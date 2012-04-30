@@ -57,7 +57,7 @@ deps:
 
 make.deps: #$(DKOBJS:.o=.c)
 	@touch make.deps
-	@${MAKE} -s deps_kernel
+	@$(MAKE) -s deps_kernel
 
 ifneq ($(MAKECMDGOALS),clean)
 -include make.deps

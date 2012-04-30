@@ -21,7 +21,20 @@ all_s: make.deps $(MODULES)
 	@#$(MAKE) -s -C fat
 	$(MAKE) -s -C ext2
 	$(MAKE) -s -C iso9660
-
+	@cp -f ata/ata.m built/ata
+	@cp -f block/loop.m built/loop
+	@cp -f bus/pci.m built/pci
+	@cp -f char/keyboard.m built/keyboard
+	@cp -f char/rand.m built/rand
+	@cp -f ext2/ext2.m built/ext2
+	@cp -f iso9660/iso9660.m built/iso9660
+	@cp -f net/ethernet.m built/ethernet
+	@cp -f net/ipv4.m built/ipv4
+	@cp -f net/cards/i825xx.m built/i825xx
+	@cp -f net/cards/rtl8139.m built/rtl8139
+	@cp -f other/sync.m built/sync
+	@cp -f partitions/partitions.m built/partitions	
+	
 
 install: $(MODULES)
 	@cp -vf ata/ata.m /sys/modules/ata

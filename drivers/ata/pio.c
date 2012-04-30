@@ -1,0 +1,78 @@
+#include <kernel.h>
+#include <dev.h>
+#include <pci.h>
+#include "ata.h"
+#include <block.h>
+int ata_pio_rw(struct ata_controller *cont, struct ata_device *dev, int rw, unsigned long long blk, unsigned char *buffer, unsigned count)
+{
+	mutex_t *lock = cont->wait;
+	mutex_on(lock);
+	unsigned long long addr = blk;
+	char cmd=0;
+	char lba48=0;
+	if(dev->flags & F_LBA48)
+		lba48=1;
+	if(rw == READ)
+		cmd = 0x20;
+	else
+		cmd = 0x30;
+	cont->irqwait=0;
+	if(lba48) {
+		cmd += 0x04;
+		outb(cont->port_cmd_base+REG_DEVICE, 0x40 | (dev->id << 4));
+		ATA_DELAY(cont);
+		outb(cont->port_cmd_base+REG_SEC_CNT, 0x00);
+		
+		outb(cont->port_cmd_base+REG_LBA_LOW, (unsigned char)(addr >> 24));
+		outb(cont->port_cmd_base+REG_LBA_MID, (unsigned char)(addr >> 32));
+		outb(cont->port_cmd_base+REG_LBA_HIG, (unsigned char)(addr >> 40));
+	}
+	
+	outb(cont->port_cmd_base+REG_SEC_CNT, count/512);
+	outb(cont->port_cmd_base+REG_LBA_LOW, (unsigned char)addr);
+	outb(cont->port_cmd_base+REG_LBA_MID, (unsigned char)(addr >> 8));
+	outb(cont->port_cmd_base+REG_LBA_HIG, (unsigned char)(addr >> 16));
+	
+	if(!lba48)
+		outb(cont->port_cmd_base+REG_DEVICE, 0xE0 | (dev->id << 4) | ((addr >> 24) & 0x0F));
+	__super_cli();
+	
+	outb(cont->port_cmd_base+REG_COMMAND, cmd);
+	int x = 10000;
+	while(--x)
+	{
+		char poll = inb(cont->port_cmd_base+REG_STATUS);
+		if(poll & STATUS_ERR) {
+			mutex_off(lock);
+			return -EIO;
+		}
+		if(poll & STATUS_DRQ)
+			break;
+		ATA_DELAY(cont);
+		force_schedule();
+	}
+	if(!x) {
+		mutex_off(lock);
+		return -EIO;
+	}
+	unsigned idx;
+	unsigned tmpword;
+	if(rw == READ)
+	{
+		for (idx = 0; idx < count/2; idx++)
+		{
+			tmpword = inw(cont->port_cmd_base+REG_DATA);
+			buffer[idx * 2] = (unsigned char)tmpword;
+			buffer[idx * 2 + 1] = (unsigned char)(tmpword >> 8);
+		}
+	} else if(rw == WRITE)
+	{
+		for (idx = 0; idx < count/2; idx++)
+		{
+			tmpword = buffer[idx * 2] | (buffer[idx * 2 + 1] << 8);
+			asm volatile ("outw %1, %0"::"dN" ((short)(cont->port_cmd_base+REG_DATA)), "a" ((short)tmpword));
+		}
+	}
+	mutex_off(lock);
+	return 512;
+}

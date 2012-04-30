@@ -1,0 +1,109 @@
+#include <kernel.h>
+#include <task.h>
+#include <memory.h>
+#include <dev.h>
+#include <char.h>
+#include <block.h>
+#include <fs.h>
+
+struct inode *devfs_root;
+struct inode *dfs_cn(char *name, int mode, int major, int minor);
+struct file_operations devfs_fops = {
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+};
+struct inode *create_devfs(struct inode *i, char *c, int h);
+struct inode_operations devfs_inode_ops = {
+ &devfs_fops,
+ create_devfs,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,0,0
+};
+void init_dev_fs()
+{
+	devfs_root = (struct inode*)kmalloc(sizeof(struct inode));
+	strcpy(devfs_root->name, "dev");
+	devfs_root->i_ops = &devfs_inode_ops;
+	devfs_root->parent = current_task->root;
+	devfs_root->mode = S_IFDIR | 0x1FF;
+	devfs_root->child = 0;
+	devfs_root->uid = devfs_root->gid = GOD;
+	devfs_root->num = -1;
+	create_mutex(&devfs_root->lock);
+	/* Create device nodes */
+	char tty[6] = "tty";
+	int i;
+	for(i=1;i<10;i++) {
+		sprintf(tty, "tty%d", i);
+		dfs_cn(tty, S_IFCHR, 3, i);
+	}
+	dfs_cn("tty", S_IFCHR, 4, 0);
+	dfs_cn("null", S_IFCHR, 0, 0);
+	dfs_cn("zero", S_IFCHR, 1, 0);
+	dfs_cn("com0", S_IFCHR, 5, 0);
+	/* Mount the filesystem */
+	add_inode(current_task->root, devfs_root);
+}
+int nodescount=1;
+struct inode *dfs_add(struct inode *q, char *name, int mode, int major, int minor)
+{
+	struct inode *i;
+	i = (struct inode*)kmalloc(sizeof(struct inode));
+	strcpy(i->name, name);
+	i->i_ops = &devfs_inode_ops;
+	i->parent = devfs_root;
+	i->mode = mode | 0xFFF;
+	i->uid = GOD;
+	i->dev = 256*major+minor;
+	i->num = nodescount++;
+	create_mutex(&i->lock);
+	add_inode(q, i);
+	return i;
+}
+
+struct inode *dfs_cn(char *name, int mode, int major, int minor)
+{
+	if(!name) return 0;
+	return dfs_add(devfs_root, name, mode, major, minor);
+}
+
+void remove_dfs_node(char *name)
+{
+	if(!name) return;
+	struct inode *r = lookup(devfs_root, name);
+	iremove_force(r);
+}
+
+struct inode *create_devfs(struct inode *i, char *c, int h)
+{
+	if(i)
+	{
+		h=strlen(c);
+	}
+	printk(KERN_WARN, "DevFS - Cannot create normal file. Use node creation instead.\n");
+	return 0;
+}

@@ -1,0 +1,118 @@
+#include <kernel.h>
+#include <isr.h>
+#include <task.h>
+extern void ack(int);
+extern unsigned read_epi();
+extern void check_alarms();
+extern unsigned heaping, waving;
+extern int current_hz;
+extern volatile long ticks;
+
+int get_timer_th(int *t)
+{
+	if(t)
+		*t = ticks;
+	return current_hz;
+}
+
+/* Recurse through the parents of tasks and update their times */
+void inc_parent_times(task_t *t, int u, int s)
+{
+	if(!t || t == kernel_task) 
+		return;
+	t->t_cutime += u;
+	t->t_cstime += s;
+	/* Heres the problem: This occurs on every clock tick. If the process tree is really
+	 * big, it could take a lot of clock cycles... Oh well. It shouldn't be that bad. */
+	inc_parent_times(t->parent, u, s);
+}
+
+inline static void do_run_scheduler()
+{
+	if(!current_task || 
+		(current_task->critical) || 
+		(current_task->flags&TF_DYING) || 
+		(current_task->flags&TF_RETSIG) ||
+		(current_task->flags&TF_LOCK))
+		return;
+	if(scheding.count) return;
+	__super_cli();
+	schedule();
+}
+
+void run_scheduler()
+{
+	if(current_task->critical)
+		panic(PANIC_NOSYNC, "Critical task tried to reschedule");
+	do_run_scheduler();
+}
+
+void force_schedule()
+{
+	if(current_task->critical)
+		panic(PANIC_NOSYNC, "Critical task tried to force schedule");
+	schedule();
+}
+#define __SYS 0, 1
+#define __USR 1, 0
+void do_tick()
+{
+	if(!current_task)
+		return;
+	if(current_task) {
+		unsigned *t;
+		++(*(current_task->system ? (t=(unsigned *)&current_task->stime) : (t=(unsigned *)&current_task->utime)));
+		/* This is a pretty damn awesome statement. Basically means that we increment the parents t_c[u,s]time */
+		inc_parent_times(current_task->parent, current_task->system ? __SYS : __USR);
+	}
+	check_alarms();
+	if(current_task->critical)
+		return;
+	if(current_task != kernel_task) {
+		if(task_is_runable(current_task) && current_task->cur_ts>0 && --current_task->cur_ts)
+			return;
+		else if(current_task->cur_ts <= 0)
+			current_task->cur_ts = GET_MAX_TS(current_task);
+	}
+	do_run_scheduler();
+}
+
+void delay(int t)
+{
+#ifdef DEBUG
+	force_nolock((task_t *)current_task);
+#endif
+	if(shutting_down)
+		return (void) delay_sleep(t);
+	__super_cli();
+	//t /= (2000/current_hz);
+	long end = ticks + t + 1;
+	if(!current_task || current_task->pid == 0)
+	{
+		__super_sti();
+		while(ticks < end)
+			force_schedule();
+		return;
+	}
+	current_task->tick=end;
+	current_task->state=TASK_USLEEP;
+	task_full_uncritical();
+	force_schedule();
+}
+void lapic_eoi();
+void delay_sleep(int t)
+{
+	//t /= (2000/current_hz);
+	long end = ticks+t+1;
+	__super_sti();
+#ifdef CONFIG_SMP
+	lapic_eoi();
+#endif
+	while(ticks < end)
+	{
+#ifdef CONFIG_SMP
+		lapic_eoi();
+#endif
+		sti();
+	}
+}

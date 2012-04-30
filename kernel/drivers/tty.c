@@ -1,0 +1,384 @@
+/* tty access - Copyright (c) 2012 Daniel Bittman
+ * Provides basic access to terminals (read, write, ioctl)
+ */
+
+#include <kernel.h>
+#include <memory.h>
+#include <task.h>
+#include <char.h>
+#include <console.h>
+#include <asm/system.h>
+#include <sgtty.h>
+extern unsigned init_pid;
+extern void update_cursor(int);
+vterm_t consoles[MAX_CONSOLES];
+unsigned *tty_calltable = 0;
+extern console_driver_t crtc_drv;
+/* Create a terminal if needed, and set as current */
+int tty_open(int min)
+{
+	if((unsigned)min >= MAX_CONSOLES)
+		return -ENOENT;
+	printk(0, "[tty]: Opening tty device %d\n", min);
+	if(!consoles[min].flag && min) {
+		create_console(&consoles[min]);
+		init_console(&consoles[min], &crtc_drv);
+	}
+	current_task->tty = min;
+	return 0;
+}
+
+int tty_close(int min)
+{
+	return 0;
+}
+
+void tty_putch(vterm_t *con, int ch)
+{
+	if(!con->rend.putch)
+		return;
+	if(con->term.c_oflag & OPOST) {
+		if((con->term.c_oflag & ONLCR || con->tty==0) && ch == '\n' && !(con->term.c_oflag & ONOCR))
+			con->rend.putch(con, '\r');
+		if((con->term.c_oflag & OCRNL && con->tty) && ch == '\r')
+			ch = '\n';
+		if(con->term.c_oflag & ONOCR && ch == '\r' && con->x==0)
+			return;
+	}
+	con->rend.putch(con, ch);
+}
+
+int tty_raise_action(int min, int sig)
+{
+	if(!(consoles[min].term.c_lflag & ISIG))
+		return 0;
+	task_t *t = kernel_task->next;
+	task_critical();
+	while(t)
+	{
+		if(t->tty == min) {
+			/* we were able to raise a signal. clear the input stream */
+			consoles[min].inpos=0;
+			t->sigd = sig;
+		}
+		t=t->next;
+	}
+	task_uncritical();
+	return 0;
+}
+
+__attribute__((optimize("O0"))) int tty_read(int min, char *buf, int len)
+{
+	if((unsigned)min > MAX_CONSOLES)
+		return -ENOENT;
+	if(!buf) return -EINVAL;
+	vterm_t *con=0;
+	again:
+	con = &consoles[min];
+	if(!con->flag)
+		return -ENOENT;
+	volatile int rem=len;
+	volatile char t=0;
+	volatile int count=0;
+	volatile int cb = !(con->term.c_lflag & ICANON);
+	int x = con->x;
+	while(1) {
+		//if(con->rend.putch)
+		//	con->rend.putch(con, ' ');
+		//if(con->rend.putch)
+		//	con->rend.putch(con, '\b');
+		
+		if(con->rend.update_cursor)
+			con->rend.update_cursor(con);
+		wait_flag_except((unsigned *)(&con->inpos), 0);
+		if(got_signal(current_task)) {
+			return -EINTR;
+		}
+		mutex_on(&con->inlock);
+		t=con->input[0];
+		con->inpos--;
+		if(con->inpos)
+			memmove(con->input, con->input+1, con->inpos+1);
+		mutex_off(&con->inlock);
+		if(con->rend.update_cursor)
+			con->rend.update_cursor(con);
+		if(t == '\b' && !cb && count)
+		{
+			buf[--count]=0;
+			rem++;
+			if(con->x > x) {
+				tty_putch(con, '\b');
+				tty_putch(con, ' ');
+				tty_putch(con, '\b');
+			}
+		} else if(t == 4 && !count && !cb)
+			 return 0;
+		else if(rem && (t != '\b' || cb)) {
+			if(count < len) {
+				buf[count++] = t;
+				rem--;
+			}
+		}
+		if(t == '\n' || t == '\r' || (cb && !rem))
+			return len-rem;
+	}
+	return len-rem;
+}
+
+/* Write to screen */
+int tty_write(int min, char *buf, int len)
+{
+	if((unsigned)min > MAX_CONSOLES)
+		return -ENOENT;
+	if(!buf)
+		return -EINVAL;
+	vterm_t *con = &consoles[min];
+	if(!con->flag)
+		return -ENOENT;
+	int i=0;
+	mutex_on(&con->wlock);
+	/* putch handles printable characters and control characters. 
+	 * We handle escape codes */
+	while(i<len) {
+		if(*buf){
+			if(*buf == 27)
+			{
+				/* Escape! */
+				if(con->rend.clear_cursor)
+					con->rend.clear_cursor(con);
+				int l = read_escape_seq(con, buf);
+				if(l == -1)
+					goto out;
+				i += l;
+				buf += l;
+				continue;
+			}
+			tty_putch(con, *buf);
+		}
+		buf++;
+		i++;
+	}
+	out:
+	if(con->rend.update_cursor)
+		con->rend.update_cursor(con);
+	mutex_off(&con->wlock);
+	return len;
+}
+
+int ttyx_ioctl(int min, int cmd, int arg)
+{
+	if((unsigned)min >= MAX_CONSOLES)
+		return -ENOENT;
+	vterm_t *con = &consoles[min];
+	if(!con->flag)
+		return -ENOENT;
+	task_t *t=0;
+	struct sgttyb *g=0;
+	struct winsize *s;
+	switch(cmd)
+	{
+		case 0:
+			if(con->rend.clear) con->rend.clear(con);
+			break;
+		case 1:
+			con->f = arg % 16;
+			con->b = arg/16;
+			break;
+		case 2:
+			current_task->tty = min;
+			break;
+		case 3:
+			if(con->rend.clear_cursor)
+				con->rend.clear_cursor(con);
+			con->x = arg;
+			if(con->rend.update_cursor)
+				con->rend.update_cursor(con);
+			break;
+		case 4:
+			if(con->rend.clear_cursor)
+				con->rend.clear_cursor(con);
+			con->y = arg;
+			if(con->rend.update_cursor)
+				con->rend.update_cursor(con);
+			break;
+		case 5:
+			return con->inpos;
+		case 6:
+			if(arg) *(int *)arg = con->x;
+			return con->x;
+		case 7:
+			if(arg) *(int *)arg = con->y;
+			return con->y;
+		case 8:
+			if(arg && arg != 1)
+				*(int *)arg = min;
+			if(arg == 1)
+			{
+				char tmp[3];
+				sprintf(tmp, "%d", min);
+				tty_write(min, tmp, strlen(tmp));
+			}
+			return min;
+		case 9:
+			break;
+		case 10:
+			if(arg)
+				*(int *)arg = con->fw+con->es;
+			return con->fh+con->es;
+		case 11:
+			if(arg)
+				*(int *)arg = con->w/(con->fw+con->es);
+			return con->h/(con->fh+con->es);
+		case 12:
+			break;
+		case 13:
+			break;
+		case 14:
+			con->inpos=0;
+			break;
+		case 15:
+			return con->mode;
+			break;
+		case 16:
+			break;
+		case 17:
+			if(con->term.c_iflag & ICRNL && arg == '\r')
+				arg = '\n';
+			if(con->term.c_iflag & IGNCR && arg == '\r')
+				break;
+			mutex_on(&con->inlock);
+			if(con->inpos < 256) {
+				con->input[con->inpos] = (char)arg;
+				con->inpos++;
+			}
+			mutex_off(&con->inlock);
+			if(!(con->term.c_lflag & ECHO) && arg != '\b' && arg != '\n')
+				break;
+			if(!(con->term.c_lflag & ECHOE) && arg == '\b')
+				break;
+			if(!(con->term.c_lflag & ECHONL) && arg == '\n')
+				break;
+			
+			tty_putch(con, arg);
+			if(con->rend.update_cursor)
+				con->rend.update_cursor(con);
+			break;
+		case 18:
+			return con->term.c_oflag;
+		case 19:
+			tty_raise_action(min, SIGINT);
+			break;
+		case 20:
+			if(!arg)
+				con->term.c_lflag &= ~ECHO;
+			else
+				con->term.c_lflag |= ECHO;
+			break;
+		case 21:
+			if(arg)
+				*(unsigned *)arg = con->scrollb;
+			return con->scrollt;
+		case 22:
+			create_console(con);
+			break;
+		case 23:
+			if(!arg)
+				con->term.c_oflag &= ~OCRNL;
+			else
+				con->term.c_oflag |= OCRNL;
+			break;
+		case 24:
+			//if(!arg)
+			//	con->term.c_oflag &= ~CBREAK;
+			//else
+			//	con->term.c_oflag |= CBREAK;
+			break;
+		case 25:
+			if(arg) {
+				wait_flag(&con->exlock, 0);
+				if(got_signal(current_task))
+					return -EINTR;
+				con->exlock = current_task->pid;
+			} else
+				if(con->exlock == (unsigned)get_pid())
+					con->exlock=0;
+			break;
+		case 26:
+			if(con->rend.clear_cursor && arg)
+				con->rend.clear_cursor(con);
+			con->nocur=arg;
+			break;
+		case 27:
+			switch_console(con);
+			break;
+		case 0x5413:
+			s = (struct winsize *)arg;
+			if(!s)
+				return -EINVAL;
+			s->ws_row=con->h-1;
+			s->ws_col=con->w;
+			return 0;
+		case 0x5402: case 0x5403: case 0x5404:
+			if(arg) 
+				memcpy(&(con->term), (void *)(unsigned)arg, sizeof(struct termios));
+			return 0;
+		case 0x5401:
+			if(arg) 
+				memcpy((void *)(unsigned)arg, &(con->term), sizeof(struct termios));
+			return 0;
+		case 0x540F:
+			return 0;
+			break;
+		case 0x5414:
+			/* set winsz */
+			return 0;
+			break;
+		default:
+			if(cmd >= 128 && cmd < 256 && ((current_task->system == SYS_LMOD) || (current_task->pid < init_pid)))
+			{
+				unsigned q = tty_calltable ? tty_calltable[cmd-128] : 0;
+				if(q)
+				{
+					int (*call)(int,int,int) = (int (*)(int,int,int))q;
+					return call(min, cmd, arg);
+				} else {
+					if(!tty_calltable)
+						tty_calltable = (unsigned *)kmalloc(128 * sizeof(unsigned));
+					tty_calltable[cmd-128] = arg;
+					return cmd;
+				}
+			} else
+				printk(1, "[tty]: %d: invalid ioctl %d\n", min, cmd);
+	}
+	return 0;
+}
+
+int tty_ioctl(int min, int cmd, int arg)
+{
+	return ttyx_ioctl(current_task->tty, cmd, arg);
+}
+
+void tty_init(vterm_t **k, vterm_t **l)
+{
+	int i;
+	assert(MAX_CONSOLES > 9);
+	for(i=0;i<MAX_CONSOLES;i++)
+	{
+		memset(&consoles[i], 0, sizeof(vterm_t));
+		consoles[i].tty=i;
+	}
+	*k = &consoles[0];
+	*l = &consoles[9];
+}
+
+void console_init_stage2()
+{
+	create_console(&consoles[1]);
+	create_console(&consoles[9]);
+	init_console(&consoles[1], &crtc_drv);
+	init_console(&consoles[9], &crtc_drv);
+	memcpy(consoles[1].vmem, consoles[0].cur_mem, 80*25*2);
+	consoles[1].x=consoles[0].x;
+	consoles[1].y=consoles[0].y;
+	switch_console(&consoles[1]);
+}

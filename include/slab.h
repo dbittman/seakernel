@@ -1,0 +1,54 @@
+#ifndef SLAB_H
+#define SLAB_H
+#include <area.h>
+#define SLAB_MAGIC 0x11235813
+
+#define S_ALIGN 1
+
+enum transfer_vals {
+	TO_EMPTY=0, 
+	TO_PARTIAL=1, 
+	TO_FULL=2
+};
+typedef struct slab_header_s {
+	unsigned magic;
+	unsigned id;
+	unsigned short num_pages;
+	unsigned short flags;
+	mutex_t lock;
+	
+	
+	unsigned short obj_used;/* Ref count */
+	unsigned short obj_num;
+	
+	/* For usage in the slab lists */
+	struct slab_header_s *next, *prev;
+	
+	unsigned parent; /* Pointer to the slab cache that this slab is part of */
+	unsigned short *stack;
+	unsigned short stack_arr[MAX_OBJ_ID];
+	vnode_t *vnode;
+	char pad[94 - sizeof(vnode_t *)];
+} slab_t;
+
+typedef struct slab_cache_s {
+	slab_t *empty, *partial, *full;
+	
+	/* Signed because an id of -1 means unused */
+	short id;
+	unsigned short flags;
+	mutex_t lock;
+	unsigned obj_size;
+	unsigned slab_count;
+} slab_cache_t;
+
+#define NUM_SCACHES (0x1000 / sizeof(slab_cache_t))
+#define OBJ_SIZE(s) (((slab_cache_t *)(s->parent))->obj_size)
+#define FIRST_OBJ(s) ((unsigned)((s->flags & S_ALIGN) ? ((unsigned)s+0x1000) : ((unsigned)s+sizeof(slab_t))))
+
+extern unsigned slab_start, slab_end;
+extern vma_t slab_area_alloc;
+
+
+#endif
+

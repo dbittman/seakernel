@@ -1,0 +1,11 @@
+0x00000000 -> 0x10000000: Kernel image
+
+0x10000000 -> 0xA0000000: Applications, libraries
+0xA0000000 -> 0xB0000000: Priv MMF
+0xB0000000 -> 0xB8000000: Stack
+
+0xB8000000 -> 0xC0000000: Shared MMF
+0xC0000000 -> 0xF0000000: Kernel malloc
+0xF0000000 -> 0xFFBFE000: Free pages stack
+0xFFBFF000 -> 0xFFC00000: Current Page Directory VADDR
+0xFFC00000 -> 0xFFFFFFFF: Current Page Tables VADDR

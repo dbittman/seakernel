@@ -1,0 +1,170 @@
+#include <kernel.h>
+#include <memory.h>
+#include <task.h>
+#include <asm/system.h>
+#include <dev.h>
+#include <fs.h>
+#include <fcntl.h>
+int is_directory(struct inode *i)
+{
+	return i ? S_ISDIR(i->mode) : 0;
+}
+
+int change_icount(struct inode *i, int c)
+{
+	if(!i) return 0;
+	mutex_on(&i->lock);
+	(i->count += c);
+	int ret = i->count;
+	mutex_off(&i->lock);
+	return ret;
+}
+
+int get_ref_count(struct inode *i)
+{
+	return i ? i->count : 0;
+}
+
+int get_f_ref_count(struct inode *i)
+{
+	return i ? i->f_count : 0;
+}
+
+int do_get_permissions(struct inode *inode, int flag)
+{
+	if(!inode)
+		return 0;
+	if(ISGOD(current_task))
+		return 1;
+	int m = inode->mode & 0xFFF;
+	if(current_task->uid >= inode->uid)
+	{
+		if(current_task->uid == inode->uid)
+		{
+			if(flag & m)
+				return 1;
+		}
+		flag /= 10;
+		if(current_task->gid == inode->gid)
+		{
+			if(flag & m)
+				return 1;
+		}
+		flag /= 10;
+		if(flag & m)
+			return 1;
+		return 0;
+	}
+	return 1;
+}
+
+int permissions(struct inode *inode, int flag)
+{
+	mutex_on(&inode->lock);
+	int ret = do_get_permissions(inode, flag);
+	mutex_off(&inode->lock);
+	return ret;
+}
+
+int do_add_inode(struct inode *b, struct inode *i)
+{
+	if(!is_directory(b))
+	{
+		printk(KERN_WARN, "Trying to add an inode to a file.\n");
+		return -1;
+	}
+	struct inode *tmp = b->child;
+	b->child = i;
+	i->next = tmp;
+	i->parent = b;
+	i->prev=0;
+	if(tmp)
+		tmp->prev=i;
+	return 0;
+}
+
+int add_inode(struct inode *b, struct inode *i)
+{
+	assert(b && i);
+	int ret;
+	mutex_on(&b->lock);
+	ret = do_add_inode(b, i);
+	mutex_off(&b->lock);
+	return ret;
+}
+
+int recur_total_refs(struct inode *i)
+{
+	int x = i->count;
+	struct inode *c = i->child;
+	while(c) {
+		x += recur_total_refs(c);
+		c=c->next;
+	}
+	return x;
+}
+
+int free_inode(struct inode *i, int recur)
+{
+	assert(i);
+	assert(recur || !i->child);
+	destroy_flocks(i);
+	if(i->pipe)
+		free_pipe(i);
+	if(i->start)
+		kfree((void *)i->start);
+	destroy_mutex(&i->lock);
+	if(recur)
+	{
+		while(i->child)
+		{
+			struct inode *c = i->child;
+			i->child=i->child->next;
+			free_inode(c, 1);
+		}
+	}
+	kfree(i);
+	return 0;
+}
+
+int do_iremove(struct inode *i, int flag)
+{
+	if(!i) return -1;
+	struct inode *parent = i->parent;
+	if(parent) mutex_on(&parent->lock);
+	if(!flag && (get_ref_count(i) || i->child) && flag != 3)
+		panic(0, "Attempted to iremove inode with count > 0 or children! (%s)", i->name);
+	if(flag != 3) 
+		i->unreal=1;
+	struct inode *prev = i->prev;
+	if(prev)
+		prev->next = i->next;
+	if(parent && parent->child == i)
+		parent->child=i->next;
+	if(i->next)
+		i->next->prev = prev;
+	if(parent) mutex_off(&parent->lock);
+	if(flag != 3)
+		free_inode(i, (flag == 2) ? 1 : 0);
+	return 0;
+}
+
+int iremove_recur(struct inode *i)
+{
+	return do_iremove(i, 2);
+}
+
+int iremove(struct inode *i)
+{
+	return do_iremove(i, 0);
+}
+
+int iremove_nofree(struct inode *i)
+{
+	return do_iremove(i, 3);
+}
+
+int iremove_force(struct inode *i)
+{
+	return do_iremove(i, 1);
+}

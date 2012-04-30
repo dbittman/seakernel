@@ -1,0 +1,8 @@
+-> All ncurses applications are subject to artifacts on screen, and many keyboard function do not work
+   for example, in nano, arrow keys don't work.
+
+-> fsck: Running fsck with -c to check for badblocks will fail with "failed to popen..." after the badblocks check is run
+
+-> bash is not stable
+
+-> 

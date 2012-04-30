@@ -1,0 +1,190 @@
+/* init/main.c: Copyright (c) 2010 Daniel Bittman
+ * Provides initialization functions for the kernel */
+#include <kernel.h>
+#include <multiboot.h>
+#include <console.h>
+#include <memory.h>
+#include <asm/system.h>
+#include <task.h>
+#include <dev.h>
+#include <fs.h>
+#include <init.h>
+#include <mod.h>
+#include <cache.h>
+#include <elf.h>
+
+struct multiboot *mtboot;
+u32int i_stack=0;
+
+char init_path[128] = "/bin/init";
+char root_device[64] = "/";
+char *stuff_to_pass[128];
+int argc_STP=3;
+int count_ie=0;
+char *init_env[12];
+char cleared_args=0;
+int init_pid=0;
+char kernel_name[128];
+elf_t kernel_elf;
+int april_fools=0;
+struct tm kernel_start_time;
+
+void parse_kernel_cmd(char *buf)
+{
+	char *current = buf;
+	char *tmp;
+	unsigned argc=0;
+	char a[128];
+	int type=0;
+	int init_mods=0;
+	memset(stuff_to_pass, 0, 128 * sizeof(char *));
+	while(current && *current)
+	{
+		tmp = strchr(current, ' ');
+		memset(a, 0, 128);
+		unsigned len = (unsigned)tmp ? (unsigned)(tmp-current) : (unsigned)strlen(current);
+		strncpy(a, current, len >= 128 ? 127 : len);
+		if(!argc)
+		{
+			memset(kernel_name, 0, 128);
+			strcpy(kernel_name, a);
+		} else if(!type) {
+			if(!strncmp("init=\"", a, 6))
+			{
+				strcpy(init_path, a+6);
+				init_path[strlen(init_path)-1]=0;
+				printk(KERN_INFO, "init=%s\n", init_path);
+			}
+			else if(!strncmp("root=\"", a, 6))
+			{
+				memset(root_device, 0, 64);
+				strcpy(root_device, a+6);
+				root_device[strlen(root_device)-1]=0;
+				printk(KERN_INFO, "root=%s\n", root_device);
+			}
+			else if(!strcmp("aprilfools", a))
+				april_fools = !april_fools;
+			else if(!strncmp("loglevel=", a, 9))
+			{
+				char *lev = ((char *)a) + 9;
+				int logl = strtoint(lev);
+				printk(1, "Setting loglevel to %d\n", logl);
+				PRINT_LEVEL = logl;
+			} else {
+				stuff_to_pass[argc_STP] = (char *)kmalloc(strlen(a)+1);
+				strcpy(stuff_to_pass[argc_STP++], a);
+			}
+		} else
+		{
+			/* switch type */
+			type=0;
+		}
+		if(!tmp)
+			break;
+		argc++;
+		current = tmp+1;
+	}
+	stuff_to_pass[0] = (char *)kmalloc(9);
+	strcpy(stuff_to_pass[0], init_path);
+	stuff_to_pass[2] = (char *)kmalloc(strlen(init_path) + 4);
+	stuff_to_pass[1] = (char *)kmalloc(strlen(root_device) + 4);
+	strcpy(stuff_to_pass[1], root_device);
+	strcpy(stuff_to_pass[2], init_path);
+}
+
+/* This is the C kernel entry point */
+void kmain(struct multiboot *mboot_header, u32int initial_stack)
+{
+	/* Store passed values, and initiate some early things
+	 * We want serial log output as early as possible */
+	shutting_down=0;
+	mtboot = mboot_header;
+	i_stack = initial_stack;
+	/* parse_kernel_elf(mboot_header, &kernel_elf); */
+	load_tables();
+	init_serial();
+	console_init_stage1();
+	
+	puts("~ SeaOS Version ");
+	char ver[32];
+	get_kernel_version(ver);
+	puts(ver);
+	puts(" Booting Up ~\n\r");
+	puts("[kernel]: initializing kernel...\n\r");
+	init_cache();
+	init_module_system();
+	init_syscalls();
+	load_initrd(mtboot);
+	install_timer(1000);
+	pm_init(placement, mtboot);
+	init_main_cpu();
+	/* Now get the management stuff going */
+	printk(1, "[kernel]: Starting system management\n");
+	init_memory(mtboot);
+	console_init_stage2();
+	
+	parse_kernel_cmd((char *)mboot_header->cmdline);
+	init_multitasking();
+	init_dm();
+	load_superblocktable();
+	/* Load the rest... */
+	kb_install();
+	process_initrd();
+	init_kern_task();
+	
+	get_timed(&kernel_start_time);
+	printk(KERN_MILE, "[kernel]: Kernel is setup (%2.2d:%2.2d:%2.2d, %s, kv=%d, ts=%d bytes: ok)\n", 
+	       kernel_start_time.tm_hour, kernel_start_time.tm_min, kernel_start_time.tm_sec, kernel_name, KVERSION, sizeof(task_t));
+	unlock_all_mutexes();
+	task_full_uncritical();
+	__super_sti();
+	if(!fork())
+		init();
+	
+	/* The kernel task has all rights, and it always in the 'system' */
+	sys_setsid();
+	enter_system(255);
+	kernel_idle_task();
+}
+
+/* User-mode printf function */
+void printf(const char *fmt, ...)
+{
+	char printbuf[1024];
+	memset(printbuf, 0, 1024);
+	va_list args;
+	va_start(args, fmt);
+	vsprintf(printbuf, fmt, args);
+	u_write(1, printbuf);
+	va_end(args);
+}
+
+void init()
+{
+	/* Call sys_setup. This sets up the root nodes, and filedesc's 0, 1 and 2. Essentially, a basic unix type process. */
+	sys_setup();
+	kprintf("Something stirs and something tries, and starts to climb towards the light.\n");
+	/* Set some basic environment variables. These allow simple root execution, basic terminal access, and a shell to run from */
+	add_init_env("PATH=/bin/:/usr/bin/:/usr/sbin:");
+	add_init_env("TERM=seaos");
+	add_init_env("HOME=/");
+	add_init_env("SHELL=/bin/sh");
+	int ret=0;
+	int pid;
+	init_pid = current_task->pid+1;
+	/* Our last moments in kernel mode... */
+	switch_to_user_mode();
+	/* We have to be careful now. If we try to call any kernel functions
+	 * without doing a system call, the processor will generate a GPF (or 
+	 * a page fault) because you can't execute kernel code in ring 3!
+	 * So we write simple wrapper functions for common functions that 
+	 * we will need */
+	ret = u_execve("/preinit", (char **)stuff_to_pass, (char **)init_env);
+	printf("Could not execute /preinit\nAttempting '/bin/sh'...\n");
+	ret = u_execve("/bin/sh", (char **)stuff_to_pass, (char **)init_env);
+	printf("Attempting '/sh'...\n");
+	ret = u_execve("/sh", (char **)stuff_to_pass, (char **)init_env);
+	
+	printf("Failed to start the preinit process. System will halt.\n");
+	u_exit(0);
+}

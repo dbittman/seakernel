@@ -30,6 +30,9 @@ long sys_sysconf(int cmd)
 		case _SC_CHILD_MAX:
 			ret = 0;
 			break;
+		case _SC_ARG_MAX:
+			ret = 0x1000;
+			break;
 		default:
 			printk(1, "[sysconf]: %d gave unknown specifier: %d\n", current_task->pid, cmd);
 	}

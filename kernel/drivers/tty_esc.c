@@ -197,12 +197,6 @@ int read_brak_esc(vterm_t *con, char *seq)
 	//printk(0, ":: %c\n",command);
 	switch(command)
 	{
-		case 'h':
-			//printk(1, "h\n");
-			break;
-		case 'l':
-			//printk(1, "l\n");
-			break;
 		case 'm':
 			if(!d)
 			{
@@ -236,7 +230,6 @@ int read_brak_esc(vterm_t *con, char *seq)
 			tty_gotoxy(con, 0, -1);
 			break;
 		case 'H': case 'f':
-			//printk(0, "H: %d %d\n", data[0], data[1]);
 			if(data[0]) data[0]--;
 			if(data[1]) data[1]--;
 			tty_gotoxy(con, data[1], data[0]);
@@ -248,7 +241,6 @@ int read_brak_esc(vterm_t *con, char *seq)
 			tty_Kclear(con, data[0]);
 			break;
 		case 'J':
-			//printk(0, "Jclear: %d\n", data[0]);
 			tty_Jclear(con, data[0]);
 			break;
 		case 'G': case '`': 
@@ -268,9 +260,6 @@ int read_brak_esc(vterm_t *con, char *seq)
 			if(!data[0]) data[0]++;
 			len = con->w - con->x;
 			memcpy(con->cur_mem + con->y*con->w*2 + con->x*2, con->cur_mem + con->y*con->w*2 + con->x*2 + data[0]*2, len*2);
-			break;
-		case 'X':
-			//printk(1, "X\n");
 			break;
 		case 'a':
 			tty_movexy(con, data[0], 0);

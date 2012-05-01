@@ -28,7 +28,7 @@ volatile int proc_pci_maj;
 struct pci_device *pci_list=0;
 mutex_t *pci_mutex;
 int remove_kernel_symbol(char * unres);
-int proc_set_callback(int major, int( *callback)(char rw, struct inode *inode, int m, char *buf));
+int proc_set_callback(int major, int( *callback)(char rw, struct inode *inode, int m, char *buf, int, int));
 struct inode *pfs_cn_node(struct inode *to, char *name, int mode, int major, int minor);
 /* Adds a device to the list of devices */
 int pci_add_device(struct pci_device *dev)
@@ -256,8 +256,9 @@ unsigned pci_get_base_address(struct pci_device *device)
 	return tmp & 0xFFFFFFFC;
 }
 
-int pci_proc_call(char rw, struct inode *inode, int m, char *buf)
+int pci_proc_call(char rw, struct inode *inode, int m, char *buf, int off, int len)
 {
+	int c=0;
 	if(rw == READ)
 	{
 		int bus, dev, func;
@@ -272,9 +273,10 @@ int pci_proc_call(char rw, struct inode *inode, int m, char *buf)
 			tmp=tmp->next;
 		}
 		if(tmp) {
+			c += proc_append_buffer(buf, (void *)tmp, c, sizeof(struct pci_device), off, len);
 			memcpy(buf, (unsigned char *)tmp, sizeof(struct pci_device));
 		}
-		return 0;
+		return c;
 	}
 	return 0;
 }

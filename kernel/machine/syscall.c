@@ -62,7 +62,7 @@ void *syscall_table[129] = {
 	SC sys_link, SC unlink, SC get_ref_count, SC get_pwd, 
 	SC sys_getpath, SC rename, SC chroot, SC chdir,
 	SC sys_mount, SC unmount, SC read_dir, SC sys_create, 
-	SC create_console, SC switch_console, SC sys_fsstat, SC sys_mkfifo,
+	SC create_console, SC switch_console, SC sys_null, SC sys_mkfifo,
 	
 	SC sys_null, SC sys_mmap, SC sys_munmap, SC sys_sync, 
 	SC rmdir, SC sys_fsync, SC sys_alarm, SC sys_select,
@@ -106,7 +106,7 @@ int check_pointers(volatile registers_t *regs)
 {
 	switch(regs->eax) {
 		case SYS_READ: case SYS_FSTAT: case SYS_STAT: case SYS_GETPATH:
-		case SYS_FSSTAT: case SYS_READLINK: case SYS_GETNODESTR: 
+		case SYS_READLINK: case SYS_GETNODESTR: 
 		case SYS_POSFSSTAT:
 			return __is_valid_user_ptr((void *)_B_, 0);
 		

@@ -213,6 +213,7 @@ void init_kernel_symbols(void)
 	add_kernel_symbol(read_fs);
 	add_kernel_symbol(write_fs);
 	add_kernel_symbol(sys_ioctl);
+	add_kernel_symbol(proc_append_buffer);
 	add_kernel_symbol(sys_stat);
 	add_kernel_symbol(sys_fstat);
 	_add_kernel_symbol((unsigned)__super_cli, "__super_cli");

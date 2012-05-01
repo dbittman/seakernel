@@ -6,21 +6,6 @@
 #include <fs.h>
 extern struct inode *devfs_root, *procfs_root;
 
-int do_fs_stat(struct inode *i, struct fsstat *f)
-{
-	if(i && i->i_ops && i->i_ops->fsstat)
-		return i->i_ops->fsstat(i, f);
-	return -EINVAL;
-}
-
-int fs_stat(char *path, struct fsstat *f)
-{
-	struct inode *i = get_idir(path, 0);
-	int ret = do_fs_stat(i, f);
-	iput(i);
-	return ret;
-}
-
 int rename(char *f, char *nname)
 {
 	if(!f || !nname) return -EINVAL;

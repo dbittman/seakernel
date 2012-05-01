@@ -87,19 +87,6 @@ int sys_umask(int mode)
 	return old;
 }
 
-int sys_posix_fsstat(int fd, struct posix_statfs *sb)
-{
-	struct file *f = get_file_pointer((task_t *)current_task, fd);
-	if(!f) return -EBADF;
-	struct inode *i = f->inode;
-	if(!i) return -EBADF;
-	struct fsstat sf;
-	if(i->i_ops && i->i_ops->fsstat)
-		i->i_ops->fsstat(i, &sf);
-	memcpy(sb, &sf, sizeof(*sb));
-	return 0;
-}
-
 int sys_chmod(char *path, int mode)
 {
 	if(!path) return -EINVAL;

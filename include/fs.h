@@ -147,7 +147,7 @@ struct inode_operations {
 	int (*sync_inode) (struct inode *);
 	int (*createnode) (struct inode *, char *, int, int, int);
 	int (*unmount)(int);
-	int (*fsstat)(struct inode *, struct fsstat *);
+	int (*fsstat)(struct inode *, struct posix_statfs *);
 	int (*fssync)(struct inode *);
 	int (*update)(struct inode *);
 };

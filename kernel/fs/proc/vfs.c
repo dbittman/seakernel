@@ -55,7 +55,7 @@ int proc_vfs(char rw, struct inode *n, int m, char *buf, int off, int len)
 			}
 			if(i->r_mount_ptr) {
 				if(i->r_mount_ptr == current_task->root || i == current_task->root)
-					mt.mt_mountp = "/";
+					mt.mt_filsys=mt.mt_mountp = "/";
 				else {
 					if(!strcmp(i->r_mount_ptr->name, "dev"))
 						mt.mt_mountp = "/dev";

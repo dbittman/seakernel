@@ -60,7 +60,7 @@ int dosyscall(int num, int a, int b, int c, int d, int e);
 #define SYS_CREATE		 44
 #define SYS_CREATE_CONSOLE	 45
 #define SYS_SWITCH_CONSOLE	 46
-#define SYS_FSSTAT    	 47
+#define SYS_UNUSED19    	 47
 #define SYS_MKFIFO1		 48
 
 #define SYS_UNUSED10		 49

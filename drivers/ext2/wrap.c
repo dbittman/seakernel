@@ -15,14 +15,14 @@ int wrap_sync_inode(struct inode *i);
 int wrap_put_inode(struct inode *i);
 int ext2_sane(struct inode *i);
 int ext2_fs_sane(struct inode *i);
-int ext2_fs_stat(struct inode *i, struct fsstat *f);
+int ext2_fs_stat(struct inode *i, struct posix_statfs *f);
 int ext2_sync(struct inode *i);
 struct file_operations e2fs_fops = {
 	0,
 	wrap_ext2_readfile,
 	wrap_ext2_writefile,
 	0,
-	0,//ext2_stat,
+	0,
 	0,
 	0,
 	0,
@@ -55,21 +55,16 @@ struct inode_operations e2fs_inode_ops = {
 	wrap_ext2_update,
 };
 
-int ext2_fs_stat(struct inode *i, struct fsstat *f)
+int ext2_fs_stat(struct inode *i, struct posix_statfs *f)
 {
 	if(!i || !f) return -EINVAL;
 	ext2_fs_t *fs = get_fs(i->sb_idx);
 	if(!fs) return -EINVAL;
-	f->total_size = fs->sb->block_count;
-	f->free_size = fs->sb->free_blocks;
-	f->used_size = f->total_size - f->free_size;
-	f->dev = i->dev;
-	strncpy(f->name, (char *)fs->sb->volume_id, 4);
 	
-	f->f_bsize = fs->sb->block_size;
+	f->f_bsize = ext2_sb_blocksize(fs->sb);
 	f->f_blocks = fs->sb->block_count;
 	f->f_bfree = fs->sb->free_blocks;
-	f->f_bavail = f->f_blocks - f->f_bfree;
+	f->f_bavail = f->f_bfree;
 	f->f_files = fs->sb->inode_count;
 	f->f_ffree = fs->sb->free_inodes;
 	f->f_type = 0xEF53;

@@ -85,11 +85,13 @@ int sys_fstat(int fp, struct stat *sb)
 	return do_stat(f->inode, sb);
 }
 
-int sys_fsstat(int fp, struct fsstat *fss)
+int sys_posix_fsstat(int fd, struct posix_statfs *sb)
 {
-	if(!fss) return -EINVAL;
-	struct file *f = get_file_pointer((task_t *)current_task, fp);
-	if(!f)
-		return -EBADF;
-	return do_fs_stat(f->inode, fss);
+	struct file *f = get_file_pointer((task_t *)current_task, fd);
+	if(!f) return -EBADF;
+	struct inode *i = f->inode;
+	if(!i) return -EBADF;
+	if(i->i_ops && i->i_ops->fsstat)
+		i->i_ops->fsstat(i, sb);
+	return 0;
 }

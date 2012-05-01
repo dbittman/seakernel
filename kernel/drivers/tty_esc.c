@@ -234,9 +234,6 @@ int read_brak_esc(vterm_t *con, char *seq)
 			if(data[1]) data[1]--;
 			tty_gotoxy(con, data[1], data[0]);
 			break;
-		case 'g':
-			//printk(1, "g\n");
-			break;
 		case 'K':
 			tty_Kclear(con, data[0]);
 			break;
@@ -247,9 +244,6 @@ int read_brak_esc(vterm_t *con, char *seq)
 			if (data[0]) data[0]--;
 			tty_gotoxy(con, data[0], -1);
 			break;
-		case 'L':
-			//printk(1, "L\n");
-			break;	
 		case 'M':
 			a = con->scrollt;
 			con->scrollt = con->y;

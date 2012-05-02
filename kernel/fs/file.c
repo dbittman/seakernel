@@ -5,16 +5,9 @@
 
 struct file_ptr *get_file_handle(task_t *t, int n)
 {
-	if(!t)
-		return 0;
-	struct file_ptr *f = t->filp;
-	while(f)
-	{
-		if(f->num == n)
-			return f;
-		f=f->next;
-	}
-	return 0;
+	if(n >= FILP_HASH_LEN) return 0;
+	struct file_ptr *f = t->filp[n];
+	return f;
 }
 
 struct file *get_file_pointer(task_t *t, int n)
@@ -27,20 +20,13 @@ struct file *get_file_pointer(task_t *t, int n)
 
 void remove_file_pointer(task_t *t, int n)
 {
+	if(n > FILP_HASH_LEN) return;
 	if(!t || !t->filp)
 		return;
 	struct file_ptr *f = get_file_handle(t, n);
 	if(!f)
 		return;
-	if(f->prev)
-		f->prev->next = f->next;
-	if(f->next)
-		f->next->prev = f->prev;
-	if(t->filp == f) {
-		assert(!f->prev);
-		t->filp = f->next;
-		t->filp->prev=0;
-	}
+	t->filp[n] = 0;
 	task_critical();
 	f->fi->count--;
 	task_uncritical();
@@ -53,47 +39,14 @@ void remove_file_pointer(task_t *t, int n)
  * for relatively efficient determining of a filedes without limit. */
 int add_file_pointer_do(task_t *t, struct file_ptr *f, int after)
 {
-	if(!t) 
-		return -1;
-	struct file_ptr *p = t->filp;
-	if(!p) {
-		t->filp = f;
-		f->num=after;
-		return f->num;
-	}
-	if(p->num > after)
-	{
-		p->prev = f;
-		f->next = p;
-		f->prev=0;
-		t->filp=f;
-		f->num=after;
-		return f->num;
-	}
-	int i=-1;
-	while(p)
-	{
-		if(p->next && (p->next->num-p->num) > 1 && ((p->num+1) >= after))
-		{
-			i = p->num+1;
-			break;
-		}
-		if(!p->next)
-			break;
-		p=p->next;
-	}
-	if(i != -1) {
-		f->next = p->next;
-		if(p->next)
-			p->next->prev = f;
-	} else {
-		i = p->num+1;
-		f->next=0;
-	}
-	p->next = f;
-	f->prev = p;
-	f->num = i;
-	return i;
+	assert(t && f);
+	while(after < FILP_HASH_LEN && t->filp[after])
+		after++;
+	if(after >= FILP_HASH_LEN)
+		panic(0, "tried to use a file descriptor that was too high");
+	t->filp[after] = f;
+	f->num = after;
+	return after;
 }
 
 int add_file_pointer(task_t *t, struct file *f)
@@ -118,37 +71,39 @@ void copy_file_handles(task_t *p, task_t *n)
 {
 	if(!p || !n)
 		return;
-	struct file_ptr *f = p->filp;
-	if(!f) {
-		n->filp=0;
-		return;
-	}
-	struct file_ptr *new, *prev=0, *start=0;
-	start = new = (struct file_ptr *)kmalloc(sizeof(struct file_ptr));
-	while(f) {
-		new->fi = f->fi;
-		struct inode *i = f->fi->inode;
-		change_icount(i, 1);
-		mutex_on(&i->lock);
-		i->f_count++;
-		if(i->pipe && !i->pipe->type) {
-			mutex_on(i->pipe->lock);
-			++i->pipe->count;
-			if(f->fi->flag & _FWRITE) i->pipe->wrcount++;
-			mutex_off(i->pipe->lock);
+	int c=0;
+	while(c < FILP_HASH_LEN) {
+		if(p->filp[c]) {
+			struct file_ptr *fp = (void *)kmalloc(sizeof(struct file_ptr));
+			fp->num = c;
+			fp->fi = p->filp[c]->fi;
+			task_critical();
+			fp->fi->count++;
+			task_uncritical();
+			struct inode *i = fp->fi->inode;
+			change_icount(i, 1);
+			mutex_on(&i->lock);
+			i->f_count++;
+			if(i->pipe && !i->pipe->type) {
+				mutex_on(i->pipe->lock);
+				++i->pipe->count;
+				if(fp->fi->flags & _FWRITE) i->pipe->wrcount++;
+				mutex_off(i->pipe->lock);
+			}
+			mutex_off(&i->lock);
+			n->filp[c] = fp;
 		}
-		mutex_off(&i->lock);
-		task_critical();
-		new->fi->count++;
-		task_uncritical();
-		new->num = f->num;
-		f=f->next;
-		if(f) {
-			prev = new;
-			new = (struct file_ptr *)kmalloc(sizeof(struct file_ptr));
-			prev->next = new;
-			new->prev = prev;
-		}
+		
+		c++;
 	}
-	n->filp = start;
+}
+
+void close_all_files(task_t *t)
+{
+	int q=0;
+	for(;q<FILP_HASH_LEN;q++)
+	{
+		if(t->filp[q])
+			sys_close(q);
+	}
 }

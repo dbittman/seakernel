@@ -48,7 +48,7 @@ struct file *d_sys_open(char *name, int flags, int mode, int *error, int *num)
 	int ret;
 	f = (struct file *)kmalloc(sizeof(struct file));
 	f->inode = inode;
-	f->flags = f->flag = flags;
+	f->flags = flags;
 	f->pos=0;
 	f->count=1;
 	f->fd_flags &= ~FD_CLOEXEC;
@@ -95,14 +95,14 @@ int duplicate(task_t *t, int fp, int n)
 	mutex_on(&f->inode->lock);
 	f->inode->f_count++;
 	mutex_off(&f->inode->lock);
-	new->flag = f->flag;
+	new->flags = f->flags;
 	new->fd_flags = f->fd_flags;
 	new->fd_flags &= ~FD_CLOEXEC;
 	new->pos = f->pos;
 	if(f->inode->pipe && !f->inode->pipe->type) {
 		mutex_on(f->inode->pipe->lock);
 		++f->inode->pipe->count;
-		if(f->flag & _FWRITE) f->inode->pipe->wrcount++;
+		if(f->flags & _FWRITE) f->inode->pipe->wrcount++;
 		mutex_off(f->inode->pipe->lock);
 	}
 	int ret = 0;

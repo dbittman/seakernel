@@ -29,13 +29,3 @@ struct inode *sys_create(char *path)
 {
 	return cget_idir(path, 0, current_task->cmask);
 }
-
-int create_node(struct inode *i, char *name, int mode, int maj, int min)
-{
-	if(!name)
-		return -EINVAL;
-	if(i->i_ops)
-		if(i->i_ops->createnode)
-			return i->i_ops->createnode(i, name, mode, maj, min);
-	return 0;
-}

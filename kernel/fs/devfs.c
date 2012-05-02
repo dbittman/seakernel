@@ -8,46 +8,12 @@
 
 struct inode *devfs_root;
 struct inode *dfs_cn(char *name, int mode, int major, int minor);
-struct file_operations devfs_fops = {
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
-};
-struct inode *create_devfs(struct inode *i, char *c, int h);
-struct inode_operations devfs_inode_ops = {
- &devfs_fops,
- create_devfs,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,0,0
-};
+
 void init_dev_fs()
 {
 	devfs_root = (struct inode*)kmalloc(sizeof(struct inode));
 	strcpy(devfs_root->name, "dev");
-	devfs_root->i_ops = &devfs_inode_ops;
+	devfs_root->i_ops = 0;
 	devfs_root->parent = current_task->root;
 	devfs_root->mode = S_IFDIR | 0x1FF;
 	devfs_root->child = 0;
@@ -74,7 +40,7 @@ struct inode *dfs_add(struct inode *q, char *name, int mode, int major, int mino
 	struct inode *i;
 	i = (struct inode*)kmalloc(sizeof(struct inode));
 	strcpy(i->name, name);
-	i->i_ops = &devfs_inode_ops;
+	i->i_ops = 0;
 	i->parent = devfs_root;
 	i->mode = mode | 0xFFF;
 	i->uid = GOD;
@@ -96,14 +62,4 @@ void remove_dfs_node(char *name)
 	if(!name) return;
 	struct inode *r = lookup(devfs_root, name);
 	iremove_force(r);
-}
-
-struct inode *create_devfs(struct inode *i, char *c, int h)
-{
-	if(i)
-	{
-		h=strlen(c);
-	}
-	printk(KERN_WARN, "DevFS - Cannot create normal file. Use node creation instead.\n");
-	return 0;
 }

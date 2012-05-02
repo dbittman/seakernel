@@ -20,24 +20,11 @@ int ramfs_unlink(struct inode *i)
 	return 0;
 }
 
-struct file_operations rfs_fops = {
- (void *)ramfs_op_dummy,
+struct inode_operations rfs_inode_ops = {
  rfs_read,
  rfs_write,
  (void *)ramfs_op_dummy,
- (void *)ramfs_op_dummy,
- (void *)ramfs_op_dummy,
- (void *)ramfs_op_dummy,
- (void *)ramfs_op_dummy,
- (void *)ramfs_op_dummy,
- (void *)ramfs_op_dummy,
- (void *)ramfs_op_dummy,
-};
-
-struct inode_operations rfs_inode_ops = {
- &rfs_fops,
  (struct inode *(*)(struct inode *, char *, int))rfs_create,
- (void *)ramfs_op_dummy,
  (void *)ramfs_op_dummy,
  (void *)ramfs_op_dummy,
  (void *)ramfs_op_dummy,
@@ -48,24 +35,7 @@ struct inode_operations rfs_inode_ops = {
  (void *)ramfs_op_dummy,
  (void *)ramfs_op_dummy,
  (void *)ramfs_op_dummy,
- ramfs_sane,
- (void *)ramfs_op_dummy,
- (void *)ramfs_op_dummy,
- (void *)ramfs_op_dummy,
- (void *)ramfs_op_dummy,
- (void *)ramfs_op_dummy,
- (void *)ramfs_op_dummy,
- (void *)ramfs_op_dummy
 };
-
-int ramfs_sane(struct inode *i)
-{
-	int ret=0;
-	if(i->start < KMALLOC_ADDR_START)
-		++ret;
-	
-	return ret;
-}
 
 struct inode *init_ramfs()
 {
@@ -148,7 +118,7 @@ struct inode *rfs_create(struct inode *__p, char *name, int mode)
 	}
 	struct inode *root_nodes;
 	root_nodes = (struct inode *)kmalloc(sizeof(struct inode));
-	strcpy(root_nodes->name, name);
+	strncpy(root_nodes->name, name, 128);
 	root_nodes->uid = current_task->uid;
 	root_nodes->gid = current_task->gid;
 	root_nodes->len = 1;

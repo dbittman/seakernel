@@ -53,7 +53,7 @@ int sys_readpos(int fp, char *buf, unsigned count)
 	struct file *f = get_file_pointer((task_t *)current_task, fp);
 	if(!f)
 		return -EBADF;
-	if(!(f->flag & _FREAD))
+	if(!(f->flags & _FREAD))
 		return -EACCES;
 	return do_sys_read(f, f->pos, buf, count);
 }
@@ -94,11 +94,11 @@ int sys_writepos(int fp, char *buf, unsigned count)
 		return -EBADF;
 	if(!count || !buf)
 		return -EINVAL;
-	if(!(f->flag & _FWRITE))
+	if(!(f->flags & _FWRITE))
 		return -EACCES;
 	int pos = f->pos;
 	assert(f->inode);
-	if(f->flag & _FAPPEND) pos = f->inode->len;
+	if(f->flags & _FAPPEND) pos = f->inode->len;
 	pos=do_sys_write(f, pos, buf, count);
 	f->pos += pos;
 	return pos;

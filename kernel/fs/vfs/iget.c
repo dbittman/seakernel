@@ -36,7 +36,8 @@ struct inode *do_lookup(struct inode *i, char *path, int aut, int ram)
 		{
 			if(temp->mount_ptr)
 				temp = temp->mount_ptr;
-			/* Update info. We do this in case something inside the driver has changed the stats of this file without us knowing. */
+			/* Update info. We do this in case something inside the driver 
+			 * has changed the stats of this file without us knowing. */
 			if(temp->i_ops && temp->i_ops->update)
 				temp->i_ops->update(temp);
 			return temp;

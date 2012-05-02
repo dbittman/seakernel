@@ -133,6 +133,17 @@ int char_ioctl(int dev, int cmd, int arg)
 	return 0;
 }
 
+int chardev_select(struct inode *in, int rw)
+{
+	if(rw == READ) {
+		if(MAJOR(in->dev) == 3 && MAJOR(in->dev) == 4) {
+			if(!consoles[MINOR(in->dev)].inpos)
+				return 0;
+		}
+	}
+	return 1;
+}
+
 void send_sync_char()
 {
 	int i=0;

@@ -60,9 +60,9 @@ int do_get_permissions(struct inode *inode, int flag)
 
 int permissions(struct inode *inode, int flag)
 {
-	mutex_on(&inode->lock);
+	//mutex_on(&inode->lock);
 	int ret = do_get_permissions(inode, flag);
-	mutex_off(&inode->lock);
+	//mutex_off(&inode->lock);
 	return ret;
 }
 

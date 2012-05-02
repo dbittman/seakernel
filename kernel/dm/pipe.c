@@ -54,13 +54,13 @@ int sys_pipe(int *files)
 	struct inode *inode = create_anon_pipe();
 	f = (struct file *)kmalloc(sizeof(struct file));
 	f->inode = inode;
-	f->flag = _FREAD;
+	f->flags = _FREAD;
 	f->pos=0;
 	f->count=1;
 	int read = add_file_pointer((task_t *)current_task, f);
 	f = (struct file *)kmalloc(sizeof(struct file));
 	f->inode = inode;
-	f->flag = _FREAD | _FWRITE;
+	f->flags = _FREAD | _FWRITE;
 	f->count=1;
 	f->pos=0;
 	int write = add_file_pointer((task_t *)current_task, f);
@@ -135,4 +135,9 @@ __attribute__((optimize("O0"))) int write_pipe(struct inode *ino, char *buffer, 
 	pipe->pending += length;
 	mutex_off(pipe->lock);
 	return length;
+}
+
+int pipedev_select(struct inode *in, int rw)
+{
+	return 1;
 }

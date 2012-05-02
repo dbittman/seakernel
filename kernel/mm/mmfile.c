@@ -40,9 +40,9 @@ unsigned sys_mmap(void *addr, void *str, int prot, int flags, int fildes)
 	struct file *fil = get_file_pointer((task_t *)current_task, fildes);
 	if(!fil)
 		return EBADF;
-	if(!(fil->flag & _FREAD))
+	if(!(fil->flags & _FREAD))
 		return EACCES;
-	if(flags&PROT_WRITE && !(fil->flag&_FWRITE))
+	if(flags&PROT_WRITE && !(fil->flags&_FWRITE))
 		return EACCES;
 	/* Ok, we can attempt to allocate the area */
 	vma_t **v = (vma_t **)((flags&MAP_SHARED) ? &((task_t *)current_task)->mmf_share_space : &((task_t *)current_task)->mmf_priv_space);

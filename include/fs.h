@@ -1,22 +1,23 @@
 #ifndef FS_H
 #define FS_H
-
-
+#include <sys/stat.h>
 #include <task.h>
 #include <pipe.h>
 #include <sys/fcntl.h>
+
 #define SEEK_SET (0)
 #define SEEK_CUR (1)
 #define SEEK_END (2)
-struct imount_pt {
-	unsigned dev;
-	unsigned flags;
-	unsigned sb_idx;
-	
-	struct inode *root;
-	struct inode *refer;
-	
-};
+#define OTHERMAY_EXEC 1
+#define OTHERMAY_WRITE 2
+#define OTHERMAY_READ 4
+#define GROUPMAY_EXEC 10
+#define GROUPMAY_WRITE 20
+#define GROUPMAY_READ 40
+#define MAY_EXEC 100
+#define MAY_WRITE 200
+#define MAY_READ 400
+extern struct sblktbl *sb_table;
 
 struct inode {
 	/* Attributes */
@@ -27,16 +28,16 @@ struct inode {
 	int count, f_count;
 	struct inode_operations *i_ops;
 	/* Identification */
-	char name[64];/* TODO: pointer */
+	char name[128];
 	unsigned int dev;
 	unsigned long num;
 	unsigned int sb_idx;
 	/* Pointers */
 	unsigned atime, mtime;
-	struct inode *mount_ptr, *r_mount_ptr; /** Deprecated */
-	struct inode *child; //First in linked list
+	struct inode *mount_ptr, *r_mount_ptr;
+	struct inode *child;
 	struct inode *parent;
-	struct inode *next; //Next in current level linked list
+	struct inode *next;
 	pipe_t *pipe;
 	short nlink;
 	
@@ -55,26 +56,6 @@ struct inode {
 	unsigned required;
 };
 
-
-
-#define dummy_inode { \
-	0, 0, 0, 0, \
- 	0, 0, 0, 0, \
-  	0, 0, 0, 0, \
-   	0, 0, 0, 0, \
-    	0, 0, 0, 0, \
- 	0, 0, 0, 0, 0 \
-}
-#define OTHERMAY_EXEC 1
-#define OTHERMAY_WRITE 2
-#define OTHERMAY_READ 4
-#define GROUPMAY_EXEC 10
-#define GROUPMAY_WRITE 20
-#define GROUPMAY_READ 40
-#define MAY_EXEC 100
-#define MAY_WRITE 200
-#define MAY_READ 400
-
 struct sblktbl {
 	int version;
 	char name[16];
@@ -87,10 +68,8 @@ struct mountlst {
 	struct mountlst *next, *prev;
 };
 
-extern struct sblktbl *sb_table;
 struct file {
 	unsigned int flags;
-	unsigned int flag;
 	unsigned int count;
 	unsigned int fd_flags;
 	struct inode * inode;
@@ -100,54 +79,19 @@ struct file {
 struct file_ptr {
 	int num;
 	struct file *fi;
-	struct file_ptr *next, *prev;
-};
-
-extern Spinlock vfs;
-
-#define NAME_LEN 128
-struct dirent {
-	char            d_name[256]; /* filename */
-    unsigned        d_ino;       /* inode number */
- //   int             d_off;       /* offset to the next dirent */
-    unsigned short  d_namlen;    /* length of this record */
-    unsigned char   d_type;      /* type of file */
-
-};
-#include <sys/stat.h>
-
-struct file_operations {
-	int (*lseek) (struct inode *, struct file *, off_t, int);
-	int (*read) (struct inode *, int, int, char *);
-	int (*write) (struct inode *, int, int, char *);
-	int (*readdir) (struct inode *, struct file *, struct dirent *, int);
-	int (*stat) (struct inode *, struct stat *);
-	int (*UNselect) (struct inode *, struct file *, int, int *);
-	int (*ioctl) (struct inode *, struct file *, unsigned int, unsigned long);
-	int (*mmap) (struct inode *, struct file *, unsigned long, size_t, int, unsigned long);
-	int (*UNopen) (struct inode *, struct file *);
-	void (*UNrelease) (struct inode *, struct file *);
-	int (*UNfsync) (struct inode *, struct file *);
 };
 
 struct inode_operations {
-	struct file_operations * f_ops;
+	int (*read) (struct inode *, int, int, char *);
+	int (*write) (struct inode *, int, int, char *);
+	int (*select) (struct inode *, int);
 	struct inode *(*create) (struct inode *,char *, int);
 	struct inode *(*lookup) (struct inode *,char *);
-	struct inode *(*getdir) (int *,char *);/* FSINFO, NAME */
 	struct inode *(*readdir) (struct inode *, long long);
-	int (*link) (struct inode *,const char *);
+	int (*link) (struct inode *, char *);
 	int (*unlink) (struct inode *);
-	int (*readdir_name) (struct inode *,int,const char *);
-	int (*UNmkdir) (struct inode *,const char *,int,int);
 	int (*rmdir) (struct inode *);
-	int (*rename) (struct inode *,const char *); /*UNUSED*/
-	int (*readlink) (struct inode *,char *,int);
-	int (*put_inode) (struct inode *);
-	int (*sane) (struct inode *);
-	int (*fs_sane) (struct inode *);
 	int (*sync_inode) (struct inode *);
-	int (*createnode) (struct inode *, char *, int, int, int);
 	int (*unmount)(int);
 	int (*fsstat)(struct inode *, struct posix_statfs *);
 	int (*fssync)(struct inode *);

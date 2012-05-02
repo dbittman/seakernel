@@ -51,6 +51,7 @@ typedef struct exit_status {
 } ex_stat;
 
 #define TASK_MAGIC 0xDEADBEEF
+#define FILP_HASH_LEN 512
 typedef volatile struct task_struct
 {
 	volatile unsigned magic;
@@ -88,7 +89,7 @@ typedef volatile struct task_struct
 	int cmask;
 	int tty;
 	struct inode *root, *pwd;
-	struct file_ptr *filp;
+	struct file_ptr *filp[FILP_HASH_LEN];
 	int uid, _uid, gid, _gid;
 	mmf_t *mm_files;
 	vma_t *mmf_priv_space, *mmf_share_space;

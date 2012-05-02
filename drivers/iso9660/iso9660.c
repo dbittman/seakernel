@@ -69,40 +69,18 @@ int wrap_iso_readfile(struct inode *in, int off, int len, char *buf)
 	return iso9660_read_file(fs, file, buf, off, len);
 }
 
-struct file_operations iso9660_fops = {
-	0,
+struct inode_operations iso9660_inode_ops = {
 	wrap_iso_readfile,
 	0, 0,
-	0,//ext2_stat,
-	0,
-	0,
-	0,
-	0,
-	0,
-	0
-};
-
-struct inode_operations iso9660_inode_ops = {
-	&iso9660_fops,
 	0,
 	wrap_iso_lookup,
-	0,
 	wrap_iso_readdir,
 	0,
 	0,
 	0,
 	0,
-	0,
-	0,
-	0,
-	0,
-	0,
-	0,
-	0,
-	0,
 	iso9660_unmount,
-	0, //iso_fs_stat,
-	0,0,
+	0, 0, 0
 };
 
 iso_fs_t vols[MAX_ISO];
@@ -209,7 +187,7 @@ struct inode *create_sea_inode(iso_fs_t *fs, struct iso9660DirRecord *in, char *
 		}
 		
 	} else
-		strncpy(out->name, name, 64);
+		strncpy(out->name, name, 128);
 	return out;
 }
 

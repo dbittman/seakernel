@@ -141,6 +141,7 @@ void add_exit_stat(task_t *t, ex_stat *e)
 	unlock_scheduler();
 }
 
+void close_all_files(task_t *);
 void exit(int code)
 {
 	if(!current_task || current_task->pid == 0) 
@@ -156,13 +157,7 @@ void exit(int code)
 	self_free(0);
 	free_stack();
 	clear_resources(t);
-	struct file_ptr *f_nex, *f = t->filp;
-	while(f)
-	{
-		f_nex = f->next;
-		sys_close(f->num);
-		f=f_nex;
-	}
+	close_all_files(t);
 	iput(t->root);
 	iput(t->pwd);
 	/* Send out some signals */

@@ -19,7 +19,7 @@ int sys_close(int fp)
 		mutex_on(f->inode->pipe->lock);
 		if(f->inode->pipe->count)
 			f->inode->pipe->count--;
-		if(f->flag & _FWRITE && f->inode->pipe->wrcount)
+		if(f->flags & _FWRITE && f->inode->pipe->wrcount)
 			f->inode->pipe->wrcount--;
 		if(!f->inode->pipe->count)
 			free_pipe(f->inode);

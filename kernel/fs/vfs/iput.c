@@ -25,8 +25,6 @@ int do_iput(struct inode *i)
 		return EACCES;
 	}
 	i->unreal=1;
-	if(i->i_ops && i->i_ops->put_inode)
-		i->i_ops->put_inode(i);
 	int g = iremove(i);
 	if(parent) mutex_off(&parent->lock);
 	return g;

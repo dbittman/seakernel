@@ -11,7 +11,7 @@ int read_fs(struct inode *i, int off, int len, char *b)
 		return -EINVAL;
 	if(!permissions(i, MAY_READ))
 		return -EACCES;
-	if(i->i_ops && i->i_ops->f_ops && i->i_ops->f_ops->read)
-		return i->i_ops->f_ops->read(i, off, len, b);
+	if(i->i_ops && i->i_ops->read)
+		return i->i_ops->read(i, off, len, b);
 	return -EINVAL;
 }

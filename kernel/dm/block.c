@@ -365,6 +365,11 @@ int block_ioctl(int dev, int cmd, int arg)
 		return 0;
 }
 
+int blockdev_select(struct inode *in, int rw)
+{
+	return 1;
+}
+
 void send_sync_block()
 {
 	int i=0;

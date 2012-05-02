@@ -78,15 +78,6 @@ task_t *preexec(task_t *t, int desc)
 {
 	if(t->magic != TASK_MAGIC)
 		panic(0, "Invalid task in exec (%d)", t->pid);
-	//struct file_ptr *f = t->filp;
-	//int i;
-	//while(f)
-	//{
-		//struct file *nex = f->next;
-		//if((f->fd_flags & FD_CLOEXEC) && f->num != desc)
-		//	sys_close(f->num);
-		//f=nex;
-	//}
 	clear_resources(t);
 	self_free(0);
 	memset((void *)t->sig_queue, 0, sizeof(int) * 128);

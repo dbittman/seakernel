@@ -244,6 +244,27 @@ int sys_access(char *path, int mode)
 	return (fail ? -EACCES : 0);
 }
 
+int select_filedes(int i, int rw)
+{
+	int ready = 1;
+	struct file *file = get_file_pointer((task_t *)current_task, i);
+	if(!file || !file->inode)
+		return -EBADF;
+	struct inode *in = file->inode;
+	if(S_ISREG(in->mode) || S_ISDIR(in->mode) || S_ISLNK(in->mode))
+	{
+		if(in->i_ops && in->i_ops->select)
+			ready = in->i_ops->select(in, rw);
+	}
+	else if(S_ISCHR(in->mode))
+		ready = chardev_select(in, rw);
+	else if(S_ISBLK(in->mode))
+		ready = blockdev_select(in, rw);
+	else if(S_ISFIFO(in->mode))
+		ready = pipedev_select(in, rw);
+	return ready;
+}
+
 /* This stub provides the basic functionality of sys_select, but the results are not real. They assume no errors */
 int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds, struct timeval *timeout)
 {
@@ -261,51 +282,31 @@ int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds, st
 	while((ticks <= end || !wait || !timeout) && !ret)
 	{
 		total_set=0;
-		if(writefds)
+		for(i=0;i<nfds;++i)
 		{
-			for(i=0;i<nfds;++i)
+			if(FD_ISSET(i, readfds))
 			{
-				if(FD_ISSET(i, writefds))
-				{
-					/* Unset bit if not ready to write */
-					++is_ok; /* Gets incremented when file is ok to write */
+				if(select_filedes(i, READ)) {
+					++is_ok;
 					++total_set;
-				}
+				} else
+					FD_CLR(i, readfds);
 			}
-		}
-		if(readfds)
-		{
-			for(i=0;i<nfds;++i)
+			if(FD_ISSET(i, writefds))
 			{
-				if(FD_ISSET(i, readfds))
-				{
-					struct file *file = get_file_pointer((task_t *)current_task, i);
-					if(!file || !file->inode)
-						return -EBADF;
-					struct inode *in = file->inode;
-					if(!S_ISCHR(in->mode) || (MAJOR(in->dev) != 3 && MAJOR(in->dev) != 4) || consoles[MINOR(in->dev)].inpos)
-					{
-						++is_ok; /* Gets incremented when file is ok to read */
-						++total_set;
-					} else
-						FD_CLR(i, readfds); /* TODO: Do we clear here? or...?*/
-					/* Unset bit if not ready to read */
-					
-				}
-			}
-		}
-		if(errorfds)
-		{
-			for(i=0;i<nfds;++i)
-			{
-				if(FD_ISSET(i, errorfds))
-				{
-					/* Unset bit if has no errors */
-					//FD_CLR(i, errorfds);
-					++is_ok; /* Gets incremented when file is non-error'd TODO: How to
-					* Handle incrememnted here? inc on CLEARBIT or SETBIT? */
+				if(select_filedes(i, WRITE)) {
+					++is_ok;
 					++total_set;
-				}
+				} else
+					FD_CLR(i, writefds);
+			}
+			if(FD_ISSET(i, errorfds))
+			{
+				if(select_filedes(i, OTHER)) {
+					++is_ok;
+					++total_set;
+				} else
+					FD_CLR(i, errorfds);
 			}
 		}
 		if(!ret)

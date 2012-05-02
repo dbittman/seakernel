@@ -112,7 +112,7 @@ int proc_append_buffer(char *buffer, char *data, int off, int len, int req_off, 
 void init_proc_fs()
 {
 	procfs_root = (struct inode*)kmalloc(sizeof(struct inode));
-	strcpy(procfs_root->name, "proc\0");
+	strcpy(procfs_root->name, "proc");
 	procfs_root->i_ops = &procfs_inode_ops;
 	procfs_root->parent = current_task->root;
 	procfs_root->mode = S_IFDIR | 0x1FF;
@@ -173,8 +173,7 @@ int pfs_write(struct inode *i, int pos, int len, char *buffer)
 	return callback(WRITE, i, min, buffer, pos, len);
 }
 
-struct file_operations procfs_fops = {
- 0,
+struct inode_operations procfs_inode_ops = {
  pfs_read,
  pfs_write,
  0,
@@ -184,27 +183,9 @@ struct file_operations procfs_fops = {
  0,
  0,
  0,
+ 0,
+ 0,
+ 0,
+ 0,
  0
-};
-
-struct inode_operations procfs_inode_ops = {
- &procfs_fops,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0, 0,0
 };

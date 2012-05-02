@@ -48,5 +48,8 @@ int add_device(int type, int major, void *str);
 int remove_device(int type, int major);
 device_t *get_n_device(int type, int n);
 device_t *get_device(int type, int major);
+int blockdev_select(struct inode *in, int rw);
+int chardev_select(struct inode *in, int rw);
+int pipedev_select(struct inode *in, int rw);
 
 #endif

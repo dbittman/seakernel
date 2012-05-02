@@ -17,42 +17,22 @@ int ext2_sane(struct inode *i);
 int ext2_fs_sane(struct inode *i);
 int ext2_fs_stat(struct inode *i, struct posix_statfs *f);
 int ext2_sync(struct inode *i);
-struct file_operations e2fs_fops = {
-	0,
+
+struct inode_operations e2fs_inode_ops = {
 	wrap_ext2_readfile,
 	wrap_ext2_writefile,
 	0,
-	0,
-	0,
-	0,
-	0,
-	0,
-	0,
-	0
-};
-
-struct inode_operations e2fs_inode_ops = {
-	&e2fs_fops,
 	wrap_ext2_create,
 	wrap_ext2_lookup,
-	0,
 	wrap_ext2_readdir,
-	(int (*) (struct inode *,const char *))wrap_ext2_link,
+	wrap_ext2_link,
 	wrap_ext2_unlink,
-	wrap_ext2_readdir_name,
-	0,
-	wrap_ext2_unlink,//seperate
-	0,
-	0,
-	0,
-	ext2_sane,//sane
-	ext2_fs_sane,//fssane
+	wrap_ext2_unlink,
 	wrap_sync_inode,
-	0,
 	ext2_unmount,
 	ext2_fs_stat,
 	ext2_sync,
-	wrap_ext2_update,
+	wrap_ext2_update
 };
 
 int ext2_fs_stat(struct inode *i, struct posix_statfs *f)
@@ -439,7 +419,7 @@ struct inode *create_sea_inode(ext2_inode_t *in, char *name)
 	out->flm = create_mutex(0);
 	out->i_ops = &e2fs_inode_ops;
 	create_mutex(&out->lock);
-	strncpy(out->name, name, 64);
+	strncpy(out->name, name, 128);
 	return out;
 }
 

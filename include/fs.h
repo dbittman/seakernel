@@ -21,39 +21,29 @@ extern struct sblktbl *sb_table;
 
 struct inode {
 	/* Attributes */
-	unsigned short mode, uid, gid;
-	unsigned int pad__0[9];
-	unsigned char lock_, dirty, dynamic;
-	unsigned int unreal, flags, len, start;
-	int count, f_count;
-	struct inode_operations *i_ops;
+	unsigned short mode, uid, gid, nlink;
+	unsigned char unreal, dynamic, required;
+	unsigned int flags, len, start, nblocks, ctime, atime, mtime;
+	int count, f_count, newlocks;
 	/* Identification */
 	char name[128];
 	unsigned int dev;
 	unsigned long num;
 	unsigned int sb_idx;
+	char node_str[129];
+	int devnum;
 	/* Pointers */
-	unsigned atime, mtime;
+	struct inode_operations *i_ops;
 	struct inode *mount_ptr, *r_mount_ptr;
 	struct inode *child;
 	struct inode *parent;
 	struct inode *next;
-	pipe_t *pipe;
-	short nlink;
-	
-	struct imount_pt *mount;
 	struct inode *prev;
-	
-	char node_str[129];
-	int devnum;
-	
+	pipe_t *pipe;
+	/* Locking */
 	mutex_t lock;
 	struct flock *flocks;
 	mutex_t *flm;
-	volatile int newlocks;
-	unsigned nblocks;
-	unsigned ctime;
-	unsigned required;
 };
 
 struct sblktbl {
@@ -69,30 +59,27 @@ struct mountlst {
 };
 
 struct file {
-	unsigned int flags;
-	unsigned int count;
-	unsigned int fd_flags;
+	unsigned int flags, fd_flags, count, pos;
 	struct inode * inode;
-	int pos;
 };
 
 struct file_ptr {
-	int num;
+	unsigned int num;
 	struct file *fi;
 };
 
 struct inode_operations {
-	int (*read) (struct inode *, int, int, char *);
-	int (*write) (struct inode *, int, int, char *);
-	int (*select) (struct inode *, int);
-	struct inode *(*create) (struct inode *,char *, int);
+	int (*read) (struct inode *, unsigned int, unsigned int, char *);
+	int (*write) (struct inode *, unsigned int, unsigned int, char *);
+	int (*select) (struct inode *, unsigned int);
+	struct inode *(*create) (struct inode *,char *, unsigned int);
 	struct inode *(*lookup) (struct inode *,char *);
-	struct inode *(*readdir) (struct inode *, long long);
+	struct inode *(*readdir) (struct inode *, unsigned);
 	int (*link) (struct inode *, char *);
 	int (*unlink) (struct inode *);
 	int (*rmdir) (struct inode *);
 	int (*sync_inode) (struct inode *);
-	int (*unmount)(int);
+	int (*unmount)(unsigned int);
 	int (*fsstat)(struct inode *, struct posix_statfs *);
 	int (*fssync)(struct inode *);
 	int (*update)(struct inode *);
@@ -128,8 +115,8 @@ int rename(char *f, char *nname);
 int sys_isatty(int f);
 int iremove_nofree(struct inode *i);
 int sys_dirstat(char *dir, unsigned num, char *namebuf, struct stat *statbuf);
-int pfs_write(struct inode *i, int pos, int len, char *buffer);
-int pfs_read(struct inode *i, int pos, int len, char *buffer);
+int pfs_write(struct inode *i, unsigned int pos, unsigned int len, char *buffer);
+int pfs_read(struct inode *i, unsigned int pos, unsigned int len, char *buffer);
 struct inode *create_procfs(struct inode *i, char *c, int h);
 struct inode *pfs_cn(char *name, int mode, int major, int minor);
 void remove_dfs_node(char *name);

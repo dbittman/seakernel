@@ -3,9 +3,9 @@
 #include <task.h>
 #include <fs.h>
 struct inode *ramfs_root;
-int rfs_read(struct inode *i, int off, int len, char *b);
-struct inode *rfs_create(struct inode *p, char *name, int mode);
-int rfs_write(struct inode *i, int off, int len, char *b);
+int rfs_read(struct inode *i, unsigned int off, unsigned int len, char *b);
+struct inode *rfs_create(struct inode *p, char *name, unsigned int mode);
+int rfs_write(struct inode *i, unsigned int off, unsigned int len, char *b);
 int ramfs_sane(struct inode *i);
 
 int ramfs_op_dummy()
@@ -24,7 +24,7 @@ struct inode_operations rfs_inode_ops = {
  rfs_read,
  rfs_write,
  (void *)ramfs_op_dummy,
- (struct inode *(*)(struct inode *, char *, int))rfs_create,
+ rfs_create,
  (void *)ramfs_op_dummy,
  (void *)ramfs_op_dummy,
  (void *)ramfs_op_dummy,
@@ -60,7 +60,7 @@ struct inode *init_tmpfs()
 	return i;
 }
 
-int rfs_read(struct inode *i, int off, int len, char *b)
+int rfs_read(struct inode *i, unsigned int off, unsigned int len, char *b)
 {
 	int pl = len;
 	if((unsigned)off >= i->len)
@@ -95,7 +95,7 @@ int rfs_resize(struct inode *i, unsigned int s)
 	return x;
 }
 
-int rfs_write(struct inode *i, int off, int len, char *b)
+int rfs_write(struct inode *i, unsigned int off, unsigned int len, char *b)
 {
 	if(!len)
 		return -EINVAL;
@@ -107,7 +107,7 @@ int rfs_write(struct inode *i, int off, int len, char *b)
 	return len;
 }
 
-struct inode *rfs_create(struct inode *__p, char *name, int mode)
+struct inode *rfs_create(struct inode *__p, char *name, unsigned int mode)
 {
 	struct inode *r, *p=__p;
 	if(!__p)

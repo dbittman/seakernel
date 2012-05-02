@@ -1,16 +1,15 @@
 #include "ext2.h"
 int wrap_ext2_update(struct inode *i);
 struct inode *wrap_ext2_lookup(struct inode *in, char *name);
-int wrap_ext2_readfile(struct inode *in, int off, int len, char *buf);
-int wrap_ext2_writefile(struct inode *in, int off, int len, char *buf);
-struct inode *wrap_ext2_readdir(struct inode *node, long long num);
-int wrap_ext2_readdir_name(struct inode *node, int num, const char *name);
+int wrap_ext2_readfile(struct inode *in, unsigned int off, unsigned int len, char *buf);
+int wrap_ext2_writefile(struct inode *in, unsigned int off, unsigned int len, char *buf);
+struct inode *wrap_ext2_readdir(struct inode *node, unsigned  num);
 int copyto_ext2_inode(struct inode *out, ext2_inode_t *in);
 int update_sea_inode(struct inode *out, ext2_inode_t *in, char *name);
 int wrap_ext2_unlink(struct inode *i);
 int wrap_ext2_link(struct inode *i, char *path);
-struct inode *wrap_ext2_create(struct inode *i, char *name, int mode);
-int ext2_unmount(int v);
+struct inode *wrap_ext2_create(struct inode *i, char *name, unsigned mode);
+int ext2_unmount(unsigned v);
 int wrap_sync_inode(struct inode *i);
 int wrap_put_inode(struct inode *i);
 int ext2_sane(struct inode *i);
@@ -53,7 +52,7 @@ int ext2_fs_stat(struct inode *i, struct posix_statfs *f)
 	return 0;
 }
 
-struct inode *wrap_ext2_readdir(struct inode *in, long long num)
+struct inode *wrap_ext2_readdir(struct inode *in, unsigned num)
 {
 	num+=2;
 	ext2_fs_t *fs = get_fs(in->sb_idx);
@@ -77,13 +76,6 @@ struct inode *wrap_ext2_readdir(struct inode *in, long long num)
 	return no;
 }
 
-int wrap_ext2_readdir_name(struct inode *in, int num, const char *name)
-{
-	struct inode *node = wrap_ext2_readdir(in, num);
-	if(node && name) strcpy((char *)name, node->name);
-	return (node ? 1 : 0);
-}
-
 struct inode *wrap_ext2_lookup(struct inode *in, char *name)
 {
 	ext2_fs_t *fs = get_fs(in->sb_idx);
@@ -100,7 +92,7 @@ struct inode *wrap_ext2_lookup(struct inode *in, char *name)
 	return create_sea_inode(&inode, name);
 }
 
-int wrap_ext2_readfile(struct inode *in, int off, int len, char *buf)
+int wrap_ext2_readfile(struct inode *in, unsigned int off, unsigned int len, char *buf)
 {
 	ext2_fs_t *fs = get_fs(in->sb_idx);
 	if(!fs)
@@ -121,7 +113,7 @@ int wrap_ext2_readfile(struct inode *in, int off, int len, char *buf)
 	return ret;
 }
 
-int wrap_ext2_writefile(struct inode *in, int off, int len, char *buf)
+int wrap_ext2_writefile(struct inode *in, unsigned int off, unsigned int len, char *buf)
 {
 	ext2_fs_t *fs = get_fs(in->sb_idx);
 	if(!fs)
@@ -134,7 +126,7 @@ int wrap_ext2_writefile(struct inode *in, int off, int len, char *buf)
 	if(inode.deletion_time || !inode.mode)
 		return -ENOENT;
 	
-	int ret = ext2_inode_writedata(&inode, off, len, (unsigned char*)buf);
+	unsigned int ret = ext2_inode_writedata(&inode, off, len, (unsigned char*)buf);
 	mutex_on(&in->lock);
 	update_sea_inode(in, &inode, 0);
 	mutex_off(&in->lock);
@@ -221,7 +213,7 @@ int wrap_ext2_link(struct inode *i, char *path)
 	return ret;
 }
 
-struct inode *do_wrap_ext2_create(struct inode *i, char *name, int mode)
+struct inode *do_wrap_ext2_create(struct inode *i, char *name, unsigned mode)
 {
 	if(!i)
 		return 0;
@@ -260,7 +252,7 @@ struct inode *do_wrap_ext2_create(struct inode *i, char *name, int mode)
 	return out;
 }
 
-struct inode *wrap_ext2_create(struct inode *i, char *name, int mode)
+struct inode *wrap_ext2_create(struct inode *i, char *name, unsigned mode)
 {
 	mutex_on(&i->lock);
 	struct inode *ret = do_wrap_ext2_create(i, name, mode);

@@ -2,7 +2,7 @@
 #include <fs.h>
 #include <sys/stat.h>
 #include "iso9660.h"
-int iso9660_unmount(int v);
+int iso9660_unmount(unsigned  v);
 iso_fs_t *get_fs(int v);
 int lowercase=1;
 struct inode *create_sea_inode(iso_fs_t *fs, struct iso9660DirRecord *in, char *name);
@@ -18,7 +18,7 @@ int iso_read_off(iso_fs_t *fs, unsigned off, unsigned char *buf, unsigned len)
 	return block_device_rw(READ, fs->dev, off, (char *)buf, len);
 }
 
-struct inode *wrap_iso_readdir(struct inode *in, long long num)
+struct inode *wrap_iso_readdir(struct inode *in, unsigned  num)
 {
 	num+=2;
 	iso_fs_t *fs = get_fs(in->sb_idx);
@@ -58,7 +58,7 @@ struct inode *wrap_iso_lookup(struct inode *in, char *name)
 	return ret;
 }
 
-int wrap_iso_readfile(struct inode *in, int off, int len, char *buf)
+int wrap_iso_readfile(struct inode *in, unsigned int off, unsigned int len, char *buf)
 {
 	iso_fs_t *fs = get_fs(in->sb_idx);
 	if(!fs)
@@ -233,7 +233,7 @@ struct inode *iso9660_mount(int dev, int block, char *node)
 	return root;
 }
 
-int iso9660_unmount(int v)
+int iso9660_unmount(unsigned int v)
 {
 	iso_fs_t *fs = get_fs(v);
 	if(!fs)

@@ -12,7 +12,6 @@ int proc_read_int(char *buf, int off, int len);
 int proc_read_mutex(char *buf, int off, int len);
 int proc_read_bcache(char *buf, int off, int len);
 extern struct inode_operations procfs_inode_ops;
-extern struct file_operations procfs_fops;
 int proc_mods(char rw, struct inode *n, int min, char *buf, int off, int len);
 int proc_cpu(char rw, struct inode *inode, int m, char *buf, int off, int len);
 int proc_vfs(char rw, struct inode *n, int m, char *buf, int off, int len);
@@ -149,7 +148,7 @@ void init_proc_fs()
 	add_inode(current_task->root, procfs_root);
 }
 
-int pfs_read(struct inode *i, int off, int len, char *buffer)
+int pfs_read(struct inode *i, unsigned int off, unsigned int len, char *buffer)
 {
 	if(!i || !buffer) return -EINVAL;
 	int maj = MAJOR(i->dev);
@@ -161,7 +160,7 @@ int pfs_read(struct inode *i, int off, int len, char *buffer)
 	return callback(READ, i, min, buffer, off, len);
 }
 
-int pfs_write(struct inode *i, int pos, int len, char *buffer)
+int pfs_write(struct inode *i, unsigned int pos, unsigned int len, char *buffer)
 {
 	if(!i || !buffer) return -EINVAL;
 	int maj = MAJOR(i->dev);

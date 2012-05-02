@@ -70,15 +70,12 @@ int do_sys_write_flags(struct file *f, unsigned off, char *buf, unsigned count, 
 	else if(S_ISBLK(inode->mode))
 	{
 		unsigned o = (block_device_rw(WRITE, inode->dev, off, buf, count));
-		if(update_pos) f->pos += o;
 		return o;
 	}
 	/* Again, we want to write to the link because we have that node */
 	else if(S_ISDIR(inode->mode) || S_ISREG(inode->mode) || S_ISLNK(inode->mode))
 	{
 		unsigned c = write_fs(inode, off, count, buf);
-		if(c > 0 && update_pos)
-			f->pos = off+c;
 		return c;
 	}
 	printk(1, "sys_write (%s): invalid mode %x\n", inode->name, inode->mode);
@@ -103,6 +100,7 @@ int sys_writepos(int fp, char *buf, unsigned count)
 	assert(f->inode);
 	if(f->flag & _FAPPEND) pos = f->inode->len;
 	pos=do_sys_write(f, pos, buf, count);
+	f->pos += pos;
 	return pos;
 }
 

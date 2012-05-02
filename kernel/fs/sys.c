@@ -24,7 +24,6 @@ int sys_setup(int a)
 		schedule();
 		return 1;
 	}
-	system_setup=1;
 	printk(KERN_MILE, "Setting up interface...");
 	current_task->pwd = current_task->root = ramfs_root;
 	init_dev_fs();
@@ -35,6 +34,7 @@ int sys_setup(int a)
 	sys_open("/dev/tty1", O_WRONLY);/* stdout */
 	sys_open("/dev/tty1", O_WRONLY);/* stderr */
 	current_task->tty=1;
+	system_setup=1;
 	printk(KERN_MILE, "done (i/o/e=%x [tty1]: ok)\n", 3*256+1);
 	return 12;
 }

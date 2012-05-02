@@ -156,7 +156,7 @@ void exit(int code)
 	self_free(0);
 	free_stack();
 	clear_resources(t);
-	struct file *f_nex, *f = t->filp;
+	struct file_ptr *f_nex, *f = t->filp;
 	while(f)
 	{
 		f_nex = f->next;

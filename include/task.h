@@ -88,7 +88,7 @@ typedef volatile struct task_struct
 	int cmask;
 	int tty;
 	struct inode *root, *pwd;
-	struct file *filp;
+	struct file_ptr *filp;
 	int uid, _uid, gid, _gid;
 	mmf_t *mm_files;
 	vma_t *mmf_priv_space, *mmf_share_space;

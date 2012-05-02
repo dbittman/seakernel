@@ -8,7 +8,7 @@
 #include <dev.h>
 #include <sys/fcntl.h>
 
-struct file *d_sys_open(char *name, int flags, int mode, int *error)
+struct file *d_sys_open(char *name, int flags, int mode, int *error, int *num)
 {
 	if(!name) {
 		*error = -EINVAL;
@@ -50,13 +50,13 @@ struct file *d_sys_open(char *name, int flags, int mode, int *error)
 	f->inode = inode;
 	f->flags = f->flag = flags;
 	f->pos=0;
-	f->mode = inode->mode;
 	f->count=1;
 	f->fd_flags &= ~FD_CLOEXEC;
 	mutex_on(&inode->lock);
 	++inode->f_count;
 	mutex_off(&inode->lock);
 	ret = add_file_pointer((task_t *)current_task, f);
+	if(num) *num = ret;
 	if(S_ISCHR(inode->mode) && ret == 1 && !(flags & _FNOCTTY))
 		char_rw(OPEN, inode->dev, 0, 0);
 	if(flags & _FTRUNC && !is_directory(inode))
@@ -71,11 +71,11 @@ struct file *d_sys_open(char *name, int flags, int mode, int *error)
 
 int sys_open_posix(char *name, int flags, int mode)
 {
-	int error=0;
-	struct file *f = d_sys_open(name, flags, mode, &error);
+	int error=0, num;
+	struct file *f = d_sys_open(name, flags, mode, &error, &num);
 	if(!f)
 		return error;
-	return f->num;
+	return num;
 }
 
 int sys_open(char *name, int flags)
@@ -90,16 +90,15 @@ int duplicate(task_t *t, int fp, int n)
 		return -EBADF;
 	struct file *new=(struct file *)kmalloc(sizeof(struct file));
 	new->inode = f->inode;
-	new->pos = 0;
 	new->count=1;
 	change_icount(f->inode, 1);
 	mutex_on(&f->inode->lock);
 	f->inode->f_count++;
 	mutex_off(&f->inode->lock);
 	new->flag = f->flag;
-	new->mode = f->mode;
 	new->fd_flags = f->fd_flags;
 	new->fd_flags &= ~FD_CLOEXEC;
+	new->pos = f->pos;
 	if(f->inode->pipe && !f->inode->pipe->type) {
 		mutex_on(f->inode->pipe->lock);
 		++f->inode->pipe->count;

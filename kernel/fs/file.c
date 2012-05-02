@@ -3,13 +3,11 @@
 #include <task.h>
 #include <fs.h>
 
-struct file *get_file_pointer(task_t *t, int n)
+struct file_ptr *get_file_handle(task_t *t, int n)
 {
 	if(!t)
 		return 0;
-	if(!n) 
-		return t->filp;
-	struct file *f = t->filp;
+	struct file_ptr *f = t->filp;
 	while(f)
 	{
 		if(f->num == n)
@@ -19,11 +17,19 @@ struct file *get_file_pointer(task_t *t, int n)
 	return 0;
 }
 
+struct file *get_file_pointer(task_t *t, int n)
+{
+	struct file_ptr *fp = get_file_handle(t, n);
+	if(fp && !fp->fi)
+		panic(PANIC_NOSYNC, "found empty file handle in task %d pointer list", t->pid);
+	return fp ? fp->fi : 0;
+}
+
 void remove_file_pointer(task_t *t, int n)
 {
 	if(!t || !t->filp)
 		return;
-	struct file *f = get_file_pointer(t, n);
+	struct file_ptr *f = get_file_handle(t, n);
 	if(!f)
 		return;
 	if(f->prev)
@@ -35,20 +41,25 @@ void remove_file_pointer(task_t *t, int n)
 		t->filp = f->next;
 		t->filp->prev=0;
 	}
+	task_critical();
+	f->fi->count--;
+	task_uncritical();
+	if(!f->fi->count)
+		kfree(f->fi);
 	kfree(f);
 }
 /* Here we find an unused filedes, and add it to the list. We rely on the list being sorted, 
  * and since this is the only function that adds to it, we can assume it is. This allows
  * for relatively efficient determining of a filedes without limit. */
-int add_file_pointer_after(task_t *t, struct file *f, int after)
+int add_file_pointer_do(task_t *t, struct file_ptr *f, int after)
 {
 	if(!t) 
 		return -1;
-	struct file *p = t->filp;
+	struct file_ptr *p = t->filp;
 	if(!p) {
 		t->filp = f;
 		f->num=after;
-		return 0;
+		return f->num;
 	}
 	if(p->num > after)
 	{
@@ -57,7 +68,7 @@ int add_file_pointer_after(task_t *t, struct file *f, int after)
 		f->prev=0;
 		t->filp=f;
 		f->num=after;
-		return 0;
+		return f->num;
 	}
 	int i=-1;
 	while(p)
@@ -87,51 +98,57 @@ int add_file_pointer_after(task_t *t, struct file *f, int after)
 
 int add_file_pointer(task_t *t, struct file *f)
 {
-	return add_file_pointer_after(t, f, 0);
+	struct file_ptr *fp = (struct file_ptr *)kmalloc(sizeof(struct file_ptr));
+	fp->fi = f;
+	int r = add_file_pointer_do(t, fp, 0);
+	fp->num = r;
+	return r;
+}
+
+int add_file_pointer_after(task_t *t, struct file *f, int x)
+{
+	struct file_ptr *fp = (struct file_ptr *)kmalloc(sizeof(struct file_ptr));
+	fp->fi = f;
+	int r = add_file_pointer_do(t, fp, x);
+	fp->num = r;
+	return r;
 }
 
 void copy_file_handles(task_t *p, task_t *n)
 {
 	if(!p || !n)
 		return;
-	struct file *f = p->filp;
+	struct file_ptr *f = p->filp;
 	if(!f) {
 		n->filp=0;
 		return;
 	}
-	struct file *q=0, *base=0, *prev=0;
-	q = (struct file *)kmalloc(sizeof(struct file));
-	base=q;
-	prev=0;
-	while(f)
-	{
-		q->pos=0;
-		q->count=1;
-		change_icount(f->inode, 1);
-		q->next=0;
-		q->flag = f->flag;
-		q->fd_flags = f->fd_flags;
-		q->num = f->num;
-		q->mode = f->mode;
-		q->inode = f->inode;
-		mutex_on(&f->inode->lock);
-		f->inode->f_count++;
-		mutex_off(&f->inode->lock);
-		if(f->inode->pipe && !f->inode->pipe->type)
-		{
-			mutex_on(f->inode->pipe->lock);
-			++f->inode->pipe->count;
-			if(f->flag & _FWRITE) f->inode->pipe->wrcount++;
-			mutex_off(f->inode->pipe->lock);
+	struct file_ptr *new, *prev=0, *start=0;
+	start = new = (struct file_ptr *)kmalloc(sizeof(struct file_ptr));
+	while(f) {
+		new->fi = f->fi;
+		struct inode *i = f->fi->inode;
+		change_icount(i, 1);
+		mutex_on(&i->lock);
+		i->f_count++;
+		if(i->pipe && !i->pipe->type) {
+			mutex_on(i->pipe->lock);
+			++i->pipe->count;
+			if(f->fi->flag & _FWRITE) i->pipe->wrcount++;
+			mutex_off(i->pipe->lock);
 		}
-		q->prev = prev;
+		mutex_off(&i->lock);
+		task_critical();
+		new->fi->count++;
+		task_uncritical();
+		new->num = f->num;
 		f=f->next;
 		if(f) {
-			q->next = (struct file *)kmalloc(sizeof(struct file));
-			prev=q;
-			q=q->next;
-		} else
-			q->next=0;
+			prev = new;
+			new = (struct file_ptr *)kmalloc(sizeof(struct file_ptr));
+			prev->next = new;
+			new->prev = prev;
+		}
 	}
-	n->filp = base;
+	n->filp = start;
 }

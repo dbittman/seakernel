@@ -89,16 +89,18 @@ struct mountlst {
 
 extern struct sblktbl *sb_table;
 struct file {
-	unsigned int mode;
 	unsigned int flags;
 	unsigned int flag;
 	unsigned int count;
-	struct inode * inode;
-	char inode_free;
-	int pos;
-	int num;
-	struct file *next, *prev;
 	unsigned int fd_flags;
+	struct inode * inode;
+	int pos;
+};
+
+struct file_ptr {
+	int num;
+	struct file *fi;
+	struct file_ptr *next, *prev;
 };
 
 extern Spinlock vfs;
@@ -205,7 +207,7 @@ int fs_stat(char *path, struct fsstat *f);
 int sys_fsstat(int fp, struct fsstat *fss);
 int sys_ioctl(int fp, int cmd, int arg);
 int sys_open(char *name, int flags);
-struct file *d_sys_open(char *name, int flags, int mode, int *);
+struct file *d_sys_open(char *name, int flags, int mode, int *, int *);
 int sys_open_posix(char *name, int flags, int mode);
 int sys_close(int fp);
 int sys_read(int fp, unsigned off, char *buf, unsigned count);

@@ -136,8 +136,8 @@ int module_install()
 	}
 	register_interrupt_handler(32 + ATA_PRIMARY_IRQ, &ata_irq_handler);
 	register_interrupt_handler(32 + ATA_SECONDARY_IRQ, &ata_irq_handler2);
-	api = set_availablebd(atapi_rw_main, 2048, ioctl_atapi, 0);
-	set_blockdevice(3, ata_rw_main, 512, ioctl_ata, ata_rw_multiple);
+	api = set_availablebd(atapi_rw_main, 2048, ioctl_atapi, 0, 0);
+	set_blockdevice(3, ata_rw_main, 512, ioctl_ata, ata_rw_multiple, 0);
 	primary->wait = create_mutex(0);
 	secondary->wait = create_mutex(0);
 	init_ata_controller(primary);

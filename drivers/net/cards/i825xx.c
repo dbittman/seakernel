@@ -144,7 +144,7 @@ int module_install()
 {
 	i8_min=0;
 	cards=0;
-	i8_maj = set_availablecd(i825xx_rw_main, ioctl_i825xx);
+	i8_maj = set_availablecd(i825xx_rw_main, ioctl_i825xx, 0);
 	int i=0;
 	printk(1, "[i825xx]: Scanning PCI bus...\n");
 	while(1) {

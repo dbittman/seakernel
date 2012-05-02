@@ -237,7 +237,7 @@ int module_install()
 {
 	rtl8139_min=0;
 	cards=0;
-	rtl8139_maj = set_availablecd(rtl8139_rw_main, ioctl_rtl8139);
+	rtl8139_maj = set_availablecd(rtl8139_rw_main, ioctl_rtl8139, 0);
 	int i=0;
 	printk(1, "[rtl8139]: Scanning PCI bus...\n");
 	while(1) {

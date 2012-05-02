@@ -5,31 +5,6 @@
 #include <char.h>
 #include <console.h>
 
-int ttyx_rw(int rw, int min, char *buf, int count)
-{
-	switch(rw) {
-		case OPEN:
-			return tty_open(min);
-			break;
-		case CLOSE:
-			return tty_close(min);
-			break;
-		case READ:
-			return tty_read(min, buf, count);
-			break;
-		case WRITE:
-			return tty_write(min, buf, count);
-			break;
-	}
-	return -EINVAL;
-}
-
-int tty_rw(int rw, int m, char *buf, int c)
-{
- 	if(!current_task) 
-		return -ESRCH;
-	return ttyx_rw(rw, m=current_task->tty, buf, c);
-}
 
 int zero_rw(int rw, int m, char *buf, int c)
 {
@@ -57,24 +32,24 @@ int null_rw(int rw, int m, char *buf, int c)
 	5 -> serial
 */
 
-chardevice_t *set_chardevice(int maj, int (*f)(int, int, char*, int), int (*c)(int, int, int))
+chardevice_t *set_chardevice(int maj, int (*f)(int, int, char*, int), int (*c)(int, int, int), int (*s)(int, int))
 {
 	printk(1, "[dev]: Setting char device %d (%x, %x)\n", maj, f, c);
 	chardevice_t *dev = (chardevice_t *)kmalloc(sizeof(chardevice_t));
 	dev->func = f;
-	dev->busy=0;
 	dev->ioctl=c;
+	dev->select=s;
 	add_device(DT_CHAR, maj, dev);
 	return dev;
 }
 
-int set_availablecd(int (*f)(int, int, char*, int), int (*c)(int, int, int))
+int set_availablecd(int (*f)(int, int, char*, int), int (*c)(int, int, int), int (*s)(int, int))
 {
 	int i=10;
 	while(i>0) {
 		if(!get_device(DT_CHAR, i))
 		{
-			set_chardevice(i, f, c);
+			set_chardevice(i, f, c, s);
 			break;
 		}
 		i++;
@@ -87,11 +62,11 @@ int set_availablecd(int (*f)(int, int, char*, int), int (*c)(int, int, int))
 void init_char_devs()
 {
 	/* These devices are all built into the kernel. We must initialize them now */
-	set_chardevice(0, null_rw, 0);
-	set_chardevice(1, zero_rw, 0);
-	set_chardevice(3, ttyx_rw, ttyx_ioctl);
-	set_chardevice(4, tty_rw, tty_ioctl);
-	set_chardevice(5, serial_rw, 0);
+	set_chardevice(0, null_rw, 0, 0);
+	set_chardevice(1, zero_rw, 0, 0);
+	set_chardevice(3, ttyx_rw, ttyx_ioctl, ttyx_select);
+	set_chardevice(4, tty_rw, tty_ioctl, tty_select);
+	set_chardevice(5, serial_rw, 0, 0);
 }
 
 int char_rw(int rw, int dev, char *buf, int len)
@@ -135,12 +110,13 @@ int char_ioctl(int dev, int cmd, int arg)
 
 int chardev_select(struct inode *in, int rw)
 {
-	if(rw == READ) {
-		if(MAJOR(in->dev) == 3 && MAJOR(in->dev) == 4) {
-			if(!consoles[MINOR(in->dev)].inpos)
-				return 0;
-		}
-	}
+	int dev = in->dev;
+	device_t *dt = get_device(DT_CHAR, MAJOR(dev));
+	if(!dt)
+		return 1;
+	chardevice_t *cd = (chardevice_t *)dt->ptr;
+	if(cd->select)
+		return cd->select(MINOR(dev), rw);
 	return 1;
 }
 

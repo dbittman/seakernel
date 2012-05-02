@@ -69,7 +69,7 @@ int module_install()
 {
 	df=0;
 	rand_maj=0;
-	rand_maj = set_availablecd(rand_rw, rand_ioctl);
+	rand_maj = set_availablecd(rand_rw, rand_ioctl, 0);
 	if(rand_maj == -1)
 		return 0;
 	df = dfs_cn("random", S_IFCHR, rand_maj, 0);

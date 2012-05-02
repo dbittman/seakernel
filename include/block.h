@@ -6,22 +6,21 @@
 
 
 typedef struct blockdevice_s {
-	char used;
-	int busy;
 	int blksz;
 	int (*func)(int mode, int minor, int, char *buf);
 	int (*func_m)(int mode, int minor, int, char *buf, int);
 	int (*ioctl)(int min, int cmd, int arg);
+	int (*select)(int min, int rw);
 	unsigned char cache;
 	mutex_t acl;
 } blockdevice_t;
 void init_block_devs();
-blockdevice_t *set_blockdevice(int maj, int (*f)(int, int, int, char*), int bs, int (*c)(int, int, int), int (*m)(int, int, int, char *, int));
+blockdevice_t *set_blockdevice(int maj, int (*f)(int, int, int, char*), int bs, int (*c)(int, int, int), int (*m)(int, int, int, char *, int), int (*s)(int, int));
 int block_rw(int rw, int dev, int blk, char *buf, blockdevice_t *bd);
 int block_device_rw(int mode, int dev, int off, char *buf, int len);
 int block_ioctl(int dev, int cmd, int arg);
 int do_block_rw(int rw, int dev, int blk, char *buf, blockdevice_t *bd);
-int set_availablebd(int (*f)(int, int, int, char*), int bs, int (*c)(int, int, int), int (*m)(int, int, int, char *, int));
+int set_availablebd(int (*f)(int, int, int, char*), int bs, int (*c)(int, int, int), int (*m)(int, int, int, char *, int), int (*s)(int, int));
 int do_block_rw_multiple(int rw, int dev, int blk, char *buf, blockdevice_t *bd, int count);
 
 int mem_rw(int rw, int min, int blk, char *b);

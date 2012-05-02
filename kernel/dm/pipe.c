@@ -83,10 +83,8 @@ __attribute__((optimize("O0"))) int read_pipe(struct inode *ino, char *buffer, u
 	if(!ino || !buffer)
 		return -EINVAL;
 	pipe_t *pipe = ino->pipe;
-	if(!pipe){
-		kprintf("Tried to pipe with a non-pipe!\n");
+	if(!pipe)
 		return -EINVAL;
-	}
 	unsigned len = length;
 	int ret=0;
 	int count=0;
@@ -119,10 +117,8 @@ __attribute__((optimize("O0"))) int write_pipe(struct inode *ino, char *buffer, 
 	if(!ino || !buffer)
 		return -EINVAL;
 	pipe_t *pipe = ino->pipe;
-	if(!pipe) {
-		kprintf("Tried to pipe with a non-pipe!\n");
+	if(!pipe)
 		return -EINVAL;
-	}
 	mutex_on(pipe->lock);
 	if((pipe->write_pos+length)>=PIPE_SIZE)
 	{
@@ -139,5 +135,11 @@ __attribute__((optimize("O0"))) int write_pipe(struct inode *ino, char *buffer, 
 
 int pipedev_select(struct inode *in, int rw)
 {
+	if(rw != READ)
+		return 1;
+	pipe_t *pipe = in->pipe;
+	if(!pipe) return 1;
+	if(!pipe->pending && (pipe->count > 1 && pipe->type != PIPE_NAMED && pipe->wrcount>0))
+		return 0;
 	return 1;
 }

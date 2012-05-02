@@ -358,6 +358,45 @@ int tty_ioctl(int min, int cmd, int arg)
 	return ttyx_ioctl(current_task->tty, cmd, arg);
 }
 
+int ttyx_rw(int rw, int min, char *buf, int count)
+{
+	switch(rw) {
+		case OPEN:
+			return tty_open(min);
+			break;
+		case CLOSE:
+			return tty_close(min);
+			break;
+		case READ:
+			return tty_read(min, buf, count);
+			break;
+		case WRITE:
+			return tty_write(min, buf, count);
+			break;
+	}
+	return -EINVAL;
+}
+
+int tty_rw(int rw, int m, char *buf, int c)
+{
+ 	if(!current_task) 
+		return -ESRCH;
+	return ttyx_rw(rw, m=current_task->tty, buf, c);
+}
+
+int ttyx_select(int min, int rw)
+{
+	if(!consoles[min].flag) return 1;
+	if(rw == READ && !consoles[min].inpos)
+		return 0;
+	return 1;
+}
+
+int tty_select(int min, int rw)
+{
+	return ttyx_select(min=current_task->tty, rw);
+}
+
 void tty_init(vterm_t **k, vterm_t **l)
 {
 	int i;

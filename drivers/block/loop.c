@@ -97,7 +97,7 @@ int module_install()
 	}
 	if(NUM_LOOP > 19) NUM_LOOP=19;
 	printk(KERN_DEBUG, "[loop]: Creating %d loopback devices...\n", NUM_LOOP);
-	loop_maj = set_availablebd(loop_rw, 512, ioctl_main, 0);
+	loop_maj = set_availablebd(loop_rw, 512, ioctl_main, 0, 0);
 	int i;
 	char name[8];
 	for(i=0;i<NUM_LOOP;i++)

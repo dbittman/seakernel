@@ -12,16 +12,16 @@ int ioctl_stub(int a, int b, int c)
 	return -1;
 }
 
-blockdevice_t *set_blockdevice(int maj, int (*f)(int, int, int, char*), int bs, int (*c)(int, int, int), int (*m)(int, int, int, char *, int))
+blockdevice_t *set_blockdevice(int maj, int (*f)(int, int, int, char*), int bs, 
+	int (*c)(int, int, int), int (*m)(int, int, int, char *, int), int (*s)(int, int))
 {
 	printk(1, "[dev]: Setting block device %d, bs=%d (%x, %x)\n", maj, bs, f, c);
 	blockdevice_t *dev = (blockdevice_t *)kmalloc(sizeof(blockdevice_t));
 	dev->func = f;
-	dev->used=1;
-	dev->busy=0;
 	dev->blksz=bs;
 	dev->ioctl=c;
 	dev->func_m=m;
+	dev->select = s;
 	create_mutex(&dev->acl);
 	if(!c)
 		dev->ioctl=ioctl_stub;
@@ -30,13 +30,13 @@ blockdevice_t *set_blockdevice(int maj, int (*f)(int, int, int, char*), int bs, 
 	return dev;
 }
 
-int set_availablebd(int (*f)(int, int, int, char*), int bs, int (*c)(int, int, int), int (*m)(int, int, int, char *, int))
+int set_availablebd(int (*f)(int, int, int, char*), int bs, int (*c)(int, int, int), int (*m)(int, int, int, char *, int), int (*s)(int, int))
 {
 	int i=10;
 	while(i>0) {
 		if(!get_device(DT_BLOCK, i))
 		{
-			set_blockdevice(i, f, bs, c, m);
+			set_blockdevice(i, f, bs, c, m, s);
 			break;
 		}
 		i++;
@@ -367,6 +367,13 @@ int block_ioctl(int dev, int cmd, int arg)
 
 int blockdev_select(struct inode *in, int rw)
 {
+	int dev = in->dev;
+	device_t *dt = get_device(DT_BLOCK, MAJOR(dev));
+	if(!dt)
+		return 1;
+	blockdevice_t *bd = (blockdevice_t *)dt->ptr;
+	if(bd->select)
+		return bd->select(MINOR(dev), rw);
 	return 1;
 }
 

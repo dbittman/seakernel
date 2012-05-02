@@ -58,7 +58,7 @@ int s_mount(char *name, int dev, int block, char *fsname, char *no)
 	}
 	return ret;
 }
-
+struct inode *init_tmpfs();
 int sys_mount2(char *node, char *to, char *name, char *opts, int flags)
 {
 	if(!to) return -EINVAL;
@@ -70,6 +70,9 @@ int sys_mount2(char *node, char *to, char *name, char *opts, int flags)
 		if(!strcmp(name, "procfs")) {
 			iremove_nofree(procfs_root);
 			return mount(to, procfs_root);
+		}
+		if(!strcmp(name, "tmpfs")) {
+			return mount(to, init_tmpfs());
 		}
 		return -EINVAL;
 	}

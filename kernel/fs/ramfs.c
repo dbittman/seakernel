@@ -7,41 +7,55 @@ int rfs_read(struct inode *i, int off, int len, char *b);
 struct inode *rfs_create(struct inode *p, char *name, int mode);
 int rfs_write(struct inode *i, int off, int len, char *b);
 int ramfs_sane(struct inode *i);
+
+int ramfs_op_dummy()
+{
+	return 0;
+}
+
+int ramfs_unlink(struct inode *i)
+{
+	i->f_count=0;
+	i->count=1;
+	return 0;
+}
+
 struct file_operations rfs_fops = {
- 0,
+ (void *)ramfs_op_dummy,
  rfs_read,
  rfs_write,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
+ (void *)ramfs_op_dummy,
+ (void *)ramfs_op_dummy,
+ (void *)ramfs_op_dummy,
+ (void *)ramfs_op_dummy,
+ (void *)ramfs_op_dummy,
+ (void *)ramfs_op_dummy,
+ (void *)ramfs_op_dummy,
+ (void *)ramfs_op_dummy,
 };
 
 struct inode_operations rfs_inode_ops = {
  &rfs_fops,
  (struct inode *(*)(struct inode *, char *, int))rfs_create,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- ramfs_sane,//sane
- 0,//fs_sane
- 0,
- 0,
- 0,
- 0,//ramfs_fsstat
- 0,0
+ (void *)ramfs_op_dummy,
+ (void *)ramfs_op_dummy,
+ (void *)ramfs_op_dummy,
+ (void *)ramfs_op_dummy,
+ (void *)ramfs_unlink,
+ (void *)ramfs_op_dummy,
+ (void *)ramfs_op_dummy,
+ (void *)ramfs_op_dummy,
+ (void *)ramfs_op_dummy,
+ (void *)ramfs_op_dummy,
+ (void *)ramfs_op_dummy,
+ ramfs_sane,
+ (void *)ramfs_op_dummy,
+ (void *)ramfs_op_dummy,
+ (void *)ramfs_op_dummy,
+ (void *)ramfs_op_dummy,
+ (void *)ramfs_op_dummy,
+ (void *)ramfs_op_dummy,
+ (void *)ramfs_op_dummy
 };
 
 int ramfs_sane(struct inode *i)
@@ -65,15 +79,26 @@ struct inode *init_ramfs()
 	return i;
 }
 
+struct inode *init_tmpfs()
+{
+	struct inode *i = (struct inode *)kmalloc(sizeof(struct inode));
+	i->mode = S_IFDIR | 0x1FF;
+	create_mutex(&i->lock);
+	strcpy(i->name, "rfs");
+	i->i_ops = &rfs_inode_ops;
+	i->parent = i;
+	return i;
+}
+
 int rfs_read(struct inode *i, int off, int len, char *b)
 {
 	int pl = len;
-	if((unsigned)(off+len) > i->len)
+	if((unsigned)off >= i->len)
+		return 0;
+	if((unsigned)(off+len) >= i->len)
 		len = i->len-off;
-	if(!len || len < 0)
-		return -EINVAL;
-	if((unsigned)off > i->len)
-		return -EINVAL;
+	if(!len)
+		return 0;
 	memcpy((void *)b, (void *)(i->start+off), len);
 	return len;
 }
@@ -103,9 +128,9 @@ int rfs_resize(struct inode *i, unsigned int s)
 int rfs_write(struct inode *i, int off, int len, char *b)
 {
 	if(!len)
-		return -1;
+		return -EINVAL;
 	if((unsigned)off > i->len)
-		return -1;
+		rfs_resize(i, len+off);
 	if((unsigned)off+len > i->len)
 		rfs_resize(i, len+off);
 	memcpy((void *)(i->start+off), (void *)b, len);
@@ -124,8 +149,8 @@ struct inode *rfs_create(struct inode *__p, char *name, int mode)
 	struct inode *root_nodes;
 	root_nodes = (struct inode *)kmalloc(sizeof(struct inode));
 	strcpy(root_nodes->name, name);
-	root_nodes->uid = p->uid;
-	root_nodes->gid = p->gid;
+	root_nodes->uid = current_task->uid;
+	root_nodes->gid = current_task->gid;
 	root_nodes->len = 1;
 	root_nodes->i_ops = &rfs_inode_ops;
 	root_nodes->mode = mode | 0x1FF;

@@ -46,6 +46,6 @@ int unlink(char *f)
 	if(i->i_ops)
 		if(i->i_ops->unlink)
 			ret = (i->i_ops->unlink(i));
-	iput(i);
+	i->dynamic ? iput(i) : iremove_force(i);
 	return ret;
 }

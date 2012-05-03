@@ -18,6 +18,7 @@ typedef struct e2_vol_data {
 	struct inode *root;
 	char read_only;
 	mutex_t *m_node, *m_block, *m_inode, ac_lock;
+	int cache;
 	struct e2_vol_data *next, *prev;
 } ext2_fs_t;
 typedef char ext2_inode_type_t;

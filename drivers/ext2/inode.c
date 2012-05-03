@@ -92,6 +92,11 @@ ext2_fs_t* fs, uint32_t inode_nr, size_t* offset)
 
 int ext2_inode_read(ext2_fs_t* fs, uint32_t inode_nr, ext2_inode_t* inode)
 {
+	struct ce_t *c = find_cache_element(fs->cache, inode_nr, 0);
+	if(c) {
+		memcpy(inode, c->data, sizeof (ext2_inode_t));
+		return 1;
+	}
 	size_t offset;
 	int num;
 	if (!(num = inode_get_block(fs, inode_nr, &offset))) {
@@ -100,16 +105,15 @@ int ext2_inode_read(ext2_fs_t* fs, uint32_t inode_nr, ext2_inode_t* inode)
 	ext2_read_off(fs, num * ext2_sb_blocksize(fs->sb) + offset, (unsigned char *)inode, ext2_sb_inodesize(fs->sb));
 	inode->fs = fs;
 	inode->number = inode_nr;
+	cache_object_clean(fs->cache, inode_nr, 0, sizeof(ext2_inode_t), (void *)inode);
 	return 1;
-}
-
-void ext2_inode_release(ext2_inode_t* inode)
-{
-	
 }
 
 int ext2_inode_update(ext2_inode_t* inode)
 {
+	struct ce_t *c = find_cache_element(inode->fs->cache, inode->number, 0);
+	if(c)
+		memcpy(c->data, inode, sizeof (ext2_inode_t));
 	size_t offset;
 	int num;
 	if (!(num = inode_get_block(inode->fs, inode->number, &offset))) {

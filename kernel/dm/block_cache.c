@@ -3,7 +3,7 @@
 #include <dev.h>
 #include <block.h>
 #include <cache.h>
-int cache_object_clean(int c, int id, char *name, int sz, char *buf);
+
 struct ctbl {
 	int cn;
 	int dev;

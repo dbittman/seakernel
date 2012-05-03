@@ -11,11 +11,7 @@ int wrap_ext2_link(struct inode *i, char *path);
 struct inode *wrap_ext2_create(struct inode *i, char *name, unsigned mode);
 int ext2_unmount(unsigned v);
 int wrap_sync_inode(struct inode *i);
-int wrap_put_inode(struct inode *i);
-int ext2_sane(struct inode *i);
-int ext2_fs_sane(struct inode *i);
 int ext2_fs_stat(struct inode *i, struct posix_statfs *f);
-int ext2_sync(struct inode *i);
 
 struct inode_operations e2fs_inode_ops = {
 	wrap_ext2_readfile,
@@ -30,7 +26,7 @@ struct inode_operations e2fs_inode_ops = {
 	wrap_sync_inode,
 	ext2_unmount,
 	ext2_fs_stat,
-	ext2_sync,
+	0,
 	wrap_ext2_update
 };
 
@@ -100,14 +96,14 @@ int wrap_ext2_readfile(struct inode *in, unsigned int off, unsigned int len, cha
 	ext2_inode_t inode;
 	if(!ext2_inode_read(fs, in->num, &inode))
 		return -EIO;
-	if((unsigned)off > inode.size) {
-		return -1;
+	if((unsigned)off >= inode.size) {
+		return 0;
 	}
 	if(inode.deletion_time)
 		return -ENOENT;
 	if(!inode.mode)
 		return -EACCES;
-	if((unsigned)(off + len) > inode.size)
+	if((unsigned)(off + len) >= inode.size)
 		len = inode.size - off;
 	int ret = ext2_inode_readdata(&inode, off, len, (unsigned char *)buf);
 	return ret;
@@ -351,21 +347,6 @@ int wrap_ext2_update(struct inode *i)
 	if(!ext2_inode_read(fs, i->num, &inode))
 		return -EIO;
 	update_sea_inode(i, &inode, 0);
-	return 0;
-}
-
-int ext2_sync(struct inode *i)
-{
-	return 0;
-}
-
-int ext2_sane(struct inode *i)
-{
-	return 0;
-}
-
-int ext2_fs_sane(struct inode *i)
-{
 	return 0;
 }
 

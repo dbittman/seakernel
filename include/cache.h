@@ -45,6 +45,7 @@ struct cache_map {
 	unsigned len;
 };
 int cache_object(int c, int id, char *name, int sz, char *buf);
+int cache_object_clean(int c, int id, char *name, int sz, char *buf);
 int get_empty_cache(int (*)(struct ce_t *), int, int (*)(int, struct ce_t *, char *, int));
 struct ce_t *find_cache_element(int c, unsigned id, char *name);
 struct ce_t *add_cache_element(int cache, int id, char *name, int length, char *data);

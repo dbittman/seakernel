@@ -110,7 +110,6 @@ int get_empty_cache(int (*sync)(struct ce_t *), int num_obj, int (*s_m)(int, str
 int cache_add_element(int c, struct ce_t *obj)
 {
 	assert(caches[c].flag);
-	assert(caches[c].count < caches[c].nrobj);
 	accessed_cache(c);
 	mutex_on(&caches[c].lock);
 	bptree_insert(cache_get_btree(c, obj->key), obj->key, obj);
@@ -250,8 +249,8 @@ int destroy_cache(int id, int slow)
 	mutex_on(&caches[id].lock);
 	int k=0;
 	while(k<NUM_TREES) {
-		bptree_destroy(caches[id].bt[k]);
-		kfree(caches[id].bt[k]);
+		//bptree_destroy(caches[id].bt[k]);
+		//kfree(caches[id].bt[k]);
 		k++;
 	}
 	mutex_off(&caches[id].lock);

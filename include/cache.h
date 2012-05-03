@@ -1,60 +1,55 @@
 #ifndef CACHE_H
 #define CACHE_H
 
-#include <btree.h>
+typedef struct chash_chain_s {
+	void *ptr;
+	unsigned id, key;
+	struct chash_chain_s *next, *prev;
+} chash_chain_t;
+
+typedef struct {
+	unsigned length;
+	chash_chain_t **hash;
+} chash_t;
+
 struct ce_t {
-	char flag;
-	unsigned key;
-	char busy;
+	unsigned id, key;
 	char dirty;
 	char *data;
 	unsigned length;
 	unsigned atime;
 	unsigned acount;
-	char name[32];
-	
-	struct ce_t *next_dirty;
-	struct ce_t *prev_dirty;
-	struct ce_t *next_rl, *t_next;
-	struct ce_t *prev_rl, *t_prev;
+	unsigned dev;
+	struct ce_t *next_dirty, *next;
+	struct ce_t *prev_dirty, *prev;
 };
-
 
 typedef struct {
 	unsigned dirty;
-	char pad1[4];
-	unsigned count;
-	unsigned nrobj;
-	char pad2[4];
-	unsigned int syncing;
+	unsigned count, acc, slow, syncing;
 	char flag;
+	chash_t *hash;
 	int (*sync)(struct ce_t *);
-	int (*sync_multiple)(int, struct ce_t *, char *, int);
-	bptree *bt[NUM_TREES];
-	unsigned slow, acc, l_rc;
 	mutex_t lock, dlock;
-	struct ce_t *dlist, *rlist; /* Double linked-list of dirty items. 
-	We can use a DLL because we never have to search this list. 
-	All operations approach O(1). Which is pretty cool.
-	*/
-	struct ce_t *last;
+	struct ce_t *dlist, *list, *tail; 
 } cache_t;
 
-struct cache_map {
-	unsigned start;
-	unsigned len;
-};
-int cache_object(int c, int id, char *name, int sz, char *buf);
-int cache_object_clean(int c, int id, char *name, int sz, char *buf);
-int get_empty_cache(int (*)(struct ce_t *), int, int (*)(int, struct ce_t *, char *, int));
-struct ce_t *find_cache_element(int c, unsigned id, char *name);
-struct ce_t *add_cache_element(int cache, int id, char *name, int length, char *data);
-int update_object(int c, int id, char *name, int off, int sz, char *buf, int true_size);
-struct ce_t *remove_cached_element(int c, int id, char *name);
-int free_cached_element(struct ce_t *c);
-void sync_cache(int id, int red, int slow, int rm);
 extern cache_t caches[NUM_CACHES];
-int destroy_cache(int id, int );
+
+#define cache_object(c,id,key,sz,buf) do_cache_object(c, id, key, sz, buf, 1)
+#define cache_object_clean(c,id,key,sz,buf) do_cache_object(c, id, key, sz, buf, 0)
+
+chash_t *chash_create(unsigned length);
+int chash_destroy(chash_t *h);
+void *chash_search(chash_t *h, unsigned id, unsigned key);
+int chash_delete(chash_t *h, unsigned id, unsigned key);
+int chash_add(chash_t *h, unsigned id, unsigned key, void *ptr);
+
+int do_cache_object(int c, unsigned id, unsigned key, int sz, char *buf, int dirty);
+int get_empty_cache(int (*)(struct ce_t *));
+struct ce_t *find_cache_element(int c, unsigned id, unsigned key);
+void sync_cache(int id, int red, int slow, int rm);
+int destroy_cache(int id, int);
 int sync_element(int c, struct ce_t *e);
 void remove_element(int c, struct ce_t *o);
 void do_sync_of_mounted();

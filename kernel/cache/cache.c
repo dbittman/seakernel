@@ -10,25 +10,17 @@
 #include <kernel.h>
 #include <cache.h>
 #include <task.h>
-
+extern char shutting_down;
 cache_t caches[NUM_CACHES];
-struct cache_map cm[NUM_CACHES];
-
 void accessed_cache(int c)
 {
 	caches[c].slow=100;
 	caches[c].acc=1000;
 }
 
-bptree *cache_get_btree(unsigned id, unsigned key)
-{
-	return caches[id].bt[key%NUM_TREES];
-}
-
 int init_cache()
 {
 	memset(caches, 0, NUM_CACHES * sizeof(cache_t));
-	memset(cm, 0, NUM_CACHES*sizeof(struct cache_map));
 	return 0;
 }
 
@@ -81,7 +73,7 @@ int set_dirty(int c, struct ce_t *e, int dirty)
 	return old;
 }
 
-int get_empty_cache(int (*sync)(struct ce_t *), int num_obj, int (*s_m)(int, struct ce_t *, char *, int))
+int get_empty_cache(int (*sync)(struct ce_t *))
 {
 	int i;
 	for(i=0;i<NUM_CACHES && caches[i].flag;i++);
@@ -94,15 +86,10 @@ int get_empty_cache(int (*sync)(struct ce_t *), int num_obj, int (*s_m)(int, str
 	create_mutex(&caches[i].lock);
 	create_mutex(&caches[i].dlock);
 	caches[i].count=0;
-	caches[i].nrobj = num_obj;
 	caches[i].slow=1000;
-	caches[i].sync_multiple=s_m;
-	int k=0;
-	while(k<NUM_TREES)
-	{
-		caches[i].bt[k] = bptree_create();
-		k++;
-	}
+	
+	caches[i].hash = chash_create(100000);
+	
 	printk(0, "[cache]: Allocated new cache %d\n", i);
 	return i;
 }
@@ -112,84 +99,54 @@ int cache_add_element(int c, struct ce_t *obj)
 	assert(caches[c].flag);
 	accessed_cache(c);
 	mutex_on(&caches[c].lock);
-	bptree_insert(cache_get_btree(c, obj->key), obj->key, obj);
+	
+	chash_add(caches[c].hash, obj->id, obj->key, obj);
+	
+	struct ce_t *old = caches[c].list;
+	obj->next = old;
+	if(old) old->prev = obj;
+	else    caches[c].list = caches[c].tail = obj;
+	obj->prev = 0;
 	caches[c].count++;
 	obj->acount=1;
 	mutex_off(&caches[c].lock);
 	return 0;
 }
 
-struct ce_t *find_cache_element(int c, unsigned id, char *name)
+struct ce_t *find_cache_element(int c, unsigned id, unsigned key)
 {
 	accessed_cache(c);
 	mutex_on(&caches[c].lock);
-	if(caches[c].last && caches[c].last->key == id)
-	{
-		struct ce_t *ret_l = caches[c].last;
-		mutex_off(&caches[c].lock);
-		return ret_l;
-	}
-	unsigned min = bptree_get_min_key(cache_get_btree(c, id));
-	unsigned max = bptree_get_max_key(cache_get_btree(c, id));
-	if(id > max || id < min) {
-		mutex_off(&caches[c].lock);
-		return 0;
-	}
-	struct ce_t *ret = bptree_search(cache_get_btree(c, id), id);
-	if(!ret) {
-		mutex_off(&caches[c].lock);
-		return 0;
-	}
-	ret->acount++;
-	caches[c].last = ret;
+	
+	struct ce_t *ret = chash_search(caches[c].hash, id, key);
+	
+	if(ret)
+		ret->acount++;
 	mutex_off(&caches[c].lock);
 	return ret;
 }
 
-void cache_update_obj(int c, struct ce_t *obj, unsigned sz, char *buf)
-{
-	if(obj->length < sz || !obj->data)
-	{
-		if(obj->data)
-			kfree(obj->data);
-		obj->data = (char *)kmalloc(sz);
-	}
-	memcpy(obj->data, buf, sz);
-}
-
-int do_cache_object(int c, int id, char *name, int sz, char *buf, int dirty)
+int do_cache_object(int c, unsigned id, unsigned key, int sz, char *buf, int dirty)
 {
 	mutex_on(&caches[c].lock);
-	struct ce_t *o;
-	o = find_cache_element(c, id, name);
-	if(o)
+	struct ce_t *obj = find_cache_element(c, id, key);
+	if(obj)
 	{
-		cache_update_obj(c, o, sz, buf);
-		set_dirty(c, o, dirty);
+		memcpy(obj->data, buf, obj->length);
+		set_dirty(c, obj, dirty);
 		mutex_off(&caches[c].lock);
 		return 0;
 	}
-	struct ce_t *obj = (struct ce_t *)kmalloc(sizeof(struct ce_t));
+	obj = (struct ce_t *)kmalloc(sizeof(struct ce_t));
 	obj->data = (char *)kmalloc(sz);
 	obj->length = sz;
 	memcpy(obj->data, buf, sz);
-	if(name) strncpy(obj->name, name, 31);
 	set_dirty(c, obj, dirty);
-	obj->key = id;
-	obj->flag=1;
+	obj->key = key;
+	obj->id = id;
 	cache_add_element(c, obj);
 	mutex_off(&caches[c].lock);
 	return 0;
-}
-
-int cache_object(int c, int id, char *name, int sz, char *buf)
-{
-	return do_cache_object(c, id, name, sz, buf, 1);
-}
-
-int cache_object_clean(int c, int id, char *name, int sz, char *buf)
-{
-	return do_cache_object(c, id, name, sz, buf, 0);
 }
 
 /* WARNING: This does not sync!!! */
@@ -198,25 +155,32 @@ void remove_element(int c, struct ce_t *o)
 	if(!o) return;
 	if(o->dirty)
 		printk(1, "[cache]: Warning - Removing non-sync'd element %d in cache %d\n", o->key, c);
+	
 	mutex_on(&caches[c].lock);
-	if(caches[c].last && caches[c].last->key == o->key)
-		caches[c].last=0;
 	if(o->dirty)
 		set_dirty(c, o, 0);
 	assert(caches[c].count);
 	caches[c].count--;
-	bptree_delete(cache_get_btree(c, o->key), o->key);
+	
+	if(o->prev)
+		o->prev->next = o->next;
+	else
+		caches[c].list = o->next;
+	if(o->next)
+		o->next->prev = o->prev;
+	else
+		caches[c].tail = o->prev;
+	chash_delete(caches[c].hash, o->id, o->key);
 	if(o->data)
 		kfree(o->data);
 	kfree(o);
 	mutex_off(&caches[c].lock);
 }
 
-void remove_element_byid(int c, int id)
+void remove_element_byid(int c, unsigned id, unsigned key)
 {
-	struct ce_t *o;
 	mutex_on(&caches[c].lock);
-	o = find_cache_element(c, id, 0);
+	struct ce_t *o = find_cache_element(c, id, key);
 	remove_element(c, o);
 	mutex_off(&caches[c].lock);
 }
@@ -231,7 +195,7 @@ void try_remove_element(int c, struct ce_t* o)
 
 int sync_element(int c, struct ce_t *e)
 {
-	if(!(caches[c].flag && e->flag))
+	if(!caches[c].flag)
 		return 0;
 	int ret=0;
 	if(caches[c].sync)
@@ -239,7 +203,7 @@ int sync_element(int c, struct ce_t *e)
 	set_dirty(c, e, 0);
 	return ret;
 }
-extern char shutting_down;
+
 int destroy_cache(int id, int slow)
 {
 	/* Sync with forced removal */
@@ -247,12 +211,9 @@ int destroy_cache(int id, int slow)
 	sync_cache(id, 0, 0, 1);
 	/* Destroy the tree */
 	mutex_on(&caches[id].lock);
-	int k=0;
-	while(k<NUM_TREES) {
-		//bptree_destroy(caches[id].bt[k]);
-		//kfree(caches[id].bt[k]);
-		k++;
-	}
+	
+	chash_destroy(caches[id].hash);
+	
 	mutex_off(&caches[id].lock);
 	destroy_mutex(&caches[id].lock);
 	destroy_mutex(&caches[id].dlock);
@@ -348,26 +309,14 @@ int kernel_cache_sync_slow(int all)
 	return 0;
 }
 
-int reclaim_cache_memory(int id, unsigned time)
+int reclaim_cache_memory(int i)
 {
-	unsigned ctime = get_epoch_time();
-	int num=0;
-	int k=caches[id].l_rc++;
-	if(k >= NUM_TREES)
-		k=0, caches[id].l_rc=1;
-	
-	unsigned min = bptree_get_min_key(caches[id].bt[k]);
-	unsigned max = bptree_get_max_key(caches[id].bt[k]);
-	if(min == max || (!min && k) || !max)
-		return num;
-	unsigned i = max;
-	struct ce_t *obj = bptree_search(caches[id].bt[k], i);
-	if(obj && !obj->dirty && obj->atime < (ctime-time)) {
-		num++;
-		caches[id].last=0;
-		remove_element(id, obj);
-	}
-	return num;
+	struct ce_t *del = caches[i].tail;
+	while(del && del->dirty) 
+		del=del->prev;
+	if(!del || del->dirty) return 0;
+	remove_element(i, del);
+	return 1;
 }
 
 extern volatile unsigned pm_num_pages, pm_used_pages;
@@ -375,7 +324,6 @@ int __KT_cache_reclaim_memory()
 {
 	int i;
 	int usage = (pm_used_pages * 100)/(pm_num_pages);
-	int del=1+80/(usage);
 	int total=0;
 	for(i=0;i<NUM_CACHES;i++)
 	{
@@ -383,16 +331,14 @@ int __KT_cache_reclaim_memory()
 			continue;
 		if((caches[i].count < CACHE_CAP) && usage < 30)
 			continue;
-		int d = del;
-		if(caches[i].count > CACHE_CAP && d > 5)
-			d=5;
 		if(caches[i].flag) {
 			mutex_on(&caches[i].lock);
 			mutex_on(&caches[i].dlock);
-			total+=(reclaim_cache_memory(i, d));
+			
+			total+=reclaim_cache_memory(i);
+			
 			mutex_off(&caches[i].dlock);
 			mutex_off(&caches[i].lock);
-			delay((caches[i].acc/=2) + 10);
 		}
 	}
 	return total;

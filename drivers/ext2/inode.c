@@ -678,12 +678,9 @@ int ext2_inode_readdata(ext2_inode_t* inode, uint32_t start, size_t len, unsigne
 	}
 	if(S_ISLNK(inode->mode) && inode->size < 60)
 		return ext2_inode_readlink(inode, start, len, buf);
-	// Wenn der erste Block nicht ganz gelesen werden soll, wird er zuerst in
-	// einen Lokalen Puffer gelesen.
 	if (start % block_size) {
 		size_t bytes;
 		size_t offset = start % block_size;
-		//kprintf("dsf\n");
 		if (!ext2_inode_readblk(inode, start_block, localbuf, 1)) {
 			return 0;
 		}
@@ -703,11 +700,8 @@ int ext2_inode_readdata(ext2_inode_t* inode, uint32_t start, size_t len, unsigne
 		counter+=bytes;
 	}
 	
-	// Wenn der letzte Block nicht mehr ganz gelesen werden soll, muss er
-	// separat eingelesen werden.
 	if (len % block_size) {
 		size_t bytes = len % block_size;
-		//kprintf("emd\n");
 		if (!ext2_inode_readblk(inode, end_block, localbuf, 1)) {
 			return counter;
 		}
@@ -721,18 +715,13 @@ int ext2_inode_readdata(ext2_inode_t* inode, uint32_t start, size_t len, unsigne
 	}
 	
 	for (i = 0; i < block_count; i++) {
-		ret = ext2_inode_readblk(inode, start_block + i, buf + i * block_size,
-					 1);
+		ret = ext2_inode_readblk(inode, start_block + i, buf + i * block_size, 1);
 		if (!ret) {
 			return counter;
 		}
-		
-		// Wenn mehrere Blocks aneinander gelesen wurden, muessen die jetzt
-		// uebersprungen werden.
 		i += ret - 1;
 		counter+=block_size;
 	}
-	
 	return counter;
 }
 
@@ -761,8 +750,6 @@ int ext2_inode_writedata(ext2_inode_t* inode, uint32_t start, size_t len, const 
 				return ext2_inode_writelink(inode, start, len, (char *)buf);
 		}
 	}
-	// Wenn der erste Block nicht ganz geschrieben werden soll, wird er zuerst
-	// in einen Lokalen Puffer gelesen werden, damit nichts ueberschrieben wird.
 	if (start % block_size) {
 		size_t bytes;
 		size_t offset = start % block_size;
@@ -785,8 +772,6 @@ int ext2_inode_writedata(ext2_inode_t* inode, uint32_t start, size_t len, const 
 		buf += bytes;
 		start_block++;
 	}
-	// Wenn der letzte Block nicht mehr ganz geschrieben werden soll, muss er
-	// zuerst eingelesen werden, damit nichts ueberschrieben wird.
 	if (len % block_size) {
 		size_t bytes = len % block_size;
 		if (!ext2_inode_readblk(inode, end_block, localbuf, 1)) {
@@ -829,7 +814,6 @@ int ext2_inode_truncate(ext2_inode_t* inode, uint32_t size)
 	uint32_t i;
 	if(size > inode->size) return 0;
 	unsigned char tmp[size+1];
-	//mutex_on(inode->fs->m_node);
 	if(S_ISLNK(inode->mode))
 	{
 		if(inode->size >= 60 && size < 60) {
@@ -843,7 +827,6 @@ int ext2_inode_truncate(ext2_inode_t* inode, uint32_t size)
 	}
 	int old_s = inode->size;
 	inode->size = size;
-	//mutex_off(inode->fs->m_node);
 	if (!ext2_inode_update(inode)) {
 		return 0;
 	}

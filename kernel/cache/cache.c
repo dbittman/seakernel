@@ -289,36 +289,3 @@ int kernel_cache_sync()
 	}
 	return 0;
 }
-
-int reclaim_cache_memory(cache_t *c)
-{
-	struct ce_t *del = c->tail;
-	while(del && del->dirty) 
-		del=del->prev;
-	if(!del || del->dirty) return 0;
-	remove_element(c, del);
-	return 1;
-}
-
-extern volatile unsigned pm_num_pages, pm_used_pages;
-int __KT_cache_reclaim_memory()
-{
-	return 0;
-	int i;
-	int usage = (pm_used_pages * 100)/(pm_num_pages);
-	int total=0;
-	cache_t *c = cache_list;
-	while(c) {
-		if((c->count < CACHE_CAP) && usage < 30)
-			continue;
-		mutex_on(&c->lock);
-		mutex_on(&c->dlock);
-		
-		total+=reclaim_cache_memory(c);
-		
-		mutex_off(&c->dlock);
-		mutex_off(&c->lock);
-		c=c->next;
-	}
-	return total;
-}

@@ -19,7 +19,6 @@
 #include <swap.h>
 void get_timed(struct tm *now);
 int __KT_try_releasing_tasks();
-int __KT_cache_reclaim_memory();
 extern char *stuff_to_pass[128];
 extern char cleared_args;
 extern int argc_STP;
@@ -34,7 +33,7 @@ static inline void __KT_clear_args()
 	/* Clear out the alloc'ed arguments */
 	if(!cleared_args && next_pid > (unsigned)(init_pid+1) && init_pid)
 	{
-		printk(1, "[idle]: Clearing kernel arguments...\n");
+		printk(6, "[idle]: Clearing kernel arguments...\n");
 		int w=0;
 		for(;w<128;w++)
 		{
@@ -84,20 +83,17 @@ int kernel_idle_task()
 		__KT_pager();
 	}
 	set_as_kernel_task("kidle");
-	for(;;) {
-		/* If these flags are set to 1, then the KT functions associated with them did work. If so, we loop again */
-		task=0, cache=0;
-		force_schedule();
-		task=__KT_try_releasing_tasks();
-		
+	/* First stage is to wait until we can clear various allocated things
+	 * that we wont need anymore */
+	while(!cleared_args)
+	{
 		force_schedule();
 		__KT_clear_args();
-		
-		force_schedule();
-		cache=__KT_cache_reclaim_memory();
-		
-		force_schedule();
-		if(!task && !cache && init_pid) {
+	}
+	/* Now enter the main idle loop, waiting to do periodic cleanup */
+	for(;;) {
+		task=__KT_try_releasing_tasks();
+		if(!task && init_pid) {
 			__disengage_idle();
 			/* Note that, while we go into a wait here, the scheduler 
 			 * may awaken the kernel at any time if its the only runable

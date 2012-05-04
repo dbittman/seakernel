@@ -11,130 +11,129 @@
 #include <cache.h>
 #include <task.h>
 extern char shutting_down;
-cache_t caches[NUM_CACHES];
-void accessed_cache(int c)
+mutex_t cl_mutex;
+cache_t *cache_list=0;
+void accessed_cache(cache_t *c)
 {
-	caches[c].slow=100;
-	caches[c].acc=1000;
+	c->slow=100;
+	c->acc=1000;
 }
 
 int init_cache()
 {
-	memset(caches, 0, NUM_CACHES * sizeof(cache_t));
+	create_mutex(&cl_mutex);
 	return 0;
 }
 
 /* Add and remove items from the list of dirty items */
-void add_dlist(int c, struct ce_t *e)
+void add_dlist(cache_t *c, struct ce_t *e)
 {
-	struct ce_t *tmp = caches[c].dlist;
-	caches[c].dlist = e;
+	struct ce_t *tmp = c->dlist;
+	c->dlist = e;
 	e->next_dirty = tmp;
 	e->prev_dirty=0;
 	if(tmp)
 		tmp->prev_dirty=e;
 }
 
-void remove_dlist(int c, struct ce_t *e)
+void remove_dlist(cache_t *c, struct ce_t *e)
 {
 	if(e->prev_dirty)
 		e->prev_dirty->next_dirty = e->next_dirty;
 	if(e->next_dirty)
 		e->next_dirty->prev_dirty = e->prev_dirty;
-	if(caches[c].dlist == e)
+	if(c->dlist == e)
 	{
 		assert(!e->prev_dirty);
-		caches[c].dlist = (e->next_dirty);
+		c->dlist = e->next_dirty;
 	}
 	e->prev_dirty=e->next_dirty=0;
 }
 
-int set_dirty(int c, struct ce_t *e, int dirty)
+int set_dirty(cache_t *c, struct ce_t *e, int dirty)
 {
-	assert(e && caches[c].flag);
-	mutex_on(&caches[c].dlock);
+	mutex_on(&c->dlock);
 	int old = e->dirty;
 	e->dirty=dirty;
 	if(dirty)
 	{
 		if(old != dirty) {
 			add_dlist(c, e);
-			caches[c].dirty++;
+			c->dirty++;
 		}
 	} else
 	{
 		if(old != dirty) {
-			assert(caches[c].dirty);
-			caches[c].dirty--;
+			assert(c->dirty);
+			c->dirty--;
 			remove_dlist(c, e);
 		}
 	}
-	mutex_off(&caches[c].dlock);
+	mutex_off(&c->dlock);
 	return old;
 }
 
-int get_empty_cache(int (*sync)(struct ce_t *))
+cache_t *get_empty_cache(int (*sync)(struct ce_t *), char *name)
 {
-	int i;
-	for(i=0;i<NUM_CACHES && caches[i].flag;i++);
-	if(i == NUM_CACHES)
-		panic(0, "Ran out of cash! Can I have some money please?");
-	caches[i].flag=1;
-	caches[i].sync = sync;
-	caches[i].syncing=0;
-	caches[i].dirty=0;
-	create_mutex(&caches[i].lock);
-	create_mutex(&caches[i].dlock);
-	caches[i].count=0;
-	caches[i].slow=1000;
+	cache_t *c = (void *)kmalloc(sizeof(cache_t));
+	c->sync = sync;
+	c->syncing=0;
+	c->dirty=0;
+	create_mutex(&c->lock);
+	create_mutex(&c->dlock);
+	c->count=0;
+	c->slow=1000;
+	c->hash = chash_create(100000);
+	strncpy(c->name, name, 32);
 	
-	caches[i].hash = chash_create(100000);
+	mutex_on(&cl_mutex);
+	c->next = cache_list;
+	if(cache_list) cache_list->prev = c;
+	cache_list = c;
+	mutex_off(&cl_mutex);
 	
-	printk(0, "[cache]: Allocated new cache %d\n", i);
-	return i;
+	printk(0, "[cache]: Allocated new cache '%s'\n", name);
+	return c;
 }
 
-int cache_add_element(int c, struct ce_t *obj)
+int cache_add_element(cache_t *c, struct ce_t *obj)
 {
-	assert(caches[c].flag);
 	accessed_cache(c);
-	mutex_on(&caches[c].lock);
+	mutex_on(&c->lock);
 	
-	chash_add(caches[c].hash, obj->id, obj->key, obj);
+	chash_add(c->hash, obj->id, obj->key, obj);
 	
-	struct ce_t *old = caches[c].list;
+	struct ce_t *old = c->list;
 	obj->next = old;
 	if(old) old->prev = obj;
-	else    caches[c].list = caches[c].tail = obj;
+	else    c->list = c->tail = obj;
 	obj->prev = 0;
-	caches[c].count++;
+	c->count++;
 	obj->acount=1;
-	mutex_off(&caches[c].lock);
+	mutex_off(&c->lock);
 	return 0;
 }
 
-struct ce_t *find_cache_element(int c, unsigned id, unsigned key)
+struct ce_t *find_cache_element(cache_t *c, unsigned id, unsigned key)
 {
 	accessed_cache(c);
-	mutex_on(&caches[c].lock);
-	
-	struct ce_t *ret = chash_search(caches[c].hash, id, key);
-	
+	mutex_on(&c->lock);
+	struct ce_t *ret = chash_search(c->hash, id, key);
 	if(ret)
 		ret->acount++;
-	mutex_off(&caches[c].lock);
+	mutex_off(&c->lock);
 	return ret;
 }
 
-int do_cache_object(int c, unsigned id, unsigned key, int sz, char *buf, int dirty)
+int do_cache_object(cache_t *c, unsigned id, unsigned key, int sz, char *buf, int dirty)
 {
-	mutex_on(&caches[c].lock);
+	mutex_on(&c->lock);
 	struct ce_t *obj = find_cache_element(c, id, key);
 	if(obj)
 	{
 		memcpy(obj->data, buf, obj->length);
 		set_dirty(c, obj, dirty);
-		mutex_off(&caches[c].lock);
+		mutex_off(&c->lock);
 		return 0;
 	}
 	obj = (struct ce_t *)kmalloc(sizeof(struct ce_t));
@@ -145,201 +144,169 @@ int do_cache_object(int c, unsigned id, unsigned key, int sz, char *buf, int dir
 	obj->key = key;
 	obj->id = id;
 	cache_add_element(c, obj);
-	mutex_off(&caches[c].lock);
+	mutex_off(&c->lock);
 	return 0;
 }
 
 /* WARNING: This does not sync!!! */
-void remove_element(int c, struct ce_t *o)
+void remove_element(cache_t *c, struct ce_t *o)
 {
 	if(!o) return;
 	if(o->dirty)
-		printk(1, "[cache]: Warning - Removing non-sync'd element %d in cache %d\n", o->key, c);
+		panic(PANIC_NOSYNC, "tried to remove non-sync'd element");
 	
-	mutex_on(&caches[c].lock);
+	mutex_on(&c->lock);
 	if(o->dirty)
 		set_dirty(c, o, 0);
-	assert(caches[c].count);
-	caches[c].count--;
+	assert(c->count);
+	c->count--;
 	
 	if(o->prev)
 		o->prev->next = o->next;
 	else
-		caches[c].list = o->next;
+		c->list = o->next;
 	if(o->next)
 		o->next->prev = o->prev;
 	else
-		caches[c].tail = o->prev;
-	chash_delete(caches[c].hash, o->id, o->key);
+		c->tail = o->prev;
+	chash_delete(c->hash, o->id, o->key);
 	if(o->data)
 		kfree(o->data);
 	kfree(o);
-	mutex_off(&caches[c].lock);
+	mutex_off(&c->lock);
 }
 
-void remove_element_byid(int c, unsigned id, unsigned key)
+void remove_element_byid(cache_t *c, unsigned id, unsigned key)
 {
-	mutex_on(&caches[c].lock);
+	mutex_on(&c->lock);
 	struct ce_t *o = find_cache_element(c, id, key);
 	remove_element(c, o);
-	mutex_off(&caches[c].lock);
+	mutex_off(&c->lock);
 }
 
-void try_remove_element(int c, struct ce_t* o)
+void try_remove_element(cache_t *c, struct ce_t* o)
 {
 	if(o->dirty) return;
-	mutex_on(&caches[c].lock);
+	mutex_on(&c->lock);
 	remove_element(c, o);
-	mutex_off(&caches[c].lock);
+	mutex_off(&c->lock);
 }
 
-int sync_element(int c, struct ce_t *e)
+int sync_element(cache_t *c, struct ce_t *e)
 {
-	if(!caches[c].flag)
-		return 0;
 	int ret=0;
-	if(caches[c].sync)
-		ret = caches[c].sync(e);
+	if(c->sync)
+		ret = c->sync(e);
 	set_dirty(c, e, 0);
 	return ret;
 }
 
-int destroy_cache(int id, int slow)
+void sync_cache(cache_t *c)
 {
-	/* Sync with forced removal */
-	printk(1, "[cache]: Destroying cache %d...\n", id);
-	sync_cache(id, 0, 0, 1);
-	/* Destroy the tree */
-	mutex_on(&caches[id].lock);
-	
-	chash_destroy(caches[id].hash);
-	
-	mutex_off(&caches[id].lock);
-	destroy_mutex(&caches[id].lock);
-	destroy_mutex(&caches[id].dlock);
-	caches[id].flag=0;
-	printk(1, "[cache]: Cache %d destroyed\n", id);
-	return 1;
-}
-
-void do_sync_cache(int id, int red, volatile int slow, int rm)
-{
-	if(!caches[id].flag || !caches[id].dirty || !caches[id].sync) return;
-	accessed_cache(id);
-	printk(0, "[cache]: Cache %d is syncing", id);
-	if(slow)
-		printk(0, " slowly");
-	printk(0, " with force = %d\n", rm);
-	top:
-	__super_sti();
-	volatile unsigned int num = caches[id].dirty;
+	if(!c->dirty || !c->sync) return;
+	accessed_cache(c);
+	printk(0, "[cache]: Cache '%s' is syncing\n", c->name);
+	volatile unsigned int num = c->dirty;
 	volatile unsigned int i=1;
 	struct ce_t *obj;
-	if(!slow)
-		caches[id].syncing=1;
+	c->syncing=1;
 	while(1)
 	{
-		if(!caches[id].dlist) break;
+		if(!c->dlist) break;
 		
-		mutex_on(&caches[id].lock);
-		mutex_on(&caches[id].dlock);
-		obj = caches[id].dlist;
+		mutex_on(&c->lock);
+		mutex_on(&c->dlock);
+		obj = c->dlist;
 		if(!obj) {
-			mutex_off(&caches[id].dlock);
-			mutex_off(&caches[id].lock);
-			caches[id].syncing=0;
+			mutex_off(&c->dlock);
+			mutex_off(&c->lock);
+			c->syncing=0;
 			break;
 		}
-		if(num < (caches[id].dirty+i))
-			num=(caches[id].dirty+i);
-		if(!slow)
-			printk(red, "\r[cache]: Syncing %d: %d/%d (%d.%d%%)...   ", id, i, num, (i*100)/num, ((i*1000)/num) % 10);
-		sync_element(id, obj);
-		mutex_off(&caches[id].dlock);
-		mutex_off(&caches[id].lock);
+		if(num < (c->dirty+i))
+			num=(c->dirty+i);
 		
-		if(slow) {
-			wait_flag(&caches[id].syncing, 0);
-			if(got_signal(current_task)) {
-					return;
-			}
-			unsigned d = caches[id].slow;
-			if(d < 10) d = 10;
-			caches[id].slow /= 2;
-			delay_sleep(d);
-		}
+		printk(shutting_down ? 4 : 0, "\r[cache]: Syncing '%s': %d/%d (%d.%d%%)...   ", c->name, i, num, (i*100)/num, ((i*1000)/num) % 10);
+		
+		sync_element(c, obj);
+		mutex_off(&c->dlock);
+		mutex_off(&c->lock);
+		
 		if(got_signal(current_task)) {
 			return;
 		}
 		i++;
 	}
 	
-	if(!slow)
-	{
-		caches[id].syncing=0;
-		printk(red, "\r[cache]: Syncing %d: %d/%d (%d.%d%%)\n", id, num, num, 100, 0);
-	}
-	printk(0, "[cache]: Cache %d has sunk\n", id);
+	c->syncing=0;
+	printk(shutting_down ? 4 : 0, "\r[cache]: Syncing '%s': %d/%d (%d.%d%%)\n", c->name, num, num, 100, 0);
+	printk(0, "[cache]: Cache '%s' has sunk\n", c->name);
 }
 
-void sync_cache(int id, int red, int slow, int rm)
+int destroy_cache(cache_t *c)
 {
-	do_sync_cache(id, red, slow, rm);
+	/* Sync with forced removal */
+	printk(1, "[cache]: Destroying cache '%s'...\n", c->name);
+	sync_cache(c);
+	/* Destroy the tree */
+	mutex_on(&c->lock);
+	
+	chash_destroy(c->hash);
+	
+	mutex_off(&c->lock);
+	destroy_mutex(&c->lock);
+	destroy_mutex(&c->dlock);
+	mutex_on(&cl_mutex);
+	if(c->prev)
+		c->prev->next = c->next;
+	else
+		cache_list = c->next;
+	if(c->next) 
+		c->next->prev = c->prev;
+	mutex_off(&cl_mutex);
+	printk(1, "[cache]: Cache '%s' destroyed\n", c->name);
+	return 1;
 }
 
-int kernel_cache_sync(int all, int disp)
+int kernel_cache_sync()
 {
-	int i;
-	for(i=0;i<NUM_CACHES;i++)
-	{
-		if(caches[i].flag)
-			sync_cache(i, disp, 0, 1);
+	cache_t *c = cache_list;
+	while(c) {
+		sync_cache(c);
+		c=c->next;
 	}
 	return 0;
 }
 
-int kernel_cache_sync_slow(int all)
+int reclaim_cache_memory(cache_t *c)
 {
-	int i;
-	for(i=0;i<NUM_CACHES;i++)
-	{
-		if(caches[i].flag)
-			sync_cache(i, 0, 1, 1);
-	}
-	return 0;
-}
-
-int reclaim_cache_memory(int i)
-{
-	struct ce_t *del = caches[i].tail;
+	struct ce_t *del = c->tail;
 	while(del && del->dirty) 
 		del=del->prev;
 	if(!del || del->dirty) return 0;
-	remove_element(i, del);
+	remove_element(c, del);
 	return 1;
 }
 
 extern volatile unsigned pm_num_pages, pm_used_pages;
 int __KT_cache_reclaim_memory()
 {
+	return 0;
 	int i;
 	int usage = (pm_used_pages * 100)/(pm_num_pages);
 	int total=0;
-	for(i=0;i<NUM_CACHES;i++)
-	{
-		if(!caches[i].flag)
+	cache_t *c = cache_list;
+	while(c) {
+		if((c->count < CACHE_CAP) && usage < 30)
 			continue;
-		if((caches[i].count < CACHE_CAP) && usage < 30)
-			continue;
-		if(caches[i].flag) {
-			mutex_on(&caches[i].lock);
-			mutex_on(&caches[i].dlock);
-			
-			total+=reclaim_cache_memory(i);
-			
-			mutex_off(&caches[i].dlock);
-			mutex_off(&caches[i].lock);
-		}
+		mutex_on(&c->lock);
+		mutex_on(&c->dlock);
+		
+		total+=reclaim_cache_memory(c);
+		
+		mutex_off(&c->dlock);
+		mutex_off(&c->lock);
+		c=c->next;
 	}
 	return total;
 }

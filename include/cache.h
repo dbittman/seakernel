@@ -24,14 +24,15 @@ struct ce_t {
 	struct ce_t *prev_dirty, *prev;
 };
 
-typedef struct {
+typedef struct cache_t_s {
 	unsigned dirty;
 	unsigned count, acc, slow, syncing;
-	char flag;
 	chash_t *hash;
 	int (*sync)(struct ce_t *);
 	mutex_t lock, dlock;
-	struct ce_t *dlist, *list, *tail; 
+	char name[32];
+	struct ce_t *dlist, *list, *tail;
+	struct cache_t_s *next, *prev;
 } cache_t;
 
 extern cache_t caches[NUM_CACHES];
@@ -45,15 +46,14 @@ void *chash_search(chash_t *h, unsigned id, unsigned key);
 int chash_delete(chash_t *h, unsigned id, unsigned key);
 int chash_add(chash_t *h, unsigned id, unsigned key, void *ptr);
 
-int do_cache_object(int c, unsigned id, unsigned key, int sz, char *buf, int dirty);
-int get_empty_cache(int (*)(struct ce_t *));
-struct ce_t *find_cache_element(int c, unsigned id, unsigned key);
-void sync_cache(int id, int red, int slow, int rm);
-int destroy_cache(int id, int);
-int sync_element(int c, struct ce_t *e);
-void remove_element(int c, struct ce_t *o);
+int do_cache_object(cache_t *, unsigned id, unsigned key, int sz, char *buf, int dirty);
+cache_t * get_empty_cache(int (*)(struct ce_t *), char *);
+struct ce_t *find_cache_element(cache_t *, unsigned id, unsigned key);
+void sync_cache(cache_t *);
+int destroy_cache(cache_t *);
+int sync_element(cache_t *, struct ce_t *e);
+void remove_element(cache_t *, struct ce_t *o);
 void do_sync_of_mounted();
-int kernel_cache_sync(int all, int);
-int kernel_cache_sync_slow(int all);
+int kernel_cache_sync();
 void sync_dm();
 #endif

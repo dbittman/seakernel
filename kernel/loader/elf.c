@@ -218,7 +218,6 @@ void init_kernel_symbols(void)
 	add_kernel_symbol(sys_fstat);
 	_add_kernel_symbol((unsigned)__super_cli, "__super_cli");
 	_add_kernel_symbol((unsigned)__super_sti, "__super_sti");
-	add_kernel_symbol(kernel_cache_sync_slow);
 	add_kernel_symbol(get_epoch_time);
 	add_kernel_symbol(disconnect_block_cache);
 	add_kernel_symbol(register_sbt);

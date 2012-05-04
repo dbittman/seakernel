@@ -3,7 +3,7 @@
 #include <dev.h>
 #include <block.h>
 #include <cache.h>
-int blk_cache=-1;
+cache_t *blk_cache=0;
 
 int block_cache_sync(struct ce_t *c)
 {
@@ -16,7 +16,7 @@ int block_cache_sync(struct ce_t *c)
 
 void block_cache_init()
 {
-	blk_cache = get_empty_cache(block_cache_sync);
+	blk_cache = get_empty_cache(block_cache_sync, "block");
 }
 
 int sync_block_device(int dev)

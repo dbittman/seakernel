@@ -17,7 +17,7 @@ int module_install()
 		printk(1, "[sync]: Autosync enabled\n");
 		for(;;) {
 			delay(1000);
-			kernel_cache_sync_slow(0);
+			//kernel_cache_sync_slow(0);
 		}
 	}
 	return 0;

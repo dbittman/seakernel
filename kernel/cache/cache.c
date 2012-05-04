@@ -243,6 +243,22 @@ void sync_cache(cache_t *c)
 	printk(0, "[cache]: Cache '%s' has sunk\n", c->name);
 }
 
+int destroy_all_id(cache_t *c, unsigned id)
+{
+	mutex_on(&c->lock);
+	struct ce_t *o = c->list;
+	while(o) {
+		if(o->id == id) {
+			if(o->dirty)
+				sync_element(c, o);
+			remove_element(c, o);
+		}
+		o=o->next;
+	}
+	mutex_off(&c->lock);
+	return 0;
+}
+
 int destroy_cache(cache_t *c)
 {
 	/* Sync with forced removal */

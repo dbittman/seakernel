@@ -218,15 +218,10 @@ int init_ata_controller(struct ata_controller *cont){
 			dev.length=~0;
 			dev.flags |= F_LBA28;
 		}
-		int j;
-		for(j=0;j<5;j++)
-			cont->devices[i].cache[j]=0;
 		memcpy(&cont->devices[i], &dev, sizeof(struct ata_device));
 		char node[16];
 		create_device(cont, &cont->devices[i], node);
 		read_partitions(cont, &cont->devices[i], node);
-		for(j=0;j<5;j++)
-			cont->devices[i].cache[j]=BCACHE_READ | BCACHE_WRITE;
 	}
 	
 	if (cont->port_bmr_base) {

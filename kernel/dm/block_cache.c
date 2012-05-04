@@ -19,29 +19,9 @@ void block_cache_init()
 	blk_cache = get_empty_cache(block_cache_sync, "block");
 }
 
-int sync_block_device(int dev)
-{
-	return 1;
-}
-
 int disconnect_block_cache(int dev)
 {
-	return 1;
-}
-
-int disconnect_block_cache_1(int dev)
-{
-	return 1;
-}
-
-int disconnect_block_cache_2(int x)
-{
-	return 1;
-}
-
-int disconnect_block_cache_slow(int dev)
-{
-	return 1;
+	return destroy_all_id(blk_cache, dev);
 }
 
 int cache_block(int dev, unsigned blk, int sz, char *buf)

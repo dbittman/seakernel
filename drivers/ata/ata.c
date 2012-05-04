@@ -94,16 +94,6 @@ int ioctl_ata(int min, int cmd, int arg)
 		mutex_off(secondary->wait);
 		return 0;
 	}
-	if(cmd == -5)
-	{
-		/* Ask about caching info */
-		return device->cache[min%5];
-	}
-	if(cmd == -6)
-	{
-		/* Change caching info */
-		return (device->cache[min%5]=arg);
-	}
 	if(cmd == -7)
 	{
 		if(part >= 0) {

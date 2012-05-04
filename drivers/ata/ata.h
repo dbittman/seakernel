@@ -96,9 +96,7 @@ struct ata_device {
 	unsigned char flags;
 	int id;
 	unsigned long long length;
-	unsigned char cache[64];
 	struct partition ptable[64];
-	char pad[256];
 };
 
 struct ata_controller {
@@ -117,7 +115,6 @@ struct ata_controller {
     struct ata_device           devices[2];
     mutex_t*                    wait;
     struct ata_device *selected;
-    char pad[96];
 };
 
 struct dev_rec

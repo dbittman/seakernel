@@ -51,9 +51,7 @@ void unregister_block_device(int n)
 	printk(1, "[dev]: Unregistering block device %d\n", n);
 	int i;
 	for(i=0;i<256;i++)
-	{
 		disconnect_block_cache(GETDEV(n, i));
-	}
 	device_t *dev = get_device(DT_BLOCK, n);
 	if(!dev) return;
 	void *fr = dev->ptr;
@@ -87,79 +85,6 @@ int do_block_rw(int rw, int dev, int blk, char *buf, blockdevice_t *bd)
 	return -EIO;
 }
 
-int do_block_rw_multiple(int rw, int dev, int blk, char *buf, blockdevice_t *bd, int count)
-{
-	if(dev < 0)
-		dev=-dev;
-	if(!bd) 
-	{
-		device_t *dt = get_device(DT_BLOCK, MAJOR(dev));
-		if(!dt)
-			return -ENXIO;
-		bd = (blockdevice_t *)dt->ptr;
-	}
-	if(bd->func_m)
-	{
-		__super_sti();
-		int ret = (bd->func_m)(rw, MINOR(dev), blk, buf, count);
-		return ret;
-	} else
-	{
-		panic(PANIC_NOSYNC, "Tried to write multiple blocks to driver that doesn't support that!");
-	}
-	return -EIO;
-}
-
-int block_rw_multiple(int rw, int dev, int blk, char *buf, blockdevice_t *bd, int count)
-{
-	if(!bd) 
-	{
-		device_t *dt = get_device(DT_BLOCK, MAJOR(dev));
-		if(!dt)
-			return -ENXIO;
-		bd = (blockdevice_t *)dt->ptr;
-	}
-	int ret=0;
-	int byt=0;
-	unsigned char u_cache = (bd->ioctl)(MINOR(dev), -5, 0);
-	if(u_cache == (unsigned char)-1)
-		u_cache = bd->cache;
-	char buf__[bd->blksz];
-	if(rw == READ)
-	{
-		while(count) {
-			if(u_cache)
-				ret = get_block_cache(dev, blk, buf);
-			int x=1;
-			if(!ret || !u_cache)
-			{
-				ret = do_block_rw_multiple(rw, dev, blk, buf, bd, x);
-				if(u_cache & BCACHE_READ && ret == bd->blksz) 
-				{
-					int i;
-					for(i=0;i<x;i++)
-						cache_block(-dev, blk+i, bd->blksz, buf+bd->blksz*i);
-				}
-			}
-			byt+=bd->blksz * x;
-			buf += bd->blksz * x;
-			blk+=x;
-			count -= x;
-		}
-	} else if(rw == WRITE)
-	{
-		int x=0;
-		while(u_cache && x < count) {
-			ret += cache_block(dev, blk+x, bd->blksz, buf + bd->blksz*(x));
-			x++;
-		}
-		if(!(u_cache & BCACHE_WRITE) || ret)
-			ret = do_block_rw_multiple(rw, dev, blk, buf, bd, count);
-		byt+=bd->blksz * count;
-	}
-	return byt;
-}
-
 int block_rw(int rw, int dev, int blk, char *buf, blockdevice_t *bd)
 {
 	if(!bd) 
@@ -171,32 +96,26 @@ int block_rw(int rw, int dev, int blk, char *buf, blockdevice_t *bd)
 	}
 	int ret=0;
 	mutex_on(&bd->acl);
-	unsigned char u_cache = (bd->ioctl)(MINOR(dev), -5, 0);
-	if(u_cache == (unsigned char)-1)
-		u_cache = bd->cache;
 	if(rw == READ)
 	{
 #if USE_CACHE
-		if(u_cache) {
-			ret = get_block_cache(dev, blk, buf);
-			if(ret) {
-				mutex_off(&bd->acl);
-				return bd->blksz;
-			}
+		ret = get_block_cache(dev, blk, buf);
+		if(ret) {
+			mutex_off(&bd->acl);
+			return bd->blksz;
 		}
 #endif
 		ret = do_block_rw(rw, dev, blk, buf, bd);
 #if USE_CACHE
 		/* -dev signals that this is a read cache - meaning it is not 'dirty' to start with */
-		if(u_cache & BCACHE_READ && ret == bd->blksz) 
+		if(ret == bd->blksz) 
 			cache_block(-dev, blk, bd->blksz, buf);
 #endif
 	} else if(rw == WRITE)
 	{
 #if USE_CACHE
-		if(u_cache)
-			ret = cache_block(dev, blk, bd->blksz, buf);
-		if(!(u_cache & BCACHE_WRITE) || ret)
+		ret = cache_block(dev, blk, bd->blksz, buf);
+		if(ret)
 #endif
 			ret = do_block_rw(rw, dev, blk, buf, bd);
 	}
@@ -258,13 +177,13 @@ long long block_read(int dev, unsigned long long posit, char *buf, unsigned int 
 		count -= write;
 		pos += write;
 	}
-	int g_ = count - (count % 512);
-	g_ /= blk_size;
-	if(g_)
-		block_rw_multiple(WRITE, dev, pos/blk_size, buf, bd, g_);
-	count -= g_*blk_size;
-	pos += g_*blk_size;
-	buf += g_*blk_size;
+	while(count >= (unsigned int)blk_size)
+	{
+		block_rw(WRITE, dev, pos/blk_size, buf, bd);
+		count -= blk_size;
+		pos += blk_size;
+		buf += blk_size;
+	}
 	/* Anything left over? */
 	if(count > 0)
 	{
@@ -301,62 +220,6 @@ int block_ioctl(int dev, int cmd, int arg)
 	if(!dt)
 		return -ENXIO;
 	blockdevice_t *bd = (blockdevice_t *)dt->ptr;
-	/* Reads the flags */
-	unsigned char u_cache = (bd->ioctl)(MINOR(dev), -5, 0);
-	char glob=0;
-	if(u_cache == (unsigned char)-1)
-		u_cache = bd->cache, glob=1;
-	if(cmd == -2)
-	{
-		return u_cache;
-	}
-	if(cmd == -3) {
-		if((current_task->uid == 0)) {
-			if(!(arg & BCACHE_WRITE) && (!arg & BCACHE_READ) && u_cache)
-			{
-				printk(0, "[BCACHE]: cache disabled on %x.", dev);
-				if(u_cache & BCACHE_WRITE) {
-					printk(0, " Syncing...");
-					sync_block_device(dev);
-				}
-				printk(0, "\n");
-				task_critical();
-				int x = disconnect_block_cache_1(dev);
-				task_uncritical();
-				if(x >= 0)
-					disconnect_block_cache_2(x);
-			}
-			if(glob)
-				return (bd->cache=arg);
-			else
-			{
-				(bd->ioctl)(MINOR(dev), -6, arg);
-				return arg;
-			}
-		}
-		else
-			return -1;
-	}
-	if(cmd == -4)
-	{
-		if((current_task->uid == 0)) {
-			int ret=0;
-			printk(0, "[BCACHE]: cache disengaging on %x.", dev);
-			if(u_cache & BCACHE_WRITE) {
-				printk(0, " Syncing...");
-				sync_block_device(dev);
-				ret++;
-			}
-			printk(0, "\n");
-			task_critical();
-			int x = disconnect_block_cache_1(dev);
-			task_uncritical();
-			if(x >= 0)
-				disconnect_block_cache_2(x);
-			return ret;
-		}
-		return -1;
-	}
 	if(bd->ioctl)
 	{
 		int ret = (bd->ioctl)(MINOR(dev), cmd, arg);

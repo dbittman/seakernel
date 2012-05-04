@@ -45,7 +45,7 @@ int chash_destroy(chash_t *h);
 void *chash_search(chash_t *h, unsigned id, unsigned key);
 int chash_delete(chash_t *h, unsigned id, unsigned key);
 int chash_add(chash_t *h, unsigned id, unsigned key, void *ptr);
-
+int destroy_all_id(cache_t *c, unsigned);
 int do_cache_object(cache_t *, unsigned id, unsigned key, int sz, char *buf, int dirty);
 cache_t * get_empty_cache(int (*)(struct ce_t *), char *);
 struct ce_t *find_cache_element(cache_t *, unsigned id, unsigned key);

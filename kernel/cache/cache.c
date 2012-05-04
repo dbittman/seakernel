@@ -1,11 +1,7 @@
 /* kernel/cache.c: Oct 2010. Copyright (c) 2010 Daniel Bittman 
- * This provides a general abstraction layer to a btree system, where they data values are pointers to structs.
- * These structs contain information on storing data of specified sizes. Essentially, a kernel cache system of 
- * data. Primarily used in block cache and FS caches.
+ * System to cache elements, stored in a hash table and identified by
+ * two different integers: id and key. They're really interchangable.
  * 
- * The reclaiming system is pretty simple. If there is more than 20000 elements in a cache, the kernel task is
- * allowed to reclaim old elements (that haven't been accessed for > some number of seconds). It can also reclaim
- * elements if the memory usage of the system to deemed too high.
  */
 #include <kernel.h>
 #include <cache.h>

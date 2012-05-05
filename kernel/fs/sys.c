@@ -129,10 +129,6 @@ int sys_utime(char *path, unsigned a, unsigned m)
 	struct inode *i = get_idir(path, 0);
 	if(!i)
 		return -ENOENT;
-	if(!permissions(i, MAY_WRITE)) {
-		iput(i);
-		return -EACCES;
-	}
 	i->mtime = m ? m : get_epoch_time();
 	i->atime = a ? a : get_epoch_time();
 	sync_inode_tofs(i);

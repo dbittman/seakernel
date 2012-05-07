@@ -58,7 +58,7 @@ int sys_uname(struct utsname *name)
 	strcpy(name->nodename, "");
 	strcpy(name->release, "0.2");
 	strcpy(name->version, "eclipse");
-	strcpy(name->machine, "i586-pc");
+	strcpy(name->machine, "i586");
 	strcpy(name->domainname, "");
 	return 0;
 }

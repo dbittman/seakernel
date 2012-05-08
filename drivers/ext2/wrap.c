@@ -177,20 +177,15 @@ int do_wrap_ext2_link(struct inode *i, char *path)
 	if(!inode.mode)
 		return -EACCES;
 	char *p = strrchr(path, '/');
+	struct inode *dir=0;
 	/* Check if its in the same directory. If so, its easy */
 	if(!p) {
-		int ret;
-		mutex_on(&i->parent->lock);
-		ret = do_add_ent(i->parent, &inode, path);
-		mutex_off(&i->parent->lock);
-		return ret;
+		dir = get_idir(".", 0);
+	} else {
+		*p=0;
+		dir = get_idir(path, 0);
 	}
-	char *loc = (char *)kmalloc((p-path)+2);
-	strncpy(loc, path, (p-path) + 1);
-	p++;
 	/* Now, loc has the directory to link it into, and p contains the name of the entry */
-	struct inode *dir = get_idir(loc, 0);
-	kfree(loc);
 	if(!dir)
 		return -ENOENT;
 	/* Can't link accross multiple filesystems */
@@ -198,7 +193,7 @@ int do_wrap_ext2_link(struct inode *i, char *path)
 		return -EINVAL;
 	}
 	mutex_on(&dir->lock);
-	int ret = do_add_ent(dir, &inode, p);
+	int ret = do_add_ent(dir, &inode, p ? p+1 : path);
 	iput(dir);
 	return ret;
 }

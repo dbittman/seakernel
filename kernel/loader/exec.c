@@ -214,7 +214,7 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	while(env[g] && env[g][0]) {
 		//printk(0, "%s\n", env[g]);
 		if(!strncmp(env[g], "PATH=", 5) || !strcmp(env[g], "="))
-			env[g] = "PATH=/usr/bin:/usr/sbin:/usr/libexec:/usr/i586-pc-seaos/bin:/bin:/:.";
+			env[g] = "PATH=/usr/bin:/usr/sbin:/usr/libexec:/usr/i586-pc-seaos/bin:/bin:/:.:/usr/libexec/gcc/i586-pc-seaos/4.7.0/";
 		g++;
 	}
 	unsigned path_loc = copy_double_pointers(argv, env, &argc);

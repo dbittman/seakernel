@@ -141,8 +141,6 @@ __attribute__((optimize("O0"))) void __mutex_on(mutex_t *m, char *file, int line
 	strcpy((char *)m->file, file);
 	m->line = line;
 #endif
-	if((unsigned)m->pid != current_task->pid)
-		current_task->mutex_count++;
 	if(((unsigned)m->pid != current_task->pid && m->count))
 		panic(0, "Mutex lock failed %d %d\n", m->pid, m->count);
 	m->pid = current_task->pid;
@@ -180,7 +178,6 @@ __attribute__((optimize("O0"))) void __mutex_off(mutex_t *m, char *file, int lin
 	__super_cli();
 	task_critical();
 	if(!A_dec_mutex_count(m)) {
-		current_task->mutex_count -= 1;
 		reset_mutex(m);
 	}
 	if(!m->count && m->pid != -1)
@@ -195,8 +192,6 @@ void __destroy_mutex(mutex_t *m, char *file, int line)
 	if(m->magic != MUTEX_MAGIC)
 		panic(0, "got invalid mutex: %x: %s:%d\n", m, file, line);
 	task_critical();
-	if((unsigned)m->pid == current_task->pid)
-		__sync_sub_and_fetch(&current_task->mutex_count, 1);
 	super_cli();
 	task_critical();
 	reset_mutex(m);
@@ -206,27 +201,6 @@ void __destroy_mutex(mutex_t *m, char *file, int line)
 	if(m->flags & MF_ALLOC)
 		kfree((void *)m);
 	task_uncritical();
-}
-
-void release_mutexes(task_t *t)
-{
-	if(panicing)
-		return;
-	super_cli();
-	mutex_t *m = mutex_list;
-	task_critical();
-	while(m)
-	{
-		if(m->pid == (int)t->pid) {
-			t->mutex_count--;
-			reset_mutex(m);
-		}
-		else if(m->pid == -1)
-			reset_mutex(m);
-		m = m->next;
-	}
-	task_uncritical();
-	t->mutex_count=0;
 }
 
 void force_nolock(task_t *t)
@@ -245,7 +219,6 @@ void force_nolock(task_t *t)
 		m = m->next;
 	}
 	task_uncritical();
-	t->mutex_count=0;
 }
 
 void unlock_all_mutexes()
@@ -262,7 +235,6 @@ void unlock_all_mutexes()
 	task_t *t = (task_t *)kernel_task;
 	while(t)
 	{
-		t->mutex_count=0;
 		t=t->next;
 	}
 	task_uncritical();

@@ -8,6 +8,7 @@
 #include <mmfile.h>
 #include <dev.h>
 #ifdef CONFIG_SMP
+/** TODO: this needs to be fixed for SMP */
 //#define current_task (__get_current_task())
 #define current_task ((volatile task_t *)(primary_cpu.current))
 #endif
@@ -79,7 +80,7 @@ typedef volatile struct task_struct
 	registers_t reg_b;	
 	registers_t *regs;
 	unsigned mem_usage_calc;
-	volatile unsigned wait_again, path_loc_start, mutex_count;
+	volatile unsigned wait_again, path_loc_start;
 	unsigned num_swapped;
 	
 	volatile unsigned heap_start, heap_end, he_red;
@@ -295,7 +296,6 @@ static __attribute__((always_inline)) inline void exit_system()
 #ifdef DEBUG
 	force_nolock(current_task);
 #endif
-	current_task->mutex_count=0;
 	force_schedule();
 }
 int sys_setsid();

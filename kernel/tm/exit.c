@@ -148,7 +148,7 @@ void exit(int code)
 		panic(PANIC_NOSYNC, "kernel tried to exit");
 	task_t *t = (task_t *)current_task;
 	/* Get ready to exit */
-	release_mutexes(t);
+	force_nolock(t);
 	raise_flag(TF_EXITING);
 	if(code != -9) t->exit_reason.cause = 0;
 	t->exit_reason.ret = code;
@@ -196,7 +196,7 @@ void exit(int code)
 	/* Do these again, just in case */
 	lock_scheduler();
 	raise_flag(TF_DYING);
-	release_mutexes(t);
+	force_nolock(t);
 	set_as_dead(t);
 	unlock_scheduler();
 	force_schedule();

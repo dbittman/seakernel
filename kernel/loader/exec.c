@@ -247,8 +247,7 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	__sync_synchronize();
 	/* Release everything */
 	current_task->state = TASK_RUNNING;
-	if(current_task->flags & TF_DIDLOCK)
-		release_mutexes((task_t *)current_task);
+	force_nolock((task_t *)current_task);
 	task_full_uncritical();
 	__super_cli();
 	if(EXEC_LOG == 2) 

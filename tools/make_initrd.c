@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <libgen.h>
 struct initrd_header
 {
 	unsigned char magic;
@@ -10,16 +13,19 @@ struct initrd_header
 	unsigned int length;
 };
 
-int main(char argc, char **argv)
+int main(int argc, char **argv)
 {
-	
 	int nheaders = (argc-1)/2;
-	struct initrd_header headers[64];
-	unsigned int off = sizeof(struct initrd_header) * 64 + sizeof(int);
+	struct initrd_header headers[nheaders];
+	unsigned int off = sizeof(struct initrd_header) * nheaders + sizeof(int);
 
 	int i;
 	for(i = 0; i < nheaders; i++)
 	{
+		char print[256];
+		sprintf(print, "processing header %d/%d: %s", i, nheaders, basename(argv[i*2+2]));
+		printf("%s", print);
+		fflush(stdout);
 		strcpy(headers[i].name, argv[i*2+2]);
 		headers[i].offset = off;
 		FILE *stream = fopen(argv[i*2+1], "r");
@@ -33,25 +39,39 @@ int main(char argc, char **argv)
 		off += headers[i].length;
 		fclose(stream);
 		headers[i].magic = 0xBF;
+		printf("\r");
+		int j;
+		for(j=0;j<strlen(print);j++) printf(" ");
+		printf("\r");
 	}
-	
+	printf("processing headers... done\n");
 	FILE *wstream = fopen("./initrd.img", "w");
 	unsigned char *data = (unsigned char *)malloc(off);
 	unsigned char mag[4] = "IRD1";
 	fwrite(mag, sizeof(unsigned char), 4, wstream);
 	fwrite(&nheaders, sizeof(int), 1, wstream);
-	fwrite(headers, sizeof(struct initrd_header), 64, wstream);
+	fwrite(headers, sizeof(struct initrd_header), nheaders, wstream);
 	
 	for(i = 0; i < nheaders; i++)
 	{
+		char print[256];
+		sprintf(print, "writing data %d/%d: %s", i, nheaders, basename(argv[i*2+2]));
+		printf("%s", print);
+		fflush(stdout);
 		FILE *stream = fopen(argv[i*2+1], "r");
 		unsigned char *buf = (unsigned char *)malloc(headers[i].length);
 		fread(buf, 1, headers[i].length, stream);
 		fwrite(buf, 1, headers[i].length, wstream);
 		fclose(stream);
 		free(buf);
+		
+		printf("\r");
+		int j;
+		for(j=0;j<strlen(print);j++) printf(" ");
+		printf("\r");
 	}
-	
+	printf("initrd generated. flushing stream...\n");
+	fflush(wstream);
 	fclose(wstream);
 	free(data);
 

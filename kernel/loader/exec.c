@@ -209,14 +209,6 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 		printk(0, "[%d]: Copy data\n", t->pid);
 	struct inode *exe = efil->inode;
 	change_icount(exe, 1);
-	int g=0;
-	/* HACK */
-	while(env[g] && env[g][0]) {
-		//printk(0, "%s\n", env[g]);
-		if(!strncmp(env[g], "PATH=", 5) || !strcmp(env[g], "="))
-			env[g] = "PATH=/usr/bin:/usr/sbin:/usr/libexec:/usr/i586-pc-seaos/bin:/bin:/:.:/usr/libexec/gcc/i586-pc-seaos/4.7.0/";
-		g++;
-	}
 	unsigned path_loc = copy_double_pointers(argv, env, &argc);
 	path_loc -= (strlen(path) + 32);
 	map_if_not_mapped(path_loc);

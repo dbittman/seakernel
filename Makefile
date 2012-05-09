@@ -17,14 +17,9 @@ LDFLAGS=-T kernel/link.ld -m seaos_i386
 ASFLAGS=-felf32
 GASFLAGS=--32
 include make.inc
-ifneq ($(SYSNAME),seaos)
 RAMFILES=data-initrd/usr/sbin/fsck usr/sbin/fsck data-initrd/usr/sbin/fsck.ext2 usr/sbin/fsck.ext2 \
 	 data-initrd/preinit.sh /preinit.sh data-initrd/etc/fstab etc/fstab data-initrd/bin/preinit /preinit \
 	 data-initrd/bin/bash /sh data-initrd/bin/lmod /lmod data-initrd/bin/mount /mount
-else
-RAMFILES=/usr/sbin/fsck usr/sbin/fsck /usr/sbin/fsck.ext2 usr/sbin/fsck.ext2 \
-	 /config/preinit.sh /preinit.sh /config/fstab etc/fstab
-endif
 
 # This is all the objects to be compiled and linked into the kernel
 include kernel/make.inc
@@ -73,7 +68,7 @@ os_s: $(KOBJS) $(AOBJS)
 	echo Building modules, pass 1...
 	$(MAKE) -C drivers
 	echo "Building initrd..."
-	-exec ./tools/mkird $(RAMFILES)
+	-exec ./tools/mkird $(RAMFILES) > /dev/null
 all: make.deps
 	@$(MAKE) -s os
 

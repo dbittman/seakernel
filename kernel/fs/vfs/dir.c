@@ -25,7 +25,8 @@ int do_get_path_string(struct inode *p, char *path, int max)
 	}
 	if(i != current_task->root && i->r_mount_ptr)
 		i = i->r_mount_ptr;
-	char *tmp = (char *)kmalloc(max * sizeof(char) + 1);
+	char tmp[max * sizeof(char) +1];
+	memset(tmp, 0, max * sizeof(char) +1);
 	while(i && i->parent != i && i->parent && ((int)(strlen(path) + strlen(i->name)) < max || max == -1))
 	{
 		if(i->r_mount_ptr)
@@ -43,7 +44,6 @@ int do_get_path_string(struct inode *p, char *path, int max)
 	strcpy(tmp, path);
 	strcpy(path, "/");
 	strcat(path, tmp);
-	kfree(tmp);
 	return 0;
 }
 
@@ -54,11 +54,11 @@ int get_path_string(struct inode *p, char *buf)
 	return do_get_path_string(p, buf, -1);
 }
 
-int get_pwd(char *buf)
-{
+int get_pwd(char *buf, int sz)
+{printk(0, "PWD\n");
 	if(!buf) 
 		return -EINVAL;
-	return do_get_path_string(current_task->pwd, buf, -1);
+	return do_get_path_string(current_task->pwd, buf, sz == 0 ? -1 : sz);
 }
 
 int do_chroot(struct inode *i)

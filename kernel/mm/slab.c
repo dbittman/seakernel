@@ -30,6 +30,17 @@ unsigned pages_used=0;
 unsigned num_slab=0, num_scache=0;
 void release_slab(slab_t *slab);
 mutex_t scache_lock;
+
+#define mutex_on(a) __dummy(a)
+#define mutex_off(a) __dummy(a)
+#define create_mutex(a) __dummy(a)
+#define destroy_mutex(a) __dummy(a)
+
+int __dummy(volatile void *a)
+{
+	return 0;
+}
+
 void slab_stat(struct mem_stat *s)
 {
 	strcpy(s->km_name, "slab");

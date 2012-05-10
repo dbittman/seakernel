@@ -107,7 +107,7 @@ int sys_getnodestr(char *path, char *node);
 int chroot(char *);
 int sys_chown(char *path, int uid, int gid);
 int sys_utime(char *path, unsigned a, unsigned m);
-int get_pwd(char *buf);
+int get_pwd(char *buf, int);
 int unlink(char *f);
 int proc_get_major();
 int do_fs_stat(struct inode *i, struct fsstat *f);

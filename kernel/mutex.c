@@ -14,7 +14,7 @@
 #include <memory.h>
 #include <task.h>
 mutex_t *mutex_list=0;
-
+#undef DEBUG
 static inline int A_inc_mutex_count(mutex_t *m)
 {
 	asm("lock incl %0":"+m"(m->count));
@@ -101,7 +101,7 @@ __attribute__((optimize("O0"))) void __mutex_on(mutex_t *m, char *file, int line
 	raise_flag(TF_LOCK);
 	/* This must be garunteed to only break when the mutex is free. */
 	while(m->count > 0 && (unsigned)m->pid != current_task->pid) {
-#ifdef DEBUG
+#if 1
 		assert(m->pid != -1);
 		task_t *t = (task_t *)m->owner;
 		task_t *p = get_task_pid(t->pid);
@@ -113,7 +113,7 @@ __attribute__((optimize("O0"))) void __mutex_on(mutex_t *m, char *file, int line
 		lower_flag(TF_LOCK);
 		__sync_synchronize();
 		/* Sleep...*/
-#ifdef DEBUG
+#if 1
 		if(i++ == 1000)
 			printk(0, "Had to wait: %s:%d \nmutex is currently p=%d [%d:%d:%x], c=%d %s:%d\nwe are %d", file, (unsigned)line, m->pid, t->state, t->system, t->flags, m->count, m->file, m->line, current_task->pid);
 		force_schedule();
@@ -206,6 +206,7 @@ void __destroy_mutex(mutex_t *m, char *file, int line)
 /** THIS IS VERY SLOW **/
 void force_nolock(task_t *t)
 {
+	return;
 	if(panicing) return;
 #ifndef DEBUG
 	return;

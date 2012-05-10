@@ -19,7 +19,6 @@ int tty_open(int min)
 {
 	if((unsigned)min >= MAX_CONSOLES)
 		return -ENOENT;
-	printk(0, "[tty]: Opening tty device %d\n", min);
 	if(!consoles[min].flag && min) {
 		create_console(&consoles[min]);
 		init_console(&consoles[min], &crtc_drv);
@@ -30,6 +29,7 @@ int tty_open(int min)
 
 int tty_close(int min)
 {
+	current_task->tty=0;
 	return 0;
 }
 

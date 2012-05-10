@@ -26,6 +26,8 @@ int sys_close(int fp)
 		else
 			mutex_off(f->inode->pipe->lock);
 	}
+	if(S_ISCHR(f->inode->mode) && !fp)
+		char_rw(CLOSE, f->inode->dev, 0, 0);
 	if(f->inode->f_count > 0)
 		f->inode->f_count--;
 	sync_inode_tofs(f->inode);

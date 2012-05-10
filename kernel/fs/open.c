@@ -57,7 +57,7 @@ struct file *d_sys_open(char *name, int flags, int mode, int *error, int *num)
 	mutex_off(&inode->lock);
 	ret = add_file_pointer((task_t *)current_task, f);
 	if(num) *num = ret;
-	if(S_ISCHR(inode->mode) && ret == 1 && !(flags & _FNOCTTY))
+	if(S_ISCHR(inode->mode) && !(flags & _FNOCTTY))
 		char_rw(OPEN, inode->dev, 0, 0);
 	if(flags & _FTRUNC && !is_directory(inode))
 	{

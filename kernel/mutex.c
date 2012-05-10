@@ -203,6 +203,7 @@ void __destroy_mutex(mutex_t *m, char *file, int line)
 	task_uncritical();
 }
 
+/** THIS IS VERY SLOW **/
 void force_nolock(task_t *t)
 {
 	if(panicing) return;

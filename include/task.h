@@ -296,7 +296,6 @@ static __attribute__((always_inline)) inline void exit_system()
 #ifdef DEBUG
 	force_nolock(current_task);
 #endif
-	force_schedule();
 }
 int sys_setsid();
 int sys_setpgid(int a, int b);

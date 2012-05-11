@@ -55,7 +55,7 @@ int get_path_string(struct inode *p, char *buf)
 }
 
 int get_pwd(char *buf, int sz)
-{printk(0, "PWD\n");
+{
 	if(!buf) 
 		return -EINVAL;
 	return do_get_path_string(current_task->pwd, buf, sz == 0 ? -1 : sz);

@@ -12,6 +12,7 @@ struct inode *wrap_ext2_create(struct inode *i, char *name, unsigned mode);
 int ext2_unmount(unsigned v);
 int wrap_sync_inode(struct inode *i);
 int ext2_fs_stat(struct inode *i, struct posix_statfs *f);
+int ext2_dir_get_inode(ext2_inode_t* inode, char *name);
 
 struct inode_operations e2fs_inode_ops = {
 	wrap_ext2_readfile,
@@ -57,19 +58,14 @@ struct inode *wrap_ext2_readdir(struct inode *in, unsigned num)
 	if (!ext2_inode_read(fs, in->num, &inode))
 		return 0;
 	mutex_on(&in->lock);
-	ext2_dirent_t *ed = ext2_dir_getnum(&inode, num);
+	char tmp[256];
+	memset(tmp, 0, 256);
+	int ret = ext2_dir_getnum(&inode, num, tmp);
 	mutex_off(&in->lock);
-	if(!ed) return 0;
-	if(!ext2_inode_read(fs, ed->inode, &inode)) {
-		kfree(ed);
+	if(!ret) return 0;
+	if(!ext2_inode_read(fs, ret, &inode))
 		return 0;
-	}
-	char tmp[ed->name_len + 2];
-	memset(tmp, 0, ed->name_len  +2);
-	strncpy(tmp, (const char *)ed->name, ed->name_len);
-	struct inode *no = create_sea_inode(&inode, tmp);
-	kfree(ed);
-	return no;
+	return create_sea_inode(&inode, tmp);
 }
 
 struct inode *wrap_ext2_lookup(struct inode *in, char *name)
@@ -80,11 +76,10 @@ struct inode *wrap_ext2_lookup(struct inode *in, char *name)
 	mutex_on(&in->lock);
 	ext2_inode_read(fs, in->num, &inode);
 	mutex_off(&in->lock);
-	ext2_dirent_t *d = ext2_dir_get(&inode, name);
-	if(!d) 
+	int ret = ext2_dir_get_inode(&inode, name);
+	if(!ret) 
 		return 0;
-	ext2_inode_read(fs, d->inode, &inode);
-	kfree(d);
+	ext2_inode_read(fs, ret, &inode);
 	return create_sea_inode(&inode, name);
 }
 

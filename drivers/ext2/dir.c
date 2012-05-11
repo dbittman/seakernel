@@ -36,8 +36,8 @@
 #include <string.h>
 #include "ext2.h"
 
-ext2_dirent_t *ext2_dir_getnum(ext2_inode_t* inode,
-			       unsigned number)
+int ext2_dir_getnum(ext2_inode_t* inode,
+			       unsigned number, char *name)
 {
 	ext2_dirent_t* entry;
 	unsigned char buf[ext2_sb_blocksize(inode->fs->sb)];
@@ -56,9 +56,8 @@ ext2_dirent_t *ext2_dir_getnum(ext2_inode_t* inode,
 			continue;
 		
 		if (!(number)) {
-			ext2_dirent_t *ed = (ext2_dirent_t *)kmalloc(entry->record_len);
-			memcpy(ed, entry, entry->record_len);
-			return ed;
+			strncpy(name, (char *)entry->name, entry->name_len);
+			return entry->inode;
 		}
 		number--;
 		if (entry->record_len == 0)
@@ -130,7 +129,7 @@ int ext2_dir_change_type(ext2_inode_t* inode, char *name,
 	return -1;
 }
 
-ext2_dirent_t *ext2_dir_get(ext2_inode_t* inode, char *name)
+int ext2_dir_get(ext2_inode_t* inode, char *name, ext2_dirent_t *de)
 {
 	ext2_dirent_t* entry;
 	unsigned char buf[ext2_sb_blocksize(inode->fs->sb)];
@@ -151,9 +150,35 @@ ext2_dirent_t *ext2_dir_get(ext2_inode_t* inode, char *name)
 		if (entry->inode == 0)
 			continue;
 		if (!strncmp((const char *)name, (const char *)entry->name, len) && len == entry->name_len) {
-			ext2_dirent_t *de = (ext2_dirent_t *) kmalloc(entry->record_len);
 			memcpy(de, entry, entry->record_len);
-			return de;
+			return 1;
+		}
+	}
+	return 0;
+}
+
+int ext2_dir_get_inode(ext2_inode_t* inode, char *name)
+{
+	ext2_dirent_t* entry;
+	unsigned char buf[ext2_sb_blocksize(inode->fs->sb)];
+	uint32_t pos = ext2_sb_blocksize(inode->fs->sb), tpos=0, off=0;
+	unsigned len = strlen(name);
+	while (tpos < inode->size) {
+		if(pos >= ext2_sb_blocksize(inode->fs->sb))
+		{
+			pos = 0;
+			ext2_inode_readdata(inode, off, ext2_sb_blocksize(inode->fs->sb), buf);
+			off += ext2_sb_blocksize(inode->fs->sb);
+		}
+		entry = (ext2_dirent_t*)(buf + pos);
+		pos += entry->record_len;
+		tpos += entry->record_len;
+		if (entry->record_len < 8)
+			break;
+		if (entry->inode == 0)
+			continue;
+		if (!strncmp((const char *)name, (const char *)entry->name, len) && len == entry->name_len) {
+			return entry->inode;
 		}
 	}
 	return 0;

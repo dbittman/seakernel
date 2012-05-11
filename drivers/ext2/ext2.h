@@ -105,7 +105,6 @@ typedef struct ext2_blockgroup {
 	uint32_t reserved[3];
 } __attribute__((packed)) ext2_blockgroup_t;
 
-extern struct file_operations e2fs_fops;
 extern struct inode_operations e2fs_inode_ops;
 int ext2_write_block(ext2_fs_t *fs, unsigned block, unsigned char *buf);
 int ext2_read_block(ext2_fs_t *fs, unsigned block, unsigned char *buf);
@@ -122,7 +121,6 @@ int ext2_bg_read(ext2_fs_t* fs, int group_nr, ext2_blockgroup_t* bg);
 int ext2_bg_update(ext2_fs_t* fs, int group_nr, ext2_blockgroup_t* bg);
 int ext2_inode_read(ext2_fs_t* fs, uint32_t inode_nr, ext2_inode_t* inode);
 int ext2_inode_update(ext2_inode_t* inode);
-ext2_dirent_t* ext2_dir_get(ext2_inode_t* inode, char* name);
 struct inode *create_sea_inode(ext2_inode_t *in, char *name);
 ext2_fs_t *get_fs(int v);
 int ext2_inode_type(ext2_inode_t *in);
@@ -130,8 +128,6 @@ int ext2_inode_free(ext2_inode_t* inode);
 void ext2_inode_release(ext2_inode_t* inode);
 int ext2_inode_alloc(ext2_fs_t* fs, ext2_inode_t* inode);
 int ext2_sb_update(ext2_fs_t *fs, ext2_superblock_t *sb);
-ext2_dirent_t *ext2_dir_getnum(ext2_inode_t* inode,
-			       unsigned number);
 int ext2_write_off(ext2_fs_t *fs, unsigned off, unsigned char *buf, unsigned len);
 int ext2_read_off(ext2_fs_t *fs, unsigned off, unsigned char *buf, unsigned len);
 int ext2_dir_change_type(ext2_inode_t* inode, char *name,
@@ -141,9 +137,8 @@ int ext2_dir_change_type(ext2_inode_t* inode, char *name,
 int ext2_dir_unlink(ext2_inode_t* dir, const char* name, int);
 int ext2_dir_create(ext2_inode_t* parent, const char* name, ext2_inode_t* newi);
 int ext2_dir_link(ext2_inode_t* dir, ext2_inode_t* inode, const char* name);
-ext2_dirent_t* ext2_dir_get(ext2_inode_t* inode, char* name);
-ext2_dirent_t *ext2_dir_getnum(ext2_inode_t* inode,
-			       unsigned number);
+int ext2_dir_get(ext2_inode_t* inode, char* name, ext2_dirent_t*);
+int ext2_dir_getnum(ext2_inode_t* inode, unsigned number, char *);
 
 
 

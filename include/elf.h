@@ -145,7 +145,6 @@ int proc_set_callback(int major, int( *callback)(char rw, struct inode *inode, i
 int proc_get_major();
 struct inode *pfs_cn_node(struct inode *to, char *name, int mode, int major, int minor);
 struct inode *pfs_cn(char *name, int mode, int major, int minor);
-int iremove(struct inode *i);
 void delay_sleep(int t);
 int block_ioctl(int dev, int cmd, int arg);
 #endif

@@ -30,7 +30,7 @@ int get_f_ref_count(struct inode *i)
 	return i ? i->f_count : 0;
 }
 
-int do_get_permissions(struct inode *inode, int flag)
+int permissions(struct inode *inode, int flag)
 {
 	if(!inode)
 		return 0;
@@ -56,14 +56,6 @@ int do_get_permissions(struct inode *inode, int flag)
 		return 0;
 	}
 	return 1;
-}
-
-int permissions(struct inode *inode, int flag)
-{
-	//mutex_on(&inode->lock);
-	int ret = do_get_permissions(inode, flag);
-	//mutex_off(&inode->lock);
-	return ret;
 }
 
 int do_add_inode(struct inode *b, struct inode *i)
@@ -147,24 +139,4 @@ int do_iremove(struct inode *i, int flag)
 	if(flag != 3)
 		free_inode(i, (flag == 2) ? 1 : 0);
 	return 0;
-}
-
-int iremove_recur(struct inode *i)
-{
-	return do_iremove(i, 2);
-}
-
-int iremove(struct inode *i)
-{
-	return do_iremove(i, 0);
-}
-
-int iremove_nofree(struct inode *i)
-{
-	return do_iremove(i, 3);
-}
-
-int iremove_force(struct inode *i)
-{
-	return do_iremove(i, 1);
 }

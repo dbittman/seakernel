@@ -13,7 +13,6 @@
 #define MAX_SYMS 512
 extern int load_deps(char *);
 int load_deps_c(char *d);
-int iremove_force(struct inode *i);
 struct { 
 	const char *name; 
 	intptr_t ptr; 
@@ -130,7 +129,7 @@ void init_kernel_symbols(void)
 	for(i = 0; i < MAX_SYMS; i++)
 		export_syms[i].ptr = 0;
 	add_kernel_symbol(_add_kernel_symbol);
-	add_kernel_symbol(iremove);
+	add_kernel_symbol(do_iremove);
 	add_kernel_symbol(write_block_cache);
 	add_kernel_symbol(printk);
 	add_kernel_symbol(kprintf);
@@ -140,7 +139,6 @@ void init_kernel_symbols(void)
 	add_kernel_symbol(pfs_cn);
 	add_kernel_symbol(outb);
 	add_kernel_symbol(inw);
-	add_kernel_symbol(iremove_force);
 	add_kernel_symbol(outw);
 	add_kernel_symbol(inl);
 	add_kernel_symbol(ttyx_ioctl);

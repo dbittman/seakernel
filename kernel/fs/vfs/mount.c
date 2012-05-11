@@ -4,6 +4,7 @@
 #include <asm/system.h>
 #include <dev.h>
 #include <fs.h>
+struct inode *init_tmpfs();
 
 int do_mount(struct inode *i, struct inode *p)
 {
@@ -23,42 +24,31 @@ int do_mount(struct inode *i, struct inode *p)
 
 int mount(char *d, struct inode *p)
 {
-	if(!p) {
-		kprintf("Couldn't mount (probably due to an unknown filesystem)\n");
+	if(!p)
 		return -EINVAL;
-	}
 	struct inode *i = get_idir(d, 0);
 	if(!i)
 		return -ENOENT;
-	int ret = do_mount(i, p);
-	return ret;
+	return do_mount(i, p);
 }
 
 int s_mount(char *name, int dev, int block, char *fsname, char *no)
 {
 	struct inode *i=0;
 	if(!fsname || !*fsname)
-	{
-		//Look for one
 		i=sb_check_all(dev, block, no);
-	}
 	else
-	{
 		i=sb_callback(fsname, dev, block, no);
-	}
 	if(!i)
 		return -EIO;
-	i->dev=dev; /* Mostly for swap...lol */
+	i->dev = dev;
 	int ret = mount(name, i);
-	if(i && ret)
-	{
-		if(i->i_ops && i->i_ops->unmount)
-			i->i_ops->unmount(i->sb_idx);
-		iput(i);
-	}
+	if(!ret) return 0;
+	vfs_callback_unmount(i, i->sb_idx);
+	iput(i);
 	return ret;
 }
-struct inode *init_tmpfs();
+
 int sys_mount2(char *node, char *to, char *name, char *opts, int flags)
 {
 	if(!to) return -EINVAL;
@@ -71,22 +61,19 @@ int sys_mount2(char *node, char *to, char *name, char *opts, int flags)
 			iremove_nofree(procfs_root);
 			return mount(to, procfs_root);
 		}
-		if(!strcmp(name, "tmpfs")) {
+		if(!strcmp(name, "tmpfs"))
 			return mount(to, init_tmpfs());
-		}
 		return -EINVAL;
 	}
 	if(!node)
 		return -EINVAL;
 	struct inode *i=0;
 	i = get_idir(node, 0);
-	if(!i) {
+	if(!i)
 		return -ENOENT;
-	}
 	int dev = i->dev;
 	iput(i);
-	int ret = s_mount(to, dev, 0, name, node);
-	return ret;
+	return s_mount(to, dev, 0, name, node);
 }
 
 int sys_mount(char *node, char *to)
@@ -115,8 +102,7 @@ int do_unmount(struct inode *i, int flags)
 		return -EBUSY;
 	}
 	unlock_scheduler();
-	if(i->mount_ptr->i_ops && i->mount_ptr->i_ops->unmount)
-		i->mount_ptr->i_ops->unmount(i->mount_ptr->sb_idx);
+	vfs_callback_unmount(i->mount_ptr, i->mount_ptr->sb_idx);
 	m->r_mount_ptr = 0;
 	remove_mountlst(m);
 	iremove_recur(m);
@@ -129,9 +115,8 @@ int unmount(char *n, int flags)
 	if(!n) return -EINVAL;
 	struct inode *i=0;
 	i = get_idir(n, 0);
-	if(!i) {
+	if(!i)
 		return -ENOENT;
-	}
 	struct inode *g;
 	g = i->r_mount_ptr;
 	if(!g) {

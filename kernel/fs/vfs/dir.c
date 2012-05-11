@@ -146,7 +146,7 @@ struct inode *do_readdir(struct inode *i, int num)
 	}
 	else if(i->i_ops && i->i_ops->readdir) {
 		struct inode *old=0;
-		old = i->i_ops->readdir(i, num);
+		old = vfs_callback_readdir(i, num);
 		if(!old) 
 			return 0;
 		if(old && old->r_mount_ptr) old = old->r_mount_ptr;
@@ -190,10 +190,7 @@ int rmdir(char *f)
 		iput(i);
 		return -EACCES;
 	}
-	int ret=-EINVAL;
-	if(i->i_ops)
-		if(i->i_ops->rmdir)
-			ret=(i->i_ops->rmdir(i));
+	int ret = vfs_callback_rmdir(i);
 	iput(i);
 	return ret;
 }

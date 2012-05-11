@@ -30,9 +30,9 @@ int sys_setup(int a)
 	init_proc_fs();
 	add_inode(procfs_root, kproclist);
 	char_rw(OPEN, 3*256+1, 0, 0);
-	sys_open("/dev/tty1", O_RDWR);  /* stdin  */
-	sys_open("/dev/tty1", O_WRONLY);/* stdout */
-	sys_open("/dev/tty1", O_WRONLY);/* stderr */
+	sys_open("/dev/tty1", O_RDWR);   /* stdin  */
+	sys_open("/dev/tty1", O_WRONLY); /* stdout */
+	sys_open("/dev/tty1", O_WRONLY); /* stderr */
 	current_task->tty=1;
 	system_setup=1;
 	printk(KERN_MILE, "done (i/o/e=%x [tty1]: ok)\n", 3*256+1);
@@ -57,8 +57,7 @@ struct inode *sys_getidir(char *path, int fd)
 	if(path)
 		return get_idir(path, 0);
 	struct file *f = get_file_pointer(current_task, fd);
-	if(!f) return 0;
-	return f->inode;
+	return f ? f->inode : 0;
 }
 
 int sys_fsync(int f)
@@ -248,10 +247,7 @@ int select_filedes(int i, int rw)
 		return -EBADF;
 	struct inode *in = file->inode;
 	if(S_ISREG(in->mode) || S_ISDIR(in->mode) || S_ISLNK(in->mode))
-	{
-		if(in->i_ops && in->i_ops->select)
-			ready = in->i_ops->select(in, rw);
-	}
+		ready = vfs_callback_select(in, rw);
 	else if(S_ISCHR(in->mode))
 		ready = chardev_select(in, rw);
 	else if(S_ISBLK(in->mode))

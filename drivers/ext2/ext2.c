@@ -134,7 +134,7 @@ struct inode *ext2_mount(int dev, int block, char *node)
 	return fs->root;
 }
 
-int ext2_unmount(int v)
+int ext2_unmount(struct inode *i, int v)
 {
 	ext2_fs_t *fs = get_fs(v);
 	if(!fs)
@@ -156,7 +156,7 @@ int module_exit()
 {
 	printk(1, "[ext2]: Unmounting all ext2 filesystems\n");
 	int i=0;
-	while(fs_list && !ext2_unmount(fs_list->flag));
+	while(fs_list && !ext2_unmount(0, fs_list->flag));
 	unregister_sbt("ext2");
 	destroy_mutex(fsll);
 	return 0;

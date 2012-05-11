@@ -38,8 +38,7 @@ struct inode *do_lookup(struct inode *i, char *path, int aut, int ram)
 				temp = temp->mount_ptr;
 			/* Update info. We do this in case something inside the driver 
 			 * has changed the stats of this file without us knowing. */
-			if(temp->i_ops && temp->i_ops->update)
-				temp->i_ops->update(temp);
+			vfs_callback_update(temp);
 			return temp;
 		}
 		temp = temp->next;
@@ -47,7 +46,7 @@ struct inode *do_lookup(struct inode *i, char *path, int aut, int ram)
 	/* Force Lookup */
 	if(i->dynamic && i->i_ops && i->i_ops->lookup && !ram)
 	{
-		temp = i->i_ops->lookup(i, path);
+		temp = vfs_callback_lookup(i, path);
 		if(!temp)
 			return 0;
 		add_inode(i, temp);
@@ -99,9 +98,7 @@ struct inode *do_add_dirent(struct inode *p, char *name, int mode)
 	}
 	if(p->parent == current_task->root && !strcmp(p->name, "tmp"))
 		mode |= 0x1FF;
-	struct inode *ret = 0;
-	if(p && p->i_ops && p->i_ops->create)
-		ret = p->i_ops->create(p, name, mode);
+	struct inode *ret = vfs_callback_create(p, name, mode);
 	if(ret) {
 		ret->mtime = get_epoch_time();
 		ret->uid = current_task->uid;

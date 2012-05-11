@@ -2,7 +2,7 @@
 #include <fs.h>
 #include <sys/stat.h>
 #include "iso9660.h"
-int iso9660_unmount(unsigned  v);
+int iso9660_unmount(struct inode *, unsigned  v);
 iso_fs_t *get_fs(int v);
 int lowercase=1;
 struct inode *create_sea_inode(iso_fs_t *fs, struct iso9660DirRecord *in, char *name);
@@ -233,7 +233,7 @@ struct inode *iso9660_mount(int dev, int block, char *node)
 	return root;
 }
 
-int iso9660_unmount(unsigned int v)
+int iso9660_unmount(struct inode *i, unsigned int v)
 {
 	iso_fs_t *fs = get_fs(v);
 	if(!fs)
@@ -256,7 +256,7 @@ int module_exit()
 {
 	int i=0;
 	for(i=0;i<MAX_ISO;i++)
-		iso9660_unmount(i);
+		iso9660_unmount(0, i);
 	return 0;
 }
 int module_deps(char *b)

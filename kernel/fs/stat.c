@@ -91,7 +91,5 @@ int sys_posix_fsstat(int fd, struct posix_statfs *sb)
 	if(!f) return -EBADF;
 	struct inode *i = f->inode;
 	if(!i) return -EBADF;
-	if(i->i_ops && i->i_ops->fsstat)
-		i->i_ops->fsstat(i, sb);
-	return 0;
+	return vfs_callback_fsstat(i, sb);
 }

@@ -19,10 +19,7 @@ int sync_inode_tofs(struct inode *i)
 {
 	if(!i)
 		return -EINVAL;
-	int ret = -EINVAL;
-	if(i && i->i_ops && i->i_ops->sync_inode)
-		ret = i->i_ops->sync_inode(i);
-	return ret;
+	return vfs_callback_sync_inode(i);
 }
 
 struct inode *sys_create(char *path)

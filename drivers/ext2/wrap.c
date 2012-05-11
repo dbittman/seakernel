@@ -9,7 +9,7 @@ int update_sea_inode(struct inode *out, ext2_inode_t *in, char *name);
 int wrap_ext2_unlink(struct inode *i);
 int wrap_ext2_link(struct inode *i, char *path);
 struct inode *wrap_ext2_create(struct inode *i, char *name, unsigned mode);
-int ext2_unmount(unsigned v);
+int ext2_unmount(struct inode *, unsigned v);
 int wrap_sync_inode(struct inode *i);
 int ext2_fs_stat(struct inode *i, struct posix_statfs *f);
 int ext2_dir_get_inode(ext2_inode_t* inode, char *name);

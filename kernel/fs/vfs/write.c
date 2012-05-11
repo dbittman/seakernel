@@ -13,7 +13,14 @@ int write_fs(struct inode *i, int off, int len, char *b)
 		return -EISDIR;
 	if(!permissions(i, MAY_WRITE))
 		return -EACCES;
-	if(i->i_ops && i->i_ops->write)
-		return i->i_ops->write(i, off, len, b);
-	return -EINVAL;
+	return vfs_callback_write(i, off, len, b);
+}
+
+int read_fs(struct inode *i, int off, int len, char *b)
+{
+	if(!i || !b)
+		return -EINVAL;
+	if(!permissions(i, MAY_READ))
+		return -EACCES;
+	return vfs_callback_read(i, off, len, b);
 }

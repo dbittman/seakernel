@@ -73,8 +73,7 @@ void do_sync_of_mounted()
 	mutex_on(&ml_mutex);
 	struct mountlst *m = ml;
 	while(m) {
-		if(m->i && m->i->i_ops && m->i->i_ops->fssync)
-			m->i->i_ops->fssync(m->i);
+		vfs_callback_fssync(m->i);
 		m = m->next;
 	}
 	mutex_off(&ml_mutex);

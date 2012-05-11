@@ -79,20 +79,40 @@ struct inode_operations {
 	int (*unlink) (struct inode *);
 	int (*rmdir) (struct inode *);
 	int (*sync_inode) (struct inode *);
-	int (*unmount)(unsigned int);
+	int (*unmount)(struct inode *, unsigned int);
 	int (*fsstat)(struct inode *, struct posix_statfs *);
 	int (*fssync)(struct inode *);
 	int (*update)(struct inode *);
 };
 
-#define get_idir(path, in_st) do_get_idir(path, in_st, 0, 0, 0)
-#define lget_idir(path, in_st) do_get_idir(path, in_st, 1, 0, 0)
-#define clget_idir(path, in_st, x) do_get_idir(path, in_st, 1, x, 0)
-#define cget_idir(path, in_st, x) do_get_idir(path, in_st, 1, x, 0)
-#define ctget_idir(path, in_st, x, res) do_get_idir(path, in_st, 1, x, res)
+int vfs_callback_read (struct inode *i, unsigned int a, unsigned int b, char *d);
+int vfs_callback_write (struct inode *i, unsigned int a, unsigned int b, char *d);
+int vfs_callback_select (struct inode *i, unsigned int m);
+struct inode *vfs_callback_create (struct inode *i,char *d, unsigned int m);
+struct inode *vfs_callback_lookup (struct inode *i,char *d);
+struct inode *vfs_callback_readdir (struct inode *i, unsigned n);
+int vfs_callback_link (struct inode *i, char *d);
+int vfs_callback_unlink (struct inode *i);
+int vfs_callback_rmdir (struct inode *i);
+int vfs_callback_sync_inode (struct inode *i);
+int vfs_callback_unmount (struct inode *i, unsigned int n);
+int vfs_callback_fsstat (struct inode *i, struct posix_statfs *s);
+int vfs_callback_fssync (struct inode *i);
+int vfs_callback_update (struct inode *i);
+int do_iremove(struct inode *i, int flag);
+
+#define iremove_recur(i)  do_iremove(i, 2)
+#define iremove(i)        do_iremove(i, 0)
+#define iremove_nofree(i) do_iremove(i, 3)
+#define iremove_force(i)  do_iremove(i, 1)
+
+#define get_idir(path,in_st) do_get_idir(path, in_st, 0, 0, 0)
+#define lget_idir(path,in_st) do_get_idir(path, in_st, 1, 0, 0)
+#define clget_idir(path,in_st,x) do_get_idir(path, in_st, 1, x, 0)
+#define cget_idir(path,in_st,x) do_get_idir(path, in_st, 1, x, 0)
+#define ctget_idir(path,in_st,x,res) do_get_idir(path, in_st, 1, x, res)
 
 int sys_sync();
-int iremove(struct inode *);
 int sync_inode_tofs(struct inode *i);
 int add_inode(struct inode *b, struct inode *i);
 int remove_inode(struct inode *b, char *name);
@@ -113,7 +133,6 @@ int proc_get_major();
 int do_fs_stat(struct inode *i, struct fsstat *f);
 int rename(char *f, char *nname);
 int sys_isatty(int f);
-int iremove_nofree(struct inode *i);
 int sys_dirstat(char *dir, unsigned num, char *namebuf, struct stat *statbuf);
 int pfs_write(struct inode *i, unsigned int pos, unsigned int len, char *buffer);
 int pfs_read(struct inode *i, unsigned int pos, unsigned int len, char *buffer);
@@ -190,7 +209,6 @@ void init_proc_fs();
 int sys_posix_fsstat(int fd, struct posix_statfs *sb);
 int sys_sync();
 int recur_total_refs(struct inode *i);
-int iremove_recur(struct inode *);
 extern struct inode *devfs_root, *procfs_root;
 int sys_fcntl(int filedes, int cmd, int attr1, int attr2, int attr3);
 int permissions(struct inode *, int);
@@ -200,7 +218,6 @@ int sys_symlink(char *p1, char *p2);
 int sys_readlink(char *_link, char *buf, int nr);
 int change_icount(struct inode *i, int c);
 extern struct inode *kproclist;
-int iremove_force(struct inode *i);
 void init_flocks(struct inode *i);
 int do_sys_write_flags(struct file *f, unsigned off, char *buf, unsigned count, int update_pos);
 int do_sys_read_flags(struct file *f, unsigned off, char *buf, unsigned count, int update_pos);

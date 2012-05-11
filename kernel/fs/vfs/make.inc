@@ -1,4 +1,5 @@
-KOBJS+=kernel/fs/vfs/dir.o \
+KOBJS+=kernel/fs/vfs/callback.o \
+	kernel/fs/vfs/dir.o \
 	kernel/fs/vfs/fs.o \
 	kernel/fs/vfs/iget.o \
 	kernel/fs/vfs/iput.o \

@@ -29,7 +29,6 @@ int tty_open(int min)
 
 int tty_close(int min)
 {
-	current_task->tty=0;
 	return 0;
 }
 
@@ -83,17 +82,11 @@ __attribute__((optimize("O0"))) int tty_read(int min, char *buf, int len)
 	volatile int cb = !(con->term.c_lflag & ICANON);
 	int x = con->x;
 	while(1) {
-		//if(con->rend.putch)
-		//	con->rend.putch(con, ' ');
-		//if(con->rend.putch)
-		//	con->rend.putch(con, '\b');
-		
 		if(con->rend.update_cursor)
 			con->rend.update_cursor(con);
 		wait_flag_except((unsigned *)(&con->inpos), 0);
-		if(got_signal(current_task)) {
+		if(got_signal(current_task))
 			return -EINTR;
-		}
 		mutex_on(&con->inlock);
 		t=con->input[0];
 		con->inpos--;

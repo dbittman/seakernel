@@ -34,7 +34,7 @@ int rfs_write(struct inode *i, int off, int len, char *b);
 void process_initrd()
 {
 	unsigned int i;
-	printk(KERN_INFO, "Processing initrd...\n");
+	printk(5, "[kernel]: processing initrd...");
 	struct inode *node = init_ramfs();
 	u32int location = initrd_location;
 	initrd_header = (initrd_header_t *)location;
@@ -43,19 +43,25 @@ void process_initrd()
 	/* Temporarily set the FS indicators to the ramfs root so we can use the VFS. This makes
 	 * parsing directories much easier. */
 	current_task->pwd=current_task->root=node;
+	printk(1, "\n");
+	int count=0, size=0;
 	for (i = 0; i < initrd_header->nfiles; i++)
 	{
-		printk(KERN_DEBUG, "\t* Loading '%s': %d bytes...\n", (char *)&file_headers[i].name, file_headers[i].length);
+		printk(1, "\t* Loading '%s': %d bytes...\n", (char *)&file_headers[i].name, file_headers[i].length);
 		file_headers[i].offset += location;
 		char name[128];
 		sprintf(name, "/%s", (char *)&file_headers[i].name);
 		q = cget_idir(name, 0, 0x1FF);
 		rfs_write(q, 0, file_headers[i].length, (char *)(file_headers[i].offset));
+		count++;
+		size += file_headers[i].length / 1024;
 	}
+	printk(1, "\t* Creating directories...\n");
 	rfs_create(0, "dev", S_IFDIR);
 	rfs_create(0, "mnt", S_IFDIR);
 	rfs_create(0, "mnt2", S_IFDIR);
 	rfs_create(0, "proc", S_IFDIR);
+	printk(5, "\r[kernel]: Initrd loaded (%d files, %d KB: ok)\n", count, size);
 	/* Reset the indicators to FS-less system */
 	current_task->root = current_task->pwd=0;
 }

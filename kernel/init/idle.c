@@ -33,7 +33,7 @@ static inline void __KT_clear_args()
 	/* Clear out the alloc'ed arguments */
 	if(!cleared_args && next_pid > (unsigned)(init_pid+1) && init_pid)
 	{
-		printk(6, "[idle]: Clearing kernel arguments...\n");
+		printk(1, "[idle]: Clearing kernel arguments...\n");
 		int w=0;
 		for(;w<128;w++)
 		{

@@ -212,6 +212,7 @@ int ext2_inode_alloc(ext2_fs_t* fs, ext2_inode_t* inode)
 	memset(inode, 0, ext2_sb_inodesize(fs->sb));
 	inode->number = ext2_inode_from_internal(fs, number);
 	inode->fs = fs;
+	ext2_inode_update(inode);
 	return 1;
 }
 
@@ -754,7 +755,7 @@ int ext2_inode_writedata(ext2_inode_t* inode, uint32_t start, size_t len, const 
 		size_t bytes;
 		size_t offset = start % block_size;
 		if (!ext2_inode_readblk(inode, start_block, localbuf, 1)) {
-			return counter;
+			goto out;
 		}
 		bytes = block_size - offset;
 		if (len < bytes) {
@@ -762,7 +763,7 @@ int ext2_inode_writedata(ext2_inode_t* inode, uint32_t start, size_t len, const 
 		}
 		memcpy(localbuf + offset, buf, bytes);
 		if (!writeblk(inode, start_block, localbuf)) {
-			return counter;
+			goto out;
 		}
 		counter+=bytes;
 		if (--block_count == 0) {

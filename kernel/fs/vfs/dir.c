@@ -186,10 +186,6 @@ int rmdir(char *f)
 		iput(i);
 		return -ENOTDIR;
 	}
-	if(i->child && get_uid() != 0) {
-		iput(i);
-		return -EACCES;
-	}
 	int ret = vfs_callback_rmdir(i);
 	iput(i);
 	return ret;

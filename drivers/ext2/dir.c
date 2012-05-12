@@ -199,7 +199,7 @@ int ext2_dir_link(ext2_inode_t* dir, ext2_inode_t* inode, const char* name)
 	ext2_dirent_t* newentry;
 	unsigned char buf[ext2_sb_blocksize(inode->fs->sb)];
 	uint32_t pos = 0, tpos=0, off=0;
-	size_t newentry_len = dirent_size(strlen(name) + 1);
+	size_t newentry_len = dirent_size(strlen(name));
 	size_t entry_len = 0;
 	ext2_inode_type_t type = 0;
 	if (dir->fs->sb->revision && ((dir->fs->sb->features_req &
@@ -217,9 +217,9 @@ int ext2_dir_link(ext2_inode_t* dir, ext2_inode_t* inode, const char* name)
 				return 0;
 			if (entry->record_len - entry_len >= newentry_len) {
 				newentry = (ext2_dirent_t*) &buf[tpos + entry_len];
-				
+				memset(newentry, 0, newentry_len);
 				newentry->name_len = strlen(name);
-				memcpy(newentry->name, name, newentry->name_len + 1);
+				memcpy(newentry->name, name, newentry->name_len);
 				newentry->inode = inode->number;
 				newentry->record_len = entry->record_len - entry_len;
 				newentry->type = type;
@@ -229,10 +229,10 @@ int ext2_dir_link(ext2_inode_t* dir, ext2_inode_t* inode, const char* name)
 				inode->link_count++;
 				ext2_inode_update(inode);
 				return 1;
-			}
+			} else
 			pos += entry->record_len;
 			tpos += entry->record_len;
-			if(tpos >= ext2_sb_blocksize(inode->fs->sb))
+			if(tpos >= ext2_sb_blocksize(inode->fs->sb) && pos < dir->size)
 			{
 				tpos=0;
 				off+=ext2_sb_blocksize(inode->fs->sb);
@@ -246,12 +246,11 @@ int ext2_dir_link(ext2_inode_t* dir, ext2_inode_t* inode, const char* name)
 	memset(newbuf, 0, newentry_len);
 	newentry = (ext2_dirent_t*) newbuf;
 	newentry->name_len = strlen(name);
-	memcpy(newentry->name, name, newentry->name_len + 1);
+	memcpy(newentry->name, name, newentry->name_len);
 	newentry->inode = inode->number;
 	newentry->record_len = newentry_len;
 	newentry->type = type;
-	ext2_inode_writedata(dir, pos, newentry_len, newbuf);
-	ext2_inode_update(dir);
+	int r = ext2_inode_writedata(dir, pos, newentry_len, newbuf);
 	inode->link_count++;
 	ext2_inode_update(inode);
 	return 1;
@@ -287,13 +286,11 @@ int ext2_dir_unlink(ext2_inode_t* dir, const char* name, int dofree)
 					ext2_bg_update(inode.fs, bgnum, &bg);
 					ext2_inode_read(dir->fs, dir->number, dir);
 				}
-				if(dofree) 
-					ext2_inode_free(&inode);
+				ext2_inode_free(&inode);
 			}
 			if (!ext2_inode_update(&inode))
 				return 0;
 			entry->inode = 0;
-			ret = 1;
 			ext2_inode_writedata(dir, off, ext2_sb_blocksize(dir->fs->sb), buf);
 			return 1;
 		}

@@ -91,9 +91,8 @@ int wrap_ext2_readfile(struct inode *in, unsigned int off, unsigned int len, cha
 	ext2_inode_t inode;
 	if(!ext2_inode_read(fs, in->num, &inode))
 		return -EIO;
-	if((unsigned)off >= inode.size) {
+	if((unsigned)off >= inode.size)
 		return 0;
-	}
 	if(inode.deletion_time)
 		return -ENOENT;
 	if(!inode.mode)
@@ -152,7 +151,8 @@ int do_add_ent(struct inode *i, ext2_inode_t *inode, char *name)
 		ext2_inode_read(fs, old, &told);
 		told.link_count--;
 		ext2_inode_update(&told);
-	}
+	} else
+		ext2_inode_update(&dir);
 	update_sea_inode(i, &dir, 0);
 	return ret;
 }
@@ -196,6 +196,7 @@ int do_wrap_ext2_link(struct inode *i, char *path)
 int wrap_ext2_link(struct inode *i, char *path)
 {
 	int ret = do_wrap_ext2_link(i, path);
+	wrap_ext2_update(i);
 	return ret;
 }
 
@@ -220,6 +221,7 @@ struct inode *do_wrap_ext2_create(struct inode *i, char *name, unsigned mode)
 		dir.mode = mode;
 		dir.change_time = get_epoch_time();
 		ext2_inode_update(&dir);
+		update_sea_inode(i, &inode, 0);
 		return create_sea_inode(&dir, name);
 	}
 	ext2_inode_t new;
@@ -234,8 +236,8 @@ struct inode *do_wrap_ext2_create(struct inode *i, char *name, unsigned mode)
 	new.change_time = get_epoch_time();
 	ext2_inode_update(&new);
 	ext2_inode_update(&inode);
-	struct inode *out = create_sea_inode(&new, name);
-	return out;
+	update_sea_inode(i, &inode, 0);
+	return create_sea_inode(&new, name);
 }
 
 struct inode *wrap_ext2_create(struct inode *i, char *name, unsigned mode)

@@ -39,8 +39,11 @@ int serial_received(int p) {
 	return inb(p + 5) & 1;
 }
 
-char read_serial(int port) {
-	while (serial_received(port) == 0);
+int read_serial(int port) {
+	while (serial_received(port) == 0) {
+		if(got_signal(current_task))
+			return -EINTR;
+	}
 	
 	return inb(port);
 }
@@ -85,7 +88,12 @@ int serial_rw(int rw, int min, char *b, int c)
 	{
 		while(c)
 		{
-			b[i++] = read_serial(ports[min]);
+			int r = read_serial(ports[min]);
+			if(r == -EINTR) {
+				mutex_off(&serial_m);
+				return -EINTR;
+			}
+			b[i++] = (char)r;
 			c--;
 		}
 		mutex_off(&serial_m);

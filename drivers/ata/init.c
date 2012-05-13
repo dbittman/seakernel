@@ -68,7 +68,7 @@ int create_device(struct ata_controller *cont, struct ata_device *dev, char *nod
 
 int ata_read_partitions(struct ata_controller *cont, struct ata_device *dev, char *node)
 {
-	printk(1, "Reading partition table (%d:%d)...", cont->id, dev->id);
+	printk(1, "[ata]: Reading partition table (%d:%d)...", cont->id, dev->id);
 	unsigned char buf[512];
 	ata_pio_rw(cont, dev, READ, 0, buf, 512);
 	memcpy(dev->ptable, buf+0x1BE, 64);
@@ -175,7 +175,7 @@ int init_ata_controller(struct ata_controller *cont){
 		{
 			if(m == 0x14)
 			{
-				printk(3, "Found an ATAPI device: ");
+				printk(3, "[ata]: Found an ATAPI device: ");
 				dev.flags |= F_ATAPI;
 			} else
 			{
@@ -183,8 +183,8 @@ int init_ata_controller(struct ata_controller *cont){
 				continue;
 			}
 		} else
-			printk(3, "Found an ATA device: ");
-		printk(3, "%d:%d\n", cont->id, i);
+			printk(3, "[ata]: Found an ATA device: ");
+		printk(3, "%d:%d", cont->id, i);
 		dev.flags |= F_EXIST;
 		if(!(dev.flags & F_ATAPI)) {
 		unsigned short tmp[256];
@@ -194,7 +194,7 @@ int init_ata_controller(struct ata_controller *cont){
 			tmp[idx] = inw(cont->port_cmd_base+REG_DATA);
 		}
 		if(tmp[83] & 0x400) {
-			printk(2, "\tlba48\n");
+			printk(2, "\tlba48");
 			dev.flags |= F_LBA48;
 		}
 		unsigned lba28 = *(unsigned *)(tmp+60);
@@ -202,6 +202,7 @@ int init_ata_controller(struct ata_controller *cont){
 		if(!lba28 && !lba48)
 		{
 			cont->devices[i].flags=0;
+			printk(2, "\n");
 			continue;
 		}
 		if(lba48)
@@ -217,6 +218,7 @@ int init_ata_controller(struct ata_controller *cont){
 			//TODO: Identify atapi
 			dev.length=~0;
 			dev.flags |= F_LBA28;
+			printk(2, "\n");
 		}
 		memcpy(&cont->devices[i], &dev, sizeof(struct ata_device));
 		char node[16];

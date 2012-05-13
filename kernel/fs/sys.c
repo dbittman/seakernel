@@ -24,7 +24,7 @@ int sys_setup(int a)
 		schedule();
 		return 1;
 	}
-	printk(KERN_MILE, "Setting up interface...");
+	printk(KERN_MILE, "[kernel]: Setting up environment...");
 	current_task->pwd = current_task->root = ramfs_root;
 	init_dev_fs();
 	init_proc_fs();

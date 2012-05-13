@@ -333,9 +333,9 @@ int probe_smp()
 	if(!res)
 		return 0;
 	if(imps_enabled)
-		kprintf("[smp]: started %d application processors                     \n", imps_num_cpus-1);
+		printk(5, "[cpu]: CPU%s initialized (boot=%d, #APs=%d: ok)                    \n", imps_num_cpus > 1 ? "s" : "", bootstrap, imps_num_cpus-1);
 	else
-		kprintf("[smp]: could not initialize application processors\n");
+		printk(6, "[cpu]: Could not initialize application processors\n");
 	
 	init_ioapic();
 	init_lapic();

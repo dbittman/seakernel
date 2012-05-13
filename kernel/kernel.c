@@ -21,7 +21,6 @@ void kernel_shutdown()
 	kernel_task->next = current_task;
 	current_task->next=0;
 	current_task->prev = kernel_task;
-	kprintf("Syncing...\n");
 	sys_sync(PRINT_LEVEL);
 	unmount_all();
 	unload_all_modules(1);

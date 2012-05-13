@@ -73,7 +73,6 @@ void kb_int_handler()
 }
 
 void kb_install() {
-	printk(KERN_EVERY, "Keyboard installed to %d\n", IRQ1);
 	register_interrupt_handler(IRQ1, &kb_int_handler);
 	unsigned temp;
 	do

@@ -34,7 +34,7 @@ int rfs_write(struct inode *i, int off, int len, char *b);
 void process_initrd()
 {
 	unsigned int i;
-	printk(5, "[kernel]: processing initrd...");
+	printk(5, "[vfs]: Processing initrd...");
 	struct inode *node = init_ramfs();
 	u32int location = initrd_location;
 	initrd_header = (initrd_header_t *)location;
@@ -61,7 +61,7 @@ void process_initrd()
 	rfs_create(0, "mnt", S_IFDIR);
 	rfs_create(0, "mnt2", S_IFDIR);
 	rfs_create(0, "proc", S_IFDIR);
-	printk(5, "\r[kernel]: Initrd loaded (%d files, %d KB: ok)\n", count, size);
+	printk(5, "\r[vfs]: Initrd loaded (%d files, %d KB: ok)\n", count, size);
 	/* Reset the indicators to FS-less system */
 	current_task->root = current_task->pwd=0;
 }

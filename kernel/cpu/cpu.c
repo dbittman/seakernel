@@ -71,7 +71,7 @@ void parse_cpuid(cpu_t *me)
 	*(int*)(ccb + 0) = ebx;
 	*(int*)(cpuid.manufacturer_string + 4) = edx;
 	*(int*)(cpuid.manufacturer_string + 8) = ecx;
-	printk(KERN_DEBUG, "CPUID: ");
+	printk(KERN_DEBUG, "[cpu]: CPUID: ");
 	printk(KERN_DEBUG, "%s\n", cpuid.manufacturer_string);
 	if(cpuid.max_basic_input_val >= 1)
 		cpuid_get_features(&cpuid);

@@ -13,7 +13,7 @@ void process_memorymap(struct multiboot *mboot)
 	unsigned int j=0;
 	while(i < (mboot->mmap_addr + mboot->mmap_length)){
 		mmap_entry_t *me = (mmap_entry_t *)(i);
-		printk(1, "Map %d: %x -> %x\n", me->type, me->base_addr_low, me->base_addr_low+me->length_low);
+		printk(1, "[mm]: Map %d: %x -> %x\n", me->type, me->base_addr_low, me->base_addr_low+me->length_low);
 		if(me->type == 1)
 		{
 			for (j = me->base_addr_low; j < (me->base_addr_low+me->length_low); j += PAGE_SIZE)
@@ -31,7 +31,7 @@ void process_memorymap(struct multiboot *mboot)
 		}
 		i += me->size + sizeof (uint32_t);
 	}
-	printk(1, "Highest page = %x               \n", highest_page);
+	printk(1, "[mm]: Highest page = %x               \n", highest_page);
 	if(!j)
 		panic(PANIC_MEM | PANIC_NOSYNC, "Memory map corrupted");
 	int gbs=0;
@@ -41,14 +41,13 @@ void process_memorymap(struct multiboot *mboot)
 		panic(PANIC_MEM | PANIC_NOSYNC, "Not enough memory, system wont work");
 	}
 	gbs = mbs/1024;
-	printk(KERN_EVERY, "\n\t");
 	if(gbs > 0)
 	{
 		printk(KERN_MILE, "%d GB and ", gbs);
 		mbs = mbs % 1024;
 	}
-	printk(KERN_MILE, "[kernel]: %d MB available memory (page size=0x1000, kmalloc=%s: ok)       \n", mbs, KMALLOC_NAME);
-	printk(1, "[kernel]: num pages = %d\n", num_pages);
+	printk(KERN_MILE, "[mm]: %d MB available memory (page size=0x1000, kmalloc=%s: ok)       \n", mbs, KMALLOC_NAME);
+	printk(1, "[mm]: num pages = %d\n", num_pages);
 	pm_num_pages=num_pages;
 	memory_has_been_mapped=1;
 	pm_used_pages=0;
@@ -56,7 +55,7 @@ void process_memorymap(struct multiboot *mboot)
 
 void init_memory(struct multiboot *m)
 {
-	printk(KERN_DEBUG, "Setting up Memory Management...");
+	printk(KERN_DEBUG, "[mm]: Setting up Memory Management...\n");
 	create_mutex(&pm_mutex);
 	vm_init(pm_location);
 	process_memorymap(m);

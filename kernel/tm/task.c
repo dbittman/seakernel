@@ -15,7 +15,7 @@ extern void set_kernel_stack(u32int stack);
 void init_multitasking()
 {
 	super_cli();
-	printk(KERN_DEBUG, "Starting multitasking system...\n");
+	printk(KERN_DEBUG, "[sched]: Starting multitasking system...\n");
 	task_t *task = (task_t *)kmalloc(sizeof(task_t));
 	if(!task)
 		panic(PANIC_NOSYNC, "Unable to allocate memory for tasking?");
@@ -88,7 +88,6 @@ void unfreeze_all_tasks()
 void kill_all_tasks()
 {
 	if(current_task->uid != 0) return;
-	serial_puts(0, "Killing all tasks...\n");
 	super_cli();
 	task_t *t = (task_t *)kernel_task->next;
 	while(t)

@@ -7,7 +7,7 @@ struct devhash_s devhash[NUM_DT];
 
 void init_dm()
 {
-	printk(KERN_DEBUG, "Loading device management...\n");
+	printk(KERN_DEBUG, "[dev]: Loading device management...\n");
 	memset(devhash, 0, sizeof(struct devhash_s)*NUM_DT);
 	int i;
 	for(i=0;i<NUM_DT;i++) 

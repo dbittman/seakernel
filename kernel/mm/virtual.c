@@ -62,7 +62,6 @@ void vm_init(unsigned id_map_to)
 /* This relocates the stack to a safe place which is copied upon clone, and creates a new directory that is...well, complete */
 void vm_init_2()
 {
-	printk(KERN_EVERY, "\tRelocating kernel stack\n");
 	setup_kernelstack(id_tables);
 	page_dir_t *c = vm_clone(page_directory, 0);
 	kernel_dir = c;

@@ -110,7 +110,7 @@ void kmain(struct multiboot *mboot_header, u32int initial_stack)
 	get_kernel_version(ver);
 	puts(ver);
 	puts(" Booting Up ~\n\r");
-	puts("[kernel]: initializing kernel...\n\r");
+	
 	init_cache();
 	init_module_system();
 	init_syscalls();
@@ -118,11 +118,11 @@ void kmain(struct multiboot *mboot_header, u32int initial_stack)
 	install_timer(1000);
 	pm_init(placement, mtboot);
 	init_main_cpu();
+	
 	/* Now get the management stuff going */
 	printk(1, "[kernel]: Starting system management\n");
 	init_memory(mtboot);
 	console_init_stage2();
-	
 	parse_kernel_cmd((char *)mboot_header->cmdline);
 	init_multitasking();
 	init_dm();

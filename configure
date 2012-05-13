@@ -6,8 +6,8 @@ echo "Allgood" > tools/confed
 
 if [ -e /proc/seaos ]; then
 	echo "SYSNAME=seaos" > make.inc
-	sh tools/nodeps.sh
-	printf "done\n"
+	#sh tools/nodeps.sh
 else
 	echo "SYSNAME=linux" > make.inc
 fi
+printf "done\n"

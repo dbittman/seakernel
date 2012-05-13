@@ -142,7 +142,6 @@ void init_kernel_symbols(void)
 	add_kernel_symbol(outw);
 	add_kernel_symbol(inl);
 	add_kernel_symbol(ttyx_ioctl);
-	add_kernel_symbol(take_issue_with_current_task);
 	add_kernel_symbol(outl);
 	//add_kernel_symbol(set_console_font);
 	add_kernel_symbol(vm_unmap_only);

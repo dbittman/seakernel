@@ -107,30 +107,7 @@ int times(struct tms *buf)
 		buf->tms_cstime = current_task->t_cstime;
 		buf->tms_cutime = current_task->t_cutime;
 	}
-	return current_hz;
-}
-
-void take_issue_with_current_task()
-{
-	/* The task made muy angry. Make a memory dump thingy */
-	task_t *p = (task_t *)current_task;
-	if(!p) return;
-	printk(KERN_ERROR, "Task %d got arrested for pushing cocaine, 1st degree murder and assult. It got a life sentance.\n",
-	       p->pid);
-	u32int cr0;
-	asm("mov %%cr0, %0": "=r"(cr0));
-	u32int cr2;
-	asm("mov %%cr2, %0": "=r"(cr2));
-	u32int cr3;
-	asm("mov %%cr3, %0": "=r"(cr3));
-	u32int ef;
-	asm("pushf");
-	asm("pop %eax");
-	asm("mov %%eax, %0": "=r"(ef));
-	/* The formatting here makes them all line up...*/
-	printk(KERN_ERROR, "Task Information:\n\tEIP: 0x%X, \t ESP: 0x%X, EBP: 0x%X\n", p->eip, p->esp, p->ebp);
-	printk(KERN_ERROR, "\tCR0: 0x%X, CR2: 0x%X, \tCR3: 0x%X\tEFLAGS: 0x%X\n", cr0, cr2, cr3, ef);
-	printk(KERN_ERROR, "\tKernel Stack: %x -> %x\n\tLast System Call: %d\tCurrent Syscall: %d\n", p->kernel_stack, p->kernel_stack + KERN_STACK_SIZE, p->last, p->system);
+	return ticks; /* this is inaccurate */
 }
 
 int get_mem_usage()

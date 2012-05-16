@@ -12,10 +12,10 @@ int is_directory(struct inode *i)
 
 int change_icount(struct inode *i, int c)
 {
+	int ret=0;
 	if(!i) return 0;
 	mutex_on(&i->lock);
-	(i->count += c);
-	int ret = i->count;
+	ret = (i->count += c);
 	mutex_off(&i->lock);
 	return ret;
 }

@@ -60,7 +60,7 @@ endif
 
 link: $(AOBJS) $(KOBJS) library/klib.a
 	echo "[LD]	skernel"
-	$(LD) $(LDFLAGS) -o skernel $(AOBJS) $(KOBJS) library/klib.a
+	$(LD) $(LDFLAGS) -o skernel.1 $(AOBJS) $(KOBJS) library/klib.a
 
 os_s: $(KOBJS) $(AOBJS) 
 	$(MAKE) -s -C library
@@ -69,6 +69,7 @@ os_s: $(KOBJS) $(AOBJS)
 	$(MAKE) -C drivers
 	echo "Building initrd..."
 	-exec ./tools/mkird $(RAMFILES) > /dev/null
+	mv skernel.1 skernel
 all: make.deps
 	@$(MAKE) -s os
 

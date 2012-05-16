@@ -99,9 +99,10 @@ __attribute__((optimize("O0"))) int read_pipe(struct inode *ino, char *buffer, u
 	mutex_on(pipe->lock);
 	ret = pipe->pending > len ? len : pipe->pending;
 	memcpy(buffer + count, (void *)(pipe->buffer + pipe->read_pos), ret);
+	memcpy(pipe->buffer, (void *)(pipe->buffer + pipe->read_pos + ret), PIPE_SIZE - (pipe->read_pos + ret));
 	if(ret > 0) {
-		pipe->read_pos += ret;
 		pipe->pending -= ret;
+		pipe->write_pos -= ret;
 		len -= ret;
 		count+=ret;
 	} else {
@@ -120,8 +121,21 @@ __attribute__((optimize("O0"))) int write_pipe(struct inode *ino, char *buffer, 
 	if(!pipe)
 		return -EINVAL;
 	mutex_on(pipe->lock);
+	
+	while((pipe->write_pos+length)>=PIPE_SIZE && (pipe->count > 1 && pipe->type != PIPE_NAMED)) {
+		mutex_off(pipe->lock);
+		wait_flag_except(&pipe->write_pos, pipe->write_pos);
+		if(current_task->sigd)
+			return -EINTR;
+		mutex_on(pipe->lock);
+	}
+	if(pipe->count <= 1) {
+		mutex_off(pipe->lock);
+		return -EPIPE;
+	}
 	if((pipe->write_pos+length)>=PIPE_SIZE)
 	{
+		printk(1, "[pipe]: warning - task %d failed to block for writing to pipe\n", current_task->pid);
 		mutex_off(pipe->lock);
 		return -EPIPE;
 	}

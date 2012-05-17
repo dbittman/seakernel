@@ -16,7 +16,7 @@
 struct multiboot *mtboot;
 u32int i_stack=0;
 
-char init_path[128] = "/bin/init";
+char init_path[128] = "*";
 char root_device[64] = "/";
 char *stuff_to_pass[128];
 int argc_STP=3;
@@ -85,11 +85,12 @@ void parse_kernel_cmd(char *buf)
 		current = tmp+1;
 	}
 	stuff_to_pass[0] = (char *)kmalloc(9);
-	strcpy(stuff_to_pass[0], init_path);
-	stuff_to_pass[2] = (char *)kmalloc(strlen(init_path) + 4);
-	stuff_to_pass[1] = (char *)kmalloc(strlen(root_device) + 4);
-	strcpy(stuff_to_pass[1], root_device);
-	strcpy(stuff_to_pass[2], init_path);
+	strcpy(stuff_to_pass[0], "ird-sh");
+	stuff_to_pass[1] = (char *)kmalloc(9);
+	strcpy(stuff_to_pass[1], "/preinit.sh");
+	stuff_to_pass[2] = (char *)kmalloc(9);
+	strcpy(stuff_to_pass[2], "/dev/hda1");
+	
 }
 
 /* This is the C kernel entry point */
@@ -179,10 +180,10 @@ void init()
 	 * a page fault) because you can't execute kernel code in ring 3!
 	 * So we write simple wrapper functions for common functions that 
 	 * we will need */
-	ret = u_execve("/preinit", (char **)stuff_to_pass, (char **)init_env);
-	printf("Could not execute /preinit\nAttempting '/bin/sh'...\n");
-	ret = u_execve("/bin/sh", (char **)stuff_to_pass, (char **)init_env);
-	printf("Attempting '/sh'...\n");
+	//ret = u_execve("/bin/sh", (char **)stuff_to_pass, (char **)init_env);
+	//printf("Could not execute /preinit\nAttempting '/bin/sh'...\n");
+	//ret = u_execve("/bin/sh", (char **)stuff_to_pass, (char **)init_env);
+	//printf("Attempting '/sh'...\n");
 	ret = u_execve("/sh", (char **)stuff_to_pass, (char **)init_env);
 	
 	printf("Failed to start the preinit process. System will halt.\n");

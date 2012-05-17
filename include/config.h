@@ -57,7 +57,7 @@
 #define CACHE_CAP 20000
 
 #define NUM_DT 4
-#define PIPE_SIZE 0x40000
+#define PIPE_SIZE 0x4000
 #define USE_CACHE 1
 #define CACHE_READ 1
 

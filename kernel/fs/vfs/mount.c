@@ -52,7 +52,7 @@ int s_mount(char *name, int dev, int block, char *fsname, char *no)
 int sys_mount2(char *node, char *to, char *name, char *opts, int flags)
 {
 	if(!to) return -EINVAL;
-	if(name && !node) {
+	if(name && (!node || *node == '*')) {
 		if(!strcmp(name, "devfs")) {
 			iremove_nofree(devfs_root);
 			return mount(to, devfs_root);

@@ -87,9 +87,9 @@ void parse_kernel_cmd(char *buf)
 	stuff_to_pass[0] = (char *)kmalloc(9);
 	strcpy(stuff_to_pass[0], "ird-sh");
 	stuff_to_pass[1] = (char *)kmalloc(9);
-	strcpy(stuff_to_pass[1], "/preinit.sh");
-	stuff_to_pass[2] = (char *)kmalloc(9);
-	strcpy(stuff_to_pass[2], "/dev/hda1");
+	strcpy(stuff_to_pass[1], "-c");
+	stuff_to_pass[2] = (char *)kmalloc(90);
+	sprintf(stuff_to_pass[2], "/preinit.sh %s", root_device);
 	
 }
 
@@ -180,10 +180,6 @@ void init()
 	 * a page fault) because you can't execute kernel code in ring 3!
 	 * So we write simple wrapper functions for common functions that 
 	 * we will need */
-	//ret = u_execve("/bin/sh", (char **)stuff_to_pass, (char **)init_env);
-	//printf("Could not execute /preinit\nAttempting '/bin/sh'...\n");
-	//ret = u_execve("/bin/sh", (char **)stuff_to_pass, (char **)init_env);
-	//printf("Attempting '/sh'...\n");
 	ret = u_execve("/sh", (char **)stuff_to_pass, (char **)init_env);
 	
 	printf("Failed to start the preinit process. System will halt.\n");

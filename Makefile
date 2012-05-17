@@ -18,7 +18,7 @@ ASFLAGS=-felf32
 GASFLAGS=--32
 include make.inc
 RAMFILES=data-initrd/usr/sbin/fsck usr/sbin/fsck data-initrd/usr/sbin/fsck.ext2 usr/sbin/fsck.ext2 \
-	 data-initrd/preinit.sh /preinit.sh data-initrd/etc/fstab etc/fstab data-initrd/bin/preinit /preinit \
+	 data-initrd/preinit.sh /preinit.sh data-initrd/etc/fstab etc/fstab \
 	 data-initrd/bin/bash /sh data-initrd/bin/lmod /lmod data-initrd/bin/mount /mount data-initrd/bin/chroot /chroot \
 	 data-initrd/bin/cp /cp
 

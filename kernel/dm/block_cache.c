@@ -35,7 +35,6 @@ int get_block_cache(int dev, int blk, char *buf)
 	if(!c)
 		return 0;
 	memcpy(buf, c->data, c->length);
-	c->atime = get_epoch_time();
 	return 1;
 }
 

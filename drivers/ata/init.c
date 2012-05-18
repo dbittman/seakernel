@@ -17,7 +17,7 @@ int init_ata_device()
 		ata->flags = PCI_ERROR;
 		return -1;
 	}
-	//bmr = ata->pcs->bar4;
+	bmr = ata->pcs->bar4;
 	ata_pci = ata;
 	primary->port_bmr_base=bmr;
 	primary->port_cmd_base = ATA_PRIMARY_CMD_BASE;
@@ -230,15 +230,15 @@ int init_ata_controller(struct ata_controller *cont){
 		unsigned buf;
 		unsigned p;
 		if(!cont->prdt_virt) {
-		buf = (unsigned)kmalloc_ap(0x1000, &p);
-		cont->prdt_virt = (uint64_t *)buf;
-		cont->prdt_phys = p;
+			buf = (unsigned)kmalloc_ap(0x1000, &p);
+			cont->prdt_virt = (uint64_t *)buf;
+			cont->prdt_phys = p;
 		}
 		if(!cont->dma_buf_virt) {
-		buf = (unsigned)kmalloc_ap(ATA_DMA_MAXSIZE, &p);
-		cont->dma_buf_virt = (void *)buf;
-		cont->dma_buf_phys = p;
-		cont->dma_use=ATA_DMA_ENABLE;
+			buf = (unsigned)kmalloc_ap(ATA_DMA_MAXSIZE, &p);
+			cont->dma_buf_virt = (void *)buf;
+			cont->dma_buf_phys = p;
+			cont->dma_use=ATA_DMA_ENABLE;
 		}
 	}
 	return 0;

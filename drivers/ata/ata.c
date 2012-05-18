@@ -29,10 +29,10 @@ int ata_rw_main(int rw, int dev, int blk_, char *buf)
 		return 0;
 	}
 	int ret;
-	if(0 && cont->dma_use)
-		ret = ata_dma_rw(cont, device, rw, blk, buf);
+	if(cont->dma_use)
+		ret = ata_dma_rw(cont, device, rw, blk, buf, 1);
 	else
-		ret = ata_pio_rw(cont, device, rw, blk, (unsigned char *)buf, 512);
+		ret = ata_pio_rw(cont, device, rw, blk, (unsigned char *)buf, 1);
 	return ret;
 }
 
@@ -56,10 +56,10 @@ int ata_rw_multiple(int rw, int dev, int blk_, char *buf, int count)
 		return 0;
 	}
 	int ret;
-	if(0 && cont->dma_use)
-		ret = ata_dma_rw(cont, device, rw, blk, buf);
+	if(cont->dma_use)
+		ret = ata_dma_rw(cont, device, rw, blk, buf, count);
 	else
-		ret = ata_pio_rw(cont, device, rw, blk, (unsigned char *)buf, 512*count);
+		ret = ata_pio_rw(cont, device, rw, blk, (unsigned char *)buf, count);
 	return ret;
 }
 

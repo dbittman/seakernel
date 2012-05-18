@@ -714,15 +714,8 @@ int ext2_inode_readdata(ext2_inode_t* inode, uint32_t start, size_t len, unsigne
 		len -= bytes;
 		end_block--;
 	}
-	
-	for (i = 0; i < block_count; i++) {
-		ret = ext2_inode_readblk(inode, start_block + i, buf + i * block_size, 1);
-		if (!ret) {
-			return counter;
-		}
-		i += ret - 1;
-		counter+=block_size;
-	}
+	ext2_inode_readblk(inode, start_block, buf, block_count);
+	counter+=block_size*block_count;
 	return counter;
 }
 

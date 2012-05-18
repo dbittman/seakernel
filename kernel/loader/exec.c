@@ -23,8 +23,7 @@ static inline int is_valid_elf(char *buf)
 
 static inline int read_data(int fp, char *buf, unsigned off, int length)
 {
-	int r = do_sys_read_flags(get_file_pointer((task_t *)current_task, fp), off, buf, length, 0);
-	return r;
+	return do_sys_read_flags(get_file_pointer((task_t *)current_task, fp), off, buf, length, 0);
 }
 
 int process_elf_phdr(char *mem, int fp, unsigned *start, unsigned *end)
@@ -33,10 +32,10 @@ int process_elf_phdr(char *mem, int fp, unsigned *start, unsigned *end)
 	uint32_t entry;
 	struct ELF_header_s *eh = (struct ELF_header_s *)mem;
 	char buffer[(eh->phnum+1)*eh->phsize];
-	memset(buffer, 0, sizeof buffer);
 	read_data(fp, buffer, eh->phoff, eh->phsize * eh->phnum);
 	unsigned vaddr=0, length=0, offset=0, stop, tmp;
 	unsigned max=0, min=~0;
+	struct file *file = get_file_pointer((task_t *)current_task, fp);
 	for(i=0;i < eh->phnum;i++)
 	{
 		elf_phdr_t *ph = (elf_phdr_t *)(buffer + (i*eh->phsize));
@@ -52,10 +51,9 @@ int process_elf_phdr(char *mem, int fp, unsigned *start, unsigned *end)
 			while(tmp <= stop + PAGE_SIZE)
 			{
 				map_if_not_mapped(tmp);
-				memset((void *)tmp, 0, PAGE_SIZE);
 				tmp += PAGE_SIZE;
 			}
-			if(read_data(fp, (char *)vaddr, offset, length) != (int)length)
+			if((unsigned)do_sys_read_flags(file, offset, (char *)vaddr, length, 0) != length)
 				return 0;
 		}
 	}
@@ -63,7 +61,6 @@ int process_elf_phdr(char *mem, int fp, unsigned *start, unsigned *end)
 		return 0;
 	*start = eh->entry;
 	*end = max;
-	flush_pd();
 	return 1;
 }
 
@@ -103,7 +100,7 @@ char **copy_down_dp_give(unsigned _location, char **_dp, unsigned *count, unsign
 	unsigned location = _location;
 	char **ret=0;
 	
-	map_if_not_mapped(location);
+	map_if_not_mapped_noclear(location);
 	
 	if(dp && *dp && **dp) {
 		/* Loop through all the strings */
@@ -112,7 +109,7 @@ char **copy_down_dp_give(unsigned _location, char **_dp, unsigned *count, unsign
 			if((unsigned)*dp >= TOP_LOWER_KERNEL) {
 				unsigned len = strlen(*dp);
 				location -= (len+32);
-				map_if_not_mapped(location);
+				map_if_not_mapped_noclear(location);
 				/* Copy them in */
 				memset((void *)location, 0, len+4);
 				memcpy((void *)location, (void *)*dp, len);
@@ -124,7 +121,7 @@ char **copy_down_dp_give(unsigned _location, char **_dp, unsigned *count, unsign
 		*dp=0;
 		/* Create the double pointer in this memory area */
 		start = location-((i+4)*sizeof(char *));
-		map_if_not_mapped(start);
+		map_if_not_mapped_noclear(start);
 		memcpy((void *)start, (void *)_dp, (i+1)*sizeof(char *));
 		ret = (char **)start;
 		if(count)
@@ -199,7 +196,6 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	char mem[sizeof(struct ELF_header_s)];
 	read_data(desc, mem, 0, sizeof(struct ELF_header_s));
 	if(!is_valid_elf(mem)) {
-		printk(1, "[exec]: Invalid ELF file!\n");
 		err = -ENOEXEC;
 		sys_close(desc);
 		goto error;
@@ -211,7 +207,7 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	change_icount(exe, 1);
 	unsigned path_loc = copy_double_pointers(argv, env, &argc);
 	path_loc -= (strlen(path) + 32);
-	map_if_not_mapped(path_loc);
+	map_if_not_mapped_noclear(path_loc);
 	strcpy((char *)path_loc, path);
 	path = (char *)path_loc;
 	t->path_loc_start = path_loc;
@@ -237,9 +233,9 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	/* Setup the task with the proper values (libc malloc stack) */
 	unsigned end_l = end;
 	end = (end&PAGE_MASK);
-	map_if_not_mapped(end);
+	map_if_not_mapped_noclear(end);
 	t->heap_start = t->heap_end = end + 0x1000;
-	map_if_not_mapped(t->heap_start);
+	map_if_not_mapped_noclear(t->heap_start);
 	/* Zero the heap and stack */
 	memset((void *)end_l, 0, 0x1000-(end_l%0x1000));
 	memset((void *)(end+0x1000), 0, 0x1000);
@@ -276,7 +272,6 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 
 int execve(char *path, char **argv, char **env)
 {
-	__super_cli();
 	int ret = do_exec((task_t *)current_task, path, argv, env);
 	return ret;
 }

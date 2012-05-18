@@ -113,22 +113,10 @@ __attribute__((optimize("O0"))) void __mutex_on(mutex_t *m, char *file, int line
 		lower_flag(TF_LOCK);
 		__sync_synchronize();
 		/* Sleep...*/
-#if 1
 		if(i++ == 1000)
 			printk(0, "Had to wait: %s:%d \nmutex is currently p=%d [%d:%d:%x], c=%d %s:%d\nwe are %d", file, (unsigned)line, m->pid, t->state, t->system, t->flags, m->count, m->file, m->line, current_task->pid);
 		force_schedule();
-#else
-		/* This probably wont ever happen, but just to be safe... */
-		if(current_task->waitflag)
-			force_schedule();
-		else
-			wait_flag((unsigned *)&m->count, 0);
-		/* We don't check for a signal here, because if we're trying
-		 * to lock a mutex we are entering a critical section
-		 * that cannot be interrupted. If we are, for example, trying
-		 * to update a linked list, we must be allowed to complete
-		 * that action, or chaos will rule the world. */
-#endif
+		
 		task_critical();
 		raise_flag(TF_LOCK);
 		__sync_synchronize();
@@ -138,8 +126,8 @@ __attribute__((optimize("O0"))) void __mutex_on(mutex_t *m, char *file, int line
 	raise_flag(TF_DIDLOCK);
 	lower_flag(TF_WMUTEX);
 #ifdef DEBUG
-	strcpy((char *)m->file, file);
-	m->line = line;
+	//strcpy((char *)m->file, file);
+	//m->line = line;
 #endif
 	if(((unsigned)m->pid != current_task->pid && m->count))
 		panic(0, "Mutex lock failed %d %d\n", m->pid, m->count);

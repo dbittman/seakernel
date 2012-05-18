@@ -113,11 +113,9 @@ int cache_add_element(cache_t *c, struct ce_t *obj)
 struct ce_t *find_cache_element(cache_t *c, unsigned id, unsigned key)
 {
 	accessed_cache(c);
-	mutex_on(&c->lock);
+	//mutex_on(&c->lock);
 	struct ce_t *ret = chash_search(c->hash, id, key);
-	if(ret)
-		ret->acount++;
-	mutex_off(&c->lock);
+	//mutex_off(&c->lock);
 	return ret;
 }
 

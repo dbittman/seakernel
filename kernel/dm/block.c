@@ -78,8 +78,9 @@ int do_block_rw(int rw, int dev, int blk, char *buf, blockdevice_t *bd)
 	}
 	if(bd->func)
 	{
-		__super_sti();
+		mutex_on(&bd->acl);
 		int ret = (bd->func)(rw, MINOR(dev), blk, buf);
+		mutex_off(&bd->acl);
 		return ret;
 	}
 	return -EIO;
@@ -95,15 +96,12 @@ int block_rw(int rw, int dev, int blk, char *buf, blockdevice_t *bd)
 		bd = (blockdevice_t *)dt->ptr;
 	}
 	int ret=0;
-	mutex_on(&bd->acl);
 	if(rw == READ)
 	{
 #if USE_CACHE
 		ret = get_block_cache(dev, blk, buf);
-		if(ret) {
-			mutex_off(&bd->acl);
+		if(ret)
 			return bd->blksz;
-		}
 #endif
 		ret = do_block_rw(rw, dev, blk, buf, bd);
 #if USE_CACHE
@@ -119,8 +117,38 @@ int block_rw(int rw, int dev, int blk, char *buf, blockdevice_t *bd)
 #endif
 			ret = do_block_rw(rw, dev, blk, buf, bd);
 	}
-	mutex_off(&bd->acl);
 	return ret;
+}
+
+unsigned do_block_read_multiple(blockdevice_t *bd, int dev, unsigned start, unsigned num, char *buf)
+{
+	unsigned count=0;
+	bd->func_m(READ, MINOR(dev), start, buf, num);
+	while(count < num) {
+		cache_block(-dev, start+count, bd->blksz, buf + count*bd->blksz);
+		count++;
+	}
+	return count;
+}
+
+unsigned block_read_multiple(blockdevice_t *bd, int dev, unsigned start, unsigned num, char *buf)
+{
+	unsigned count=0;
+	int ret;
+	while(count<num) {
+		ret = get_block_cache(dev, start+count, buf + count*bd->blksz);
+		if(!ret) {
+			unsigned x = count+1;
+			while(x < num && !get_block_cache(dev, start+x, buf + x*bd->blksz))
+				x++;
+			do_block_read_multiple(bd, dev, start+count, x-count, buf + count*bd->blksz);
+			count = x;
+			if(x < num)
+				count++;
+		} else
+			count++;
+	}
+	return count;
 }
 
 long long block_read(int dev, unsigned long long posit, char *buf, unsigned int c)
@@ -129,31 +157,46 @@ long long block_read(int dev, unsigned long long posit, char *buf, unsigned int 
 	if(!dt)
 		return -ENXIO;
 	blockdevice_t *bd = (blockdevice_t *)dt->ptr;
-	int blk_size = bd->blksz;
-	int pos = posit;
-	char buffer[blk_size];
-	int count, done=0;
-	while(c > 0 && !done) {
-		if(block_rw(READ, dev, pos/blk_size, buffer, bd) == -1)
-			return (pos - posit);
-		count = blk_size - (pos % blk_size);
-		if(c < (unsigned int)blk_size) {
-			count = c;
-			done=1;
-		}
-		memcpy(buf, buffer+(pos % blk_size), count);
-		buf+=count;
+	unsigned blk_size = bd->blksz;
+	unsigned count=0;
+	unsigned pos=posit;
+	unsigned offset=0;
+	unsigned end = pos + c;
+	unsigned i=0;
+	int ret;
+	char tmp[blk_size];
+	/* read in the first (possibly) partial block */
+	offset = pos % blk_size;
+	if(offset) {
+		ret = block_rw(READ, dev, pos/blk_size, tmp, bd);
+		if(ret < 0)
+			return count;
+		count = blk_size - offset;
+		if(count > c) count = c;
+		memcpy(buf, tmp + offset, c);
 		pos += count;
-		c -= count;
 	}
-	return pos-posit;
+	if(count >= c) return count;
+	/* read in the bulk full blocks */
+	if((c-count) >= blk_size) {
+		i = (c-count)/blk_size;
+		block_read_multiple(bd, dev, pos / blk_size, i, buf + count);
+		pos += i * blk_size;
+		count += i * blk_size;
+	}
+	if(count >= c) return count;
+	/* read in the remainder */
+	if(end % blk_size && pos < end) {
+		ret = block_rw(READ, dev, pos/blk_size, tmp, bd);
+		if(ret < 0)
+			return count;
+		memcpy(buf+count, tmp, end % blk_size);
+		count += end % blk_size;
+	}
+	return count;
 }
 
-/* Hmm...unfortunatly, block writing is a bit trickier...Cause we don't wanna overwrite
-   other data. If pos is @ the beginging of a block and the count ends at the end of a block, '
-   then it'd be easy, but its just not so all the time! :(. Still, it's not that bad.
-*/
- long long  block_write(int dev, unsigned long long posit, char *buf, unsigned int count)
+long long  block_write(int dev, unsigned long long posit, char *buf, unsigned int count)
 {
 	device_t *dt = get_device(DT_BLOCK, MAJOR(dev));
 	if(!dt)

@@ -25,9 +25,7 @@ chash_chain_t *do_chash_search(chash_t *h, unsigned id, unsigned key)
 {
 	unsigned i = chach_get_location(h, id, key);
 	chash_chain_t *chain = h->hash[i];
-	int q=0;
 	while(chain) {
-		q++;
 		if(chain->key == key && chain->id == id)
 			return chain;
 		chain = chain->next;

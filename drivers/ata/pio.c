@@ -5,6 +5,7 @@
 #include <block.h>
 int ata_pio_rw(struct ata_controller *cont, struct ata_device *dev, int rw, unsigned long long blk, unsigned char *buffer, unsigned count)
 {
+	count *= 512;
 	mutex_t *lock = cont->wait;
 	mutex_on(lock);
 	unsigned long long addr = blk;
@@ -74,5 +75,5 @@ int ata_pio_rw(struct ata_controller *cont, struct ata_device *dev, int rw, unsi
 		}
 	}
 	mutex_off(lock);
-	return 512;
+	return count;
 }

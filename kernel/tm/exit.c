@@ -148,7 +148,7 @@ void exit(int code)
 		panic(PANIC_NOSYNC, "kernel tried to exit");
 	task_t *t = (task_t *)current_task;
 	/* Get ready to exit */
-	force_nolock(t);
+	do_force_nolock(t);
 	raise_flag(TF_EXITING);
 	if(code != -9) t->exit_reason.cause = 0;
 	t->exit_reason.ret = code;

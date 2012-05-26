@@ -142,6 +142,8 @@ int tty_write(int min, char *buf, int len)
 				int l = read_escape_seq(con, buf);
 				if(l == -1)
 					goto out;
+				else if(l == 0)
+					l++;
 				i += l;
 				buf += l;
 				continue;

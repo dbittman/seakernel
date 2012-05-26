@@ -483,11 +483,11 @@ unsigned do_kmalloc_slab(unsigned sz, char align)
 	if(!align)
 		sz += sizeof(unsigned *);
 	slab_t *slab=0, *old_slab=0;
-	__super_sti();
 	try_again:
 	slab = find_usable_slab(sz, align, 1);
 	if(!slab)
 		goto try_again;
+	assert(slab && slab->magic == SLAB_MAGIC);
 	mutex_on(&slab->lock);
 	if(slab->obj_used >= slab->obj_num)
 		panic(PANIC_MEM | PANIC_NOSYNC, "BUG: slab: Attemping to allocate from full slab: %d:%d\n", slab->obj_used, slab->obj_num);

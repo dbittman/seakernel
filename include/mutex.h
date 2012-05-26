@@ -28,4 +28,5 @@ void reset_mutex(mutex_t *m);
 
 #define destroy_mutex(m) (__destroy_mutex(m, __FILE__, __LINE__))
 #define MUTEX_COUNT (~(unsigned)0)
+
 #endif

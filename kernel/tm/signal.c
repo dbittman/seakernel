@@ -255,7 +255,7 @@ int sys_sigact(int sig, const struct sigaction *act, struct sigaction *oact)
 		return 0;
 	/* Set actions */
 	if(act->sa_flags & SA_NOCLDWAIT || act->sa_flags & SA_SIGINFO || act->sa_flags & SA_NOCLDSTOP)
-		printk(0, "Warning - Signal set with flags that this implementation does not support:\n\tTask %d, Sig %d. Flags: %x\n", current_task->pid, sig, act->sa_flags);
+		printk(0, "[sched]: sigact got unknown flags: Task %d, Sig %d. Flags: %x\n", current_task->pid, sig, act->sa_flags);
 	if(act->sa_flags & SA_SIGINFO)
 		return -ENOTSUP;
 	memcpy((void *)&current_task->signal_act[sig], act, sizeof(struct sigaction));

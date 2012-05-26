@@ -275,10 +275,10 @@ void acpiPowerOff(void)
 	acpiEnable();
 	
 	// send the shutdown command
-	kprintf("Power off...\n");
+	kprintf("[acpi]: Power off...\n");
 	outw((unsigned int) PM1a_CNT, SLP_TYPa | SLP_EN );
 	if ( PM1b_CNT != 0 )
 		outw((unsigned int) PM1b_CNT, SLP_TYPb | SLP_EN );
 	delay_sleep(1000);
-	printk(4, "ACPI poweroff failed.\n");
+	printk(4, "[acpi]: Poweroff failed.\n");
 }

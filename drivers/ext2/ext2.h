@@ -116,7 +116,7 @@ int ext2_inode_readdata(
 	ext2_inode_t* inode, uint32_t start, size_t len, unsigned char* buf);
 int ext2_inode_writedata(
 	ext2_inode_t* inode, uint32_t start, size_t len, const unsigned char* buf);
-int ext2_inode_truncate(ext2_inode_t* inode, uint32_t size);
+int ext2_inode_truncate(ext2_inode_t* inode, uint32_t size, int);
 int ext2_bg_read(ext2_fs_t* fs, int group_nr, ext2_blockgroup_t* bg);
 int ext2_bg_update(ext2_fs_t* fs, int group_nr, ext2_blockgroup_t* bg);
 int ext2_inode_read(ext2_fs_t* fs, uint32_t inode_nr, ext2_inode_t* inode);

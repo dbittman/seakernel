@@ -666,57 +666,75 @@ int ext2_inode_readlink(ext2_inode_t *inode, unsigned int start, size_t len, uns
 
 int ext2_inode_readdata(ext2_inode_t* inode, uint32_t start, size_t len, unsigned char* buf)
 {
-	size_t block_size = ext2_sb_blocksize(inode->fs->sb);
-	uint32_t start_block = start / block_size;
-	uint32_t end_block = (start + len - 1) / block_size;
-	size_t block_count = end_block - start_block + 1;
-	unsigned char localbuf[block_size];
-	uint32_t i;
-	int ret;
-	int counter=0;
-	if (len == 0) {
-		return 0;
-	}
-	if(S_ISLNK(inode->mode) && inode->size < 60)
-		return ext2_inode_readlink(inode, start, len, buf);
-	if (start % block_size) {
-		size_t bytes;
-		size_t offset = start % block_size;
-		if (!ext2_inode_readblk(inode, start_block, localbuf, 1)) {
-			return 0;
-		}
-		
-		bytes = block_size - offset;
-		if (len < bytes) {
-			bytes = len;
-		}
-		memcpy(buf, localbuf + offset, bytes);
-		
-		if (--block_count == 0) {
-			return bytes;
-		}
-		len -= bytes;
-		buf += bytes;
-		start_block++;
-		counter+=bytes;
-	}
-	
-	if (len % block_size) {
-		size_t bytes = len % block_size;
-		if (!ext2_inode_readblk(inode, end_block, localbuf, 1)) {
-			return counter;
-		}
-		memcpy(buf + len - bytes, localbuf, bytes);
-		counter+=bytes;
-		if (--block_count == 0) {
-			return counter;
-		}
-		len -= bytes;
-		end_block--;
-	}
-	ext2_inode_readblk(inode, start_block, buf, block_count);
-	counter+=block_size*block_count;
-	return counter;
+        size_t block_size = ext2_sb_blocksize(inode->fs->sb);
+        uint32_t start_block = start / block_size;
+        uint32_t end_block = (start + len - 1) / block_size;
+        size_t block_count = end_block - start_block + 1;
+        unsigned char localbuf[block_size];
+        uint32_t i;
+        int ret;
+        int counter=0;
+        if (len == 0) {
+                return 0;
+        }
+        if(S_ISLNK(inode->mode) && inode->size < 60)
+                return ext2_inode_readlink(inode, start, len, buf);
+        // Wenn der erste Block nicht ganz gelesen werden soll, wird er zuerst in
+        // einen Lokalen Puffer gelesen.
+        if (start % block_size) {
+                size_t bytes;
+                size_t offset = start % block_size;
+                //kprintf("dsf\n");
+                if (!ext2_inode_readblk(inode, start_block, localbuf, 1)) {
+                        return 0;
+                }
+                
+                bytes = block_size - offset;
+                if (len < bytes) {
+                        bytes = len;
+                }
+                memcpy(buf, localbuf + offset, bytes);
+                
+                if (--block_count == 0) {
+                        return bytes;
+                }
+                len -= bytes;
+                buf += bytes;
+                start_block++;
+                counter+=bytes;
+        }
+        
+        // Wenn der letzte Block nicht mehr ganz gelesen werden soll, muss er
+        // separat eingelesen werden.
+        if (len % block_size) {
+                size_t bytes = len % block_size;
+                //kprintf("emd\n");
+                if (!ext2_inode_readblk(inode, end_block, localbuf, 1)) {
+                        return counter;
+                }
+                memcpy(buf + len - bytes, localbuf, bytes);
+                counter+=bytes;
+                if (--block_count == 0) {
+                        return counter;
+                }
+                len -= bytes;
+                end_block--;
+        }
+        
+        for (i = 0; i < block_count; i++) {
+                ret = ext2_inode_readblk(inode, start_block + i, buf + i * block_size,
+                                         1);
+                if (!ret) {
+                        return counter;
+                }
+                
+                // Wenn mehrere Blocks aneinander gelesen wurden, muessen die jetzt
+                // uebersprungen werden.
+                i += ret - 1;
+                counter+=block_size;
+        }
+        
+        return counter;
 }
 
 int ext2_inode_writedata(ext2_inode_t* inode, uint32_t start, size_t len, const unsigned char* buf)
@@ -728,6 +746,7 @@ int ext2_inode_writedata(ext2_inode_t* inode, uint32_t start, size_t len, const 
 	size_t block_count = end_block - start_block + 1;
 	unsigned char localbuf[block_size*2];
 	uint32_t i;
+	unsigned int init_sect_count = inode->sector_count;
 	int ret;
 	size_t req_len = len;
 	int counter=0;
@@ -792,14 +811,16 @@ int ext2_inode_writedata(ext2_inode_t* inode, uint32_t start, size_t len, const 
 	}
 	
 	out:
-	if (start + counter > inode->size) {
-		inode->size = start + counter;
+	if (start + counter > inode->size || inode->sector_count != init_sect_count) {
+		if(start + counter > inode->size) 
+			inode->size = start + counter;
+		ext2_inode_update(inode);
 	}
-	ext2_inode_update(inode);
+	
 	return counter;
 }
 
-int ext2_inode_truncate(ext2_inode_t* inode, uint32_t size)
+int ext2_inode_truncate(ext2_inode_t* inode, uint32_t size, int noupdate)
 {
 	size_t block_size = ext2_sb_blocksize(inode->fs->sb);
 	uint32_t first_to_free = (size / block_size) + 1;
@@ -821,8 +842,8 @@ int ext2_inode_truncate(ext2_inode_t* inode, uint32_t size)
 	}
 	int old_s = inode->size;
 	inode->size = size;
-	if (!ext2_inode_update(inode)) {
-		return 0;
+	if (!noupdate && !ext2_inode_update(inode)) {
+		return noupdate;
 	}
 	if(S_ISLNK(inode->mode) && old_s >= 60 && size < 60)
 		ext2_inode_writedata(inode, 0, size, tmp);

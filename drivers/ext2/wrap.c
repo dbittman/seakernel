@@ -89,6 +89,7 @@ int wrap_ext2_readfile(struct inode *in, unsigned int off, unsigned int len, cha
 	if(!fs)
 		return -EINVAL;
 	ext2_inode_t inode;
+	unsigned x = len;
 	if(!ext2_inode_read(fs, in->num, &inode))
 		return -EIO;
 	if((unsigned)off >= inode.size)
@@ -97,10 +98,10 @@ int wrap_ext2_readfile(struct inode *in, unsigned int off, unsigned int len, cha
 		return -ENOENT;
 	if(!inode.mode)
 		return -EACCES;
-	if((unsigned)(off + len) >= inode.size)
-		len = inode.size - off;
-	int ret = ext2_inode_readdata(&inode, off, len, (unsigned char *)buf);
-	return ret;
+	if((unsigned)(off + len) >= in->len)
+		len = in->len - off;
+	unsigned int ret = ext2_inode_readdata(&inode, off, len, (unsigned char *)buf);
+	return (int)ret;
 }
 
 int wrap_ext2_writefile(struct inode *in, unsigned int off, unsigned int len, char *buf)
@@ -115,13 +116,16 @@ int wrap_ext2_writefile(struct inode *in, unsigned int off, unsigned int len, ch
 		return -EIO;
 	if(inode.deletion_time || !inode.mode)
 		return -ENOENT;
-	
+	unsigned sz = inode.size;
+	unsigned sc = inode.sector_count;
 	unsigned int ret = ext2_inode_writedata(&inode, off, len, (unsigned char*)buf);
-	mutex_on(&in->lock);
-	update_sea_inode(in, &inode, 0);
-	mutex_off(&in->lock);
+	if(sz != inode.sector_count || sz != inode.size) 
+	{
+		mutex_on(&in->lock);
+		update_sea_inode(in, &inode, 0);
+		mutex_off(&in->lock);
+	}
 	if(ret > len) ret = len;
-	
 	return ret;
 }
 int ext2_dir_change_num(ext2_inode_t* inode, char *name,
@@ -280,7 +284,7 @@ int wrap_ext2_unlink(struct inode *i)
 	return ret;
 }
 
-int ext2_inode_truncate(ext2_inode_t* inode, uint32_t size);
+int ext2_inode_truncate(ext2_inode_t* inode, uint32_t size, int);
 int wrap_sync_inode(struct inode *i)
 {
 	int new_type=-1;
@@ -294,22 +298,20 @@ int wrap_sync_inode(struct inode *i)
 	if(!ext2_inode_read(fs, i->num, &inode))
 		return -EIO;
 	if(inode.link_count < 1 && !i->f_count) {
-		ext2_inode_free(&inode);
-		ext2_inode_update(&inode);
-		return 0;
+		//ext2_inode_free(&inode);
+		//ext2_inode_update(&inode);
+		//return 0;
 	}
 	if(inode.size > i->len)
-		ext2_inode_truncate(&inode, i->len);
+		ext2_inode_truncate(&inode, i->len, 0);
 	if((inode.mode & (~0xFFF)) != (i->mode & (~0xFFF)))
 	{
 		/* The filetype has changed. We must update the directory entry. */
 		inode.mode = i->mode;
 		new_type = ext2_inode_type(&inode);
 	}
-	mutex_on(&i->lock);
 	copyto_ext2_inode(i, &inode);
 	ext2_inode_update(&inode);
-	mutex_off(&i->lock);
 	if(new_type >= 0)
 	{
 		if(!i->parent)

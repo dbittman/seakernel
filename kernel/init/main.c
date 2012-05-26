@@ -53,14 +53,14 @@ void parse_kernel_cmd(char *buf)
 			{
 				strcpy(init_path, a+6);
 				init_path[strlen(init_path)-1]=0;
-				printk(KERN_INFO, "init=%s\n", init_path);
+				printk(KERN_INFO, "[kernel]: init=%s\n", init_path);
 			}
 			else if(!strncmp("root=\"", a, 6))
 			{
 				memset(root_device, 0, 64);
 				strcpy(root_device, a+6);
 				root_device[strlen(root_device)-1]=0;
-				printk(KERN_INFO, "root=%s\n", root_device);
+				printk(KERN_INFO, "[kernel]: root=%s\n", root_device);
 			}
 			else if(!strcmp("aprilfools", a))
 				april_fools = !april_fools;
@@ -68,7 +68,7 @@ void parse_kernel_cmd(char *buf)
 			{
 				char *lev = ((char *)a) + 9;
 				int logl = strtoint(lev);
-				printk(1, "Setting loglevel to %d\n", logl);
+				printk(1, "[kernel]: Setting loglevel to %d\n", logl);
 				PRINT_LEVEL = logl;
 			} else {
 				stuff_to_pass[argc_STP] = (char *)kmalloc(strlen(a)+1);

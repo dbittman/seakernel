@@ -95,7 +95,6 @@ __attribute__((optimize("O0"))) void __mutex_on(mutex_t *m, char *file, int line
 		panic(0, "got invalid mutex: %x: %s:%d\n", m, file, line);
 	int flag=0;
 	volatile int i=0;
-	__super_cli();
 	task_critical();
 	char found = (current_task->flags & TF_LOCK) ? 1 : 0;
 	raise_flag(TF_LOCK);
@@ -111,7 +110,6 @@ __attribute__((optimize("O0"))) void __mutex_on(mutex_t *m, char *file, int line
 		raise_flag(TF_WMUTEX);
 		task_full_uncritical();
 		lower_flag(TF_LOCK);
-		__sync_synchronize();
 		/* Sleep...*/
 		if(i++ == 1000)
 			printk(0, "Had to wait: %s:%d \nmutex is currently p=%d [%d:%d:%x], c=%d %s:%d\nwe are %d", file, (unsigned)line, m->pid, t->state, t->system, t->flags, m->count, m->file, m->line, current_task->pid);
@@ -119,15 +117,13 @@ __attribute__((optimize("O0"))) void __mutex_on(mutex_t *m, char *file, int line
 		
 		task_critical();
 		raise_flag(TF_LOCK);
-		__sync_synchronize();
 	}
 	/* Here we update the mutex fields */
-	__super_cli();
 	raise_flag(TF_DIDLOCK);
 	lower_flag(TF_WMUTEX);
 #ifdef DEBUG
-	//strcpy((char *)m->file, file);
-	//m->line = line;
+	strcpy((char *)m->file, file);
+	m->line = line;
 #endif
 	if(((unsigned)m->pid != current_task->pid && m->count))
 		panic(0, "Mutex lock failed %d %d\n", m->pid, m->count);
@@ -163,7 +159,6 @@ __attribute__((optimize("O0"))) void __mutex_off(mutex_t *m, char *file, int lin
 #endif
 	}
 	assert(m->count > 0);
-	__super_cli();
 	task_critical();
 	if(!A_dec_mutex_count(m)) {
 		reset_mutex(m);
@@ -199,6 +194,21 @@ void force_nolock(task_t *t)
 #ifndef DEBUG
 	return;
 #endif
+	super_cli();
+	mutex_t *m = mutex_list;
+	task_critical();
+	while(m)
+	{
+		if(m->pid == (int)t->pid)
+			panic(0, "Found invalid mutex! %d %d, %s:%d", m->pid, m->count, m->file, m->line);
+		m = m->next;
+	}
+	task_uncritical();
+}
+
+/** THIS IS VERY SLOW **/
+void do_force_nolock(task_t *t)
+{
 	super_cli();
 	mutex_t *m = mutex_list;
 	task_critical();

@@ -15,19 +15,19 @@
 #include <task.h>
 mutex_t *mutex_list=0;
 #define MUTEX_DO_NOLOCK 0
-static inline int A_inc_mutex_count(mutex_t *m)
+__attribute__((optimize("O0"))) static inline int A_inc_mutex_count(mutex_t *m)
 {
 	asm("lock incl %0":"+m"(m->count));
 	return m->count;
 }
 
-static inline int A_dec_mutex_count(mutex_t *m)
+__attribute__((optimize("O0"))) static inline int A_dec_mutex_count(mutex_t *m)
 {
 	asm("lock decl %0":"+m" (m->count));
 	return m->count;
 }
 
-void reset_mutex(mutex_t *m)
+__attribute__((optimize("O0"))) void reset_mutex(mutex_t *m)
 {
 	__super_cli();
 	m->pid=-1;
@@ -36,7 +36,7 @@ void reset_mutex(mutex_t *m)
 	*m->file=0;
 }
 
-static void add_mutex_list(mutex_t *m)
+__attribute__((optimize("O0"))) static void add_mutex_list(mutex_t *m)
 {
 	mutex_t *old = mutex_list;
 	mutex_list = m;
@@ -45,7 +45,7 @@ static void add_mutex_list(mutex_t *m)
 	m->prev=0;
 }
 
-static void remove_mutex_list(mutex_t *m)
+__attribute__((optimize("O0"))) static void remove_mutex_list(mutex_t *m)
 {
 	if(!m) return;
 	if(m->prev)
@@ -56,17 +56,17 @@ static void remove_mutex_list(mutex_t *m)
 		mutex_list = m->next;
 }
 
-void engage_full_system_lock()
+__attribute__((optimize("O0"))) static inline void engage_full_system_lock()
 {
-	raise_flag(TF_LOCK);
-	task_critical();
 	__super_cli();
+	task_critical();
+	raise_flag(TF_LOCK);
 }
 
-void disengage_full_system_lock()
+__attribute__((optimize("O0"))) static inline void disengage_full_system_lock()
 {
-	lower_flag(TF_LOCK);
 	task_full_uncritical();
+	lower_flag(TF_LOCK);
 }
 
 mutex_t *create_mutex(mutex_t *existing)
@@ -103,7 +103,7 @@ __attribute__((optimize("O0"))) void __mutex_on(mutex_t *m, char *file, int line
 #if 1
 		assert(m->pid != -1);
 		task_t *t = (task_t *)m->owner;
-		task_t *p = 0;//get_task_pid(t->pid);
+		task_t *p = get_task_pid(m->pid);
 		if(p && (p != t || m->pid != (int)p->pid || m->pid != (int)t->pid))
 			panic(0, "Mutex confusion (%d)! \nm %d, t %d (%d:%d:%d), p %d; %s:%d\nWas set on: %s:%d", current_task->pid, m->pid, t->pid, t->state, t->system, t->flags, p->pid, file, line, m->file, m->line);
 #endif
@@ -111,10 +111,12 @@ __attribute__((optimize("O0"))) void __mutex_on(mutex_t *m, char *file, int line
 		disengage_full_system_lock();
 		/* Sleep...*/
 		if(i++ == 1000)
-			i=0, printk(0, "[mutex]: potential deadlock:\n\ttask %d is waiting for a mutex (p=%d,c=%d)\n", current_task->pid, m->pid, m->count);
+			i=0, printk(0, "[mutex]: potential deadlock (%s:%d):\n\ttask %d is waiting for a mutex (p=%d,c=%d): %x\n", file, line, current_task->pid, m->pid, m->count, p);
 		force_schedule();
 		engage_full_system_lock();
 	}
+	assert(!m->count || (current_task->pid == (unsigned)m->pid));
+	assert(m->count < MUTEX_COUNT);
 	/* Here we update the mutex fields */
 	raise_flag(TF_DIDLOCK);
 	lower_flag(TF_WMUTEX);
@@ -122,17 +124,19 @@ __attribute__((optimize("O0"))) void __mutex_on(mutex_t *m, char *file, int line
 	strcpy((char *)m->file, file);
 	m->line = line;
 #endif
-	assert(!m->count || (current_task->pid == (unsigned)m->pid));
-	assert(m->count < MUTEX_COUNT);
 	/* update the fields */
 	m->pid = current_task->pid;
+	m->owner = (unsigned)current_task;
 	A_inc_mutex_count(m);
 	/* Clear up locks and return */
-	disengage_full_system_lock();
-	if(lock_was_raised)
+	if(lock_was_raised) {
 		raise_flag(TF_LOCK);
-	else
+		task_full_uncritical();
+	}
+	else {
+		disengage_full_system_lock();
 		__super_sti();
+	}
 }
 
 __attribute__((optimize("O0"))) void __mutex_off(mutex_t *m, char *file, int line)
@@ -142,7 +146,7 @@ __attribute__((optimize("O0"))) void __mutex_off(mutex_t *m, char *file, int lin
 	if(m->magic != MUTEX_MAGIC)
 		panic(0, "mutex_off got invalid mutex: %x: %s:%d\n", m, file, line);
 	if((unsigned)m->pid != current_task->pid) {
-#ifdef DEBUG
+#if 0
 		panic(0, "Tried to free a mutex that we don't own! at %s:%d\ngrabbed at %s:%d, owned by %d (c=%d) (we are %d)", file, line, m->file, m->line, m->pid, m->count, get_pid());
 #else
 		panic(0, "Process %d attempted to release mutex that it didn't own", current_task->pid);
@@ -158,7 +162,7 @@ __attribute__((optimize("O0"))) void __mutex_off(mutex_t *m, char *file, int lin
 	__super_sti();
 }
 
-void __destroy_mutex(mutex_t *m, char *file, int line)
+__attribute__((optimize("O0"))) void __destroy_mutex(mutex_t *m, char *file, int line)
 {
 	if(!m || panicing) return;
 	if(m->magic != MUTEX_MAGIC)
@@ -166,13 +170,13 @@ void __destroy_mutex(mutex_t *m, char *file, int line)
 	engage_full_system_lock();
 	reset_mutex(m);
 	remove_mutex_list(m);
-	disengage_full_system_lock();
 	if(m->flags & MF_ALLOC)
 		kfree((void *)m);
+	disengage_full_system_lock();
 }
 
 /** THIS IS VERY SLOW **/
-void do_force_nolock(task_t *t)
+__attribute__((optimize("O0"))) void do_force_nolock(task_t *t)
 {
 	engage_full_system_lock();
 	mutex_t *m = mutex_list;

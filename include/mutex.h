@@ -2,14 +2,14 @@
 #define MUTEX_H
 
 typedef volatile struct mutex_s {
-	volatile unsigned count;
 	volatile unsigned magic;
+	volatile unsigned count;
 	volatile int pid;
-	volatile struct mutex_s *next, *prev;
 	volatile unsigned line;
 	volatile unsigned owner;
 	volatile unsigned char flags;
 	volatile char file[64];
+	volatile struct mutex_s *next, *prev;
 } mutex_t;
 
 #define MF_ALLOC 1

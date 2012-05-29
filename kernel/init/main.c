@@ -129,7 +129,6 @@ void kmain(struct multiboot *mboot_header, u32int initial_stack)
 	init_dm();
 	load_superblocktable();
 	/* Load the rest... */
-	kb_install();
 	process_initrd();
 	init_kern_task();
 	

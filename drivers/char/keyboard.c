@@ -354,7 +354,8 @@ int module_install()
 	handlist_t *f = old_handler;
 	while(f)
 	{
-		f->block=1;
+		if(f->handler)
+			f->block=1;
 		f=f->next;
 	}
 	register_interrupt_handler(IRQ1, (isr_t)&do_keyboard_int);

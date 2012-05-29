@@ -7,6 +7,7 @@ typedef volatile struct mutex_s {
 	volatile int pid;
 	volatile struct mutex_s *next, *prev;
 	volatile unsigned line;
+	volatile unsigned owner;
 	volatile unsigned char flags;
 	volatile char file[64];
 } mutex_t;

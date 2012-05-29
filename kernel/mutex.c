@@ -17,13 +17,13 @@ mutex_t *mutex_list=0;
 #define MUTEX_DO_NOLOCK 0
 __attribute__((optimize("O0"))) static inline int A_inc_mutex_count(mutex_t *m)
 {
-	asm("lock incl %0":"+m"(m->count));
+	asm("cli;lock incl %0":"+m"(m->count));
 	return m->count;
 }
 
 __attribute__((optimize("O0"))) static inline int A_dec_mutex_count(mutex_t *m)
 {
-	asm("lock decl %0":"+m" (m->count));
+	asm("cli;lock decl %0":"+m" (m->count));
 	return m->count;
 }
 
@@ -120,7 +120,7 @@ __attribute__((optimize("O0"))) void __mutex_on(mutex_t *m, char *file, int line
 	/* Here we update the mutex fields */
 	raise_flag(TF_DIDLOCK);
 	lower_flag(TF_WMUTEX);
-#ifdef DEBUG
+#if 0
 	strcpy((char *)m->file, file);
 	m->line = line;
 #endif
@@ -145,13 +145,8 @@ __attribute__((optimize("O0"))) void __mutex_off(mutex_t *m, char *file, int lin
 		return;
 	if(m->magic != MUTEX_MAGIC)
 		panic(0, "mutex_off got invalid mutex: %x: %s:%d\n", m, file, line);
-	if((unsigned)m->pid != current_task->pid) {
-#if 0
-		panic(0, "Tried to free a mutex that we don't own! at %s:%d\ngrabbed at %s:%d, owned by %d (c=%d) (we are %d)", file, line, m->file, m->line, m->pid, m->count, get_pid());
-#else
+	if((unsigned)m->pid != current_task->pid)
 		panic(0, "Process %d attempted to release mutex that it didn't own", current_task->pid);
-#endif
-	}
 	assert(m->count > 0);
 	engage_full_system_lock();
 	if(!A_dec_mutex_count(m))
@@ -194,6 +189,19 @@ void force_nolock(task_t *t)
 #if MUTEX_DO_NOLOCK
 	do_force_nolock(t);
 #endif
+}
+
+__attribute__((optimize("O0"))) void task_unlock_mutexes(task_t *t)
+{
+	engage_full_system_lock();
+	mutex_t *m = mutex_list;
+	while(m)
+	{
+		if(m->pid == (int)t->pid)
+			reset_mutex(m);
+		m = m->next;
+	}
+	disengage_full_system_lock();
 }
 
 void unlock_all_mutexes()

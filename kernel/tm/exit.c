@@ -195,7 +195,7 @@ void exit(int code)
 	/* Do these again, just in case */
 	lock_scheduler();
 	raise_flag(TF_DYING);
-	do_force_nolock(t);
+	task_unlock_mutexes(current_task);
 	set_as_dead(t);
 	unlock_scheduler();
 	force_schedule();

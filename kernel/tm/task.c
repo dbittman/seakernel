@@ -42,8 +42,6 @@ void switch_to_user_mode()
 
 task_t *get_task_pid(int pid)
 {
-	if(current_task->pid == (unsigned)pid) return (task_t *)current_task; /* :D optimizations! */
-	if(pid == 0) return (task_t *)kernel_task;
 	lock_scheduler();
 	task_t *task = kernel_task;
 	while(task && task->pid != (unsigned)pid)

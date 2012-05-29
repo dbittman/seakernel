@@ -219,6 +219,7 @@ task_t *get_task_pid(int pid);
 int do_send_signal(int, int, int);
 extern unsigned glob_sched_eip;
 void kill_all_tasks();
+void task_unlock_mutexes(task_t *t);
 void do_force_nolock(task_t *t);
 int sys_ret_sig();
 int sys_gsetpriority(int set, int which, int id, int val);

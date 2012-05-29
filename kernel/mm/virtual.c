@@ -49,9 +49,12 @@ void vm_init(unsigned id_map_to)
 		memset(pt, 0, 0x1000);
 	}
 	/* Now map in the physical page stack so we have memory to use */
-	uint32_t pt_idx = PAGE_DIR_IDX((PM_STACK_ADDR/0x1000));
-	pd[pt_idx] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
-	memset((void *)(pd[pt_idx] & PAGE_MASK), 0, 0x1000);
+	for(i=PAGE_DIR_IDX((PM_STACK_ADDR/0x1000));i<(int)PAGE_DIR_IDX(PM_STACK_ADDR_TOP/0x1000);i++)
+	{
+		pd[i] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+		pt = (unsigned int *)(pd[i] & PAGE_MASK);
+		memset(pt, 0, 0x1000);
+	}
 	/* CR3 requires the physical address, so we directly set it because we have the physical address */
 	__asm__ volatile ("mov %0, %%cr3" : : "r" (pd));
 	/* Enable */

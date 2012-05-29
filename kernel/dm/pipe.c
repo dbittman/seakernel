@@ -23,12 +23,13 @@ static struct inode *create_pipe(char *name, unsigned mode)
 
 static struct inode *create_anon_pipe()
 {
-	struct inode *root_nodes;
-	root_nodes = (struct inode *)kmalloc(sizeof(struct inode));
-	root_nodes->uid = current_task->uid;
-	root_nodes->gid = current_task->gid;
-	root_nodes->mode = S_IFIFO | 0x1FF;
-	create_mutex(&root_nodes->lock);
+	struct inode *node;
+	/* create a 'fake' inode */
+	node = (struct inode *)kmalloc(sizeof(struct inode));
+	node->uid = current_task->uid;
+	node->gid = current_task->gid;
+	node->mode = S_IFIFO | 0x1FF;
+	create_mutex(&node->lock);
 	
 	pipe_t *pipe = (pipe_t *)kmalloc(sizeof(pipe_t));
 	pipe->length = PIPE_SIZE;
@@ -36,8 +37,8 @@ static struct inode *create_anon_pipe()
 	pipe->count=2;
 	pipe->wrcount=1;
 	pipe->lock = create_mutex(0);
-	root_nodes->pipe = pipe;
-	return root_nodes;
+	node->pipe = pipe;
+	return node;
 }
 
 int sys_mkfifo(char *path, unsigned mode)
@@ -52,12 +53,14 @@ int sys_pipe(int *files)
 	if(!files) return -EINVAL;
 	struct file *f;
 	struct inode *inode = create_anon_pipe();
+	/* this is the reading descriptor */
 	f = (struct file *)kmalloc(sizeof(struct file));
 	f->inode = inode;
 	f->flags = _FREAD;
 	f->pos=0;
 	f->count=1;
 	int read = add_file_pointer((task_t *)current_task, f);
+	/* this is the writing descriptor */
 	f = (struct file *)kmalloc(sizeof(struct file));
 	f->inode = inode;
 	f->flags = _FREAD | _FWRITE;
@@ -73,7 +76,6 @@ void free_pipe(struct inode *i)
 {
 	if(!i || !i->pipe) return;
 	kfree((void *)i->pipe->buffer);
-	i->pipe->lock->pid=-1;
 	destroy_mutex(i->pipe->lock);
 	kfree(i->pipe);
 }
@@ -98,8 +100,8 @@ __attribute__((optimize("O0"))) int read_pipe(struct inode *ino, char *buffer, u
 	}
 	mutex_on(pipe->lock);
 	ret = pipe->pending > len ? len : pipe->pending;
-	memcpy(buffer + count, (void *)(pipe->buffer + pipe->read_pos), ret);
-	memcpy(pipe->buffer, (void *)(pipe->buffer + pipe->read_pos + ret), PIPE_SIZE - (pipe->read_pos + ret));
+	memcpy((void *)(buffer + count), (void *)(pipe->buffer + pipe->read_pos), ret);
+	memcpy((void *)pipe->buffer, (void *)(pipe->buffer + pipe->read_pos + ret), PIPE_SIZE - (pipe->read_pos + ret));
 	if(ret > 0) {
 		pipe->pending -= ret;
 		pipe->write_pos -= ret;
@@ -124,7 +126,7 @@ __attribute__((optimize("O0"))) int write_pipe(struct inode *ino, char *buffer, 
 	
 	while((pipe->write_pos+length)>=PIPE_SIZE && (pipe->count > 1 && pipe->type != PIPE_NAMED)) {
 		mutex_off(pipe->lock);
-		wait_flag_except(&pipe->write_pos, pipe->write_pos);
+		wait_flag_except((unsigned *)&pipe->write_pos, pipe->write_pos);
 		if(current_task->sigd)
 			return -EINTR;
 		mutex_on(pipe->lock);

@@ -39,6 +39,11 @@ int sys_setup(int a)
 	return 12;
 }
 
+void init_vfs()
+{
+	load_superblocktable();
+}
+
 int sys_seek(int fp, unsigned pos, unsigned whence)
 {
 	struct file *f = get_file_pointer((task_t *)current_task, fp);

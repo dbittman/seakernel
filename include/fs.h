@@ -50,7 +50,7 @@ struct sblktbl {
 	int version;
 	char name[16];
 	struct inode * (*sb_load)(int dev, int block, char *);
-	struct sblktbl *next;
+	struct sblktbl *next, *prev;
 };
 
 struct mountlst {
@@ -208,6 +208,10 @@ void init_dev_fs();
 void init_proc_fs();
 int sys_posix_fsstat(int fd, struct posix_statfs *sb);
 int sys_sync();
+struct inode *init_ramfs();
+struct inode *rfs_create(struct inode *__p, char *name, unsigned int mode);
+int rfs_read(struct inode *i, unsigned int off, unsigned int len, char *b);
+int rfs_write(struct inode *i, unsigned int off, unsigned int len, char *b);
 int recur_total_refs(struct inode *i);
 extern struct inode *devfs_root, *procfs_root;
 int sys_fcntl(int filedes, int cmd, int attr1, int attr2, int attr3);

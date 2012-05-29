@@ -1,5 +1,5 @@
-/* Defines kernel-space side of functions for dealing with file locks. This should be compatible with POSIX
- * (or, mostly so).
+/* Defines kernel-space side of functions for dealing with file locks. 
+ * This should be compatible with POSIX (or, mostly so).
  */
 #include <kernel.h>
 #include <task.h>

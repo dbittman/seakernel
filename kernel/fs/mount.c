@@ -51,6 +51,7 @@ void remove_mountlst(struct inode *n)
 			ml = m->next;
 		if(m->next)
 			m->next->prev=m->prev;
+		kfree(m);
 	}
 	mutex_off(&ml_mutex);
 }
@@ -89,6 +90,8 @@ int register_sbt(char *name, int ver, int (*sbl)(int,int,char *))
 	struct sblktbl *o = sb_table;
 	sb_table = sb;
 	sb->next=o;
+	if(o) o->prev = sb;
+	sb->prev=0;
 	mutex_off(&sb_mutex);
 	return 0;
 }
@@ -126,23 +129,20 @@ struct inode *sb_check_all(int dev, int block, char *n)
 int unregister_sbt(char *name)
 {
 	struct sblktbl *s = sb_table;
-	struct sblktbl *p=0;
 	mutex_on(&sb_mutex);
 	while(s) {
 		if(!strcmp(name, s->name))
 			break;
-		p=s;
 		s=s->next;
 	}
 	if(s)
 	{
-		if(p)
-			p->next = s->next;
+		if(s->prev)
+			s->prev->next = s->next;
 		else
-		{
-			assert(s == sb_table);
 			sb_table = s->next;
-		}
+		if(s->next)
+			s->next->prev = s->prev;
 		kfree(s);
 	}
 	mutex_off(&sb_mutex);

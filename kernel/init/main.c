@@ -127,7 +127,7 @@ void kmain(struct multiboot *mboot_header, u32int initial_stack)
 	parse_kernel_cmd((char *)mboot_header->cmdline);
 	init_multitasking();
 	init_dm();
-	load_superblocktable();
+	init_vfs();
 	/* Load the rest... */
 	process_initrd();
 	init_kern_task();

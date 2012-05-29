@@ -250,12 +250,6 @@ int block_device_rw(int mode, int dev, int off, char *buf, int len)
 
 /* Reserved commands:
  * -1: Sync any data in device buffer
- * -2: Return current cache settings
- * -3: Set new cache settings. This will only delete the cache if no-caching is selected.
- * -4: Sync and destroy cache
- * [-5: Asks driver what the caching is on a specific device
- * [-6: Tells driver to change caching info on a specfic device
- * [-7: Ask for size of device (specific to minor)
  */
 int block_ioctl(int dev, int cmd, int arg)
 {

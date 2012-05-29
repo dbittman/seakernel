@@ -28,9 +28,7 @@ void load_initrd(struct multiboot *mb)
 	not_found:
 	panic(0, "could not find initial ramdisk - system will fail to start");
 }
-struct inode *init_ramfs();
-struct inode *rfs_create(struct inode *p, char *name, int mode);
-int rfs_write(struct inode *i, int off, int len, char *b);
+
 void process_initrd()
 {
 	unsigned int i;

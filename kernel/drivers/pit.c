@@ -10,8 +10,8 @@ void do_tick();
 
 static void timer_handler(registers_t r)
 {
-	__super_cli();
 	++ticks;
+	/* engage the idle task occasionally */
 	if((ticks % current_hz*10) == 0)
 		__engage_idle();
 	do_tick();

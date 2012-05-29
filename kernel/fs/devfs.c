@@ -5,9 +5,9 @@
 #include <char.h>
 #include <block.h>
 #include <fs.h>
-
 struct inode *devfs_root;
 struct inode *dfs_cn(char *name, int mode, int major, int minor);
+int devfs_nodescount=1;
 
 void init_dev_fs()
 {
@@ -34,7 +34,7 @@ void init_dev_fs()
 	/* Mount the filesystem */
 	add_inode(current_task->root, devfs_root);
 }
-int nodescount=1;
+
 struct inode *dfs_add(struct inode *q, char *name, int mode, int major, int minor)
 {
 	struct inode *i;
@@ -45,7 +45,7 @@ struct inode *dfs_add(struct inode *q, char *name, int mode, int major, int mino
 	i->mode = mode | 0xFFF;
 	i->uid = GOD;
 	i->dev = 256*major+minor;
-	i->num = nodescount++;
+	i->num = devfs_nodescount++;
 	create_mutex(&i->lock);
 	add_inode(q, i);
 	return i;

@@ -3,9 +3,6 @@
 #include <task.h>
 #include <fs.h>
 struct inode *ramfs_root;
-int rfs_read(struct inode *i, unsigned int off, unsigned int len, char *b);
-struct inode *rfs_create(struct inode *p, char *name, unsigned int mode);
-int rfs_write(struct inode *i, unsigned int off, unsigned int len, char *b);
 int ramfs_sane(struct inode *i);
 
 int ramfs_op_dummy()

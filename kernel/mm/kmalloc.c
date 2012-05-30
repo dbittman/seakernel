@@ -33,14 +33,12 @@ inline unsigned do_kmalloc(unsigned sz, char align)
 
 unsigned __kmalloc(unsigned s, char *file, int line)
 {
-	unsigned ret = do_kmalloc(s, 0);
-	return ret;
+	return do_kmalloc(s, 0);
 }
 
 unsigned kmalloc_a(unsigned s)
 {
-	unsigned ret = do_kmalloc(s, 1);
-	return ret;
+	return do_kmalloc(s, 1);
 }
 
 unsigned kmalloc_p(unsigned s, unsigned *p)

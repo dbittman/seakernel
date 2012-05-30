@@ -81,7 +81,7 @@ void page_fault(registers_t regs)
 	__super_cli();
 	if(USER_TASK || dont_panic)
 	{
-		printk(!(dont_panic) ? 5 : 0, "[pf]: Invalid Memory Access in task %d: %x %x %x\n", current_task->pid, regs.eip, cr2, err_code);
+		printk(!(dont_panic) ? 5 : 0, "[pf]: Invalid Memory Access in task %d: eip=%x addr=%x flags=%x\n", current_task->pid, regs.eip, cr2, err_code);
 		print_pf(0, &regs, cr2);
 		kprintf("[pf]: Segmentation Fault\n");
 		kill_task(current_task->pid);

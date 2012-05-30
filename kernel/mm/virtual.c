@@ -60,6 +60,7 @@ void vm_init(unsigned id_map_to)
 	/* Enable */
 	enable_paging();
 	paging_enabled=1;
+	*(unsigned *)0 = 0;
 }
 
 /* This relocates the stack to a safe place which is copied upon clone, and creates a new directory that is...well, complete */

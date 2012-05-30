@@ -51,7 +51,7 @@ int serial_rw(int rw, int min, char *b, int c)
 		mutex_on(&serial_m);
 		while(i)
 		{
-			write_serial(0x3f8, *(b+i));
+			write_serial(0x3f8, *(b++));
 			i--;
 		}
 		mutex_off(&serial_m);

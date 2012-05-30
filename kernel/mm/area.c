@@ -14,7 +14,6 @@ vnode_t *insert_vmem_area(vma_t *v, unsigned num_p)
 	mutex_on(&v->lock);
 	vnode_t *n = (vnode_t *)v->first;
 	vnode_t *new=0;
-	char flag=0;
 	if(!n)
 	{
 		super_cli();
@@ -31,7 +30,6 @@ vnode_t *insert_vmem_area(vma_t *v, unsigned num_p)
 	{
 		while(n && (unsigned)n < (v->addr + v->num_ipages*PAGE_SIZE))
 		{
-			flag=1;
 			if((n->addr + n->num_pages*PAGE_SIZE) + num_p*PAGE_SIZE >= v->max) {
 				mutex_off(&v->lock);
 				return 0;
@@ -57,9 +55,7 @@ vnode_t *insert_vmem_area(vma_t *v, unsigned num_p)
 			mutex_off(&v->lock);
 			return 0;
 		}
-		
 		/* n is the node to insert after. */
-		super_cli();
 		unsigned i=0;
 		while(i < NUM_NODES(v) && v->nodes[i]) ++i;
 		assert(i<NUM_NODES(v));
@@ -68,31 +64,27 @@ vnode_t *insert_vmem_area(vma_t *v, unsigned num_p)
 		memset(new, 0, sizeof(vnode_t));
 		new->next = n->next;
 		n->next = new;
-		__super_cli();
 		new->num_pages = num_p;
-		
 		new->addr = n->addr + n->num_pages * PAGE_SIZE;
 		if(new->next)
 			assert(new->num_pages * PAGE_SIZE + new->addr <= new->next->addr);
 		assert(n->num_pages * PAGE_SIZE + n->addr <= n->next->addr);
 	}
 	v->used_nodes++;
-
 	mutex_off(&v->lock);
 	return new;
-	
 }
 
 int remove_vmem_area(vma_t *v, vnode_t *n)
 {
 	mutex_on(&v->lock);
-	super_cli();
 	if(n == v->first)
 		v->first = n->next;
 	else
 	{
 		vnode_t *t = v->first;
-		while(t->next != n) t=t->next;
+		while(t && t->next != n) t=t->next;
+		assert(t);
 		t->next = n->next;
 	}
 	n->next=0;
@@ -108,9 +100,8 @@ vnode_t *find_vmem_area(vma_t *v, unsigned addr)
 	mutex_on(&v->lock);
 	vnode_t *t = v->first;
 	while(t) {
-		if(addr >= t->addr && addr < (t->addr + t->num_pages*PAGE_SIZE)) {
+		if(addr >= t->addr && addr < (t->addr + t->num_pages*PAGE_SIZE))
 			break;
-		}
 		t=t->next;
 	}
 	mutex_off(&v->lock);

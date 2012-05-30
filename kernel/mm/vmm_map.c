@@ -14,14 +14,11 @@ int vm_map(unsigned virt, unsigned phys, unsigned attr, unsigned opt)
 	if(!pd[vdir])
 	{
 		p = pm_alloc_page();
- 		zero_page_physical(p);
+		zero_page_physical(p);
 		pd[vdir] = p | PAGE_WRITE | PAGE_PRESENT | (attr & PAGE_USER);
-		unsigned yah = ((unsigned)((void *)page_tables[vdir*1024]) & PAGE_MASK);
-		memset((void *)yah, 0, 0x1000);
 		flush_pd();
 	}
 	page_tables[vpage] = (phys & PAGE_MASK) | attr;
-	flush_pd();
 	if(!(opt & MAP_NOCLEAR))
 		memset((void *)(virt&PAGE_MASK), 0, 0x1000);
 	return 0;

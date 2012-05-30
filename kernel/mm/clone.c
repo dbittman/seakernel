@@ -22,7 +22,6 @@ int vm_do_copy_table(int i, page_dir_t *new, page_dir_t *from)
 	int q;
 	for(q=0;virt<((unsigned)((i+1)*PAGE_SIZE*1024));virt+=PAGE_SIZE, ++q)
 	{
-		
 		if(vm_getmap(virt, &phyz) && vm_getattrib(virt, &attrib))
 		{
 			/* OK, this page exists, we have the physical address of it too */
@@ -30,8 +29,6 @@ int vm_do_copy_table(int i, page_dir_t *new, page_dir_t *from)
 			copy_page_physical((unsigned)phyz /* Source */, (unsigned)page /* Destination*/);
 			table[q] = (unsigned)(page | attrib);
 		}
-		else
-			table[q]=0;
 	}
 	new[i] = table_phys | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
 	vm_unmap_only((unsigned)table);

@@ -43,9 +43,7 @@
 #define MMF_PRIV_START     0xA0000000
 #define MMF_PRIV_END       0xB0000000
 
-#define PD_INFO_DWORD      0xB0000000
-
-#define VIRT_TEMP (STACK_LOCATION+STACK_SIZE*2)
+#define VIRT_TEMP (0xB0000000)
 
 #define BASE_SLAB_SIZE 8 /* In number of pages */
 #define MAX_OBJ_ID 1024

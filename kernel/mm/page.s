@@ -43,7 +43,7 @@ zero_page_physical:
 	mov edx, 1024         ; 1024*4bytes = 4096 bytes to copy
 
 	.loop:
-		mov eax, 0        ; Get the word at the source address
+		xor eax, eax        ; Get the word at the source address
 		mov [ebx], eax        ; Store it at the dest address
 		add ebx, 4            ; Source address += sizeof(word)
 		dec edx               ; One less word to do

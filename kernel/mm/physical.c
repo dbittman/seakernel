@@ -39,15 +39,13 @@ int __pm_alloc_page(char *file, int line)
 				set_current_task_dp(0); /* So we don't try to sync */
 				panic(PANIC_MEM | PANIC_NOSYNC, "Ran out of physical memory");
 			}
-			pm_mutex.pid=-1;
-			pm_mutex.count=0;
+			mutex_off(&pm_mutex);
 			if(OOM_HANDLER == OOM_SLEEP) {
 				if(!flag++) 
 					printk(0, "Warning - Ran out of physical memory in task %d\n", current_task->pid);
 				task_full_uncritical();
 				__engage_idle();
 				force_schedule();
-				__super_cli();
 				goto try_again;
 			} else if(OOM_HANDLER == OOM_KILL)
 			{

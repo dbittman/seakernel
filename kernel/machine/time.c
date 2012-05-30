@@ -21,8 +21,8 @@ void writeCMOS(unsigned char addr, unsigned int value)
 	__asm__ __volatile__ ("jmp 1f; 1: jmp 1f;1:");
 }
 
-void get_timed(struct tm *now) {
-	__super_cli();
+void get_timed(struct tm *now) 
+{
 	now->tm_sec = BCD2BIN(readCMOS(0x0));
 	now->tm_min = BCD2BIN(readCMOS(0x2));
 	now->tm_hour = BCD2BIN(readCMOS(0x4));
@@ -30,7 +30,6 @@ void get_timed(struct tm *now) {
 	now->tm_mon = BCD2BIN(readCMOS(0x8));
 	now->tm_year = BCD2BIN(readCMOS(0x9));
 	now->tm_mon--;
-	__super_sti();
 }
 
 void get_time(struct tm *now) {

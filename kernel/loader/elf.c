@@ -160,7 +160,6 @@ void init_kernel_symbols(void)
 	add_kernel_symbol(register_interrupt_handler);
 	add_kernel_symbol(unregister_interrupt_handler);
 	add_kernel_symbol(get_interrupt_handler);
-	add_kernel_symbol(irq_wait);
 	add_kernel_symbol(serial_puts);
 	add_kernel_symbol(set_blockdevice);
 	add_kernel_symbol(set_chardevice);

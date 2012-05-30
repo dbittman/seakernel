@@ -163,7 +163,7 @@ __attribute__((optimize("O0"))) int syscall_handler(volatile registers_t *regs)
 	if(current_task->tty == curcons->tty && (ticks - or_t >= 10 || 1) && (ret < 0 || 1))
 		printk(SC_DEBUG, "syscall %d: %d ret %d, took %d ticks\n", current_task->pid, current_task->system, ret, ticks - or_t);
 #endif
-	__super_sti();
+	cli();
 	exit_system();
 	/* store the return value in the regs */
 	regs->eax = ret;

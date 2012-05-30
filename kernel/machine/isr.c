@@ -8,7 +8,6 @@
 extern char *exception_messages[];
 handlist_t interrupt_handlers[256];
 volatile long int_count[256];
-void faulted(int);
 mutex_t isr_lock;
 char interrupt_controller=0;
 /* Interrupt handlers are stored in linked lists (allows 'infinite' number of them). But we need kmalloc to do this.
@@ -62,21 +61,6 @@ void unregister_interrupt_handler(u8int n, isr_t handler)
 handlist_t *get_interrupt_handler(u8int n)
 {
 	return &interrupt_handlers[n];
-}
-
-void wait_isr(int no)
-{
-	__super_cli();
-	volatile int i=int_count[no];
-	while(i >= int_count[no]) {
-		__super_sti();
-	}
-}
-
-int irq_wait(int n)
-{
-	wait_isr(n+32);
-	return 0;
 }
 
 void kernel_fault(int fuckoff)

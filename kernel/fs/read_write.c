@@ -7,7 +7,7 @@
 #include <dev.h>
 #include <sys/fcntl.h>
 
-int do_sys_read_flags(struct file *f, unsigned off, char *buf, unsigned count, int update_pos)
+int do_sys_read_flags(struct file *f, unsigned off, char *buf, unsigned count)
 {
 	if(!f || !buf)
 		return -EINVAL;
@@ -18,27 +18,23 @@ int do_sys_read_flags(struct file *f, unsigned off, char *buf, unsigned count, i
 	else if(S_ISCHR(mode))
 		return char_rw(READ, inode->dev, buf, count);
 	else if(S_ISBLK(mode)) {
-		int ret = (block_device_rw(READ, inode->dev, off, buf, count));
-		if(update_pos) f->pos += ret;
-		return ret;
+		return block_device_rw(READ, inode->dev, off, buf, count);
 	}
 	/* We read the data for a link as well. If we have gotten to the point
 	 * where we have the inode for the link we probably want to read the link itself
 	 */
 	else if(S_ISDIR(mode) || S_ISREG(mode) || S_ISLNK(mode))
-	{
-		int ret = read_fs(inode, off, count, buf);
-		if(ret > 0 && update_pos)
-			f->pos = off+ret;
-		return ret;
-	}
+		return read_fs(inode, off, count, buf);
 	printk(1, "sys_read (%s): invalid mode %x\n", inode->name, inode->mode);
 	return -EINVAL;
 }
 
 int do_sys_read(struct file *f, unsigned off, char *buf, unsigned count)
 {
-	return do_sys_read_flags(f, off, buf, count, 1);
+	int ret = do_sys_read_flags(f, off, buf, count);
+	if(ret < 0) return ret;
+	f->pos = off+ret;
+	return ret;
 }
 
 int sys_read(int fp, unsigned off, char *buf, unsigned count)
@@ -58,7 +54,7 @@ int sys_readpos(int fp, char *buf, unsigned count)
 	return do_sys_read(f, f->pos, buf, count);
 }
 
-int do_sys_write_flags(struct file *f, unsigned off, char *buf, unsigned count, int update_pos)
+int do_sys_write_flags(struct file *f, unsigned off, char *buf, unsigned count)
 {
 	if(!f || !buf)
 		return -EINVAL;
@@ -68,23 +64,17 @@ int do_sys_write_flags(struct file *f, unsigned off, char *buf, unsigned count, 
 	else if(S_ISCHR(inode->mode))
 		return char_rw(WRITE, inode->dev, buf, count);
 	else if(S_ISBLK(inode->mode))
-	{
-		unsigned o = (block_device_rw(WRITE, inode->dev, off, buf, count));
-		return o;
-	}
+		return (block_device_rw(WRITE, inode->dev, off, buf, count));
 	/* Again, we want to write to the link because we have that node */
 	else if(S_ISDIR(inode->mode) || S_ISREG(inode->mode) || S_ISLNK(inode->mode))
-	{
-		unsigned c = write_fs(inode, off, count, buf);
-		return c;
-	}
+		return write_fs(inode, off, count, buf);
 	printk(1, "sys_write (%s): invalid mode %x\n", inode->name, inode->mode);
 	return -EINVAL;
 }
 
 int do_sys_write(struct file *f, unsigned off, char *buf, unsigned count)
 {
-	return do_sys_write_flags(f, off, buf, count, 1);
+	return do_sys_write_flags(f, off, buf, count);
 }
 
 int sys_writepos(int fp, char *buf, unsigned count)

@@ -103,7 +103,7 @@ void flush_mmf(mmf_t *m, int un_map, unsigned off, unsigned addr, unsigned end)
 			int length = sz-i;
 			if(length > PAGE_SIZE)
 				length = PAGE_SIZE;
-			do_sys_write_flags(fil, i+off, (char *)addr, length, 0 /* Don't update position of fildes */);
+			do_sys_write_flags(fil, i+off, (char *)addr, length);
 			if(un_map)
 				vm_unmap(addr);
 		}
@@ -216,7 +216,7 @@ int pfault_mmf_check(unsigned err, unsigned addr)
 	if(!fil)
 		return 1;
 	int off = (addr&PAGE_MASK) - n->addr;
-	do_sys_read_flags(fil, mf->off + off, (char *)(addr&PAGE_MASK), PAGE_SIZE, 0);
+	do_sys_read_flags(fil, mf->off + off, (char *)(addr&PAGE_MASK), PAGE_SIZE);
 	return 1;
 }
 

@@ -57,14 +57,6 @@ int sys_seek(int fp, unsigned pos, unsigned whence)
 	return f->pos;
 }
 
-struct inode *sys_getidir(char *path, int fd)
-{
-	if(path)
-		return get_idir(path, 0);
-	struct file *f = get_file_pointer(current_task, fd);
-	return f ? f->inode : 0;
-}
-
 int sys_fsync(int f)
 {
 	struct file *file = get_file_pointer((task_t *)current_task, f);
@@ -155,9 +147,7 @@ int sys_getnodestr(char *path, char *node)
 int sys_ftruncate(int f, unsigned length)
 {
 	struct file *file = get_file_pointer((task_t *)current_task, f);
-	if(!file)
-		return -EBADF;
-	if(!file->inode) 
+	if(!file || !file->inode)
 		return -EBADF;
 	file->inode->len = length;
 	sync_inode_tofs(file->inode);
@@ -231,8 +221,10 @@ int sys_access(char *path, int mode)
 	struct inode *i = get_idir(path, 0);
 	if(!i)
 		return -ENOENT;
-	if(current_task->uid == GOD)
+	if(current_task->uid == GOD) {
+		iput(i);
 		return 0;
+	}
 	int fail=0;
 	if(mode & R_OK)
 		fail += (permissions(i, MAY_READ) ? 0 : 1);
@@ -262,7 +254,6 @@ int select_filedes(int i, int rw)
 	return ready;
 }
 
-/* This stub provides the basic functionality of sys_select, but the results are not real. They assume no errors */
 int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds, struct timeval *timeout)
 {
 	if(nfds < 0)

@@ -22,12 +22,13 @@ struct file *d_sys_open(char *name, int flags, int mode, int *error, int *num)
 	else if(current_task->cmask)
 		mode &= current_task->cmask;
 	int did_create=0;
-	inode = (flags & _FCREAT) ? ctget_idir(name, 0, mode | 0x1FF/*HACK*/, &did_create) : get_idir(name, 0);
+	inode = (flags & _FCREAT) ? 
+				ctget_idir(name, 0, mode | 0x1FF/*HACK*/, &did_create) 
+				: get_idir(name, 0);
 	if(!inode) {
 		*error = (flags & _FCREAT) ? -EACCES : -ENOENT;
 		return 0;
-	} else
-	{
+	} else {
 		/* If CREAT and EXCL are set, and the file exists, return */
 		if(flags & _FCREAT && flags & _FEXCL && !did_create) {
 			iput(inode);

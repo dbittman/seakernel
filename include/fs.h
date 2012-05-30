@@ -223,6 +223,6 @@ int sys_readlink(char *_link, char *buf, int nr);
 int change_icount(struct inode *i, int c);
 extern struct inode *kproclist;
 void init_flocks(struct inode *i);
-int do_sys_write_flags(struct file *f, unsigned off, char *buf, unsigned count, int update_pos);
-int do_sys_read_flags(struct file *f, unsigned off, char *buf, unsigned count, int update_pos);
+int do_sys_write_flags(struct file *f, unsigned off, char *buf, unsigned count);
+int do_sys_read_flags(struct file *f, unsigned off, char *buf, unsigned count);
 #endif

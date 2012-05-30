@@ -70,36 +70,34 @@ int rfs_read(struct inode *i, unsigned int off, unsigned int len, char *b)
 	return len;
 }
 
-int rfs_resize(struct inode *i, unsigned int s)
+static void rfs_resize(struct inode *i, unsigned int s)
 {
 	if(s == i->len)
-		return 0;
+		return;
 	int new = (int)kmalloc(s);
-	int x=0;
 	if(i->len > s)
 	{
 		memcpy((void *)new, (void *)i->start, s);
-		x = -1;
 	}
 	else
 	{
 		memcpy((void *)new, (void *)i->start, i->len);
-		x = 1;
 	}
 	kfree((void *)i->start);
 	i->start = new;
 	i->len = s;
-	return x;
 }
 
 int rfs_write(struct inode *i, unsigned int off, unsigned int len, char *b)
 {
 	if(!len)
 		return -EINVAL;
-	if((unsigned)off > i->len)
+	if((unsigned)off > i->len || (unsigned)off+len > i->len) 
+	{
+		mutex_on(&i->lock);
 		rfs_resize(i, len+off);
-	if((unsigned)off+len > i->len)
-		rfs_resize(i, len+off);
+		mutex_off(&i->lock);
+	}
 	memcpy((void *)(i->start+off), (void *)b, len);
 	return len;
 }
@@ -113,16 +111,16 @@ struct inode *rfs_create(struct inode *__p, char *name, unsigned int mode)
 	{
 		return r;
 	}
-	struct inode *root_nodes;
-	root_nodes = (struct inode *)kmalloc(sizeof(struct inode));
-	strncpy(root_nodes->name, name, 128);
-	root_nodes->uid = current_task->uid;
-	root_nodes->gid = current_task->gid;
-	root_nodes->len = 1;
-	root_nodes->i_ops = &rfs_inode_ops;
-	root_nodes->mode = mode | 0x1FF;
-	root_nodes->start = (int)kmalloc(1);
-	create_mutex(&root_nodes->lock);
-	if(!__p) add_inode(p, root_nodes);
-	return root_nodes;
+	struct inode *node;
+	node = (struct inode *)kmalloc(sizeof(struct inode));
+	strncpy(node->name, name, 128);
+	node->uid = current_task->uid;
+	node->gid = current_task->gid;
+	node->len = 0;
+	node->i_ops = &rfs_inode_ops;
+	node->mode = mode | 0x1FF;
+	node->start = (int)kmalloc(1);
+	create_mutex(&node->lock);
+	if(!__p) add_inode(p, node);
+	return node;
 }

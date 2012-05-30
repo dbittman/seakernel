@@ -6,5 +6,4 @@ KOBJS+=kernel/fs/vfs/callback.o \
 	kernel/fs/vfs/link.o \
 	kernel/fs/vfs/mount.o \
 	kernel/fs/vfs/ops.o \
-	kernel/fs/vfs/read.o \
-	kernel/fs/vfs/write.o
+	kernel/fs/vfs/rw.o

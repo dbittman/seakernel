@@ -61,14 +61,6 @@ int get_pwd(char *buf, int sz)
 	return do_get_path_string(current_task->pwd, buf, sz == 0 ? -1 : sz);
 }
 
-int do_chroot(struct inode *i)
-{
-	mutex_on(&i->lock);
-	current_task->root = i;
-	mutex_off(&i->lock);
-	return 0;
-}
-
 int chroot(char *n)
 {
 	if(!n) return -EINVAL;
@@ -89,22 +81,13 @@ int chroot(char *n)
 	}
 	mutex_on(&i->lock);
 	i->required++;
+	current_task->root = i;
 	mutex_off(&i->lock);
-	do_chroot(i);
 	mutex_on(&old->lock);
 	old->required++;
 	mutex_off(&old->lock);
 	iput(old);
 	chdir("/");
-	return 0;
-}
-
-int do_chdir(struct inode *i)
-{
-	if(!i) return -EINVAL;
-	if(!is_directory(i)) return -ENOTDIR;
-	if(!permissions(i, MAY_READ)) return -EACCES;
-	current_task->pwd = i;
 	return 0;
 }
 
@@ -115,19 +98,23 @@ int chdir(char *n)
 	struct inode *i=0;
 	struct inode *old = current_task->pwd;
 	i = get_idir(n, 0);
-	if(!i)
-		return -ENOENT;
-	int ret = do_chdir(i);
-	if(!ret) {
-		mutex_on(&old->lock);
-		old->required--;
-		mutex_off(&old->lock);
-		iput(old);
+	if(!i) return -ENOENT;
+	if(!is_directory(i)) {
+		iput(i);
+		return -ENOTDIR;
 	}
+	if(!permissions(i, MAY_READ)) {
+		iput(i);
+		return -EACCES;
+	}
+	current_task->pwd = i;
+	mutex_on(&old->lock);
+	old->required--;
+	iput(old);
 	mutex_on(&current_task->pwd->lock);
 	current_task->pwd->required++;
 	mutex_off(&current_task->pwd->lock);
-	return ret;
+	return 0;
 }
 
 struct inode *do_readdir(struct inode *i, int num)
@@ -163,8 +150,10 @@ struct inode *read_dir(char *n, int num)
 	i = get_idir(n, 0);
 	if(!i)
 		return 0;
-	if(!permissions(i, MAY_EXEC))
+	if(!permissions(i, MAY_EXEC)) {
+		iput(i);
 		return 0;
+	}
 	struct inode *ret = do_readdir(i, num);
 	iput(i);
 	return ret;

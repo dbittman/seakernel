@@ -23,7 +23,7 @@ static inline int is_valid_elf(char *buf)
 
 static inline int read_data(int fp, char *buf, unsigned off, int length)
 {
-	return do_sys_read_flags(get_file_pointer((task_t *)current_task, fp), off, buf, length, 0);
+	return do_sys_read_flags(get_file_pointer((task_t *)current_task, fp), off, buf, length);
 }
 
 int process_elf_phdr(char *mem, int fp, unsigned *start, unsigned *end)
@@ -53,7 +53,7 @@ int process_elf_phdr(char *mem, int fp, unsigned *start, unsigned *end)
 				map_if_not_mapped(tmp);
 				tmp += PAGE_SIZE;
 			}
-			if((unsigned)do_sys_read_flags(file, offset, (char *)vaddr, length, 0) != length)
+			if((unsigned)do_sys_read_flags(file, offset, (char *)vaddr, length) != length)
 				return 0;
 		}
 	}

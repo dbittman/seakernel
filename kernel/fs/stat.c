@@ -12,12 +12,8 @@ int sys_isatty(int f)
 	struct file *file = get_file_pointer((task_t *) current_task, f);
 	if(!file) return -EBADF;
 	struct inode *inode = file->inode;
-	if(S_ISCHR(inode->mode))
-	{
-		if(MAJOR(inode->dev) == 3 || MAJOR(inode->dev) == 4) {
-			return 1;
-		}
-	}
+	if(S_ISCHR(inode->mode) && (MAJOR(inode->dev) == 3 || MAJOR(inode->dev) == 4))
+		return 1;
 	return 0;
 }
 
@@ -27,28 +23,24 @@ int sys_getpath(int f, char *b)
 	struct file *file = get_file_pointer((task_t *) current_task, f);
 	if(!file)
 		return -EBADF;
-	struct inode *inode = file->inode;
-	return get_path_string(inode, b);
+	return get_path_string(file->inode, b);
 }
 
-int do_stat(struct inode * inode, struct stat * statbuf)
+void do_stat(struct inode * inode, struct stat * tmp)
 {
-	unsigned int i;
-	struct stat tmp;
-	tmp.st_dev = inode->dev;
-	tmp.st_ino = inode->num;
-	tmp.st_mode = inode->mode;
-	tmp.st_uid = inode->uid;
-	tmp.st_gid = inode->gid;
-	tmp.st_rdev = inode->dev;
-	tmp.st_size = inode->len;
-	tmp.st_blocks = inode->nblocks;
-	tmp.st_nlink = inode->nlink;
-	tmp.st_atime = inode->atime;
-	tmp.st_mtime = inode->mtime;
-	tmp.st_ctime = inode->ctime;
-	memcpy(statbuf, &tmp, sizeof(struct stat));
-	return (0);
+	assert(inode && tmp);
+	tmp->st_dev = inode->dev;
+	tmp->st_ino = inode->num;
+	tmp->st_mode = inode->mode;
+	tmp->st_uid = inode->uid;
+	tmp->st_gid = inode->gid;
+	tmp->st_rdev = inode->dev;
+	tmp->st_size = inode->len;
+	tmp->st_blocks = inode->nblocks;
+	tmp->st_nlink = inode->nlink;
+	tmp->st_atime = inode->atime;
+	tmp->st_mtime = inode->mtime;
+	tmp->st_ctime = inode->ctime;
 }
 
 int sys_stat(char *f, struct stat *statbuf, int lin)
@@ -58,9 +50,9 @@ int sys_stat(char *f, struct stat *statbuf, int lin)
 	i = (struct inode *) (lin ? lget_idir(f, 0) : get_idir(f, 0));
 	if(!i)
 		return -ENOENT;
-	int r = do_stat(i, statbuf);
+	do_stat(i, statbuf);
 	iput(i);
-	return r;
+	return 0;
 }
 
 int sys_dirstat(char *dir, unsigned num, char *namebuf, struct stat *statbuf)
@@ -78,11 +70,12 @@ int sys_dirstat(char *dir, unsigned num, char *namebuf, struct stat *statbuf)
 
 int sys_fstat(int fp, struct stat *sb)
 {
-	struct file *f = get_file_pointer((task_t *)current_task, fp);
-	if(!f) return -EBADF;
 	if(!sb)
 		return -EINVAL;
-	return do_stat(f->inode, sb);
+	struct file *f = get_file_pointer((task_t *)current_task, fp);
+	if(!f) return -EBADF;
+	do_stat(f->inode, sb);
+	return 0;
 }
 
 int sys_posix_fsstat(int fd, struct posix_statfs *sb)

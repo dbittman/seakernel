@@ -28,7 +28,7 @@ int unlink(char *f)
 	if(!i)
 		return -ENOENT;
 	int err = 0;
-	if(!permissions(i->parent, MAY_WRITE))
+	if(current_task->uid && (i->parent->mode & S_ISVTX) && (i->uid != current_task->uid))
 		err = -EACCES;
 	if(i->child)
 		err = -EISDIR;

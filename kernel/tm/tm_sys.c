@@ -68,8 +68,6 @@ int sys_nice(int which, int who, int val, int flags)
 	int c=0;
 	for(;t;t=t->next)
 	{
-		//if(which == PRIO_PGRP)
-		//	t->priority = val;
 		if(which == PRIO_USER && (t->uid == who || t->_uid == who))
 			t->priority = val, c++;
 	}

@@ -1,11 +1,11 @@
 /* Functions for exiting processes, killing processes, and cleaning up resources.
-* Copyright (c) 2010 Daniel Bittman
+* Copyright (c) 2012 Daniel Bittman
 */
 #include <kernel.h>
 #include <memory.h>
 #include <task.h>
 extern task_t *end_tokill;
-int free_stack();
+
 void clear_resources(task_t *t)
 {
 	if(t->exe && t->exe->parent != kproclist) 
@@ -35,9 +35,8 @@ void set_as_dead(task_t *t)
 	/* Add to death */
 	if((tokill && !end_tokill) || (!tokill && end_tokill))
 		panic(PANIC_NOSYNC, "deletion queue is f*cked up");
-	if(!tokill) {
+	if(!tokill)
 		tokill = t;
-	}
 	else {
 		task_t *p = (task_t *)end_tokill;
 		p->next = t;
@@ -100,7 +99,7 @@ void kill_task(unsigned int pid)
 	task->state = TASK_SUICIDAL;
 	task_full_uncritical();
 	memset((void *)task->sig_queue, 0, 128*sizeof(int));
-	task->sigd = 0;
+	task->sigd = 0; /* fuck your signals */
 	if(task == current_task)
 		force_schedule();
 }
@@ -141,7 +140,6 @@ void add_exit_stat(task_t *t, ex_stat *e)
 	unlock_scheduler();
 }
 
-void close_all_files(task_t *);
 void exit(int code)
 {
 	if(!current_task || current_task->pid == 0) 

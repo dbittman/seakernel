@@ -103,7 +103,7 @@ __attribute__((optimize("O0"))) void __mutex_on(mutex_t *m, char *file, int line
 #if 1
 		assert(m->pid != -1);
 		task_t *t = (task_t *)m->owner;
-		task_t *p = get_task_pid(m->pid);
+		task_t *p = 0;//get_task_pid(m->pid);
 		if(p && (p != t || m->pid != (int)p->pid || m->pid != (int)t->pid))
 			panic(0, "Mutex confusion (%d)! \nm %d, t %d (%d:%d:%d), p %d; %s:%d\nWas set on: %s:%d", current_task->pid, m->pid, t->pid, t->state, t->system, t->flags, p->pid, file, line, m->file, m->line);
 #endif

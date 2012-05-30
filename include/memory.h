@@ -55,7 +55,6 @@ extern unsigned int cr0temp;
  __asm__ __volatile__("movl %%cr3,%%eax\n\tmovl %%eax,%%cr3": : :"ax", "eax")
 
 void page_fault(registers_t r);
-
 int vm_map_all(unsigned virt, unsigned phys, unsigned attr);
 void vm_init(unsigned id_map_to);
 void vm_switch(page_dir_t *n/*VIRTUAL ADDRESS*/);
@@ -68,7 +67,7 @@ unsigned int vm_getmap(unsigned v, unsigned *p);
 page_dir_t *vm_clone(page_dir_t *pd, char);
 void process_memorymap(struct multiboot *mboot);
 void pm_init(int start, struct multiboot *);
-
+int free_stack();
 int __pm_alloc_page(char *, int);
 
 #define pm_alloc_page() __pm_alloc_page(__FILE__, __LINE__)

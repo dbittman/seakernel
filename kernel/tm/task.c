@@ -8,13 +8,10 @@ volatile task_t *current_task=0;
 extern volatile page_dir_t *kernel_dir;
 volatile unsigned next_pid=0;
 volatile task_t *tokill=0, *end_tokill=0;
-extern unsigned current_hz;
 extern void do_switch_to_user_mode();
-extern void set_kernel_stack(u32int stack);
 
 void init_multitasking()
 {
-	super_cli();
 	printk(KERN_DEBUG, "[sched]: Starting multitasking system...\n");
 	task_t *task = (task_t *)kmalloc(sizeof(task_t));
 	if(!task)
@@ -105,7 +102,7 @@ int times(struct tms *buf)
 		buf->tms_cstime = current_task->t_cstime;
 		buf->tms_cutime = current_task->t_cutime;
 	}
-	return ticks; /* this is inaccurate */
+	return ticks; /* TODO: this is inaccurate */
 }
 
 int get_mem_usage()
@@ -116,11 +113,7 @@ int get_mem_usage()
 	int i=0;
 	for(i=0;i<1022;++i)
 	{
-		if(i<id_tables)
-			continue;
-		if(i >= D)
-			continue;
-		if(!pd[i])
+		if(i<id_tables || i >= D || !pd[i])
 			continue;
 		++count;
 		unsigned virt = i*1024*PAGE_SIZE;
@@ -144,7 +137,6 @@ int get_task_mem_usage(task_t *t)
 {
 	if(!t || !get_task_pid(t->pid))
 		return 0;
-	__super_cli();
 	t->mem_usage_calc=0;
 	while(!t->mem_usage_calc) {
 		t->flags |= TF_REQMEM;
@@ -154,4 +146,3 @@ int get_task_mem_usage(task_t *t)
 	}
 	return t->mem_usage_calc;
 }
-

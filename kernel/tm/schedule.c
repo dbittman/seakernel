@@ -5,8 +5,6 @@
 mutex_t scheding;
 
 /* This here is the basic scheduler - It does nothing except find the next runable task */
-task_t *watch=0;
-int get_mem_usage();
 void _overflow(char *type)
 {
 	printk(5, "%s overflow occurred in task %d (esp=%x, ebp=%x, heap_end=%x). Killing...\n", type, current_task->pid, current_task->esp, current_task->ebp, current_task->heap_end);
@@ -16,7 +14,6 @@ void _overflow(char *type)
 	task_suicide();
 }
 
-extern int current_hz;
 __attribute__((always_inline)) inline void update_task(task_t *t)
 {
 	if(t->state == TASK_USLEEP)
@@ -58,7 +55,6 @@ __attribute__((always_inline)) inline task_t *get_next_task()
 		 * runnable task, it gets forced to run */
 		if(t == prev && !task_is_runable(t))
 			return (task_t *)kernel_task;
-		
 	}
 	panic(PANIC_NOSYNC, "get_next_task(): Task became null pointer!");
 	return (task_t *)0;
@@ -178,7 +174,6 @@ void check_alarms()
 {
 	task_t *t = alarm_list_start;
 	task_critical();
-	__super_cli();
 	while(t) {
 		if(!(--t->alrm_count))
 		{
@@ -194,7 +189,6 @@ void check_alarms()
 			}
 			t->flags &= ~TF_ALARM;
 			do_send_signal(t->pid, SIGALRM, 1);
-			__super_cli();
 		}
 		t=t->alarm_next;
 	}

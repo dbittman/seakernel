@@ -6,7 +6,6 @@
 #include <kernel.h>
 #include <cache.h>
 #include <task.h>
-extern char shutting_down;
 mutex_t cl_mutex;
 cache_t *cache_list=0;
 void accessed_cache(cache_t *c)

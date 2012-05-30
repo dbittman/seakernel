@@ -109,7 +109,6 @@ int fork()
 		__engage_idle();
 		unlock_scheduler();
 		return new->pid;
-	} else
-		return 0;
-	return -1;
+	}
+	return 0;
 }

@@ -18,13 +18,11 @@ int get_timer_th(int *t)
 /* Recurse through the parents of tasks and update their times */
 void inc_parent_times(task_t *t, int u, int s)
 {
-	if(!t || t == kernel_task) 
-		return;
-	t->t_cutime += u;
-	t->t_cstime += s;
-	/* Heres the problem: This occurs on every clock tick. If the process tree is really
-	 * big, it could take a lot of clock cycles... Oh well. It shouldn't be that bad. */
-	inc_parent_times(t->parent, u, s);
+	while(t && t != kernel_task) {
+		t->t_cutime += u;
+		t->t_cstime += s;
+		t=t->parent;
+	}
 }
 
 inline static void do_run_scheduler()
@@ -36,7 +34,6 @@ inline static void do_run_scheduler()
 		(current_task->flags&TF_LOCK))
 		return;
 	if(scheding.count) return;
-	__super_cli();
 	schedule();
 }
 
@@ -84,8 +81,6 @@ void delay(int t)
 #endif
 	if(shutting_down)
 		return (void) delay_sleep(t);
-	__super_cli();
-	//t /= (2000/current_hz);
 	long end = ticks + t + 1;
 	if(!current_task || current_task->pid == 0)
 	{
@@ -99,10 +94,9 @@ void delay(int t)
 	task_full_uncritical();
 	force_schedule();
 }
-void lapic_eoi();
+
 void delay_sleep(int t)
 {
-	//t /= (2000/current_hz);
 	long end = ticks+t+1;
 	__super_sti();
 #ifdef CONFIG_SMP

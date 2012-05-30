@@ -14,6 +14,5 @@ else
 	printf "tmp "
 	mount -t tmpfs \* /mnt/tmp
 	printf "done\n"
-	cp /sh /mnt/tmp/sh
-	chroot /mnt /tmp/sh /config/rc/boot
+	chroot /mnt /bin/sh /config/rc/boot
 fi

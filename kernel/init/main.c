@@ -25,7 +25,7 @@ char *init_env[12];
 char cleared_args=0;
 int init_pid=0;
 char kernel_name[128];
-elf_t kernel_elf;
+elf32_t kernel_elf;
 int april_fools=0;
 struct tm kernel_start_time;
 

@@ -110,7 +110,6 @@ isr_common_stub:
     mov fs, ax
 
     call isr_handler
-    cli
     pop ebx        ; reload the original data segment descriptor
     mov ds, bx
     mov es, bx
@@ -118,7 +117,6 @@ isr_common_stub:
 
     popa                     ; Pops edi,esi,ebp...
     add esp, 8     ; Cleans up the pushed error code and pushed ISR number
-    sti
     iretd           ; pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP
 
 ; In isr.c

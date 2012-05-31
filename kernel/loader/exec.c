@@ -9,66 +9,6 @@
 #include <init.h>
 #include <sys/fcntl.h>
 
-static inline int is_valid_elf(char *buf)
-{
-	struct ELF_header_s * eh;
-	eh = (struct ELF_header_s*)buf;
-	if(memcmp(eh->id + 1, (uint8_t*)"ELF", 3)
-		|| eh->machine != 0x03
-		|| eh->type != 0x02
-		|| eh->entry == 0x00)
-		return 0;
-	return 1;
-}
-
-static inline int read_data(int fp, char *buf, unsigned off, int length)
-{
-	return do_sys_read_flags(get_file_pointer((task_t *)current_task, fp), off, buf, length);
-}
-
-int process_elf_phdr(char *mem, int fp, unsigned *start, unsigned *end)
-{
-	uint32_t i, x;
-	uint32_t entry;
-	struct ELF_header_s *eh = (struct ELF_header_s *)mem;
-	char buffer[(eh->phnum+1)*eh->phsize];
-	read_data(fp, buffer, eh->phoff, eh->phsize * eh->phnum);
-	unsigned vaddr=0, length=0, offset=0, stop, tmp;
-	unsigned max=0, min=~0;
-	struct file *file = get_file_pointer((task_t *)current_task, fp);
-	for(i=0;i < eh->phnum;i++)
-	{
-		elf_phdr_t *ph = (elf_phdr_t *)(buffer + (i*eh->phsize));
-		vaddr = ph->p_addr;
-		if(vaddr < min)
-			min = vaddr;
-		offset = ph->p_offset;
-		length = ph->p_filesz;
-		stop = vaddr+ph->p_memsz;
-		tmp = vaddr&PAGE_MASK;
-		if(ph->p_type == PH_LOAD) {
-			if(stop > max) max = stop;
-			while(tmp <= stop + PAGE_SIZE)
-			{
-				map_if_not_mapped(tmp);
-				tmp += PAGE_SIZE;
-			}
-			if((unsigned)do_sys_read_flags(file, offset, (char *)vaddr, length) != length)
-				return 0;
-		}
-	}
-	if(!max)
-		return 0;
-	*start = eh->entry;
-	*end = max;
-	return 1;
-}
-
-int process_elf(char *mem, int fp, unsigned *start, unsigned *end)
-{
-	return process_elf_phdr(mem, fp, start, end);
-}
-
 /* Prepares a process to recieve a new executable. Desc is the descriptor of the executable. 
  * We keep it open through here so that we dont have to re-open it. */
 task_t *preexec(task_t *t, int desc)
@@ -193,9 +133,9 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 		goto error;
 	}
 	/* Detirmine if the file is a valid ELF */
-	char mem[sizeof(struct ELF_header_s)];
-	read_data(desc, mem, 0, sizeof(struct ELF_header_s));
-	if(!is_valid_elf(mem)) {
+	char mem[sizeof(elf_header_t)];
+	read_data(desc, mem, 0, sizeof(elf_header_t));
+	if(!is_valid_elf32(mem, 2)) {
 		err = -ENOEXEC;
 		sys_close(desc);
 		goto error;

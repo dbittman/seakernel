@@ -117,7 +117,7 @@ void isr_handler(volatile registers_t regs)
 {
 	int_count[regs.int_no]++;
 	ack(regs.int_no);
-	if(regs.int_no == 0x80 || regs.int_no == 80) {
+	if(regs.int_no == 80) {
 		syscall_handler(&regs);
 		return;
 	}

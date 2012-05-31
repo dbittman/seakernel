@@ -25,6 +25,7 @@ int remove_kernel_symbol(char *);
 int sys_load_module(char *path, char *args, int flags);
 int sys_unload_module(char *path, int flags);
 intptr_t find_kernel_function(char * unres);
+int load_deps_c(char *);
 static inline void write_deps(char *b, char *str)
 {
 	int i=0;

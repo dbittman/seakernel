@@ -1,11 +1,38 @@
 #ifndef ELF_H
 #define ELF_H
 #include <mod.h>
-#define d_memcmp memcmp
+#include <block.h>
 
 extern void * kernel_start;
 
-struct __attribute__((packed)) ELF_section_header_s
+typedef struct { 
+	const char *name; 
+	intptr_t ptr; 
+	int flag;
+} kernel_symbol_t;
+#define MAX_SYMS 512
+
+typedef struct __attribute__((packed))
+{
+	uint8_t  id[16];
+	uint16_t type;
+	uint16_t machine;
+	uint32_t version;
+	uint32_t entry;
+	uint32_t phoff;
+	uint32_t shoff;
+	uint32_t flags;
+	uint16_t size;
+	uint16_t phsize;
+	uint16_t phnum;
+	uint16_t shsize;
+	uint16_t shnum;
+	uint16_t strndx;
+	char *shbuf;
+	unsigned strtab_addr, symtab_addr, strtabsz, syment_len;
+} elf_header_t;
+
+typedef struct __attribute__((packed))
 {
 	uint32_t name;
 	uint32_t type;
@@ -17,20 +44,20 @@ struct __attribute__((packed)) ELF_section_header_s
 	uint32_t info;
 	uint32_t alignment;
 	uint32_t sect_size;
-} __attribute__((packed));
+} elf32_section_header_t;
 
-struct __attribute__((packed)) ELF_reloc_entry_s
+typedef struct __attribute__((packed))
 {
 	int   offset;
 	uint32_t  info;
-} __attribute__((packed));
+} elf32_reloc_entry_t;
 
-typedef struct {
+typedef struct __attribute__((packed)) {
 	uint32_t r_offset;
 	uint32_t r_info;
-} elf_rel_t;
+} elf32_rel_t;
 
-struct __attribute__((packed)) ELF_symtab_entry_s
+typedef struct __attribute__((packed))
 {
 	uint32_t name;
 	uint32_t address;
@@ -38,11 +65,9 @@ struct __attribute__((packed)) ELF_symtab_entry_s
 	uint8_t  info;
 	uint8_t  other;
 	uint16_t shndx;
-} __attribute__((packed));
+} elf32_symtab_entry_t;
 
-typedef struct ELF_symtab_entry_s elf_syment_t;
-
-typedef struct
+typedef struct __attribute__((packed))
 {
 	uint32_t p_type;
 	uint32_t p_offset;
@@ -52,7 +77,18 @@ typedef struct
 	uint32_t p_memsz;
 	uint32_t p_flags;
 	uint32_t p_align;
-} elf_phdr_t;
+} elf32_program_header_t;
+
+static inline int is_valid_elf32(char *buf, short type)
+{
+	elf_header_t * eh;
+	eh = (elf_header_t*)buf;
+	if(memcmp(eh->id + 1, (uint8_t*)"ELF", 3)
+		|| eh->machine != 0x03
+		|| eh->type != type)
+		return 0;
+	return 1;
+}
 
 #define PH_LOAD    1
 #define PH_DYNAMIC 2
@@ -93,23 +129,28 @@ typedef struct
 
 #define ELF_R_SYM(i)  ((i)>>8)
 #define ELF_R_TYPE(i) ((unsigned char)(i))
-
+#define ELF32_ST_TYPE(i) ((i)&0xf)
 typedef struct {
 	uint16_t d_tag;
 	union {
 		uint32_t d_val;
 		uint32_t d_ptr;
 	} d_un;
-} elf_dyn_t;
+} elf32_dyn_t;
 
 typedef struct
 {
-  struct ELF_symtab_entry_s *symtab;
+  elf32_symtab_entry_t *symtab;
   uint32_t      symtabsz;
   const char   *strtab;
   uint32_t      strtabsz;
   unsigned lookable;
-} elf_t;
+} elf32_t;
+
+static inline int read_data(int fp, char *buf, unsigned off, int length)
+{
+	return do_sys_read_flags(get_file_pointer((task_t *)current_task, fp), off, buf, length);
+}
 
 #define GET_RELOC_SYM(i)  ((i)>>8)
 #define GET_RELOC_TYPE(i) ((unsigned char)(i))
@@ -124,11 +165,17 @@ intptr_t find_kernel_function_user(char * unres);
 intptr_t find_kernel_function(char * unres);
 void init_kernel_symbols(void);
 int parse_elf_module(module_t *mod, uint8_t * buf, char *name);
-const char *elf_lookup_symbol (uint32_t addr, elf_t *elf);
-elf_t parse_kernel_elf(struct multiboot *mb, elf_t *);
-extern elf_t kernel_elf;
-
-#include <block.h>
+const char *elf_lookup_symbol (uint32_t addr, elf32_t *elf);
+elf32_t parse_kernel_elf(struct multiboot *mb, elf32_t *);
+extern elf32_t kernel_elf;
+const char *elf_lookup_symbol (uint32_t addr, elf32_t *elf);
+char *get_symbol_string(uint8_t *buf, uint32_t index);
+void _add_kernel_symbol(const intptr_t func, const char * funcstr);
+intptr_t find_kernel_function(char * unres);
+int remove_kernel_symbol(char * unres);
+elf32_symtab_entry_t * fill_symbol_struct(uint8_t * buf, uint32_t symbol);
+intptr_t get_section_offset(uint8_t * buf, uint32_t info);
+int process_elf(char *mem, int fp, unsigned *start, unsigned *end);
 unsigned long long get_epoch_time();
 void remove_dfs_node(char *name);
 int kernel_cache_sync_slow(int all);

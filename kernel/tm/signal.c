@@ -15,8 +15,6 @@ int sys_ret_sig()
 	__super_cli();
 	lock_scheduler();
 	current_task->flags |= TF_RETSIG;
-	//struct sigaction *sa = (struct sigaction *)&(current_task->signal_act[current_task->cur_sig]);
-	/* Emulate behavior for being called on the current stack by copying the new stack back to the old one */
 	asm("jmp *%0"::"r"(current_task->oip));
 	for(;;);
 }

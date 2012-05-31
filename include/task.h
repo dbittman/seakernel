@@ -12,25 +12,7 @@
 //#define current_task (__get_current_task())
 #define current_task ((volatile task_t *)(primary_cpu.current))
 #endif
-struct __attribute__((packed)) ELF_header_s
-{
-	uint8_t  id[16];
-	uint16_t type;
-	uint16_t machine;
-	uint32_t version;
-	uint32_t entry;
-	uint32_t phoff;
-	uint32_t shoff;
-	uint32_t flags;
-	uint16_t size;
-	uint16_t phsize;
-	uint16_t phnum;
-	uint16_t shsize;
-	uint16_t shnum;
-	uint16_t strndx;
-	char *shbuf;
-	unsigned strtab_addr, symtab_addr, strtabsz, syment_len;
-} __attribute__((packed));
+
 #define GOD 0 
 extern void set_kernel_stack(u32int stack);
 #define ISGOD(x) (current_task->uid == GOD)

@@ -123,8 +123,6 @@ typedef volatile struct task_struct
 #include <cpu.h>
 static inline __attribute__((always_inline))  volatile task_t *__get_current_task()
 {
-	/* TODO: fix this */
-	return primary_cpu.current;
 	unsigned t=0, a=0;
 	//__super_cli();
 	if(kernel_task) {

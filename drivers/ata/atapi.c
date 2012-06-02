@@ -84,6 +84,6 @@ int atapi_rw_main(int rw, int dev, int blk_, char *buf)
 
 int ioctl_atapi(int min, int cmd, int arg)
 {
-	/* TODO */
+	
 	return 0;
 }

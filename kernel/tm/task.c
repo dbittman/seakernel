@@ -102,7 +102,7 @@ int times(struct tms *buf)
 		buf->tms_cstime = current_task->t_cstime;
 		buf->tms_cutime = current_task->t_cutime;
 	}
-	return ticks; /* TODO: this is inaccurate */
+	return ticks;
 }
 
 int get_mem_usage()

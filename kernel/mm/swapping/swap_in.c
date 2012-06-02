@@ -3,9 +3,7 @@
 #include <task.h>
 #include <swap.h>
 #include <block.h>
-/* TODO:
- * 	* After swapping in a page, move the end marker (0xFFFFFFFF) back to the true end
- */
+
 swapdev_t *swap_find_page(unsigned addr, unsigned pid, page_index_t **ret)
 {
 	if(!addr || !pid)

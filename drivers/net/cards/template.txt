@@ -71,7 +71,7 @@ int rtl8139_load_device_pci(struct pci_device *device)
 		device->flags |= PCI_ERROR;
 		return -1;
 	}
-	struct inode *i = dfs_cn("rtl8139", S_IFCHR, rtl8139_maj, rtl8139_min++); /* TODO: Network devices */
+	struct inode *i = dfs_cn("rtl8139", S_IFCHR, rtl8139_maj, rtl8139_min++);
 	dev->node = i;
 	printk(1, "[rtl8139]: Success!\n");
 	device->flags |= PCI_ENGAGED;

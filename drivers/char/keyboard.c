@@ -263,13 +263,9 @@ int try_console_switch(int code)
 
 int keyboard_int()
 {
-	int rawmode = !(curcons->term.c_iflag & ICANON);
-	/* HACK */ //rawmode=0;
 	unsigned char scancode = inb(0x60);
 	int release = (scancode > 127) ? 1 : 0;
 	if(release) scancode -= 128;
-	//if(rawmode)
-	//	raw(scancode, release);
 	unsigned short *map = get_keymap(is_shift, is_alt, is_ctrl, is_altgr);
 	if(!release)
 		if(try_console_switch(scancode))
@@ -286,13 +282,11 @@ int keyboard_int()
 	}
 	int value = code & 0xFF;
 	if(type < 0xF0) {
-		if (!release && !rawmode)
+		if (!release)
 			to_utf8(code);
 		return 0;
 	}
 	type -= 0xF0;
-	//if(rawmode && type != 2 && type != 7)
-	//return 0;
 	switch(type)
 	{
 		case 0: /* Keys like numbers, don't respond to capslock key */

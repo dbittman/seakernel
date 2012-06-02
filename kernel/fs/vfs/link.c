@@ -32,7 +32,7 @@ int unlink(char *f)
 		err = -EACCES;
 	if(i->child)
 		err = -EISDIR;
-	if(i->f_count) { /* HACK: This should queue the file for deletion */
+	if(i->f_count) {
 		iput(i);
 		return 0;
 	}

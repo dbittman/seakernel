@@ -55,10 +55,6 @@
 typedef long long int quad_t;
 typedef unsigned long long int u_quad_t;
 
-/*
- * FIXME
- * Relocate these... somewhere.
- */
 #define QUAD_MIN LLONG_MIN
 #define QUAD_MAX LLONG_MAX
 #define UQUAD_MAX ULLONG_MAX
@@ -74,12 +70,7 @@ union uu {
 	unsigned int ul[2];	/* as two unsigned ints */
 };
 
-/*
- * FIXME
- * This is currently little-endian dependant, fix when proper endian
- * detection is available.
- * Define high and low parts of a quad_t.
- */
+
 #define	H		1
 #define	L		0
 
@@ -105,10 +96,6 @@ union uu {
 #define	LHALF(x)	((unsigned int)(x) & (((int)1 << HALF_BITS) - 1))
 #define	LHUP(x)		((unsigned int)(x) << HALF_BITS)
 
-/*
- * FIXME
- * GCC >= 2 define qshift_t as an unsigned int, 1x uses u_quad_t.
- */
 #if __GNUC__ >= 2
 typedef unsigned int qshift_t;
 #else

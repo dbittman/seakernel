@@ -130,6 +130,11 @@ int read_partitions(struct ata_controller *cont, struct ata_device *dev, char *n
 	return 0;
 }
 
+int identify_atapi()
+{
+	return 0;
+}
+
 int init_ata_controller(struct ata_controller *cont){
 	cont->irqwait=1;
 	int i;
@@ -215,7 +220,7 @@ int init_ata_controller(struct ata_controller *cont){
 		printk(2, "\tLength = %d sectors (%d MB)\n", (unsigned)dev.length, ((unsigned)dev.length/2)/1024);
 		} else
 		{
-			//TODO: Identify atapi
+			identify_atapi();
 			dev.length=~0;
 			dev.flags |= F_LBA28;
 			printk(2, "\n");

@@ -23,7 +23,7 @@ struct file *d_sys_open(char *name, int flags, int mode, int *error, int *num)
 		mode &= current_task->cmask;
 	int did_create=0;
 	inode = (flags & _FCREAT) ? 
-				ctget_idir(name, 0, mode | 0x1FF/*HACK*/, &did_create) 
+				ctget_idir(name, 0, mode, &did_create) 
 				: get_idir(name, 0);
 	if(!inode) {
 		*error = (flags & _FCREAT) ? -EACCES : -ENOENT;

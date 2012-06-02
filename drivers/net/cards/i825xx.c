@@ -107,7 +107,7 @@ int i825xx_load_device_pci(struct pci_device *device)
 		device->flags |= PCI_ERROR;
 		return -1;
 	}
-	struct inode *i = dfs_cn("i825xx", S_IFCHR, i8_maj, i8_min++); /* TODO: Network devices */
+	struct inode *i = dfs_cn("i825xx", S_IFCHR, i8_maj, i8_min++);
 	dev->node = i;
 	printk(1, "[i825xx]: Success!\n");
 	device->flags |= PCI_ENGAGED;

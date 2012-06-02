@@ -2,7 +2,7 @@
 #define ELF_H
 #include <mod.h>
 #include <block.h>
-
+#define MAX_SYMS 512
 extern void * kernel_start;
 
 typedef struct { 
@@ -10,7 +10,7 @@ typedef struct {
 	intptr_t ptr; 
 	int flag;
 } kernel_symbol_t;
-#define MAX_SYMS 512
+
 
 typedef struct __attribute__((packed))
 {

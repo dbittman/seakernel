@@ -1,6 +1,6 @@
 #ifndef TSS_H
 #define TSS_H
-struct tss_entry_struct
+typedef struct tss_entry_struct
 {
 	u32int prev_tss;   // The previous TSS - if we used hardware task switching this would form a linked list.
 	u32int esp0;       // The stack pointer to load when we change to kernel mode.
@@ -29,13 +29,8 @@ struct tss_entry_struct
 	u32int ldt;        // Unused...
 	u16int trap;
 	u16int iomap_base;
-} __attribute__((packed));
-
-typedef struct tss_entry_struct tss_entry_t; 
-
+} __attribute__((packed)) tss_entry_t;
 
 extern void tss_flush();
-
-
 
 #endif

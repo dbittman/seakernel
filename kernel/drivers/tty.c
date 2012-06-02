@@ -8,7 +8,7 @@
 #include <char.h>
 #include <console.h>
 #include <asm/system.h>
-#include <sgtty.h>
+#include <termios.h>
 extern unsigned init_pid;
 extern void update_cursor(int);
 vterm_t consoles[MAX_CONSOLES];

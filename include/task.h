@@ -7,23 +7,41 @@
 #include <sig.h>
 #include <mmfile.h>
 #include <dev.h>
-#ifdef CONFIG_SMP
-/** TODO: this needs to be fixed for SMP */
-//#define current_task (__get_current_task())
-#define current_task ((volatile task_t *)(primary_cpu.current))
-#endif
-
 #define GOD 0 
-extern void set_kernel_stack(u32int stack);
 #define ISGOD(x) (current_task->uid == GOD)
 #define KERN_STACK_SIZE 0x16000
-extern unsigned exploding;
-void run_scheduler();
-
 #define __EXIT     0
 #define __COREDUMP 1
 #define __EXITSIG  2
 #define __STOPSIG  4
+#define TASK_MAGIC 0xDEADBEEF
+#define FILP_HASH_LEN 512
+#define TF_WMUTEX     1
+#define TF_EXITING    2
+#define TF_ALARM      4
+#define TF_DIDLOCK    8
+#define TF_SWAP      16
+#define TF_KTASK     32
+#define TF_SWAPQUEUE 64
+#define TF_LOCK     128
+#define TF_REQMEM   256
+#define TF_DYING    512
+#define TF_RETSIG  1024
+#define TF_INSIG   2048
+#define PRIO_PROCESS 1
+#define PRIO_PGRP    2
+#define PRIO_USER    3
+
+#ifdef CONFIG_SMP
+#define current_task (__get_current_task())
+#endif
+
+#if SCHED_TTY
+static int sched_tty = SCHED_TTY_CYC;
+#else
+static int sched_tty = 0;
+#endif
+
 typedef struct exit_status {
 	unsigned pid;
 	int ret;
@@ -33,8 +51,22 @@ typedef struct exit_status {
 	struct exit_status *next, *prev;
 } ex_stat;
 
-#define TASK_MAGIC 0xDEADBEEF
-#define FILP_HASH_LEN 512
+/** I believe its fair to describe the storage of tasks. There are many linked lists.
+ * 
+ * First, theres the basic master list. kernel_task is start, and every task is DLL'd to it.
+ * 
+ * Second, there is the family list. This is kept track of by 'parent'. Each task's parent field points to the task that created it.
+ * 
+ * Third, there is 'waiting'. This is used when a task is waiting on another task, and points to it.
+ * 
+ * Fourth, there is the alarm list. This is a single linked list that is a list of all tasks that are waiting for alarms.
+ * 
+ * If a task is dead, it goes to the 'dead queue'. the tokill list. This is DLL, using the next and prev fields.
+ * 
+ * alarm_list_start is the first alarmed task.
+ * 
+ * current_task points to the task currently running.
+ */
 typedef volatile struct task_struct
 {
 	volatile unsigned magic;
@@ -87,11 +119,11 @@ typedef volatile struct task_struct
 	volatile struct task_struct *next, *prev, *parent, *waiting, *alarm_next;
 } task_t;
 
-extern volatile task_t *kernel_task, *tokill, *alarm_list_start;
 #ifdef CONFIG_SMP
 #include <cpu.h>
 static inline __attribute__((always_inline))  volatile task_t *__get_current_task()
 {
+	/* TODO: fix this */
 	return primary_cpu.current;
 	unsigned t=0, a=0;
 	//__super_cli();
@@ -107,6 +139,7 @@ static inline __attribute__((always_inline))  volatile task_t *__get_current_tas
 #else /* !CONFIG_SMP */
 extern volatile task_t *current_task;
 #endif
+
 static inline __attribute__((always_inline)) void set_current_task_dp(task_t *t)
 {
 #ifndef CONFIG_SMP
@@ -121,35 +154,8 @@ static inline __attribute__((always_inline)) void set_current_task_dp(task_t *t)
 #endif
 }
 
-/** I believe its fair to describe the storage of tasks. There are many linked lists.
- * 
- * First, theres the basic master list. kernel_task is start, and every task is DLL'd to it.
- * 
- * Second, there is the family list. This is kept track of by 'parent'. Each task's parent field points to the task that created it.
- * 
- * Third, there is 'waiting'. This is used when a task is waiting on another task, and points to it.
- * 
- * Fourth, there is the alarm list. This is a single linked list that is a list of all tasks that are waiting for alarms.
- * 
- * If a task is dead, it goes to the 'dead queue'. the tokill list. This is DLL, using the next and prev fields.
- * 
- * alarm_list_start is the first alarmed task.
- * 
- * current_task points to the task currently running.
- */
 
-#define TF_WMUTEX     1
-#define TF_EXITING    2
-#define TF_ALARM      4
-#define TF_DIDLOCK    8
-#define TF_SWAP      16
-#define TF_KTASK     32
-#define TF_SWAPQUEUE 64
-#define TF_LOCK     128
-#define TF_REQMEM   256
-#define TF_DYING    512
-#define TF_RETSIG  1024
-#define TF_INSIG   2048
+extern volatile task_t *kernel_task, *tokill, *alarm_list_start;
 
 #define raise_flag(f) current_task->flags |= f
 #define lower_flag(f) current_task->flags &= ~f
@@ -158,7 +164,8 @@ void force_schedule();
 void take_issue_with_current_task();
 void clear_resources(task_t *);
 int times(struct tms *buf);
-
+extern void set_kernel_stack(u32int stack);
+void run_scheduler();
 extern volatile long ticks;
 int set_gid(int new);
 int set_uid(int new);
@@ -204,16 +211,56 @@ extern unsigned glob_sched_eip;
 void kill_all_tasks();
 void task_unlock_mutexes(task_t *t);
 void do_force_nolock(task_t *t);
+void clear_mmfiles(task_t *t, int);
+void copy_mmf(task_t *old, task_t *new);
+void check_mmf_and_flush(task_t *t, int fd);
+int load_so_library(char *name);
 int sys_ret_sig();
 void close_all_files(task_t *);
 int sys_gsetpriority(int set, int which, int id, int val);
 int sys_waitagain();
 void force_nolock(task_t *);
 int get_task_mem_usage(task_t *t);
-#define PRIO_PROCESS 1
-#define PRIO_PGRP    2
-#define PRIO_USER    3
 int sys_nice(int which, int who, int val, int flags);
+int sys_setsid();
+int sys_setpgid(int a, int b);
+void task_suicide();
+extern unsigned ret_values_size;
+extern unsigned *ret_values;
+void set_signal(int sig, unsigned hand);
+extern mutex_t scheding;
+int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds, struct timeval *timeout);
+int swap_in_page(task_t *, unsigned);
+#define wait_flag(a, b) __wait_flag(a, b, __FILE__, __LINE__)
+#define lock_scheduler() _lock_scheduler(__FILE__, __LINE__);
+#define unlock_scheduler() _unlock_scheduler(__FILE__, __LINE__);
+
+static inline  __attribute__((always_inline))  void _lock_scheduler(char *f, int l)
+{
+	current_task->flags |= TF_LOCK;
+	__super_cli();
+}
+
+static inline  __attribute__((always_inline))  void _unlock_scheduler(char *f, int l)
+{
+	current_task->flags &= ~TF_LOCK;
+	__super_sti();
+}
+
+static inline int got_signal(task_t *t)
+{
+	/* Ignore some kernel-generated signals */
+	if(current_task->sigd == SIGCHILD && 
+	!(((struct sigaction *)&(current_task->signal_act
+	[current_task->sigd]))->_sa_func._sa_handler))
+		return 0;
+	if(current_task->sigd == SIGPARENT && 
+	!(((struct sigaction *)&(current_task->signal_act
+	[current_task->sigd]))->_sa_func._sa_handler))
+		return 0;
+	return (current_task->sigd);
+}
+
 static __attribute__((always_inline)) inline int count_tasks()
 {
 	task_t *t = (task_t *)kernel_task;
@@ -283,51 +330,6 @@ static __attribute__((always_inline)) inline void exit_system()
 	force_nolock(current_task);
 #endif
 }
-int sys_setsid();
-int sys_setpgid(int a, int b);
-void task_suicide();
-extern unsigned ret_values_size;
-extern unsigned *ret_values;
-void set_signal(int sig, unsigned hand);
-extern mutex_t scheding;
-int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds, struct timeval *timeout);
-
-int swap_in_page(task_t *, unsigned);
-#define wait_flag(a, b) __wait_flag(a, b, __FILE__, __LINE__)
-extern int scheding_;
-static inline  __attribute__((always_inline))  void _lock_scheduler(char *f, int l)
-{
-	current_task->flags |= TF_LOCK;
-	__super_cli();
-}
-
-static inline  __attribute__((always_inline))  void _unlock_scheduler(char *f, int l)
-{
-	current_task->flags &= ~TF_LOCK;
-	__super_sti();
-}
-
-static inline int got_signal(task_t *t)
-{
-	/* Ignore some kernel-generated signals */
-	if(current_task->sigd == SIGCHILD && 
-	!(((struct sigaction *)&(current_task->signal_act
-	[current_task->sigd]))->_sa_func._sa_handler))
-		return 0;
-	if(current_task->sigd == SIGPARENT && 
-	!(((struct sigaction *)&(current_task->signal_act
-	[current_task->sigd]))->_sa_func._sa_handler))
-		return 0;
-	return (current_task->sigd);
-}
-
-#define lock_scheduler() _lock_scheduler(__FILE__, __LINE__);
-#define unlock_scheduler() _unlock_scheduler(__FILE__, __LINE__);
-#if SCHED_TTY
-static int sched_tty = SCHED_TTY_CYC;
-#else
-static int sched_tty = 0;
-#endif
 
 static inline int GET_MAX_TS(task_t *t)
 {
@@ -355,10 +357,5 @@ __attribute__((always_inline)) inline static int task_is_runable(task_t *task)
 		|| task->state == TASK_SIGNALED 
 		|| (task->state == TASK_ISLEEP && (task->sig_queue[0] || task->sigd)));
 }
-void clear_mmfiles(task_t *t, int);
-void copy_mmf(task_t *old, task_t *new);
-void check_mmf_and_flush(task_t *t, int fd);
-int load_so_library(char *name);
-
 
 #endif

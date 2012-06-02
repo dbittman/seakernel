@@ -12,6 +12,7 @@
 #define sigemptyset(what)   (*(what) = 0, 0)
 #define sigfillset(what)    (*(what) = ~(0), 0)
 #define sigismember(what,sig) (((*(what)) & (1<<(sig))) != 0)
+
 union sigval {
 	int    sival_int;    /* Integer signal value */
 	void  *sival_ptr;    /* Pointer signal value */
@@ -30,12 +31,10 @@ typedef unsigned long sigset_t;
 #define SA_RESTART	0x10000000
 #define SA_NODEFER	0x40000000
 #define SA_RESETHAND	0x80000000
-
 #define SA_NOMASK	SA_NODEFER
 #define SA_ONESHOT	SA_RESETHAND
 
 typedef void (*_sig_func_ptr)(int);
-
 struct sigaction
 {
 	union

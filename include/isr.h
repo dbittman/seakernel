@@ -18,6 +18,9 @@
 #define IRQ14 46
 #define IRQ15 47
 
+#define IOINT_PIC  1
+#define IOINT_APIC 2
+
 typedef struct registers
 {
   volatile   u32int ds;                  // Data segment selector
@@ -27,13 +30,7 @@ typedef struct registers
 } volatile registers_t;
 
 typedef void (*isr_t)(registers_t);
-void register_interrupt_handler(u8int n, isr_t handler);
-void unregister_interrupt_handler(u8int n, isr_t handler);
-int irq_wait(int n);
-void wait_isr(int no);
-extern char interrupt_controller;
-#define IOINT_PIC  1
-#define IOINT_APIC 2
+
 typedef struct handlist_s
 {
 	isr_t handler;
@@ -41,5 +38,11 @@ typedef struct handlist_s
 	char block;
 	struct handlist_s *next, *prev;
 } handlist_t;
+
+void register_interrupt_handler(u8int n, isr_t handler);
+void unregister_interrupt_handler(u8int n, isr_t handler);
+int irq_wait(int n);
+void wait_isr(int no);
+extern char interrupt_controller;
 handlist_t *get_interrupt_handler(u8int n);
 #endif

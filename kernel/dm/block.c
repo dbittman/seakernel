@@ -17,10 +17,10 @@ blockdevice_t *set_blockdevice(int maj, int (*f)(int, int, int, char*), int bs,
 {
 	printk(1, "[dev]: Setting block device %d, bs=%d (%x, %x)\n", maj, bs, f, c);
 	blockdevice_t *dev = (blockdevice_t *)kmalloc(sizeof(blockdevice_t));
-	dev->func = f;
+	dev->rw = f;
 	dev->blksz=bs;
 	dev->ioctl=c;
-	dev->func_m=m;
+	dev->rw_multiple=m;
 	dev->select = s;
 	create_mutex(&dev->acl);
 	if(!c)
@@ -76,10 +76,10 @@ int do_block_rw(int rw, int dev, int blk, char *buf, blockdevice_t *bd)
 			return -ENXIO;
 		bd = (blockdevice_t *)dt->ptr;
 	}
-	if(bd->func)
+	if(bd->rw)
 	{
 		mutex_on(&bd->acl);
-		int ret = (bd->func)(rw, MINOR(dev), blk, buf);
+		int ret = (bd->rw)(rw, MINOR(dev), blk, buf);
 		mutex_off(&bd->acl);
 		return ret;
 	}
@@ -123,7 +123,14 @@ int block_rw(int rw, int dev, int blk, char *buf, blockdevice_t *bd)
 unsigned do_block_read_multiple(blockdevice_t *bd, int dev, unsigned start, unsigned num, char *buf)
 {
 	unsigned count=0;
-	bd->func_m(READ, MINOR(dev), start, buf, num);
+	if(!bd->rw_multiple) {
+		while(num--) {
+			block_rw(READ, dev, start+count, buf+count*bd->blksz, bd);
+			count++;
+		}
+		return count;
+	}
+	bd->rw_multiple(READ, MINOR(dev), start, buf, num);
 	while(count < num) {
 		cache_block(-dev, start+count, bd->blksz, buf + count*bd->blksz);
 		count++;

@@ -1,6 +1,7 @@
 #ifndef _TIME_H
 #define _TIME_H
 typedef int clock_t;
+
 struct tm
 {
   int	tm_sec;
@@ -13,10 +14,12 @@ struct tm
   int	tm_yday;
   int	tm_isdst;
 };
+
 struct timeval {
   int      tv_sec;
   int tv_usec;
 };
+
 struct tms {
 	clock_t tms_utime;
 	clock_t tms_stime;

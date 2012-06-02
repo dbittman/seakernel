@@ -1,7 +1,8 @@
 #ifndef STAT_H
 #define STAT_H
-
+typedef signed long time_t;
 #define S_IFMT  00170000
+#define	S_IFSOCK 0140000	/* socket */
 #define	S_IFLNK  0120000
 #define S_IFREG  0100000
 #define S_IFBLK  0060000
@@ -18,7 +19,8 @@
 #define S_ISBLK(m)	(((m) & S_IFMT) == S_IFBLK)
 #define S_ISFIFO(m)	(((m) & S_IFMT) == S_IFIFO)
 #define S_ISLNK(m)	(((m) & S_IFMT) == S_IFLNK)
-#define DUMMY 0x12345
+#define	S_ISSOCK(m)	(((m)&_IFMT) == _IFSOCK)
+
 struct task_stat {
 	unsigned pid, ppid, *waitflag, stime, utime;
 	int uid, gid, state;
@@ -48,7 +50,7 @@ struct mem_stat {
 	char km_name[32];
 	float km_version;
 };
-typedef signed long time_t;
+
 struct stat {
 	unsigned short	st_dev;
 	unsigned long	st_ino;
@@ -86,13 +88,10 @@ struct fsstat {
 	unsigned long used_size, free_size;
 	unsigned long dev;
 	char name[8];
-	
-
-	
 };
 
 struct posix_statfs
-  {
+{
     unsigned f_type;
     unsigned f_bsize;
     unsigned long long f_blocks;
@@ -105,7 +104,6 @@ struct posix_statfs
     unsigned f_frsize;
     unsigned f_flags;
     unsigned f_spare[4];
-  };
-  
+};
 
 #endif

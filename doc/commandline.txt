@@ -1,9 +1,0 @@
-The kernel Command Line
-=======================
-Allows manipulation of kernel option at boot time
-
-
-init="<path>"		Specify an init process to run (elf executable) in path. e.g. init="/init"
-root="<path>"		Specify a root device (usually gonna be in /dev/). e.g. root="/dev/hda"
-mod <path>		Specify a boot time module (note: these get loaded before config modules). e.g. mod /loop
-boot_diag #		Turn on boot time diagnostics (runs just before the jump to init) at level #. e.g. boot_diag 0

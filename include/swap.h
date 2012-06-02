@@ -1,8 +1,9 @@
 #ifndef SEA_SWAP_H
 #define SEA_SWAP_H
 #include <memory.h>
-
-
+#define SW_FORCE 1
+#define SW_EMPTY 2
+#define SW_ENABLE 4
 
 typedef struct {
 	unsigned page;
@@ -30,6 +31,7 @@ typedef struct swapdevice_s
 
 extern swapdev_t *swaplist;
 extern volatile unsigned num_swapdev;
+
 void init_swap();
 int sys_swapoff(char *node, unsigned flags);
 int sys_swapon(char *node, unsigned size /*0 for all */);
@@ -40,9 +42,6 @@ int page_out_task_addr(task_t *t, unsigned addr);
 int swap_in_all_the_pages(task_t *t);
 void __KT_pager();
 int sys_swaptask(unsigned pid);
-#define SW_FORCE 1
-#define SW_EMPTY 2
-#define SW_ENABLE 4
 
 static inline char valid_swappable(unsigned x)
 {

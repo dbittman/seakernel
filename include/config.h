@@ -15,7 +15,7 @@
 #define STACK_LOCATION 0xB0021000
 #define STACK_SIZE 0x20000
 
-#define CONFIG_SMP 1
+///#define CONFIG_SMP 1
 
 #define OOM_KILL 1
 #define OOM_SLEEP 2
@@ -90,14 +90,5 @@
 
 extern int PRINT_LEVEL;
 
-unsigned int do_kmalloc_heap(unsigned sz, char align);
-void do_kfree_heap(void *pt);
-unsigned do_kmalloc_wave(unsigned size, char align);
-unsigned wave_init(unsigned start, unsigned end);
-void install_kmalloc(char *name, unsigned (*init)(unsigned, unsigned), unsigned (*alloc)(unsigned, char), void (*free)(void *));
-void do_kfree_wave(void *ptr);
-unsigned do_kmalloc_slab(unsigned sz, char align);
-void do_kfree_slab(void *ptr);
-unsigned slab_init(unsigned start, unsigned end);
 long sys_sysconf(int cmd);
 #endif

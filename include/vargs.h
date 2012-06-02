@@ -1,4 +1,5 @@
-
+#ifndef _VARGS_H
+#define _VARGS_H
 //typedef char * va_list;
 #define va_list char *
 
@@ -22,3 +23,5 @@
 #define va_arg(AP, TYPE)						\
  (AP += __va_rounded_size (TYPE),					\
   *((TYPE *) (AP - __va_rounded_size (TYPE))))
+
+#endif

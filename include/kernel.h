@@ -1,48 +1,38 @@
+/* every file should include this. This defines the basic things needed for
+ * kernel operation. asm is redefined here, which is vital. */
+
 #ifndef KERNEL_H
 #define KERNEL_H
 #define asm __sync_synchronize(); __asm__ __volatile__
-/* These includes contain common functions, and since I'm lazy, we include all of them here */
 #include <types.h>
 #include <string.h>
 #include <config.h>
 #include <vsprintf.h>
 #include <console.h>
-#include <critical.h>
 #include <asm/system.h>
 #include <memory.h>
 #include <syscall.h>
 #include <time.h>
 #include <sys/fcntl.h>
-#include <sys/errno.h>
+#include <errno.h>
 #include <mutex.h>
-int get_timer_th(int *t);
-extern int april_fools;
-void unregister_interrupt_handler(unsigned char n, isr_t);
-int sys_isstate(int pid, int state);
-void do_reset();
-int sys_gethostname(char *buf, int len);
-void restart_int();
+extern char shutting_down;
 extern volatile int panicing;
+extern volatile unsigned int __allow_idle;
 #define super_cli __super_cli
 #define super_sti __super_sti
-void panic_assert(const char *file, u32int line, const char *desc);
-static inline void __super_cli()
-{
-	__sync_synchronize();
-	__asm__ volatile("cli");
-}
-
-static inline void __super_sti()
-{
-	__sync_synchronize();
-	__asm__ volatile("sti");
-}
 #define PANIC_NOSYNC 1
 #define PANIC_MEM    2
-void panic(char flags, char *fmt, ...);
-void serial_puts(int, char *);
-void kernel_reset();
-void kernel_poweroff();
+#define __UTSNAMELEN 65
+struct utsname {
+    char sysname[__UTSNAMELEN];
+    char nodename[__UTSNAMELEN];
+    char release[__UTSNAMELEN];
+    char version[__UTSNAMELEN];
+    char machine[__UTSNAMELEN];
+    char domainname[__UTSNAMELEN];
+};
+
 #define assert(c) if(!(c)) panic_assert(__FILE__, __LINE__, #c)
 
 #define assert_act(c, q) if(!(c)) { \
@@ -58,6 +48,18 @@ void kernel_poweroff();
 		w();\
 		printk(5, "Assertion failed: %s", #c); \
 		}
+
+static inline void __super_cli()
+{
+	__sync_synchronize();
+	__asm__ volatile("cli");
+}
+
+static inline void __super_sti()
+{
+	__sync_synchronize();
+	__asm__ volatile("sti");
+}
 
 static inline void outb(short port, char value)
 {
@@ -95,7 +97,6 @@ static inline int inl(short port)
 	return ret;
 }
 
-extern volatile unsigned int __allow_idle;
 static inline void __engage_idle()
 {
 	__allow_idle=1;
@@ -122,17 +123,19 @@ static inline void get_kernel_version(char *b)
 		p = (PRE_VER - 7);
 	sprintf(b, "%d.%d%c%c%d", MAJ_VER, MIN_VER, t ? '-' : 0, t, p);
 }
-#define __UTSNAMELEN 65
 
-struct utsname {
-    char sysname[__UTSNAMELEN];
-    char nodename[__UTSNAMELEN];
-    char release[__UTSNAMELEN];
-    char version[__UTSNAMELEN];
-    char machine[__UTSNAMELEN];
-    char domainname[__UTSNAMELEN];
-};
+void panic(char flags, char *fmt, ...);
+void serial_puts(int, char *);
+void kernel_reset();
+void panic_assert(const char *file, u32int line, const char *desc);
+void kernel_poweroff();
 int sys_uname(struct utsname *name);
-extern char shutting_down;
+int get_timer_th(int *t);
+extern int april_fools;
+void unregister_interrupt_handler(unsigned char n, isr_t);
+int sys_isstate(int pid, int state);
+void do_reset();
+int sys_gethostname(char *buf, int len);
+void restart_int();
 int proc_append_buffer(char *buffer, char *data, int off, int len, int req_off, int req_len);
 #endif

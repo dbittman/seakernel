@@ -1,6 +1,6 @@
 #ifndef CONSOLE_H
 #define CONSOLE_H
-#include <sgtty.h>
+#include <termios.h>
 #include <mutex.h>
 #define TTY_IBLEN 256
 
@@ -15,6 +15,8 @@
 #define KERN_DEBUG 1
 #define KERN_EVERY 0
 
+#define VIDEO_MEMORY 0xb8000
+
 typedef struct vterm_s {
 	char flag;
 	volatile int x, ox, y, oy, f, b, w, h, bd, fw, fh, mode, es, scrollt, scrollb;
@@ -27,16 +29,7 @@ typedef struct vterm_s {
 	char nocur, no_wrap;
 	mutex_t wlock, inlock;
 	unsigned exlock;
-	//struct sgttyb gtty;
 	struct termios term;
-	struct Am__{
-		char bold;
-		char invis;
-		char reverse;
-		char blink;
-		char under;
-		char low;
-	} Am;
 	struct renderer {
 		void (*scroll)(struct vterm_s *);
 		void (*update_cursor)(struct vterm_s *);
@@ -54,9 +47,6 @@ typedef struct console_driver_s console_driver_t;
 extern vterm_t consoles[];
 
 extern vterm_t *curcons, *kernel_console, *log_console;
-
-extern int sx, sy, hi, wid;
-#define VIDEO_MEMORY 0xb8000
 
 void set_text_mode();
 int tty_write(int min, char *buf, int len);

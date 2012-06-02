@@ -2,6 +2,11 @@
 #define MOD_H
 #include <multiboot.h>
 #include <task.h>
+
+#define _MOD_FAIL  0
+#define _MOD_GO    1
+#define _MOD_AGAIN 2
+
 typedef struct module_s {
 	char *base;
 	int length;
@@ -14,6 +19,26 @@ typedef struct module_s {
 } module_t;
 
 #define add_kernel_symbol(x) {_add_kernel_symbol( (intptr_t)x, #x);}
+
+static inline void write_deps(char *b, char *str)
+{
+	int i=0;
+	while(b && str && *(str+i))
+	{
+		*(b+i) = *(str+i);
+		i++;
+	}
+	*(b+i)=0;
+}
+
+static inline int mod_fork(int *pid)
+{
+	int x = fork();
+	if(x)
+		*pid = x;
+	return x;
+}
+
 int load_module(char *path, char *);
 int unload_module(char *name);
 void unload_all_modules(int c);
@@ -26,28 +51,4 @@ int sys_load_module(char *path, char *args, int flags);
 int sys_unload_module(char *path, int flags);
 intptr_t find_kernel_function(char * unres);
 int load_deps_c(char *);
-static inline void write_deps(char *b, char *str)
-{
-	int i=0;
-	while(b && str && *(str+i))
-	{
-		*(b+i) = *(str+i);
-		i++;
-	}
-	*(b+i)=0;
-}
-
-#define _MOD_FAIL  0
-#define _MOD_GO    1
-#define _MOD_AGAIN 2
-
-
-static inline int mod_fork(int *pid)
-{
-	int x = fork();
-	if(x)
-		*pid = x;
-	return x;
-}
-
 #endif

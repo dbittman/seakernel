@@ -2,14 +2,17 @@
 #define SLAB_H
 #include <area.h>
 #define SLAB_MAGIC 0x11235813
-
 #define S_ALIGN 1
+
+extern unsigned slab_start, slab_end;
+extern vma_t slab_area_alloc;
 
 enum transfer_vals {
 	TO_EMPTY=0, 
 	TO_PARTIAL=1, 
 	TO_FULL=2
 };
+
 typedef struct slab_header_s {
 	unsigned magic;
 	unsigned id;
@@ -45,10 +48,6 @@ typedef struct slab_cache_s {
 #define NUM_SCACHES (0x1000 / sizeof(slab_cache_t))
 #define OBJ_SIZE(s) (((slab_cache_t *)(s->parent))->obj_size)
 #define FIRST_OBJ(s) ((unsigned)((s->flags & S_ALIGN) ? ((unsigned)s+0x1000) : ((unsigned)s+sizeof(slab_t))))
-
-extern unsigned slab_start, slab_end;
-extern vma_t slab_area_alloc;
-
 
 #endif
 

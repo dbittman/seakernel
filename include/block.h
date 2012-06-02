@@ -4,11 +4,10 @@
 #define BCACHE_READ 1
 #define BCACHE_WRITE 2
 
-
 typedef struct blockdevice_s {
 	int blksz;
-	int (*func)(int mode, int minor, int, char *buf);
-	int (*func_m)(int mode, int minor, int, char *buf, int);
+	int (*rw)(int mode, int minor, int, char *buf);
+	int (*rw_multiple)(int mode, int minor, int, char *buf, int);
 	int (*ioctl)(int min, int cmd, int arg);
 	int (*select)(int min, int rw);
 	unsigned char cache;

@@ -3,7 +3,6 @@
 #include <types.h>
 #define size_t unsigned
 void *memchr(const void *cs, int c, size_t count);
-//void *memcpy(void * to, const void * from, size_t n);
 #define memcpy memmove
 void *memmove(void *dest, const void *src, size_t n);
 void *memset(void *s, int c, size_t count);

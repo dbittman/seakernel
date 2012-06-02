@@ -23,21 +23,21 @@
 #define PAGE_TABLE_IDX(x) ((uint32_t)x%1024)
 #define PAGE_DIR_PHYS(x) (x[1023]&PAGE_MASK)
 typedef unsigned int page_dir_t;
-int vm_unmap_only(unsigned v);
-int self_free_table(int t);
+
+extern volatile unsigned int pm_location;
+extern volatile unsigned int pm_stack;
+extern volatile unsigned int pm_stack_max;
+extern volatile unsigned pm_num_pages, pm_used_pages;
+extern volatile unsigned highest_page;
+extern volatile unsigned lowest_page;
+extern int memory_has_been_mapped;
+extern volatile int placement;
+extern mutex_t pm_mutex;
 extern volatile int mmu_ready;
 extern char paging_enabled;
-//int vm_do_copy_table(int i, page_dir_t *new, page_dir_t *from);
-void setup_kernelstack(int);
-extern void zero_page_physical(unsigned);
 extern volatile page_dir_t *kernel_dir, *current_dir;
-
 extern unsigned *page_directory, *page_tables;
-
-extern unsigned int *t_page; //tracking page
 extern int id_tables;
-
-extern unsigned int cr0temp;
 
 #define disable_paging() \
 	__asm__ volatile ("mov %%cr0, %0" : "=r" (cr0temp)); \
@@ -63,15 +63,21 @@ int vm_map_all(unsigned virt, unsigned phys, unsigned attr);
 int vm_unmap(unsigned virt);
 int vm_unmap_all(unsigned virt);
 unsigned int vm_getmap(unsigned v, unsigned *p);
-//int vm_copy_directory(page_dir_t *d, page_dir_t *, char);
 page_dir_t *vm_clone(page_dir_t *pd, char);
 void process_memorymap(struct multiboot *mboot);
 void pm_init(int start, struct multiboot *);
 int free_stack();
 int __pm_alloc_page(char *, int);
-
 #define pm_alloc_page() __pm_alloc_page(__FILE__, __LINE__)
-
+unsigned int do_kmalloc_heap(unsigned sz, char align);
+void do_kfree_heap(void *pt);
+unsigned do_kmalloc_wave(unsigned size, char align);
+unsigned wave_init(unsigned start, unsigned end);
+void install_kmalloc(char *name, unsigned (*init)(unsigned, unsigned), unsigned (*alloc)(unsigned, char), void (*free)(void *));
+void do_kfree_wave(void *ptr);
+unsigned do_kmalloc_slab(unsigned sz, char align);
+void do_kfree_slab(void *ptr);
+unsigned slab_init(unsigned start, unsigned end);
 void pm_free_page(unsigned int addr);
 unsigned int vm_getattrib(unsigned v, unsigned *p);
 extern void copy_page_physical(unsigned int, unsigned int);
@@ -79,23 +85,7 @@ extern void copy_page_physical_half(unsigned int, unsigned int);
 int vm_cleanup(page_dir_t *, unsigned *);
 int pm_stat_mem(struct mem_stat *s);
 void vm_free_page_table(int tbl, unsigned int *t/* VIRTUAL ADDRESS */, unsigned int*);
-typedef struct {
-	unsigned int *phys;
-	unsigned int *virt;
-} page_dir_info;
-
-/* Heap */
-typedef struct header_s {
-	unsigned used : 1;
-	unsigned len : 31;
-	unsigned magic;
-	struct header_s *next, *prev;
-} header_t ;
-//__attribute__((packed))
-void be_free(header_t *h);
-int split(header_t *h, int ln);
 void alloc_mas_heap(unsigned start, int len);
-void combine(header_t *h);
 void kfree(void * pt);
 unsigned int do_kmalloc(unsigned sz, char);
 unsigned __kmalloc(unsigned s, char *, int);
@@ -103,22 +93,14 @@ unsigned kmalloc_a(unsigned s);
 unsigned kmalloc_ap(unsigned s, unsigned *);
 unsigned kmalloc_p(unsigned s, unsigned *);
 int self_free(int);
+int vm_unmap_only(unsigned v);
+int self_free_table(int t);
 void pm_free_page(unsigned int addr);
 void vm_init_2();
 void vm_init_tracking();
-
-extern volatile unsigned int pm_location;
-extern volatile unsigned int pm_stack;
-extern volatile unsigned int pm_stack_max;
-
-extern volatile unsigned pm_num_pages, pm_used_pages;
-extern volatile unsigned highest_page;
-extern volatile unsigned lowest_page;
-
-extern int memory_has_been_mapped;
-
-extern volatile int placement;
-extern mutex_t pm_mutex;
+void setup_kernelstack(int);
+extern void zero_page_physical(unsigned);
+#define kmalloc(a) __kmalloc(a, __FILE__, __LINE__)
 
 static inline void map_if_not_mapped(unsigned loc)
 {
@@ -133,13 +115,5 @@ static inline void map_if_not_mapped_noclear(unsigned loc)
 		vm_map(loc & 0xFFFFF000, __pm_alloc_page("map_if_not_mapped", 0), 
 		       PAGE_PRESENT | PAGE_WRITE | PAGE_USER, MAP_CRIT | MAP_NOCLEAR);
 }
-
-
-#define HEAP_MAGIC  0x2B00B1E5
-
-/* Swapping */
-
-#define kmalloc(a) __kmalloc(a, __FILE__, __LINE__)
-
 
 #endif

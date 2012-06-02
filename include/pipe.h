@@ -1,7 +1,6 @@
 #ifndef PIPE_H
 #define PIPE_H
-
-
+#define PIPE_NAMED 1
 typedef struct pipe_struct {
 	volatile unsigned pending;
 	volatile unsigned write_pos, read_pos;
@@ -17,7 +16,5 @@ void free_pipe(struct inode *i);
 int read_pipe(struct inode *ino, char *buffer, unsigned length);
 int write_pipe(struct inode *ino, char *buffer, unsigned length);
 int sys_pipe(int *files);
-#define PIPE_NAMED 1
-
 
 #endif

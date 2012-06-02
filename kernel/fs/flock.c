@@ -171,7 +171,10 @@ int fcntl_setlk(struct file *file, int arg)
 		return disengage_flock(f, p);
 	}
 	p = create_flock(p->l_type, p->l_whence, p->l_start, p->l_len);
-	return engage_flock(f, p, file->pos);
+	int ret = engage_flock(f, p, file->pos);
+	if(ret < 0)
+		kfree(p);
+	return ret;
 }
 
 int fcntl_getlk(struct file *file, int arg)

@@ -1,8 +1,5 @@
 #ifndef __MMF_H
 #define __MMF_H
-
-unsigned sys_mmap(void *addr, void *str, int prot, int flags, int fildes);
-int sys_munmap(void *ptr, unsigned sz);
 /*
  * Prots to 'mmap'.
  */
@@ -49,6 +46,9 @@ typedef struct mmapfile_s {
 	vnode_t *node;
 	struct mmapfile_s *next, *prev;
 } mmf_t;
+
 int pfault_mmf_check(unsigned err, unsigned addr);
 void mmf_sync();
+unsigned sys_mmap(void *addr, void *str, int prot, int flags, int fildes);
+int sys_munmap(void *ptr, unsigned sz);
 #endif

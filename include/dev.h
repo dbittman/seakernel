@@ -26,19 +26,18 @@
 
 #define GETDEV(maj, min) (maj*256+min)
 
-		#define DH_SZ 64
-		typedef struct device_ss {
-			void *ptr;
-			int beta;
-			struct device_ss *next;
-		} device_t;
-		
-		struct devhash_s {
-			device_t *devs[DH_SZ];
-			mutex_t lock;
-		};
-		
-		
+#define DH_SZ 64
+typedef struct device_ss {
+	void *ptr;
+	int beta;
+	struct device_ss *next;
+} device_t;
+
+struct devhash_s {
+	device_t *devs[DH_SZ];
+	mutex_t lock;
+};
+	
 int char_rw(int rw, int dev, char *buf, int len);
 int block_device_rw(int mode, int dev, int off, char *buf, int len);
 void init_block_devs();

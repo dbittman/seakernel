@@ -1,6 +1,6 @@
 #ifndef TYPES_H
 #define TYPES_H
-//typedef unsigned int   size_t;
+
 typedef unsigned int   u32int;
 typedef          int   s32int;
 typedef unsigned long long   u64int;

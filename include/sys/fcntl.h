@@ -138,9 +138,6 @@
 #define AT_REMOVEDIR            8
 #endif
 
-/*#include <sys/stdtypes.h>*/
-
-
 struct flock {
 	short	l_type;		/* F_RDLCK, F_WRLCK, or F_UNLCK */
 	short	l_whence;	/* flag to choose starting offset */

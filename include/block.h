@@ -21,7 +21,7 @@ int block_ioctl(int dev, int cmd, int arg);
 int do_block_rw(int rw, int dev, int blk, char *buf, blockdevice_t *bd);
 int set_availablebd(int (*f)(int, int, int, char*), int bs, int (*c)(int, int, int), int (*m)(int, int, int, char *, int), int (*s)(int, int));
 int do_block_rw_multiple(int rw, int dev, int blk, char *buf, blockdevice_t *bd, int count);
-
+void block_cache_init();
 int mem_rw(int rw, int min, int blk, char *b);
 int get_block_cache(int dev, int blk, char *buf);
 int cache_block(int dev, unsigned blk, int sz, char *buf);

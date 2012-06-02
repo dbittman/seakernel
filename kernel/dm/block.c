@@ -6,7 +6,7 @@
 #include <block.h>
 #include <cache.h>
 #undef DT_CHAR
-void block_cache_init();
+mutex_t bd_search_lock;
 int ioctl_stub(int a, int b, int c)
 {
 	return -1;
@@ -32,7 +32,8 @@ blockdevice_t *set_blockdevice(int maj, int (*f)(int, int, int, char*), int bs,
 
 int set_availablebd(int (*f)(int, int, int, char*), int bs, int (*c)(int, int, int), int (*m)(int, int, int, char *, int), int (*s)(int, int))
 {
-	int i=10;
+	int i=10; /* first 10 devices are reserved by the system */
+	mutex_on(&bd_search_lock);
 	while(i>0) {
 		if(!get_device(DT_BLOCK, i))
 		{
@@ -41,6 +42,7 @@ int set_availablebd(int (*f)(int, int, int, char*), int bs, int (*c)(int, int, i
 		}
 		i++;
 	}
+	mutex_off(&bd_search_lock);
 	if(i < 0)
 		return -EINVAL;
 	return i;
@@ -52,16 +54,22 @@ void unregister_block_device(int n)
 	int i;
 	for(i=0;i<256;i++)
 		disconnect_block_cache(GETDEV(n, i));
+	mutex_on(&bd_search_lock);
 	device_t *dev = get_device(DT_BLOCK, n);
-	if(!dev) return;
+	if(!dev) {
+		mutex_off(&bd_search_lock);
+		return;
+	}
 	void *fr = dev->ptr;
 	remove_device(DT_BLOCK, n);
+	mutex_off(&bd_search_lock);
 	destroy_mutex(&((blockdevice_t *)(dev->ptr))->acl);
 	kfree(fr);
 }
 
 void init_block_devs()
 {
+	create_mutex(&bd_search_lock);
 	block_cache_init();
 }
 

@@ -6,9 +6,8 @@
 int sys_sbrk(int inc)
 {
 	assert(current_task);
-	if(0 && inc < 0 && current_task->heap_start < current_task->heap_end) {
+	if(inc < 0 && current_task->heap_start < current_task->heap_end) {
 		int dec = -inc;
-		unsigned del_pages=0;
 		unsigned new_end = current_task->heap_end - dec;
 		if(new_end < current_task->heap_start)
 			new_end = current_task->heap_start;
@@ -16,10 +15,13 @@ int sys_sbrk(int inc)
 		unsigned free_start = (new_end&PAGE_MASK) + PAGE_SIZE;
 		unsigned free_end = old_end&PAGE_MASK;
 		int x=0;
-		while(free_start <= free_end)
-			vm_unmap(free_start), free_start += 0x1000, x++;
+		while(free_start <= free_end) {
+			vm_unmap(free_start);
+			free_start += 0x1000;
+			x++;
+		}
 		current_task->heap_end = new_end;
-		//printk(0, "[sbrk]: reclaiming memory %d. oldend=%x, newend=%x. start=%x. freed %d\n", dec, old_end, new_end, current_task->heap_start, x);
+		printk(0, "[sbrk]: reclaiming memory %d. oldend=%x, newend=%x. start=%x. freed %d\n", dec, old_end, new_end, current_task->heap_start, x);
 		return old_end;
 	}
 	if(!inc)

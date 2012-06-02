@@ -157,7 +157,7 @@ void schedule()
 	
 	store_context(eip);
 	volatile task_t *new = (volatile task_t *)get_next_task();
-	set_current_task_dp(new);
+	set_current_task_dp(new, 0 /* this should be the current CPU */);
 	restore_context();
 	task_full_uncritical();
 	cli();

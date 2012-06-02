@@ -119,17 +119,16 @@ typedef volatile struct task_struct
 	volatile struct task_struct *next, *prev, *parent, *waiting, *alarm_next;
 } task_t;
 
+extern volatile task_t *kernel_task, *tokill, *alarm_list_start;
+
 #ifdef CONFIG_SMP
 #include <cpu.h>
 static inline __attribute__((always_inline))  volatile task_t *__get_current_task()
 {
-	unsigned t=0, a=0;
-	//__super_cli();
+	unsigned t=0;
 	if(kernel_task) {
-		///lock_all_cpus
-		__asm__ volatile ("mov %%gs, %0" : "=r" (t));
-		cpu_t *c = get_cpu(0);
-		__super_sti();
+		asm ("mov %%gs, %0" : "=r" (t));
+		cpu_t *c = get_cpu(t);
 		return c->current;
 	}
 	return (task_t *)t;
@@ -138,22 +137,16 @@ static inline __attribute__((always_inline))  volatile task_t *__get_current_tas
 extern volatile task_t *current_task;
 #endif
 
-static inline __attribute__((always_inline)) void set_current_task_dp(task_t *t)
+static inline __attribute__((always_inline)) void set_current_task_dp(task_t *t, int cpu)
 {
 #ifndef CONFIG_SMP
 	current_task = t;
 	return;
 #else
-	primary_cpu.current = (volatile void *)t;
-	//cpu_t *c = get_cpu(0);
-	//c->current = (void *)t;
-	t=0;//this cpu
-	__asm__ volatile ("mov %0, %%gs"::"r"(t));
+	cpu_t *c = get_cpu(cpu);
+	c->current = (void *)t;
 #endif
 }
-
-
-extern volatile task_t *kernel_task, *tokill, *alarm_list_start;
 
 #define raise_flag(f) current_task->flags |= f
 #define lower_flag(f) current_task->flags &= ~f

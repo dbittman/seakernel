@@ -24,7 +24,7 @@ void init_multitasking()
 	task->priority = 1;
 	task->cmask=0x1FF;
 	task->magic = TASK_MAGIC;
-	set_current_task_dp(task);
+	set_current_task_dp(task, 0);
 	kernel_task = task;
 	create_mutex(&scheding);
 }

@@ -35,10 +35,8 @@ int __pm_alloc_page(char *file, int line)
 	if(paging_enabled)
 	{
 		if(pm_stack <= (PM_STACK_ADDR+sizeof(unsigned)*2)) {
-			if(current_task == kernel_task || !current_task) {
-				set_current_task_dp(0); /* So we don't try to sync */
+			if(current_task == kernel_task || !current_task)
 				panic(PANIC_MEM | PANIC_NOSYNC, "Ran out of physical memory");
-			}
 			mutex_off(&pm_mutex);
 			if(OOM_HANDLER == OOM_SLEEP) {
 				if(!flag++) 

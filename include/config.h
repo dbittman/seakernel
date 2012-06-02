@@ -15,7 +15,7 @@
 #define STACK_LOCATION 0xB0021000
 #define STACK_SIZE 0x20000
 
-///#define CONFIG_SMP 1
+//#define CONFIG_SMP 1
 
 #define OOM_KILL 1
 #define OOM_SLEEP 2

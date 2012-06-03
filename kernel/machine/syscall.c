@@ -13,7 +13,7 @@
 #include <sys/sysconf.h>
 #include <swap.h>
 unsigned int num_syscalls=0;
-#define SC_DEBUG 1
+//#define SC_DEBUG 1
 int sys_null()
 {
 #ifdef DEBUG

@@ -133,6 +133,10 @@ int tty_write(int min, char *buf, int len)
 	/* putch handles printable characters and control characters. 
 	 * We handle escape codes */
 	while(i<len) {
+		if(got_signal(current_task)) {
+			mutex_off(&con->wlock);
+			return -EINTR;
+		}
 		if(*buf){
 			if(*buf == 27)
 			{

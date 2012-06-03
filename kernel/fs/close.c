@@ -12,7 +12,7 @@ int sys_close(int fp)
 	check_mmf_and_flush((task_t *)current_task, fp);
 	struct file *f = get_file_pointer((task_t *) current_task, fp);
 	if(!f)
-		return 0;
+		return -EBADF;
 	mutex_on(&f->inode->lock);
 	if(f->inode->pipe)
 	{

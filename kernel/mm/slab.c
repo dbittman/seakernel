@@ -226,9 +226,8 @@ slab_t *create_slab(slab_cache_t *sc, int num_pages, unsigned short flags)
 		slab->obj_num = (((num_pages-1)*PAGE_SIZE)) / sc->obj_size;
 	else
 		slab->obj_num = ((num_pages*PAGE_SIZE)-sizeof(slab_t)) / sc->obj_size;
-	if(slab->obj_num > MAX_OBJ_ID) {
+	if(slab->obj_num > MAX_OBJ_ID)
 		slab->obj_num = MAX_OBJ_ID;
-	}
 	slab->stack = (unsigned short *)slab->stack_arr;
 	/* Setup the stack of objects */
 	i=0;
@@ -268,7 +267,7 @@ unsigned alloc_object(slab_t *slab)
 		remove_slab_list(slab);
 		add_slab_to_list(slab, TO_FULL);
 	}
-	if(ret && slab->obj_used == 1)
+	else if(ret && slab->obj_used == 1)
 	{
 		remove_slab_list(slab);
 		add_slab_to_list(slab, TO_PARTIAL);
@@ -368,7 +367,6 @@ unsigned slab_init(unsigned start, unsigned end)
 
 unsigned slab_size(int sz)
 {
-	
 	if(sz < 512)
 		return sz * 128 + 0x4000;
 	if(sz >= 512 && sz < 0x500)

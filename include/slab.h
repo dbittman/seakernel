@@ -19,19 +19,15 @@ typedef struct slab_header_s {
 	unsigned short num_pages;
 	unsigned short flags;
 	mutex_t lock;
-	
-	
 	unsigned short obj_used;/* Ref count */
 	unsigned short obj_num;
-	
 	/* For usage in the slab lists */
 	struct slab_header_s *next, *prev;
-	
 	unsigned parent; /* Pointer to the slab cache that this slab is part of */
 	unsigned short *stack;
 	unsigned short stack_arr[MAX_OBJ_ID];
 	vnode_t *vnode;
-	char pad[94 - sizeof(vnode_t *)];
+	//char pad[94 - sizeof(vnode_t *)];
 } slab_t;
 
 typedef struct slab_cache_s {

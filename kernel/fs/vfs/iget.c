@@ -171,11 +171,10 @@ struct inode *do_get_idir(char *p_path, struct inode *b, int use_link, int creat
 		else
 			ret = lookup(ret, current);
 		if(create && !ret) {
-			if(did_create)
-				*did_create=1;
 			ret = do_add_dirent(old, current, 
-				dir_f ? (0x4000 | (old->mode&0xFFF)) : 
-				((create&0xFFF) | 0x8000));
+				dir_f ? (0x4000 | (create&0xFFF)) : ((create&0xFFF) | 0x8000));
+			if(did_create && ret)
+				*did_create=1;
 			if(ret) ret->count++;
 		}
 		if(prev)

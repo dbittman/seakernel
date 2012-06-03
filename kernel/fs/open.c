@@ -21,6 +21,7 @@ struct file *d_sys_open(char *name, int flags, int mode, int *error, int *num)
 		mode = current_task->cmask;
 	else if(current_task->cmask)
 		mode &= current_task->cmask;
+	if(!mode) mode = 0x1FF;
 	int did_create=0;
 	inode = (flags & _FCREAT) ? 
 				ctget_idir(name, 0, mode, &did_create) 

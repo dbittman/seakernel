@@ -139,10 +139,14 @@ unsigned do_block_read_multiple(blockdevice_t *bd, int dev, unsigned start, unsi
 		return count;
 	}
 	bd->rw_multiple(READ, MINOR(dev), start, buf, num);
+#if USE_CACHE
 	while(count < num) {
 		cache_block(-dev, start+count, bd->blksz, buf + count*bd->blksz);
 		count++;
 	}
+#else
+	count = num;
+#endif
 	return count;
 }
 
@@ -150,6 +154,7 @@ unsigned block_read_multiple(blockdevice_t *bd, int dev, unsigned start, unsigne
 {
 	unsigned count=0;
 	int ret;
+#if USE_CACHE
 	while(count<num) {
 		ret = get_block_cache(dev, start+count, buf + count*bd->blksz);
 		if(!ret) {
@@ -163,6 +168,9 @@ unsigned block_read_multiple(blockdevice_t *bd, int dev, unsigned start, unsigne
 		} else
 			count++;
 	}
+#else
+	count=do_block_read_multiple(bd, dev, start, num, buf);
+#endif
 	return count;
 }
 

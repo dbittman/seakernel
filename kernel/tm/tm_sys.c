@@ -129,11 +129,9 @@ int get_uid()
 	return current_task->uid;
 }
 
-int task_pstat(unsigned int pid, struct task_stat *s)
+void do_task_stat(struct task_stat *s, task_t *t)
 {
-	task_t *t=get_task_pid(pid);
-	if(!t || !s)
-		return -EINVAL;
+	assert(s && t);
 	s->stime = t->stime;
 	s->utime = t->utime;
 	s->waitflag = (unsigned *)t->waitflag;
@@ -146,8 +144,17 @@ int task_pstat(unsigned int pid, struct task_stat *s)
 	s->argv = t->argv;
 	s->exe = (struct inode *)t->exe->name;
 	s->pid = t->pid;
-	if(s->exe) strcpy(s->exe_name, s->exe->name);
+	s->cmd = (char *)t->path_loc_start;
 	s->mem_usage = get_task_mem_usage(t) * 0x1000;
+}
+
+int task_pstat(unsigned int pid, struct task_stat *s)
+{
+	if(!s) return -EINVAL;
+	task_t *t=get_task_pid(pid);
+	if(!t)
+		return -ESRCH;
+	do_task_stat(s, t);
 	return 0;
 }
 
@@ -161,21 +168,8 @@ int task_stat(unsigned int num, struct task_stat *s)
 		t = t->next;
 	unlock_scheduler();
 	if(!t) 
-		return -1;
-	s->stime = t->stime;
-	s->utime = t->utime;
-	s->waitflag = (unsigned *)t->waitflag;
-	s->state = t->state;
-	s->uid = t->uid;
-	s->gid = t->gid;
-	s->system = t->system;
-	s->ppid = t->parent->pid;
-	s->tty = t->tty;
-	s->argv = t->argv;
-	s->exe = (struct inode *)t->exe->name;
-	s->pid = t->pid;
-	if(s->exe) strcpy(s->exe_name, s->exe->name);
-	s->mem_usage = get_task_mem_usage(t) * 0x1000;
+		return -ESRCH;
+	do_task_stat(s, t);
 	return 0;
 }
 

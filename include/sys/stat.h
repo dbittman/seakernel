@@ -29,7 +29,7 @@ struct task_stat {
 	struct inode *exe;
 	char **argv;
 	unsigned mem_usage;
-	char exe_name[128];
+	char *cmd;
 };
 
 struct mem_stat {

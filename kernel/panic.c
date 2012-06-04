@@ -42,11 +42,11 @@ void panic(char flags, char *fmt, ...)
 		
 	if(pid && !second_panic && !(flags & PANIC_NOSYNC))
 	{
-		kprintf("syncing...");
+		kprintf("[panic]: syncing...");
 		sys_sync();
-		kprintf("Done\n");
+		kprintf("\n[panic]: Done\n");
 	} else
-		kprintf("not syncing\n");
+		kprintf("[panic]: not syncing\n");
 	__super_cli();
 	for(;;)
 	{

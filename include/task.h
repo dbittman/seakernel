@@ -99,6 +99,7 @@ typedef volatile struct task_struct
 	
 	volatile unsigned heap_start, heap_end, he_red;
 	struct inode *exe;
+	char command[128];
 	char **argv, **env;
 	unsigned arg_l[128], env_l[128];
 	int cmask;

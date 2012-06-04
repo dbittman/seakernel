@@ -26,7 +26,8 @@ void load_initrd(struct multiboot *mb)
 		return;
 	}
 	not_found:
-	panic(0, "could not find initial ramdisk - system will fail to start");
+	kprintf("[initrd]: Couldn't find an initial ramdisk.\n[initrd]: No known way to start the system.\n");
+	panic(0, "no initrd");
 }
 
 void process_initrd()

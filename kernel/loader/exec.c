@@ -155,6 +155,7 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	 * and clear up the resources of the task */
 	if(EXEC_LOG) 
 		printk(0, "Executing (task %d, tty %d): %s\n", t->pid, t->tty, path);
+	strncpy(t->command, path, 128);
 	preexec(t, desc);
 	t->exe = exe;
 	if(!process_elf(mem, desc, &eip, &end))

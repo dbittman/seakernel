@@ -55,7 +55,7 @@ struct inode *pfs_cn(char *name, int mode, int major, int minor)
 	if(!name) return 0;
 	struct inode *i;
 	i = (struct inode*)kmalloc(sizeof(struct inode));
-	strcpy(i->name, name);
+	strncpy(i->name, name, INAME_LEN);
 	i->i_ops = &procfs_inode_ops;
 	i->parent = procfs_root;
 	i->mode = mode | 0xFFF;
@@ -72,7 +72,7 @@ struct inode *pfs_cn_node(struct inode *to, char *name, int mode, int major, int
 	if(!name) return 0;
 	struct inode *i;
 	i = (struct inode*)kmalloc(sizeof(struct inode));
-	strcpy(i->name, name);
+	strncpy(i->name, name, INAME_LEN);
 	i->i_ops = &procfs_inode_ops;
 	i->parent = procfs_root;
 	i->mode = mode | 0x1FF;
@@ -111,7 +111,7 @@ int proc_append_buffer(char *buffer, char *data, int off, int len, int req_off, 
 void init_proc_fs()
 {
 	procfs_root = (struct inode*)kmalloc(sizeof(struct inode));
-	strcpy(procfs_root->name, "proc");
+	_strcpy(procfs_root->name, "proc");
 	procfs_root->i_ops = &procfs_inode_ops;
 	procfs_root->parent = current_task->root;
 	procfs_root->mode = S_IFDIR | 0x1FF;

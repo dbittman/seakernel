@@ -39,7 +39,7 @@ struct inode *init_ramfs()
 	struct inode *i = (struct inode *)kmalloc(sizeof(struct inode));
 	i->mode = S_IFDIR | 0x1FF;
 	create_mutex(&i->lock);
-	strcpy(i->name, "rfs");
+	_strcpy(i->name, "rfs");
 	ramfs_root = i;
 	i->i_ops = &rfs_inode_ops;
 	i->parent = i;
@@ -51,7 +51,7 @@ struct inode *init_tmpfs()
 	struct inode *i = (struct inode *)kmalloc(sizeof(struct inode));
 	i->mode = S_IFDIR | 0x1FF;
 	create_mutex(&i->lock);
-	strcpy(i->name, "rfs");
+	_strcpy(i->name, "rfs");
 	i->i_ops = &rfs_inode_ops;
 	i->parent = i;
 	return i;
@@ -113,7 +113,7 @@ struct inode *rfs_create(struct inode *__p, char *name, unsigned int mode)
 	}
 	struct inode *node;
 	node = (struct inode *)kmalloc(sizeof(struct inode));
-	strncpy(node->name, name, 128);
+	strncpy(node->name, name, INAME_LEN);
 	node->uid = current_task->uid;
 	node->gid = current_task->gid;
 	node->len = 0;

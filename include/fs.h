@@ -18,7 +18,7 @@
 #define MAY_WRITE 200
 #define MAY_READ 400
 extern struct sblktbl *sb_table;
-
+#define INAME_LEN 128
 struct inode {
 	/* Attributes */
 	unsigned short mode, uid, gid, nlink;
@@ -30,7 +30,7 @@ struct inode {
 	unsigned int dev;
 	unsigned long num;
 	unsigned int sb_idx;
-	char node_str[129];
+	char node_str[INAME_LEN];
 	int devnum;
 	/* Pointers */
 	struct inode_operations *i_ops;

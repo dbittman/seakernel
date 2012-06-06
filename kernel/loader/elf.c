@@ -196,7 +196,7 @@ int parse_elf_module(module_t *mod, uint8_t * buf, char *name)
 			kprintf("[mod]: Module '%s' was compiled for a different kernel version!\n", mod->name);
 			return _MOD_FAIL;
 		}
-		strcpy(mod->deps, deps_str);
+		strncpy(mod->deps, deps_str, 256);
 		int dl=0;
 		if((dl=load_deps_c(deps_str)) == -1)
 			return _MOD_FAIL;

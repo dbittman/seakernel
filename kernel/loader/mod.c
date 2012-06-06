@@ -16,8 +16,8 @@ int load_module(char *path, char *args)
 	module_t *tmp = (module_t *)kmalloc(sizeof(module_t));
 	char *r = strrchr(path, '/');
 	if(r) r++; else r = path;
-	strcpy(tmp->name, r);
-	strcpy(tmp->path, path);
+	strncpy(tmp->name, r, 128);
+	strncpy(tmp->path, path, 128);
 	
 	mutex_on(&mod_mutex);
 	module_t *m = modules;

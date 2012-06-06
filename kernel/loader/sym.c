@@ -60,7 +60,7 @@ void init_kernel_symbols(void)
 	add_kernel_symbol(delay_sleep);
 	add_kernel_symbol(memset);
 	add_kernel_symbol(memcpy);
-	add_kernel_symbol(strcpy);
+	add_kernel_symbol(_strcpy);
 	add_kernel_symbol(proc_set_callback);
 	add_kernel_symbol(proc_get_major);
 	add_kernel_symbol(panic);

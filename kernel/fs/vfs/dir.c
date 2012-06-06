@@ -31,7 +31,7 @@ int do_get_path_string(struct inode *p, char *path, int max)
 	{
 		if(i->r_mount_ptr)
 			i = i->r_mount_ptr;
-		strcpy(tmp, path);
+		strncpy(tmp, path, max * sizeof(char) +1);
 		sprintf(path, "%s/%s", i->name, tmp);
 		i = i->parent;
 		if(i == current_task->root)
@@ -41,9 +41,9 @@ int do_get_path_string(struct inode *p, char *path, int max)
 		if(i == current_task->root)
 			break;
 	}
-	strcpy(tmp, path);
-	strcpy(path, "/");
-	strcat(path, tmp);
+	strncpy(tmp, path, max * sizeof(char) +1);
+	strncpy(path, "/", max - (strlen(tmp)+1));
+	strncat(path, tmp, max);
 	return 0;
 }
 

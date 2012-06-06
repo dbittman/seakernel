@@ -35,7 +35,7 @@ int search_dir_rec(iso_fs_t *fs, struct iso9660DirRecord *dir, char *name, struc
 	char buf[2048];
 	char search[strlen(name)+4];
 	memset(search, 0, strlen(name)+4);
-	strcpy(search, name);
+	_strcpy(search, name);
 	to_upper(search);
 	unsigned int block=0, total=0;
 	struct iso9660DirRecord *record;

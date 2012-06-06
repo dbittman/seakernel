@@ -54,11 +54,11 @@ int sys_uname(struct utsname *name)
 {
 	if(!name)
 		return -EINVAL;
-	strcpy(name->sysname, "seaos");
-	strcpy(name->nodename, "");
-	strcpy(name->release, "0.2");
-	strcpy(name->version, "eclipse");
-	strcpy(name->machine, "i586");
-	strcpy(name->domainname, "");
+	strncpy(name->sysname, "seaos", 6);
+	strncpy(name->nodename, "", 1);
+	strncpy(name->release, "0.2", 4);
+	strncpy(name->version, "eclipse", 8);
+	strncpy(name->machine, "i586", 5);
+	strncpy(name->domainname, "", 1);
 	return 0;
 }

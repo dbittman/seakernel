@@ -12,7 +12,7 @@ int devfs_nodescount=1;
 void init_dev_fs()
 {
 	devfs_root = (struct inode*)kmalloc(sizeof(struct inode));
-	strcpy(devfs_root->name, "dev");
+	_strcpy(devfs_root->name, "dev");
 	devfs_root->i_ops = 0;
 	devfs_root->parent = current_task->root;
 	devfs_root->mode = S_IFDIR | 0x1FF;
@@ -39,7 +39,7 @@ struct inode *dfs_add(struct inode *q, char *name, int mode, int major, int mino
 {
 	struct inode *i;
 	i = (struct inode*)kmalloc(sizeof(struct inode));
-	strcpy(i->name, name);
+	strncpy(i->name, name, INAME_LEN);
 	i->i_ops = 0;
 	i->parent = devfs_root;
 	i->mode = mode | 0xFFF;

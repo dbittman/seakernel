@@ -33,7 +33,7 @@
 #include <string.h>
 
 /* Experimentally off - libc_hidden_proto(strcat) */
-char *strcat(char * dest, const char * src)
+char *_strcat(char * dest, const char * src)
 {
     int d0, d1, d2, d3;
     __asm__ __volatile__(

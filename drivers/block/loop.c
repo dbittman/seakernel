@@ -28,7 +28,7 @@ int loop_up(int num, char *name)
 		return -EINVAL;
 	if(loop_table[num][0] != 0)
 		return -EEXIST;
-	strcpy(loop_table[num], name);
+	strncpy(loop_table[num], name, 128);
 	loop_f[num] = get_idir(name, 0);
 	if(!loop_f[num])
 		return -ENOENT;

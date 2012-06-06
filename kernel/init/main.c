@@ -47,18 +47,18 @@ void parse_kernel_cmd(char *buf)
 		if(!argc)
 		{
 			memset(kernel_name, 0, 128);
-			strcpy(kernel_name, a);
+			strncpy(kernel_name, a, 128);
 		} else if(!type) {
 			if(!strncmp("init=\"", a, 6))
 			{
-				strcpy(init_path, a+6);
+				strncpy(init_path, a+6, 128);
 				init_path[strlen(init_path)-1]=0;
 				printk(KERN_INFO, "[kernel]: init=%s\n", init_path);
 			}
 			else if(!strncmp("root=\"", a, 6))
 			{
 				memset(root_device, 0, 64);
-				strcpy(root_device, a+6);
+				strncpy(root_device, a+6, 64);
 				root_device[strlen(root_device)-1]=0;
 				printk(KERN_INFO, "[kernel]: root=%s\n", root_device);
 			}
@@ -72,7 +72,7 @@ void parse_kernel_cmd(char *buf)
 				PRINT_LEVEL = logl;
 			} else {
 				stuff_to_pass[argc_STP] = (char *)kmalloc(strlen(a)+1);
-				strcpy(stuff_to_pass[argc_STP++], a);
+				_strcpy(stuff_to_pass[argc_STP++], a);
 			}
 		} else
 		{
@@ -85,9 +85,9 @@ void parse_kernel_cmd(char *buf)
 		current = tmp+1;
 	}
 	stuff_to_pass[0] = (char *)kmalloc(9);
-	strcpy(stuff_to_pass[0], "ird-sh");
+	_strcpy(stuff_to_pass[0], "ird-sh");
 	stuff_to_pass[1] = (char *)kmalloc(9);
-	strcpy(stuff_to_pass[1], "-c");
+	_strcpy(stuff_to_pass[1], "-c");
 	stuff_to_pass[2] = (char *)kmalloc(90);
 	sprintf(stuff_to_pass[2], "/preinit.sh %s", root_device);
 	

@@ -139,7 +139,7 @@ int sys_getnodestr(char *path, char *node)
 	struct inode *i = get_idir(path, 0);
 	if(!i)
 		return -ENOENT;
-	strcpy(node, i->node_str);
+	strncpy(node, i->node_str, 128);
 	iput(i);
 	return 0;
 }

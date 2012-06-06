@@ -85,7 +85,7 @@ int register_sbt(char *name, int ver, int (*sbl)(int,int,char *))
 	struct sblktbl *sb = (struct sblktbl *)kmalloc(sizeof(struct sblktbl));
 	sb->version = (char)ver;
 	sb->sb_load = (struct inode * (*)(int,int, char*))sbl;
-	strcpy(sb->name, name);
+	strncpy(sb->name, name, 16);
 	mutex_on(&sb_mutex);
 	struct sblktbl *o = sb_table;
 	sb_table = sb;

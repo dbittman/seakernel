@@ -33,7 +33,7 @@
 #include <string.h>
 
 /* Experimentally off - libc_hidden_proto(strcpy) */
-char *strcpy(char * dest, const char * src)
+char *_strcpy(char * dest, const char * src)
 {
     int d0, d1, d2;
     __asm__ __volatile__(

@@ -148,14 +148,14 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	unsigned path_loc = copy_double_pointers(argv, env, &argc);
 	path_loc -= (strlen(path) + 32);
 	map_if_not_mapped_noclear(path_loc);
-	strcpy((char *)path_loc, path);
+	_strcpy((char *)path_loc, path);
 	path = (char *)path_loc;
 	t->path_loc_start = path_loc;
 	/* Preexec - This is the point of no return. Here we close out unneeded file descs, free up the page directory
 	 * and clear up the resources of the task */
 	if(EXEC_LOG) 
 		printk(0, "Executing (task %d, tty %d): %s\n", t->pid, t->tty, path);
-	strncpy(t->command, path, 128);
+	strncpy((char *)t->command, path, 128);
 	preexec(t, desc);
 	t->exe = exe;
 	if(!process_elf(mem, desc, &eip, &end))

@@ -120,7 +120,7 @@ struct inode *ext2_mount(int dev, int block, char *node)
 	ext2_inode_t root;
 	ext2_inode_read(fs, 2, &root);
 	fs->root = create_sea_inode(&root, "ext2");
-	strcpy(fs->root->node_str, node);
+	strncpy(fs->root->node_str, node, 128);
 	if(fs->sb->mount_count > fs->sb->max_mount_count)
 		fs->sb->mount_count=0;
 	fs->sb->mount_time = get_epoch_time();

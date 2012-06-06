@@ -229,7 +229,7 @@ struct inode *iso9660_mount(int dev, int block, char *node)
 	root->mode = 0x4000 | 0xFFF;
 	if(!root) return 0;
 	fs->root=root;
-	strcpy(fs->root->node_str, node);
+	strncpy(fs->root->node_str, node, 128);
 	return root;
 }
 

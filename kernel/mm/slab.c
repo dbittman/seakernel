@@ -43,7 +43,7 @@ int __dummy(volatile void *a)
 
 void slab_stat(struct mem_stat *s)
 {
-	strcpy(s->km_name, "slab");
+	_strcpy(s->km_name, "slab");
 	s->km_version = 0.3;
 	s->km_loc=slab_start;
 	s->km_end=slab_end;

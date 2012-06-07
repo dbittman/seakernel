@@ -53,10 +53,9 @@ int tty_movexy(vterm_t *con, int x, int y)
 int scroll_display(vterm_t *con, int count)
 {
 	if(count < 0)
-		while(count++) {
-			con->rend.scroll(con);
-			con->y = con->scrollb;
-		}
+		while(con->rend.scroll_up && count++) con->rend.scroll_up(con);
+	else
+		while(con->rend.scroll && count--) con->rend.scroll(con);
 	return 0;
 }
 
@@ -207,7 +206,7 @@ int read_brak_esc(vterm_t *con, char *seq)
 				csi_m(con, data[--d]);
 			break;
 		case 'r':
-			printk(0, "scroll: %d %d\n", data[0], data[1]);
+			printk(0, "[esc]: UNHANDLED: scroll: %d %d\n", data[0], data[1]);
 			break;
 		case 'A':if (!data[0]) data[0]++;
 			tty_movexy(con, 0, 0-data[0]);
@@ -279,6 +278,7 @@ int read_brak_esc(vterm_t *con, char *seq)
 
 int read_par_esc(vterm_t *con, char *seq)
 {
+	printk(0, "[esc]: UNHANDLED: parethetical sequence\n");
 	return 0;
 }
 

@@ -32,6 +32,7 @@ typedef struct vterm_s {
 	struct termios term;
 	struct renderer {
 		void (*scroll)(struct vterm_s *);
+		void (*scroll_up)(struct vterm_s *);
 		void (*update_cursor)(struct vterm_s *);
 		void (*clear)(struct vterm_s *);
 		void (*putch)(struct vterm_s *, char);

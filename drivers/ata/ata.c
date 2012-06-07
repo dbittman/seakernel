@@ -143,7 +143,12 @@ int module_deps(char *b)
 
 int module_exit()
 {
+	
 	if(api) {
+		printk(1, "[ata]: Syncing disks...\n");
+		ata_disk_sync(primary);
+		ata_disk_sync(secondary);
+		delay(100);
 		mutex_on(primary->wait);
 		mutex_on(secondary->wait);
 		remove_devices();
@@ -153,10 +158,6 @@ int module_exit()
 		destroy_mutex(secondary->wait);
 		register_interrupt_handler(32 + ATA_PRIMARY_IRQ, 0);
 		register_interrupt_handler(32 + ATA_SECONDARY_IRQ, 0);
-		printk(1, "[ata]: Syncing disks...\n");
-		ata_disk_sync(primary);
-		ata_disk_sync(secondary);
-		delay(100);
 	}
 	kfree(primary);
 	kfree(secondary);

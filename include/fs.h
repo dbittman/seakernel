@@ -19,6 +19,12 @@
 #define MAY_READ 400
 extern struct sblktbl *sb_table;
 #define INAME_LEN 128
+
+typedef struct {
+	struct inode *root;
+	struct inode *parent;
+} mount_pt_t;
+
 struct inode {
 	/* Attributes */
 	unsigned short mode, uid, gid, nlink;
@@ -34,12 +40,13 @@ struct inode {
 	int devnum;
 	/* Pointers */
 	struct inode_operations *i_ops;
-	struct inode *mount_ptr, *r_mount_ptr;
 	struct inode *child;
 	struct inode *parent;
 	struct inode *next;
 	struct inode *prev;
+	struct inode *mount_parent;
 	pipe_t *pipe;
+	mount_pt_t *mount;
 	/* Locking */
 	mutex_t lock;
 	struct flock *flocks;
@@ -120,6 +127,7 @@ int get_path_string(struct inode *p, char *path);
 struct inode *do_get_idir(char *path, struct inode *b, int, int, int *);
 int iput(struct inode *i);
 int do_chdir(struct inode *);
+int change_ireq(struct inode *i, int c);
 int do_chroot(struct inode *);
 int chdir(char *);
 int sys_ftruncate(int f, unsigned length);

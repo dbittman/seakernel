@@ -94,7 +94,7 @@ __attribute__((optimize("O0"))) void __mutex_on(mutex_t *m, char *file, int line
 	if(!m) return;
 	if(!current_task || panicing) return;
 	if(m->magic != MUTEX_MAGIC)
-		panic(0, "mutex_on got invalid mutex: %x: %s:%d\n", m, file, line);
+		panic(0, "mutex_on got invalid mutex: %x (%x): %s:%d\n", m, m->magic, file, line);
 	int i=0;
 	char lock_was_raised = (current_task->flags & TF_LOCK) ? 1 : 0;
 	engage_full_system_lock();
@@ -144,7 +144,7 @@ __attribute__((optimize("O0"))) void __mutex_off(mutex_t *m, char *file, int lin
 	if(!current_task || panicing)
 		return;
 	if(m->magic != MUTEX_MAGIC)
-		panic(0, "mutex_off got invalid mutex: %x: %s:%d\n", m, file, line);
+		panic(0, "mutex_off got invalid mutex: %x (%x): %s:%d\n", m, m->magic, file, line);
 	if((unsigned)m->pid != current_task->pid)
 		panic(0, "Process %d attempted to release mutex that it didn't own", current_task->pid);
 	assert(m->count > 0);
@@ -165,6 +165,7 @@ __attribute__((optimize("O0"))) void __destroy_mutex(mutex_t *m, char *file, int
 	engage_full_system_lock();
 	reset_mutex(m);
 	remove_mutex_list(m);
+	m->magic = 0xDEADBEEF;
 	if(m->flags & MF_ALLOC)
 		kfree((void *)m);
 	disengage_full_system_lock();

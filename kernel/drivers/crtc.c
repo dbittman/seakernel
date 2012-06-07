@@ -113,10 +113,11 @@ void crtc_clear_cursor(vterm_t *c)
 
 struct renderer crtc_renderer = {
 	crtc_scrolldown,
+	0,
 	crtc_update_cursor,
 	crtc_clear,
 	crtc_console_put,
-	0,
+	0, /* switch in */
 	crtc_clear_cursor,
 };
 

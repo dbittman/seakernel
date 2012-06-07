@@ -14,10 +14,16 @@ int do_mount(struct inode *i, struct inode *p)
 		return -EACCES;
 	if(!is_directory(i) || !is_directory(p))
 		return -ENOTDIR;
-	if(i->mount_ptr || i->r_mount_ptr)
+	mutex_on(&i->lock);
+	if(i->mount) {
+		mutex_off(&i->lock);
 		return -EBUSY;
-	i->mount_ptr = p;
-	p->r_mount_ptr = i;
+	}
+	i->mount = (mount_pt_t *)kmalloc(sizeof(mount_pt_t));
+	i->mount->root = p;
+	i->mount->parent = i;
+	p->mount_parent = i;
+	mutex_off(&i->lock);
 	add_mountlst(p);
 	return 0;
 }
@@ -83,30 +89,32 @@ int sys_mount(char *node, char *to)
 
 int do_unmount(struct inode *i, int flags)
 {
-	if(!i)
+	if(!i || !i->mount)
 		return -EINVAL;
 	if(!permissions(i, MAY_READ))
 		return -EACCES;
 	if(!is_directory(i))
 		return -ENOTDIR;
-	struct inode *m = i->mount_ptr;
+	struct inode *m = i->mount->root;
+	mount_pt_t *mt = i->mount;
 	mutex_on(&i->lock);
-	i->mount_ptr=0;
+	i->mount=0;
 	lock_scheduler();
 	int c = recur_total_refs(m);
 	if(c && (!(flags&1) && !current_task->uid))
 	{
-		i->mount_ptr=m;
+		i->mount=mt;
 		unlock_scheduler();
 		mutex_off(&i->lock);
 		return -EBUSY;
 	}
 	unlock_scheduler();
-	vfs_callback_unmount(i->mount_ptr, i->mount_ptr->sb_idx);
-	m->r_mount_ptr = 0;
+	vfs_callback_unmount(m, m->sb_idx);
+	m->mount_parent=0;
 	remove_mountlst(m);
-	iremove_recur(m);
-	iput(i);
+	if(m != devfs_root && m != procfs_root)
+		iremove_recur(m);
+	kfree(mt);
 	return 0;
 }
 
@@ -117,15 +125,10 @@ int unmount(char *n, int flags)
 	i = get_idir(n, 0);
 	if(!i)
 		return -ENOENT;
-	struct inode *g;
-	g = i->r_mount_ptr;
-	if(!g) {
-		iput(i);
-		return -EINVAL;
-	}
-	change_icount(g, 1);
-	change_icount(i, -1);
-	int ret = do_unmount(g, flags);
+	if(!i->mount_parent)
+		return -ENOENT;
+	i = i->mount_parent;
+	int ret = do_unmount(i, flags);
 	iput(i);
 	return ret;
 }

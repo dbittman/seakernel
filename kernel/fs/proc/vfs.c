@@ -32,9 +32,9 @@ int proc_vfs(char rw, struct inode *n, int m, char *buf, int off, int len)
 		int c=0;
 		while((i=get_sb_table(c++)))
 		{
-			if(!strcmp(i->r_mount_ptr->name, "dev"))
+			if(!strcmp(i->mount_parent->name, "dev"))
 				continue;
-			if(!strcmp(i->r_mount_ptr->name, "proc"))
+			if(!strcmp(i->mount_parent->name, "proc"))
 				continue;
 			struct mnttab mt;
 			mt.mt_special = "";
@@ -46,20 +46,20 @@ int proc_vfs(char rw, struct inode *n, int m, char *buf, int off, int len)
 			
 			if(!i->node_str[0])
 			{
-				if(i->mount_ptr)
-					mt.mt_dev = i->mount_ptr->name;
+				if(i->mount && i->mount->root)
+					mt.mt_dev = i->mount->root->name;
 				else
 					mt.mt_dev = i->name;
 			} else {
 				mt.mt_dev = strrchr(i->node_str, '/')+1;
 			}
-			if(i->r_mount_ptr) {
-				if(i->r_mount_ptr == current_task->root || i == current_task->root)
+			if(i->mount_parent) {
+				if(i->mount_parent == current_task->root || i == current_task->root)
 					mt.mt_filsys=mt.mt_mountp = "/";
 				else {
-					if(!strcmp(i->r_mount_ptr->name, "dev"))
+					if(!strcmp(i->mount_parent->name, "dev"))
 						mt.mt_mountp = "/dev";
-					if(!strcmp(i->r_mount_ptr->name, "proc"))
+					if(!strcmp(i->mount_parent->name, "proc"))
 						mt.mt_mountp = "/proc";
 				}
 			}

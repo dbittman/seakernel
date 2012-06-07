@@ -18,6 +18,7 @@ void kernel_shutdown()
 	/** Write the system-down stuffs */
 	/* Unload modules, unmount stuff, sync stuff, kill all tasks*/
 	kill_all_tasks();
+	unlock_all_mutexes();
 	kernel_task->next = current_task;
 	current_task->next=0;
 	current_task->prev = kernel_task;

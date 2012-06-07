@@ -20,6 +20,16 @@ int change_icount(struct inode *i, int c)
 	return ret;
 }
 
+int change_ireq(struct inode *i, int c)
+{
+	int ret=0;
+	if(!i) return 0;
+	mutex_on(&i->lock);
+	ret = (i->required += c);
+	mutex_off(&i->lock);
+	return ret;
+}
+
 int get_ref_count(struct inode *i)
 {
 	return i ? i->count : 0;
@@ -123,7 +133,7 @@ int do_iremove(struct inode *i, int flag)
 {
 	if(!i) return -1;
 	struct inode *parent = i->parent;
-	if(parent) mutex_on(&parent->lock);
+	if(parent && parent != i) mutex_on(&parent->lock);
 	if(!flag && (get_ref_count(i) || i->child) && flag != 3)
 		panic(0, "Attempted to iremove inode with count > 0 or children! (%s)", i->name);
 	if(flag != 3) 
@@ -131,11 +141,11 @@ int do_iremove(struct inode *i, int flag)
 	struct inode *prev = i->prev;
 	if(prev)
 		prev->next = i->next;
-	if(parent && parent->child == i)
+	if(parent && parent->child == i && parent != i)
 		parent->child=i->next;
 	if(i->next)
 		i->next->prev = prev;
-	if(parent) mutex_off(&parent->lock);
+	if(parent && parent != i) mutex_off(&parent->lock);
 	if(flag != 3)
 		free_inode(i, (flag == 2) ? 1 : 0);
 	return 0;

@@ -23,21 +23,21 @@ int do_get_path_string(struct inode *p, char *path, int max)
 		sprintf(path, "%s", p->name);
 		return 0;
 	}
-	if(i != current_task->root && i->r_mount_ptr)
-		i = i->r_mount_ptr;
+	if(i != current_task->root && i->mount_parent)
+		i = i->mount_parent;
 	char tmp[max * sizeof(char) +1];
 	memset(tmp, 0, max * sizeof(char) +1);
 	while(i && i->parent != i && i->parent && ((int)(strlen(path) + strlen(i->name)) < max || max == -1))
 	{
-		if(i->r_mount_ptr)
-			i = i->r_mount_ptr;
+		if(i->mount_parent)
+			i = i->mount_parent;
 		strncpy(tmp, path, max * sizeof(char) +1);
 		sprintf(path, "%s/%s", i->name, tmp);
 		i = i->parent;
 		if(i == current_task->root)
 			break;
-		if(i->r_mount_ptr)
-			i = i->r_mount_ptr;
+		if(i->mount_parent)
+			i = i->mount_parent;
 		if(i == current_task->root)
 			break;
 	}
@@ -79,13 +79,9 @@ int chroot(char *n)
 		iput(i);
 		return -EACCES;
 	}
-	mutex_on(&i->lock);
-	i->required++;
 	current_task->root = i;
-	mutex_off(&i->lock);
-	mutex_on(&old->lock);
-	old->required++;
-	mutex_off(&old->lock);
+	change_ireq(i, 1);
+	change_ireq(old, -1);
 	iput(old);
 	chdir("/");
 	return 0;
@@ -108,12 +104,9 @@ int chdir(char *n)
 		return -EACCES;
 	}
 	current_task->pwd = i;
-	mutex_on(&old->lock);
-	old->required--;
+	change_ireq(i, 1);
+	change_ireq(old, -1);
 	iput(old);
-	mutex_on(&current_task->pwd->lock);
-	current_task->pwd->required++;
-	mutex_off(&current_task->pwd->lock);
 	return 0;
 }
 
@@ -136,7 +129,6 @@ struct inode *do_readdir(struct inode *i, int num)
 		old = vfs_callback_readdir(i, num);
 		if(!old) 
 			return 0;
-		if(old && old->r_mount_ptr) old = old->r_mount_ptr;
 		old->count=1;
 		c = old;
 	}

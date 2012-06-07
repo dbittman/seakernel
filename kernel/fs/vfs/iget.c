@@ -15,8 +15,8 @@ struct inode *do_lookup(struct inode *i, char *path, int aut, int ram)
 		{
 			if(i == current_task->root)
 				return i;
-			if(i->r_mount_ptr)
-				i = i->r_mount_ptr;
+			if(i->mount_parent)
+				i = i->mount_parent;
 			if(!i->parent || !i) 
 				return 0;
 			return i->parent;
@@ -32,10 +32,10 @@ struct inode *do_lookup(struct inode *i, char *path, int aut, int ram)
 	{
 		/* Check to see if an inode is valid. This is similar to checks in iput if it can be released
 		 * If the validness fails, then the inode could very well be being released */
-		if(((!temp->unreal && (temp->count || temp->child || i->mount_ptr)) || !temp->dynamic) && !strcmp(temp->name, path))
+		if(((!temp->unreal && (temp->count || temp->child || i->mount)) || !temp->dynamic) && !strcmp(temp->name, path))
 		{
-			if(temp->mount_ptr)
-				temp = temp->mount_ptr;
+			if(temp->mount)
+				temp = temp->mount->root;
 			/* Update info. We do this in case something inside the driver 
 			 * has changed the stats of this file without us knowing. */
 			vfs_callback_update(temp);
@@ -50,8 +50,8 @@ struct inode *do_lookup(struct inode *i, char *path, int aut, int ram)
 		if(!temp)
 			return 0;
 		add_inode(i, temp);
-		if(temp->mount_ptr)
-			temp = temp->mount_ptr;
+		if(temp->mount)
+			temp = temp->mount->root;
 		return temp;
 	}
 	return 0;
@@ -61,8 +61,11 @@ struct inode *lookup(struct inode *i, char *path)
 {
 	mutex_on(&i->lock);
 	struct inode *ret = do_lookup(i, path, 1, 0);
+	if(ret->mount_parent)
+		change_icount(ret->mount_parent, 1);
+	else
+		change_icount(ret, 1);
 	mutex_off(&i->lock);
-	change_icount(ret, 1);
 	if(S_ISLNK(ret->mode))
 	{
 		/* The link's actual contents contain the path to the linked file */
@@ -81,8 +84,12 @@ struct inode *llookup(struct inode *i, char *path)
 {
 	mutex_on(&i->lock);
 	struct inode *ret = do_lookup(i, path, 1, 0);
+	
+	if(ret->mount_parent)
+		change_icount(ret->mount_parent, 1);
+	else
+		change_icount(ret, 1);
 	mutex_off(&i->lock);
-	change_icount(ret, 1);
 	return ret;
 }
 
@@ -90,7 +97,7 @@ struct inode *do_add_dirent(struct inode *p, char *name, int mode)
 {
 	if(!is_directory(p))
 		return 0;
-	if(p->mount_ptr) p = p->mount_ptr;
+	if(p->mount) p = p->mount->root;
 	mutex_on(&p->lock);
 	if(!permissions(p, MAY_WRITE)) {
 		mutex_off(&p->lock);
@@ -177,8 +184,12 @@ struct inode *do_get_idir(char *p_path, struct inode *b, int use_link, int creat
 				*did_create=1;
 			if(ret) ret->count++;
 		}
-		if(prev)
-			change_icount(prev, -1);
+		if(prev) {
+			if(prev->mount_parent)
+				change_icount(prev->mount_parent, -1);
+			else
+				change_icount(prev, -1);
+		}
 		if(!ret)
 			return 0;
 		prev = ret;

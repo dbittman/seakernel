@@ -13,6 +13,7 @@ int sys_close(int fp)
 	struct file *f = get_file_pointer((task_t *) current_task, fp);
 	if(!f)
 		return -EBADF;
+	assert(f->inode && !f->inode->unreal && f->inode->f_count);
 	mutex_on(&f->inode->lock);
 	if(f->inode->pipe)
 	{

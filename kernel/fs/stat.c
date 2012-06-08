@@ -64,7 +64,7 @@ int sys_dirstat(char *dir, unsigned num, char *namebuf, struct stat *statbuf)
 		return -ESRCH;
 	do_stat(i, statbuf);
 	strncpy(namebuf, i->name, 128);
-	iput(i);
+	free_inode(i, 0);
 	return 0;
 }
 

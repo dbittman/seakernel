@@ -111,7 +111,7 @@ __attribute__((optimize("O0"))) void __mutex_on(mutex_t *m, char *file, int line
 		disengage_full_system_lock();
 		/* Sleep...*/
 		if(i++ == 1000)
-			i=0, printk(0, "[mutex]: potential deadlock (%s:%d):\n\ttask %d is waiting for a mutex (p=%d,c=%d): %x\n", file, line, current_task->pid, m->pid, m->count, p);
+			i=0, printk(0, "[mutex]: potential deadlock (%s:%d):\n\ttask %d (%d) is waiting for a mutex (p=%d,c=%d): %x\n", file, line, current_task->pid, current_task->system, m->pid, m->count, p);
 		force_schedule();
 		engage_full_system_lock();
 	}

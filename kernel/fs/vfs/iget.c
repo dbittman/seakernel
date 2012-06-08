@@ -19,10 +19,12 @@ struct inode *do_lookup(struct inode *i, char *path, int aut, int ram)
 				i = i->mount_parent;
 			if(!i->parent || !i) 
 				return 0;
-			return i->parent;
-		}
-		if(!strcmp(path, "."))
+			i = i->parent;
 			return i;
+		}
+		if(!strcmp(path, ".")) {
+			return i;
+		}
 	}
 	/* Access? */
 	if(!is_directory(i))
@@ -30,12 +32,14 @@ struct inode *do_lookup(struct inode *i, char *path, int aut, int ram)
 	temp = i->child;
 	while(temp)
 	{
+		assert(!temp->unreal);
 		/* Check to see if an inode is valid. This is similar to checks in iput if it can be released
 		 * If the validness fails, then the inode could very well be being released */
-		if(((!temp->unreal && (temp->count || temp->child || i->mount)) || !temp->dynamic) && !strcmp(temp->name, path))
+		if(!strcmp(temp->name, path))
 		{
 			if(temp->mount)
 				temp = temp->mount->root;
+			change_icount(temp, 1);
 			/* Update info. We do this in case something inside the driver 
 			 * has changed the stats of this file without us knowing. */
 			vfs_callback_update(temp);
@@ -49,9 +53,8 @@ struct inode *do_lookup(struct inode *i, char *path, int aut, int ram)
 		temp = vfs_callback_lookup(i, path);
 		if(!temp)
 			return 0;
+		temp->count=1;
 		add_inode(i, temp);
-		if(temp->mount)
-			temp = temp->mount->root;
 		return temp;
 	}
 	return 0;
@@ -61,10 +64,6 @@ struct inode *lookup(struct inode *i, char *path)
 {
 	mutex_on(&i->lock);
 	struct inode *ret = do_lookup(i, path, 1, 0);
-	if(ret->mount_parent)
-		change_icount(ret->mount_parent, 1);
-	else
-		change_icount(ret, 1);
 	mutex_off(&i->lock);
 	if(S_ISLNK(ret->mode))
 	{
@@ -84,11 +83,6 @@ struct inode *llookup(struct inode *i, char *path)
 {
 	mutex_on(&i->lock);
 	struct inode *ret = do_lookup(i, path, 1, 0);
-	
-	if(ret->mount_parent)
-		change_icount(ret->mount_parent, 1);
-	else
-		change_icount(ret, 1);
 	mutex_off(&i->lock);
 	return ret;
 }
@@ -184,12 +178,8 @@ struct inode *do_get_idir(char *p_path, struct inode *b, int use_link, int creat
 				*did_create=1;
 			if(ret) ret->count++;
 		}
-		if(prev) {
-			if(prev->mount_parent)
-				change_icount(prev->mount_parent, -1);
-			else
-				change_icount(prev, -1);
-		}
+		if(prev)
+			change_icount(prev, -1);
 		if(!ret)
 			return 0;
 		prev = ret;

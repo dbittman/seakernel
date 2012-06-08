@@ -145,6 +145,7 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 		printk(0, "[%d]: Copy data\n", t->pid);
 	struct inode *exe = efil->inode;
 	change_icount(exe, 1);
+	change_ireq(exe, 1);
 	unsigned path_loc = copy_double_pointers(argv, env, &argc);
 	path_loc -= (strlen(path) + 32);
 	map_if_not_mapped_noclear(path_loc);

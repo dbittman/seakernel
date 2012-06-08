@@ -55,7 +55,7 @@ struct file *d_sys_open(char *name, int flags, int mode, int *error, int *num)
 	f->count=1;
 	f->fd_flags &= ~FD_CLOEXEC;
 	mutex_on(&inode->lock);
-	++inode->f_count;
+	inode->f_count++;
 	mutex_off(&inode->lock);
 	ret = add_file_pointer((task_t *)current_task, f);
 	if(num) *num = ret;
@@ -92,6 +92,7 @@ int duplicate(task_t *t, int fp, int n)
 		return -EBADF;
 	struct file *new=(struct file *)kmalloc(sizeof(struct file));
 	new->inode = f->inode;
+	assert(new->inode && new->inode->count && new->inode->f_count && !new->inode->unreal);
 	new->count=1;
 	change_icount(f->inode, 1);
 	mutex_on(&f->inode->lock);

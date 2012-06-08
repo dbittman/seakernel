@@ -57,11 +57,9 @@ struct inode *wrap_ext2_readdir(struct inode *in, unsigned num)
 	ext2_inode_t inode;
 	if (!ext2_inode_read(fs, in->num, &inode))
 		return 0;
-	mutex_on(&in->lock);
 	char tmp[256];
 	memset(tmp, 0, 256);
 	int ret = ext2_dir_getnum(&inode, num, tmp);
-	mutex_off(&in->lock);
 	if(!ret) return 0;
 	if(!ext2_inode_read(fs, ret, &inode))
 		return 0;
@@ -73,9 +71,7 @@ struct inode *wrap_ext2_lookup(struct inode *in, char *name)
 	ext2_fs_t *fs = get_fs(in->sb_idx);
 	if(!fs) return 0;
 	ext2_inode_t inode;
-	mutex_on(&in->lock);
 	ext2_inode_read(fs, in->num, &inode);
-	mutex_off(&in->lock);
 	int ret = ext2_dir_get_inode(&inode, name);
 	if(!ret) 
 		return 0;
@@ -246,9 +242,9 @@ struct inode *do_wrap_ext2_create(struct inode *i, char *name, unsigned mode)
 
 struct inode *wrap_ext2_create(struct inode *i, char *name, unsigned mode)
 {
-	mutex_on(&i->lock);
+	//mutex_on(&i->lock);
 	struct inode *ret = do_wrap_ext2_create(i, name, mode);
-	mutex_off(&i->lock);
+	//mutex_off(&i->lock);
 	return ret;
 }
 

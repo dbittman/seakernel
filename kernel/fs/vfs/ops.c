@@ -71,10 +71,7 @@ int permissions(struct inode *inode, int flag)
 int do_add_inode(struct inode *b, struct inode *i)
 {
 	if(!is_directory(b))
-	{
-		printk(KERN_WARN, "Trying to add an inode to a file.\n");
-		return -1;
-	}
+		panic(0, "tried to add an inode to a file");
 	struct inode *tmp = b->child;
 	b->child = i;
 	i->next = tmp;

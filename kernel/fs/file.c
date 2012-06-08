@@ -81,6 +81,7 @@ void copy_file_handles(task_t *p, task_t *n)
 			fp->fi->count++;
 			task_uncritical();
 			struct inode *i = fp->fi->inode;
+			assert(i && i->count && i->f_count && !i->unreal);
 			change_icount(i, 1);
 			mutex_on(&i->lock);
 			i->f_count++;

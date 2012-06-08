@@ -28,11 +28,11 @@ typedef struct {
 struct inode {
 	/* Attributes */
 	unsigned short mode, uid, gid, nlink;
-	unsigned char unreal, dynamic, required;
+	unsigned char unreal, dynamic;
 	unsigned int flags, len, start, nblocks, ctime, atime, mtime;
-	int count, f_count, newlocks;
+	int count, f_count, newlocks, required;
 	/* Identification */
-	char name[128];
+	char name[INAME_LEN];
 	unsigned int dev;
 	unsigned long num;
 	unsigned int sb_idx;

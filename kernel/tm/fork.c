@@ -8,9 +8,18 @@ void copy_task_struct(task_t *new, task_t *parent)
 {
 	new->parent = parent;
 	new->pid = next_pid++;
-	if(parent->exe) change_icount((new->exe = parent->exe), 1);
-	if(parent->root) change_icount((new->root = parent->root), 1);
-	if(parent->pwd) change_icount((new->pwd = parent->pwd), 1);
+	if(parent->exe) {
+		change_icount((new->exe = parent->exe), 1);
+		change_ireq(new->exe, 1);
+	}
+	if(parent->root) {
+		change_icount((new->root = parent->root), 1);
+		change_ireq(new->root, 1);
+	}
+	if(parent->pwd) {
+		change_icount((new->pwd = parent->pwd), 1);
+		change_ireq(new->pwd, 1);
+	}
 	new->uid = parent->uid;
 	new->magic = TASK_MAGIC;
 	new->gid = parent->gid;

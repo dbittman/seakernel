@@ -53,6 +53,7 @@ struct inode *set_as_kernel_task(char *name)
 	add_inode(kproclist, i);
 	current_task->exe=i;
 	current_task->flags |= TF_KTASK;
+	strncpy((char *)current_task->command, name, INAME_LEN);
 	return i;
 }
 

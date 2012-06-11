@@ -197,7 +197,7 @@ int permissions(struct inode *inode, int flag);
 int add_inode(struct inode *b, struct inode *i);
 int free_inode(struct inode *i, int);
 int remove_inode(struct inode *b, char *name);
-struct inode *do_lookup(struct inode *i, char *path, int aut, int ram);
+struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, int *);
 struct inode *lookup(struct inode *i, char *path);
 int sys_mknod(char *path, unsigned mode, unsigned dev);
 int sys_chmod(char *path, int mode);

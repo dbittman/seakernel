@@ -5,7 +5,7 @@
 #include <dev.h>
 #include <fs.h>
 
-struct inode *do_lookup(struct inode *i, char *path, int aut, int ram)
+struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, int *req)
 {
 	if(!i || !path || !*path)
 		return 0;
@@ -37,9 +37,10 @@ struct inode *do_lookup(struct inode *i, char *path, int aut, int ram)
 		 * If the validness fails, then the inode could very well be being released */
 		if(!strcmp(temp->name, path))
 		{
+			change_ireq(i, 1);
+			if(req) *req=1;
 			if(temp->mount)
 				temp = temp->mount->root;
-			change_icount(temp, 1);
 			/* Update info. We do this in case something inside the driver 
 			 * has changed the stats of this file without us knowing. */
 			vfs_callback_update(temp);
@@ -64,9 +65,12 @@ struct inode *do_lookup(struct inode *i, char *path, int aut, int ram)
 
 struct inode *lookup(struct inode *i, char *path)
 {
+	int req=0;
 	mutex_on(&i->lock);
-	struct inode *ret = do_lookup(i, path, 1, 0);
+	struct inode *ret = do_lookup(i, path, 1, 0, &req);
 	mutex_off(&i->lock);
+	if(ret) change_icount(ret, 1);
+	if(req) change_ireq(i, -1);
 	if(ret && S_ISLNK(ret->mode))
 	{
 		/* The link's actual contents contain the path to the linked file */
@@ -83,9 +87,12 @@ struct inode *lookup(struct inode *i, char *path)
 /* Returns a link if is the path specified */
 struct inode *llookup(struct inode *i, char *path)
 {
+	int req=0;
 	mutex_on(&i->lock);
-	struct inode *ret = do_lookup(i, path, 1, 0);
+	struct inode *ret = do_lookup(i, path, 1, 0, &req);
 	mutex_off(&i->lock);
+	if(ret) change_icount(ret, 1);
+	if(req) change_ireq(i, -1);
 	return ret;
 }
 

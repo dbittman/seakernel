@@ -12,8 +12,8 @@ int do_iput(struct inode *i)
 	struct inode *parent = i->parent;
 	if(parent && parent != i) mutex_on(&parent->lock);	
 	if(i->count > 0)
-		change_icount(i, -1);
-	if(i->count || i->child || i->mount || i->mount_parent || !i->dynamic || i->f_count || i->required) {
+		i->count--;
+	if(i->count || i->child || i->mount || i->mount_parent || !i->dynamic || i->f_count || i->required || !parent || parent->required) {
 		if(parent && parent != i) mutex_off(&parent->lock);
 		return EACCES;
 	}

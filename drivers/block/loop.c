@@ -7,7 +7,7 @@
 #include <mod.h>
 int NUM_LOOP = 2;
 int loop_maj = -1;
-char loop_table[20][128];
+char *loop_table[20];
 struct inode *loop_f[20];
 int loop_rw(int rw, int minor, int block, char *buf)
 {
@@ -26,12 +26,15 @@ int loop_up(int num, char *name)
 {
 	if(num >= 20)
 		return -EINVAL;
-	if(loop_table[num][0] != 0)
+	if(loop_table[num])
 		return -EEXIST;
-	strncpy(loop_table[num], name, 128);
+	loop_table[num] = (char *)kmalloc(strlen(name)+1);
+	_strcpy(loop_table[num], name);
 	loop_f[num] = get_idir(name, 0);
-	if(!loop_f[num])
+	if(!loop_f[num]) {
+		kfree(loop_table[num]);
 		return -ENOENT;
+	}
 	return 0;
 }
 
@@ -41,7 +44,8 @@ int loop_down(int num)
 		return -EINVAL;
 	if(!loop_f[num]) return -ENOENT;
 	disconnect_block_cache(GETDEV(loop_maj, num));
-	memset(loop_table[num], 0, 128);
+	kfree(loop_table[num]);
+	loop_table[num]=0;
 	iput(loop_f[num]);
 	loop_f[num]=0;
 	return 0;
@@ -83,18 +87,6 @@ int strtoint(char *s)
 
 int module_install()
 {
-	int f = sys_open("/config/loopconfig", O_RDWR);
-	if(f > 0)
-	{
-		struct stat sf;
-		sys_fstat(f, &sf);
-		int len = sf.st_size;
-		char tmp[len+1];
-		memset(tmp, 0, len+1);
-		sys_read(f, 0, tmp, len);
-		sys_close(f);
-		NUM_LOOP = strtoint(tmp);
-	}
 	if(NUM_LOOP > 19) NUM_LOOP=19;
 	printk(KERN_DEBUG, "[loop]: Creating %d loopback devices...\n", NUM_LOOP);
 	loop_maj = set_availablebd(loop_rw, 512, ioctl_main, 0, 0);
@@ -104,7 +96,7 @@ int module_install()
 	{
 		sprintf(name, "loop%d", i);
 		dfs_cn(name, S_IFBLK, loop_maj, i);
-		memset(loop_table[i], 0, 128);
+		loop_table[i]=0;
 	}
 	memset(loop_f, 0, 19);
 	return 0;

@@ -14,7 +14,6 @@ int sys_close(int fp)
 	if(!f)
 		return -EBADF;
 	assert(f->inode && !f->inode->unreal && f->inode->f_count);
-	mutex_on(&f->inode->lock);
 	if(f->inode->pipe)
 	{
 		/* okay, its a pipe. We need to do some special things
@@ -35,6 +34,7 @@ int sys_close(int fp)
 		char_rw(CLOSE, f->inode->dev, 0, 0);
 	else if(S_ISBLK(f->inode->mode) && !fp)
 		block_device_rw(CLOSE, f->inode->dev, 0, 0, 0);
+	mutex_on(&f->inode->lock);
 	if(f->inode->f_count > 0)
 		f->inode->f_count--;
 	iput(f->inode);

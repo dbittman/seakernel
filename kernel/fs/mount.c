@@ -59,14 +59,12 @@ void remove_mountlst(struct inode *n)
 void unmount_all()
 {
 	struct mountlst *m = ml;
-	mutex_on(&ml_mutex);
 	while(m) {
 		do_unmount(m->i->mount_parent, 1);
 		struct mountlst *t = m->next;
 		remove_mountlst(m->i);
 		m=t;
 	}
-	mutex_off(&ml_mutex);
 }
 
 void do_sync_of_mounted()

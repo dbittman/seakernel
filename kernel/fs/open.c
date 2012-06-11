@@ -94,8 +94,8 @@ int duplicate(task_t *t, int fp, int n)
 	new->inode = f->inode;
 	assert(new->inode && new->inode->count && new->inode->f_count && !new->inode->unreal);
 	new->count=1;
-	change_icount(f->inode, 1);
 	mutex_on(&f->inode->lock);
+	f->inode->count++;
 	f->inode->f_count++;
 	mutex_off(&f->inode->lock);
 	new->flags = f->flags;

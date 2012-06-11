@@ -116,11 +116,7 @@ int wrap_ext2_writefile(struct inode *in, unsigned int off, unsigned int len, ch
 	unsigned sc = inode.sector_count;
 	unsigned int ret = ext2_inode_writedata(&inode, off, len, (unsigned char*)buf);
 	if(sz != inode.sector_count || sz != inode.size) 
-	{
-		mutex_on(&in->lock);
 		update_sea_inode(in, &inode, 0);
-		mutex_off(&in->lock);
-	}
 	if(ret > len) ret = len;
 	return ret;
 }
@@ -184,10 +180,8 @@ int do_wrap_ext2_link(struct inode *i, char *path)
 	if(!dir)
 		return -ENOENT;
 	/* Can't link accross multiple filesystems */
-	if(dir->sb_idx != i->sb_idx) {
+	if(dir->sb_idx != i->sb_idx)
 		return -EINVAL;
-	}
-	mutex_on(&dir->lock);
 	int ret = do_add_ent(dir, &inode, p ? p+1 : path);
 	iput(dir);
 	return ret;
@@ -267,9 +261,7 @@ int do_wrap_ext2_unlink(struct inode *i)
 		return -ENOENT;
 	if(!inode.mode)
 		return -EACCES;
-	mutex_on(&i->parent->lock);
 	int ret = ext2_dir_unlink(&inode, i->name, 1);
-	mutex_off(&i->parent->lock);
 	update_sea_inode(i, &inode, 0);
 	return ret-1;
 }
@@ -315,13 +307,9 @@ int wrap_sync_inode(struct inode *i)
 			printk(4, "Well, we tried to update the file type, but couldn't find where we were. Oh well.\n");
 		} else {
 			ext2_inode_t par;
-			mutex_on(&i->parent->lock);
-			if(!ext2_inode_read(fs, i->parent->num, &par)) {
-				mutex_off(&i->parent->lock);
+			if(!ext2_inode_read(fs, i->parent->num, &par))
 				return -EIO;
-			}
 			ext2_dir_change_type(&par, i->name, new_type);
-			mutex_off(&i->parent->lock);
 		}
 	}
 	return 0;

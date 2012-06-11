@@ -93,7 +93,6 @@ int sys_chmod(char *path, int mode)
 		iput(i);
 		return -EPERM;
 	}
-	mutex_on(&i->lock);
 	i->mode = (i->mode&~0xFFF) | mode;
 	sync_inode_tofs(i);
 	iput(i);
@@ -159,7 +158,6 @@ int sys_mknod(char *path, unsigned mode, unsigned dev)
 	if(!path) return -EINVAL;
 	struct inode *i = cget_idir(path, 0, mode);
 	if(!i) return -EACCES;
-	mutex_on(&i->lock);
 	i->dev = dev;
 	i->mode = mode;
 	sync_inode_tofs(i);

@@ -17,9 +17,8 @@ int do_sys_read_flags(struct file *f, unsigned off, char *buf, unsigned count)
 		return read_pipe(inode, buf, count);
 	else if(S_ISCHR(mode))
 		return char_rw(READ, inode->dev, buf, count);
-	else if(S_ISBLK(mode)) {
+	else if(S_ISBLK(mode))
 		return block_device_rw(READ, inode->dev, off, buf, count);
-	}
 	/* We read the data for a link as well. If we have gotten to the point
 	 * where we have the inode for the link we probably want to read the link itself
 	 */

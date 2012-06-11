@@ -54,6 +54,8 @@ struct inode *do_lookup(struct inode *i, char *path, int aut, int ram)
 		if(!temp)
 			return 0;
 		temp->count=1;
+		temp->f_count=0;
+		temp->required=0;
 		add_inode(i, temp);
 		return temp;
 	}
@@ -65,7 +67,7 @@ struct inode *lookup(struct inode *i, char *path)
 	mutex_on(&i->lock);
 	struct inode *ret = do_lookup(i, path, 1, 0);
 	mutex_off(&i->lock);
-	if(S_ISLNK(ret->mode))
+	if(ret && S_ISLNK(ret->mode))
 	{
 		/* The link's actual contents contain the path to the linked file */
 		char li[ret->len + 1];

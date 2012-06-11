@@ -302,13 +302,13 @@ int module_install()
 int module_exit()
 {
 	pci_destroy_list();
-	destroy_mutex(pci_mutex);
 	iremove_force(proc_pci);
 	proc_set_callback(proc_pci_maj, 0);
 	remove_kernel_symbol("pci_locate_device");
 	remove_kernel_symbol("pci_locate_devices");
 	remove_kernel_symbol("pci_locate_class");
 	remove_kernel_symbol("pci_get_base_address");
+	destroy_mutex(pci_mutex);
 	return 0;
 }
 int module_deps(char *b)

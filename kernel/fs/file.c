@@ -82,16 +82,16 @@ void copy_file_handles(task_t *p, task_t *n)
 			task_uncritical();
 			struct inode *i = fp->fi->inode;
 			assert(i && i->count && i->f_count && !i->unreal);
-			change_icount(i, 1);
 			mutex_on(&i->lock);
+			i->count++;
 			i->f_count++;
+			mutex_off(&i->lock);
 			if(i->pipe && !i->pipe->type) {
 				mutex_on(i->pipe->lock);
 				++i->pipe->count;
 				if(fp->fi->flags & _FWRITE) i->pipe->wrcount++;
 				mutex_off(i->pipe->lock);
 			}
-			mutex_off(&i->lock);
 			n->filp[c] = fp;
 		}
 		

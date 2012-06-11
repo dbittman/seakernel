@@ -10,7 +10,7 @@ int link(char *old, char *new)
 	if(!old || !new)
 		return -EINVAL;
 	struct inode *i;
-	i = get_idir(old, 0);
+	i = lget_idir(old, 0);
 	if(!i)
 		return -ENOENT;
 	unlink(new);
@@ -37,6 +37,6 @@ int unlink(char *f)
 		return 0;
 	}
 	int ret = err ? 0 : vfs_callback_unlink(i);
-	(i->dynamic || err) ? iput(i) : iremove_force(i);
+	(err) ? iput(i) : iremove_force(i);
 	return err ? err : ret;
 }

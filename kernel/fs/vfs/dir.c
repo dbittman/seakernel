@@ -150,24 +150,3 @@ struct inode *read_dir(char *n, int num)
 	iput(i);
 	return ret;
 }
-
-int rmdir(char *f)
-{
-	if(!f)
-		return -EINVAL;
-	struct inode *i;
-	i = get_idir(f, 0);
-	if(!i)
-		return -ENOENT;
-	if(!permissions(i, MAY_WRITE)) {
-		iput(i);
-		return -EACCES;
-	}
-	if(!is_directory(i)) {
-		iput(i);
-		return -ENOTDIR;
-	}
-	int ret = vfs_callback_rmdir(i);
-	iput(i);
-	return ret;
-}

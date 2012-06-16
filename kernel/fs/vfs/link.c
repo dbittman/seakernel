@@ -24,6 +24,8 @@ int unlink(char *f)
 {
 	if(!f) return -EINVAL;
 	struct inode *i;
+	if(strchr(f, '*'))
+		return -ENOENT;
 	i = lget_idir(f, 0);
 	if(!i)
 		return -ENOENT;
@@ -36,9 +38,32 @@ int unlink(char *f)
 		iput(i);
 		return 0;
 	}
-	if(i->count>2 || i->required || i->mount || i->mount_parent)
+	if(i->count > 2 || i->required || i->mount || i->mount_parent)
 		err = -EBUSY;
 	int ret = err ? 0 : vfs_callback_unlink(i);
+	(err) ? iput(i) : iremove_force(i);
+	return err ? err : ret;
+}
+
+int rmdir(char *f)
+{
+	if(!f) return -EINVAL;
+	struct inode *i;
+	if(strchr(f, '*'))
+		return -ENOENT;
+	i = lget_idir(f, 0);
+	if(!i)
+		return -ENOENT;
+	int err = 0;
+	if(i->child)
+		err = -ENOTEMPTY;
+	if(i->f_count) {
+		iput(i);
+		return 0;
+	}
+	if(i->count > 2 || i->required || i->mount || i->mount_parent)
+		err = -EBUSY;
+	int ret = err ? 0 : vfs_callback_rmdir(i);
 	(err) ? iput(i) : iremove_force(i);
 	return err ? err : ret;
 }

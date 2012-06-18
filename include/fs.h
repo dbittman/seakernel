@@ -28,7 +28,7 @@ typedef struct {
 struct inode {
 	/* Attributes */
 	unsigned short mode, uid, gid, nlink;
-	unsigned char unreal, dynamic;
+	unsigned char unreal, dynamic, marked_for_deletion;
 	unsigned int flags, len, start, nblocks, ctime, atime, mtime;
 	int count, f_count, newlocks, required;
 	/* Identification */
@@ -141,6 +141,7 @@ int proc_get_major();
 int do_fs_stat(struct inode *i, struct fsstat *f);
 int rename(char *f, char *nname);
 int sys_isatty(int f);
+int do_unlink(struct inode *i);
 int sys_dirstat(char *dir, unsigned num, char *namebuf, struct stat *statbuf);
 int pfs_write(struct inode *i, unsigned int pos, unsigned int len, char *buffer);
 int pfs_read(struct inode *i, unsigned int pos, unsigned int len, char *buffer);

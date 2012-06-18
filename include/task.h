@@ -116,7 +116,7 @@ typedef volatile struct task_struct
 	sigset_t old_mask;
 	int sig_queue[128];
 	unsigned alrm_count;
-	
+	unsigned freed, allocated;
 	volatile struct task_struct *next, *prev, *parent, *waiting, *alarm_next;
 } task_t;
 

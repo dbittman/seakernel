@@ -37,7 +37,10 @@ int sys_close(int fp)
 	mutex_on(&f->inode->lock);
 	if(f->inode->f_count > 0)
 		f->inode->f_count--;
-	iput(f->inode);
+	if(f->inode->marked_for_deletion)
+		do_unlink(f->inode);
+	else
+		iput(f->inode);
 	remove_file_pointer((task_t *)current_task, fp);
 	return 0;
 }

@@ -153,6 +153,7 @@ __attribute__((optimize("O0"))) int syscall_handler(volatile registers_t *regs)
 	if(!check_pointers(regs))
 		return -EINVAL;
 	enter_system(regs->eax);
+	current_task->freed = current_task->allocated=0;
 #ifdef SC_DEBUG
 	if(current_task->tty == curcons->tty) 
 		printk(SC_DEBUG, "syscall %d: enter %d\n", current_task->pid, regs->eax);

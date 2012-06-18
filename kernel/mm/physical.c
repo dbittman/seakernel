@@ -31,6 +31,7 @@ int __pm_alloc_page(char *file, int line)
 	unsigned flag=0;
 	try_again:
 	ret=0;
+	if(current_task) current_task->allocated++;
 	mutex_on(&pm_mutex);
 	if(paging_enabled)
 	{
@@ -87,6 +88,7 @@ void pm_free_page(unsigned int addr)
 	if(addr < pm_location) {
 		return;
 	}
+	if(current_task) current_task->freed++;
 	mutex_on(&pm_mutex);
 	/* Ignore invalid page frees (like ones above a number never allocated in the
 	 * first place. But only do this after the MM has been fully set up

@@ -6,7 +6,7 @@
 int sys_sbrk(int inc)
 {
 	assert(current_task);
-	if(inc < 0 && current_task->heap_start < current_task->heap_end) {
+	if(0 && inc < 0 && current_task->heap_start < current_task->heap_end) {
 		int dec = -inc;
 		unsigned new_end = current_task->heap_end - dec;
 		if(new_end < current_task->heap_start)

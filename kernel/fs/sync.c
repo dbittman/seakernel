@@ -4,8 +4,8 @@
 #include <fs.h>
 #include <cache.h>
 
-/* This syncs things in order. That is, the block level cache syncs before the devices do
- * because the block cache may modify the device cache */
+/* This syncs things in order. That is, the block level cache syncs before 
+ * the devices do because the block cache may modify the device cache */
 int sys_sync(int disp)
 {
 	if(disp == -1)

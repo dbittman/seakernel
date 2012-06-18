@@ -41,43 +41,36 @@ int __pm_alloc_page(char *file, int line)
 			mutex_off(&pm_mutex);
 			if(OOM_HANDLER == OOM_SLEEP) {
 				if(!flag++) 
-					printk(0, "Warning - Ran out of physical memory in task %d\n", current_task->pid);
+					printk(0, "Warning - Ran out of physical memory in task %d\n", 
+							current_task->pid);
 				task_full_uncritical();
 				__engage_idle();
 				force_schedule();
 				goto try_again;
 			} else if(OOM_HANDLER == OOM_KILL)
 			{
-				printk(0, "Warning - Ran out of physical memory in task %d. Killing...\n", current_task->pid);
+				printk(0, "Warning - Ran out of physical memory in task %d. Killing...\n", 
+						current_task->pid);
 				exit(-10);
 			}
 			else
 				panic(PANIC_MEM | PANIC_NOSYNC, "Ran out of physical memory");
 		}
-		++pm_used_pages;
 		pm_stack -= sizeof(unsigned int);
 		ret = *(unsigned int *)pm_stack;
 	} else {
-		++pm_used_pages;
 		ret = pm_location;
 		pm_location+=PAGE_SIZE;
 	}
-	
-	/* Now, I know what you're thinking - Infinite recursion!
-	 * Well, the only way for that to happen is if the pm page stack is filled with
-	 * zeros, which can happen for 1 of two reasons: (1) It got overwritten, and
-	 * (2) some huge error. Either way we're totally fucked. So it doesn't matter */
+	++pm_used_pages;
 	mutex_off(&pm_mutex);
 	if(current_task)
 		current_task->num_pages++;
-	if(!ret) {
-		printk(1, "[pmm]: BUG: found zero address in page stack\n");
-		return pm_alloc_page();
-	}
-	if(((ret > (unsigned)highest_page) || ret < (unsigned)lowest_page) && memory_has_been_mapped) {
-		printk(1, "[pmm]: BUG: found invalid address in page stack: %x\n", ret);
-		return pm_alloc_page();
-	}
+	if(!ret)
+		panic(PANIC_MEM | PANIC_NOSYNC, "found zero address in page stack\n");
+	if(((ret > (unsigned)highest_page) || ret < (unsigned)lowest_page) 
+			&& memory_has_been_mapped)
+		panic(PANIC_MEM | PANIC_NOSYNC, "found invalid address in page stack: %x\n", ret);
 	return ret;
 }
 
@@ -85,16 +78,13 @@ void pm_free_page(unsigned int addr)
 {
 	if(!paging_enabled)
 		panic(PANIC_MEM | PANIC_NOSYNC, "Called free page without paging environment");
-	if(addr < pm_location) {
+	if(addr < pm_location || (((addr > highest_page) || addr < lowest_page) 
+			&& memory_has_been_mapped)) {
+		panic(PANIC_MEM | PANIC_NOSYNC, "tried to free invalic physical address");
 		return;
 	}
 	if(current_task) current_task->freed++;
 	mutex_on(&pm_mutex);
-	/* Ignore invalid page frees (like ones above a number never allocated in the
-	 * first place. But only do this after the MM has been fully set up
-	 * so memory map processing still works. */
-	if(((addr > highest_page) || addr < lowest_page) && memory_has_been_mapped)
-		panic(PANIC_MEM | PANIC_NOSYNC, "Page was freed at %x! Impossible!", addr);
 	if(pm_stack_max <= pm_stack)
 	{
 		vm_map(pm_stack_max, addr, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT);

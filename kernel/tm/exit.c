@@ -45,10 +45,14 @@ void set_as_dead(task_t *t)
 	}
 	end_tokill = t;
 	t->next=0;
-	/* You may notice a problem here (congratz if you do) - if the task that is being set as "dead" is the current task (which it always it), 
-	* then 'current_task' is no longer a valid pointer!! However, this is cleared up nicely, because anything that calls set_as_dead must 
-	* schedule directly afterwards. Since we always set t->next=0 (for the new LL), the scheduler will see that and
-	* automatically start from the kernel task. Fancy, right? */
+	/* You may notice a problem here (congratz if you do) - 
+	 * if the task that is being set as "dead" is the 
+	 * current task (which it always it), then 'current_task' is no 
+	 * longer a valid pointer!! However, this is cleared up nicely, 
+	 * because anything that calls set_as_dead must schedule directly 
+	 * afterwards. Since we always set t->next=0 (for the new LL), 
+	 * the scheduler will see that and automatically start from the 
+	 * kernel task. Fancy, right? */
 	__engage_idle();
 }
 
@@ -74,7 +78,8 @@ int __KT_try_releasing_tasks()
 
 void release_task(task_t *p)
 {
-	/* This is everything that the task itself cannot release. The kernel cleans up what little is left nicely */
+	/* This is everything that the task itself cannot release. 
+	 * The kernel cleans up what little is left nicely */
 	assert(current_task == kernel_task);
 	assert(p != (task_t *)current_task);
 	
@@ -175,7 +180,8 @@ void exit(int code)
 			do_send_signal(ch->pid, SIGWAIT, 1);
 			ch->waiting=0;
 			ch->waiting_ret = code;
-			memcpy((void *)&ch->we_res, (void *)&t->exit_reason, sizeof(t->exit_reason));
+			memcpy((void *)&ch->we_res, (void *)&t->exit_reason, 
+				sizeof(t->exit_reason));
 			ch->we_res.pid = t->pid;
 		}
 		ch = ch->next;

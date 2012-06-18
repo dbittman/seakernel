@@ -9,13 +9,15 @@ unsigned *page_directory=(unsigned *)DIR_PHYS, *page_tables=(unsigned *)TBL_PHYS
 unsigned int cr0temp;
 int id_tables=0;
 extern void id_map_apic(page_dir_t *);
-/* This function will setup a paging environment with a basic page dir, enough to process the memory map passed by grub */
+/* This function will setup a paging environment with a basic page dir, 
+ * enough to process the memory map passed by grub */
 void vm_init(unsigned id_map_to)
 {
 	/* Register some stuff... */
 	register_interrupt_handler (14, (isr_t)&page_fault);
 
-	/* Create kernel directory. This includes looping upon itself for self-reference */
+	/* Create kernel directory. 
+	 * This includes looping upon itself for self-reference */
 	page_dir_t *pd;
 	pd = (page_dir_t *)pm_alloc_page();
 	memset(pd, 0, 0x1000);
@@ -33,7 +35,8 @@ void vm_init(unsigned id_map_to)
 		pt = (unsigned int *)(pd[mapper] & PAGE_MASK);
 		memset(pt, 0, 0x1000);
 		for(i=0;i<1024;i++)
-			pt[i] = (mapper*1024*0x1000 + 0x1000*i) | PAGE_PRESENT | ((mapper+i) ? PAGE_USER : PAGE_USER);
+			pt[i] = (mapper*1024*0x1000 + 0x1000*i) | PAGE_PRESENT 
+				| ((mapper+i) ? PAGE_USER : PAGE_USER);
 		mapper++;
 	}
 	id_tables=mapper;
@@ -49,13 +52,15 @@ void vm_init(unsigned id_map_to)
 		memset(pt, 0, 0x1000);
 	}
 	/* Now map in the physical page stack so we have memory to use */
-	for(i=PAGE_DIR_IDX((PM_STACK_ADDR/0x1000));i<(int)PAGE_DIR_IDX(PM_STACK_ADDR_TOP/0x1000);i++)
+	for(i=PAGE_DIR_IDX((PM_STACK_ADDR/0x1000));
+		i<(int)PAGE_DIR_IDX(PM_STACK_ADDR_TOP/0x1000);i++)
 	{
 		pd[i] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
 		pt = (unsigned int *)(pd[i] & PAGE_MASK);
 		memset(pt, 0, 0x1000);
 	}
-	/* CR3 requires the physical address, so we directly set it because we have the physical address */
+	/* CR3 requires the physical address, so we directly 
+	 * set it because we have the physical address */
 	__asm__ volatile ("mov %0, %%cr3" : : "r" (pd));
 	/* Enable */
 	enable_paging();
@@ -63,7 +68,8 @@ void vm_init(unsigned id_map_to)
 	memset(0, 0, 0x1000);
 }
 
-/* This relocates the stack to a safe place which is copied upon clone, and creates a new directory that is...well, complete */
+/* This relocates the stack to a safe place which is copied 
+ * upon clone, and creates a new directory that is...well, complete */
 void vm_init_2()
 {
 	setup_kernelstack(id_tables);

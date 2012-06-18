@@ -19,7 +19,8 @@ void crtc_scrolldown(vterm_t *con)
 	// Get a space character with the default colour attributes.
 	short blank = 0x20 /* space */ | (((con->b << 4) | (con->f & 0x0F)) << 8);
 	short *video_memory = (short *)con->cur_mem + con->w*con->scrollt;
-	memcpy((char *)video_memory, ((char *)video_memory + con->w*2), ((con->scrollb)-1)*con->w*2);
+	memcpy((char *)video_memory, ((char *)video_memory + con->w*2), 
+			((con->scrollb)-1)*con->w*2);
 	int i = (con->scrollb-1)*con->w;
 	for (i = (con->scrollb-1)*con->w; i < con->scrollb*con->w; i++)
 		video_memory[i] = blank;
@@ -59,7 +60,8 @@ void crtc_console_put(vterm_t *con, char c)
 		con->y++;
 	else if(c >= ' ')
 	{
-		crtc_putchar((char *)con->cur_mem, c, ((con->b << 4) | (con->f & 0x0F)), con->x, con->y, con->w);
+		crtc_putchar((char *)con->cur_mem, c, ((con->b << 4) | (con->f & 0x0F))
+				, con->x, con->y, con->w);
 		con->x++;
 	}
 	if(!con->no_wrap) {

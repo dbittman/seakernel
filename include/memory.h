@@ -73,7 +73,8 @@ unsigned int do_kmalloc_heap(unsigned sz, char align);
 void do_kfree_heap(void *pt);
 unsigned do_kmalloc_wave(unsigned size, char align);
 unsigned wave_init(unsigned start, unsigned end);
-void install_kmalloc(char *name, unsigned (*init)(unsigned, unsigned), unsigned (*alloc)(unsigned, char), void (*free)(void *));
+void install_kmalloc(char *name, unsigned (*init)(unsigned, unsigned), 
+	unsigned (*alloc)(unsigned, char), void (*free)(void *));
 void do_kfree_wave(void *ptr);
 unsigned do_kmalloc_slab(unsigned sz, char align);
 void do_kfree_slab(void *ptr);

@@ -51,17 +51,24 @@ typedef struct exit_status {
 	struct exit_status *next, *prev;
 } ex_stat;
 
-/** I believe its fair to describe the storage of tasks. There are many linked lists.
+/** I believe its fair to describe the storage of tasks. 
+ * There are many linked lists.
  * 
- * First, theres the basic master list. kernel_task is start, and every task is DLL'd to it.
+ * First, theres the basic master list. kernel_task is 
+ * start, and every task is DLL'd to it.
  * 
- * Second, there is the family list. This is kept track of by 'parent'. Each task's parent field points to the task that created it.
+ * Second, there is the family list. This is kept track 
+ * of by 'parent'. Each task's parent field points to the 
+ * task that created it.
  * 
- * Third, there is 'waiting'. This is used when a task is waiting on another task, and points to it.
+ * Third, there is 'waiting'. This is used when a task is 
+ * waiting on another task, and points to it.
  * 
- * Fourth, there is the alarm list. This is a single linked list that is a list of all tasks that are waiting for alarms.
+ * Fourth, there is the alarm list. This is a single linked 
+ * list that is a list of all tasks that are waiting for alarms.
  * 
- * If a task is dead, it goes to the 'dead queue'. the tokill list. This is DLL, using the next and prev fields.
+ * If a task is dead, it goes to the 'dead queue'. the tokill 
+ * list. This is DLL, using the next and prev fields.
  * 
  * alarm_list_start is the first alarmed task.
  * 
@@ -138,7 +145,8 @@ static inline __attribute__((always_inline))  volatile task_t *__get_current_tas
 extern volatile task_t *current_task;
 #endif
 
-static inline __attribute__((always_inline)) void set_current_task_dp(task_t *t, int cpu)
+static inline __attribute__((always_inline)) 
+void set_current_task_dp(task_t *t, int cpu)
 {
 #ifndef CONFIG_SMP
 	current_task = t;
@@ -221,19 +229,22 @@ extern unsigned ret_values_size;
 extern unsigned *ret_values;
 void set_signal(int sig, unsigned hand);
 extern mutex_t scheding;
-int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds, struct timeval *timeout);
+int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds, 
+	struct timeval *timeout);
 int swap_in_page(task_t *, unsigned);
 #define wait_flag(a, b) __wait_flag(a, b, __FILE__, __LINE__)
 #define lock_scheduler() _lock_scheduler(__FILE__, __LINE__);
 #define unlock_scheduler() _unlock_scheduler(__FILE__, __LINE__);
 
-static inline  __attribute__((always_inline))  void _lock_scheduler(char *f, int l)
+static inline  __attribute__((always_inline))  
+void _lock_scheduler(char *f, int l)
 {
 	current_task->flags |= TF_LOCK;
 	__super_cli();
 }
 
-static inline  __attribute__((always_inline))  void _unlock_scheduler(char *f, int l)
+static inline  __attribute__((always_inline))  
+void _unlock_scheduler(char *f, int l)
 {
 	current_task->flags &= ~TF_LOCK;
 	__super_sti();
@@ -300,13 +311,15 @@ static inline int __is_valid_user_ptr(void *p, char flags)
 	if(!addr && !flags) return 0;
 	if(addr < TOP_LOWER_KERNEL && addr) {
 #ifdef DEBUG
-		printk(5, "[kernel]: warning - task %d passed ptr %x to syscall (invalid)\n", current_task->pid, addr);
+		printk(5, "[kernel]: warning - task %d passed ptr %x to syscall (invalid)\n", 
+			current_task->pid, addr);
 #endif
 		return 0;
 	}
 	if(addr >= KMALLOC_ADDR_START) {
 #ifdef DEBUG
-		printk(5, "[kernel]: warning - task %d passed ptr %x to syscall (invalid)\n", current_task->pid, addr);
+		printk(5, "[kernel]: warning - task %d passed ptr %x to syscall (invalid)\n", 
+			current_task->pid, addr);
 #endif
 		return 0;
 	}

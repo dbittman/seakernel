@@ -128,7 +128,8 @@ void release_fsvol(iso_fs_t *fs)
     ret += time.Hour * 60 * 60;
     ret += (time.Day - 1) * 24 * 60 * 60;
 
-    static uint16_t cumulativeDays[] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365};
+    static uint16_t cumulativeDays[] = {0, 31, 59, 90, 120, 151, 181, 
+		212, 243, 273, 304, 334, 365};
     ret += cumulativeDays[time.Month - 1] * 24 * 60 * 60;
 
     uint32_t year = time.Year + 1900;

@@ -50,7 +50,8 @@ int do_swap_in_page(task_t *t, unsigned addr, page_index_t *pi, swapdev_t *s)
 	int ss = 0x1000 / s->blocksize;
 	int i;
 	for(i=0;i<ss;i++)
-		do_block_rw(READ, s->dev, pi->slot * ss + i, (char *)((addr & PAGE_MASK) + i*s->blocksize), 0);
+		do_block_rw(READ, s->dev, pi->slot * ss + i, 
+			(char *)((addr & PAGE_MASK) + i*s->blocksize), 0);
 	pi->page = pi->pid = 0;
 	s->block_index[pi->slot]=0;
 	s->bytes_used -= 0x1000;

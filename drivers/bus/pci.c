@@ -2,19 +2,25 @@
 */
 
 /* API:
- * Drivers call pci_locate_device with the vendor and device IDs of the device they drive.
- * This function returns a kmalloc'd structure that contains the BDF and config space of the 
- * device, as well as flags and error values. Good drivers will then look at the flags:
- * 	If the flag has the error flag set, then the device may be malfunctioning - look at the error code
- * 	Otherwise, set the "driven" flag, and start the device. When the device is fully loaded, set
- * 	the "engaged" flag. Drivers should cleanup the flags when the unload.
+ * Drivers call pci_locate_device with the vendor and device IDs of 
+ * the device they drive. This function returns a kmalloc'd structure 
+ * that contains the BDF and config space of the device, as well as 
+ * flags and error values. Good drivers will then look at the flags:
+ * 	If the flag has the error flag set, then the device may be 
+ * 	  malfunctioning - look at the error code
+ * 	Otherwise, set the "driven" flag, and start the device. 	
+ *    When the device is fully loaded, set
+ * 	  the "engaged" flag. Drivers should cleanup the flags when the unload.
  */
 
 /* PROC:
- * The pci info is exposed in /proc/pci. In this directory are files named as BDF PCI mappings. e.g. 0.3.1
- * Each file contains the data contained in the pci_list data structure for that device. bus, dev, func, config space, etc.
+ * The pci info is exposed in /proc/pci. In this directory are files 
+ * named as BDF PCI mappings. e.g. 0.3.1 Each file contains the data 
+ * contained in the pci_list data structure for that device. bus, dev, 
+ * func, config space, etc.
  * 
- * Each device obviously needs a min value...major and min...yeah. We just use bus*256+dev*8+func. */
+ * Each device obviously needs a min value...major and min...yeah. 
+ * We just use bus*256+dev*8+func. */
 #include <kernel.h>
 #include <types.h>
 #include <pci.h>
@@ -28,8 +34,10 @@ volatile int proc_pci_maj;
 struct pci_device *pci_list=0;
 mutex_t *pci_mutex;
 int remove_kernel_symbol(char * unres);
-int proc_set_callback(int major, int( *callback)(char rw, struct inode *inode, int m, char *buf, int, int));
-struct inode *pfs_cn_node(struct inode *to, char *name, int mode, int major, int minor);
+int proc_set_callback(int major, int( *callback)(char rw, struct inode *inode, 
+	int m, char *buf, int, int));
+struct inode *pfs_cn_node(struct inode *to, char *name, int mode, 
+	int major, int minor);
 /* Adds a device to the list of devices */
 int pci_add_device(struct pci_device *dev)
 {
@@ -100,7 +108,8 @@ static const char * subclass[13][8] =
 };
 
 /* Reads configuration for a device */
-unsigned short pci_read_configword(unsigned short bus, unsigned short slot, unsigned short func, unsigned short offset)
+unsigned short pci_read_configword(unsigned short bus, unsigned short slot, 
+	unsigned short func, unsigned short offset)
 {
 	unsigned long address;
 	unsigned long lbus = (unsigned long)bus;
@@ -119,7 +128,8 @@ unsigned short pci_read_configword(unsigned short bus, unsigned short slot, unsi
 	return (tmp);
 }
 
-uint32_t pci_read_dword(const uint16_t bus, const uint16_t dev, const uint16_t func, const uint32_t reg)
+uint32_t pci_read_dword(const uint16_t bus, const uint16_t dev, 
+	const uint16_t func, const uint32_t reg)
 {
 	outl(0xCF8, 0x80000000L | ((uint32_t)bus << 16) |((uint32_t)dev << 11) |
 	((uint32_t)func << 8) | (reg & ~3));
@@ -147,7 +157,10 @@ struct pci_config_space *get_pci_config(int bus, int dev, int func)
 			*(uint32_t*)((size_t)pcs + i + 12) = pci_read_dword(bus, dev, func, i + 12);
 		}
 		if(pcs->class_code < 13 && pcs->subclass != 0x80) {
-			printk(PCI_LOGLEVEL, "[pci]: [%3.3d:%2.2d:%d] Vendor %4.4x, Device %4.4x: %s %s\n", bus, dev, func, pcs->vendor_id, pcs->device_id, subclass[pcs->class_code][pcs->subclass], class_code[pcs->class_code]);
+			printk(PCI_LOGLEVEL, "[pci]: [%3.3d:%2.2d:%d] Vendor %4.4x, Device %4.4x: %s %s\n", 
+				bus, dev, func, pcs->vendor_id, pcs->device_id, 
+				subclass[pcs->class_code][pcs->subclass], 
+				class_code[pcs->class_code]);
 		
 		}
 	}
@@ -167,7 +180,8 @@ void pci_scan()
 				pcs = get_pci_config(bus, dev, func);
 				if(pcs) {
 					/* Ok, we found a device. Add it to the list */
-					struct pci_device *new = (struct pci_device *)kmalloc(sizeof(struct pci_device));
+					struct pci_device *new = 
+						(struct pci_device *)kmalloc(sizeof(struct pci_device));
 					new->bus=bus;
 					new->dev=dev;
 					new->func=func;
@@ -177,7 +191,8 @@ void pci_scan()
 					int min=0;
 					min = 256*bus + dev*8 + func;
 					sprintf(name, "%x.%x.%x", bus, dev, func);
-					if(proc_pci_maj) (new->node=pfs_cn_node(proc_pci, name, S_IFREG, proc_pci_maj, min));
+					if(proc_pci_maj) (new->node=pfs_cn_node(proc_pci, 
+						name, S_IFREG, proc_pci_maj, min));
 					if(new->node)
 						new->node->len=sizeof(struct pci_device);
 				}
@@ -244,7 +259,8 @@ unsigned pci_get_base_address(struct pci_device *device)
 	tmp = *(uint32_t*)(&device->pcs->bar0 + i);
 	if(device->pcs->vendor_id == 0x0000 || device->pcs->vendor_id == 0xFFFF)
 	{
-		kprintf("PCI: Invalid configuration space for get_base_address() in [%3.3d:%2.2d:%d]\n", device->bus, device->dev, device->func);
+		kprintf("PCI: Invalid configuration space for get_base_address() in [%3.3d:%2.2d:%d]\n", 
+			device->bus, device->dev, device->func);
 		return 0;
 	}
 	
@@ -273,7 +289,8 @@ int pci_proc_call(char rw, struct inode *inode, int m, char *buf, int off, int l
 			tmp=tmp->next;
 		}
 		if(tmp) {
-			c += proc_append_buffer(buf, (void *)tmp, c, sizeof(struct pci_device), off, len);
+			c += proc_append_buffer(buf, (void *)tmp, 
+				c, sizeof(struct pci_device), off, len);
 			memcpy(buf, (unsigned char *)tmp, sizeof(struct pci_device));
 		}
 		return c;

@@ -191,7 +191,8 @@ int rtl8139_load_device_pci(struct pci_device *device)
 		return 1;
 	}
 	rtl8139dev_t *dev = create_new_device(addr, device);
-	printk(1, "[rtl8139]: Initiating rtl8139 controller (%x.%x.%x)...\n", device->bus, device->dev, device->func);
+	printk(1, "[rtl8139]: Initiating rtl8139 controller (%x.%x.%x)...\n", 
+		device->bus, device->dev, device->func);
 	if(rtl8139_init(dev))
 		ret++;
 	
@@ -214,7 +215,8 @@ int rtl8139_unload_device_pci(rtl8139dev_t *dev)
 {
 	if(!dev) return 0;
 	struct pci_device *device = dev->device;
-	printk(1, "[rtl8139]: Unloading device (%x.%x.%x)\n", device->bus, device->dev, device->func);
+	printk(1, "[rtl8139]: Unloading device (%x.%x.%x)\n", device->bus, 
+		device->dev, device->func);
 	device->flags &= ~PCI_ENGAGED;
 	device->flags &= ~PCI_DRIVEN;
 	iremove_force(dev->node);

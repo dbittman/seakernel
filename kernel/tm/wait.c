@@ -79,7 +79,8 @@ int get_status_int(int pid, int *st, int *__pid)
 	if(status & __COREDUMP) code |= 0x80;
 	if(status & __EXITSIG)  code |= 0x7e, info=(char)sig_number << 8;
 	if(status & __STOPSIG) {
-		if(status & __EXITSIG) panic(PANIC_NOSYNC, "Stat of dead task returned nonsense data!");
+		if(status & __EXITSIG) panic(PANIC_NOSYNC, 
+			"Stat of dead task returned nonsense data!");
 		code |= 0x7f, info=(char)sig_number << 8;
 	}
 	if(status == __EXIT || status == __COREDUMP) {

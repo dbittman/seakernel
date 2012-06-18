@@ -3,7 +3,8 @@
 #include <sys/stat.h>
 #include "iso9660.h"
 
-int iso9660_read_file(iso_fs_t *fs, struct iso9660DirRecord *file, char *buffer, int offset, int length)
+int iso9660_read_file(iso_fs_t *fs, struct iso9660DirRecord *file, 
+	char *buffer, int offset, int length)
 {
 	if((unsigned)offset > file->DataLen_LE)
 		return 0;

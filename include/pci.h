@@ -66,5 +66,6 @@ struct pci_device
 };
 struct pci_device *pci_locate_device(unsigned short vendor, unsigned short device);
 unsigned pci_get_base_address(struct pci_device *device);
-struct pci_device *pci_locate_devices(unsigned short vendor, unsigned short device, int i);
+struct pci_device *pci_locate_devices(unsigned short vendor, 
+	unsigned short device, int i);
 #endif

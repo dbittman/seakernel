@@ -214,7 +214,8 @@ int do_page_out_task_addr(task_t *t, unsigned addr)
 {
 	if(!t)
 		return 0;
-	/* Don't fuck with this tasks memory if it's loading from swap, or if something is swapping it */
+	/* Don't fuck with this tasks memory if it's loading from swap, or if 
+	 * something is swapping it */
 	if(t->flags & TF_SWAP) 
 		return -1;
 	char tmp[4096];
@@ -260,7 +261,8 @@ int do_page_out_task_addr(task_t *t, unsigned addr)
 		task_uncritical();
 	} else
 	{
-		/* If it didn't work, we need to unmap and free what we allocated just above */
+		/* If it didn't work, we need to unmap and free what we 
+		 * allocated just above */
 		vm_unmap_only(addr);
 	}
 	t->state = oldstate;
@@ -318,7 +320,8 @@ void __KT_pager()
 					p->flags &= ~TF_SWAPQUEUE;
 					task_uncritical();
 					swap_task(p);
-					printk(2, "[swap]: Swapped out %d pages (%d KB) from task %d\n", p->num_swapped, p->num_swapped/4, p->pid);
+					printk(2, "[swap]: Swapped out %d pages (%d KB) from task %d\n", 
+						p->num_swapped, p->num_swapped/4, p->pid);
 					task_critical();
 				}
 				p=p->next;
@@ -329,7 +332,9 @@ void __KT_pager()
 				task_t *t = kernel_task->next;
 				while(t)
 				{
-					if((t->tty != curcons->tty || (((pm_used_pages * 100) / pm_num_pages) > 80)) || t->state != TASK_RUNNING) {
+					if((t->tty != curcons->tty || 
+							(((pm_used_pages * 100) / pm_num_pages) > 80)) || 
+							t->state != TASK_RUNNING) {
 						if(t->tty) swap_task(t);
 						break;
 					}

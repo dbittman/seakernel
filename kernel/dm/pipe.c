@@ -95,7 +95,8 @@ __attribute__((optimize("O0"))) int read_pipe(struct inode *ino, char *buffer, u
 	int count=0;
 	if(!pipe->pending && pipe->count <= 1 && pipe->type != PIPE_NAMED)
 		return count;
-	while(!pipe->pending && (pipe->count > 1 && pipe->type != PIPE_NAMED && pipe->wrcount>0)) {
+	while(!pipe->pending && (pipe->count > 1 && pipe->type != PIPE_NAMED 
+			&& pipe->wrcount>0)) {
 		__super_sti();
 		force_schedule();
 		if(current_task->sigd)
@@ -104,7 +105,8 @@ __attribute__((optimize("O0"))) int read_pipe(struct inode *ino, char *buffer, u
 	mutex_on(pipe->lock);
 	ret = pipe->pending > len ? len : pipe->pending;
 	memcpy((void *)(buffer + count), (void *)(pipe->buffer + pipe->read_pos), ret);
-	memcpy((void *)pipe->buffer, (void *)(pipe->buffer + pipe->read_pos + ret), PIPE_SIZE - (pipe->read_pos + ret));
+	memcpy((void *)pipe->buffer, (void *)(pipe->buffer + pipe->read_pos + ret), 
+		PIPE_SIZE - (pipe->read_pos + ret));
 	if(ret > 0) {
 		pipe->pending -= ret;
 		pipe->write_pos -= ret;
@@ -127,7 +129,8 @@ __attribute__((optimize("O0"))) int write_pipe(struct inode *ino, char *buffer, 
 		return -EINVAL;
 	mutex_on(pipe->lock);
 	
-	while((pipe->write_pos+length)>=PIPE_SIZE && (pipe->count > 1 && pipe->type != PIPE_NAMED)) {
+	while((pipe->write_pos+length)>=PIPE_SIZE && (pipe->count > 1 
+			&& pipe->type != PIPE_NAMED)) {
 		mutex_off(pipe->lock);
 		wait_flag_except((unsigned *)&pipe->write_pos, pipe->write_pos);
 		if(current_task->sigd)
@@ -140,7 +143,8 @@ __attribute__((optimize("O0"))) int write_pipe(struct inode *ino, char *buffer, 
 	}
 	if((pipe->write_pos+length)>=PIPE_SIZE)
 	{
-		printk(1, "[pipe]: warning - task %d failed to block for writing to pipe\n", current_task->pid);
+		printk(1, "[pipe]: warning - task %d failed to block for writing to pipe\n"
+			, current_task->pid);
 		mutex_off(pipe->lock);
 		return -EPIPE;
 	}
@@ -158,7 +162,8 @@ int pipedev_select(struct inode *in, int rw)
 		return 1;
 	pipe_t *pipe = in->pipe;
 	if(!pipe) return 1;
-	if(!pipe->pending && (pipe->count > 1 && pipe->type != PIPE_NAMED && pipe->wrcount>0))
+	if(!pipe->pending && (pipe->count > 1 && pipe->type != PIPE_NAMED 
+			&& pipe->wrcount>0))
 		return 0;
 	return 1;
 }

@@ -88,7 +88,8 @@ int ext2_dir_change_num(ext2_inode_t* inode, char *name,
 			&& (unsigned)entry->name_len == strlen((const char *)name)) {
 			int old = entry->inode;
 			entry->inode = new_number;
-			ext2_inode_writedata(inode, off -  ext2_sb_blocksize(inode->fs->sb), ext2_sb_blocksize(inode->fs->sb), buf);
+			ext2_inode_writedata(inode, off -  ext2_sb_blocksize(inode->fs->sb), 
+				ext2_sb_blocksize(inode->fs->sb), buf);
 			return old;
 		}
 		if (entry->record_len == 0)
@@ -117,10 +118,12 @@ int ext2_dir_change_type(ext2_inode_t* inode, char *name,
 		if (entry->inode == 0)
 			continue;
 		
-		if (!strncmp((const char *)name, (const char *)entry->name, entry->name_len) && entry->name_len == len) {
+		if (!strncmp((const char *)name, (const char *)entry->name, 
+				entry->name_len) && entry->name_len == len) {
 			int old = entry->type;
 			entry->type = new_type;
-			ext2_inode_writedata(inode, off -  ext2_sb_blocksize(inode->fs->sb), ext2_sb_blocksize(inode->fs->sb), buf);
+			ext2_inode_writedata(inode, off -  ext2_sb_blocksize(inode->fs->sb), 
+				ext2_sb_blocksize(inode->fs->sb), buf);
 			return old;
 		}
 		if (entry->record_len == 0)
@@ -149,7 +152,8 @@ int ext2_dir_get(ext2_inode_t* inode, char *name, ext2_dirent_t *de)
 			break;
 		if (entry->inode == 0)
 			continue;
-		if (!strncmp((const char *)name, (const char *)entry->name, len) && len == entry->name_len) {
+		if (!strncmp((const char *)name, (const char *)entry->name, len) 
+				&& len == entry->name_len) {
 			memcpy(de, entry, entry->record_len);
 			return 1;
 		}
@@ -177,7 +181,8 @@ int ext2_dir_get_inode(ext2_inode_t* inode, char *name)
 			break;
 		if (entry->inode == 0)
 			continue;
-		if (!strncmp((const char *)name, (const char *)entry->name, len) && len == entry->name_len) {
+		if (!strncmp((const char *)name, (const char *)entry->name, len) 
+				&& len == entry->name_len) {
 			return entry->inode;
 		}
 	}
@@ -270,12 +275,14 @@ int ext2_dir_unlink(ext2_inode_t* dir, const char* name, int dofree)
 	while (pos < dir->size) {
 		entry = (ext2_dirent_t*) &buf[tpos];
 		if ((strlen(name) == entry->name_len) &&
-			!strncmp((const char *)name, (const char *)entry->name, entry->name_len) && entry->inode)
+			!strncmp((const char *)name, (const char *)entry->name, 
+				entry->name_len) && entry->inode)
 		{
 			if (!ext2_inode_read(dir->fs, entry->inode, &inode))
 				return 0;
 			--inode.link_count;
-			if (inode.link_count == 0 || (EXT2_INODE_IS_DIR(&inode) && inode.link_count == 1)) {
+			if (inode.link_count == 0 || (EXT2_INODE_IS_DIR(&inode) 
+					&& inode.link_count == 1)) {
 				if (EXT2_INODE_IS_DIR(&inode)) {
 					ext2_dir_unlink(&inode, "..", 1);
 					inode.link_count--;

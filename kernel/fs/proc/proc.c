@@ -44,7 +44,8 @@ int proc_get_major()
 	return i;
 }
 
-int proc_set_callback(int major, int( *callback)(char rw, struct inode *inode, int m, char *buf, int, int))
+int proc_set_callback(int major, int( *callback)(char rw, struct inode *inode, 
+	int m, char *buf, int, int))
 {
 	pfs_table[major] = (int *)callback;
 	return 0;

@@ -42,7 +42,8 @@ void parse_kernel_cmd(char *buf)
 	{
 		tmp = strchr(current, ' ');
 		memset(a, 0, 128);
-		unsigned len = (unsigned)tmp ? (unsigned)(tmp-current) : (unsigned)strlen(current);
+		unsigned len = (unsigned)tmp ? (unsigned)(tmp-current) 
+				: (unsigned)strlen(current);
 		strncpy(a, current, len >= 128 ? 127 : len);
 		if(!argc)
 		{
@@ -134,7 +135,8 @@ void kmain(struct multiboot *mboot_header, u32int initial_stack)
 	
 	get_timed(&kernel_start_time);
 	printk(KERN_MILE, "[kernel]: Kernel is setup (%2.2d:%2.2d:%2.2d, %s, kv=%d, ts=%d bytes: ok)\n", 
-	       kernel_start_time.tm_hour, kernel_start_time.tm_min, kernel_start_time.tm_sec, kernel_name, KVERSION, sizeof(task_t));
+	       kernel_start_time.tm_hour, kernel_start_time.tm_min, 
+	       kernel_start_time.tm_sec, kernel_name, KVERSION, sizeof(task_t));
 	unlock_all_mutexes();
 	task_full_uncritical();
 	__super_sti();
@@ -161,10 +163,12 @@ void printf(const char *fmt, ...)
 
 void init()
 {
-	/* Call sys_setup. This sets up the root nodes, and filedesc's 0, 1 and 2. Essentially, a basic unix type process. */
+	/* Call sys_setup. This sets up the root nodes, and filedesc's 0, 1 and 2. 
+	 * Essentially, a basic unix type process. */
 	sys_setup();
 	kprintf("Something stirs and something tries, and starts to climb towards the light.\n");
-	/* Set some basic environment variables. These allow simple root execution, basic terminal access, and a shell to run from */
+	/* Set some basic environment variables. These allow simple root execution, 
+	 * basic terminal access, and a shell to run from */
 	add_init_env("PATH=/bin/:/usr/bin/:/usr/sbin:");
 	add_init_env("TERM=seaos");
 	add_init_env("HOME=/");

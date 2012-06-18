@@ -32,7 +32,8 @@ int ata_disk_sync(struct ata_controller *cont)
 		unsigned char poll = inb(cont->port_cmd_base+REG_STATUS);
 		if(poll & STATUS_ERR)
 		{
-			printk(6, "[ata]: Disk Cache Flush command failed in controller %d\n", cont->id);
+			printk(6, "[ata]: Disk Cache Flush command failed in controller %d\n", 
+				cont->id);
 			mutex_off(cont->wait);
 			return -1;
 		}
@@ -43,7 +44,8 @@ int ata_disk_sync(struct ata_controller *cont)
 	}
 	if(!x)
 	{
-		printk(6, "[ata]: Disk Cache Flush command timed out in controller %d\n", cont->id);
+		printk(6, "[ata]: Disk Cache Flush command timed out in controller %d\n", 
+			cont->id);
 		mutex_off(cont->wait);
 		return -1;
 	}

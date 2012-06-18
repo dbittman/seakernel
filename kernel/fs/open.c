@@ -92,7 +92,8 @@ int duplicate(task_t *t, int fp, int n)
 		return -EBADF;
 	struct file *new=(struct file *)kmalloc(sizeof(struct file));
 	new->inode = f->inode;
-	assert(new->inode && new->inode->count && new->inode->f_count && !new->inode->unreal);
+	assert(new->inode && new->inode->count && new->inode->f_count 
+			&& !new->inode->unreal);
 	new->count=1;
 	mutex_on(&f->inode->lock);
 	f->inode->count++;

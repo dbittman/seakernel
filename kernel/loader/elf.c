@@ -103,12 +103,18 @@ int parse_elf_module(module_t *mod, uint8_t * buf, char *name)
 			for(x = 0; x < sh->size; x += sh->sect_size)
 			{
 				symtab = (elf32_symtab_entry_t*)(buf + sh->offset + x);
-				if(!memcmp((uint8_t*)get_symbol_string(buf, symtab->name), (uint8_t*)"module_install", 14))
-					module_entry = get_section_offset(buf, symtab->shndx) + symtab->address + (uint32_t)buf;
-				if(!memcmp((uint8_t*)get_symbol_string(buf, symtab->name), (uint8_t*)"module_exit", 11))
-					module_exiter = get_section_offset(buf, symtab->shndx) + symtab->address + (uint32_t)buf;
-				if(!memcmp((uint8_t*)get_symbol_string(buf, symtab->name), (uint8_t*)"module_deps", 11))
-					module_deps = get_section_offset(buf, symtab->shndx) + symtab->address + (uint32_t)buf;
+				if(!memcmp((uint8_t*)get_symbol_string(buf, symtab->name), 
+						(uint8_t*)"module_install", 14))
+					module_entry = get_section_offset(buf, symtab->shndx) + 
+						symtab->address + (uint32_t)buf;
+				if(!memcmp((uint8_t*)get_symbol_string(buf, symtab->name), 
+						(uint8_t*)"module_exit", 11))
+					module_exiter = get_section_offset(buf, symtab->shndx) + 
+						symtab->address + (uint32_t)buf;
+				if(!memcmp((uint8_t*)get_symbol_string(buf, symtab->name), 
+						(uint8_t*)"module_deps", 11))
+					module_deps = get_section_offset(buf, symtab->shndx) + 
+						symtab->address + (uint32_t)buf;
 			}
 		}
 	}
@@ -141,7 +147,8 @@ int parse_elf_module(module_t *mod, uint8_t * buf, char *name)
 						reloc_addr = find_kernel_function(get_symbol_string(buf, symtab->name));
 						if(!reloc_addr)
 						{
-							printk(KERN_INFO, "[mod]: *ABS* unresolved dependency \"%s\"\n", get_symbol_string(buf, symtab->name));
+							printk(KERN_INFO, "[mod]: *ABS* unresolved dependency \"%s\"\n", 
+									get_symbol_string(buf, symtab->name));
 							error++;
 						}
 					}
@@ -160,10 +167,12 @@ int parse_elf_module(module_t *mod, uint8_t * buf, char *name)
 					/* external reference (kernel symbol most likely) */
 					if(symtab->shndx == 0)
 					{
-						reloc_addr = find_kernel_function(get_symbol_string(buf, symtab->name));
+						reloc_addr = find_kernel_function(get_symbol_string(buf, 
+								symtab->name));
 						if(!reloc_addr)
 						{
-							printk(KERN_INFO, "[mod]: *REL* unresolved dependency \"%s\"\n", get_symbol_string(buf, symtab->name));
+							printk(KERN_INFO, "[mod]: *REL* unresolved dependency \"%s\"\n", 
+									get_symbol_string(buf, symtab->name));
 							error++;
 						}
 					}
@@ -178,7 +187,8 @@ int parse_elf_module(module_t *mod, uint8_t * buf, char *name)
 				}
 				else
 				{
-					printk(KERN_INFO, "[mod]: invalid relocation type (%x)\n", GET_RELOC_TYPE(reloc->info));
+					printk(KERN_INFO, "[mod]: invalid relocation type (%x)\n", 
+							GET_RELOC_TYPE(reloc->info));
 					error++;
 				}
 			}
@@ -193,7 +203,8 @@ int parse_elf_module(module_t *mod, uint8_t * buf, char *name)
 		unsigned kver = ((int (*)(char *))module_deps)(deps_str);
 		if(kver != KVERSION)
 		{
-			kprintf("[mod]: Module '%s' was compiled for a different kernel version!\n", mod->name);
+			kprintf("[mod]: Module '%s' was compiled for a different kernel version!\n", 
+					mod->name);
 			return _MOD_FAIL;
 		}
 		strncpy(mod->deps, deps_str, 256);

@@ -4,10 +4,11 @@
 #include <task.h>
 mutex_t scheding;
 
-/* This here is the basic scheduler - It does nothing except find the next runable task */
 void _overflow(char *type)
 {
-	printk(5, "%s overflow occurred in task %d (esp=%x, ebp=%x, heap_end=%x). Killing...\n", type, current_task->pid, current_task->esp, current_task->ebp, current_task->heap_end);
+	printk(5, "%s overflow occurred in task %d (esp=%x, ebp=%x, heap_end=%x). Killing...\n", 
+			type, current_task->pid, current_task->esp, current_task->ebp, 
+			current_task->heap_end);
 #ifdef DEBUG
 	panic(0, "Overflow");
 #endif
@@ -34,7 +35,8 @@ __attribute__((always_inline)) inline void update_task(task_t *t)
 		}
 	}
 }
-
+/* This here is the basic scheduler - It does nothing 
+ * except find the next runable task */
 __attribute__((always_inline)) inline task_t *get_next_task()
 {
 	assert(current_task && kernel_task);
@@ -51,7 +53,8 @@ __attribute__((always_inline)) inline task_t *get_next_task()
 			return t;
 		if(!(t = t->next))
 			t = (task_t *)kernel_task;
-		/* This way the kernel can sleep without being in danger of causing a lockup. Basically, if the kernel is the only
+		/* This way the kernel can sleep without being in danger of 
+		 * causing a lockup. Basically, if the kernel is the only
 		 * runnable task, it gets forced to run */
 		if(t == prev && !task_is_runable(t))
 			return (task_t *)kernel_task;
@@ -98,7 +101,8 @@ __attribute__((always_inline)) static inline void post_context_switch()
 		current_task->state = TASK_RUNNING;
 		/* Update the queue */
 		if(sig >= 32) {
-			memcpy((void *)current_task->sig_queue, (void *)(current_task->sig_queue+1), 128);
+			memcpy((void *)current_task->sig_queue, 
+					(void *)(current_task->sig_queue+1), 128);
 			current_task->sig_queue[127]=0;
 		}
 		/* Jump to the signal handler */
@@ -123,7 +127,8 @@ __attribute__((always_inline)) static inline void store_context(unsigned eip)
 	current_task->esp = esp;
 	current_task->ebp = ebp;
 	/* Check for stack over-run */
-	if(!esp || (!(esp >= TOP_TASK_MEM_EXEC && esp < TOP_TASK_MEM) && !(esp >= KMALLOC_ADDR_START && esp < KMALLOC_ADDR_END)))
+	if(!esp || (!(esp >= TOP_TASK_MEM_EXEC && esp < TOP_TASK_MEM) 
+			&& !(esp >= KMALLOC_ADDR_START && esp < KMALLOC_ADDR_END)))
 		_overflow("stack");
 	if(current_task->heap_end && current_task->heap_end >= TOP_USER_HEAP)
 		_overflow("heap");
@@ -137,9 +142,9 @@ __attribute__((always_inline)) static inline void restore_context()
 	set_kernel_stack(current_task->kernel_stack+(KERN_STACK_SIZE-64));
 }
 
-/*This is the magic super awesome and important kernel function 'schedule()'. It
- * is arguable the most important function. Here we store the current task's context,
- * search for the next process to run, and load it's context.*/
+/*This is the magic super awesome and important kernel function 'schedule()'. 
+ * It is arguable the most important function. Here we store the current 
+ * task's context, search for the next process to run, and load it's context.*/
 void schedule()
 {
 	__super_cli();
@@ -167,7 +172,8 @@ void schedule()
 		mov %3, %%cr3;       \
 		mov $0xFFFFFFFF, %%eax; \
 		jmp *%0           "
-	: : "r"(current_task->eip), "r"(current_task->esp), "r"(current_task->ebp), "r"(current_task->pd[1023]&PAGE_MASK) : "eax");
+	: : "r"(current_task->eip), "r"(current_task->esp), "r"(current_task->ebp), 
+			"r"(current_task->pd[1023]&PAGE_MASK) : "eax");
 }
 
 void check_alarms()

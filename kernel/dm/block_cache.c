@@ -1,4 +1,5 @@
-/* Provides access layer to the kernel cache for block devices (write-through block cache. Speeds up writing */
+/* Provides access layer to the kernel cache for block devices 
+ * (write-through block cache. Speeds up writing */
 #include <kernel.h>
 #include <dev.h>
 #include <block.h>
@@ -26,7 +27,8 @@ int disconnect_block_cache(int dev)
 
 int cache_block(int dev, unsigned blk, int sz, char *buf)
 {
-	return do_cache_object(blk_cache, dev < 0 ? -dev : dev, blk, sz, buf, dev < 0 ? 0 : 1);
+	return do_cache_object(blk_cache, dev < 0 ? -dev : dev, blk, sz, buf, 
+		dev < 0 ? 0 : 1);
 }
 
 int get_block_cache(int dev, int blk, char *buf)

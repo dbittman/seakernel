@@ -11,7 +11,8 @@ extern struct inode *procfs_root, *procfs_kprocdir;
 int proc_read_int(char *buf, int off, int len);
 int proc_read_mutex(char *buf, int off, int len);
 int proc_read_bcache(char *buf, int off, int len);
-int proc_append_buffer(char *buffer, char *data, int off, int len, int req_off, int req_len);
+int proc_append_buffer(char *buffer, char *data, int off, int len, int req_off, 
+	int req_len);
 struct inode *get_sb_table(int n);
 
 struct mnttab {
@@ -63,7 +64,8 @@ int proc_vfs(char rw, struct inode *n, int m, char *buf, int off, int len)
 						mt.mt_mountp = "/proc";
 				}
 			}
-			total_len += proc_append_buffer(buf, (char *)&mt, total_len, sizeof(mt), off, len);
+			total_len += proc_append_buffer(buf, (char *)&mt, total_len, 
+				sizeof(mt), off, len);
 		}
 	}
 	return total_len;

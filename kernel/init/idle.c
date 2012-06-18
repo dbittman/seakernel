@@ -2,8 +2,9 @@
  * -> Provides a task to run if all other tasks have slept
  * -> Cleans up after tasks that exit
  * -> Reaps the cache
- * Note: We want to spend as little time here as possible, since it's cleanup code can run slowly and when theres
- * 	 nothing else to do. So we reschedule often.
+ * Note: We want to spend as little time here as possible, since it's 
+ * cleanup code can run slowly and when theres
+ * nothing else to do. So we reschedule often.
  */
 #include <kernel.h>
 #include <multiboot.h>

@@ -219,7 +219,8 @@ void sync_cache(cache_t *c)
 		if(num < (c->dirty+i))
 			num=(c->dirty+i);
 		
-		printk(shutting_down ? 4 : 0, "\r[cache]: Syncing '%s': %d/%d (%d.%d%%)...   ", c->name, i, num, (i*100)/num, ((i*1000)/num) % 10);
+		printk(shutting_down ? 4 : 0, "\r[cache]: Syncing '%s': %d/%d (%d.%d%%)...   "
+				, c->name, i, num, (i*100)/num, ((i*1000)/num) % 10);
 		
 		sync_element(c, obj);
 		mutex_off(&c->dlock);
@@ -232,7 +233,8 @@ void sync_cache(cache_t *c)
 	}
 	
 	c->syncing=0;
-	printk(shutting_down ? 4 : 0, "\r[cache]: Syncing '%s': %d/%d (%d.%d%%)\n", c->name, num, num, 100, 0);
+	printk(shutting_down ? 4 : 0, "\r[cache]: Syncing '%s': %d/%d (%d.%d%%)\n"
+			, c->name, num, num, 100, 0);
 	printk(0, "[cache]: Cache '%s' has sunk\n", c->name);
 }
 

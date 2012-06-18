@@ -43,21 +43,26 @@ static inline int get_bg_block(ext2_fs_t* fs, int group_nr)
 {
 	uint32_t num;
 	unsigned bs = ext2_sb_blocksize(fs->sb);
-	num = fs->sb->first_data_block + 1 + (group_nr * sizeof(ext2_blockgroup_t)) / bs; 
+	num = fs->sb->first_data_block + 1 + 
+		(group_nr * sizeof(ext2_blockgroup_t)) / bs; 
 	return num;
 }
 
 int ext2_bg_read(ext2_fs_t* fs, int group_nr, ext2_blockgroup_t* bg)
 {
 	int bg_n = get_bg_block(fs, group_nr);
-	ext2_read_off(fs, bg_n * ext2_sb_blocksize(fs->sb) + ((group_nr * sizeof(ext2_blockgroup_t)) % ext2_sb_blocksize(fs->sb)), (unsigned char *)bg, sizeof(ext2_blockgroup_t));
+	ext2_read_off(fs, bg_n * ext2_sb_blocksize(fs->sb) + 
+		((group_nr * sizeof(ext2_blockgroup_t)) % ext2_sb_blocksize(fs->sb)), 
+		(unsigned char *)bg, sizeof(ext2_blockgroup_t));
 	return 1;
 }
 
 int ext2_bg_update(ext2_fs_t* fs, int group_nr, ext2_blockgroup_t* bg)
 {
 	int num = get_bg_block(fs, group_nr);
-	ext2_write_off(fs, num * ext2_sb_blocksize(fs->sb) + (group_nr * sizeof(ext2_blockgroup_t)) % ext2_sb_blocksize(fs->sb), (unsigned char *)bg, sizeof(ext2_blockgroup_t));
+	ext2_write_off(fs, num * ext2_sb_blocksize(fs->sb) + 
+		(group_nr * sizeof(ext2_blockgroup_t)) % ext2_sb_blocksize(fs->sb), 
+		(unsigned char *)bg, sizeof(ext2_blockgroup_t));
 	return 1;
 }
 
@@ -102,7 +107,8 @@ int ext2_inode_read(ext2_fs_t* fs, uint32_t inode_nr, ext2_inode_t* inode)
 	if (!(num = inode_get_block(fs, inode_nr, &offset))) {
 		return 0;
 	}
-	ext2_read_off(fs, num * ext2_sb_blocksize(fs->sb) + offset, (unsigned char *)inode, ext2_sb_inodesize(fs->sb));
+	ext2_read_off(fs, num * ext2_sb_blocksize(fs->sb) + offset, 
+		(unsigned char *)inode, ext2_sb_inodesize(fs->sb));
 	inode->fs = fs;
 	inode->number = inode_nr;
 	cache_object_clean(fs->cache, inode_nr, 1, sizeof(ext2_inode_t), (void *)inode);
@@ -119,7 +125,8 @@ int ext2_inode_update(ext2_inode_t* inode)
 	if (!(num = inode_get_block(inode->fs, inode->number, &offset))) {
 		return 0;
 	}
-	ext2_write_off(inode->fs, num * ext2_sb_blocksize(inode->fs->sb) + offset, (unsigned char *)inode, ext2_sb_inodesize(inode->fs->sb));
+	ext2_write_off(inode->fs, num * ext2_sb_blocksize(inode->fs->sb) + offset, 
+		(unsigned char *)inode, ext2_sb_inodesize(inode->fs->sb));
 	return 1;
 }
 
@@ -174,7 +181,8 @@ static uint32_t inode_alloc(ext2_fs_t* fs, uint32_t bgnum)
 	
 	found:
 	
-	ext2_inode_read(fs, (bgnum * fs->sb->inodes_per_group) + (i * 32) + j + 1, &ino);
+	ext2_inode_read(fs, (bgnum * fs->sb->inodes_per_group) + 
+		(i * 32) + j + 1, &ino);
 	// Als besetzt markieren
 	bitmap[i] |= (1 << j);
 	ext2_write_block(fs, blk, b);
@@ -446,7 +454,8 @@ static uint32_t block_free(ext2_fs_t* fs, uint32_t num)
 *
 * @return Ein Wert von 0-3 je nach dem wie oft der Block indirekt ist
 */
-static inline int get_indirect_block_level(ext2_inode_t* inode, uint32_t block, uint32_t* direct_block, uint32_t* indirect_block)
+static inline int get_indirect_block_level(ext2_inode_t* inode, uint32_t block, 
+	uint32_t* direct_block, uint32_t* indirect_block)
 {
 	ext2_fs_t* fs = inode->fs;
 	size_t block_size = ext2_sb_blocksize(fs->sb);
@@ -638,7 +647,8 @@ int ext2_inode_writeblk(ext2_inode_t* inode, uint32_t block, void* buf)
 	return ret;
 }
 
-int ext2_inode_writelink(ext2_inode_t *inode, unsigned int start, size_t len, char *buf)
+int ext2_inode_writelink(ext2_inode_t *inode, unsigned int start, size_t len, 
+	char *buf)
 {
 	memcpy(((char *)inode->blocks) + start, buf, len);
 	if (start + len > inode->size) {
@@ -648,7 +658,8 @@ int ext2_inode_writelink(ext2_inode_t *inode, unsigned int start, size_t len, ch
 	return len;
 }
 
-int ext2_inode_readlink(ext2_inode_t *inode, unsigned int start, size_t len, unsigned char *buf)
+int ext2_inode_readlink(ext2_inode_t *inode, unsigned int start, size_t len, 
+	unsigned char *buf)
 {
 	unsigned end = start + len;
 	unsigned tmp[15];
@@ -664,7 +675,8 @@ int ext2_inode_readlink(ext2_inode_t *inode, unsigned int start, size_t len, uns
 	return len;
 }
 
-int ext2_inode_readdata(ext2_inode_t* inode, uint32_t start, size_t len, unsigned char* buf)
+int ext2_inode_readdata(ext2_inode_t* inode, uint32_t start, 
+	size_t len, unsigned char* buf)
 {
         size_t block_size = ext2_sb_blocksize(inode->fs->sb);
         uint32_t start_block = start / block_size;
@@ -737,7 +749,8 @@ int ext2_inode_readdata(ext2_inode_t* inode, uint32_t start, size_t len, unsigne
         return counter;
 }
 
-int ext2_inode_writedata(ext2_inode_t* inode, uint32_t start, size_t len, const unsigned char* buf)
+int ext2_inode_writedata(ext2_inode_t* inode, uint32_t start, size_t len, 
+	const unsigned char* buf)
 {
 	if(!len) return 0;
 	size_t block_size = ext2_sb_blocksize(inode->fs->sb);

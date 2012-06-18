@@ -1,6 +1,7 @@
-/* Allocates sections of vmem. This allows us to allocate sections of any range of virtual memory, 
- * effectively allowing better management of those allocations.
- * Copyright (c) 2010 Daniel Bittman. Written to allow easier implementation of slab allocation. 
+/* Allocates sections of vmem. This allows us to allocate sections 
+ * of any range of virtual memory, effectively allowing better 
+ * management of those allocations. Copyright (c) 2010 Daniel Bittman. 
+ * Written to allow easier implementation of slab allocation. 
  */
 #include <kernel.h>
 #include <memory.h>
@@ -38,12 +39,14 @@ vnode_t *insert_vmem_area(vma_t *v, unsigned num_p)
 			{
 				if(n->next->addr <= n->addr)
 					panic(PANIC_MEM | PANIC_NOSYNC, "vmem alloc index not sorted (virtual memory corrupted)!");
-				if(((n->next->addr - (n->addr + n->num_pages*PAGE_SIZE)) / PAGE_SIZE) >= num_p)
+				if(((n->next->addr - 
+						(n->addr + n->num_pages*PAGE_SIZE)) / PAGE_SIZE) >= num_p)
 					break;
 			} else
 			{
 				/* Do we have room for one more? */
-				if((((unsigned)n + sizeof(vnode_t)) > (v->addr+v->num_ipages*PAGE_SIZE))) {
+				if((((unsigned)n + sizeof(vnode_t)) > 
+						(v->addr+v->num_ipages*PAGE_SIZE))) {
 					mutex_off(&v->lock);
 					return 0;
 				}

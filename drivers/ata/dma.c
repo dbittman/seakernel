@@ -10,7 +10,8 @@ typedef struct {
 	unsigned short last;
 }__attribute__((packed)) prdtable_t;
 
-int ata_dma_init(struct ata_controller *cont, struct ata_device *dev, int size, int rw, unsigned char *buffer)
+int ata_dma_init(struct ata_controller *cont, struct ata_device *dev, 
+	int size, int rw, unsigned char *buffer)
 {
 	prdtable_t *t = (prdtable_t *)cont->prdt_virt;
 	t->addr = cont->dma_buf_phys;
@@ -25,7 +26,8 @@ int ata_dma_init(struct ata_controller *cont, struct ata_device *dev, int size, 
 	return 1;
 }
 
-int ata_start_command(struct ata_controller *cont, struct ata_device *dev, unsigned block, char rw, int count)
+int ata_start_command(struct ata_controller *cont, struct ata_device *dev, 
+	unsigned block, char rw, int count)
 {
 	unsigned long long addr = block;
 	unsigned char cmd=0;
@@ -55,7 +57,8 @@ int ata_start_command(struct ata_controller *cont, struct ata_device *dev, unsig
 }
 
 volatile char dma_busy;
-int ata_dma_rw(struct ata_controller *cont, struct ata_device *dev, int rw, unsigned blk, char *buf, int count)
+int ata_dma_rw(struct ata_controller *cont, struct ata_device *dev, int rw, 
+	unsigned blk, char *buf, int count)
 {
 	unsigned size=512;
 	count=1;
@@ -99,9 +102,11 @@ int ata_dma_rw(struct ata_controller *cont, struct ata_device *dev, int rw, unsi
 	} else
 	{
 		try_again:
-		printk(1, "[ata]: DMA operation on %d:%d failed (%x %x). Falling back to PIO mode (%d more)\n", cont->id, dev->id, status, st, --cont->dma_use);
+		printk(1, "[ata]: DMA operation on %d:%d failed (%x %x). Falling back to PIO mode (%d more)\n", 
+			cont->id, dev->id, status, st, --cont->dma_use);
 		/* Error in the transfer. We assume that the data is junk. Fall back to PIO mode */
-		return ata_pio_rw(cont, dev, rw, (unsigned long long)blk, (unsigned char *)buf, 512*count);
+		return ata_pio_rw(cont, dev, rw, (unsigned long long)blk, 
+			(unsigned char *)buf, 512*count);
 	}
 	if (rw == READ)
 		memcpy(buf, cont->dma_buf_virt, 512);

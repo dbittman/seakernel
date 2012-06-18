@@ -10,10 +10,14 @@ handlist_t interrupt_handlers[256];
 volatile long int_count[256];
 mutex_t isr_lock;
 char interrupt_controller=0;
-/* Interrupt handlers are stored in linked lists (allows 'infinite' number of them). But we need kmalloc to do this.
- * If we have kmalloc (aka, we have MM), we do the linked list thing. Otherwise we just set 1 interrupt handler.
+/* Interrupt handlers are stored in linked lists 
+ * (allows 'infinite' number of them). But we 
+ * need kmalloc to do this. If we have kmalloc 
+ * (aka, we have MM), we do the linked list thing. 
+ * Otherwise we just set 1 interrupt handler.
  * 
- * We make interrupt_handlers a local array so that we can use it without kmalloc.
+ * We make interrupt_handlers a local array so 
+ * that we can use it without kmalloc.
  */
 void register_interrupt_handler(u8int num, isr_t handler)
 {
@@ -66,7 +70,8 @@ handlist_t *get_interrupt_handler(u8int n)
 void kernel_fault(int fuckoff)
 {
 	kprintf("Kernel Exception #%d: ", fuckoff);
-	printk(5, "Occured in task %d during systemcall %d (F=%d).\n", current_task->pid, current_task->system, current_task->flag);
+	printk(5, "Occured in task %d during systemcall %d (F=%d).\n", 
+			current_task->pid, current_task->system, current_task->flag);
 	panic(0, exception_messages[fuckoff]);
 }
 
@@ -77,7 +82,8 @@ void faulted(int fuckoff)
 		kernel_fault(fuckoff);
 	} else
 	{
-		printk(5, "%s occured in task %d (F=%d): He's dead, Jim.\n", exception_messages[fuckoff], current_task->pid, current_task->flag);
+		printk(5, "%s occured in task %d (F=%d): He's dead, Jim.\n", 
+				exception_messages[fuckoff], current_task->pid, current_task->flag);
 		if(current_task->critical)
 			current_task->critical=0;
 		switch(fuckoff)

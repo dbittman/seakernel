@@ -38,7 +38,8 @@ void panic(char flags, char *fmt, ...)
 	kprintf(" ***\n");
 	
 	if(t) 
-		kprintf("current_task=%x:%d, sys=%d, flags=%x, F=%x: ", t, t->pid, t->system, t->flags, t->flag);
+		kprintf("current_task=%x:%d, sys=%d, flags=%x, F=%x: ", t, 
+				t->pid, t->system, t->flags, t->flag);
 		
 	if(pid && !second_panic && !(flags & PANIC_NOSYNC))
 	{

@@ -252,7 +252,8 @@ int select_filedes(int i, int rw)
 	return ready;
 }
 
-int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds, struct timeval *timeout)
+int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds, 
+		struct timeval *timeout)
 {
 	if(nfds < 0)
 		return -EINVAL;

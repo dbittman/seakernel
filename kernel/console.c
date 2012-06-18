@@ -41,13 +41,15 @@ void init_console(vterm_t *con, console_driver_t *driver)
 {
 	driver->init(con);
 	con->driver = driver;
-	printk(0, "[console]: Initialized console %d (%x:%x): %s\n", con->tty, con, driver->init, driver->name);
+	printk(0, "[console]: Initialized console %d (%x:%x): %s\n", con->tty, 
+				con, driver->init, driver->name);
 }
 
 void switch_console(vterm_t *new)
 {
 	/* Copy screen to old console */
-	memcpy(curcons->vmem, (char *)curcons->video, curcons->h*curcons->w*curcons->bd);
+	memcpy(curcons->vmem, (char *)curcons->video, 
+				curcons->h*curcons->w*curcons->bd);
 	curcons->cur_mem = curcons->vmem;
 	curcons = new;
 	curcons->cur_mem = (char *)curcons->video;
@@ -62,7 +64,8 @@ void console_init_stage1()
 {
 	tty_init(&kernel_console, &log_console);
 	create_console(kernel_console);
-	kernel_console->vmem=kernel_console->cur_mem=kernel_console->video=(char *)VIDEO_MEMORY;
+	kernel_console->vmem=kernel_console->cur_mem
+						=kernel_console->video=(char *)VIDEO_MEMORY;
 	curcons = kernel_console;
 	init_console(kernel_console, &crtc_drv);
 	curcons->rend.clear(curcons);

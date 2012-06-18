@@ -85,7 +85,8 @@ static inline char fat_type(int num) {
 	return 0;
 }
 
-#define TOTAL_SECTORS(v) (v->bpb->total_sectors ? v->bpb->total_sectors : v->bpb->large_num_sec)
+#define TOTAL_SECTORS(v) (v->bpb->total_sectors ? \
+	v->bpb->total_sectors : v->bpb->large_num_sec)
 
 
 #endif

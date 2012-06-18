@@ -225,11 +225,14 @@ static inline void insw(unsigned long addr, void *buffer, int count)
 int atapi_rw_main(int rw, int dev, int blk_, char *buf);
 int ioctl_atapi(int min, int cmd, int arg);
 struct ata_device *get_ata_device(int min, int *part);
-int ata_dma_rw(struct ata_controller *cont, struct ata_device *dev, int rw, unsigned blk, char *buf, int count);
+int ata_dma_rw(struct ata_controller *cont, struct ata_device *dev, int rw, 
+	unsigned blk, char *buf, int count);
 void remove_devices();
 extern volatile char dma_busy;
-int ata_pio_rw(struct ata_controller *cont, struct ata_device *dev, int rw, unsigned long long blk, unsigned char *buffer, unsigned);
-struct pci_device *pci_locate_class(unsigned short class, unsigned short subclass);
+int ata_pio_rw(struct ata_controller *cont, struct ata_device *dev, int rw, 
+	unsigned long long blk, unsigned char *buffer, unsigned);
+struct pci_device *pci_locate_class(unsigned short class, 
+	unsigned short subclass);
 extern struct ata_controller *primary, *secondary;
 extern struct pci_device *ata_pci;
 extern mutex_t *dma_mutex;

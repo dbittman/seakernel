@@ -1,13 +1,8 @@
 /* slab.c (kernel/mm): Implementation on a SLAB allocation system.
  * Implementation is Copyright (c) 2010 Daniel Bittman. 
  * 
- * Written to replace the wave allocator (limitations are becoming very annoying)
  * Note: This is not a pure SLAB allocator! It is simply based off the SLAB design 
  * heavily, with only minor modifications to allow easier implementation.
- * 
- * As long as it is fast, efficient, and doesn't cause problems, this should be 
- * the last kernel memory allocator written for SeaKernel (though it probably wont be).
- * 
  * First implementation completed October 13th, 2010
  * 
  * Diagram of memory layout:
@@ -30,6 +25,10 @@ unsigned pages_used=0;
 unsigned num_slab=0, num_scache=0;
 void release_slab(slab_t *slab);
 mutex_t scache_lock;
+
+#ifdef SLAB_DEBUG
+unsigned total=0;
+#endif
 
 #define mutex_on(a) __dummy(a)
 #define mutex_off(a) __dummy(a)
@@ -95,7 +94,8 @@ slab_cache_t *get_empty_scache(int size, unsigned short flags)
 			break;
 		i++;
 	}
-	/* Normally, we would panic. However, the allocator has a condition which might allow us to get around this. */
+	/* Normally, we would panic. However, the allocator has a 
+	 * condition which might allow us to get around this. */
 	if(i == NUM_SCACHES) {
 		mutex_off(&scache_lock);
 		return 0;
@@ -122,9 +122,10 @@ void release_scache(slab_cache_t *sc)
 	mutex_off(&scache_lock);
 }
 
-/* Adds a slab to a specified list in the scache. Doesn't remove the slab from it's
- * old list though. WARNING: Before calling this, remove the slab from the current list first,
- * Otherwise, we might corrupt the current list */
+/* Adds a slab to a specified list in the scache. Doesn't remove the slab 
+ * from it's old list though. WARNING: Before calling this, remove the 
+ * slab from the current list first, Otherwise, we might corrupt the 
+ * current list */
 int add_slab_to_list(slab_t *slab, char to)
 {
 	assert(slab && slab->magic == SLAB_MAGIC);
@@ -142,11 +143,14 @@ int add_slab_to_list(slab_t *slab, char to)
 		case TO_FULL:
 			list=&sc->full; break;
 		default:
-			panic(PANIC_MEM | PANIC_NOSYNC, "Invalid tranfer code sent to add_slab_to_list!");
+			panic(PANIC_MEM | PANIC_NOSYNC, 
+					"Invalid tranfer code sent to add_slab_to_list!");
 			break;
 	}
-	if(!list) panic(PANIC_MEM | PANIC_NOSYNC, "Ok, what. Seriously: Wait. What?");
-	/* Woah, double pointers! While confusing, they make things _much_ easier to handle. */
+	if(!list) panic(PANIC_MEM | PANIC_NOSYNC, 
+			"Ok, what. Seriously: Wait. What?");
+	/* Woah, double pointers! While confusing, they make 
+	 * things _much_ easier to handle. */
 	slab_t *old = *list;
 	if(old) assert(old->magic == SLAB_MAGIC);
 	if(old) 
@@ -221,7 +225,8 @@ slab_t *create_slab(slab_cache_t *sc, int num_pages, unsigned short flags)
 	slab->parent = (unsigned)sc;
 	slab->num_pages = num_pages;
 	slab->vnode = vnode;
-	/* If we are aligning, we need to make number of objects include the page aligned info page */
+	/* If we are aligning, we need to make number of objects 
+	 * include the page aligned info page */
 	if(flags & S_ALIGN)
 		slab->obj_num = (((num_pages-1)*PAGE_SIZE)) / sc->obj_size;
 	else
@@ -247,12 +252,14 @@ unsigned do_alloc_object(slab_t *slab)
 	assert(sc);
 	int ret=0;
 	if(slab->obj_used >= slab->obj_num)
-		panic(PANIC_MEM | PANIC_NOSYNC, "Slab object count is greater than possible number of objects");
+		panic(PANIC_MEM | PANIC_NOSYNC, 
+				"Slab object count is greater than possible number of objects");
 	assert(slab->stack > slab->stack_arr && slab->stack_arr);
 	/* Pop the object off the top of the stack */
 	unsigned short obj = *(--slab->stack);
 	unsigned obj_addr = FIRST_OBJ(slab) + OBJ_SIZE(slab)*obj;
-	assert((obj_addr > (unsigned)slab) && (((obj_addr+sc->obj_size)-(unsigned)slab) <= slab->num_pages*0x1000));
+	assert((obj_addr > (unsigned)slab) 
+		&& (((obj_addr+sc->obj_size)-(unsigned)slab) <= slab->num_pages*0x1000));
 	slab->obj_used++;
 	ret = obj_addr;
 	mutex_off(&slab->lock);
@@ -388,7 +395,8 @@ slab_t *find_usable_slab(unsigned size, int align, int allow_range)
 	if(i) i++;
 	for(;i<NUM_SCACHES;i++)
 	{
-		/* If we want aligned objects, we need to have sizes multiples of 0x1000 */
+		/* If we want aligned objects, we need to have sizes 
+		 * multiples of 0x1000 */
 		if(scache_list[i]->id != -1 
 			&& scache_list[i]->obj_size >= size 
 			&& (scache_list[i]->obj_size <= size*RANGE_MUL || allow_range == 2) 
@@ -443,7 +451,8 @@ slab_t *find_usable_slab(unsigned size, int align, int allow_range)
 		 * 
 		 */
 		if(align) fl |= S_ALIGN;
-		slab_t *slab = create_slab(sc, align ? slab_size(size)/PAGE_SIZE + 128: slab_size(size)/PAGE_SIZE, fl);
+		slab_t *slab = create_slab(sc, align ? slab_size(size)/PAGE_SIZE + 128 
+				: slab_size(size)/PAGE_SIZE, fl);
 		if(!slab)
 		{
 			//delay(100);
@@ -471,10 +480,6 @@ slab_t *find_usable_slab(unsigned size, int align, int allow_range)
 	return find_usable_slab(size, align, 0);
 }
 
-#ifdef SLAB_DEBUG
-unsigned total=0;
-#endif
-
 unsigned do_kmalloc_slab(unsigned sz, char align)
 {
 	if(sz < 32) sz=32;
@@ -488,13 +493,16 @@ unsigned do_kmalloc_slab(unsigned sz, char align)
 	assert(slab && slab->magic == SLAB_MAGIC);
 	mutex_on(&slab->lock);
 	if(slab->obj_used >= slab->obj_num)
-		panic(PANIC_MEM | PANIC_NOSYNC, "BUG: slab: Attemping to allocate from full slab: %d:%d\n", slab->obj_used, slab->obj_num);
+		panic(PANIC_MEM | PANIC_NOSYNC, 
+			"BUG: slab: Attemping to allocate from full slab: %d:%d\n", 
+			slab->obj_used, slab->obj_num);
 #ifdef SLAB_DEBUG
 	total += ((slab_cache_t *)(slab->parent))->obj_size;
 #endif
 	unsigned addr = alloc_object(slab);
 	if(align && !((addr&PAGE_MASK) == addr))
-		panic(PANIC_MEM | PANIC_NOSYNC, "slab allocation of aligned data failed! (returned %x)", addr);
+		panic(PANIC_MEM | PANIC_NOSYNC, 
+			"slab allocation of aligned data failed! (returned %x)", addr);
 	/* We have the address of the object. Map it in */
 	if(!align)
 	{
@@ -509,7 +517,9 @@ void do_kfree_slab(void *ptr)
 {
 	if(!((unsigned)ptr >= slab_start && (unsigned)ptr < slab_end))
 	{
-		printk(1, "[slab]: kfree got invalid address %x, pid=%d, sys=%d\n", ptr, current_task ? current_task->pid : 0, current_task ? current_task->system : 0);
+		panic(PANIC_NOSYNC, "kfree got invalid address %x, pid=%d, sys=%d\n", 
+			ptr, current_task ? current_task->pid : 0, 
+			current_task ? current_task->system : 0);
 		return;
 	}
 	vnode_t *n = 0;

@@ -32,7 +32,8 @@ int null_rw(int rw, int m, char *buf, int c)
 	6 - 9 -> reserved
 */
 
-chardevice_t *set_chardevice(int maj, int (*f)(int, int, char*, int), int (*c)(int, int, int), int (*s)(int, int))
+chardevice_t *set_chardevice(int maj, int (*f)(int, int, char*, int), 
+	int (*c)(int, int, int), int (*s)(int, int))
 {
 	printk(1, "[dev]: Setting char device %d (%x, %x)\n", maj, f, c);
 	chardevice_t *dev = (chardevice_t *)kmalloc(sizeof(chardevice_t));
@@ -43,7 +44,8 @@ chardevice_t *set_chardevice(int maj, int (*f)(int, int, char*, int), int (*c)(i
 	return dev;
 }
 
-int set_availablecd(int (*f)(int, int, char*, int), int (*c)(int, int, int), int (*s)(int, int))
+int set_availablecd(int (*f)(int, int, char*, int), 
+	int (*c)(int, int, int), int (*s)(int, int))
 {
 	int i=10; /* first 10 character devices are reserved */
 	mutex_on(&cd_search_lock);

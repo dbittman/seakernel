@@ -33,7 +33,8 @@ void handle_signal(task_t *t, int sig)
 		t->sig_mask |= (1 << sig);
 	if(!current_task->system)
 		current_task->sigd=0;
-	if(sa->_sa_func._sa_handler && sig != SIGKILL && sig != SIGSEGV && !current_task->system)
+	if(sa->_sa_func._sa_handler && sig != SIGKILL && sig != SIGSEGV 
+			&& !current_task->system)
 	{
 		/* Define all variables up front */
 		void (*handler)(int) = sa->_sa_func._sa_handler;
@@ -74,7 +75,8 @@ void handle_signal(task_t *t, int sig)
 			set_kernel_stack(current_task->kernel_stack + (KERN_STACK_SIZE-64));
 			/* Unset flags and return to scheduler */
 			current_task->system = current_task->osystem;
-			current_task->oip = current_task->obp = current_task->osp = current_task->cur_sig = 0;
+			current_task->oip = current_task->obp = current_task->osp = 
+				current_task->cur_sig = 0;
 			current_task->flags &= ~TF_RETSIG;
 			unlock_scheduler();
 			goto out;
@@ -145,7 +147,8 @@ int do_send_signal(int pid, int __sig, int p)
 {
 	if(!current_task)
 	{
-		printk(1, "Attempted to send signal %d to pid %d, but we are taskless\n", __sig, pid);
+		printk(1, "Attempted to send signal %d to pid %d, but we are taskless\n",
+				__sig, pid);
 		return -ESRCH;
 	}
 	
@@ -252,8 +255,10 @@ int sys_sigact(int sig, const struct sigaction *act, struct sigaction *oact)
 	if(!act)
 		return 0;
 	/* Set actions */
-	if(act->sa_flags & SA_NOCLDWAIT || act->sa_flags & SA_SIGINFO || act->sa_flags & SA_NOCLDSTOP)
-		printk(0, "[sched]: sigact got unknown flags: Task %d, Sig %d. Flags: %x\n", current_task->pid, sig, act->sa_flags);
+	if(act->sa_flags & SA_NOCLDWAIT || act->sa_flags & SA_SIGINFO 
+			|| act->sa_flags & SA_NOCLDSTOP)
+		printk(0, "[sched]: sigact got unknown flags: Task %d, Sig %d. Flags: %x\n", 
+			current_task->pid, sig, act->sa_flags);
 	if(act->sa_flags & SA_SIGINFO)
 		return -ENOTSUP;
 	memcpy((void *)&current_task->signal_act[sig], act, sizeof(struct sigaction));

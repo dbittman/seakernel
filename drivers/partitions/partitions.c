@@ -15,10 +15,12 @@ struct partition {
 };
 
 /* Okay. What the actual fuck. */
-int parse_extended_partitions(int num, int dev, struct partition *ext, struct partition *part, int prev_lba)
+int parse_extended_partitions(int num, int dev, struct partition *ext, 
+	struct partition *part, int prev_lba)
 {
 	unsigned char buf[512];
-	printk(0, "[partition]: Reading extended partition at %d\n", (ext->start_lba + prev_lba));
+	printk(0, "[partition]: Reading extended partition at %d\n", 
+		(ext->start_lba + prev_lba));
 	do_block_rw(READ, dev, (ext->start_lba + prev_lba)*512, (char *)buf, 0);
 	/* Only two entries */
 	struct partition ptable[2];

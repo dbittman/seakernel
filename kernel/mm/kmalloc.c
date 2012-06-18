@@ -8,7 +8,8 @@ unsigned (*do_kmalloc_wrap)(unsigned, char)=0;
 void (*do_kfree_wrap)(void *)=0;
 char kmalloc_name[128];
 mutex_t km_m;
-void install_kmalloc(char *name, unsigned (*init)(unsigned, unsigned), unsigned (*alloc)(unsigned, char), void (*free)(void *))
+void install_kmalloc(char *name, unsigned (*init)(unsigned, unsigned), 
+	unsigned (*alloc)(unsigned, char), void (*free)(void *))
 {
 	do_kmalloc_wrap = alloc;
 	do_kfree_wrap = free;

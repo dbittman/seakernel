@@ -176,7 +176,8 @@ int do_wrap_ext2_link(struct inode *i, char *path)
 		*p=0;
 		dir = get_idir(path, 0);
 	}
-	/* Now, loc has the directory to link it into, and p contains the name of the entry */
+	/* Now, loc has the directory to link it into, and p contains 
+	 * the name of the entry */
 	if(!dir)
 		return -ENOENT;
 	/* Can't link accross multiple filesystems */
@@ -304,7 +305,7 @@ int wrap_sync_inode(struct inode *i)
 	{
 		if(!i->parent)
 		{
-			printk(4, "Well, we tried to update the file type, but couldn't find where we were. Oh well.\n");
+			printk(4, "[ext2]: Failed to discover parent node\n");
 		} else {
 			ext2_inode_t par;
 			if(!ext2_inode_read(fs, i->parent->num, &par))

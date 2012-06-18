@@ -98,7 +98,8 @@ int i825xx_load_device_pci(struct pci_device *device)
 		return 1;
 	}
 	i825xxdev_t *dev = create_new_device(addr, device);
-	printk(1, "[i825xx]: Initiating i825xx controller (%x.%x.%x)...\n", device->bus, device->dev, device->func);
+	printk(1, "[i825xx]: Initiating i825xx controller (%x.%x.%x)...\n", 
+		device->bus, device->dev, device->func);
 	if(i825xx_init(dev))
 		ret++;
 	
@@ -121,7 +122,8 @@ int i825xx_unload_device_pci(i825xxdev_t *dev)
 {
 	if(!dev) return 0;
 	struct pci_device *device = dev->device;
-	printk(1, "[i825xx]: Unloading device (%x.%x.%x)\n", device->bus, device->dev, device->func);
+	printk(1, "[i825xx]: Unloading device (%x.%x.%x)\n", 
+		device->bus, device->dev, device->func);
 	device->flags &= ~PCI_ENGAGED;
 	device->flags &= ~PCI_DRIVEN;
 	iremove_force(dev->node);

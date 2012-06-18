@@ -20,8 +20,8 @@ int do_sys_read_flags(struct file *f, unsigned off, char *buf, unsigned count)
 	else if(S_ISBLK(mode))
 		return block_device_rw(READ, inode->dev, off, buf, count);
 	/* We read the data for a link as well. If we have gotten to the point
-	 * where we have the inode for the link we probably want to read the link itself
-	 */
+	 * where we have the inode for the link we probably want to read the link 
+	 * itself */
 	else if(S_ISDIR(mode) || S_ISREG(mode) || S_ISLNK(mode))
 		return read_fs(inode, off, count, buf);
 	printk(1, "sys_read (%s): invalid mode %x\n", inode->name, inode->mode);

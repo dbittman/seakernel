@@ -43,7 +43,8 @@ typedef struct slab_cache_s {
 
 #define NUM_SCACHES (0x1000 / sizeof(slab_cache_t))
 #define OBJ_SIZE(s) (((slab_cache_t *)(s->parent))->obj_size)
-#define FIRST_OBJ(s) ((unsigned)((s->flags & S_ALIGN) ? ((unsigned)s+0x1000) : ((unsigned)s+sizeof(slab_t))))
+#define FIRST_OBJ(s) ((unsigned)((s->flags & S_ALIGN) ? ((unsigned)s+0x1000) \
+	: ((unsigned)s+sizeof(slab_t))))
 
 #endif
 

@@ -144,7 +144,8 @@ struct flock *find_flock(struct inode *f, struct flock *l)
 	mutex_on(f->flm);
 	while(c)
 	{
-		if(l->l_start == c->l_start && l->l_whence == c->l_whence && l->l_len == c->l_len && l->l_pid == c->l_pid) {
+		if(l->l_start == c->l_start && l->l_whence == c->l_whence 
+				&& l->l_len == c->l_len && l->l_pid == c->l_pid) {
 			mutex_off(f->flm);
 			return c;
 		}

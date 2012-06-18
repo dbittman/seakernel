@@ -37,7 +37,8 @@ void tty_putch(vterm_t *con, int ch)
 	if(!con->rend.putch)
 		return;
 	if(con->term.c_oflag & OPOST) {
-		if((con->term.c_oflag & ONLCR || con->tty==0) && ch == '\n' && !(con->term.c_oflag & ONOCR))
+		if((con->term.c_oflag & ONLCR || con->tty==0) && ch == '\n' 
+				&& !(con->term.c_oflag & ONOCR))
 			con->rend.putch(con, '\r');
 		if((con->term.c_oflag & OCRNL && con->tty) && ch == '\r')
 			ch = '\n';
@@ -333,7 +334,8 @@ int ttyx_ioctl(int min, int cmd, int arg)
 			return 0;
 			break;
 		default:
-			if(cmd >= 128 && cmd < 256 && ((current_task->system == SYS_LMOD) || (current_task->pid < init_pid)))
+			if(cmd >= 128 && cmd < 256 && ((current_task->system == SYS_LMOD)
+					|| (current_task->pid < init_pid)))
 			{
 				unsigned q = tty_calltable ? tty_calltable[cmd-128] : 0;
 				if(q)

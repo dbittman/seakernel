@@ -1,7 +1,8 @@
 #ifndef AREA_H
 #define AREA_H
 #include <mutex.h>
-#define NUM_NODES(v) ((((v->num_ipages*0x1000)/sizeof(vnode_t)) > MAX_NODES) ? MAX_NODES : ((v->num_ipages*0x1000)/sizeof(vnode_t)))
+#define NUM_NODES(v) ((((v->num_ipages*0x1000)/sizeof(vnode_t)) > \
+			MAX_NODES) ? MAX_NODES : ((v->num_ipages*0x1000)/sizeof(vnode_t)))
 
 typedef struct vmem_node {
 	unsigned addr;

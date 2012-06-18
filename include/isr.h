@@ -23,10 +23,10 @@
 
 typedef struct registers
 {
-  volatile   u32int ds;                  // Data segment selector
-  volatile   u32int edi, esi, ebp, esp, ebx, edx, ecx, eax; // Pushed by pusha.
-  volatile   u32int int_no, err_code;    // Interrupt number and error code (if applicable)
-  volatile   u32int eip, cs, eflags, useresp, ss; // Pushed by the processor automatically.
+  volatile   u32int ds;
+  volatile   u32int edi, esi, ebp, esp, ebx, edx, ecx, eax;
+  volatile   u32int int_no, err_code;
+  volatile   u32int eip, cs, eflags, useresp, ss;
 } volatile registers_t;
 
 typedef void (*isr_t)(registers_t);

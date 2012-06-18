@@ -89,12 +89,14 @@ mutex_t *create_mutex(mutex_t *existing)
 }
 
 /* Void because we must garuntee that this succeeds or panics */
-__attribute__((optimize("O0"))) void __mutex_on(mutex_t *m, char *file, int line)
+__attribute__((optimize("O0"))) void __mutex_on(mutex_t *m, 
+	char *file, int line)
 {
 	if(!m) return;
 	if(!current_task || panicing) return;
 	if(m->magic != MUTEX_MAGIC)
-		panic(0, "mutex_on got invalid mutex: %x (%x): %s:%d\n", m, m->magic, file, line);
+		panic(0, "mutex_on got invalid mutex: %x (%x): %s:%d\n", m, 
+					m->magic, file, line);
 	int i=0;
 	char lock_was_raised = (current_task->flags & TF_LOCK) ? 1 : 0;
 	engage_full_system_lock();
@@ -105,13 +107,18 @@ __attribute__((optimize("O0"))) void __mutex_on(mutex_t *m, char *file, int line
 		task_t *t = (task_t *)m->owner;
 		task_t *p = 0;//get_task_pid(m->pid);
 		if(p && (p != t || m->pid != (int)p->pid || m->pid != (int)t->pid))
-			panic(0, "Mutex confusion (%d)! \nm %d, t %d (%d:%d:%d), p %d; %s:%d\nWas set on: %s:%d", current_task->pid, m->pid, t->pid, t->state, t->system, t->flags, p->pid, file, line, m->file, m->line);
+			panic(0, "Mutex confusion (%d)! \nm %d, t %d (%d:%d:%d), p %d; %s:%d\nWas set on: %s:%d", 
+					current_task->pid, 
+					m->pid, t->pid, t->state, t->system, t->flags, p->pid, 
+					file, line, m->file, m->line);
 #endif
 		raise_flag(TF_WMUTEX);
 		disengage_full_system_lock();
 		/* Sleep...*/
 		if(i++ == 1000)
-			i=0, printk(0, "[mutex]: potential deadlock (%s:%d):\n\ttask %d (%d) is waiting for a mutex (p=%d,c=%d): %x\n", file, line, current_task->pid, current_task->system, m->pid, m->count, p);
+			i=0, printk(0, "[mutex]: potential deadlock (%s:%d):\n\ttask %d (%d) is waiting for a mutex (p=%d,c=%d): %x\n", 
+						file, line, current_task->pid, 
+						current_task->system, m->pid, m->count, p);
 		force_schedule();
 		engage_full_system_lock();
 	}
@@ -139,14 +146,17 @@ __attribute__((optimize("O0"))) void __mutex_on(mutex_t *m, char *file, int line
 	}
 }
 
-__attribute__((optimize("O0"))) void __mutex_off(mutex_t *m, char *file, int line)
+__attribute__((optimize("O0"))) void __mutex_off(mutex_t *m, 
+	char *file, int line)
 {
 	if(!current_task || panicing)
 		return;
 	if(m->magic != MUTEX_MAGIC)
-		panic(0, "mutex_off got invalid mutex: %x (%x): %s:%d\n", m, m->magic, file, line);
+		panic(0, "mutex_off got invalid mutex: %x (%x): %s:%d\n", 
+				m, m->magic, file, line);
 	if((unsigned)m->pid != current_task->pid)
-		panic(0, "Process %d attempted to release mutex that it didn't own", current_task->pid);
+		panic(0, "Process %d attempted to release mutex that it didn't own", 
+				current_task->pid);
 	assert(m->count > 0);
 	engage_full_system_lock();
 	if(!A_dec_mutex_count(m))
@@ -157,7 +167,8 @@ __attribute__((optimize("O0"))) void __mutex_off(mutex_t *m, char *file, int lin
 	__super_sti();
 }
 
-__attribute__((optimize("O0"))) void __destroy_mutex(mutex_t *m, char *file, int line)
+__attribute__((optimize("O0"))) void __destroy_mutex(mutex_t *m, 
+	char *file, int line)
 {
 	if(!m || panicing) return;
 	if(m->magic != MUTEX_MAGIC)
@@ -179,7 +190,8 @@ __attribute__((optimize("O0"))) void do_force_nolock(task_t *t)
 	while(m)
 	{
 		if(m->pid == (int)t->pid && !panicing)
-			panic(0, "Found illegal mutex! %d %d, %s:%d", m->pid, m->count, m->file, m->line);
+			panic(0, "Found illegal mutex! %d %d, %s:%d", m->pid, 
+				m->count, m->file, m->line);
 		m = m->next;
 	}
 	disengage_full_system_lock();
@@ -222,7 +234,8 @@ void unlock_all_mutexes()
 int proc_read_mutex(char *buf, int off, int len)
 {
 	int total_len=0;
-	total_len += proc_append_buffer(buf, "PID | COUNT\n", total_len, -1, off, len);
+	total_len += proc_append_buffer(buf, "PID | COUNT\n", 
+		total_len, -1, off, len);
 	mutex_t *m = mutex_list;
 	int g=0;
 	while(m)

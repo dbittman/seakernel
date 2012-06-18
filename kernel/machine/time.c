@@ -43,8 +43,9 @@ unsigned long long get_epoch_time()
 	get_timed(tm);
 	tm->tm_year += 30;
 	return ((((unsigned long)
-		  (tm->tm_year/4 - tm->tm_year/100 + tm->tm_year/400 + 367*tm->tm_mon/12 + tm->tm_mday) +
-		  tm->tm_year*365
+		  (tm->tm_year/4 - tm->tm_year/100 + 
+				tm->tm_year/400 + 367*tm->tm_mon/12 + tm->tm_mday) +
+				tm->tm_year*365
 	    )*24 + tm->tm_hour /* now have hours */
 	  )*60 + tm->tm_min /* now have minutes */
 	)*60 + tm->tm_sec; /* finally seconds */

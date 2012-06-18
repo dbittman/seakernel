@@ -30,7 +30,8 @@ blockdevice_t *set_blockdevice(int maj, int (*f)(int, int, int, char*), int bs,
 	return dev;
 }
 
-int set_availablebd(int (*f)(int, int, int, char*), int bs, int (*c)(int, int, int), int (*m)(int, int, int, char *, int), int (*s)(int, int))
+int set_availablebd(int (*f)(int, int, int, char*), int bs, 
+	int (*c)(int, int, int), int (*m)(int, int, int, char *, int), int (*s)(int, int))
 {
 	int i=10; /* first 10 devices are reserved by the system */
 	mutex_on(&bd_search_lock);
@@ -113,7 +114,8 @@ int block_rw(int rw, int dev, int blk, char *buf, blockdevice_t *bd)
 #endif
 		ret = do_block_rw(rw, dev, blk, buf, bd);
 #if USE_CACHE
-		/* -dev signals that this is a read cache - meaning it is not 'dirty' to start with */
+		/* -dev signals that this is a read cache - 
+		 * meaning it is not 'dirty' to start with */
 		if(ret == bd->blksz) 
 			cache_block(-dev, blk, bd->blksz, buf);
 #endif
@@ -128,7 +130,8 @@ int block_rw(int rw, int dev, int blk, char *buf, blockdevice_t *bd)
 	return ret;
 }
 
-unsigned do_block_read_multiple(blockdevice_t *bd, int dev, unsigned start, unsigned num, char *buf)
+unsigned do_block_read_multiple(blockdevice_t *bd, int dev, unsigned start, 
+	unsigned num, char *buf)
 {
 	unsigned count=0;
 	if(!bd->rw_multiple) {
@@ -150,7 +153,8 @@ unsigned do_block_read_multiple(blockdevice_t *bd, int dev, unsigned start, unsi
 	return count;
 }
 
-unsigned block_read_multiple(blockdevice_t *bd, int dev, unsigned start, unsigned num, char *buf)
+unsigned block_read_multiple(blockdevice_t *bd, int dev, unsigned start, 
+	unsigned num, char *buf)
 {
 	unsigned count=0;
 	int ret;

@@ -130,9 +130,12 @@ typedef struct iso_vol_data {
 } iso_fs_t;
 
 struct iso9660DirRecord *get_root_dir(iso_fs_t *fs);
-int iso9660_read_file(iso_fs_t *fs, struct iso9660DirRecord *file, char *buffer, int offset, int length);
-int search_dir_rec(iso_fs_t *fs, struct iso9660DirRecord *dir, char *name, struct iso9660DirRecord *ret);
+int iso9660_read_file(iso_fs_t *fs, struct iso9660DirRecord *file, 
+	char *buffer, int offset, int length);
+int search_dir_rec(iso_fs_t *fs, struct iso9660DirRecord *dir, 
+	char *name, struct iso9660DirRecord *ret);
 int iso_read_block(iso_fs_t *fs, unsigned block, unsigned char *buf);
 int iso_read_off(iso_fs_t *fs, unsigned off, unsigned char *buf, unsigned len);
-int read_dir_rec(iso_fs_t *fs, struct iso9660DirRecord *dir, int n, struct iso9660DirRecord *ret, char *name);
+int read_dir_rec(iso_fs_t *fs, struct iso9660DirRecord *dir, int n, 
+	struct iso9660DirRecord *ret, char *name);
 #endif

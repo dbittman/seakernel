@@ -45,14 +45,18 @@ unsigned sys_mmap(void *addr, void *str, int prot, int flags, int fildes)
 	if(flags&PROT_WRITE && !(fil->flags&_FWRITE))
 		return EACCES;
 	/* Ok, we can attempt to allocate the area */
-	vma_t **v = (vma_t **)((flags&MAP_SHARED) ? &((task_t *)current_task)->mmf_share_space : &((task_t *)current_task)->mmf_priv_space);
+	vma_t **v = (vma_t **)((flags&MAP_SHARED) ? 
+			&((task_t *)current_task)->mmf_share_space 
+			: &((task_t *)current_task)->mmf_priv_space);
 	if(!*v) {
 		*v = (vma_t *)kmalloc(sizeof(vma_t));
-		init_vmem_area(*v, (flags&MAP_SHARED) ? MMF_SHARED_START : MMF_PRIV_START,
-			       (flags&MAP_SHARED) ? MMF_SHARED_END : MMF_PRIV_END, A_NI);
+		init_vmem_area(*v, (flags&MAP_SHARED) ? MMF_SHARED_START 
+					: MMF_PRIV_START, (flags&MAP_SHARED) ? MMF_SHARED_END 
+					: MMF_PRIV_END, A_NI);
 		unsigned a = (*v)->addr, e = (*v)->addr + A_NI*PAGE_SIZE;
 		while(a < e) {
-			vm_map(a, pm_alloc_page(), PAGE_PRESENT | PAGE_USER | PAGE_WRITE, MAP_CRIT);
+			vm_map(a, pm_alloc_page(), PAGE_PRESENT | PAGE_USER | PAGE_WRITE
+																, MAP_CRIT);
 			a += PAGE_SIZE;
 		}
 	}
@@ -139,7 +143,8 @@ int sys_munmap(void *ptr, unsigned sz)
 	int clear=0;
 	if((unsigned)ptr == vn->addr && (sz / PAGE_SIZE) == vn->num_pages)
 		clear=1;
-	flush_mmf(mf, clear, ((unsigned)ptr - vn->addr)+mf->off, (unsigned)ptr, (unsigned)ptr + sz);
+	flush_mmf(mf, clear, ((unsigned)ptr - vn->addr)+mf->off, (unsigned)ptr, 
+														(unsigned)ptr + sz);
 	if(clear)
 	{
 		remove_mmf(mf);

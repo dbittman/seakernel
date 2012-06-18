@@ -53,14 +53,18 @@ int search_dir_rec(iso_fs_t *fs, struct iso9660DirRecord *dir, char *name, struc
 			char flag=0;
 			if(record->FileFlags & 0x2)
 			{
-				flag = (record->FileIdentLen == strlen((const char *)search) && !strncmp((const char *)record->FileIdent, (const char *)search, record->FileIdentLen));
+				flag = (record->FileIdentLen == strlen((const char *)search) 
+					&& !strncmp((const char *)record->FileIdent, 
+					(const char *)search, record->FileIdentLen));
 			} else
 			{
 				record->FileIdentLen -= 2;
 				record->FileIdent[record->FileIdentLen]=0;
 				if(record->FileIdent[record->FileIdentLen-1] == '.')
 					record->FileIdent[--record->FileIdentLen]=0;
-				flag = (record->FileIdentLen == strlen(search) && !strncmp((const char *)record->FileIdent, (const char *)search, record->FileIdentLen));
+				flag = (record->FileIdentLen == strlen(search) 
+					&& !strncmp((const char *)record->FileIdent, 
+					(const char *)search, record->FileIdentLen));
 			}
 			if(flag)
 			{
@@ -79,7 +83,8 @@ int search_dir_rec(iso_fs_t *fs, struct iso9660DirRecord *dir, char *name, struc
 	return -1;
 }
 
-int read_dir_rec(iso_fs_t *fs, struct iso9660DirRecord *dir, int n, struct iso9660DirRecord *ret, char *name)
+int read_dir_rec(iso_fs_t *fs, struct iso9660DirRecord *dir, 
+	int n, struct iso9660DirRecord *ret, char *name)
 {
 	char buf[2048];
 	unsigned int block=0, total=0;
@@ -104,7 +109,8 @@ int read_dir_rec(iso_fs_t *fs, struct iso9660DirRecord *dir, int n, struct iso96
 			if(!n--)
 			{
 				memcpy(ret, record, sizeof(*ret));
-				strncpy(name, (const char *)record->FileIdent, record->FileIdentLen < 128 ? record->FileIdentLen : 127);
+				strncpy(name, (const char *)record->FileIdent, 
+					record->FileIdentLen < 128 ? record->FileIdentLen : 127);
 				return 0;
 			}
 			off += record->RecLen;

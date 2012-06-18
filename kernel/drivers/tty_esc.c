@@ -252,7 +252,8 @@ int read_brak_esc(vterm_t *con, char *seq)
 		case 'P':
 			if(!data[0]) data[0]++;
 			len = con->w - con->x;
-			memcpy(con->cur_mem + con->y*con->w*2 + con->x*2, con->cur_mem + con->y*con->w*2 + con->x*2 + data[0]*2, len*2);
+			memcpy(con->cur_mem + con->y*con->w*2 + con->x*2, 
+					con->cur_mem + con->y*con->w*2 + con->x*2 + data[0]*2, len*2);
 			break;
 		case 'a':
 			tty_movexy(con, data[0], 0);

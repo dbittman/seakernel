@@ -7,10 +7,7 @@ int self_free_table(int t)
 {
 	unsigned virt = t*1024*PAGE_SIZE;
 	int i;
-	int start=0;
-	int end=1024;
-	virt += PAGE_SIZE * start;
-	for(i=start;i<end;++i)
+	for(i=0;i<1024;++i)
 	{
 		if(page_tables[(virt&PAGE_MASK)/PAGE_SIZE])
 			vm_unmap(virt);
@@ -43,14 +40,11 @@ int self_free(int all)
 int free_stack()
 {
 	unsigned int *pd = (unsigned *)current_task->pd;
-	int F = PAGE_DIR_IDX(STACK_LOCATION/PAGE_SIZE);
 	int T = PAGE_DIR_IDX(TOP_TASK_MEM/PAGE_SIZE);
 	int S = PAGE_DIR_IDX(TOP_TASK_MEM_EXEC/PAGE_SIZE);
 	int i=0;
-	for(i=S;i<1022;++i)
+	for(i=S;i<T;++i)
 	{
-		if(i >= T)
-			continue;
 		if(!pd[i])
 			continue;
 		self_free_table(i);

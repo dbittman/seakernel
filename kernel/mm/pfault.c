@@ -50,7 +50,6 @@ int map_in_page(unsigned int cr2, unsigned err_code)
 	return 0;
 }
 
-
 void print_pf(int x, registers_t *regs, unsigned cr2)
 {
 	printk(x, "Occured in task %d.\n\tstate=%d, flags=%d, F=%d, magic=%x.\n\tlast syscall=%d, kernel is %slocked", current_task->pid, current_task->state, current_task->flags, current_task->flag, current_task->magic, current_task->last, current_task->critical ? "" : "un");
@@ -68,8 +67,10 @@ void page_fault(registers_t regs)
 	uint32_t cr2, err_code = regs.err_code;
 	__asm__ volatile ("mov %%cr2, %0" : "=r" (cr2));
 	/* Has the page been swapped out? NOTE: We must always check this first */
-	if(current_task && num_swapdev && current_task->num_swapped && swap_in_page((task_t *)current_task, cr2 & PAGE_MASK) == 0) {
-		printk(1, "[swap]: Swapped back in page %x for task %d\n", cr2 & PAGE_MASK, current_task->pid);
+	if(current_task && num_swapdev && current_task->num_swapped && 
+			swap_in_page((task_t *)current_task, cr2 & PAGE_MASK) == 0) {
+		printk(1, "[swap]: Swapped back in page %x for task %d\n", 
+			cr2 & PAGE_MASK, current_task->pid);
 		return;
 	}
 	
@@ -81,7 +82,8 @@ void page_fault(registers_t regs)
 	__super_cli();
 	if(USER_TASK || dont_panic)
 	{
-		printk(!(dont_panic) ? 5 : 0, "[pf]: Invalid Memory Access in task %d: eip=%x addr=%x flags=%x\n", current_task->pid, regs.eip, cr2, err_code);
+		printk(!(dont_panic) ? 5 : 0, "[pf]: Invalid Memory Access in task %d: eip=%x addr=%x flags=%x\n", 
+			current_task->pid, regs.eip, cr2, err_code);
 		print_pf(0, &regs, cr2);
 		kprintf("[pf]: Segmentation Fault\n");
 		kill_task(current_task->pid);

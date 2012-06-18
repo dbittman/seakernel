@@ -15,7 +15,8 @@ int vm_unmap_only(unsigned virt)
 
 int vm_unmap(unsigned virt)
 {
-	/* This gives the virtual address of the table needed, and sets the correct place as zero */
+	/* This gives the virtual address of the table needed, and sets
+	 * the correct place as zero */
 	if(current_task && num_swapdev && current_task->num_swapped)
 		swap_in_page((task_t *)current_task, virt & PAGE_MASK);
 	unsigned p = page_tables[(virt&PAGE_MASK)/0x1000] & PAGE_MASK;

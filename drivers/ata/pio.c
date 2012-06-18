@@ -3,7 +3,8 @@
 #include <pci.h>
 #include "ata.h"
 #include <block.h>
-int ata_pio_rw(struct ata_controller *cont, struct ata_device *dev, int rw, unsigned long long blk, unsigned char *buffer, unsigned count)
+int ata_pio_rw(struct ata_controller *cont, struct ata_device *dev, 
+	int rw, unsigned long long blk, unsigned char *buffer, unsigned count)
 {
 	count *= 512;
 	mutex_t *lock = cont->wait;
@@ -35,7 +36,8 @@ int ata_pio_rw(struct ata_controller *cont, struct ata_device *dev, int rw, unsi
 	outb(cont->port_cmd_base+REG_LBA_HIG, (unsigned char)(addr >> 16));
 	
 	if(!lba48)
-		outb(cont->port_cmd_base+REG_DEVICE, 0xE0 | (dev->id << 4) | ((addr >> 24) & 0x0F));
+		outb(cont->port_cmd_base+REG_DEVICE, 0xE0 | (dev->id << 4) 
+			| ((addr >> 24) & 0x0F));
 	__super_cli();
 	
 	outb(cont->port_cmd_base+REG_COMMAND, cmd);
@@ -71,7 +73,8 @@ int ata_pio_rw(struct ata_controller *cont, struct ata_device *dev, int rw, unsi
 		for (idx = 0; idx < count/2; idx++)
 		{
 			tmpword = buffer[idx * 2] | (buffer[idx * 2 + 1] << 8);
-			asm volatile ("outw %1, %0"::"dN" ((short)(cont->port_cmd_base+REG_DATA)), "a" ((short)tmpword));
+			asm volatile ("outw %1, %0"::"dN" 
+				((short)(cont->port_cmd_base+REG_DATA)), "a" ((short)tmpword));
 		}
 	}
 	mutex_off(lock);

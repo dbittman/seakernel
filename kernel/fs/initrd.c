@@ -16,7 +16,9 @@ void load_initrd(struct multiboot *mb)
 		initrd_location = *((u32int*)mb->mods_addr);
 		initrd_end = *(u32int*)(mb->mods_addr+4);
 		int q = initrd_location;
-		if(!(*(unsigned char *)(q) == 'I' && *(unsigned char *)(q+1) == 'R' && *(unsigned char *)(q+2) == 'D'))
+		if(!(*(unsigned char *)(q) == 'I' 
+				&& *(unsigned char *)(q+1) == 'R' 
+				&& *(unsigned char *)(q+2) == 'D'))
 			goto not_found;
 		initrd_version = *(unsigned char *)(q+3);
 		initrd_location += 4;
@@ -39,14 +41,15 @@ void process_initrd()
 	initrd_header = (initrd_header_t *)location;
 	file_headers = (initrd_file_header_t *) (location+sizeof(initrd_header_t));
 	struct inode *q;
-	/* Temporarily set the FS indicators to the ramfs root so we can use the VFS. This makes
-	 * parsing directories much easier. */
+	/* Temporarily set the FS indicators to the ramfs root so we can use the 
+	 * VFS. This makes parsing directories much easier. */
 	current_task->pwd=current_task->root=node;
 	printk(1, "\n");
 	int count=0, size=0;
 	for (i = 0; i < initrd_header->nfiles; i++)
 	{
-		printk(1, "\t* Loading '%s': %d bytes...\n", (char *)&file_headers[i].name, file_headers[i].length);
+		printk(1, "\t* Loading '%s': %d bytes...\n", 
+				(char *)&file_headers[i].name, file_headers[i].length);
 		file_headers[i].offset += location;
 		char name[128];
 		sprintf(name, "/%s", (char *)&file_headers[i].name);

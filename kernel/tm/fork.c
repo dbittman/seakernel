@@ -43,12 +43,14 @@ void copy_task_struct(task_t *new, task_t *parent)
 	}
 	new->mmf_share_space = parent->mmf_share_space;
 	copy_mmf(parent, new);
-	memcpy((void *)new->signal_act, (void *)parent->signal_act, 128 * sizeof(struct sigaction));
+	memcpy((void *)new->signal_act, (void *)parent->signal_act, 128 * 
+		sizeof(struct sigaction));
 	/* This actually duplicates the handles... */
 	copy_file_handles(parent, new);
 }
 
-__attribute__((always_inline)) inline static int engage_new_stack(task_t *new, task_t *parent)
+__attribute__((always_inline)) 
+inline static int engage_new_stack(task_t *new, task_t *parent)
 {
 	assert(parent == current_task);
 	u32int ebp;
@@ -101,7 +103,7 @@ int fork()
 	/* Copy the stack */
 	__super_cli();
 	engage_new_stack(new, parent);
-	/* Set the state as frozen temporarily, so that it doesn't accidentally run it.
+	/* Set the state as frozen temporarily, so that it doesn't accidentally run.
 	 * And then add it to the queue */
 	new->state = TASK_FROZEN;
 	add_task(new);

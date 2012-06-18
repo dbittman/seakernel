@@ -34,9 +34,10 @@ void remove_file_pointer(task_t *t, int n)
 		kfree(f->fi);
 	kfree(f);
 }
-/* Here we find an unused filedes, and add it to the list. We rely on the list being sorted, 
- * and since this is the only function that adds to it, we can assume it is. This allows
- * for relatively efficient determining of a filedes without limit. */
+/* Here we find an unused filedes, and add it to the list. We rely on the 
+ * list being sorted, and since this is the only function that adds to it, 
+ * we can assume it is. This allows for relatively efficient determining of 
+ * a filedes without limit. */
 int add_file_pointer_do(task_t *t, struct file_ptr *f, int after)
 {
 	assert(t && f);

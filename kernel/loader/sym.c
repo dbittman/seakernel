@@ -25,9 +25,11 @@ const char *elf_lookup_symbol (uint32_t addr, elf32_t *elf)
 	{
 		if (ELF32_ST_TYPE(elf->symtab[i].info) != 0x2)
 			continue;
-		if ( (addr >= elf->symtab[i].address) && (addr < (elf->symtab[i].address + elf->symtab[i].size)) )
+		if ( (addr >= elf->symtab[i].address) 
+				&& (addr < (elf->symtab[i].address + elf->symtab[i].size)) )
 		{
-			const char *name = (const char *) ((uint32_t)elf->strtab + elf->symtab[i].name);
+			const char *name = (const char *) ((uint32_t)elf->strtab
+					+ elf->symtab[i].name);
 			return name;
 		}
 	}
@@ -201,7 +203,8 @@ intptr_t find_kernel_function(char * unres)
 	{
 		if(export_syms[i].ptr && 
 			strlen(export_syms[i].name) == strlen(unres) &&
-			!memcmp((uint8_t*)export_syms[i].name, (uint8_t*)unres, (int)strlen(unres)))
+			!memcmp((uint8_t*)export_syms[i].name, (uint8_t*)unres, 
+				(int)strlen(unres)))
 			return export_syms[i].ptr;
 	}
 	return 0;
@@ -214,7 +217,8 @@ int remove_kernel_symbol(char * unres)
 	{
 		if(export_syms[i].ptr && 
 			strlen(export_syms[i].name) == strlen(unres) &&
-			!memcmp((uint8_t*)export_syms[i].name, (uint8_t*)unres, (int)strlen(unres)))
+			!memcmp((uint8_t*)export_syms[i].name, (uint8_t*)unres, 
+				(int)strlen(unres)))
 		{
 			export_syms[i].ptr=0;
 			return 1;
@@ -235,7 +239,8 @@ elf32_symtab_entry_t * fill_symbol_struct(uint8_t * buf, uint32_t symbol)
 		sh = (elf32_section_header_t*)(buf + eh->shoff + (i * eh->shsize));
 		if(sh->type == 2)
 		{
-			symtab = (elf32_symtab_entry_t *)(buf + sh->offset + (symbol * sh->sect_size));
+			symtab = (elf32_symtab_entry_t *)(buf + sh->offset + 
+					(symbol * sh->sect_size));
 			return (elf32_symtab_entry_t *)symtab;
 		}
 	}

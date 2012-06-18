@@ -11,7 +11,8 @@ extern struct inode *procfs_root, *procfs_kprocdir;
 int proc_read_int(char *buf, int off, int len);
 int proc_read_mutex(char *buf, int off, int len);
 int proc_read_bcache(char *buf, int off, int len);
-int proc_append_buffer(char *buffer, char *data, int off, int len, int req_off, int req_len);
+int proc_append_buffer(char *buffer, char *data, int off, int len, 
+		int req_off, int req_len);
 
 #ifdef CONFIG_SMP
 int proc_cpu(char rw, struct inode *inode, int m, char *buf, int off, int len)
@@ -38,8 +39,12 @@ int proc_cpu(char rw, struct inode *inode, int m, char *buf, int off, int len)
 		total_len += proc_append_buffer(buf, tmp, total_len, -1, off, len);
 		sprintf(tmp, "\tCPU Brand: %s \n", cpuid->cpu_brand);
 		total_len += proc_append_buffer(buf, tmp, total_len, -1, off, len);
-		sprintf(tmp,"\t%s %s %s %s %s %s\n", c->flags&CPU_UP ? "up" : "down", c->flags&CPU_RUNNING ? "running" : "frozen", c->flags&CPU_ERROR ? "ERROR" : "\b", 
-			c->flags&CPU_SSE ? "sse" : "\b", c->flags&CPU_FPU ? "fpu" : "\b", c->flags&CPU_PAGING ? "paging" : "segmentation");
+		sprintf(tmp,"\t%s %s %s %s %s %s\n", c->flags&CPU_UP ? "up" : "down", 
+			c->flags&CPU_RUNNING ? "running" : "frozen", 
+			c->flags&CPU_ERROR ? "ERROR" : "\b", 
+			c->flags&CPU_SSE ? "sse" : "\b", 
+			c->flags&CPU_FPU ? "fpu" : "\b", 
+			c->flags&CPU_PAGING ? "paging" : "segmentation");
 		total_len += proc_append_buffer(buf, tmp, total_len, -1, off, len);
 	}
 	return total_len;
@@ -52,7 +57,8 @@ int proc_mods(char rw, struct inode *n, int min, char *buf, int off, int len)
 		int total_len=0;
 		int total=0;
 		char tmp[128];
-		total_len += proc_append_buffer(buf, "NAME\t\t      SIZE DEPENDENCIES\n", 0, -1, off, len);
+		total_len += proc_append_buffer(buf, "NAME\t\t      SIZE DEPENDENCIES\n"
+				, 0, -1, off, len);
 		int i;
 		module_t *mq = modules;
 		while(mq) {
@@ -63,7 +69,7 @@ int proc_mods(char rw, struct inode *n, int min, char *buf, int off, int len)
 			total_len += proc_append_buffer(buf, "\n", total_len, -1, off, len);
 			mq=mq->next;
 		}
-		sprintf(tmp, "TOTAL: %d modules, %d KB\n", total, total_len/1024);// (%d.%1.1d%1.1d MB)\n", total, total_len/1024, ((total_len/1024)/1024), ((total_len/1024)*10)/1024, ((total_len/1024)*100)/1024);
+		sprintf(tmp, "TOTAL: %d modules, %d KB\n", total, total_len/1024);
 		total_len += proc_append_buffer(buf, tmp, total_len, -1, off, len);
 		return total_len;
 	}
@@ -80,14 +86,19 @@ int proc_kern_rw(char rw, struct inode *inode, int m, char *buf, int off, int le
 				/* List swap devices */
 				if(!s)
 				{
-					total_len += proc_append_buffer(buf, "no swap devices registered\n", total_len, -1, off, len);
+					total_len += proc_append_buffer(buf, 
+						"no swap devices registered\n", total_len, -1, off, len);
 					return total_len;
 				}
-				total_len += proc_append_buffer(buf, "Device\t\t| Bytes Used| Total Size| Usage %\n", total_len, -1, off, len);
+				total_len += proc_append_buffer(buf, 
+					"Device\t\t| Bytes Used| Total Size| Usage %\n", total_len
+					, -1, off, len);
 				while(s)
 				{
 					char tmp[1024];
-					sprintf(tmp, "%s\t| %7d MB| %7d MB| %3d%%\n", s->node, (s->bytes_used/1024)/1024, (s->size/1024)/1024, (s->bytes_used * 100)/s->size);
+					sprintf(tmp, "%s\t| %7d MB| %7d MB| %3d%%\n", 
+						s->node, (s->bytes_used/1024)/1024, (s->size/1024)/1024
+						, (s->bytes_used * 100)/s->size);
 					total_len += proc_append_buffer(buf, tmp, total_len, -1, off, len);
 					s=s->next;
 				}

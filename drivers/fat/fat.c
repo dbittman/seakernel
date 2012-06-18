@@ -126,22 +126,29 @@ struct inode *fat_mount(int dev, int block, char *node)
 	
 	/* Calculate some useful values */
 	char probably_32=0;
-	if(*(unsigned char *)((unsigned char*)(fs->bpb) + 66) == 0x28 || *(unsigned char *)((unsigned char*)(fs->bpb) + 66) == 0x29) {
+	if(*(unsigned char *)((unsigned char*)(fs->bpb) + 66) == 0x28 
+			|| *(unsigned char *)((unsigned char*)(fs->bpb) + 66) == 0x29) {
 		probably_32=1;
 		fs->ext32=(fat_32_extbpb *)(((unsigned char*)fs->bpb)+36);
 	}
 	if(!probably_32)
 	{
-		if(!(*(unsigned char *)((unsigned char*)(fs->bpb) + 38) == 0x28 || *(unsigned char *)((unsigned char*)(fs->bpb) + 38) == 0x29))
+		if(!(*(unsigned char *)((unsigned char*)(fs->bpb) + 38) == 0x28 
+			|| *(unsigned char *)((unsigned char*)(fs->bpb) + 38) == 0x29))
 		{
 			printk(0, "[fat]: Not a FAT volume!\n");
 			goto error;
 		}
 	}
-	fs->root_dir_sec = ((fs->bpb->num_dirent * 32) + (fs->bpb->bytes_per_sector - 1)) / fs->bpb->bytes_per_sector;
-	fs->num_data_sec = TOTAL_SECTORS(fs) - (fs->bpb->res_sectors + (fs->bpb->num_fats * (!probably_32 ? fs->bpb->sec_per_fat : fs->ext32->sec_per_fat)) + fs->root_dir_sec);
+	fs->root_dir_sec = ((fs->bpb->num_dirent * 32) + 
+		(fs->bpb->bytes_per_sector - 1)) / fs->bpb->bytes_per_sector;
+	fs->num_data_sec = TOTAL_SECTORS(fs) - 
+		(fs->bpb->res_sectors + (fs->bpb->num_fats * (!probably_32 
+		? fs->bpb->sec_per_fat : fs->ext32->sec_per_fat)) + fs->root_dir_sec);
 	
-	fs->first_data_sec = fs->bpb->res_sectors + (fs->bpb->num_fats * (!probably_32 ? fs->bpb->sec_per_fat : fs->ext32->sec_per_fat));
+	fs->first_data_sec = fs->bpb->res_sectors + 
+		(fs->bpb->num_fats * (!probably_32 
+		? fs->bpb->sec_per_fat : fs->ext32->sec_per_fat));
 	
 	fs->fat_type = fat_type(NUM_CLUSTERS(fs));
 	if(fs->fat_type == FAT32 && !probably_32)

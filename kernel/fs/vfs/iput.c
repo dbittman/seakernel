@@ -13,7 +13,8 @@ int do_iput(struct inode *i)
 	if(parent && parent != i) mutex_on(&parent->lock);	
 	if(i->count > 0)
 		i->count--;
-	if(i->count || i->child || i->mount || i->mount_parent || !i->dynamic || i->f_count || i->required || !parent || parent->required) {
+	if(i->count || i->child || i->mount || i->mount_parent || !i->dynamic 
+			|| i->f_count || i->required || !parent || parent->required) {
 		if(parent && parent != i) mutex_off(&parent->lock);
 		return EACCES;
 	}
@@ -23,7 +24,8 @@ int do_iput(struct inode *i)
 	return 0;
 }
 
-/* After calling this, you MAY NOT access i any more as the data may have been freed */
+/* After calling this, you MAY NOT access i any more as the data 
+ * may have been freed */
 int iput(struct inode *i)
 {
 	if(!i)

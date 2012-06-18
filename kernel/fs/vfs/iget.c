@@ -33,8 +33,9 @@ struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, int *req)
 	while(temp)
 	{
 		assert(!temp->unreal);
-		/* Check to see if an inode is valid. This is similar to checks in iput if it can be released
-		 * If the validness fails, then the inode could very well be being released */
+		/* Check to see if an inode is valid. This is similar to checks in 
+		 * iput if it can be released If the validness fails, then the inode 
+		 * could very well be being released */
 		if(!strcmp(temp->name, path))
 		{
 			change_ireq(i, 1);
@@ -123,7 +124,8 @@ struct inode *do_add_dirent(struct inode *p, char *name, int mode)
 /* This function is the master path parser for the VFS. It will traverse
  * the given path and return an inode, or fail. Don't call this directly,
  * use the wrapper functions */
-struct inode *do_get_idir(char *p_path, struct inode *b, int use_link, int create, int *did_create)
+struct inode *do_get_idir(char *p_path, struct inode *b, int use_link, 
+	int create, int *did_create)
 {
 	if(did_create)
 		*did_create=0;

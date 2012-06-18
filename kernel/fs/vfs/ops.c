@@ -132,7 +132,8 @@ int do_iremove(struct inode *i, int flag)
 	struct inode *parent = i->parent;
 	if(parent && parent != i) mutex_on(&parent->lock);
 	if(!flag && (get_ref_count(i) || i->child) && flag != 3)
-		panic(0, "Attempted to iremove inode with count > 0 or children! (%s)", i->name);
+		panic(0, "Attempted to iremove inode with count > 0 or children! (%s)", 
+			i->name);
 	if(flag != 3) 
 		i->unreal=1;
 	struct inode *prev = i->prev;

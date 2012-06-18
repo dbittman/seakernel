@@ -81,7 +81,8 @@ int ata_read_partitions(struct ata_controller *cont, struct ata_device *dev, cha
 			char tmp[17];
 			memset(tmp, 0, 17);
 			sprintf(tmp, "%s%d", node, i+1);
-			struct inode *in = dfs_cn(tmp, S_IFBLK, (dev->flags & F_ATAPI || dev->flags & F_SATAPI) ? api : 3, a+(i+1)*4);
+			struct inode *in = dfs_cn(tmp, S_IFBLK, (dev->flags & F_ATAPI 
+				|| dev->flags & F_SATAPI) ? api : 3, a+(i+1)*4);
 			struct dev_rec *d = nodes;
 			struct dev_rec *new = (struct dev_rec *)kmalloc(sizeof(*d));
 			new->node=in;
@@ -117,7 +118,8 @@ int read_partitions(struct ata_controller *cont, struct ata_device *dev, char *n
 			char tmp[17];
 			memset(tmp, 0, 17);
 			sprintf(tmp, "%s%d", node, i+1);
-			struct inode *in = dfs_cn(tmp, S_IFBLK, (dev->flags & F_ATAPI || dev->flags & F_SATAPI) ? api : 3, a+(i+1)*4);
+			struct inode *in = dfs_cn(tmp, S_IFBLK, (dev->flags & F_ATAPI 
+				|| dev->flags & F_SATAPI) ? api : 3, a+(i+1)*4);
 			struct dev_rec *dr = nodes;
 			struct dev_rec *new = (struct dev_rec *)kmalloc(sizeof(*dr));
 			new->node=in;
@@ -164,7 +166,8 @@ int init_ata_controller(struct ata_controller *cont){
 		while(1)
 		{
 			in = inb(cont->port_cmd_base+REG_STATUS);
-			if((m=inb(cont->port_cmd_base+REG_LBA_MID)) || (h=inb(cont->port_cmd_base+REG_LBA_HIG)))
+			if((m=inb(cont->port_cmd_base+REG_LBA_MID)) 
+					|| (h=inb(cont->port_cmd_base+REG_LBA_HIG)))
 				break;
 			if(!in)
 			{
@@ -217,7 +220,8 @@ int init_ata_controller(struct ata_controller *cont){
 			dev.length = lba28;
 			dev.flags |= F_LBA28;
 		}
-		printk(2, "\tLength = %d sectors (%d MB)\n", (unsigned)dev.length, ((unsigned)dev.length/2)/1024);
+		printk(2, "\tLength = %d sectors (%d MB)\n", (unsigned)dev.length, 
+			((unsigned)dev.length/2)/1024);
 		} else
 		{
 			identify_atapi();

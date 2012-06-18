@@ -2,7 +2,7 @@
 #define TSS_H
 typedef struct tss_entry_struct
 {
-	u32int prev_tss;   // The previous TSS - if we used hardware task switching this would form a linked list.
+	u32int prev_tss;
 	u32int esp0;       // The stack pointer to load when we change to kernel mode.
 	u32int ss0;        // The stack segment to load when we change to kernel mode.
 	u32int esp1;       // Unused...

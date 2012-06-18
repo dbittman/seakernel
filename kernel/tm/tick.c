@@ -58,15 +58,19 @@ void do_tick()
 		return;
 	if(current_task) {
 		unsigned *t;
-		++(*(current_task->system ? (t=(unsigned *)&current_task->stime) : (t=(unsigned *)&current_task->utime)));
-		/* This is a pretty damn awesome statement. Basically means that we increment the parents t_c[u,s]time */
-		inc_parent_times(current_task->parent, current_task->system ? __SYS : __USR);
+		++(*(current_task->system ? (t=(unsigned *)&current_task->stime) 
+			: (t=(unsigned *)&current_task->utime)));
+		/* This is a pretty damn awesome statement. Basically means 
+		 * that we increment the parents t_c[u,s]time */
+		inc_parent_times(current_task->parent, 
+			current_task->system ? __SYS : __USR);
 	}
 	check_alarms();
 	if(current_task->critical)
 		return;
 	if(current_task != kernel_task) {
-		if(task_is_runable(current_task) && current_task->cur_ts>0 && --current_task->cur_ts)
+		if(task_is_runable(current_task) && current_task->cur_ts>0 
+				&& --current_task->cur_ts)
 			return;
 		else if(current_task->cur_ts <= 0)
 			current_task->cur_ts = GET_MAX_TS(current_task);

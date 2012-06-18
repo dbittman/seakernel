@@ -137,5 +137,6 @@ int sys_isstate(int pid, int state);
 void do_reset();
 int sys_gethostname(char *buf, int len);
 void restart_int();
-int proc_append_buffer(char *buffer, char *data, int off, int len, int req_off, int req_len);
+int proc_append_buffer(char *buffer, char *data, int off, int len, 
+	int req_off, int req_len);
 #endif

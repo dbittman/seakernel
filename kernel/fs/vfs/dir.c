@@ -27,7 +27,8 @@ int do_get_path_string(struct inode *p, char *path, int max)
 		i = i->mount_parent;
 	char tmp[max * sizeof(char) +1];
 	memset(tmp, 0, max * sizeof(char) +1);
-	while(i && i->parent != i && i->parent && ((int)(strlen(path) + strlen(i->name)) < max || max == -1))
+	while(i && i->parent != i && i->parent && ((int)(strlen(path) + 
+		strlen(i->name)) < max || max == -1))
 	{
 		if(i->mount_parent)
 			i = i->mount_parent;

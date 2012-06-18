@@ -9,8 +9,9 @@
 #include <init.h>
 #include <sys/fcntl.h>
 
-/* Prepares a process to recieve a new executable. Desc is the descriptor of the executable. 
- * We keep it open through here so that we dont have to re-open it. */
+/* Prepares a process to recieve a new executable. Desc is the descriptor of 
+ * the executable. We keep it open through here so that we dont have to 
+ * re-open it. */
 task_t *preexec(task_t *t, int desc)
 {
 	if(t->magic != TASK_MAGIC)
@@ -24,7 +25,8 @@ task_t *preexec(task_t *t, int desc)
 
 /* Copy the arguments and environment into a special area in memory:
  * [\0 | 1 | G | R | G | ->0 | -> First Arg | ]
- * Basically, from 0xB to 0xC we have an area where we can store task info that will hold accross exec.
+ * Basically, from 0xB to 0xC we have an area where we can store task info 
+ * that will hold accross exec.
  * 
  * (arg0) (arg1) (arg2) [->null] [->to arg2] [->to arg1] [->to arg0] *
  * is the way its set up. */
@@ -44,7 +46,8 @@ char **copy_down_dp_give(unsigned _location, char **_dp, unsigned *count, unsign
 	
 	if(dp && *dp && **dp) {
 		/* Loop through all the strings */
-		while(*dp && **dp && location > (TOP_TASK_MEM_EXEC) && (location+MAX_ARGV_LEN) > _location)
+		while(*dp && **dp && location > (TOP_TASK_MEM_EXEC) 
+				&& (location+MAX_ARGV_LEN) > _location)
 		{
 			if((unsigned)*dp >= TOP_LOWER_KERNEL) {
 				unsigned len = strlen(*dp);
@@ -152,8 +155,9 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	_strcpy((char *)path_loc, path);
 	path = (char *)path_loc;
 	t->path_loc_start = path_loc;
-	/* Preexec - This is the point of no return. Here we close out unneeded file descs, free up the page directory
-	 * and clear up the resources of the task */
+	/* Preexec - This is the point of no return. Here we close out unneeded 
+	 * file descs, free up the page directory and clear up the resources 
+	 * of the task */
 	if(EXEC_LOG) 
 		printk(0, "Executing (task %d, tty %d): %s\n", t->pid, t->tty, path);
 	strncpy((char *)t->command, path, 128);
@@ -190,7 +194,8 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	__super_cli();
 	if(EXEC_LOG == 2) 
 		printk(0, "[%d]: Performing call\n", t->pid);
-	if(DO_USER_MODE) /* We are currently inside a system call. We must return to usermode before we call */
+	if(DO_USER_MODE) /* We are currently inside a system call. We must return 
+	to usermode before we call */
 	{
 		assert(current_task->argv && current_task->env);
 		set_kernel_stack(current_task->kernel_stack + (KERN_STACK_SIZE-64));
@@ -202,7 +207,8 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 			push %3; \
 			call do_switch_to_user_mode; \
 			call *%4;\
-		"::"r"(STACK_LOCATION-64), "r"(current_task->env), "r"(current_task->argv), "r"(argc), "r"(eip):"memory");
+		"::"r"(STACK_LOCATION-64), "r"(current_task->env), 
+			"r"(current_task->argv), "r"(argc), "r"(eip):"memory");
 	} else
 		panic(0, "This feature is no longer supported");
 	exit(0);

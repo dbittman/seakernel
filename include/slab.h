@@ -18,7 +18,6 @@ typedef struct slab_header_s {
 	unsigned id;
 	unsigned short num_pages;
 	unsigned short flags;
-	mutex_t lock;
 	unsigned short obj_used;/* Ref count */
 	unsigned short obj_num;
 	/* For usage in the slab lists */
@@ -27,16 +26,13 @@ typedef struct slab_header_s {
 	unsigned short *stack;
 	unsigned short stack_arr[MAX_OBJ_ID];
 	vnode_t *vnode;
-	//char pad[94 - sizeof(vnode_t *)];
 } slab_t;
 
 typedef struct slab_cache_s {
 	slab_t *empty, *partial, *full;
-	
 	/* Signed because an id of -1 means unused */
 	short id;
 	unsigned short flags;
-	mutex_t lock;
 	unsigned obj_size;
 	unsigned slab_count;
 } slab_cache_t;

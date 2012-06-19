@@ -30,16 +30,6 @@ mutex_t scache_lock;
 unsigned total=0;
 #endif
 
-#define mutex_on(a) __dummy(a)
-#define mutex_off(a) __dummy(a)
-#define create_mutex(a) __dummy(a)
-#define destroy_mutex(a) __dummy(a)
-
-int __dummy(volatile void *a)
-{
-	return 0;
-}
-
 void slab_stat(struct mem_stat *s)
 {
 	_strcpy(s->km_name, "slab");
@@ -71,7 +61,6 @@ void free_slab(slab_t *slab)
 {
 	unsigned num_pages = slab->num_pages;
 	assert(slab);
-	destroy_mutex(&slab->lock);
 	pages_used -= slab->num_pages;
 	vnode_t *t = slab->vnode;
 	unsigned j, addr = (unsigned)slab;
@@ -104,7 +93,6 @@ slab_cache_t *get_empty_scache(int size, unsigned short flags)
 	((slab_cache_t *)(scache_list[i]))->id = i;
 	((slab_cache_t *)(scache_list[i]))->flags = flags;
 	((slab_cache_t *)(scache_list[i]))->obj_size = size;
-	create_mutex(&((slab_cache_t *)(scache_list[i]))->lock);
 	num_scache++;
 	mutex_off(&scache_lock);
 	return scache_list[i];
@@ -118,7 +106,6 @@ void release_scache(slab_cache_t *sc)
 	mutex_on(&scache_lock);
 	sc->id=-1;
 	num_scache--;
-	destroy_mutex(&sc->lock);
 	mutex_off(&scache_lock);
 }
 
@@ -133,7 +120,6 @@ int add_slab_to_list(slab_t *slab, char to)
 	slab_t **list=0;
 	slab_cache_t *sc = (slab_cache_t *)(slab->parent);
 	assert(sc);
-	mutex_on(&sc->lock);
 	switch(to)
 	{
 		case TO_EMPTY:
@@ -147,23 +133,15 @@ int add_slab_to_list(slab_t *slab, char to)
 					"Invalid tranfer code sent to add_slab_to_list!");
 			break;
 	}
-	if(!list) panic(PANIC_MEM | PANIC_NOSYNC, 
-			"Ok, what. Seriously: Wait. What?");
+	assert(list);
 	/* Woah, double pointers! While confusing, they make 
 	 * things _much_ easier to handle. */
 	slab_t *old = *list;
 	if(old) assert(old->magic == SLAB_MAGIC);
-	if(old) 
-		mutex_on(&old->lock);
-	mutex_on(&slab->lock);
 	*list = slab;
 	if(old) old->prev = slab;
 	slab->next = old;
 	slab->prev=0;
-	mutex_off(&slab->lock);
-	if(old) 
-		mutex_off(&old->lock);
-	mutex_off(&sc->lock);
 	return 0;
 }
 
@@ -172,8 +150,6 @@ void remove_slab_list(slab_t *slab)
 	assert(slab && slab->magic == SLAB_MAGIC);
 	slab_cache_t *sc = (slab_cache_t *)(slab->parent);
 	assert(sc);
-	mutex_on(&sc->lock);
-	mutex_on(&slab->lock);
 	if(slab->prev)
 		slab->prev->next=slab->next;
 	if(slab->next)
@@ -192,8 +168,6 @@ void remove_slab_list(slab_t *slab)
 			*list = slab->prev;
 	}
 	slab->prev = slab->next=0;
-	mutex_off(&slab->lock);
-	mutex_off(&sc->lock);
 }
 
 slab_t *create_slab(slab_cache_t *sc, int num_pages, unsigned short flags)
@@ -209,9 +183,7 @@ slab_t *create_slab(slab_cache_t *sc, int num_pages, unsigned short flags)
 		addr = vnode->addr;
 	if(!addr)
 		panic(PANIC_MEM | PANIC_NOSYNC, "Unable to allocate slab");
-	mutex_on(&sc->lock);
 	sc->slab_count++;
-	mutex_off(&sc->lock);
 	unsigned int j=0, i=0;
 	for(j=addr;j<(addr + num_pages*PAGE_SIZE);j+=PAGE_SIZE) {
 		if(!vm_getmap(j, 0))
@@ -219,7 +191,6 @@ slab_t *create_slab(slab_cache_t *sc, int num_pages, unsigned short flags)
 	}
 	slab_t *slab = (slab_t *)addr;
 	memset(slab, 0, sizeof(slab_t));
-	create_mutex(&slab->lock);
 	slab->magic = SLAB_MAGIC;
 	slab->flags = flags;
 	slab->parent = (unsigned)sc;
@@ -247,7 +218,6 @@ slab_t *create_slab(slab_cache_t *sc, int num_pages, unsigned short flags)
 unsigned do_alloc_object(slab_t *slab)
 {
 	assert(slab && slab->magic == SLAB_MAGIC);
-	mutex_on(&slab->lock);
 	slab_cache_t *sc = (slab_cache_t *)(slab->parent);
 	assert(sc);
 	int ret=0;
@@ -262,7 +232,6 @@ unsigned do_alloc_object(slab_t *slab)
 		&& (((obj_addr+sc->obj_size)-(unsigned)slab) <= slab->num_pages*0x1000));
 	slab->obj_used++;
 	ret = obj_addr;
-	mutex_off(&slab->lock);
 	return ret;
 }
 
@@ -285,13 +254,11 @@ unsigned alloc_object(slab_t *slab)
 int do_release_object(slab_t *slab, int obj)
 {
 	assert(slab && slab->magic == SLAB_MAGIC);
-	mutex_on(&slab->lock);
 	assert(slab->obj_used);
 	/* Push the object onto the stack */
 	*(slab->stack) = (unsigned short)obj;
 	slab->stack++;
 	int ret = --slab->obj_used;
-	mutex_off(&slab->lock);
 	return ret;
 }
 
@@ -331,12 +298,9 @@ void release_slab(slab_t *slab)
 {
 	slab_cache_t *sc = (slab_cache_t *)(slab->parent);
 	assert(sc);
-	mutex_on(&sc->lock);
 	do_release_slab(slab);
 	if(!sc->slab_count)
 		release_scache(sc);
-	else
-		mutex_off(&sc->lock);
 }
 
 unsigned slab_init(unsigned start, unsigned end)
@@ -414,7 +378,6 @@ slab_t *find_usable_slab(unsigned size, int align, int allow_range)
 	assert(sc);
 	if(sc->partial || sc->empty)
 	{/* Good, theres room */
-		mutex_on(&sc->lock);
 		slab_t *slab = sc->partial;
 		if(align)
 		{
@@ -428,7 +391,6 @@ slab_t *find_usable_slab(unsigned size, int align, int allow_range)
 		{
 			if(!slab) slab = sc->empty;
 		}
-		mutex_off(&sc->lock);
 		if(!slab)
 		{
 			/* Should we look for a different cache, or add a new slab? */
@@ -491,7 +453,6 @@ unsigned do_kmalloc_slab(unsigned sz, char align)
 	if(!slab)
 		goto try_again;
 	assert(slab && slab->magic == SLAB_MAGIC);
-	mutex_on(&slab->lock);
 	if(slab->obj_used >= slab->obj_num)
 		panic(PANIC_MEM | PANIC_NOSYNC, 
 			"BUG: slab: Attemping to allocate from full slab: %d:%d\n", 
@@ -509,7 +470,6 @@ unsigned do_kmalloc_slab(unsigned sz, char align)
 		*(unsigned *)(addr) = (unsigned)slab;
 		addr += sizeof(unsigned *);
 	}
-	mutex_off(&slab->lock);
 	return addr;
 }
 

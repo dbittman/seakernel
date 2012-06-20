@@ -123,7 +123,9 @@ int block_rw(int rw, int dev, int blk, char *buf, blockdevice_t *bd)
 	{
 #if USE_CACHE
 		ret = cache_block(dev, blk, bd->blksz, buf);
-		if(ret)
+		if(!ret)
+			ret = bd->blksz;
+		else
 #endif
 			ret = do_block_rw(rw, dev, blk, buf, bd);
 	}
@@ -136,12 +138,13 @@ unsigned do_block_read_multiple(blockdevice_t *bd, int dev, unsigned start,
 	unsigned count=0;
 	if(!bd->rw_multiple) {
 		while(num--) {
-			block_rw(READ, dev, start+count, buf+count*bd->blksz, bd);
+			if(block_rw(READ, dev, start+count, buf+count*bd->blksz, bd) != bd->blksz)
+				return count;
 			count++;
 		}
 		return count;
 	}
-	bd->rw_multiple(READ, MINOR(dev), start, buf, num);
+	num = bd->rw_multiple(READ, MINOR(dev), start, buf, num) / bd->blksz;
 #if USE_CACHE
 	while(count < num) {
 		cache_block(-dev, start+count, bd->blksz, buf + count*bd->blksz);
@@ -165,7 +168,9 @@ unsigned block_read_multiple(blockdevice_t *bd, int dev, unsigned start,
 			unsigned x = count+1;
 			while(x < num && !get_block_cache(dev, start+x, buf + x*bd->blksz))
 				x++;
-			do_block_read_multiple(bd, dev, start+count, x-count, buf + count*bd->blksz);
+			unsigned int r = do_block_read_multiple(bd, dev, start+count, x-count, buf + count*bd->blksz);
+			if(r != x-count)
+				return count+r;
 			count = x;
 			if(x < num)
 				count++;
@@ -196,7 +201,7 @@ long long block_read(int dev, unsigned long long posit, char *buf, unsigned int 
 	offset = pos % blk_size;
 	if(offset) {
 		ret = block_rw(READ, dev, pos/blk_size, tmp, bd);
-		if(ret < 0)
+		if(ret != (int)blk_size)
 			return count;
 		count = blk_size - offset;
 		if(count > c) count = c;
@@ -207,7 +212,9 @@ long long block_read(int dev, unsigned long long posit, char *buf, unsigned int 
 	/* read in the bulk full blocks */
 	if((c-count) >= blk_size) {
 		i = (c-count)/blk_size;
-		block_read_multiple(bd, dev, pos / blk_size, i, buf + count);
+		unsigned int r = block_read_multiple(bd, dev, pos / blk_size, i, buf + count);
+		if(r != i)
+			return count + r*blk_size;
 		pos += i * blk_size;
 		count += i * blk_size;
 	}
@@ -215,7 +222,7 @@ long long block_read(int dev, unsigned long long posit, char *buf, unsigned int 
 	/* read in the remainder */
 	if(end % blk_size && pos < end) {
 		ret = block_rw(READ, dev, pos/blk_size, tmp, bd);
-		if(ret < 0)
+		if(ret != (int)blk_size)
 			return count;
 		memcpy(buf+count, tmp, end % blk_size);
 		count += end % blk_size;
@@ -236,20 +243,23 @@ long long  block_write(int dev, unsigned long long posit, char *buf, unsigned in
 	/* If we are offset in a block, we dont wanna overwrite stuff */
 	if(pos % blk_size)
 	{
-		block_rw(READ, dev, pos/blk_size, buffer, bd);
+		if(block_rw(READ, dev, pos/blk_size, buffer, bd) != blk_size)
+			return 0;
 		/* If count is less than whats remaining, just use count */
 		int write = (blk_size-(pos % blk_size));
 		if(count < (unsigned)write)
 			write=count;
 		memcpy(buffer+(pos % blk_size), buf, write);
-		block_rw(WRITE, dev, pos/blk_size, buffer, bd);
+		if(block_rw(WRITE, dev, pos/blk_size, buffer, bd) != blk_size)
+			return 0;
 		buf += write;
 		count -= write;
 		pos += write;
 	}
 	while(count >= (unsigned int)blk_size)
 	{
-		block_rw(WRITE, dev, pos/blk_size, buf, bd);
+		if(block_rw(WRITE, dev, pos/blk_size, buf, bd) != blk_size)
+			return pos-posit;
 		count -= blk_size;
 		pos += blk_size;
 		buf += blk_size;
@@ -257,7 +267,8 @@ long long  block_write(int dev, unsigned long long posit, char *buf, unsigned in
 	/* Anything left over? */
 	if(count > 0)
 	{
-		block_rw(READ, dev, pos/blk_size, buffer, bd);
+		if(block_rw(READ, dev, pos/blk_size, buffer, bd) != blk_size)
+			return pos-posit;
 		memcpy(buffer, buf, count);
 		block_rw(WRITE, dev, pos/blk_size, buffer, bd);
 		pos+=count;
@@ -315,5 +326,7 @@ void send_sync_block()
 		if(cd->ioctl)
 			cd->ioctl(0, -1, 0);
 		i++;
+		if(got_signal(current_task))
+			return;
 	}
 }

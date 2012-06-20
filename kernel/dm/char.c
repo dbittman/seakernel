@@ -141,5 +141,7 @@ void send_sync_char()
 		if(cd->ioctl)
 			cd->ioctl(0, -1, 0);
 		i++;
+		if(got_signal(current_task))
+			return;
 	}
 }

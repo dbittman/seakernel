@@ -31,8 +31,6 @@ void handle_signal(task_t *t, int sig)
 	t->sig_mask |= sa->sa_mask;
 	if(!(sa->sa_flags & SA_NODEFER))
 		t->sig_mask |= (1 << sig);
-	if(!current_task->system)
-		current_task->sigd=0;
 	if(sa->_sa_func._sa_handler && sig != SIGKILL && sig != SIGSEGV 
 			&& !current_task->system)
 	{

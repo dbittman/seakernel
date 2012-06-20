@@ -105,14 +105,15 @@ __attribute__((always_inline)) static inline void post_context_switch()
 					(void *)(current_task->sig_queue+1), 128);
 			current_task->sig_queue[127]=0;
 		}
+		current_task->sigd=0;
 		/* Jump to the signal handler */
 		handle_signal((task_t *)current_task, sig);
-		
 		__super_cli();
 		current_task->state = current_task->old_state;
 		current_task->flags &= ~TF_INSIG;
 		task_full_uncritical();
-		force_schedule();
+		if(current_task->state != TASK_RUNNING) 
+			force_schedule();
 	}
 	__super_sti();
 }

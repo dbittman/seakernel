@@ -455,7 +455,7 @@ unsigned do_kmalloc_slab(unsigned sz, char align)
 	assert(slab && slab->magic == SLAB_MAGIC);
 	if(slab->obj_used >= slab->obj_num)
 		panic(PANIC_MEM | PANIC_NOSYNC, 
-			"BUG: slab: Attemping to allocate from full slab: %d:%d\n", 
+			"Attemping to allocate from full slab: %d:%d\n", 
 			slab->obj_used, slab->obj_num);
 #ifdef SLAB_DEBUG
 	total += ((slab_cache_t *)(slab->parent))->obj_size;
@@ -464,7 +464,6 @@ unsigned do_kmalloc_slab(unsigned sz, char align)
 	if(align && !((addr&PAGE_MASK) == addr))
 		panic(PANIC_MEM | PANIC_NOSYNC, 
 			"slab allocation of aligned data failed! (returned %x)", addr);
-	/* We have the address of the object. Map it in */
 	if(!align)
 	{
 		*(unsigned *)(addr) = (unsigned)slab;

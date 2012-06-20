@@ -696,7 +696,6 @@ int ext2_inode_readdata(ext2_inode_t* inode, uint32_t start,
         if (start % block_size) {
                 size_t bytes;
                 size_t offset = start % block_size;
-                //kprintf("dsf\n");
                 if (!ext2_inode_readblk(inode, start_block, localbuf, 1)) {
                         return 0;
                 }
@@ -715,7 +714,6 @@ int ext2_inode_readdata(ext2_inode_t* inode, uint32_t start,
                 start_block++;
                 counter+=bytes;
         }
-        
         // Wenn der letzte Block nicht mehr ganz gelesen werden soll, muss er
         // separat eingelesen werden.
         if (len % block_size) {

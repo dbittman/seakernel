@@ -36,6 +36,19 @@ long sys_sysconf(int cmd)
 		case _SC_ARG_MAX:
 			ret = 0x1000;
 			break;
+		case _SC_AVPHYS_PAGES:
+			return pm_num_pages; 
+			/* this is not correct. We should only return the number of pages
+			 * we can use immediately without fucking over other things */
+			break;
+		case _SC_NPROCESSORS_ONLN:
+#ifdef CONFIG_SMP
+			extern unsigned imps_num_cpus;
+			return imps_num_cpus;
+#else
+			return 1; /* no SMP, thus only one processor */
+#endif
+			break;
 		default:
 			printk(1, "[sysconf]: %d gave unknown specifier: %d\n", 
 					current_task->pid, cmd);

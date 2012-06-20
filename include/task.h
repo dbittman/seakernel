@@ -105,7 +105,6 @@ typedef volatile struct task_struct
 	unsigned num_swapped;
 	
 	volatile unsigned heap_start, heap_end, he_red;
-	//struct inode *exe;
 	char command[128];
 	char **argv, **env;
 	unsigned arg_l[128], env_l[128];

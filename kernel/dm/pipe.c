@@ -104,6 +104,9 @@ __attribute__((optimize("O0"))) int read_pipe(struct inode *ino, char *buffer, u
 	}
 	mutex_on(pipe->lock);
 	ret = pipe->pending > len ? len : pipe->pending;
+	char *nl = strchr(pipe->buffer+pipe->read_pos, '\n');
+	if(nl && (nl-(pipe->buffer+pipe->read_pos)) < ret)
+		ret = (nl-(pipe->buffer+pipe->read_pos))+1;
 	memcpy((void *)(buffer + count), (void *)(pipe->buffer + pipe->read_pos), ret);
 	memcpy((void *)pipe->buffer, (void *)(pipe->buffer + pipe->read_pos + ret), 
 		PIPE_SIZE - (pipe->read_pos + ret));
@@ -112,9 +115,6 @@ __attribute__((optimize("O0"))) int read_pipe(struct inode *ino, char *buffer, u
 		pipe->write_pos -= ret;
 		len -= ret;
 		count+=ret;
-	} else {
-		mutex_off(pipe->lock);
-		return count;
 	}
 	mutex_off(pipe->lock);
 	return count;
@@ -128,7 +128,6 @@ __attribute__((optimize("O0"))) int write_pipe(struct inode *ino, char *buffer, 
 	if(!pipe)
 		return -EINVAL;
 	mutex_on(pipe->lock);
-	
 	while((pipe->write_pos+length)>=PIPE_SIZE && (pipe->count > 1 
 			&& pipe->type != PIPE_NAMED)) {
 		mutex_off(pipe->lock);

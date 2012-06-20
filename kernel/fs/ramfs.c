@@ -4,7 +4,7 @@
 #include <fs.h>
 struct inode *ramfs_root;
 int ramfs_sane(struct inode *i);
-
+unsigned int ramfs_node_num=1;
 int ramfs_op_dummy()
 {
 	return 0;
@@ -120,6 +120,9 @@ struct inode *rfs_create(struct inode *__p, char *name, unsigned int mode)
 	node->i_ops = &rfs_inode_ops;
 	node->mode = mode | 0x1FF;
 	node->start = (int)kmalloc(1);
+	task_critical();
+	node->num = ramfs_node_num++;
+	task_uncritical();
 	create_mutex(&node->lock);
 	if(!__p) add_inode(p, node);
 	return node;

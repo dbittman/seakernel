@@ -86,11 +86,6 @@ int sys_setsid(int ex, int cmd)
 	if(cmd) {
 		return -ENOTSUP;
 	}
-	if(!ex) {
-	if(current_task->exe)
-		iput(current_task->exe);
-		current_task->exe=0;
-	}
 	current_task->tty=0;
 	return 0;
 }
@@ -147,7 +142,6 @@ void do_task_stat(struct task_stat *s, task_t *t)
 	s->ppid = t->parent->pid;
 	s->tty = t->tty;
 	s->argv = t->argv;
-	s->exe = (struct inode *)t->exe->name;
 	s->pid = t->pid;
 	s->cmd = (char *)t->command;
 	s->mem_usage = get_task_mem_usage(t) * 0x1000;

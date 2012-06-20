@@ -93,18 +93,25 @@ __attribute__((optimize("O0"))) int read_pipe(struct inode *ino, char *buffer, u
 	unsigned len = length;
 	int ret=0;
 	int count=0;
+	/* should we even try reading? (empty pipe with no writing processes=no) */
 	if(!pipe->pending && pipe->count <= 1 && pipe->type != PIPE_NAMED)
 		return count;
+	/* block until we can get access */
+	mutex_on(pipe->lock);
 	while(!pipe->pending && (pipe->count > 1 && pipe->type != PIPE_NAMED 
 			&& pipe->wrcount>0)) {
-		__super_sti();
+		mutex_off(pipe->lock);
 		force_schedule();
 		if(current_task->sigd)
 			return -EINTR;
+		mutex_on(pipe->lock);
 	}
-	mutex_on(pipe->lock);
 	ret = pipe->pending > len ? len : pipe->pending;
-	char *nl = strchr(pipe->buffer+pipe->read_pos, '\n');
+	/* note: this is a quick implementation of line-buffering that should
+	 * work for most cases. There is currently no way to disable line
+	 * buffering in pipes, but I don't care, because there shouldn't be a
+	 * reason to. TODO maybe? */
+	char *nl = strchr((char *)pipe->buffer+pipe->read_pos, '\n');
 	if(nl && (nl-(pipe->buffer+pipe->read_pos)) < ret)
 		ret = (nl-(pipe->buffer+pipe->read_pos))+1;
 	memcpy((void *)(buffer + count), (void *)(pipe->buffer + pipe->read_pos), ret);
@@ -128,6 +135,7 @@ __attribute__((optimize("O0"))) int write_pipe(struct inode *ino, char *buffer, 
 	if(!pipe)
 		return -EINVAL;
 	mutex_on(pipe->lock);
+	/* IO block until we can write to it */
 	while((pipe->write_pos+length)>=PIPE_SIZE && (pipe->count > 1 
 			&& pipe->type != PIPE_NAMED)) {
 		mutex_off(pipe->lock);
@@ -136,10 +144,12 @@ __attribute__((optimize("O0"))) int write_pipe(struct inode *ino, char *buffer, 
 			return -EINTR;
 		mutex_on(pipe->lock);
 	}
+	/* we're writing to a pipe with no reading process! */
 	if(pipe->count <= 1) {
 		mutex_off(pipe->lock);
 		return -EPIPE;
 	}
+	/* this shouldn't happen, but lets be safe */
 	if((pipe->write_pos+length)>=PIPE_SIZE)
 	{
 		printk(1, "[pipe]: warning - task %d failed to block for writing to pipe\n"

@@ -8,11 +8,6 @@ extern task_t *end_tokill;
 
 void clear_resources(task_t *t)
 {
-	if(t->exe && t->exe->parent != kproclist) {
-		change_ireq(t->exe, -1);
-		iput(t->exe);
-	}
-	t->exe=0;
 	clear_mmfiles(t, (t->flags&TF_EXITING) ? 1 : 0);
 }
 

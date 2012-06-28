@@ -217,6 +217,7 @@ void init_dev_fs();
 void init_proc_fs();
 int sys_posix_fsstat(int fd, struct posix_statfs *sb);
 int sys_sync();
+pipe_t *create_pipe();
 struct inode *init_ramfs();
 struct inode *rfs_create(struct inode *__p, char *name, unsigned int mode);
 int rfs_read(struct inode *i, unsigned int off, unsigned int len, char *b);

@@ -156,11 +156,20 @@ int sys_ftruncate(int f, unsigned length)
 int sys_mknod(char *path, unsigned mode, unsigned dev)
 {
 	if(!path) return -EINVAL;
-	struct inode *i = cget_idir(path, 0, mode);
+	struct inode *i = lget_idir(path, 0);
+	if(i) {
+		iput(i);
+		return -EEXIST;
+	}
+	i = cget_idir(path, 0, mode);
 	if(!i) return -EACCES;
 	i->dev = dev;
 	i->mode = mode;
 	sync_inode_tofs(i);
+	if(S_ISFIFO(i->mode)) {
+		i->pipe = create_pipe();
+		i->pipe->type = PIPE_NAMED;
+	}
 	iput(i);
 	return 0;
 }

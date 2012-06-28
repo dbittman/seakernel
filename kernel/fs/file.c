@@ -43,8 +43,11 @@ int add_file_pointer_do(task_t *t, struct file_ptr *f, int after)
 	assert(t && f);
 	while(after < FILP_HASH_LEN && t->filp[after])
 		after++;
-	if(after >= FILP_HASH_LEN)
-		panic(0, "tried to use a file descriptor that was too high");
+	if(after >= FILP_HASH_LEN) {
+		printk(1, "[vfs]: task %d ran out of files (syscall=%d). killed.\n", 
+				t->pid, t == current_task ? (int)t->system : -1);
+		kill_task(t->pid);
+	}
 	t->filp[after] = f;
 	f->num = after;
 	return after;

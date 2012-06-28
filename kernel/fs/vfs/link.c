@@ -14,6 +14,7 @@ int link(char *old, char *new)
 	if(!i)
 		return -ENOENT;
 	unlink(new);
+	mutex_on(&i->lock);
 	int ret = vfs_callback_link(i, new);
 	iput(i);
 	sys_utime(new, 0, 0);

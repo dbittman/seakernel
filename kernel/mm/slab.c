@@ -178,7 +178,7 @@ slab_t *create_slab(slab_cache_t *sc, int num_pages, unsigned short flags)
 	unsigned addr=0;
 	vnode = alloc_slab(num_pages);
 	if(!vnode)
-		return 0;
+		panic(PANIC_MEM | PANIC_NOSYNC, "Unable to allocate slab");
 	if(vnode)
 		addr = vnode->addr;
 	if(!addr)
@@ -238,7 +238,8 @@ unsigned do_alloc_object(slab_t *slab)
 unsigned alloc_object(slab_t *slab)
 {
 	unsigned ret = do_alloc_object(slab);
-	if(ret && slab->obj_used >= slab->obj_num)
+	assert(slab->obj_used <= slab->obj_num);
+	if(ret && slab->obj_used == slab->obj_num)
 	{
 		remove_slab_list(slab);
 		add_slab_to_list(slab, TO_FULL);
@@ -291,7 +292,6 @@ void do_release_slab(slab_t *slab)
 	--sc->slab_count;
 	remove_slab_list(slab);
 	free_slab(slab);
-	/* Dont unlock the slab, because it doesnt exist */
 }
 
 void release_slab(slab_t *slab)
@@ -338,15 +338,20 @@ unsigned slab_init(unsigned start, unsigned end)
 
 unsigned slab_size(int sz)
 {
+	int s;
+	if(sz < 32) sz=32;
 	if(sz < 512)
-		return sz * 128 + 0x4000;
-	if(sz >= 512 && sz < 0x500)
-		return sz * 128 + 0x32000;
-	if(sz > 0x500 && sz < 0x1000)
-		return 0x3000 + sz*32;
-	if(sz >= 0x1000 && sz < 10000)
-		return sz*16 + 0x4000;
-	return sz*8 + 0x4000;
+		s = sz * 128;
+	else if(sz >= 512 && sz < 0x500)
+		s = sz * 128;
+	else if(sz > 0x500 && sz < 0x1000)
+		s = sz*32;
+	else if(sz >= 0x1000 && sz < 10000)
+		s =  sz*16;
+	else
+		s = sz*8;
+	s = (s&PAGE_MASK) + 0x1000;
+	return s + 0x1000;
 }
 
 slab_t *find_usable_slab(unsigned size, int align, int allow_range)

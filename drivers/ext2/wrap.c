@@ -138,6 +138,7 @@ int do_add_ent(struct inode *i, ext2_inode_t *inode, char *name)
 		return -EACCES;
 	if(!EXT2_INODE_IS_DIR(&dir))
 		return -ENOTDIR;
+	mutex_on(&i->lock);
 	int ret = ext2_dir_link(&dir, inode, name);
 	if(EXT2_INODE_IS_DIR(inode))
 	{
@@ -150,6 +151,7 @@ int do_add_ent(struct inode *i, ext2_inode_t *inode, char *name)
 	} else
 		ext2_inode_update(&dir);
 	update_sea_inode(i, &dir, 0);
+	mutex_off(&i->lock);
 	return 0;
 }
 

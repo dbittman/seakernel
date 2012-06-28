@@ -63,7 +63,7 @@ void *syscall_table[129] = {
 	SC sys_link, SC unlink, SC get_ref_count, SC get_pwd, 
 	SC sys_getpath, SC rename, SC chroot, SC chdir,
 	SC sys_mount, SC unmount, SC read_dir, SC sys_create, 
-	SC create_console, SC switch_console, SC sys_null, SC sys_mkfifo,
+	SC create_console, SC switch_console, SC sys_null, SC sys_null,
 	
 	SC sys_null, SC sys_mmap, SC sys_munmap, SC sys_sync, 
 	SC rmdir, SC sys_fsync, SC sys_alarm, SC sys_select,
@@ -75,7 +75,7 @@ void *syscall_table[129] = {
 	SC kernel_poweroff, SC get_uid, SC get_gid, SC set_uid, 
 	SC set_gid, SC pm_stat_mem, SC task_pstat, SC sys_mount2,
 	
-	SC sys_null, SC sys_mkfifo, SC sys_pipe, SC set_signal, 
+	SC sys_null, SC sys_null, SC sys_pipe, SC set_signal, 
 	SC sys_null, SC sys_null, SC sys_null, SC sys_null,
 	SC get_time, SC get_timer_th, SC sys_isstate, SC sys_wait3, 
 	SC sys_null, SC sys_null, SC sys_null, SC /**96*/sys_swaptask,
@@ -163,10 +163,10 @@ __attribute__((optimize("O0"))) int syscall_handler(volatile registers_t *regs)
 	__do_syscall_jump(ret, syscall_table[regs->eax], regs->edi, regs->esi, 
 			regs->edx, regs->ecx, regs->ebx);
 #ifdef SC_DEBUG
-	if(current_task->tty == curcons->tty && (ticks - or_t >= 10 || 1) 
-			&& (ret < 0 || 1))
-		printk(SC_DEBUG, "syscall %d: %d ret %d, took %d ticks\n", 
-				current_task->pid, current_task->system, ret, ticks - or_t);
+	//if(current_task->tty == curcons->tty && (ticks - or_t >= 10 || 1) 
+	//		&& (ret < 0 || 1))
+	//	printk(SC_DEBUG, "syscall %d: %d ret %d, took %d ticks\n", 
+	//			current_task->pid, current_task->system, ret, ticks - or_t);
 #endif
 	cli();
 	exit_system();

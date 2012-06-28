@@ -58,7 +58,7 @@ int dosyscall(int num, int a, int b, int c, int d, int e);
 #define SYS_CREATE_CONSOLE	 45
 #define SYS_SWITCH_CONSOLE	 46
 #define SYS_UNUSED19    	 47
-#define SYS_MKFIFO1		 48
+#define SYS_UNUSED20	 48
 
 #define SYS_UNUSED10		 49
 #define SYS_MMAP		 50
@@ -95,7 +95,7 @@ int dosyscall(int num, int a, int b, int c, int d, int e);
 #define SYS_MOUNT2  		 80
 
 #define SYS_UNUSED9		 81
-#define SYS_MKFIFO		 82
+#define SYS_UNUSED21		 82
 #define SYS_PIPE  		 83
 #define SYS_SETSIG		 84
 #define SYS_UNUSED11 		 85

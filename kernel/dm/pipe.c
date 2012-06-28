@@ -3,22 +3,13 @@
 #include <fs.h>
 #include <pipe.h>
 
-static struct inode *create_pipe(char *name, unsigned mode)
+pipe_t *create_pipe()
 {
-	if(!name) return 0;
-	struct inode *node;
-	node = (struct inode *)cget_idir(name, 0, mode&0xFFF);
-	if(!node)
-		return 0;
-	node->mode = S_IFIFO | (mode&0xFFF);
 	pipe_t *pipe = (pipe_t *)kmalloc(sizeof(pipe_t));
 	pipe->length = PIPE_SIZE;
 	pipe->buffer = (char *)kmalloc(PIPE_SIZE+1);
-	pipe->type = PIPE_NAMED;
-	node->pipe = pipe;
 	pipe->lock = create_mutex(0);
-	node->start = (unsigned)pipe->buffer;
-	return node;
+	return pipe;
 }
 
 static struct inode *create_anon_pipe()
@@ -34,21 +25,11 @@ static struct inode *create_anon_pipe()
 	node->f_count=2;
 	create_mutex(&node->lock);
 	
-	pipe_t *pipe = (pipe_t *)kmalloc(sizeof(pipe_t));
-	pipe->length = PIPE_SIZE;
-	pipe->buffer = (char *)kmalloc(PIPE_SIZE+1);
+	pipe_t *pipe = create_pipe();
 	pipe->count=2;
 	pipe->wrcount=1;
-	pipe->lock = create_mutex(0);
 	node->pipe = pipe;
 	return node;
-}
-
-int sys_mkfifo(char *path, unsigned mode)
-{
-	if(!create_pipe(path, mode))
-		return -EINVAL;
-	return 0;
 }
 
 int sys_pipe(int *files)
@@ -81,6 +62,7 @@ void free_pipe(struct inode *i)
 	kfree((void *)i->pipe->buffer);
 	destroy_mutex(i->pipe->lock);
 	kfree(i->pipe);
+	i->pipe=0;
 }
 
 __attribute__((optimize("O0"))) int read_pipe(struct inode *ino, char *buffer, unsigned length)
@@ -135,20 +117,20 @@ __attribute__((optimize("O0"))) int write_pipe(struct inode *ino, char *buffer, 
 	if(!pipe)
 		return -EINVAL;
 	mutex_on(pipe->lock);
+	/* we're writing to a pipe with no reading process! */
+	if(pipe->count <= 1 && pipe->type != PIPE_NAMED) {
+		mutex_off(pipe->lock);
+		return -EPIPE;
+	}
 	/* IO block until we can write to it */
-	while((pipe->write_pos+length)>=PIPE_SIZE && (pipe->count > 1 
-			&& pipe->type != PIPE_NAMED)) {
+	while((pipe->write_pos+length)>=PIPE_SIZE) {
 		mutex_off(pipe->lock);
 		wait_flag_except((unsigned *)&pipe->write_pos, pipe->write_pos);
 		if(current_task->sigd)
 			return -EINTR;
 		mutex_on(pipe->lock);
 	}
-	/* we're writing to a pipe with no reading process! */
-	if(pipe->count <= 1) {
-		mutex_off(pipe->lock);
-		return -EPIPE;
-	}
+	
 	/* this shouldn't happen, but lets be safe */
 	if((pipe->write_pos+length)>=PIPE_SIZE)
 	{

@@ -24,7 +24,7 @@ int sys_close(int fp)
 			f->inode->pipe->count--;
 		if(f->flags & _FWRITE && f->inode->pipe->wrcount)
 			f->inode->pipe->wrcount--;
-		if(!f->inode->pipe->count)
+		if(!f->inode->pipe->count && f->inode->pipe->type != PIPE_NAMED)
 			free_pipe(f->inode);
 		else
 			mutex_off(f->inode->pipe->lock);

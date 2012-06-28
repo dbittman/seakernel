@@ -202,9 +202,6 @@ struct inode *do_get_idir(char *p_path, struct inode *b, int use_link,
 			ret->pipe = create_pipe();
 			ret->pipe->type = PIPE_NAMED;
 		}
-		mutex_on(ret->pipe->lock);
-		ret->pipe->count++;
-		mutex_off(ret->pipe->lock);
 	}
 	
 	return ret;

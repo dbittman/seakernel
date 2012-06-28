@@ -61,12 +61,17 @@ struct file *d_sys_open(char *name, int flags, int mode, int *error, int *num)
 	if(num) *num = ret;
 	if(S_ISCHR(inode->mode) && !(flags & _FNOCTTY))
 		char_rw(OPEN, inode->dev, 0, 0);
-	if(flags & _FTRUNC && !is_directory(inode))
+	if(flags & _FTRUNC && S_ISREG(inode->mode))
 	{
 		mutex_on(&inode->lock);
 		inode->len=0;
 		sync_inode_tofs(inode);
 		mutex_off(&inode->lock);
+	}
+	if(S_ISFIFO(inode->mode) && inode->pipe) {
+		mutex_on(inode->pipe->lock);
+		inode->pipe->count++;
+		mutex_off(inode->pipe->lock);
 	}
 	return f;
 }

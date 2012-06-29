@@ -106,12 +106,10 @@ int sys_chown(char *path, int uid, int gid)
 	struct inode *i = get_idir(path, 0);
 	if(!i)
 		return -ENOENT;
-	if(!permissions(i, MAY_WRITE)) {
-		iput(i);
-		return -EACCES;
-	}
-	i->uid = uid;
-	i->gid = gid;
+	if(current_task->uid && current_task->uid != i->uid)
+		return -EPERM;
+	if(uid != -1) i->uid = uid;
+	if(gid != -1) i->gid = gid;
 	sync_inode_tofs(i);
 	iput(i);
 	return 0;

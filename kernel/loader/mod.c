@@ -65,6 +65,7 @@ int load_module(char *path, char *args)
 	{
 		kfree(mem);
 		kfree(tmp);
+		/* try again? Maybe we loaded a dependency and need to retry */
 		if(res == _MOD_AGAIN)
 			return load_module(path, args);
 		return -ENOEXEC;
@@ -158,28 +159,32 @@ module_t *canweunload(module_t *i)
 	return 0;
 }
 
-int do_unload_module(char *name, int cle)
+int do_unload_module(char *name)
 {
 	/* Is it going to work? */
+	mutex_on(&mod_mutex);
 	module_t *mq = modules;
 	while(mq) {
 		if((!strcmp(mq->name, name) || !strcmp(mq->path, name)))
 			break;
 		mq = mq->next;
 	}
+	
 	if(!mq)
 		return -ENOENT;
 	/* Determin if are being depended upon or if we can unload */
 	module_t *mo;
-	if((mo = canweunload(mq)))
+	if((mo = canweunload(mq))) {
+		mutex_off(&mod_mutex);
 		return -EINVAL;
+	}
+	mutex_off(&mod_mutex);
 	/* Call the unloader */
 	printk(KERN_INFO, "[mod]: Unloading Module '%s'\n", name);
 	if(mq->exiter)
 		asm("sti;call *%0;"::"r"(mq->exiter));
 	/* Clear out the resources */
-	if(cle)
-		kfree(mq->base);
+	kfree(mq->base);
 	mutex_on(&mod_mutex);
 	module_t *a = modules;
 	if(a == mq)
@@ -199,10 +204,10 @@ int unload_module(char *name)
 {
 	if(!name)
 		return -EINVAL;
-	return do_unload_module(name, 1);
+	return do_unload_module(name);
 }
 
-void unload_all_modules(int c)
+void unload_all_modules()
 {
 	/* Unload all loaded modules */
 	int todo=1;
@@ -216,7 +221,7 @@ void unload_all_modules(int c)
 		int i;
 		module_t *mq = modules;
 		while(mq) {
-			int r = do_unload_module(mq->name, c);
+			int r = do_unload_module(mq->name);
 			if(r < 0 && r != -ENOENT) {
 				todo++;
 				mq = mq->next;

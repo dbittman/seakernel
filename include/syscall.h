@@ -48,7 +48,7 @@ int dosyscall(int num, int a, int b, int c, int d, int e);
 #define SYS_GETREFCOUNT	 35
 #define SYS_GETPWD		 36
 #define SYS_GETPATH		 37
-#define SYS_RENAME		 38
+#define SYS_UNUSED22	 38
 #define SYS_CHROOT		 39
 #define SYS_CHDIR		 40
 #define SYS_MOUNT		 41

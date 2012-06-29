@@ -6,15 +6,6 @@
 #include <fs.h>
 extern struct inode *devfs_root, *procfs_root;
 
-int rename(char *f, char *nname)
-{
-	if(!f || !nname) return -EINVAL;
-	int ret = link(f, nname);
-	if(ret >= 0)
-		ret = unlink(f);
-	return ret;
-}
-
 int sync_inode_tofs(struct inode *i)
 {
 	if(!i)

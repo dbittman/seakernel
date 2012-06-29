@@ -61,7 +61,7 @@ void *syscall_table[129] = {
 	SC canweunload, SC unload_all_modules, SC get_pid, SC /**32*/sys_getppid,
 	
 	SC sys_link, SC unlink, SC get_ref_count, SC get_pwd, 
-	SC sys_getpath, SC rename, SC chroot, SC chdir,
+	SC sys_getpath, SC sys_null, SC chroot, SC chdir,
 	SC sys_mount, SC unmount, SC read_dir, SC sys_create, 
 	SC create_console, SC switch_console, SC sys_null, SC sys_null,
 	

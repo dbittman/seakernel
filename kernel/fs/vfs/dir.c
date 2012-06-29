@@ -12,9 +12,8 @@ int do_get_path_string(struct inode *p, char *path, int max)
 	if(max == -1)
 		max = 2048;
 	struct inode *i = p;
-	if(!path) {
+	if(!path)
 		return -EINVAL;
-	}
 	*path=0;
 	if(!p)
 		return 0;

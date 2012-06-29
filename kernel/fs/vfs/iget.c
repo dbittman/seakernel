@@ -66,6 +66,7 @@ struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, int *req)
 	return 0;
 }
 
+/* auto-magically resolves links by calling iget again */
 struct inode *lookup(struct inode *i, char *path)
 {
 	int req=0;
@@ -198,13 +199,12 @@ struct inode *do_get_idir(char *p_path, struct inode *b, int use_link,
 		prev = ret;
 		current=a;
 	}
-	//kprintf("iget: %s: %d\n", ret->name, ret->count);
+	/* if its a named pipe, lets make sure that the pipe is really there */
 	if(S_ISFIFO(ret->mode)) {
 		if(!ret->pipe) {
 			ret->pipe = create_pipe();
 			ret->pipe->type = PIPE_NAMED;
 		}
 	}
-	
 	return ret;
 }

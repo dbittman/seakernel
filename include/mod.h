@@ -41,7 +41,7 @@ static inline int mod_fork(int *pid)
 
 int load_module(char *path, char *);
 int unload_module(char *name);
-void unload_all_modules(int c);
+void unload_all_modules();
 void load_all_config_mods(char *);
 module_t *canweunload(module_t *i);
 void _add_kernel_symbol(const intptr_t func, const char * funcstr);

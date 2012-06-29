@@ -55,7 +55,9 @@ struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, int *req)
 		temp = vfs_callback_lookup(i, path);
 		if(!temp)
 			return 0;
-		temp->count=1;
+		change_ireq(i, 1);
+		if(req) *req=1;
+		temp->count=0;
 		temp->f_count=0;
 		temp->required=0;
 		add_inode(i, temp);
@@ -196,7 +198,7 @@ struct inode *do_get_idir(char *p_path, struct inode *b, int use_link,
 		prev = ret;
 		current=a;
 	}
-	
+	//kprintf("iget: %s: %d\n", ret->name, ret->count);
 	if(S_ISFIFO(ret->mode)) {
 		if(!ret->pipe) {
 			ret->pipe = create_pipe();

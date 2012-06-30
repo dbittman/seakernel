@@ -3,7 +3,7 @@
 #include <fs.h>
 #include <mod.h>
 #include <block.h>
-int remove_kernel_symbol(char * unres);
+
 struct partition {
 	char flag;
 	char ext;

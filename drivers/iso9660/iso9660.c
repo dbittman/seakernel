@@ -260,6 +260,7 @@ int module_exit()
 		iso9660_unmount(0, i);
 	return 0;
 }
+
 int module_deps(char *b)
 {
 	return KVERSION;

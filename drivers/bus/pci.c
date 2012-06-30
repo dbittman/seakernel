@@ -161,11 +161,11 @@ struct pci_config_space *get_pci_config(int bus, int dev, int func)
 				bus, dev, func, pcs->vendor_id, pcs->device_id, 
 				subclass[pcs->class_code][pcs->subclass], 
 				class_code[pcs->class_code]);
-		
 		}
 	}
 	return pcs;
 }
+
 /* Scans the entire PCI bus(es) and compiles a linked list of devices */
 void pci_scan()
 {
@@ -328,6 +328,7 @@ int module_exit()
 	destroy_mutex(pci_mutex);
 	return 0;
 }
+
 int module_deps(char *b)
 {
 	return KVERSION;

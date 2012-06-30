@@ -42,7 +42,7 @@ struct inode *dfs_add(struct inode *q, char *name, int mode, int major, int mino
 	strncpy(i->name, name, INAME_LEN);
 	i->i_ops = 0;
 	i->parent = devfs_root;
-	i->mode = mode | 0xFFF;
+	i->mode = mode | 0x1FF;
 	i->uid = GOD;
 	i->dev = 256*major+minor;
 	i->num = devfs_nodescount++;

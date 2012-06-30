@@ -108,7 +108,7 @@ int block_rw(int rw, int dev, int blk, char *buf, blockdevice_t *bd)
 	if(rw == READ)
 	{
 #if USE_CACHE
-		ret = get_block_cache(dev, blk, buf);
+		if(bd->cache & BCACHE_READ) ret = get_block_cache(dev, blk, buf);
 		if(ret)
 			return bd->blksz;
 #endif
@@ -116,13 +116,13 @@ int block_rw(int rw, int dev, int blk, char *buf, blockdevice_t *bd)
 #if USE_CACHE
 		/* -dev signals that this is a read cache - 
 		 * meaning it is not 'dirty' to start with */
-		if(ret == bd->blksz) 
+		if(ret == bd->blksz && (bd->cache & BCACHE_READ)) 
 			cache_block(-dev, blk, bd->blksz, buf);
 #endif
 	} else if(rw == WRITE)
 	{
 #if USE_CACHE
-		ret = cache_block(dev, blk, bd->blksz, buf);
+		if(bd->cache & BCACHE_WRITE) ret = cache_block(dev, blk, bd->blksz, buf);
 		if(!ret)
 			ret = bd->blksz;
 		else
@@ -146,10 +146,13 @@ unsigned do_block_read_multiple(blockdevice_t *bd, int dev, unsigned start,
 	}
 	num = bd->rw_multiple(READ, MINOR(dev), start, buf, num) / bd->blksz;
 #if USE_CACHE
-	while(count < num) {
-		cache_block(-dev, start+count, bd->blksz, buf + count*bd->blksz);
-		count++;
-	}
+	if(bd->cache & BCACHE_READ) {
+		while(count < num) {
+			cache_block(-dev, start+count, bd->blksz, buf + count*bd->blksz);
+			count++;
+		}
+	} else
+		count=num;
 #else
 	count = num;
 #endif
@@ -162,21 +165,24 @@ unsigned block_read_multiple(blockdevice_t *bd, int dev, unsigned start,
 	unsigned count=0;
 	int ret;
 #if USE_CACHE
-	while(count<num) {
-		ret = get_block_cache(dev, start+count, buf + count*bd->blksz);
-		if(!ret) {
-			unsigned x = count+1;
-			while(x < num && !get_block_cache(dev, start+x, buf + x*bd->blksz))
-				x++;
-			unsigned int r = do_block_read_multiple(bd, dev, start+count, x-count, buf + count*bd->blksz);
-			if(r != x-count)
-				return count+r;
-			count = x;
-			if(x < num)
+	if(bd->cache & BCACHE_READ)  {
+		while(count<num) {
+			ret = get_block_cache(dev, start+count, buf + count*bd->blksz);
+			if(!ret) {
+				unsigned x = count+1;
+				while(x < num && !get_block_cache(dev, start+x, buf + x*bd->blksz))
+					x++;
+				unsigned int r = do_block_read_multiple(bd, dev, start+count, x-count, buf + count*bd->blksz);
+				if(r != x-count)
+					return count+r;
+				count = x;
+				if(x < num)
+					count++;
+			} else
 				count++;
-		} else
-			count++;
-	}
+		}
+	} else
+		count=do_block_read_multiple(bd, dev, start, num, buf);
 #else
 	count=do_block_read_multiple(bd, dev, start, num, buf);
 #endif

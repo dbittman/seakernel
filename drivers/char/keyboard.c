@@ -87,9 +87,6 @@ void control_keys(int value, int release)
 		case 9:
 			slock = !slock;
 			break;
-			
-		default:
-			;//kprintf("Control key: %x\n", value);
 	}
 }
 
@@ -110,8 +107,6 @@ static void k_cur(unsigned char value, char up_flag)
 		return;
 	int mode = 0;//getmode: VC_CKMODE
 	applkey(cur_chars[value], mode);
-	//enqueue_char(1);
-	//enqueue_char(value+1);
 }
 
 void special_keys(int value, int release)
@@ -138,12 +133,6 @@ void letter_keys(int value, int release)
 {
 	if(release)
 		return;
-	if(is_ctrl)
-	{
-		//enqueue_char(27);
-		//unsigned short *map = get_keymap(0, 0, 0, 0);
-		//enqueue_char(map[
-	}
 	enqueue_char(value);
 }
 
@@ -164,7 +153,6 @@ void modifier_keys(int value, int release)
 }
 
 /* x86_keycodes, raw and to_utf8 borrowed from linux */
-
 static const unsigned short x86_keycodes[256] =
 { 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
@@ -308,7 +296,7 @@ int keyboard_int()
 			letter_keys(value, release);
 			break;
 		default:
-			if(!release) kprintf("%d-> %x\n", scancode, (unsigned)code);
+			if(!release) printk(0, "[keyboard]: unknown scancode: %d-> %x\n", scancode, (unsigned)code);
 	}
 	return 0;
 }

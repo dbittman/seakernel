@@ -124,6 +124,7 @@ int loop_down(int num)
  * 4: add this loop device
  * 5: remove this loop device
  * 6: make readonly
+ * 7: create new loop device (arg = number)
 */
 
 int ioctl_main(int min, int cmd, int arg)
@@ -160,7 +161,18 @@ int ioctl_main(int min, int cmd, int arg)
 			if(!loop) return -EINVAL;
 			loop->ro = (unsigned)arg;
 		case 7:
-			return loop_maj;
+			loop = get_loop(arg);
+			if(loop) return -EEXIST;
+			char tmp[128];
+			sprintf(tmp, "loop%d", arg);
+			struct inode *i = get_idir(tmp, devfs_root);
+			if(i) {
+				iput(i);
+				return -EEXIST;
+			}
+			dfs_cn(tmp, S_IFBLK, loop_maj, arg);
+			add_loop_device(arg);
+			break;
 		default:
 			return -EINVAL;
 	}

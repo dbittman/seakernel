@@ -115,6 +115,7 @@ void init_kernel_symbols(void)
 	_add_kernel_symbol((unsigned)(task_t **)&kernel_task, "kernel_task");
 	_add_kernel_symbol((unsigned)(cpu_t *)&primary_cpu, "primary_cpu");
 	_add_kernel_symbol((unsigned)(struct inode **)&kproclist, "kproclist");
+	_add_kernel_symbol((unsigned)(struct inode **)&devfs_root, "devfs_root");
 	add_kernel_symbol(sys_open);
 	add_kernel_symbol(sys_read);
 	add_kernel_symbol(set_as_kernel_task);

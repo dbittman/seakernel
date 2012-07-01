@@ -182,14 +182,14 @@ int ioctl_main(int min, int cmd, int arg)
 int module_install()
 {
 	loop_maj = set_availablebd(loop_rw, 512, ioctl_main, 0, 0);
-	if(loop_maj < 0) return 1;
+	if(loop_maj < 0) return EINVAL;
 	device_t *dev = get_device(DT_BLOCK, loop_maj);
 	if(dev && dev->ptr) {
 		blockdevice_t *bd = dev->ptr;
 		bd->cache=0;
 	} else {
 		unregister_block_device(loop_maj);
-		return 1;
+		return EINVAL;
 	}
 	create_mutex(&loop_mutex);
 	dfs_cn("loop0", S_IFBLK, loop_maj, 0);

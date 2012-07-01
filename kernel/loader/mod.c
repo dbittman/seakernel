@@ -75,8 +75,7 @@ int load_module(char *path, char *args)
 	modules = tmp;
 	tmp->next = old;
 	mutex_off(&mod_mutex);
-	((int (*)(char *))tmp->entry)(args);
-	return 0;
+	return ((int (*)(char *))tmp->entry)(args);
 }
 
 int load_deps_c(char *d)
@@ -181,8 +180,9 @@ int do_unload_module(char *name)
 	mutex_off(&mod_mutex);
 	/* Call the unloader */
 	printk(KERN_INFO, "[mod]: Unloading Module '%s'\n", name);
+	int ret = 0;
 	if(mq->exiter)
-		asm("sti;call *%0;"::"r"(mq->exiter));
+		ret = ((int (*)())mq->exiter)();
 	/* Clear out the resources */
 	kfree(mq->base);
 	mutex_on(&mod_mutex);
@@ -197,7 +197,7 @@ int do_unload_module(char *name)
 	}
 	mutex_off(&mod_mutex);
 	kfree(mq);
-	return 0;
+	return ret;
 }
 
 int unload_module(char *name)

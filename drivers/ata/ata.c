@@ -122,7 +122,7 @@ int module_install()
 	{
 		if(res < 0)
 			kprintf("Error in init'ing ATA controller\n");
-		return res;
+		return EEXIST;
 	}
 	register_interrupt_handler(32 + ATA_PRIMARY_IRQ, &ata_irq_handler);
 	register_interrupt_handler(32 + ATA_SECONDARY_IRQ, &ata_irq_handler2);

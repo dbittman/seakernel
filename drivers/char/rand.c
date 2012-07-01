@@ -71,7 +71,7 @@ int module_install()
 	rand_maj=0;
 	rand_maj = set_availablecd(rand_rw, rand_ioctl, 0);
 	if(rand_maj == -1)
-		return 0;
+		return EINVAL;
 	df = dfs_cn("random", S_IFCHR, rand_maj, 0);
 	seed=get_epoch_time();
 	a1=seed;

@@ -103,13 +103,13 @@ int module_install()
 {
 	if(!is_bochs_video()) {
 		printk(1, "[bga]: Not a bochs video controller!\n");
-		return -1;
+		return EEXIST;
 	}
 	memcpy(consoles[current_task->tty].vmem, consoles[current_task->tty].cur_mem, consoles[current_task->tty].w * consoles[current_task->tty].h * consoles[current_task->tty].bd);
 	if(sys_ioctl(0, 128, (unsigned)switch_mode) != 128)
 	{
 		kprintf("Could not allocate a tty callback for mode switch!\n");
-		return -1;
+		return ENOMEM;
 	}
 	return 0;
 }

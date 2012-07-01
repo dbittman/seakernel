@@ -162,7 +162,7 @@ int sys_mknod(char *path, unsigned mode, unsigned dev)
 	i = cget_idir(path, 0, mode);
 	if(!i) return -EACCES;
 	i->dev = dev;
-	i->mode = mode;
+	i->mode = (mode & ~0xFFF) | ((mode&0xFFF) & (current_task->cmask&0xFFF));
 	sync_inode_tofs(i);
 	if(S_ISFIFO(i->mode)) {
 		i->pipe = create_pipe();

@@ -228,7 +228,7 @@ struct inode *do_wrap_ext2_create(struct inode *i, char *name, unsigned mode)
 	new.mode = mode;
 	new.uid = current_task->uid;
 	new.gid = current_task->gid;
-	if(!ext2_dir_link(&inode, &new, name))
+	if(!ext2_dir_link(&inode, &new, name)) 
 		return 0;
 	new.change_time = get_epoch_time();
 	ext2_inode_update(&new);
@@ -239,9 +239,7 @@ struct inode *do_wrap_ext2_create(struct inode *i, char *name, unsigned mode)
 
 struct inode *wrap_ext2_create(struct inode *i, char *name, unsigned mode)
 {
-	//mutex_on(&i->lock);
 	struct inode *ret = do_wrap_ext2_create(i, name, mode);
-	//mutex_off(&i->lock);
 	return ret;
 }
 
@@ -307,7 +305,7 @@ int wrap_sync_inode(struct inode *i)
 	{
 		if(!i->parent)
 		{
-			printk(4, "[ext2]: Failed to discover parent node\n");
+			printk(4, "[ext2]: Failed to discover parent node (i->name=%s)\n", i->name);
 		} else {
 			ext2_inode_t par;
 			if(!ext2_inode_read(fs, i->parent->num, &par))

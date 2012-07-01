@@ -117,10 +117,15 @@ struct inode *do_add_dirent(struct inode *p, char *name, int mode)
 		ret->mtime = get_epoch_time();
 		ret->uid = current_task->uid;
 		ret->gid = current_task->gid;
-		sync_inode_tofs(ret);
+		change_ireq(p, 1);
 		add_inode(p, ret);
 	}
 	mutex_off(&p->lock);
+	if(ret) {
+		change_icount(ret, 1);
+		change_ireq(p, -1);
+		sync_inode_tofs(ret);
+	}
 	return ret;
 }
 
@@ -187,10 +192,9 @@ struct inode *do_get_idir(char *p_path, struct inode *b, int use_link,
 			ret = lookup(ret, current);
 		if(create && !ret) {
 			ret = do_add_dirent(old, current, 
-				dir_f ? (0x4000 | (create&0xFFF)) : ((create&0xFFF) | 0x8000));
+				dir_f ? (0x4000|(create&0xFFF)) : ((create&0xFFF)|0x8000));
 			if(did_create && ret)
 				*did_create=1;
-			if(ret) ret->count++;
 		}
 		if(prev)
 			change_icount(prev, -1);

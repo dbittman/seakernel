@@ -17,10 +17,7 @@ struct file *d_sys_open(char *name, int flags, int mode, int *error, int *num)
 	++flags;
 	struct inode *inode;
 	struct file *f;
-	if(!mode)
-		mode = current_task->cmask;
-	else if(current_task->cmask)
-		mode &= current_task->cmask;
+	mode = (mode & ~0xFFF) | ((mode&0xFFF) & (~(current_task->cmask&0xFFF)));
 	if(!mode) mode = 0x1FF;
 	int did_create=0;
 	inode = (flags & _FCREAT) ? 

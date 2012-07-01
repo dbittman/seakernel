@@ -16,7 +16,6 @@ struct loop_device {
 mutex_t loop_mutex;
 int loop_maj = -1;
 
-
 struct loop_device *get_loop(int num) 
 {
 	mutex_on(&loop_mutex);
@@ -89,7 +88,7 @@ int loop_up(int num, char *name)
 	mutex_on(&i->lock);
 	i->required++;
 	mutex_off(&i->lock);
-	loop->offset = loop->limit = 0;
+	loop->offset = loop->limit = loop->ro = 0;
 	loop->node = i;
 	
 	mutex_off(&loop_mutex);
@@ -146,6 +145,8 @@ int ioctl_main(int min, int cmd, int arg)
 			loop->limit = (unsigned)arg;
 			break;
 		case 4:
+			loop = get_loop(min);
+			if(loop) return -EINVAL;
 			add_loop_device(min);
 			break;
 		case 5:
@@ -158,6 +159,8 @@ int ioctl_main(int min, int cmd, int arg)
 			loop = get_loop(min);
 			if(!loop) return -EINVAL;
 			loop->ro = (unsigned)arg;
+		case 7:
+			return loop_maj;
 		default:
 			return -EINVAL;
 	}

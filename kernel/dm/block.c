@@ -108,7 +108,7 @@ int block_rw(int rw, int dev, int blk, char *buf, blockdevice_t *bd)
 	if(rw == READ)
 	{
 #if USE_CACHE
-		if(bd->cache & BCACHE_READ) ret = get_block_cache(dev, blk, buf);
+		if(bd->cache) ret = get_block_cache(dev, blk, buf);
 		if(ret)
 			return bd->blksz;
 #endif
@@ -122,12 +122,13 @@ int block_rw(int rw, int dev, int blk, char *buf, blockdevice_t *bd)
 	} else if(rw == WRITE)
 	{
 #if USE_CACHE
-		if(bd->cache & BCACHE_WRITE) ret = cache_block(dev, blk, bd->blksz, buf);
-		if(!ret)
-			ret = bd->blksz;
-		else
+		if(bd->cache) 
+		{
+			if(!cache_block(dev, blk, bd->blksz, buf))
+				return bd->blksz;
+		}
 #endif
-			ret = do_block_rw(rw, dev, blk, buf, bd);
+		ret = do_block_rw(rw, dev, blk, buf, bd);
 	}
 	return ret;
 }

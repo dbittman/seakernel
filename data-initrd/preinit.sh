@@ -1,6 +1,11 @@
 echo "Loading modules..."
 export PATH=$PATH:/:.:/usr/sbin
-lmod /keyboard /pci /partitions /ata /ext2 /iso9660
+modprobe -d / /keyboard 
+modprobe -d / /pci 
+modprobe -d / /partitions 
+modprobe -d / /ata 
+modprobe -d / /ext2 
+modprobe -d / /iso9660
 if [[ "$1" = "/" ]]; then
 	sh
 else

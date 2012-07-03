@@ -39,7 +39,7 @@ static inline int mod_fork(int *pid)
 	return x;
 }
 
-int load_module(char *path, char *);
+int load_module(char *path, char *, int);
 int unload_module(char *name);
 void unload_all_modules();
 void load_all_config_mods(char *);

@@ -7,11 +7,11 @@
 module_t *modules=0;
 int load_deps(char *);
 mutex_t mod_mutex;
-int load_module(char *path, char *args)
+int load_module(char *path, char *args, int flags)
 {
 	if(!path)
 		return -EINVAL;
-	printk(KERN_DEBUG, "[mod]: Loading Module '%s'\n", path);
+	if(!(flags & 2)) printk(KERN_DEBUG, "[mod]: Loading Module '%s'\n", path);
 	int i, pos=-1;
 	module_t *tmp = (module_t *)kmalloc(sizeof(module_t));
 	char *r = strrchr(path, '/');
@@ -31,7 +31,10 @@ int load_module(char *path, char *args)
 		m=m->next;
 	}
 	mutex_off(&mod_mutex);
-	
+	if(flags & 2) {
+		kfree(tmp);
+		return 0;
+	}
 	/* Open and test */
 	int desc=sys_open(path, O_RDWR);
 	if(desc < 0)
@@ -67,7 +70,7 @@ int load_module(char *path, char *args)
 		kfree(tmp);
 		/* try again? Maybe we loaded a dependency and need to retry */
 		if(res == _MOD_AGAIN)
-			return load_module(path, args);
+			return load_module(path, args, flags);
 		return -ENOEXEC;
 	}
 	mutex_on(&mod_mutex);
@@ -104,12 +107,12 @@ int load_deps_c(char *d)
 		}
 		if(!found) {
 			int res;
-			res = load_module(current, (char *)mtboot->cmdline);
+			res = load_module(current, (char *)mtboot->cmdline, 0);
 			if(res)
 			{
 				char tmp[strlen(current) + strlen(SYS_MODULE_PATH) + 4];
 				sprintf(tmp, "%s%s", SYS_MODULE_PATH, current);
-				res = load_module(tmp, (char *)mtboot->cmdline);
+				res = load_module(tmp, (char *)mtboot->cmdline, 0);
 				if(res)
 					return -1;
 			}
@@ -239,7 +242,7 @@ void init_module_system()
 
 int sys_load_module(char *path, char *args, int flags)
 {
-	return load_module(path, args);
+	return load_module(path, args, flags);
 }
 
 int sys_unload_module(char *path, int flags)

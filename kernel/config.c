@@ -70,7 +70,7 @@ int sys_uname(struct utsname *name)
 		return -EINVAL;
 	strncpy(name->sysname, "seaos", 6);
 	strncpy(name->nodename, "", 1);
-	strncpy(name->release, "0.2", 4);
+	get_kernel_version(name->release);
 	strncpy(name->version, "eclipse", 8);
 	strncpy(name->machine, "i586", 5);
 	strncpy(name->domainname, "", 1);

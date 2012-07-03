@@ -7,6 +7,23 @@
 module_t *modules=0;
 int load_deps(char *);
 mutex_t mod_mutex;
+
+int is_loaded(char *name)
+{
+	mutex_on(&mod_mutex);
+	module_t *m = modules;
+	while(m) {
+		if(!strcmp(m->name, name))
+		{
+			mutex_off(&mod_mutex);
+			return 1;
+		}
+		m=m->next;
+	}
+	mutex_off(&mod_mutex);
+	return 0;
+}
+
 int load_module(char *path, char *args, int flags)
 {
 	if(!path)
@@ -18,19 +35,10 @@ int load_module(char *path, char *args, int flags)
 	if(r) r++; else r = path;
 	strncpy(tmp->name, r, 128);
 	strncpy(tmp->path, path, 128);
-	
-	mutex_on(&mod_mutex);
-	module_t *m = modules;
-	while(m) {
-		if(!strcmp(m->name, tmp->name))
-		{
-			mutex_off(&mod_mutex);
-			kfree(tmp);
-			return -EEXIST;
-		}
-		m=m->next;
+	if(is_loaded(tmp->name)) {
+		kfree(tmp);
+		return -EEXIST;
 	}
-	mutex_off(&mod_mutex);
 	if(flags & 2) {
 		kfree(tmp);
 		return 0;
@@ -63,7 +71,7 @@ int load_module(char *path, char *args, int flags)
 		return -EINVAL;
 	}
 	/* Call the elf parser */
-	int res = parse_elf_module(tmp, (unsigned char *)mem+4, path);
+	int res = parse_elf_module(tmp, (unsigned char *)mem+4, path, flags & 1);
 	if(res == _MOD_FAIL || res == _MOD_AGAIN)
 	{
 		kfree(mem);
@@ -80,51 +88,6 @@ int load_module(char *path, char *args, int flags)
 	mutex_off(&mod_mutex);
 	return ((int (*)(char *))tmp->entry)(args);
 }
-
-int load_deps_c(char *d)
-{
-	if(!*d) return 0;
-	char *mnext, *current;
-	current = d;
-	int count=0;
-	while(current)
-	{
-		mnext = strchr(current, ',');
-		if(mnext)
-		{
-			*mnext=0;
-			mnext++;
-		}
-		if(*current == ':')
-			break;
-		
-		module_t *mq = modules;
-		char found=0;
-		while(mq) {
-			if(!strcmp(current, mq->name) || !strcmp(mq->path, current))
-				found=1;
-			mq=mq->next;
-		}
-		if(!found) {
-			int res;
-			res = load_module(current, (char *)mtboot->cmdline, 0);
-			if(res)
-			{
-				char ver[64];
-				char tmp[strlen(current) + 64];
-				get_kernel_version(ver);
-				sprintf(tmp, "/sys/modules-%s/%s", ver, current);
-				res = load_module(tmp, (char *)mtboot->cmdline, 0);
-				if(res)
-					return -1;
-			}
-			count++;
-		}
-		current = mnext;
-	}
-	return count;
-}
-
 
 /* This checks if module 'm' depends on module 'yo' */
 int do_it_depend_on(module_t *yo, module_t *m)
@@ -163,7 +126,7 @@ module_t *canweunload(module_t *i)
 	return 0;
 }
 
-int do_unload_module(char *name)
+int do_unload_module(char *name, int flags)
 {
 	/* Is it going to work? */
 	mutex_on(&mod_mutex);
@@ -174,11 +137,13 @@ int do_unload_module(char *name)
 		mq = mq->next;
 	}
 	
-	if(!mq)
+	if(!mq) {
+		mutex_off(&mod_mutex);
 		return -ENOENT;
-	/* Determin if are being depended upon or if we can unload */
+	}
+	/* Determine if are being depended upon or if we can unload */
 	module_t *mo;
-	if((mo = canweunload(mq))) {
+	if(!(flags & 1) && (mo = canweunload(mq))) {
 		mutex_off(&mod_mutex);
 		return -EINVAL;
 	}
@@ -209,7 +174,7 @@ int unload_module(char *name)
 {
 	if(!name)
 		return -EINVAL;
-	return do_unload_module(name);
+	return do_unload_module(name, 0);
 }
 
 void unload_all_modules()
@@ -226,7 +191,7 @@ void unload_all_modules()
 		int i;
 		module_t *mq = modules;
 		while(mq) {
-			int r = do_unload_module(mq->name);
+			int r = do_unload_module(mq->name, 0);
 			if(r < 0 && r != -ENOENT) {
 				todo++;
 				mq = mq->next;
@@ -249,5 +214,5 @@ int sys_load_module(char *path, char *args, int flags)
 
 int sys_unload_module(char *path, int flags)
 {
-	return unload_module(path);
+	return do_unload_module(path, flags);
 }

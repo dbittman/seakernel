@@ -80,7 +80,7 @@ elf32_t parse_kernel_elf(struct multiboot *mb, elf32_t *elf)
 	return *elf;
 }
 
-int parse_elf_module(module_t *mod, uint8_t * buf, char *name)
+int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int force)
 {
 	uint32_t i, x;
 	uint32_t module_entry=0, reloc_addr, mem_addr, module_exiter=0, module_deps=0;
@@ -201,21 +201,25 @@ int parse_elf_module(module_t *mod, uint8_t * buf, char *name)
 		char deps_str[128];
 		memset(deps_str, 0, 128);
 		unsigned kver = ((int (*)(char *))module_deps)(deps_str);
-		if(kver != KVERSION)
+		if(kver != KVERSION && !force)
 		{
-			kprintf("[mod]: Module '%s' was compiled for a different kernel version!\n", 
+			printk(3, "[mod]: Module '%s' was compiled for a different kernel version!\n", 
 					mod->name);
 			return _MOD_FAIL;
 		}
-		strncpy(mod->deps, deps_str, 256);
-		int dl=0;
-		if((dl=load_deps_c(deps_str)) == -1)
-			return _MOD_FAIL;
-		if(!dl && error)
-			return _MOD_FAIL;
-		if(error || dl) {
-			printk(1, "[mod]: Trying again...\n");
-			return _MOD_AGAIN;
+		strncpy(mod->deps, deps_str, 128);
+		/* make sure all deps are loaded */
+		char *cur = deps_str;
+		while(1) {
+			char *n = strchr(cur, ',');
+			if(!n) break;
+			*n=0;
+			n++;
+			if(!is_loaded(cur)) {
+				printk(3, "[mod]: Module '%s' has missing dependency '%s'\n", mod->name, cur);
+				return _MOD_FAIL;
+			}
+			cur = n;
 		}
 	} else if(error)
 		return _MOD_FAIL;

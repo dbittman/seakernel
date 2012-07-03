@@ -164,7 +164,7 @@ void _add_kernel_symbol(const intptr_t func, const char * funcstr);
 intptr_t find_kernel_function_user(char * unres);
 intptr_t find_kernel_function(char * unres);
 void init_kernel_symbols(void);
-int parse_elf_module(module_t *mod, uint8_t * buf, char *name);
+int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int);
 const char *elf_lookup_symbol (uint32_t addr, elf32_t *elf);
 elf32_t parse_kernel_elf(struct multiboot *mb, elf32_t *);
 extern elf32_t kernel_elf;

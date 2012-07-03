@@ -38,7 +38,7 @@ static inline int mod_fork(int *pid)
 		*pid = x;
 	return x;
 }
-
+int is_loaded(char *name);
 int load_module(char *path, char *, int);
 int unload_module(char *name);
 void unload_all_modules();

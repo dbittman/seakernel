@@ -96,6 +96,8 @@ int do_unmount(struct inode *i, int flags)
 	if(!is_directory(i))
 		return -ENOTDIR;
 	struct inode *m = i->mount->root;
+	if(m->required || m->count>1)
+		return -EBUSY;
 	mount_pt_t *mt = i->mount;
 	mutex_on(&i->lock);
 	i->mount=0;
@@ -127,8 +129,10 @@ int unmount(char *n, int flags)
 		return -ENOENT;
 	if(!i->mount_parent)
 		return -ENOENT;
+	struct inode *got = i;
 	i = i->mount_parent;
 	int ret = do_unmount(i, flags);
-	iput(i);
+	if(ret) iput(got);
+	else iput(i);
 	return ret;
 }

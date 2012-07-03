@@ -1,3 +1,4 @@
+include ../make.inc
 MODULES+=block/loop.m \
 bus/pci.m \
 char/keyboard.m \
@@ -8,6 +9,8 @@ net/cards/i825xx.m \
 net/cards/rtl8139.m \
 other/sync.m \
 partitions/partitions.m
+
+VERSION=${KERNEL_VERSION}
 
 CC=i586-pc-seaos-gcc
 LD=i586-pc-seaos-ld
@@ -37,19 +40,19 @@ all_s: make.deps $(MODULES)
 	
 
 install: $(MODULES)
-	@cp -vf ata/ata.m /sys/modules/ata
-	@cp -vf block/loop.m /sys/modules/loop
-	@cp -vf bus/pci.m /sys/modules/pci
-	@cp -vf char/keyboard.m /sys/modules/keyboard
-	@cp -vf char/rand.m /sys/modules/rand
-	@cp -vf ext2/ext2.m /sys/modules/ext2
-	@cp -vf iso9660/iso9660.m /sys/modules/iso9660
-	@cp -vf net/ethernet.m /sys/modules/ethernet
-	@cp -vf net/ipv4.m /sys/modules/ipv4
-	@cp -vf net/cards/i825xx.m /sys/modules/i825xx
-	@cp -vf net/cards/rtl8139.m /sys/modules/rtl8139
-	@cp -vf other/sync.m /sys/modules/sync
-	@cp -vf partitions/partitions.m /sys/modules/partitions
+	@cp -vf ata/ata.m /sys/modules-${VERSION}/ata
+	@cp -vf block/loop.m /sys/modules-${VERSION}/loop
+	@cp -vf bus/pci.m /sys/modules-${VERSION}/pci
+	@cp -vf char/keyboard.m /sys/modules-${VERSION}/keyboard
+	@cp -vf char/rand.m /sys/modules-${VERSION}/rand
+	@cp -vf ext2/ext2.m /sys/modules-${VERSION}/ext2
+	@cp -vf iso9660/iso9660.m /sys/modules-${VERSION}/iso9660
+	@cp -vf net/ethernet.m /sys/modules-${VERSION}/ethernet
+	@cp -vf net/ipv4.m /sys/modules-${VERSION}/ipv4
+	@cp -vf net/cards/i825xx.m /sys/modules-${VERSION}/i825xx
+	@cp -vf net/cards/rtl8139.m /sys/modules-${VERSION}/rtl8139
+	@cp -vf other/sync.m /sys/modules-${VERSION}/sync
+	@cp -vf partitions/partitions.m /sys/modules-${VERSION}/partitions
 
 CFLAGS=-std=c99 -Wall -Wextra -fno-omit-frame-pointer\
            -Wformat-security -Wformat-nonliteral  -fno-rename-registers -fno-regmove\

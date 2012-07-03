@@ -54,7 +54,7 @@ int proc_cpu(char rw, struct inode *inode, int m, char *buf, int off, int len)
 int proc_mods(char rw, struct inode *n, int min, char *buf, int off, int len)
 {
 	if(rw == READ) {
-		int total_len=0;
+		int total_len=0, total_mem=0;
 		int total=0;
 		char tmp[128];
 		total_len += proc_append_buffer(buf, "NAME\t\t      SIZE DEPENDENCIES\n"
@@ -63,13 +63,14 @@ int proc_mods(char rw, struct inode *n, int min, char *buf, int off, int len)
 		module_t *mq = modules;
 		while(mq) {
 			++total;
+			total_mem += mq->length;
 			sprintf(tmp, "%-16s %6d KB ", mq->name, mq->length/1024);
 			total_len += proc_append_buffer(buf, tmp, total_len, -1, off, len);
 			total_len += proc_append_buffer(buf, mq->deps, total_len, -1, off, len);
 			total_len += proc_append_buffer(buf, "\n", total_len, -1, off, len);
 			mq=mq->next;
 		}
-		sprintf(tmp, "TOTAL: %d modules, %d KB\n", total, total_len/1024);
+		sprintf(tmp, "TOTAL: %d modules, %d KB\n", total, total_mem/1024);
 		total_len += proc_append_buffer(buf, tmp, total_len, -1, off, len);
 		return total_len;
 	}

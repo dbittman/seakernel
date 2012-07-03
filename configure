@@ -10,4 +10,7 @@ if [ -e /proc/seaos ]; then
 else
 	echo "SYSNAME=linux" > make.inc
 fi
+echo -n "KERNEL_VERSION=" >> make.inc
+cat version >> make.inc
+echo >> make.inc
 printf "done\n"

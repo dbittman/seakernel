@@ -14,19 +14,13 @@ int sys_sbrk(int inc)
 		unsigned old_end = current_task->heap_end;
 		unsigned free_start = (new_end&PAGE_MASK) + PAGE_SIZE;
 		unsigned free_end = old_end&PAGE_MASK;
-		int x=0;
 		while(free_start <= free_end) {
 			if(vm_getmap(free_start, 0))
 				vm_unmap(free_start);
 			free_start += 0x1000;
-			x++;
 		}
 		current_task->heap_end = new_end;
 		assert(new_end + dec == old_end);
-#ifdef DEBUG
-		printk(0, "[sbrk]: reclaiming memory %d. oldend=%x, newend=%x. start=%x. freed %d\n", 
-					dec, old_end, new_end, current_task->heap_start, x);
-#endif
 		return old_end;
 	}
 	if(!inc)

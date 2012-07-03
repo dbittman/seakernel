@@ -110,8 +110,10 @@ int load_deps_c(char *d)
 			res = load_module(current, (char *)mtboot->cmdline, 0);
 			if(res)
 			{
-				char tmp[strlen(current) + strlen(SYS_MODULE_PATH) + 4];
-				sprintf(tmp, "%s%s", SYS_MODULE_PATH, current);
+				char ver[64];
+				char tmp[strlen(current) + 64];
+				get_kernel_version(ver);
+				sprintf(tmp, "/sys/modules-%s/%s", ver, current);
 				res = load_module(tmp, (char *)mtboot->cmdline, 0);
 				if(res)
 					return -1;

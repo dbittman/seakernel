@@ -1,1 +1,3 @@
 SYSNAME=linux
+KERNEL_VERSION=0.2-b1
+

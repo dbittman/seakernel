@@ -12,7 +12,6 @@ CFLAGS_NO = -m32 -nostdlib -nostdinc -fno-builtin -ffreestanding \
 	  -Wnested-externs -Waddress -Winline -Wno-long-long -mno-red-zone -fno-omit-frame-pointer
 
 CFLAGS = $(CFLAGS_NO) -O3 
-
 LDFLAGS=-T kernel/link.ld -m seaos_i386
 ASFLAGS=-felf32
 GASFLAGS=--32
@@ -79,7 +78,7 @@ install:
 	@cp -f skernel /sys/kernel
 	@echo "installing initrd..."
 	@cp -f initrd.img /sys/initrd
-	@make -C drivers install
+	@make -C drivers install VERSION=${KERNEL_VERSION}
 
 clean_s:
 	@-rm  $(AOBJS) $(KOBJS) $(CLEAN) initrd.img skernel make.deps 2> /dev/null

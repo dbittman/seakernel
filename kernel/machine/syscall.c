@@ -153,6 +153,8 @@ __attribute__((optimize("O0"))) int syscall_handler(volatile registers_t *regs)
 	__super_sti();
 	if(!check_pointers(regs))
 		return -EINVAL;
+	if(got_signal(current_task))
+		force_schedule();
 	enter_system(regs->eax);
 	current_task->freed = current_task->allocated=0;
 #ifdef SC_DEBUG

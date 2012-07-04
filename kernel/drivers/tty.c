@@ -52,6 +52,8 @@ int tty_raise_action(int min, int sig)
 {
 	if(!(consoles[min].term.c_lflag & ISIG))
 		return 0;
+	if(shutting_down)
+		return 0;
 	task_t *t = kernel_task->next;
 	task_critical();
 	while(t)

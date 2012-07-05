@@ -22,7 +22,6 @@ void init_multitasking()
 	task->kernel_stack = kmalloc(KERN_STACK_SIZE+8);
 	task->kernel_stack2 = kmalloc(KERN_STACK_SIZE+8);
 	task->priority = 1;
-	task->cmask=0x1FF;
 	task->magic = TASK_MAGIC;
 	set_current_task_dp(task, 0);
 	kernel_task = task;

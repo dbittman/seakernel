@@ -75,10 +75,6 @@ int chroot(char *n)
 		iput(i);
 		return -ENOTDIR;
 	}
-	if(!permissions(i, MAY_READ)) {
-		iput(i);
-		return -EACCES;
-	}
 	current_task->root = i;
 	change_ireq(i, 1);
 	change_ireq(old, -1);
@@ -99,7 +95,7 @@ int chdir(char *n)
 		iput(i);
 		return -ENOTDIR;
 	}
-	if(!permissions(i, MAY_READ)) {
+	if(!permissions(i, MAY_EXEC)) {
 		iput(i);
 		return -EACCES;
 	}
@@ -142,7 +138,7 @@ struct inode *read_dir(char *n, int num)
 	i = get_idir(n, 0);
 	if(!i)
 		return 0;
-	if(!permissions(i, MAY_EXEC)) {
+	if(!permissions(i, MAY_READ)) {
 		iput(i);
 		return 0;
 	}

@@ -8,7 +8,7 @@
 #include <dev.h>
 #include <sys/fcntl.h>
 
-struct file *d_sys_open(char *name, int flags, int mode, int *error, int *num)
+struct file *d_sys_open(char *name, int flags, int _mode, int *error, int *num)
 {
 	if(!name) {
 		*error = -EINVAL;
@@ -17,8 +17,7 @@ struct file *d_sys_open(char *name, int flags, int mode, int *error, int *num)
 	++flags;
 	struct inode *inode;
 	struct file *f;
-	mode = (mode & ~0xFFF) | ((mode&0xFFF) & (~(current_task->cmask&0xFFF)));
-	if(!mode) mode = 0x1FF;
+	int mode = (_mode & ~0xFFF) | ((_mode&0xFFF) & (~(current_task->cmask&0xFFF)));
 	int did_create=0;
 	inode = (flags & _FCREAT) ? 
 				ctget_idir(name, 0, mode, &did_create) 
@@ -26,13 +25,12 @@ struct file *d_sys_open(char *name, int flags, int mode, int *error, int *num)
 	if(!inode) {
 		*error = (flags & _FCREAT) ? -EACCES : -ENOENT;
 		return 0;
-	} else {
-		/* If CREAT and EXCL are set, and the file exists, return */
-		if(flags & _FCREAT && flags & _FEXCL && !did_create) {
-			iput(inode);
-			*error = -EEXIST;
-			return 0;
-		}
+	}
+	/* If CREAT and EXCL are set, and the file exists, return */
+	if(flags & _FCREAT && flags & _FEXCL && !did_create) {
+		iput(inode);
+		*error = -EEXIST;
+		return 0;
 	}
 	if(flags & _FREAD && !permissions(inode, MAY_READ)) {
 		iput(inode);

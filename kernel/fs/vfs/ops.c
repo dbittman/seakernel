@@ -40,32 +40,19 @@ int get_f_ref_count(struct inode *i)
 	return i ? i->f_count : 0;
 }
 
-int permissions(struct inode *inode, int flag)
+int permissions(struct inode *i, int flag)
 {
-	if(!inode)
+	if(!i)
 		return 0;
 	if(ISGOD(current_task))
 		return 1;
-	int m = inode->mode & 0xFFF;
-	if(current_task->uid >= inode->uid)
-	{
-		if(current_task->uid == inode->uid)
-		{
-			if(flag & m)
-				return 1;
-		}
-		flag /= 10;
-		if(current_task->gid == inode->gid)
-		{
-			if(flag & m)
-				return 1;
-		}
-		flag /= 10;
-		if(flag & m)
-			return 1;
-		return 0;
-	}
-	return 1;
+	if(current_task->uid == i->uid && (flag & i->mode))
+		return 1;
+	flag = flag >> 3;
+	if(current_task->gid == i->gid && (flag & i->mode))
+		return 1;
+	flag = flag >> 3;
+	return flag & i->mode;
 }
 
 int do_add_inode(struct inode *b, struct inode *i)

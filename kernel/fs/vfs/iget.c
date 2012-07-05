@@ -29,6 +29,8 @@ struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, int *req)
 	/* Access? */
 	if(!is_directory(i))
 		return 0;
+	if(!permissions(i, MAY_EXEC))
+		return 0;
 	temp = i->child;
 	while(temp)
 	{

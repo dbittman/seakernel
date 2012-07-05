@@ -29,6 +29,8 @@ int do_unlink(struct inode *i)
 		err = -EACCES;
 	if(i->child)
 		err = -EISDIR;
+	if(!permissions(i->parent, MAY_WRITE))
+		err = -EACCES;
 	if(i->f_count) {
 		/* we allow any open files to keep this in existance until 
 		 * it has been closed everywhere. if this flag is marked, and 
@@ -69,6 +71,8 @@ int rmdir(char *f)
 	int err = 0;
 	if(i->child)
 		err = -ENOTEMPTY;
+	if(!permissions(i->parent, MAY_WRITE))
+		err = -EACCES;
 	if(i->f_count) {
 		iput(i);
 		return 0;

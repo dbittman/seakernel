@@ -15,5 +15,5 @@ int sync_inode_tofs(struct inode *i)
 
 struct inode *sys_create(char *path)
 {
-	return cget_idir(path, 0, current_task->cmask);
+	return cget_idir(path, 0, 0x1FF);
 }

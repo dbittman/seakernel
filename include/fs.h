@@ -8,15 +8,15 @@
 #define SEEK_SET (0)
 #define SEEK_CUR (1)
 #define SEEK_END (2)
-#define OTHERMAY_EXEC 1
-#define OTHERMAY_WRITE 2
-#define OTHERMAY_READ 4
-#define GROUPMAY_EXEC 10
-#define GROUPMAY_WRITE 20
-#define GROUPMAY_READ 40
-#define MAY_EXEC 100
-#define MAY_WRITE 200
-#define MAY_READ 400
+//#define OTHERMAY_EXEC   01
+//#define OTHERMAY_WRITE  02
+//#define OTHERMAY_READ   04
+//#define GROUPMAY_EXEC  010
+//#define GROUPMAY_WRITE 020
+//#define GROUPMAY_READ  040
+#define MAY_EXEC      0100
+#define MAY_WRITE     0200
+#define MAY_READ      0400
 extern struct sblktbl *sb_table;
 #define INAME_LEN 128
 

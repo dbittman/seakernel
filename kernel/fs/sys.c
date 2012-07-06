@@ -162,6 +162,8 @@ int sys_ftruncate(int f, unsigned length)
 	struct file *file = get_file_pointer((task_t *)current_task, f);
 	if(!file || !file->inode)
 		return -EBADF;
+	if(!permissions(file->inode, MAY_WRITE))
+		return -EACCES;
 	file->inode->len = length;
 	sync_inode_tofs(file->inode);
 	return 0;

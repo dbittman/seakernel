@@ -118,7 +118,7 @@ int check_pointers(volatile registers_t *regs)
 		
 		case SYS_SETSIG: case SYS_WAITPID:
 			return __is_valid_user_ptr((void *)_B_, 1);
-			
+		
 		case SYS_SELECT:
 			if(!__is_valid_user_ptr((void *)_B_, 1))
 				return 0;
@@ -139,6 +139,9 @@ int check_pointers(volatile registers_t *regs)
 			
 		case SYS_SIGACT: case SYS_SIGPROCMASK:
 			return __is_valid_user_ptr((void *)_C_, 1);
+			
+		case SYS_CHOWN: case SYS_CHMOD:
+			return __is_valid_user_ptr((void *)_A_, 1);
 	}
 	return 1;
 }

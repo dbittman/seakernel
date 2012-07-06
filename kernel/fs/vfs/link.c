@@ -10,10 +10,11 @@ int link(char *old, char *new)
 	if(!old || !new)
 		return -EINVAL;
 	struct inode *i;
-	i = lget_idir(old, 0);
+	if((i = get_idir(new, 0)))
+		do_unlink(i);
+	i = get_idir(old, 0);
 	if(!i)
 		return -ENOENT;
-	unlink(new);
 	mutex_on(&i->lock);
 	int ret = vfs_callback_link(i, new);
 	iput(i);

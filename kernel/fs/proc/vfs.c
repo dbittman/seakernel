@@ -37,6 +37,8 @@ int proc_vfs(char rw, struct inode *n, int m, char *buf, int off, int len)
 				continue;
 			if(!strcmp(i->mount_parent->name, "proc"))
 				continue;
+			if(!strcmp(i->mount_parent->name, "tmp"))
+				continue;
 			struct mnttab mt;
 			mt.mt_special = "";
 			mt.mt_mountp = "";
@@ -44,22 +46,22 @@ int proc_vfs(char rw, struct inode *n, int m, char *buf, int off, int len)
 			mt.mt_mntopts = "rw";
 			mt.mt_time = "0";
 			mt.mt_dev = "";
-			
 			if(!i->node_str[0])
 			{
 				if(i->mount && i->mount->root)
 					mt.mt_dev = i->mount->root->name;
 				else
 					mt.mt_dev = i->name;
-			} else {
+			} else
 				mt.mt_dev = strrchr(i->node_str, '/')+1;
-			}
 			if(i->mount_parent) {
 				if(i->mount_parent == current_task->root || i == current_task->root)
 					mt.mt_filsys=mt.mt_mountp = "/";
 				else {
 					if(!strcmp(i->mount_parent->name, "dev"))
 						mt.mt_mountp = "/dev";
+					if(!strcmp(i->mount_parent->name, "tmp"))
+						mt.mt_mountp = "/tmp";
 					if(!strcmp(i->mount_parent->name, "proc"))
 						mt.mt_mountp = "/proc";
 				}

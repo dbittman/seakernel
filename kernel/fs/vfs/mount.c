@@ -9,7 +9,7 @@ struct inode *init_tmpfs();
 int do_mount(struct inode *i, struct inode *p)
 {
 	if(current_task->uid)
-		return -EPERM;
+		return -EACCES;
 	if(i == current_task->root)
 		return -EINVAL;
 	if(!is_directory(i) || !is_directory(p))
@@ -92,7 +92,7 @@ int do_unmount(struct inode *i, int flags)
 	if(!i || !i->mount)
 		return -EINVAL;
 	if(current_task->uid)
-		return -EPERM;
+		return -EACCES;
 	if(!is_directory(i))
 		return -ENOTDIR;
 	struct inode *m = i->mount->root;

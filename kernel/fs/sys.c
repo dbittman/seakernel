@@ -83,10 +83,18 @@ int sys_umask(int mode)
 	return old;
 }
 
-int sys_chmod(char *path, int mode)
+int sys_chmod(char *path, int fd, int mode)
 {
-	if(!path) return -EINVAL;
-	struct inode *i = get_idir(path, 0);
+	if(!path && fd == -1) return -EINVAL;
+	struct inode *i;
+	if(path)
+		i = get_idir(path, 0);
+	else {
+		struct file *file = get_file_pointer((task_t *)current_task, fd);
+		if(!file || !file->inode)
+			return -EBADF;
+		i = file->inode;
+	}
 	if(!i) return -ENOENT;
 	if(i->uid != current_task->uid && current_task->uid)
 	{
@@ -95,15 +103,23 @@ int sys_chmod(char *path, int mode)
 	}
 	i->mode = (i->mode&~0xFFF) | mode;
 	sync_inode_tofs(i);
-	iput(i);
+	if(path) iput(i);
 	return 0;
 }
 
-int sys_chown(char *path, int uid, int gid)
+int sys_chown(char *path, int fd, int uid, int gid)
 {
-	if(!path)
+	if(!path && fd == -1)
 		return -EINVAL;
-	struct inode *i = get_idir(path, 0);
+	struct inode *i;
+	if(path)
+		i = get_idir(path, 0);
+	else {
+		struct file *file = get_file_pointer((task_t *)current_task, fd);
+		if(!file || !file->inode)
+			return -EBADF;
+		i = file->inode;
+	}
 	if(!i)
 		return -ENOENT;
 	if(current_task->uid && current_task->uid != i->uid)
@@ -111,7 +127,7 @@ int sys_chown(char *path, int uid, int gid)
 	if(uid != -1) i->uid = uid;
 	if(gid != -1) i->gid = gid;
 	sync_inode_tofs(i);
-	iput(i);
+	if(path) iput(i);
 	return 0;
 }
 

@@ -89,7 +89,8 @@ int sys_writepos(int fp, char *buf, unsigned count)
 	assert(f->inode);
 	if(f->flags & _FAPPEND) pos = f->inode->len;
 	pos=do_sys_write(f, pos, buf, count);
-	f->pos += pos;
+	if(pos > 0)
+		f->pos += pos;
 	return pos;
 }
 

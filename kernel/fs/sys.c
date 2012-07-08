@@ -51,7 +51,7 @@ int sys_seek(int fp, unsigned pos, unsigned whence)
 	if(S_ISCHR(f->inode->mode) || S_ISFIFO(f->inode->mode))
 		return 0;
 	if(whence)
-		f->pos = ((whence == SEEK_END) ? f->inode->len+pos : f->pos+pos);
+		f->pos = ((whence == SEEK_END) ? f->inode->len+(int)pos : f->pos+(int)pos);
 	else
 		f->pos=pos;
 	return f->pos;

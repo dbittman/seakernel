@@ -30,6 +30,8 @@ void kernel_shutdown()
 
 void kernel_reset()
 {
+	if(current_task->uid)
+		return;
 	kernel_shutdown();
 	kprintf("Rebooting system...\n");
 	do_reset();
@@ -37,6 +39,8 @@ void kernel_reset()
 
 void kernel_poweroff()
 {
+	if(current_task->uid)
+		return;
 	kernel_shutdown();
 	super_cli();
 	acpiPowerOff();

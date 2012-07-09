@@ -19,6 +19,3 @@ NOTE: THE BUILD SYSTEM IS NOT GUARANTEED TO WORK EVERYWHERE.
 * 'make all' will run both make os and make image.
 
 A shortcut, once configure has been run, is "make all test"
-
-NOTE: To login, user either god, or bob (god is the superuser)
-To get a list of programs 'ls /bin /usr/bin /usr/sbin'

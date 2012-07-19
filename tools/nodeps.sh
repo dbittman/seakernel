@@ -1,5 +1,4 @@
 echo "" > make.deps
-echo "" > apps/make.deps
 echo "" > library/make.deps
 echo "" > drivers/make.deps
 echo "" > drivers/ata/make.deps

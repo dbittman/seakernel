@@ -5,7 +5,7 @@ modprobe -d / /pci
 modprobe -d / /partitions 
 modprobe -d / /ata 
 modprobe -d / /ext2 
-modprobe -d / /iso9660
+#modprobe -d / /iso9660
 if [[ "$1" = "/" ]]; then
 	sh
 else

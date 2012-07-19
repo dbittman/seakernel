@@ -184,7 +184,8 @@ void init()
 	 * So we write simple wrapper functions for common functions that 
 	 * we will need */
 	ret = u_execve("/sh", (char **)stuff_to_pass, (char **)init_env);
-	
+	ret = u_execve("/bin/sh", (char **)stuff_to_pass, (char **)init_env);
+	ret = u_execve("/bin/bash", (char **)stuff_to_pass, (char **)init_env);
 	printf("Failed to start the preinit process. System will halt.\n");
 	u_exit(0);
 }

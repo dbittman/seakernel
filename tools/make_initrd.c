@@ -8,7 +8,7 @@
 struct initrd_header
 {
 	unsigned char magic;
-	char name[64];
+	char name[256];
 	unsigned int offset;
 	unsigned int length;
 };
@@ -47,7 +47,7 @@ int main(int argc, char **argv)
 	printf("processing headers... done\n");
 	FILE *wstream = fopen("./initrd.img", "w");
 	unsigned char *data = (unsigned char *)malloc(off);
-	unsigned char mag[4] = "IRD1";
+	unsigned char mag[4] = "IRD2";
 	fwrite(mag, sizeof(unsigned char), 4, wstream);
 	fwrite(&nheaders, sizeof(int), 1, wstream);
 	fwrite(headers, sizeof(struct initrd_header), nheaders, wstream);
@@ -74,6 +74,6 @@ int main(int argc, char **argv)
 	fflush(wstream);
 	fclose(wstream);
 	free(data);
-
+	printf("generated initrd.img\n");
 	return 0;	
 }

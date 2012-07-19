@@ -9,7 +9,7 @@ typedef struct
 typedef struct
 {
 	u8int magic;
-	s8int name[64];
+	s8int name[256];
 	u32int offset;
 	u32int length; 
 } initrd_file_header_t;

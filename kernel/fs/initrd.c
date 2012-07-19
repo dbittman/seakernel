@@ -21,6 +21,8 @@ void load_initrd(struct multiboot *mb)
 				&& *(unsigned char *)(q+2) == 'D'))
 			goto not_found;
 		initrd_version = *(unsigned char *)(q+3);
+		if(initrd_version != '2')
+			goto not_found;
 		initrd_location += 4;
 		/* Place the start of temporary usable memory to the end of the initrd */
 		placement = initrd_end;

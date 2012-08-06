@@ -66,40 +66,11 @@ int create_device(struct ata_controller *cont, struct ata_device *dev, char *nod
 	return 0;
 }
 
-int ata_read_partitions(struct ata_controller *cont, struct ata_device *dev, char *node)
-{
-	printk(1, "[ata]: Reading partition table (%d:%d)...", cont->id, dev->id);
-	unsigned char buf[512];
-	ata_pio_rw(cont, dev, READ, 0, buf, 512);
-	memcpy(dev->ptable, buf+0x1BE, 64);
-	int i;
-	for(i=0;i<4;i++)
-	{
-		if(dev->ptable[i].sysid)
-		{
-			int a = cont->id * 2 + dev->id;
-			char tmp[17];
-			memset(tmp, 0, 17);
-			sprintf(tmp, "%s%d", node, i+1);
-			struct inode *in = dfs_cn(tmp, S_IFBLK, (dev->flags & F_ATAPI 
-				|| dev->flags & F_SATAPI) ? api : 3, a+(i+1)*4);
-			struct dev_rec *d = nodes;
-			struct dev_rec *new = (struct dev_rec *)kmalloc(sizeof(*d));
-			new->node=in;
-			new->next = d;
-			nodes=new;
-		}
-		dev->ptable[i].ext=0;
-	}
-	printk(1, "ok\n");
-	return 0;
-}
-
 int read_partitions(struct ata_controller *cont, struct ata_device *dev, char *node)
 {
 	unsigned p = find_kernel_function("enumerate_partitions");
 	if(!p)
-		return ata_read_partitions(cont, dev, node);
+		return 0;
 	int d = 3*256 + cont->id * 2 + dev->id;
 	int (*e_p)(int, int, struct partition *);
 	e_p = (int (*)(int, int, struct partition *))p;
@@ -235,7 +206,7 @@ int init_ata_controller(struct ata_controller *cont){
 		read_partitions(cont, &cont->devices[i], node);
 	}
 	
-	if (cont->port_bmr_base) {
+	if (cont->port_bmr_base && 0) {
 		unsigned buf;
 		unsigned p;
 		if(!cont->prdt_virt) {

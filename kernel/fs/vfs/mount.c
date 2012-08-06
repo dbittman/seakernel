@@ -12,8 +12,10 @@ int do_mount(struct inode *i, struct inode *p)
 		return -EACCES;
 	if(i == current_task->root)
 		return -EINVAL;
-	if(!is_directory(i) || !is_directory(p))
+	if(!is_directory(i))
 		return -ENOTDIR;
+	if(!is_directory(p))
+		return -EIO;
 	mutex_on(&i->lock);
 	if(i->mount) {
 		mutex_off(&i->lock);

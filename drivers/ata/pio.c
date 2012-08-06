@@ -6,7 +6,6 @@
 int ata_pio_rw(struct ata_controller *cont, struct ata_device *dev, 
 	int rw, unsigned long long blk, unsigned char *buffer, unsigned count)
 {
-	count *= 512;
 	mutex_t *lock = cont->wait;
 	mutex_on(lock);
 	unsigned long long addr = blk;
@@ -30,7 +29,7 @@ int ata_pio_rw(struct ata_controller *cont, struct ata_device *dev,
 		outb(cont->port_cmd_base+REG_LBA_HIG, (unsigned char)(addr >> 40));
 	}
 	
-	outb(cont->port_cmd_base+REG_SEC_CNT, count/512);
+	outb(cont->port_cmd_base+REG_SEC_CNT, count);
 	outb(cont->port_cmd_base+REG_LBA_LOW, (unsigned char)addr);
 	outb(cont->port_cmd_base+REG_LBA_MID, (unsigned char)(addr >> 8));
 	outb(cont->port_cmd_base+REG_LBA_HIG, (unsigned char)(addr >> 16));
@@ -62,15 +61,14 @@ int ata_pio_rw(struct ata_controller *cont, struct ata_device *dev,
 	unsigned tmpword;
 	if(rw == READ)
 	{
-		for (idx = 0; idx < count/2; idx++)
+		for (idx = 0; idx < count*256; idx++)
 		{
 			tmpword = inw(cont->port_cmd_base+REG_DATA);
 			buffer[idx * 2] = (unsigned char)tmpword;
 			buffer[idx * 2 + 1] = (unsigned char)(tmpword >> 8);
 		}
-	} else if(rw == WRITE)
-	{
-		for (idx = 0; idx < count/2; idx++)
+	} else if(rw == WRITE) {
+		for (idx = 0; idx < count*256; idx++)
 		{
 			tmpword = buffer[idx * 2] | (buffer[idx * 2 + 1] << 8);
 			asm volatile ("outw %1, %0"::"dN" 
@@ -78,5 +76,5 @@ int ata_pio_rw(struct ata_controller *cont, struct ata_device *dev,
 		}
 	}
 	mutex_off(lock);
-	return count;
+	return count*512;
 }

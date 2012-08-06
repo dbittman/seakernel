@@ -9,33 +9,6 @@ mutex_t *dma_mutex;
 int api=0;
 struct dev_rec *nodes;
 
-int ata_rw_main(int rw, int dev, int blk_, char *buf)
-{
-	unsigned long long blk = blk_;
-	int part;
-	struct ata_device *device = get_ata_device(dev, &part);
-	struct ata_controller *cont = device->controller;
-	if(!(device->flags & F_EXIST)) {
-		return 0;
-	}
-	if(part >= 0) {
-		if(blk > (device->ptable[part].start_lba + device->ptable[part].length))
-		{
-			return 0;
-		}
-		blk += device->ptable[part].start_lba;
-	}
-	if(blk >= device->length) {
-		return 0;
-	}
-	int ret;
-	if(cont->dma_use)
-		ret = ata_dma_rw(cont, device, rw, blk, buf, 1);
-	else
-		ret = ata_pio_rw(cont, device, rw, blk, (unsigned char *)buf, 1);
-	return ret;
-}
-
 int ata_rw_multiple(int rw, int dev, int blk_, char *buf, int count)
 {
 	unsigned long long blk = blk_;
@@ -46,21 +19,23 @@ int ata_rw_multiple(int rw, int dev, int blk_, char *buf, int count)
 		return 0;
 	}
 	if(part >= 0) {
-		if(blk > (device->ptable[part].start_lba + device->ptable[part].length))
-		{
+		if(blk > (device->ptable[part].length))
 			return 0;
-		}
 		blk += device->ptable[part].start_lba;
 	}
-	if(blk >= device->length) {
+	if(blk >= device->length)
 		return 0;
-	}
 	int ret;
-	if(cont->dma_use)
+	if(cont->dma_use && 0)
 		ret = ata_dma_rw(cont, device, rw, blk, buf, count);
 	else
 		ret = ata_pio_rw(cont, device, rw, blk, (unsigned char *)buf, count);
 	return ret;
+}
+
+int ata_rw_main(int rw, int dev, int blk_, char *buf)
+{
+	return ata_rw_multiple(rw, dev, blk_, buf, 1);
 }
 
 int ioctl_ata(int min, int cmd, int arg)
@@ -107,7 +82,7 @@ int ioctl_ata(int min, int cmd, int arg)
 	}
 	return -EINVAL;
 }
-
+#include <sys/fcntl.h>
 int module_install()
 {
 	dma_mutex = create_mutex(0);

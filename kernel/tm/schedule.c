@@ -137,8 +137,6 @@ __attribute__((always_inline)) static inline void store_context(unsigned eip)
 
 __attribute__((always_inline)) static inline void restore_context()
 {
-	/* Update the directory */
-	//current_dir = current_task->pd;
 	/* Update some last-minute things. The stack. */
 	set_kernel_stack(current_task->kernel_stack+(KERN_STACK_SIZE-64));
 }

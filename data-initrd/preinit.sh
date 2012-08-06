@@ -1,4 +1,4 @@
-echo "Loading modules..."
+echo -n "Loading modules..."
 export PATH=$PATH:/:.:/usr/sbin
 modprobe -d / /keyboard 
 modprobe -d / /pci 
@@ -6,7 +6,11 @@ modprobe -d / /partitions
 modprobe -d / /ata 
 modprobe -d / /ext2 
 #modprobe -d / /iso9660
+
+echo " ok"
+
 if [[ "$1" = "/" ]]; then
+	# the user instructed us to use the initrd as /. Just start a shell
 	sh
 else
 	fsck -p -T -C $1

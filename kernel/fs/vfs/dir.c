@@ -47,11 +47,11 @@ int do_get_path_string(struct inode *p, char *path, int max)
 	return 0;
 }
 
-int get_path_string(struct inode *p, char *buf)
+int get_path_string(struct inode *p, char *buf, int len)
 {
-	if(!p || !buf)
+	if(!p || !buf || !len)
 		return -EINVAL;
-	return do_get_path_string(p, buf, -1);
+	return do_get_path_string(p, buf, len);
 }
 
 int get_pwd(char *buf, int sz)
@@ -83,14 +83,11 @@ int chroot(char *n)
 	return 0;
 }
 
-int chdir(char *n)
+int ichdir(struct inode *i)
 {
-	if(!n)
+	if(!i)
 		return -EINVAL;
-	struct inode *i=0;
-	struct inode *old = current_task->pwd;
-	i = get_idir(n, 0);
-	if(!i) return -ENOENT;
+	struct inode *old=current_task->pwd;
 	if(!is_directory(i)) {
 		iput(i);
 		return -ENOTDIR;
@@ -104,6 +101,14 @@ int chdir(char *n)
 	change_ireq(old, -1);
 	iput(old);
 	return 0;
+}
+
+int chdir(char *path)
+{
+	if(!path) return -EINVAL;
+	struct inode *i = get_idir(path, 0);
+	if(!i) return -ENOENT;
+	return ichdir(i);
 }
 
 struct inode *do_readdir(struct inode *i, int num)
@@ -145,4 +150,15 @@ struct inode *read_dir(char *n, int num)
 	struct inode *ret = do_readdir(i, num);
 	iput(i);
 	return ret;
+}
+
+struct inode *read_idir(struct inode *i, int num)
+{
+	if(!i)
+		return 0;
+	if(!permissions(i, MAY_READ)) {
+		iput(i);
+		return 0;
+	}
+	return do_readdir(i, num);
 }

@@ -78,10 +78,10 @@ void *syscall_table[129] = {
 	SC sys_null, SC sys_null, SC sys_pipe, SC set_signal, 
 	SC sys_null, SC sys_null, SC sys_null, SC sys_null,
 	SC get_time, SC get_timer_th, SC sys_isstate, SC sys_wait3, 
-	SC sys_null, SC sys_null, SC sys_null, SC /**96*/sys_swaptask,
+	SC sys_null, SC sys_null, SC sys_getcwdlen, SC /**96*/sys_swaptask,
 	
 	SC sys_dirstat, SC sys_sigact, SC sys_access, SC sys_chmod, 
-	SC sys_fcntl, SC sys_null, SC sys_null, SC sys_waitpid,
+	SC sys_fcntl, SC sys_dirstat_fd, SC sys_getdepth, SC sys_waitpid,
 	SC sys_mknod, SC sys_symlink, SC sys_readlink, SC sys_umask, 
 	SC sys_sigprocmask, SC sys_ftruncate, SC sys_getnodestr, SC sys_chown,
 	

@@ -28,7 +28,9 @@
 #include <task.h>
 #include <fs.h>
 #include <dev.h>
+
 #define PCI_LOGLEVEL 1
+
 struct inode *proc_pci;
 volatile int proc_pci_maj;
 struct pci_device *pci_list=0;

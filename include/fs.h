@@ -8,12 +8,7 @@
 #define SEEK_SET (0)
 #define SEEK_CUR (1)
 #define SEEK_END (2)
-//#define OTHERMAY_EXEC   01
-//#define OTHERMAY_WRITE  02
-//#define OTHERMAY_READ   04
-//#define GROUPMAY_EXEC  010
-//#define GROUPMAY_WRITE 020
-//#define GROUPMAY_READ  040
+
 #define MAY_EXEC      0100
 #define MAY_WRITE     0200
 #define MAY_READ      0400
@@ -119,11 +114,13 @@ int do_iremove(struct inode *i, int flag);
 #define cget_idir(path,in_st,x) do_get_idir(path, in_st, 1, x, 0)
 #define ctget_idir(path,in_st,x,res) do_get_idir(path, in_st, 1, x, res)
 
+int sys_chdir(char *n, int fd);
+int ichdir(struct inode *i);
 int sys_sync();
 int sync_inode_tofs(struct inode *i);
 int add_inode(struct inode *b, struct inode *i);
 int remove_inode(struct inode *b, char *name);
-int get_path_string(struct inode *p, char *path);
+int get_path_string(struct inode *p, char *path, int);
 struct inode *do_get_idir(char *path, struct inode *b, int, int, int *);
 int iput(struct inode *i);
 int do_chdir(struct inode *);
@@ -148,7 +145,7 @@ int pfs_read(struct inode *i, unsigned int pos, unsigned int len, char *buffer);
 struct inode *create_procfs(struct inode *i, char *c, int h);
 struct inode *pfs_cn(char *name, int mode, int major, int minor);
 void remove_dfs_node(char *name);
-int sys_getpath(int f, char *b);
+int sys_getpath(int f, char *b, int);
 struct inode *read_dir(char *, int num);
 int mount(char *d, struct inode *p);
 struct inode *dfs_cn(char *name, int mode, int major, int minor);
@@ -219,6 +216,8 @@ int sys_posix_fsstat(int fd, struct posix_statfs *sb);
 int sys_sync();
 pipe_t *create_pipe();
 struct inode *init_ramfs();
+int sys_getdepth(int fd);
+int sys_getcwdlen();
 struct inode *rfs_create(struct inode *__p, char *name, unsigned int mode);
 int rfs_read(struct inode *i, unsigned int off, unsigned int len, char *b);
 int rfs_write(struct inode *i, unsigned int off, unsigned int len, char *b);
@@ -233,6 +232,8 @@ int sys_readlink(char *_link, char *buf, int nr);
 int change_icount(struct inode *i, int c);
 extern struct inode *kproclist;
 void init_flocks(struct inode *i);
+struct inode *read_idir(struct inode *i, int num);
+int sys_dirstat_fd(int fd, unsigned num, char *namebuf, struct stat *statbuf);
 int do_sys_write_flags(struct file *f, unsigned off, char *buf, unsigned count);
 int do_sys_read_flags(struct file *f, unsigned off, char *buf, unsigned count);
 #endif

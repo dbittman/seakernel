@@ -220,7 +220,7 @@ void sync_cache(cache_t *c)
 			num=(c->dirty+i);
 		
 		printk(shutting_down ? 4 : 0, "\r[cache]: Syncing '%s': %d/%d (%d.%d%%)...   "
-				, c->name, i, num, (i*100)/num, ((i*1000)/num) % 10);
+				,c->name, i, num, (i*100)/num, ((i*1000)/num) % 10);
 		
 		sync_element(c, obj);
 		mutex_off(&c->dlock);

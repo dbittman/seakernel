@@ -17,13 +17,13 @@ int sys_isatty(int f)
 	return 0;
 }
 
-int sys_getpath(int f, char *b)
+int sys_getpath(int f, char *b, int len)
 {
 	if(!b) return -EINVAL;
 	struct file *file = get_file_pointer((task_t *) current_task, f);
 	if(!file)
 		return -EBADF;
-	return get_path_string(file->inode, b);
+	return get_path_string(file->inode, b, len);
 }
 
 void do_stat(struct inode * inode, struct stat * tmp)
@@ -60,6 +60,21 @@ int sys_dirstat(char *dir, unsigned num, char *namebuf, struct stat *statbuf)
 	if(!namebuf || !statbuf || !dir)
 		return -EINVAL;
 	struct inode *i = read_dir(dir, num);
+	if(!i)
+		return -ESRCH;
+	do_stat(i, statbuf);
+	strncpy(namebuf, i->name, 128);
+	if(i->dynamic) free_inode(i, 0);
+	return 0;
+}
+
+int sys_dirstat_fd(int fd, unsigned num, char *namebuf, struct stat *statbuf)
+{
+	if(!namebuf || !statbuf)
+		return -EINVAL;
+	struct file *f = get_file_pointer((task_t *)current_task, fd);
+	if(!f) return -EBADF;
+	struct inode *i = read_idir(f->inode, num);
 	if(!i)
 		return -ESRCH;
 	do_stat(i, statbuf);

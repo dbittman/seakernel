@@ -108,7 +108,7 @@ int dosyscall(int num, int a, int b, int c, int d, int e);
 #define SYS_WAIT3 		 92
 #define SYS_UNUSED15 		 93
 #define SYS_UNUSED16 		 94
-#define SYS_UNUSED1    		 95
+#define SYS_GETCWDLEN    		 95
 #define SYS_SWAPTASK 		 96
 
 #define SYS_DIRSTAT	    	 97
@@ -116,8 +116,8 @@ int dosyscall(int num, int a, int b, int c, int d, int e);
 #define SYS_ACCESS 		 99
 #define SYS_CHMOD 		100
 #define SYS_FCNTL 		101
-#define SYS_UNUSED17 		102
-#define SYS_UNUSED18 		103
+#define SYS_DIRSTATFD 		102
+#define SYS_GETDEPTH 		103
 #define SYS_WAITPID  		104
 #define SYS_MKNOD    		105
 #define SYS_SYMLINK  		106

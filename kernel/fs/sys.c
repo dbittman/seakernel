@@ -69,6 +69,20 @@ int sys_fsync(int f)
 	return 0;
 }
 
+int sys_chdir(char *n, int fd)
+{
+	if(!n)
+	{
+		/* ok, we're comin' from a fchdir. This should be easy... */
+		struct file *file = get_file_pointer((task_t *)current_task, fd);
+		if(!file)
+			return -EBADF;
+		change_icount(file->inode, 1);
+		return ichdir(file->inode);
+	} else
+		return chdir(n);
+}
+
 int sys_link(char *s, char *d)
 {
 	if(!s || !d) 
@@ -81,6 +95,28 @@ int sys_umask(int mode)
 	int old = current_task->cmask;
 	current_task->cmask=mode;
 	return old;
+}
+
+int sys_getdepth(int fd)
+{
+	struct file *file = get_file_pointer((task_t *)current_task, fd);
+	if(!file || !file->inode)
+		return -EBADF;
+	struct inode *i = file->inode;
+	int x=1;
+	while(i->parent != current_task->root)
+		x++, i=i->parent;
+	return x;
+}
+
+int sys_getcwdlen()
+{
+	struct inode *i = current_task->pwd;
+	if(!i) return 0;
+	int x=1;
+	while(i->parent != current_task->root)
+		x++, i=i->parent;
+	return x;
 }
 
 int sys_chmod(char *path, int fd, int mode)

@@ -29,7 +29,7 @@ vnode_t *insert_vmem_area(vma_t *v, unsigned num_p)
 		v->first = n;
 	} else
 	{
-		while(n && (unsigned)n < (v->addr + v->num_ipages*PAGE_SIZE))
+		while(n && (addr_t)n < (v->addr + v->num_ipages*PAGE_SIZE))
 		{
 			if((n->addr + n->num_pages*PAGE_SIZE) + num_p*PAGE_SIZE >= v->max) {
 				mutex_off(&v->lock);
@@ -45,7 +45,7 @@ vnode_t *insert_vmem_area(vma_t *v, unsigned num_p)
 			} else
 			{
 				/* Do we have room for one more? */
-				if((((unsigned)n + sizeof(vnode_t)) > 
+				if((((addr_t)n + sizeof(vnode_t)) > 
 						(v->addr+v->num_ipages*PAGE_SIZE))) {
 					mutex_off(&v->lock);
 					return 0;
@@ -54,7 +54,7 @@ vnode_t *insert_vmem_area(vma_t *v, unsigned num_p)
 			}
 			n=n->next;
 		}
-		if((unsigned)n >= (v->addr + v->num_ipages*PAGE_SIZE)) {
+		if((addr_t)n >= (v->addr + v->num_ipages*PAGE_SIZE)) {
 			mutex_off(&v->lock);
 			return 0;
 		}
@@ -96,7 +96,7 @@ int remove_vmem_area(vma_t *v, vnode_t *n)
 	return 0;
 }
 
-vnode_t *find_vmem_area(vma_t *v, unsigned addr)
+vnode_t *find_vmem_area(vma_t *v, addr_t addr)
 {
 	if(!v)
 		return 0;
@@ -111,7 +111,7 @@ vnode_t *find_vmem_area(vma_t *v, unsigned addr)
 	return t;
 }
 
-int init_vmem_area(vma_t *v, unsigned addr, unsigned max, int num_ipages)
+int init_vmem_area(vma_t *v, addr_t addr, unsigned max, int num_ipages)
 {
 	memset(v, 0, sizeof(vma_t));
 	v->addr = addr;

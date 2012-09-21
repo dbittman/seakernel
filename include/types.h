@@ -10,6 +10,17 @@ typedef          short s16int;
 typedef unsigned char  u8int;
 typedef          char  s8int;
 
+typedef unsigned int   u32;
+typedef          int   s32;
+typedef unsigned long long   u64;
+typedef          long long   s64;
+typedef unsigned short u16;
+typedef          short s16;
+typedef unsigned char  u8;
+typedef          char  s8;
+
+typedef unsigned int addr_t;
+
 typedef unsigned int   uint32;
 typedef          int   sint32;
 typedef unsigned long long   uint64;

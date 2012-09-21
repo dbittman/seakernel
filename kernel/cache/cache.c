@@ -109,7 +109,7 @@ int cache_add_element(cache_t *c, struct ce_t *obj)
 	return 0;
 }
 
-struct ce_t *find_cache_element(cache_t *c, unsigned id, unsigned key)
+struct ce_t *find_cache_element(cache_t *c, u64 id, u64 key)
 {
 	accessed_cache(c);
 	mutex_on(&c->lock);
@@ -118,7 +118,7 @@ struct ce_t *find_cache_element(cache_t *c, unsigned id, unsigned key)
 	return ret;
 }
 
-int do_cache_object(cache_t *c, unsigned id, unsigned key, int sz, char *buf, int dirty)
+int do_cache_object(cache_t *c, u64 id, u64 key, int sz, char *buf, int dirty)
 {
 	mutex_on(&c->lock);
 	struct ce_t *obj = find_cache_element(c, id, key);
@@ -169,7 +169,7 @@ void remove_element(cache_t *c, struct ce_t *o)
 	mutex_off(&c->lock);
 }
 
-void remove_element_byid(cache_t *c, unsigned id, unsigned key)
+void remove_element_byid(cache_t *c, u64 id, u64 key)
 {
 	mutex_on(&c->lock);
 	struct ce_t *o = find_cache_element(c, id, key);
@@ -238,7 +238,7 @@ void sync_cache(cache_t *c)
 	printk(0, "[cache]: Cache '%s' has sunk\n", c->name);
 }
 
-int destroy_all_id(cache_t *c, unsigned id)
+int destroy_all_id(cache_t *c, u64 id)
 {
 	mutex_on(&c->lock);
 	struct ce_t *o = c->list;

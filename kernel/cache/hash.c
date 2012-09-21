@@ -1,7 +1,7 @@
 #include <kernel.h>
 #include <cache.h>
 #include <task.h>
-static unsigned chach_get_location(chash_t *h, unsigned id, unsigned key)
+static unsigned chach_get_location(chash_t *h, u64 id, u64 key)
 {
 	return ((id+key) * key) % h->length;
 }
@@ -21,7 +21,7 @@ int chash_destroy(chash_t *h)
 	return 0;
 }
 
-chash_chain_t *do_chash_search(chash_t *h, unsigned id, unsigned key)
+chash_chain_t *do_chash_search(chash_t *h, u64 id, u64 key)
 {
 	unsigned i = chach_get_location(h, id, key);
 	chash_chain_t *chain = h->hash[i];
@@ -33,13 +33,13 @@ chash_chain_t *do_chash_search(chash_t *h, unsigned id, unsigned key)
 	return 0;
 }
 
-void *chash_search(chash_t *h, unsigned id, unsigned key)
+void *chash_search(chash_t *h, u64 id, u64 key)
 {
 	chash_chain_t *chain = do_chash_search(h, id, key);
 	return chain ? chain->ptr : 0;
 }
 
-int chash_delete(chash_t *h, unsigned id, unsigned key)
+int chash_delete(chash_t *h, u64 id, u64 key)
 {
 	unsigned i = chach_get_location(h, id, key);
 	chash_chain_t *el = do_chash_search(h, id, key);
@@ -53,7 +53,7 @@ int chash_delete(chash_t *h, unsigned id, unsigned key)
 	return 0;
 }
 
-int chash_add(chash_t *h, unsigned id, unsigned key, void *ptr)
+int chash_add(chash_t *h, u64 id, u64 key, void *ptr)
 {
 	chash_chain_t *new = (void*)kmalloc(sizeof(chash_chain_t));
 	new->id=id;

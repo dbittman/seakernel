@@ -182,11 +182,9 @@ int kernel_cache_sync_slow(int all);
 int disconnect_block_cache(int dev);
 int ttyx_ioctl(int min, int cmd, int arg);
 void unregister_block_device(int n);
-int write_block_cache(int dev, int blk);
 long long block_read(int dev, unsigned long long posit, char *buf, unsigned int c);
 long long block_write(int dev, unsigned long long posit, char *buf, unsigned int c);
 struct inode *dfs_cn(char *name, int mode, int major, int minor);
-int block_rw(int rw, int dev, int blk, char *buf, blockdevice_t *bd);
 int sys_setsid();
 int proc_set_callback(int major, int( *callback)(char rw, struct inode *inode, 
 	int m, char *buf));

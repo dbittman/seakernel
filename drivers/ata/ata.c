@@ -9,7 +9,7 @@ mutex_t *dma_mutex;
 int api=0;
 struct dev_rec *nodes;
 
-int ata_rw_multiple(int rw, int dev, int blk_, char *buf, int count)
+int ata_rw_multiple(int rw, int dev, u64 blk_, char *buf, int count)
 {
 	unsigned long long blk = blk_;
 	int part;
@@ -33,7 +33,7 @@ int ata_rw_multiple(int rw, int dev, int blk_, char *buf, int count)
 	return ret;
 }
 
-int ata_rw_main(int rw, int dev, int blk_, char *buf)
+int ata_rw_main(int rw, int dev, u64 blk_, char *buf)
 {
 	return ata_rw_multiple(rw, dev, blk_, buf, 1);
 }

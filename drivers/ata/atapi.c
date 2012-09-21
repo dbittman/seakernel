@@ -63,7 +63,7 @@ int atapi_pio_rw(struct ata_controller *cont, struct ata_device *dev, int rw,
 	return size;
 }
 
-int atapi_rw_main(int rw, int dev, int blk_, char *buf)
+int atapi_rw_main(int rw, int dev, u64 blk_, char *buf)
 {
 	unsigned long long blk = blk_;
 	int part;

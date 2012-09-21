@@ -12,8 +12,8 @@ int ioctl_stub(int a, int b, int c)
 	return -1;
 }
 
-blockdevice_t *set_blockdevice(int maj, int (*f)(int, int, int, char*), int bs, 
-	int (*c)(int, int, int), int (*m)(int, int, int, char *, int), int (*s)(int, int))
+blockdevice_t *set_blockdevice(int maj, int (*f)(int, int, u64, char*), int bs, 
+	int (*c)(int, int, int), int (*m)(int, int, u64, char *, int), int (*s)(int, int))
 {
 	printk(1, "[dev]: Setting block device %d, bs=%d (%x, %x)\n", maj, bs, f, c);
 	blockdevice_t *dev = (blockdevice_t *)kmalloc(sizeof(blockdevice_t));
@@ -30,8 +30,8 @@ blockdevice_t *set_blockdevice(int maj, int (*f)(int, int, int, char*), int bs,
 	return dev;
 }
 
-int set_availablebd(int (*f)(int, int, int, char*), int bs, 
-	int (*c)(int, int, int), int (*m)(int, int, int, char *, int), int (*s)(int, int))
+int set_availablebd(int (*f)(int, int, u64, char*), int bs, 
+	int (*c)(int, int, int), int (*m)(int, int, u64, char *, int), int (*s)(int, int))
 {
 	int i=10; /* first 10 devices are reserved by the system */
 	mutex_on(&bd_search_lock);
@@ -74,7 +74,7 @@ void init_block_devs()
 	block_cache_init();
 }
 
-int do_block_rw(int rw, int dev, int blk, char *buf, blockdevice_t *bd)
+int do_block_rw(int rw, int dev, u64 blk, char *buf, blockdevice_t *bd)
 {
 	if(dev < 0)
 		dev=-dev;
@@ -95,7 +95,7 @@ int do_block_rw(int rw, int dev, int blk, char *buf, blockdevice_t *bd)
 	return -EIO;
 }
 
-int block_rw(int rw, int dev, int blk, char *buf, blockdevice_t *bd)
+int block_rw(int rw, int dev, u64 blk, char *buf, blockdevice_t *bd)
 {
 	if(!bd) 
 	{
@@ -133,7 +133,7 @@ int block_rw(int rw, int dev, int blk, char *buf, blockdevice_t *bd)
 	return ret;
 }
 
-unsigned do_block_read_multiple(blockdevice_t *bd, int dev, unsigned start, 
+unsigned do_block_read_multiple(blockdevice_t *bd, int dev, u64 start, 
 	unsigned num, char *buf)
 {
 	unsigned count=0;
@@ -160,7 +160,7 @@ unsigned do_block_read_multiple(blockdevice_t *bd, int dev, unsigned start,
 	return count;
 }
 
-unsigned block_read_multiple(blockdevice_t *bd, int dev, unsigned start, 
+unsigned block_read_multiple(blockdevice_t *bd, int dev, u64 start, 
 	unsigned num, char *buf)
 {
 	unsigned count=0;

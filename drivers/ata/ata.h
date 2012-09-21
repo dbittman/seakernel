@@ -222,7 +222,7 @@ static inline void insw(unsigned long addr, void *buffer, int count)
 		} while (--count);
 	}
 }
-int atapi_rw_main(int rw, int dev, int blk_, char *buf);
+int atapi_rw_main(int rw, int dev, u64 blk_, char *buf);
 int ioctl_atapi(int min, int cmd, int arg);
 struct ata_device *get_ata_device(int min, int *part);
 int ata_dma_rw(struct ata_controller *cont, struct ata_device *dev, int rw, 

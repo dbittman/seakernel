@@ -52,7 +52,7 @@ void remove_loop_device(struct loop_device *loop)
 	kfree(loop);
 }
 
-int loop_rw(int rw, int minor, int block, char *buf)
+int loop_rw(int rw, int minor, u64 block, char *buf)
 {
 	int ret=0;
 	struct loop_device *loop = get_loop(minor);

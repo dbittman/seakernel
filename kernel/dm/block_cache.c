@@ -25,13 +25,13 @@ int disconnect_block_cache(int dev)
 	return destroy_all_id(blk_cache, dev);
 }
 
-int cache_block(int dev, unsigned blk, int sz, char *buf)
+int cache_block(int dev, u64 blk, int sz, char *buf)
 {
 	return do_cache_object(blk_cache, dev < 0 ? -dev : dev, blk, sz, buf, 
 		dev < 0 ? 0 : 1);
 }
 
-int get_block_cache(int dev, int blk, char *buf)
+int get_block_cache(int dev, u64 blk, char *buf)
 {
 	struct ce_t *c = find_cache_element(blk_cache, dev, blk);
 	if(!c)
@@ -40,7 +40,7 @@ int get_block_cache(int dev, int blk, char *buf)
 	return 1;
 }
 
-int write_block_cache(int dev, int blk)
+int write_block_cache(int dev, u64 blk)
 {
 	struct ce_t *c = find_cache_element(blk_cache, dev, blk);
 	block_cache_sync(c);

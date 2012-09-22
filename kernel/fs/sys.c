@@ -144,7 +144,7 @@ int sys_chmod(char *path, int fd, mode_t mode)
 	return 0;
 }
 
-int sys_chown(char *path, int fd, int uid, int gid)
+int sys_chown(char *path, int fd, uid_t uid, gid_t gid)
 {
 	if(!path && fd == -1)
 		return -EINVAL;
@@ -206,7 +206,7 @@ int sys_ftruncate(int f, off_t length)
 	return 0;
 }
 
-int sys_mknod(char *path, mode_t mode, unsigned dev)
+int sys_mknod(char *path, mode_t mode, dev_t dev)
 {
 	if(!path) return -EINVAL;
 	struct inode *i = lget_idir(path, 0);

@@ -62,7 +62,7 @@ void release_fsvol(ext2_fs_t *fs)
 	kfree(fs);
 }
 
-struct inode *ext2_mount(int dev, int block, char *node)
+struct inode *ext2_mount(dev_t dev, u64 block, char *node)
 {
 	ext2_fs_t *fs = get_new_fsvol();
 	if(!fs) {
@@ -148,7 +148,7 @@ int module_install()
 	printk(1, "[ext2]: Registering filesystem\n");
 	fs_list=0;
 	fsll = create_mutex(0);
-	register_sbt("ext2", 2, (int (*)(int,int,char*))ext2_mount);
+	register_sbt("ext2", 2, (int (*)(dev_t,u64,char*))ext2_mount);
 	return 0;
 }
 

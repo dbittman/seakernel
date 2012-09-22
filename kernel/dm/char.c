@@ -74,7 +74,7 @@ void init_char_devs()
 	create_mutex(&cd_search_lock);
 }
 
-int char_rw(int rw, int dev, char *buf, size_t len)
+int char_rw(int rw, dev_t dev, char *buf, size_t len)
 {
 	device_t *dt = get_device(DT_CHAR, MAJOR(dev));
 	if(!dt)
@@ -104,7 +104,7 @@ void unregister_char_device(int n)
 	kfree(fr);
 }
 
-int char_ioctl(int dev, int cmd, int arg)
+int char_ioctl(dev_t dev, int cmd, int arg)
 {
 	device_t *dt = get_device(DT_CHAR, MAJOR(dev));
 	if(!dt)

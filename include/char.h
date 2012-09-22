@@ -10,8 +10,8 @@ typedef struct chardevice_s {
 void init_char_devs();
 chardevice_t *set_chardevice(int maj, int (*f)(int, int, char*, size_t), 
 	int (*c)(int, int, int), int (*s)(int, int));
-int char_rw(int rw, int dev, char *buf, size_t len);
-int char_ioctl(int dev, int cmd, int arg);
+int char_rw(int rw, dev_t dev, char *buf, size_t len);
+int char_ioctl(dev_t dev, int cmd, int arg);
 int set_availablecd(int (*f)(int, int, char*, size_t), int (*c)(int, int, int), 
 	int (*s)(int, int));
 void unregister_char_device(int n);

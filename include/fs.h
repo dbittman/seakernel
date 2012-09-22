@@ -23,7 +23,9 @@ typedef struct {
 struct inode {
 	/* Attributes */
 	mode_t mode;
-	unsigned short uid, gid, nlink;
+	uid_t uid;
+	gid_t gid;
+	unsigned short nlink;
 	unsigned char unreal, dynamic, marked_for_deletion;
 	unsigned int flags;
 	off_t len;
@@ -36,7 +38,7 @@ struct inode {
 	unsigned long num;
 	unsigned int sb_idx;
 	char node_str[INAME_LEN];
-	int devnum;
+	dev_t devnum;
 	/* Pointers */
 	struct inode_operations *i_ops;
 	struct inode *child;
@@ -55,7 +57,7 @@ struct inode {
 struct sblktbl {
 	int version;
 	char name[16];
-	struct inode * (*sb_load)(int dev, int block, char *);
+	struct inode * (*sb_load)(dev_t dev, u64 block, char *);
 	struct sblktbl *next, *prev;
 };
 
@@ -135,7 +137,7 @@ int chdir(char *);
 int sys_ftruncate(int f, off_t length);
 int sys_getnodestr(char *path, char *node);
 int chroot(char *);
-int sys_chown(char *path, int, int uid, int gid);
+int sys_chown(char *path, int, uid_t uid, gid_t gid);
 int sys_utime(char *path, unsigned a, unsigned m);
 int get_pwd(char *buf, int);
 int unlink(char *f);
@@ -159,9 +161,6 @@ int write_fs(struct inode *i, off_t off, size_t len, char *b);
 int read_fs(struct inode *i, off_t off, size_t len, char *b);
 int unmount(char *n, int);
 int do_unmount(struct inode *i, int);
-int block_ioctl(int dev, int cmd, int arg);
-int char_ioctl(int dev, int cmd, int arg);
-int dm_ioctl(int type, int dev, int cmd, int arg);
 int do_fs_stat(struct inode *i, struct fsstat *f);
 int fs_stat(char *path, struct fsstat *f);
 int sys_fsstat(int fp, struct fsstat *fss);
@@ -180,15 +179,15 @@ int sys_stat(char *f, struct stat *statbuf, int);
 void add_mountlst(struct inode *n);
 void remove_mountlst(struct inode *n);
 void unmount_all();
-int register_sbt(char *name, int ver, int (*sbl)(int,int,char *));
-struct inode *sb_callback(char *fsn, int dev, int block, char *n);
-struct inode *sb_check_all(int dev, int block, char *n);
+int register_sbt(char *name, int ver, int (*sbl)(dev_t,u64,char *));
+struct inode *sb_callback(char *fsn, dev_t dev, u64 block, char *n);
+struct inode *sb_check_all(dev_t dev, u64 block, char *n);
 int unregister_sbt(char *name);
 int execve(char *path, char **argv, char **env);
 int load_superblocktable();
 int get_ref_count(struct inode *i);
 int sys_mount(char *node, char *to);
-int s_mount(char *name, int dev, u64 block, char *fsname, char *no);
+int s_mount(char *name, dev_t dev, u64 block, char *fsname, char *no);
 int mount(char *d, struct inode *p);
 int do_mount(struct inode *i, struct inode *p);
 int sys_readpos(int fp, char *buf, size_t count);
@@ -200,7 +199,7 @@ int free_inode(struct inode *i, int);
 int remove_inode(struct inode *b, char *name);
 struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, int *);
 struct inode *lookup(struct inode *i, char *path);
-int sys_mknod(char *path, mode_t mode, unsigned dev);
+int sys_mknod(char *path, mode_t mode, dev_t dev);
 int sys_chmod(char *path, int, mode_t mode);
 int sys_access(char *path, mode_t mode);
 struct inode *sys_getidir(char *path, int fd);

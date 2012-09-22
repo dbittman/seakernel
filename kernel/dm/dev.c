@@ -3,6 +3,8 @@
 #include <dev.h>
 #include <fs.h>
 #include <sys/stat.h>
+#include <block.h>
+
 struct devhash_s devhash[NUM_DT];
 
 void init_dm()
@@ -97,7 +99,7 @@ int remove_device(int type, int major)
 	return 0;
 }
 
-int dm_ioctl(int type, int dev, int cmd, int arg)
+int dm_ioctl(int type, dev_t dev, int cmd, int arg)
 {
 	if(S_ISCHR(type))
 		return char_ioctl(dev, cmd, arg);

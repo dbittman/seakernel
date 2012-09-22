@@ -112,7 +112,8 @@ typedef volatile struct task_struct
 	int tty;
 	struct inode *root, *pwd;
 	struct file_ptr *filp[FILP_HASH_LEN];
-	u16 uid, _uid, gid, _gid;
+	uid_t uid, _uid;
+	gid_t gid, _gid;
 	mmf_t *mm_files;
 	vma_t *mmf_priv_space, *mmf_share_space;
 	

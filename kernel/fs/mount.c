@@ -78,11 +78,11 @@ void do_sync_of_mounted()
 	mutex_off(&ml_mutex);
 }
 
-int register_sbt(char *name, int ver, int (*sbl)(int,int,char *))
+int register_sbt(char *name, int ver, int (*sbl)(dev_t,u64,char *))
 {
 	struct sblktbl *sb = (struct sblktbl *)kmalloc(sizeof(struct sblktbl));
 	sb->version = (char)ver;
-	sb->sb_load = (struct inode * (*)(int,int, char*))sbl;
+	sb->sb_load = (struct inode * (*)(dev_t,u64,char*))sbl;
 	strncpy(sb->name, name, 16);
 	mutex_on(&sb_mutex);
 	struct sblktbl *o = sb_table;
@@ -94,7 +94,7 @@ int register_sbt(char *name, int ver, int (*sbl)(int,int,char *))
 	return 0;
 }
 
-struct inode *sb_callback(char *fsn, int dev, int block, char *n)
+struct inode *sb_callback(char *fsn, dev_t dev, u64 block, char *n)
 {
 	struct sblktbl *s = sb_table;
 	mutex_on(&sb_mutex);
@@ -107,7 +107,7 @@ struct inode *sb_callback(char *fsn, int dev, int block, char *n)
 	return s ? s->sb_load(dev, block, n) : 0;
 }
 
-struct inode *sb_check_all(int dev, int block, char *n)
+struct inode *sb_check_all(dev_t dev, u64 block, char *n)
 {
 	struct inode *i=0;
 	struct sblktbl *s = sb_table;

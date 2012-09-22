@@ -13,7 +13,7 @@ void init_flocks(struct inode *i)
 		i->flm = create_mutex(0);
 }
 
-struct flock *create_flock(int type, int whence, int start, int len)
+struct flock *create_flock(int type, int whence, off_t start, size_t len)
 {
 	struct flock *fl = (struct flock *)kmalloc(sizeof(struct flock));
 	fl->l_type = type;

@@ -179,15 +179,10 @@ int process_elf(char *mem, int fp, unsigned *start, unsigned *end);
 unsigned long long get_epoch_time();
 void remove_dfs_node(char *name);
 int kernel_cache_sync_slow(int all);
-int disconnect_block_cache(int dev);
 int ttyx_ioctl(int min, int cmd, int arg);
-void unregister_block_device(int n);
-long long block_read(int dev, unsigned long long posit, char *buf, unsigned int c);
-long long block_write(int dev, unsigned long long posit, char *buf, unsigned int c);
 int sys_setsid();
 int proc_set_callback(int major, int( *callback)(char rw, struct inode *inode, 
 	int m, char *buf));
 int proc_get_major();
 void delay_sleep(int t);
-int block_ioctl(int dev, int cmd, int arg);
 #endif

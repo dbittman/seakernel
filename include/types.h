@@ -39,9 +39,13 @@ typedef          short sint16_t;
 typedef unsigned char  uint8_t;
 typedef          char  sint8_t;
 typedef unsigned int    intptr_t;
-typedef long off_t;
-typedef unsigned int size_t;
-typedef unsigned mode_t;
+typedef s32 off_t;
+typedef u32 size_t;
+typedef s32 uid_t;
+typedef s32 gid_t;
+typedef s32 dev_t;
+/* internally we handle this as a 32-bit integer to allow for it to not fuck up system call registers */
+typedef u32 mode_t;
 #define NULL 0
 
 #define FALSE 0

@@ -74,7 +74,7 @@ void init_block_devs()
 	block_cache_init();
 }
 
-int do_block_rw(int rw, int dev, u64 blk, char *buf, blockdevice_t *bd)
+int do_block_rw(int rw, dev_t dev, u64 blk, char *buf, blockdevice_t *bd)
 {
 	if(dev < 0)
 		dev=-dev;
@@ -95,7 +95,7 @@ int do_block_rw(int rw, int dev, u64 blk, char *buf, blockdevice_t *bd)
 	return -EIO;
 }
 
-int block_rw(int rw, int dev, u64 blk, char *buf, blockdevice_t *bd)
+int block_rw(int rw, dev_t dev, u64 blk, char *buf, blockdevice_t *bd)
 {
 	if(!bd) 
 	{
@@ -133,7 +133,7 @@ int block_rw(int rw, int dev, u64 blk, char *buf, blockdevice_t *bd)
 	return ret;
 }
 
-unsigned do_block_read_multiple(blockdevice_t *bd, int dev, u64 start, 
+unsigned do_block_read_multiple(blockdevice_t *bd, dev_t dev, u64 start, 
 	unsigned num, char *buf)
 {
 	unsigned count=0;
@@ -190,7 +190,7 @@ unsigned block_read_multiple(blockdevice_t *bd, int dev, u64 start,
 	return count;
 }
 
-int block_read(int dev, off_t posit, char *buf, size_t c)
+int block_read(dev_t dev, off_t posit, char *buf, size_t c)
 {
 	device_t *dt = get_device(DT_BLOCK, MAJOR(dev));
 	if(!dt)
@@ -237,7 +237,7 @@ int block_read(int dev, off_t posit, char *buf, size_t c)
 	return count;
 }
 
-int block_write(int dev, off_t posit, char *buf, size_t count)
+int block_write(dev_t dev, off_t posit, char *buf, size_t count)
 {
 	device_t *dt = get_device(DT_BLOCK, MAJOR(dev));
 	if(!dt)
@@ -284,7 +284,7 @@ int block_write(int dev, off_t posit, char *buf, size_t count)
 }
 
 /* General functions */
-int block_device_rw(int mode, int dev, off_t off, char *buf, size_t len)
+int block_device_rw(int mode, dev_t dev, off_t off, char *buf, size_t len)
 {
 	if(mode == READ)
 		return block_read(dev, off, buf, len);
@@ -296,7 +296,7 @@ int block_device_rw(int mode, int dev, off_t off, char *buf, size_t len)
 /* Reserved commands:
  * -1: Sync any data in device buffer
  */
-int block_ioctl(int dev, int cmd, int arg)
+int block_ioctl(dev_t dev, int cmd, int arg)
 {
 	device_t *dt = get_device(DT_BLOCK, MAJOR(dev));
 	if(!dt)

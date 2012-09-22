@@ -19,7 +19,7 @@ struct ce_t {
 	unsigned length;
 	unsigned atime;
 	unsigned acount;
-	unsigned dev;
+	dev_t dev;
 	struct ce_t *next_dirty, *next;
 	struct ce_t *prev_dirty, *prev;
 };

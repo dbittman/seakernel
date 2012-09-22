@@ -15,7 +15,6 @@ void init_module_system();
 void mount_root(char *path);
 void load_all_boot_mods();
 void try_releasing_tasks();
-u32int read_block(int drive, long long addr, unsigned char *buffer);
 extern unsigned int heap_end;
 extern char mods_toload[128][128];
 extern void load_tables();

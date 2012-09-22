@@ -16,27 +16,29 @@ typedef struct blockdevice_s {
 void init_block_devs();
 blockdevice_t *set_blockdevice(int maj, int (*f)(int, int, u64, char*), 
 	int bs, int (*c)(int, int, int), int (*m)(int, int, u64, char *, int), int (*s)(int, int));
-int block_rw(int rw, int dev, u64 blk, char *buf, blockdevice_t *bd);
+int block_rw(int rw, dev_t dev, u64 blk, char *buf, blockdevice_t *bd);
 
 
-int block_device_rw(int mode, int dev, off_t off, char *buf, size_t len);
+int block_device_rw(int mode, dev_t dev, off_t off, char *buf, size_t len);
 
 
-int block_ioctl(int dev, int cmd, int arg);
-int do_block_rw(int rw, int dev, u64 blk, char *buf, blockdevice_t *bd);
+int block_ioctl(dev_t dev, int cmd, int arg);
+int do_block_rw(int rw, dev_t dev, u64 blk, char *buf, blockdevice_t *bd);
 int set_availablebd(int (*f)(int, int, u64, char*), int bs, 
 	int (*c)(int, int, int), int (*m)(int, int, u64, char *, int), int (*s)(int, int));
-int do_block_rw_multiple(int rw, int dev, u64 blk, char *buf, 
+int do_block_rw_multiple(int rw, dev_t dev, u64 blk, char *buf, 
 	blockdevice_t *bd, int count);
 void block_cache_init();
 int mem_rw(int rw, int min, u64 blk, char *b);
-int get_block_cache(int dev, u64 blk, char *buf);
-int cache_block(int dev, u64 blk, int sz, char *buf);
-int write_block_cache(int dev, u64 blk);
-int sync_block_device(int dev);
-int disconnect_block_cache(int dev);
-int disconnect_block_cache_1(int dev);
-int disconnect_block_cache_2(int dev);
-int disconnect_block_cache_slow(int dev);
+int get_block_cache(dev_t dev, u64 blk, char *buf);
+int cache_block(dev_t dev, u64 blk, int sz, char *buf);
+int write_block_cache(dev_t dev, u64 blk);
+int sync_block_device(dev_t dev);
+int disconnect_block_cache(dev_t dev);
+int disconnect_block_cache_1(dev_t dev);
+int disconnect_block_cache_2(dev_t dev);
+int disconnect_block_cache_slow(dev_t dev);
 void unregister_block_device(int n);
+int block_read(dev_t dev, off_t posit, char *buf, size_t c);
+int block_write(dev_t dev, off_t posit, char *buf, size_t count);
 #endif

@@ -106,8 +106,8 @@ typedef struct ext2_blockgroup {
 } __attribute__((packed)) ext2_blockgroup_t;
 
 extern struct inode_operations e2fs_inode_ops;
-int ext2_write_block(ext2_fs_t *fs, unsigned block, unsigned char *buf);
-int ext2_read_block(ext2_fs_t *fs, unsigned block, unsigned char *buf);
+int ext2_write_block(ext2_fs_t *fs, u64 block, unsigned char *buf);
+int ext2_read_block(ext2_fs_t *fs, u64 block, unsigned char *buf);
 
 int ext2_inode_readblk(ext2_inode_t* inode, uint32_t block, void* buf,
 		       size_t count);
@@ -128,8 +128,8 @@ int ext2_inode_free(ext2_inode_t* inode);
 void ext2_inode_release(ext2_inode_t* inode);
 int ext2_inode_alloc(ext2_fs_t* fs, ext2_inode_t* inode);
 int ext2_sb_update(ext2_fs_t *fs, ext2_superblock_t *sb);
-int ext2_write_off(ext2_fs_t *fs, unsigned off, unsigned char *buf, unsigned len);
-int ext2_read_off(ext2_fs_t *fs, unsigned off, unsigned char *buf, unsigned len);
+int ext2_write_off(ext2_fs_t *fs, off_t off, unsigned char *buf, size_t len);
+int ext2_read_off(ext2_fs_t *fs, off_t off, unsigned char *buf, size_t len);
 int ext2_dir_change_type(ext2_inode_t* inode, char *name,
 			       unsigned new_type);
 

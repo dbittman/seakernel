@@ -57,24 +57,24 @@ struct inode *init_tmpfs()
 	return i;
 }
 
-int rfs_read(struct inode *i, unsigned int off, unsigned int len, char *b)
+int rfs_read(struct inode *i, off_t off, size_t len, char *b)
 {
-	int pl = len;
-	if((unsigned)off >= i->len)
+	size_t pl = len;
+	if(off >= i->len)
 		return 0;
-	if((unsigned)(off+len) >= i->len)
+	if((off+len) >= (unsigned)i->len)
 		len = i->len-off;
 	if(!len)
 		return 0;
-	memcpy((void *)b, (void *)(i->start+off), len);
+	memcpy((void *)b, (void *)(i->start+(addr_t)off), len);
 	return len;
 }
 
-static void rfs_resize(struct inode *i, unsigned int s)
+static void rfs_resize(struct inode *i, off_t s)
 {
 	if(s == i->len)
 		return;
-	int new = (int)kmalloc(s);
+	addr_t new = (addr_t)kmalloc(s);
 	if(i->len > s)
 	{
 		memcpy((void *)new, (void *)i->start, s);
@@ -88,21 +88,21 @@ static void rfs_resize(struct inode *i, unsigned int s)
 	i->len = s;
 }
 
-int rfs_write(struct inode *i, unsigned int off, unsigned int len, char *b)
+int rfs_write(struct inode *i, off_t off, size_t len, char *b)
 {
 	if(!len)
 		return -EINVAL;
-	if((unsigned)off > i->len || (unsigned)off+len > i->len) 
+	if(off > i->len || off+len > (unsigned)i->len) 
 	{
 		mutex_on(&i->lock);
 		rfs_resize(i, len+off);
 		mutex_off(&i->lock);
 	}
-	memcpy((void *)(i->start+off), (void *)b, len);
+	memcpy((void *)(i->start+(addr_t)off), (void *)b, len);
 	return len;
 }
 
-struct inode *rfs_create(struct inode *__p, char *name, unsigned int mode)
+struct inode *rfs_create(struct inode *__p, char *name, mode_t mode)
 {
 	struct inode *r, *p=__p;
 	if(!__p)

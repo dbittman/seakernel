@@ -9,7 +9,7 @@ CFLAGS_NO = -m32 -nostdlib -nostdinc -fno-builtin -ffreestanding \
           -D__KERNEL__ -D__DEBUG__ -std=c99 -Wall -Wextra \
            -Wformat-security -Wformat-nonliteral\
 	  -Wno-strict-aliasing -Wshadow -Wpointer-arith -Wcast-align -Wno-unused \
-	  -Wnested-externs -Waddress -Winline -Wno-long-long -mno-red-zone -fno-omit-frame-pointer
+	  -Wnested-externs -Waddress -Winline -Wno-long-long -mno-red-zone -fno-omit-frame-pointer 
 
 CFLAGS = $(CFLAGS_NO) -O3 
 LDFLAGS=-T kernel/link.ld -m seaos_i386

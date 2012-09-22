@@ -6,7 +6,7 @@
 #include <block.h>
 #include <fs.h>
 struct inode *devfs_root;
-struct inode *dfs_cn(char *name, int mode, int major, int minor);
+struct inode *dfs_cn(char *name, mode_t mode, int major, int minor);
 int devfs_nodescount=1;
 
 void init_dev_fs()
@@ -35,7 +35,7 @@ void init_dev_fs()
 	add_inode(current_task->root, devfs_root);
 }
 
-struct inode *dfs_add(struct inode *q, char *name, int mode, int major, int minor)
+struct inode *dfs_add(struct inode *q, char *name, mode_t mode, int major, int minor)
 {
 	struct inode *i;
 	i = (struct inode*)kmalloc(sizeof(struct inode));
@@ -51,7 +51,7 @@ struct inode *dfs_add(struct inode *q, char *name, int mode, int major, int mino
 	return i;
 }
 
-struct inode *dfs_cn(char *name, int mode, int major, int minor)
+struct inode *dfs_cn(char *name, mode_t mode, int major, int minor)
 {
 	if(!name) return 0;
 	return dfs_add(devfs_root, name, mode, major, minor);

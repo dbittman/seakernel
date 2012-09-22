@@ -5,7 +5,7 @@
 #include <dev.h>
 #include <fs.h>
 
-int write_fs(struct inode *i, int off, int len, char *b)
+int write_fs(struct inode *i, off_t off, size_t len, char *b)
 {
 	if(!i || !b)
 		return -EINVAL;
@@ -16,7 +16,7 @@ int write_fs(struct inode *i, int off, int len, char *b)
 	return vfs_callback_write(i, off, len, b);
 }
 
-int read_fs(struct inode *i, int off, int len, char *b)
+int read_fs(struct inode *i, off_t off, size_t  len, char *b)
 {
 	if(!i || !b)
 		return -EINVAL;

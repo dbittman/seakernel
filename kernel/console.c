@@ -11,9 +11,8 @@ extern console_driver_t crtc_drv;
 /* Simple way to display messages before tty and vsprintf get working */
 void puts(char *s)
 {
-	while(s && *s) {
+	while(s && *s)
 		kernel_console->rend.putch(kernel_console, *(s++));
-	}
 }
 
 void destroy_console(vterm_t *con)

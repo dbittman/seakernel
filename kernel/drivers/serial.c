@@ -41,7 +41,7 @@ void serial_puts(int port, char *s)
 	mutex_off(&serial_m);
 }
 
-int serial_rw(int rw, int min, char *b, int c)
+int serial_rw(int rw, int min, char *b, size_t c)
 {
 	if(!serial_initialized) 
 		return -EINVAL;

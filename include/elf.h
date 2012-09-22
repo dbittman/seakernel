@@ -184,14 +184,10 @@ int ttyx_ioctl(int min, int cmd, int arg);
 void unregister_block_device(int n);
 long long block_read(int dev, unsigned long long posit, char *buf, unsigned int c);
 long long block_write(int dev, unsigned long long posit, char *buf, unsigned int c);
-struct inode *dfs_cn(char *name, int mode, int major, int minor);
 int sys_setsid();
 int proc_set_callback(int major, int( *callback)(char rw, struct inode *inode, 
 	int m, char *buf));
 int proc_get_major();
-struct inode *pfs_cn_node(struct inode *to, char *name, int mode, int major, 
-	int minor);
-struct inode *pfs_cn(char *name, int mode, int major, int minor);
 void delay_sleep(int t);
 int block_ioctl(int dev, int cmd, int arg);
 #endif

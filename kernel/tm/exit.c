@@ -162,7 +162,7 @@ void exit(int code)
 	iput(t->root);
 	iput(t->pwd);
 	/* Send out some signals */
-	task_t *ch = (task_t *)kernel_task;
+	task_t *ch = (task_t *)kernel_task; 
 	while(ch)
 	{
 		if(ch->parent == t)
@@ -185,7 +185,6 @@ void exit(int code)
 		do_send_signal(t->parent->pid, SIGCHILD, 1);
 		t->parent = t->parent->parent;
 	}
-	
 	/* Lock out everything and modify the linked-lists */
 	lock_scheduler();
 	raise_flag(TF_DYING);

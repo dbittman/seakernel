@@ -69,7 +69,7 @@ int tty_raise_action(int min, int sig)
 	return 0;
 }
 
-__attribute__((optimize("O0"))) int tty_read(int min, char *buf, int len)
+__attribute__((optimize("O0"))) int tty_read(int min, char *buf, size_t len)
 {
 	if((unsigned)min > MAX_CONSOLES)
 		return -ENOENT;
@@ -81,7 +81,7 @@ __attribute__((optimize("O0"))) int tty_read(int min, char *buf, int len)
 		return -ENOENT;
 	volatile int rem=len;
 	volatile char t=0;
-	volatile int count=0;
+	volatile size_t count=0;
 	volatile int cb = !(con->term.c_lflag & ICANON);
 	int x = con->x;
 	while(1) {
@@ -122,7 +122,7 @@ __attribute__((optimize("O0"))) int tty_read(int min, char *buf, int len)
 }
 
 /* Write to screen */
-int tty_write(int min, char *buf, int len)
+int tty_write(int min, char *buf, size_t len)
 {
 	if((unsigned)min > MAX_CONSOLES)
 		return -ENOENT;
@@ -131,7 +131,7 @@ int tty_write(int min, char *buf, int len)
 	vterm_t *con = &consoles[min];
 	if(!con->flag)
 		return -ENOENT;
-	int i=0;
+	size_t i=0;
 	mutex_on(&con->wlock);
 	/* putch handles printable characters and control characters. 
 	 * We handle escape codes */
@@ -361,7 +361,7 @@ int tty_ioctl(int min, int cmd, int arg)
 	return ttyx_ioctl(current_task->tty, cmd, arg);
 }
 
-int ttyx_rw(int rw, int min, char *buf, int count)
+int ttyx_rw(int rw, int min, char *buf, size_t count)
 {
 	switch(rw) {
 		case OPEN:
@@ -380,7 +380,7 @@ int ttyx_rw(int rw, int min, char *buf, int count)
 	return -EINVAL;
 }
 
-int tty_rw(int rw, int m, char *buf, int c)
+int tty_rw(int rw, int m, char *buf, size_t c)
 {
  	if(!current_task) 
 		return -ESRCH;

@@ -18,7 +18,7 @@ static inline void _set_lowercase(char *b)
 	}
 }
 
-void panic(char flags, char *fmt, ...)
+void panic(int flags, char *fmt, ...)
 {
 	__super_cli();
 	int second_panic = panicing++;

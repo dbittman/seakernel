@@ -190,7 +190,7 @@ unsigned block_read_multiple(blockdevice_t *bd, int dev, u64 start,
 	return count;
 }
 
-long long block_read(int dev, unsigned long long posit, char *buf, unsigned int c)
+int block_read(int dev, off_t posit, char *buf, size_t c)
 {
 	device_t *dt = get_device(DT_BLOCK, MAJOR(dev));
 	if(!dt)
@@ -237,7 +237,7 @@ long long block_read(int dev, unsigned long long posit, char *buf, unsigned int 
 	return count;
 }
 
-long long  block_write(int dev, unsigned long long posit, char *buf, unsigned int count)
+int block_write(int dev, off_t posit, char *buf, size_t count)
 {
 	device_t *dt = get_device(DT_BLOCK, MAJOR(dev));
 	if(!dt)
@@ -245,7 +245,7 @@ long long  block_write(int dev, unsigned long long posit, char *buf, unsigned in
 	blockdevice_t *bd = (blockdevice_t *)dt->ptr;
 	if(!count) return 0;
 	int blk_size = bd->blksz;
-	int pos = posit;
+	unsigned pos = posit;
 	char buffer[blk_size];
 	/* If we are offset in a block, we dont wanna overwrite stuff */
 	if(pos % blk_size)
@@ -266,7 +266,7 @@ long long  block_write(int dev, unsigned long long posit, char *buf, unsigned in
 	while(count >= (unsigned int)blk_size)
 	{
 		if(block_rw(WRITE, dev, pos/blk_size, buf, bd) != blk_size)
-			return pos-posit;
+			return (pos-posit);
 		count -= blk_size;
 		pos += blk_size;
 		buf += blk_size;
@@ -284,7 +284,7 @@ long long  block_write(int dev, unsigned long long posit, char *buf, unsigned in
 }
 
 /* General functions */
-int block_device_rw(int mode, int dev, int off, char *buf, int len)
+int block_device_rw(int mode, int dev, off_t off, char *buf, size_t len)
 {
 	if(mode == READ)
 		return block_read(dev, off, buf, len);

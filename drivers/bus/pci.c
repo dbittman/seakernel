@@ -38,8 +38,6 @@ mutex_t *pci_mutex;
 int remove_kernel_symbol(char * unres);
 int proc_set_callback(int major, int( *callback)(char rw, struct inode *inode, 
 	int m, char *buf, int, int));
-struct inode *pfs_cn_node(struct inode *to, char *name, int mode, 
-	int major, int minor);
 /* Adds a device to the list of devices */
 int pci_add_device(struct pci_device *dev)
 {

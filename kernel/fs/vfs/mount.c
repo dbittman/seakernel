@@ -40,7 +40,7 @@ int mount(char *d, struct inode *p)
 	return do_mount(i, p);
 }
 
-int s_mount(char *name, int dev, int block, char *fsname, char *no)
+int s_mount(char *name, int dev, u64 block, char *fsname, char *no)
 {
 	struct inode *i=0;
 	if(!fsname || !*fsname)

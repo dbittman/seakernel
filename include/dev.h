@@ -38,8 +38,6 @@ struct devhash_s {
 	mutex_t lock;
 };
 	
-int char_rw(int rw, int dev, char *buf, int len);
-int block_device_rw(int mode, int dev, int off, char *buf, int len);
 void init_block_devs();
 void send_sync_char();
 void send_sync_block();

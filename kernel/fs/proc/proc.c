@@ -51,7 +51,7 @@ int proc_set_callback(int major, int( *callback)(char rw, struct inode *inode,
 	return 0;
 }
 
-struct inode *pfs_cn(char *name, int mode, int major, int minor)
+struct inode *pfs_cn(char *name, mode_t  mode, int major, int minor)
 {
 	if(!name) return 0;
 	struct inode *i;
@@ -68,7 +68,7 @@ struct inode *pfs_cn(char *name, int mode, int major, int minor)
 	return i;
 }
 
-struct inode *pfs_cn_node(struct inode *to, char *name, int mode, int major, int minor)
+struct inode *pfs_cn_node(struct inode *to, char *name, mode_t mode, int major, int minor)
 {
 	if(!name) return 0;
 	struct inode *i;
@@ -149,7 +149,7 @@ void init_proc_fs()
 	add_inode(current_task->root, procfs_root);
 }
 
-int pfs_read(struct inode *i, unsigned int off, unsigned int len, char *buffer)
+int pfs_read(struct inode *i, off_t off, size_t len, char *buffer)
 {
 	if(!i || !buffer) return -EINVAL;
 	int maj = MAJOR(i->dev);
@@ -161,7 +161,7 @@ int pfs_read(struct inode *i, unsigned int off, unsigned int len, char *buffer)
 	return callback(READ, i, min, buffer, off, len);
 }
 
-int pfs_write(struct inode *i, unsigned int pos, unsigned int len, char *buffer)
+int pfs_write(struct inode *i, off_t pos, size_t len, char *buffer)
 {
 	if(!i || !buffer) return -EINVAL;
 	int maj = MAJOR(i->dev);

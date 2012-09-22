@@ -5,7 +5,7 @@
 
 #define CALLBACK_NOFUNC_ERROR -ENOTSUP
 
-int vfs_callback_read (struct inode *i, unsigned int a, unsigned int b, char *d)
+int vfs_callback_read (struct inode *i, off_t a, size_t b, char *d)
 {
 	if(!i) return -EINVAL;
 	if(!i->i_ops || !i->i_ops->read)
@@ -13,7 +13,7 @@ int vfs_callback_read (struct inode *i, unsigned int a, unsigned int b, char *d)
 	return i->i_ops->read(i, a, b, d);
 }
 
-int vfs_callback_write (struct inode *i, unsigned int a, unsigned int b, char *d)
+int vfs_callback_write (struct inode *i, off_t a, size_t b, char *d)
 {
 	if(!i) return -EINVAL;
 	if(!i->i_ops || !i->i_ops->write)
@@ -29,7 +29,7 @@ int vfs_callback_select (struct inode *i, unsigned int m)
 	return i->i_ops->select(i, m);
 }
 
-struct inode *vfs_callback_create (struct inode *i,char *d, unsigned int m)
+struct inode *vfs_callback_create (struct inode *i,char *d, mode_t m)
 {
 	if(!i) return 0;
 	if(!i->i_ops || !i->i_ops->create)

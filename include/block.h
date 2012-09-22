@@ -19,7 +19,7 @@ blockdevice_t *set_blockdevice(int maj, int (*f)(int, int, u64, char*),
 int block_rw(int rw, int dev, u64 blk, char *buf, blockdevice_t *bd);
 
 
-int block_device_rw(int mode, int dev, int off, char *buf, int len);
+int block_device_rw(int mode, int dev, off_t off, char *buf, size_t len);
 
 
 int block_ioctl(int dev, int cmd, int arg);

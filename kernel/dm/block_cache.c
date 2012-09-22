@@ -8,8 +8,8 @@ cache_t *blk_cache=0;
 
 int block_cache_sync(struct ce_t *c)
 {
-	int dev = c->id;
-	int blk = c->key;
+	u64 dev = c->id;
+	u64 blk = c->key;
 	if(c->dirty)
 		do_block_rw(WRITE, dev, blk, c->data, 0);
 	return 1;

@@ -56,7 +56,7 @@ long sys_sysconf(int cmd)
 	return ret;
 }
 
-int sys_gethostname(char *buf, int len)
+int sys_gethostname(char *buf, size_t len)
 {
 	if(!buf || !len)
 		return -EINVAL;

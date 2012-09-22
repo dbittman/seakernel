@@ -40,7 +40,7 @@ int get_f_ref_count(struct inode *i)
 	return i ? i->f_count : 0;
 }
 
-int permissions(struct inode *i, int flag)
+int permissions(struct inode *i, mode_t flag)
 {
 	if(!i)
 		return 0;

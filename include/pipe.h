@@ -5,16 +5,16 @@ typedef struct pipe_struct {
 	volatile unsigned pending;
 	volatile unsigned write_pos, read_pos;
 	volatile char *buffer;
-	volatile unsigned length;
+	volatile off_t length;
 	mutex_t *lock;
 	char type;
 	volatile int count, wrcount;
 } pipe_t;
 
-int sys_mkfifo(char *path, unsigned mode);
+int sys_mkfifo(char *path, mode_t mode);
 void free_pipe(struct inode *i);
-int read_pipe(struct inode *ino, char *buffer, unsigned length);
-int write_pipe(struct inode *ino, char *buffer, unsigned length);
+int read_pipe(struct inode *ino, char *buffer, size_t length);
+int write_pipe(struct inode *ino, char *buffer, size_t length);
 int sys_pipe(int *files);
 
 #endif

@@ -124,7 +124,7 @@ static inline void get_kernel_version(char *b)
 	sprintf(b, "%d.%d%c%c%d", MAJ_VER, MIN_VER, t ? '-' : 0, t, p);
 }
 
-void panic(char flags, char *fmt, ...);
+void panic(int flags, char *fmt, ...);
 void serial_puts(int, char *);
 void kernel_reset();
 void panic_assert(const char *file, u32int line, const char *desc);
@@ -135,7 +135,7 @@ extern int april_fools;
 void unregister_interrupt_handler(unsigned char n, isr_t);
 int sys_isstate(int pid, int state);
 void do_reset();
-int sys_gethostname(char *buf, int len);
+int sys_gethostname(char *buf, size_t len);
 void restart_int();
 int proc_append_buffer(char *buffer, char *data, int off, int len, 
 	int req_off, int req_len);

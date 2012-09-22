@@ -23,7 +23,7 @@ void pm_init(int start, struct multiboot *mboot)
 	pm_location = (start + PAGE_SIZE) & PAGE_MASK;
 }
 
-int __pm_alloc_page(char *file, int line)
+unsigned __pm_alloc_page(char *file, int line)
 {
 	if(!pm_location)
 		panic(PANIC_MEM | PANIC_NOSYNC, "Physical memory allocation before initilization");

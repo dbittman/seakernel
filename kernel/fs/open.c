@@ -7,8 +7,10 @@
 #include <fs.h>
 #include <dev.h>
 #include <sys/fcntl.h>
+#include <char.h>
+#include <block.h>
 
-struct file *d_sys_open(char *name, int flags, int _mode, int *error, int *num)
+struct file *d_sys_open(char *name, int flags, mode_t _mode, int *error, int *num)
 {
 	if(!name) {
 		*error = -EINVAL;
@@ -17,7 +19,7 @@ struct file *d_sys_open(char *name, int flags, int _mode, int *error, int *num)
 	++flags;
 	struct inode *inode;
 	struct file *f;
-	int mode = (_mode & ~0xFFF) | ((_mode&0xFFF) & (~(current_task->cmask&0xFFF)));
+	mode_t mode = (_mode & ~0xFFF) | ((_mode&0xFFF) & (~(current_task->cmask&0xFFF)));
 	int did_create=0;
 	inode = (flags & _FCREAT) ? 
 				ctget_idir(name, 0, mode, &did_create) 
@@ -71,7 +73,7 @@ struct file *d_sys_open(char *name, int flags, int _mode, int *error, int *num)
 	return f;
 }
 
-int sys_open_posix(char *name, int flags, int mode)
+int sys_open_posix(char *name, int flags, mode_t mode)
 {
 	int error=0, num;
 	struct file *f = d_sys_open(name, flags, mode, &error, &num);

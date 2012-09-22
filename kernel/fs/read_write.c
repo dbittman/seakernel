@@ -6,8 +6,10 @@
 #include <fs.h>
 #include <dev.h>
 #include <sys/fcntl.h>
+#include <char.h>
+#include <block.h>
 
-int do_sys_read_flags(struct file *f, unsigned off, char *buf, unsigned count)
+int do_sys_read_flags(struct file *f, off_t off, char *buf, size_t count)
 {
 	if(!f || !buf)
 		return -EINVAL;
@@ -28,7 +30,7 @@ int do_sys_read_flags(struct file *f, unsigned off, char *buf, unsigned count)
 	return -EINVAL;
 }
 
-int do_sys_read(struct file *f, unsigned off, char *buf, unsigned count)
+int do_sys_read(struct file *f, off_t off, char *buf, size_t count)
 {
 	int ret = do_sys_read_flags(f, off, buf, count);
 	if(ret < 0) return ret;
@@ -36,12 +38,12 @@ int do_sys_read(struct file *f, unsigned off, char *buf, unsigned count)
 	return ret;
 }
 
-int sys_read(int fp, unsigned off, char *buf, unsigned count)
+int sys_read(int fp, off_t off, char *buf, size_t count)
 {
 	return do_sys_read(get_file_pointer((task_t *)current_task, fp), off, buf, count);
 }
 
-int sys_readpos(int fp, char *buf, unsigned count)
+int sys_readpos(int fp, char *buf, size_t count)
 {
 	if(!buf) 
 		return -EINVAL;
@@ -53,7 +55,7 @@ int sys_readpos(int fp, char *buf, unsigned count)
 	return do_sys_read(f, f->pos, buf, count);
 }
 
-int do_sys_write_flags(struct file *f, unsigned off, char *buf, unsigned count)
+int do_sys_write_flags(struct file *f, off_t off, char *buf, size_t count)
 {
 	if(!f || !buf)
 		return -EINVAL;
@@ -71,12 +73,12 @@ int do_sys_write_flags(struct file *f, unsigned off, char *buf, unsigned count)
 	return -EINVAL;
 }
 
-int do_sys_write(struct file *f, unsigned off, char *buf, unsigned count)
+int do_sys_write(struct file *f, off_t off, char *buf, size_t count)
 {
 	return do_sys_write_flags(f, off, buf, count);
 }
 
-int sys_writepos(int fp, char *buf, unsigned count)
+int sys_writepos(int fp, char *buf, size_t count)
 {
 	struct file *f = get_file_pointer((task_t *)current_task, fp);
 	if(!f)
@@ -85,16 +87,14 @@ int sys_writepos(int fp, char *buf, unsigned count)
 		return -EINVAL;
 	if(!(f->flags & _FWRITE))
 		return -EACCES;
-	int pos = f->pos;
 	assert(f->inode);
-	if(f->flags & _FAPPEND) pos = f->inode->len;
-	pos=do_sys_write(f, pos, buf, count);
-	if(pos > 0)
-		f->pos += pos;
-	return pos;
+	int ret=do_sys_write(f, f->flags & _FAPPEND ? f->inode->len : f->pos, buf, count);
+	if(ret > 0)
+		f->pos += ret;
+	return ret;
 }
 
-int sys_write(int fp, unsigned off, char *buf, unsigned count)
+int sys_write(int fp, off_t off, char *buf, size_t count)
 {
 	struct file *f = get_file_pointer((task_t *)current_task, fp);
 	if(!f)

@@ -5,7 +5,7 @@
 #include <char.h>
 #include <console.h>
 mutex_t cd_search_lock;
-int zero_rw(int rw, int m, char *buf, int c)
+int zero_rw(int rw, int m, char *buf, size_t c)
 {
 	m=0;
 	if(rw == READ)
@@ -15,7 +15,7 @@ int zero_rw(int rw, int m, char *buf, int c)
 	return c;
 }
 
-int null_rw(int rw, int m, char *buf, int c)
+int null_rw(int rw, int m, char *buf, size_t c)
 {
 	if((m=rw) == READ)
 		return 0;
@@ -32,7 +32,7 @@ int null_rw(int rw, int m, char *buf, int c)
 	6 - 9 -> reserved
 */
 
-chardevice_t *set_chardevice(int maj, int (*f)(int, int, char*, int), 
+chardevice_t *set_chardevice(int maj, int (*f)(int, int, char*, size_t), 
 	int (*c)(int, int, int), int (*s)(int, int))
 {
 	printk(1, "[dev]: Setting char device %d (%x, %x)\n", maj, f, c);
@@ -44,7 +44,7 @@ chardevice_t *set_chardevice(int maj, int (*f)(int, int, char*, int),
 	return dev;
 }
 
-int set_availablecd(int (*f)(int, int, char*, int), 
+int set_availablecd(int (*f)(int, int, char*, size_t), 
 	int (*c)(int, int, int), int (*s)(int, int))
 {
 	int i=10; /* first 10 character devices are reserved */
@@ -74,7 +74,7 @@ void init_char_devs()
 	create_mutex(&cd_search_lock);
 }
 
-int char_rw(int rw, int dev, char *buf, int len)
+int char_rw(int rw, int dev, char *buf, size_t len)
 {
 	device_t *dt = get_device(DT_CHAR, MAJOR(dev));
 	if(!dt)

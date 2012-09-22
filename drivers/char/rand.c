@@ -10,9 +10,9 @@ struct inode *df;
 int rand1(unsigned int lim);
 int rand2(unsigned int lim);
 int rand3(unsigned int lim);
-int rand_rw(int rw, int min, char *buf, int count)
+int rand_rw(int rw, int min, char *buf, size_t count)
 {
-	int i;
+	size_t i;
 	if(rw == READ)
 	{
 		for(i=0;i<count;i++)

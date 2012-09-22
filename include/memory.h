@@ -67,12 +67,11 @@ page_dir_t *vm_clone(page_dir_t *pd, char);
 void process_memorymap(struct multiboot *mboot);
 void pm_init(int start, struct multiboot *);
 int free_stack();
-int __pm_alloc_page(char *, int);
+unsigned __pm_alloc_page(char *, int);
 #define pm_alloc_page() __pm_alloc_page(__FILE__, __LINE__)
 unsigned int do_kmalloc_heap(unsigned sz, char align);
 void do_kfree_heap(void *pt);
 unsigned do_kmalloc_wave(unsigned size, char align);
-unsigned wave_init(unsigned start, unsigned end);
 void install_kmalloc(char *name, unsigned (*init)(unsigned, unsigned), 
 	unsigned (*alloc)(unsigned, char), void (*free)(void *));
 void do_kfree_wave(void *ptr);
@@ -103,14 +102,14 @@ void setup_kernelstack(int);
 extern void zero_page_physical(unsigned);
 #define kmalloc(a) __kmalloc(a, __FILE__, __LINE__)
 
-static inline void map_if_not_mapped(unsigned loc)
+static inline void map_if_not_mapped(addr_t loc)
 {
 	if(!vm_getmap(loc & 0xFFFFF000, 0))
 		vm_map(loc & 0xFFFFF000, __pm_alloc_page("map_if_not_mapped", 0), 
 		       PAGE_PRESENT | PAGE_WRITE | PAGE_USER, MAP_CRIT);
 }
 
-static inline void map_if_not_mapped_noclear(unsigned loc)
+static inline void map_if_not_mapped_noclear(addr_t loc)
 {
 	if(!vm_getmap(loc & 0xFFFFF000, 0))
 		vm_map(loc & 0xFFFFF000, __pm_alloc_page("map_if_not_mapped", 0), 

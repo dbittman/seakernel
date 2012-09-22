@@ -5,6 +5,8 @@
 #include <fs.h>
 #include <dev.h>
 #include <sys/fcntl.h>
+#include <block.h>
+#include <char.h>
 
 int sys_close(int fp)
 {

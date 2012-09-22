@@ -65,7 +65,7 @@ void free_pipe(struct inode *i)
 	i->pipe=0;
 }
 
-__attribute__((optimize("O0"))) int read_pipe(struct inode *ino, char *buffer, unsigned length)
+__attribute__((optimize("O0"))) int read_pipe(struct inode *ino, char *buffer, size_t length)
 {
 	if(!ino || !buffer)
 		return -EINVAL;
@@ -74,7 +74,7 @@ __attribute__((optimize("O0"))) int read_pipe(struct inode *ino, char *buffer, u
 		return -EINVAL;
 	unsigned len = length;
 	int ret=0;
-	int count=0;
+	size_t count=0;
 	/* should we even try reading? (empty pipe with no writing processes=no) */
 	if(!pipe->pending && pipe->count <= 1 && pipe->type != PIPE_NAMED)
 		return count;
@@ -109,7 +109,7 @@ __attribute__((optimize("O0"))) int read_pipe(struct inode *ino, char *buffer, u
 	return count;
 }
 
-__attribute__((optimize("O0"))) int write_pipe(struct inode *ino, char *buffer, unsigned length)
+__attribute__((optimize("O0"))) int write_pipe(struct inode *ino, char *buffer, size_t length)
 {
 	if(!ino || !buffer)
 		return -EINVAL;

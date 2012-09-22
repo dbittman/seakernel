@@ -40,6 +40,8 @@ typedef unsigned char  uint8_t;
 typedef          char  sint8_t;
 typedef unsigned int    intptr_t;
 typedef long off_t;
+typedef unsigned int size_t;
+typedef unsigned mode_t;
 #define NULL 0
 
 #define FALSE 0

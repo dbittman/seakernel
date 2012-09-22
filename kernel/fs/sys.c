@@ -6,6 +6,7 @@
 #include <fs.h>
 #include <sys/stat.h>
 #include <mod.h>
+#include <char.h>
 extern volatile long ticks;
 int system_setup=0;
 /* This function is called once at the start of the init process initialization.
@@ -44,14 +45,14 @@ void init_vfs()
 	load_superblocktable();
 }
 
-int sys_seek(int fp, unsigned pos, unsigned whence)
+int sys_seek(int fp, off_t pos, unsigned whence)
 {
 	struct file *f = get_file_pointer((task_t *)current_task, fp);
 	if(!f) return -EBADF;
 	if(S_ISCHR(f->inode->mode) || S_ISFIFO(f->inode->mode))
 		return 0;
 	if(whence)
-		f->pos = ((whence == SEEK_END) ? f->inode->len+(int)pos : f->pos+(int)pos);
+		f->pos = ((whence == SEEK_END) ? f->inode->len+pos : f->pos+pos);
 	else
 		f->pos=pos;
 	return f->pos;
@@ -90,7 +91,7 @@ int sys_link(char *s, char *d)
 	return link(s, d);
 }
 
-int sys_umask(int mode)
+int sys_umask(mode_t mode)
 {
 	int old = current_task->cmask;
 	current_task->cmask=mode;
@@ -119,7 +120,7 @@ int sys_getcwdlen()
 	return x;
 }
 
-int sys_chmod(char *path, int fd, int mode)
+int sys_chmod(char *path, int fd, mode_t mode)
 {
 	if(!path && fd == -1) return -EINVAL;
 	struct inode *i;
@@ -193,7 +194,7 @@ int sys_getnodestr(char *path, char *node)
 	return 0;
 }
 
-int sys_ftruncate(int f, unsigned length)
+int sys_ftruncate(int f, off_t length)
 {
 	struct file *file = get_file_pointer((task_t *)current_task, f);
 	if(!file || !file->inode)
@@ -205,7 +206,7 @@ int sys_ftruncate(int f, unsigned length)
 	return 0;
 }
 
-int sys_mknod(char *path, unsigned mode, unsigned dev)
+int sys_mknod(char *path, mode_t mode, unsigned dev)
 {
 	if(!path) return -EINVAL;
 	struct inode *i = lget_idir(path, 0);
@@ -273,7 +274,7 @@ int sys_symlink(char *p2, char *p1)
 #define	R_OK	4
 #define	W_OK	2
 #define	X_OK	1
-int sys_access(char *path, int mode)
+int sys_access(char *path, mode_t mode)
 {
 	if(!path)
 		return -EINVAL;

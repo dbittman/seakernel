@@ -12,7 +12,7 @@ CPP	=i586-pc-seaos-gcc -E -m32 -nostdinc -I../include
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
 STRINGOBJS  = string/memchr.o  string/memcpy.o  string/memmove.o  string/memset.o  string/strcat.o  string/strchr.o  string/strcmp.o string/strcpy.o string/strlen.o string/strncat.o string/strncmp.o string/strncpy.o string/strnlen.o string/strrchr.o
-KLIBO = klib/crc32.o klib/qdivrem.o klib/udivdi3.o klib/umoddi3.o
+KLIBO = klib/crc32.o klib/ll.o klib/qdivrem.o klib/udivdi3.o klib/umoddi3.o
 all: make.deps klib.a
 
 klib.a: $(KLIBO) $(STRINGOBJS)

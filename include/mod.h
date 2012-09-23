@@ -10,8 +10,8 @@
 typedef struct module_s {
 	char *base;
 	int length;
-	int entry;
-	int exiter;
+	addr_t entry;
+	addr_t exiter;
 	char name[128];
 	char path[128];
 	char deps[256];

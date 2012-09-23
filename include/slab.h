@@ -4,7 +4,7 @@
 #define SLAB_MAGIC 0x11235813
 #define S_ALIGN 1
 
-extern unsigned slab_start, slab_end;
+extern addr_t slab_start, slab_end;
 extern vma_t slab_area_alloc;
 
 enum transfer_vals {
@@ -37,10 +37,10 @@ typedef struct slab_cache_s {
 	unsigned slab_count;
 } slab_cache_t;
 
-#define NUM_SCACHES (0x1000 / sizeof(slab_cache_t))
+#define NUM_SCACHES (PAGE_SIZE / sizeof(slab_cache_t))
 #define OBJ_SIZE(s) (((slab_cache_t *)(s->parent))->obj_size)
-#define FIRST_OBJ(s) ((unsigned)((s->flags & S_ALIGN) ? ((unsigned)s+0x1000) \
-	: ((unsigned)s+sizeof(slab_t))))
+#define FIRST_OBJ(s) ((unsigned)((s->flags & S_ALIGN) ? ((addr_t)s+PAGE_SIZE) \
+	: ((addr_t)s+sizeof(slab_t))))
 
 #endif
 

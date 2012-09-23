@@ -5,17 +5,17 @@
 #include <task.h>
 #include <swap.h>
 
-volatile unsigned int pm_location=0;
-volatile unsigned int pm_stack = PM_STACK_ADDR;
-volatile unsigned int pm_stack_max = PM_STACK_ADDR;
+volatile addr_t pm_location=0;
+volatile addr_t pm_stack = PM_STACK_ADDR;
+volatile addr_t pm_stack_max = PM_STACK_ADDR;
 
 volatile unsigned pm_num_pages=0, pm_used_pages=0;
-volatile unsigned highest_page=0;
-volatile unsigned lowest_page=~0;
+volatile addr_t highest_page=0;
+volatile addr_t lowest_page=~0;
 
 int memory_has_been_mapped=0;
 volatile int mmu_ready=0;
-volatile int placement;
+volatile addr_t placement;
 mutex_t pm_mutex;
 extern unsigned int end;
 void pm_init(int start, struct multiboot *mboot)
@@ -23,7 +23,7 @@ void pm_init(int start, struct multiboot *mboot)
 	pm_location = (start + PAGE_SIZE) & PAGE_MASK;
 }
 
-unsigned __pm_alloc_page(char *file, int line)
+addr_t __pm_alloc_page(char *file, int line)
 {
 	if(!pm_location)
 		panic(PANIC_MEM | PANIC_NOSYNC, "Physical memory allocation before initilization");
@@ -74,7 +74,7 @@ unsigned __pm_alloc_page(char *file, int line)
 	return ret;
 }
 
-void pm_free_page(unsigned int addr)
+void pm_free_page(addr_t addr)
 {
 	if(!paging_enabled)
 		panic(PANIC_MEM | PANIC_NOSYNC, "Called free page without paging environment");

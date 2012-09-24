@@ -4,6 +4,7 @@
 #include <asm/system.h>
 #include <dev.h>
 #include <fs.h>
+#include <ll.h>
 struct inode *init_tmpfs();
 
 int do_mount(struct inode *i, struct inode *p)
@@ -26,7 +27,9 @@ int do_mount(struct inode *i, struct inode *p)
 	i->mount->parent = i;
 	p->mount_parent = i;
 	mutex_off(&i->lock);
-	add_mountlst(p);
+	struct mountlst *ent = (void *)kmalloc(sizeof(struct mountlst));
+	ent->node = ll_insert(mountlist, ent);
+	ent->i = p;
 	return 0;
 }
 
@@ -115,7 +118,9 @@ int do_unmount(struct inode *i, int flags)
 	unlock_scheduler();
 	vfs_callback_unmount(m, m->sb_idx);
 	m->mount_parent=0;
-	remove_mountlst(m);
+	struct mountlst *lst = get_mount(m);
+	ll_remove(mountlist, lst->node);
+	kfree(lst);
 	if(m != devfs_root && m != procfs_root)
 		iremove_recur(m);
 	kfree(mt);

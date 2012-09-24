@@ -185,7 +185,6 @@ int get_pid();
 void init_multitasking();
 void exit(int);
 task_t *get_next_task();
-extern task_t *next;
 void kill_task(unsigned int);
 int sys_getppid();
 void __wait_flag(unsigned *f, int, char *file, int line);

@@ -2,80 +2,71 @@
 #include <fs.h>
 #include <dev.h>
 #include <asm/system.h>
+#include <ll.h>
 struct sblktbl *sb_table=0;
-struct mountlst *ml=0;
+struct llist *mountlist;
 mutex_t ml_mutex, sb_mutex;
 
-struct inode *get_sb_table(int n)
+struct inode *get_sb_table(int _n)
 {
-	struct mountlst *m = ml;
-	mutex_on(&ml_mutex);
-	while(n-- && m) m = m->next;
-	mutex_off(&ml_mutex);
+	int n=_n;
+	struct mountlst *m=0;
+	struct llistnode *cur;
+	mutex_on(&mountlist->lock);
+	ll_for_each_entry(mountlist, cur, struct mountlst *, m)
+	{
+		if(!n) break;
+		n--;
+	}
+	mutex_off(&mountlist->lock);
+	if(n) return 0;
+	if(m == mountlist->head && _n) return 0;
 	return m ? m->i : 0;
+}
+
+struct mountlst *get_mount(struct inode *i)
+{
+	struct mountlst *m=0;
+	struct llistnode *cur;
+	mutex_on(&mountlist->lock);
+	ll_for_each_entry(mountlist, cur, struct mountlst *, m)
+	{
+		if(m->i == i) break;
+	}
+	mutex_off(&mountlist->lock);
+	return (m && (m->i == i)) ? m : 0;
 }
 
 int load_superblocktable()
 {
-	create_mutex(&ml_mutex);
+	mountlist = ll_create(0);
 	create_mutex(&sb_mutex);
 	return 0;
 }
 
-void add_mountlst(struct inode *n)
-{
-	assert(n);
-	mutex_on(&ml_mutex);
-	struct mountlst *m = (struct mountlst *)kmalloc(sizeof(struct mountlst));
-	m->i = n;
-	struct mountlst *o = ml;
-	ml = m;
-	m->next=o;
-	if(o)
-		o->prev = m;
-	m->prev=0;
-	mutex_off(&ml_mutex);
-}
-
-void remove_mountlst(struct inode *n)
-{
-	mutex_on(&ml_mutex);
-	struct mountlst *m = ml;
-	while(m && m->i != n)
-		m=m->next;
-	if(m)
-	{
-		if(m->prev)
-			m->prev->next = m->next;
-		else
-			ml = m->next;
-		if(m->next)
-			m->next->prev=m->prev;
-		kfree(m);
-	}
-	mutex_off(&ml_mutex);
-}
-
 void unmount_all()
 {
-	struct mountlst *m = ml;
-	while(m) {
+	struct mountlst *m;
+	struct llistnode *cur, *next;
+	mutex_on(&mountlist->lock);
+	ll_for_each_entry_safe(mountlist, cur, next, struct mountlst *, m)
+	{
 		do_unmount(m->i->mount_parent, 1);
-		struct mountlst *t = m->next;
-		remove_mountlst(m->i);
-		m=t;
+		ll_remove(mountlist, cur);
 	}
+	mutex_off(&mountlist->lock);
 }
 
 void do_sync_of_mounted()
 {
-	mutex_on(&ml_mutex);
-	struct mountlst *m = ml;
-	while(m) {
+	mutex_on(&mountlist->lock);
+	struct mountlst *m;
+	struct llistnode *cur;
+	ll_for_each_entry(mountlist, cur, struct mountlst *, m)
+	{
 		vfs_callback_fssync(m->i);
-		m = m->next;
 	}
-	mutex_off(&ml_mutex);
+	mutex_off(&mountlist->lock);
 }
 
 int register_sbt(char *name, int ver, int (*sbl)(dev_t,u64,char *))

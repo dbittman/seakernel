@@ -63,7 +63,8 @@ struct sblktbl {
 
 struct mountlst {
 	struct inode *i;
-	struct mountlst *next, *prev;
+	struct llistnode *node;
+	//struct mountlst *next, *prev;
 };
 
 struct file {
@@ -121,6 +122,7 @@ int do_iremove(struct inode *i, int flag);
 #define cget_idir(path,in_st,x) do_get_idir(path, in_st, 1, x, 0)
 #define ctget_idir(path,in_st,x,res) do_get_idir(path, in_st, 1, x, res)
 
+extern struct llist *mountlist;
 int sys_chdir(char *n, int fd);
 int ichdir(struct inode *i);
 int sys_sync();
@@ -142,6 +144,7 @@ int sys_utime(char *path, unsigned a, unsigned m);
 int get_pwd(char *buf, int);
 int unlink(char *f);
 int proc_get_major();
+struct mountlst *get_mount(struct inode *i);
 int do_fs_stat(struct inode *i, struct fsstat *f);
 int rename(char *f, char *nname);
 int sys_isatty(int f);

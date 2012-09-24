@@ -58,13 +58,12 @@ struct sblktbl {
 	int version;
 	char name[16];
 	struct inode * (*sb_load)(dev_t dev, u64 block, char *);
-	struct sblktbl *next, *prev;
+	struct llistnode *node;
 };
 
 struct mountlst {
 	struct inode *i;
 	struct llistnode *node;
-	//struct mountlst *next, *prev;
 };
 
 struct file {

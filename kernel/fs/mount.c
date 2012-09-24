@@ -3,8 +3,7 @@
 #include <dev.h>
 #include <asm/system.h>
 #include <ll.h>
-struct sblktbl *sb_table=0;
-struct llist *mountlist;
+struct llist *mountlist, *sblist;
 mutex_t ml_mutex, sb_mutex;
 
 struct inode *get_sb_table(int _n)
@@ -43,7 +42,7 @@ struct mountlst *get_mount(struct inode *i)
 int load_superblocktable()
 {
 	mountlist = ll_create(0);
-	create_mutex(&sb_mutex);
+	sblist = ll_create(0);
 	return 0;
 }
 
@@ -79,65 +78,59 @@ int register_sbt(char *name, int ver, int (*sbl)(dev_t,u64,char *))
 	sb->version = (char)ver;
 	sb->sb_load = (struct inode * (*)(dev_t,u64,char*))sbl;
 	strncpy(sb->name, name, 16);
-	mutex_on(&sb_mutex);
-	struct sblktbl *o = sb_table;
-	sb_table = sb;
-	sb->next=o;
-	if(o) o->prev = sb;
-	sb->prev=0;
-	mutex_off(&sb_mutex);
+	sb->node = ll_insert(sblist, sb);
 	return 0;
 }
 
 struct inode *sb_callback(char *fsn, dev_t dev, u64 block, char *n)
 {
-	struct sblktbl *s = sb_table;
-	mutex_on(&sb_mutex);
-	while(s) {
+	struct llistnode *cur;
+	struct sblktbl *s;
+	mutex_on(&sblist->lock);
+	ll_for_each_entry(sblist, cur, struct sblktbl *, s)
+	{
 		if(!strcmp(fsn, s->name))
-			break;
-		s=s->next;
+		{
+			mutex_off(&sblist->lock);
+			return s->sb_load(dev, block, n);
+		}
 	}
-	mutex_off(&sb_mutex);
-	return s ? s->sb_load(dev, block, n) : 0;
+	mutex_off(&sblist->lock);
+	return 0;
 }
 
 struct inode *sb_check_all(dev_t dev, u64 block, char *n)
 {
-	struct inode *i=0;
-	struct sblktbl *s = sb_table;
-	mutex_on(&sb_mutex);
-	while(s) {
-		mutex_off(&sb_mutex);
-		i=s->sb_load(dev, block, n);
-		if(i)
+	struct llistnode *cur;
+	struct sblktbl *s;
+	mutex_on(&sblist->lock);
+	ll_for_each_entry(sblist, cur, struct sblktbl *, s)
+	{
+		struct inode *i = s->sb_load(dev, block, n);
+		if(i) {
+			mutex_off(&sblist->lock);
 			return i;
-		mutex_on(&sb_mutex);
-		s=s->next;
+		}
 	}
-	mutex_off(&sb_mutex);
+	mutex_off(&sblist->lock);
 	return 0;
 }
 
 int unregister_sbt(char *name)
 {
-	struct sblktbl *s = sb_table;
-	mutex_on(&sb_mutex);
-	while(s) {
-		if(!strcmp(name, s->name))
-			break;
-		s=s->next;
-	}
-	if(s)
+	struct llistnode *cur;
+	struct sblktbl *s;
+	mutex_on(&sblist->lock);
+	ll_for_each_entry(sblist, cur, struct sblktbl *, s)
 	{
-		if(s->prev)
-			s->prev->next = s->next;
-		else
-			sb_table = s->next;
-		if(s->next)
-			s->next->prev = s->prev;
-		kfree(s);
+		if(!strcmp(name, s->name))
+		{
+			ll_remove(sblist, s->node);
+			kfree(s);
+			mutex_off(&sblist->lock);
+			return 0;
+		}
 	}
-	mutex_off(&sb_mutex);
-	return 0;
+	mutex_off(&sblist->lock);
+	return -ENOENT;
 }

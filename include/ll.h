@@ -28,6 +28,9 @@ struct llist {
 
 #warning "ll_for_each* does not zero out entry or curnode after a completely traversal of the list!!!"
 
+#define ll_maybe_reset_loop(list,cur,next) \
+		if(list->head == cur) next=0
+
 struct llist *ll_create(struct llist *list);
 void ll_destroy(struct llist *list);
 void ll_remove(struct llist *list, struct llistnode *node);

@@ -18,9 +18,12 @@ struct inode *get_sb_table(int _n)
 		if(!n) break;
 		n--;
 	}
+	if(cur == mountlist->head && _n) {
+		mutex_off(&mountlist->lock);
+		return 0;
+	}
 	mutex_off(&mountlist->lock);
 	if(n) return 0;
-	if(m == mountlist->head && _n) return 0;
 	return m ? m->i : 0;
 }
 
@@ -52,6 +55,7 @@ void unmount_all()
 	ll_for_each_entry_safe(mountlist, cur, next, struct mountlst *, m)
 	{
 		do_unmount(m->i->mount_parent, 1);
+		ll_maybe_reset_loop(mountlist, cur, next);
 		ll_remove(mountlist, cur);
 	}
 	mutex_off(&mountlist->lock);

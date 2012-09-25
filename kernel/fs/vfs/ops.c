@@ -59,13 +59,8 @@ int do_add_inode(struct inode *b, struct inode *i)
 {
 	if(!is_directory(b))
 		panic(0, "tried to add an inode to a file");
-	struct inode *tmp = b->child;
-	b->child = i;
-	i->next = tmp;
 	i->parent = b;
-	i->prev=0;
-	if(tmp)
-		tmp->prev=i;
+	i->node=ll_insert(&b->children, i);
 	return 0;
 }
 
@@ -73,6 +68,8 @@ int add_inode(struct inode *b, struct inode *i)
 {
 	assert(b && i);
 	int ret;
+	if(!ll_is_active((&b->children)))
+		ll_create(&b->children);
 	mutex_on(&b->lock);
 	ret = do_add_inode(b, i);
 	mutex_off(&b->lock);
@@ -82,10 +79,11 @@ int add_inode(struct inode *b, struct inode *i)
 int recur_total_refs(struct inode *i)
 {
 	int x = i->count;
-	struct inode *c = i->child;
-	while(c) {
+	struct inode *c;
+	struct llistnode *cur;
+	ll_for_each_entry((&i->children), cur, struct inode *, c)
+	{
 		x += recur_total_refs(c);
-		c=c->next;
 	}
 	return x;
 }
@@ -93,7 +91,7 @@ int recur_total_refs(struct inode *i)
 int free_inode(struct inode *i, int recur)
 {
 	assert(i);
-	assert(recur || !i->child);
+	assert(recur || !i->children.head);
 	destroy_flocks(i);
 	if(i->pipe)
 		free_pipe(i);
@@ -102,13 +100,18 @@ int free_inode(struct inode *i, int recur)
 	destroy_mutex(&i->lock);
 	if(recur)
 	{
-		while(i->child)
+		struct inode *c;
+		struct llistnode *cur, *nxt;
+		ll_for_each_entry_safe((&i->children), cur, nxt, struct inode *, c)
 		{
-			struct inode *c = i->child;
-			i->child=i->child->next;
+			ll_remove(&i->children, cur);
+			ll_maybe_reset_loop((&i->children), cur, nxt);
+			c->node=0;
 			free_inode(c, 1);
+			
 		}
 	}
+	ll_destroy(&i->children);
 	kfree(i);
 	return 0;
 }
@@ -117,20 +120,16 @@ int do_iremove(struct inode *i, int flag)
 {
 	if(!i) return -1;
 	struct inode *parent = i->parent;
-	if(parent && parent != i) mutex_on(&parent->lock);
-	if(!flag && (get_ref_count(i) || i->child) && flag != 3)
+	if(!parent) return -1;
+	assert(parent != i);
+	mutex_on(&parent->lock);
+	if(!flag && (get_ref_count(i) || i->children.head) && flag != 3)
 		panic(0, "Attempted to iremove inode with count > 0 or children! (%s)", 
 			i->name);
 	if(flag != 3) 
 		i->unreal=1;
-	struct inode *prev = i->prev;
-	if(prev)
-		prev->next = i->next;
-	if(parent && parent->child == i && parent != i)
-		parent->child=i->next;
-	if(i->next)
-		i->next->prev = prev;
-	if(parent && parent != i) mutex_off(&parent->lock);
+	ll_remove(&parent->children, i->node);
+	mutex_off(&parent->lock);
 	if(flag != 3)
 		free_inode(i, (flag == 2) ? 1 : 0);
 	return 0;

@@ -7,10 +7,11 @@
 
 struct llistnode *ll_insert(struct llist *list, void *entry)
 {
-	assert(list);
+	assert(list && ll_is_active(list));
+	struct llistnode *new = (struct llistnode *)kmalloc(sizeof(struct llistnode));
 	mutex_on(&list->lock);
 	struct llistnode *old = list->head;
-	list->head = (struct llistnode *)kmalloc(sizeof(struct llistnode));
+	list->head = new;
 	list->head->next = old ? old : list->head;
 	list->head->prev = old ? old->prev : list->head;
 	if(old) {
@@ -28,7 +29,7 @@ struct llistnode *ll_insert(struct llist *list, void *entry)
 
 void ll_remove(struct llist *list, struct llistnode *node)
 {
-	assert(list && node);
+	assert(list && node && ll_is_active(list));
 	mutex_on(&list->lock);
 	if(list->head == node) {
 		/* Lets put the head at the next node, in case theres a search. */
@@ -36,6 +37,7 @@ void ll_remove(struct llist *list, struct llistnode *node)
 		/* Now, is this the only node in the list? */
 		if(list->head == node) {
 			list->head = 0;
+			mutex_off(&list->lock);
 			kfree(node);
 			return;
 		}
@@ -51,18 +53,22 @@ struct llist *ll_create(struct llist *list)
 {
 	if(list == 0) {
 		list = (struct llist *)kmalloc(sizeof(struct llist));
-		list->mallocd = 1;
+		list->flags |= LL_ALLOC;
 	} else
-		list->mallocd = 0;
+		list->flags = 0;
 	create_mutex(&list->lock);
 	list->head = 0;
+	list->flags |= LL_ACTIVE;
 	return list;
 }
 
 void ll_destroy(struct llist *list)
 {
 	assert(list && !list->head);
+	if(!ll_is_active(list))
+		return;
 	destroy_mutex(&list->lock);
-	if(list->mallocd)
+	list->flags &= ~LL_ACTIVE;
+	if(list->flags & LL_ALLOC)
 		kfree(list);
 }

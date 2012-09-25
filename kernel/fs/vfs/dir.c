@@ -26,7 +26,7 @@ int do_get_path_string(struct inode *p, char *path, int max)
 		i = i->mount_parent;
 	char tmp[max * sizeof(char) +1];
 	memset(tmp, 0, max * sizeof(char) +1);
-	while(i && i->parent != i && i->parent && ((int)(strlen(path) + 
+	while(i && i->parent && ((int)(strlen(path) + 
 		strlen(i->name)) < max || max == -1))
 	{
 		if(i->mount_parent)
@@ -119,10 +119,16 @@ struct inode *do_readdir(struct inode *i, int num)
 		return 0;
 	if(!permissions(i, MAY_READ))
 		return 0;
-	struct inode *c = i->child;
+	struct inode *c=0;
 	if(!i->dynamic) {
 		mutex_on(&i->lock);
-		while(c && n) c = c->next, --n;
+		struct llistnode *cur;
+		ll_for_each_entry((&i->children), cur, struct inode *, c)
+		{
+			if(!n--) break;
+		}
+		if(num && cur == i->children.head)
+			c=0;
 		mutex_off(&i->lock);
 	}
 	else if(i->i_ops && i->i_ops->readdir) {

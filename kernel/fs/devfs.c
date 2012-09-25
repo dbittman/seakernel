@@ -16,7 +16,6 @@ void init_dev_fs()
 	devfs_root->i_ops = 0;
 	devfs_root->parent = current_task->root;
 	devfs_root->mode = S_IFDIR | 0x1FF;
-	devfs_root->child = 0;
 	devfs_root->uid = devfs_root->gid = GOD;
 	devfs_root->num = -1;
 	create_mutex(&devfs_root->lock);

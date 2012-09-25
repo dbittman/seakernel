@@ -28,7 +28,7 @@ int do_unlink(struct inode *i)
 	if(current_task->uid && (i->parent->mode & S_ISVTX) 
 			&& (i->uid != current_task->uid))
 		err = -EACCES;
-	if(i->child)
+	if(S_ISDIR(i->mode))
 		err = -EISDIR;
 	if(!permissions(i->parent, MAY_WRITE))
 		err = -EACCES;
@@ -70,7 +70,7 @@ int rmdir(char *f)
 	if(!i)
 		return -ENOENT;
 	int err = 0;
-	if(i->child)
+	if(i->children.head)
 		err = -ENOTEMPTY;
 	if(!permissions(i->parent, MAY_WRITE))
 		err = -EACCES;

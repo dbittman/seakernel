@@ -22,17 +22,16 @@ struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, int *req)
 			i = i->parent;
 			return i;
 		}
-		if(!strcmp(path, ".")) {
+		if(!strcmp(path, "."))
 			return i;
-		}
 	}
 	/* Access? */
 	if(!is_directory(i))
 		return 0;
 	if(!permissions(i, MAY_EXEC))
 		return 0;
-	temp = i->child;
-	while(temp)
+	struct llistnode *cur;
+	ll_for_each_entry((&i->children), cur, struct inode *, temp)
 	{
 		assert(!temp->unreal);
 		/* Check to see if an inode is valid. This is similar to checks in 
@@ -49,7 +48,6 @@ struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, int *req)
 			vfs_callback_update(temp);
 			return temp;
 		}
-		temp = temp->next;
 	}
 	/* Force Lookup */
 	if(i->dynamic && i->i_ops && i->i_ops->lookup && !ram)

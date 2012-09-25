@@ -42,7 +42,6 @@ struct inode *init_ramfs()
 	_strcpy(i->name, "rfs");
 	ramfs_root = i;
 	i->i_ops = &rfs_inode_ops;
-	i->parent = i;
 	return i;
 }
 
@@ -53,7 +52,6 @@ struct inode *init_tmpfs()
 	create_mutex(&i->lock);
 	_strcpy(i->name, "rfs");
 	i->i_ops = &rfs_inode_ops;
-	i->parent = i;
 	return i;
 }
 

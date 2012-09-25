@@ -4,7 +4,7 @@
 #include <task.h>
 #include <pipe.h>
 #include <sys/fcntl.h>
-
+#include <ll.h>
 #define SEEK_SET (0)
 #define SEEK_CUR (1)
 #define SEEK_END (2)
@@ -41,10 +41,9 @@ struct inode {
 	dev_t devnum;
 	/* Pointers */
 	struct inode_operations *i_ops;
-	struct inode *child;
 	struct inode *parent;
-	struct inode *next;
-	struct inode *prev;
+	struct llist children;
+	struct llistnode *node;
 	struct inode *mount_parent;
 	pipe_t *pipe;
 	mount_pt_t *mount;

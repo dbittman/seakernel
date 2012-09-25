@@ -9,22 +9,27 @@ struct llistnode {
 struct llist {
 	struct llistnode *head;
 	mutex_t lock;
-	char mallocd;
+	char flags;
 };
+
+#define LL_ACTIVE 1
+#define LL_ALLOC  2
+
+#define ll_is_active(list) (list->flags & LL_ACTIVE)
 
 #define ll_entry(type,node) ((type)node->entry)
 
 #define ll_for_each(list,curnode) \
 		for(curnode=0; (curnode != 0 ? (curnode != list->head) : (addr_t)(curnode=list->head)); curnode=curnode->next)
 
-#define ll_for_each_entry(list,curnode,type,entry) \
-		for(curnode=0; ((curnode != 0 ? (curnode != list->head) : (addr_t)(curnode=list->head)) && (entry=ll_entry(type, curnode))); curnode=curnode->next)
+#define ll_for_each_entry(list,curnode,type,_entry) \
+		for(curnode=0; ((curnode != 0 ? (curnode != list->head) : (addr_t)(curnode=list->head)) && (_entry=ll_entry(type, curnode))); curnode=curnode->next)
 
-#define ll_for_each_safe(list,curnode,next) \
-		for(curnode=0; ((curnode != 0 ? (curnode != list->head) : (addr_t)(curnode=list->head)) && (addr_t)(next=curnode->next)); curnode=next)
+#define ll_for_each_safe(list,curnode,_next) \
+		for(curnode=0; ((curnode != 0 ? (curnode != list->head) : (addr_t)(curnode=list->head)) && (addr_t)(_next=curnode->next)); curnode=_next)
 
-#define ll_for_each_entry_safe(list,curnode,next,type,entry) \
-		for(curnode=0; ((curnode != 0 ? (curnode != list->head) : (addr_t)(curnode=list->head)) && (entry=ll_entry(type, curnode)) && (addr_t)(next=curnode->next)); curnode=next)
+#define ll_for_each_entry_safe(list,curnode,_next,type,_entry) \
+		for(curnode=0; ((curnode != 0 ? (curnode != list->head) : (addr_t)(curnode=list->head)) && (_entry=ll_entry(type, curnode)) && (addr_t)(_next=curnode->next)); curnode=_next)
 
 #warning "ll_for_each* does not zero out entry or curnode after a completely traversal of the list!!!"
 

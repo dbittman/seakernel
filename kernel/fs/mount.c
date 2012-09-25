@@ -4,7 +4,6 @@
 #include <asm/system.h>
 #include <ll.h>
 struct llist *mountlist, *sblist;
-mutex_t ml_mutex, sb_mutex;
 
 struct inode *get_sb_table(int _n)
 {

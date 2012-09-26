@@ -70,7 +70,7 @@ int rmdir(char *f)
 	if(!i)
 		return -ENOENT;
 	int err = 0;
-	if(i->children.head)
+	if(inode_has_children(i))
 		err = -ENOTEMPTY;
 	if(!permissions(i->parent, MAY_WRITE))
 		err = -EACCES;

@@ -53,6 +53,8 @@ struct inode {
 	mutex_t *flm;
 };
 
+#define inode_has_children(i) (i->children.head && ll_is_active((&i->children)))
+
 struct sblktbl {
 	int version;
 	char name[16];

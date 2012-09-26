@@ -53,7 +53,7 @@ install: $(MODULES)
 	@cp -vf other/sync.m /sys/modules-${VERSION}/sync
 	@cp -vf partitions/partitions.m /sys/modules-${VERSION}/partitions
 
-CFLAGS=-std=c99 -Wall -Wextra -fno-omit-frame-pointer\
+CFLAGS=-std=c99 -g -Wall -Wextra -fno-omit-frame-pointer\
            -Wformat-security -Wformat-nonliteral  -fno-rename-registers -fno-regmove\
 	  -Wshadow -Wpointer-arith -Wcast-align -Wno-unused \
 	  -Wnested-externs -Winline -Wno-long-long -mno-red-zone -D__KERNEL__ -mno-red-zone -nostdinc -c -O4 -m32 -I include -I../include -I./include -I../../include -I../../../include -ffreestanding -fno-common -nostdlib

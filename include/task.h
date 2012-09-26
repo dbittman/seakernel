@@ -331,9 +331,6 @@ static __attribute__((always_inline)) inline void exit_system()
 	current_task->last = current_task->system;
 	current_task->system=0;
 	task_full_uncritical();
-#ifdef DEBUG
-	force_nolock(current_task);
-#endif
 }
 
 static inline int GET_MAX_TS(task_t *t)

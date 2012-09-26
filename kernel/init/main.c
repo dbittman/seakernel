@@ -102,7 +102,8 @@ void kmain(struct multiboot *mboot_header, u32int initial_stack)
 	shutting_down=0;
 	mtboot = mboot_header;
 	i_stack = initial_stack;
-	/* parse_kernel_elf(mboot_header, &kernel_elf); */
+	parse_kernel_elf(mboot_header, &kernel_elf);
+	init_mutexes();
 	load_tables();
 	init_serial();
 	console_init_stage1();
@@ -137,7 +138,6 @@ void kmain(struct multiboot *mboot_header, u32int initial_stack)
 	printk(KERN_MILE, "[kernel]: Kernel is setup (%2.2d:%2.2d:%2.2d, %s, kv=%d, ts=%d bytes: ok)\n", 
 	       kernel_start_time.tm_hour, kernel_start_time.tm_min, 
 	       kernel_start_time.tm_sec, kernel_name, KVERSION, sizeof(task_t));
-	unlock_all_mutexes();
 	task_full_uncritical();
 	__super_sti();
 	if(!fork())

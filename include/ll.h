@@ -12,9 +12,9 @@ struct llist {
 	char flags;
 };
 
-#define LL_ACTIVE 1
-#define LL_ALLOC  2
-
+#define LL_ACTIVE   1
+#define LL_ALLOC    2
+#define LL_LOCKLESS 4
 #define ll_is_active(list) (list->flags & LL_ACTIVE)
 
 #define ll_entry(type,node) ((type)node->entry)
@@ -40,5 +40,5 @@ struct llist *ll_create(struct llist *list);
 void ll_destroy(struct llist *list);
 void ll_remove(struct llist *list, struct llistnode *node);
 struct llistnode *ll_insert(struct llist *list, void *entry);
-
+struct llist *ll_create_lockless(struct llist *list);
 #endif

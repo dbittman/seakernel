@@ -106,8 +106,6 @@ int proc_kern_rw(char rw, struct inode *inode, int m, char *buf, int off, int le
 				return total_len;
 			case 4:
 				return proc_read_int(buf, off, len);
-			case 5:
-				return proc_read_mutex(buf, off, len);
 			case 6:
 				return proc_read_bcache(buf, off, len);
 		}

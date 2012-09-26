@@ -80,9 +80,6 @@ void do_tick()
 
 void delay(int t)
 {
-#ifdef DEBUG
-	force_nolock((task_t *)current_task);
-#endif
 	if(shutting_down)
 		return (void) delay_sleep(t);
 	long end = ticks + t + 1;

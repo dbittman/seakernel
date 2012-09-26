@@ -140,7 +140,6 @@ void init_proc_fs()
 	pfs_cn("version", S_IFREG, 3, 2);
 	pfs_cn("swap", S_IFREG, 3, 3);
 	pfs_cn("isr", S_IFREG, 3, 4);
-	pfs_cn("mutex", S_IFREG, 3, 5);
 	pfs_cn("bcache", S_IFREG, 3, 6);
 	pfs_cn("modules", S_IFREG, 4, 0);
 	pfs_cn("mounts", S_IFREG, 2, 1);

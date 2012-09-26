@@ -13,7 +13,7 @@ int do_iput(struct inode *i)
 	if(parent && parent != i) mutex_on(&parent->lock);	
 	if(i->count > 0)
 		i->count--;
-	if(i->count || i->children.head || i->mount || i->mount_parent || !i->dynamic 
+	if(i->count || inode_has_children(i) || i->mount || i->mount_parent || !i->dynamic 
 			|| i->f_count || i->required || !parent || parent->required
 			|| (i->pipe && i->pipe->count)) {
 		if(parent && parent != i) mutex_off(&parent->lock);

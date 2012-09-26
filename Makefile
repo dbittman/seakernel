@@ -4,7 +4,7 @@
 CC=i586-pc-seaos-gcc
 LD=i586-pc-seaos-ld
 # Flags for programs
-CFLAGS_NO = -m32 -nostdlib -nostdinc -fno-builtin -ffreestanding \
+CFLAGS_NO = -g -m32 -nostdlib -nostdinc -fno-builtin -ffreestanding \
           -I../include -Iinclude -I ../../include -I ../../../include \
           -D__KERNEL__ -D__DEBUG__ -std=c99 -Wall -Wextra \
            -Wformat-security -Wformat-nonliteral\

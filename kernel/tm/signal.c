@@ -82,7 +82,6 @@ void handle_signal(task_t *t, int sig)
 		/* Switch over to ring-3 */
 		__super_cli();
 		unlock_scheduler();
-		force_nolock(current_task);
 		asm("\
 			mov %0, %%esp;       \
 			mov %0, %%ebp;       \
@@ -119,7 +118,6 @@ void handle_signal(task_t *t, int sig)
 				if(t->uid >= current_task->uid) {
 					t->state = TASK_ISLEEP; 
 					t->tick=0;
-					force_nolock(current_task);
 					task_full_uncritical();
 					schedule();
 				}

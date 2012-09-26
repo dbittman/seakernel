@@ -18,6 +18,20 @@ static inline void _set_lowercase(char *b)
 	}
 }
 
+void print_trace(unsigned int MaxFrames)
+{
+	unsigned int * ebp = &MaxFrames - 2;
+	for(unsigned int frame = 0; frame < MaxFrames; ++frame)
+	{
+		unsigned int eip = ebp[1];
+		if(eip == 0)
+			break;
+		ebp = (unsigned int *)(ebp[0]);
+		char *name = elf_lookup_symbol(eip, &kernel_elf);
+		if(name) kprintf("  <%x>  %s\n", eip, name);
+	}
+}
+
 void panic(int flags, char *fmt, ...)
 {
 	__super_cli();
@@ -38,9 +52,9 @@ void panic(int flags, char *fmt, ...)
 	kprintf(" ***\n");
 	
 	if(t) 
-		kprintf("current_task=%x:%d, sys=%d, flags=%x, F=%x: ", t, 
+		kprintf("current_task=%x:%d, sys=%d, flags=%x, F=%x. Stack trace:\n", t, 
 				t->pid, t->system, t->flags, t->flag);
-		
+	print_trace(10);
 	if(pid && !second_panic && !(flags & PANIC_NOSYNC))
 	{
 		kprintf("[panic]: syncing...");

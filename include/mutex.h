@@ -9,7 +9,6 @@ typedef volatile struct mutex_s {
 	volatile unsigned owner;
 	volatile unsigned char flags;
 	volatile char file[64];
-	volatile struct mutex_s *next, *prev;
 } mutex_t;
 
 #define MF_ALLOC 1
@@ -22,7 +21,7 @@ void __mutex_off(mutex_t *m, char *, int);
 void __destroy_mutex(mutex_t *m, char *, int);
 void unlock_all_mutexes();
 void reset_mutex(mutex_t *m);
-
+void init_mutexes();
 #define mutex_off(m) (current_task ? __mutex_off(m, __FILE__, __LINE__) \
 	: task_uncritical())
 #define mutex_on(m) (current_task ? __mutex_on(m, __FILE__, __LINE__) \

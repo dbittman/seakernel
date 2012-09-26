@@ -1,5 +1,12 @@
-/* ll.c - support functions for linked lists */
-
+/* ll.c - support functions for linked lists
+ * These linked lists are stored as a circular doubly linked list, 
+ * allowing us O(1) insert and remove.
+ * 
+ * WARNING - using the ll_for_each macros require a bit of extra work!
+ * After the loop exits, curnode, entry and next are still set to
+ * a value! Expecting them to be null will result in bugs. Also, 
+ * if using the 'safe' macros, and you remove a node from the list, you
+ * need to call ll_maybe_reset_loop before it reloops! */
 #include <kernel.h>
 #include <ll.h>
 #include <mutex.h>

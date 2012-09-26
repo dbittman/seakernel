@@ -27,7 +27,7 @@ void print_trace(unsigned int MaxFrames)
 		if(eip == 0)
 			break;
 		ebp = (unsigned int *)(ebp[0]);
-		char *name = elf_lookup_symbol(eip, &kernel_elf);
+		const char *name = elf_lookup_symbol(eip, &kernel_elf);
 		if(name) kprintf("  <%x>  %s\n", eip, name);
 	}
 }

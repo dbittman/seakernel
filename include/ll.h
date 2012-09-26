@@ -31,8 +31,6 @@ struct llist {
 #define ll_for_each_entry_safe(list,curnode,_next,type,_entry) \
 		for(curnode=0; ((curnode != 0 ? (curnode != list->head) : (addr_t)(curnode=list->head)) && (_entry=ll_entry(type, curnode)) && (addr_t)(_next=curnode->next)); curnode=_next)
 
-#warning "ll_for_each* does not zero out entry or curnode after a completely traversal of the list!!!"
-
 #define ll_maybe_reset_loop(list,cur,next) \
 		if(list->head == cur) next=0
 

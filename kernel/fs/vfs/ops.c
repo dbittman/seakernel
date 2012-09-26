@@ -111,7 +111,6 @@ int free_inode(struct inode *i, int recur)
 			ll_maybe_reset_loop((&i->children), cur, nxt);
 			c->node=0;
 			free_inode(c, 1);
-			
 		}
 	}
 	ll_destroy(&i->children);

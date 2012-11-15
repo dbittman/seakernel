@@ -246,5 +246,5 @@ int init_ata_controller(struct ata_controller *cont);
 int init_ata_device();
 extern int __a, __b, __c, __d;
 
-#define ATA_DMA_ENABLE 0
+#define ATA_DMA_ENABLE 1
 #endif

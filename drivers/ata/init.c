@@ -17,17 +17,38 @@ int init_ata_device()
 		ata->flags = PCI_ERROR;
 		return -1;
 	}
-	bmr = ata->pcs->bar4;
+	//bmr = ata->pcs->bar4;
+	//kprintf("BMR0 = %x (%d)\n", ata->pcs->bar0, ata->pcs->bar0);
+	//kprintf("BMR1 = %x (%d)\n", ata->pcs->bar1, ata->pcs->bar1);
+	//kprintf("BMR2 = %x (%d)\n", ata->pcs->bar2, ata->pcs->bar2);
+	//kprintf("BMR3 = %x (%d)\n", ata->pcs->bar3, ata->pcs->bar3);
+	//kprintf("BMR4 = %x (%d)\n", bmr, bmr);
 	ata_pci = ata;
 	primary->port_bmr_base=bmr;
-	primary->port_cmd_base = ATA_PRIMARY_CMD_BASE;
-	primary->port_ctl_base = ATA_PRIMARY_CTL_BASE;
+	if(ata->pcs->bar0 == 0 || ata->pcs->bar0 == 1)
+		primary->port_cmd_base = ATA_PRIMARY_CMD_BASE;
+	else
+		primary->port_cmd_base = ata->pcs->bar0;
+	if(ata->pcs->bar1 == 0 || ata->pcs->bar1 == 1)
+		primary->port_ctl_base = ATA_PRIMARY_CTL_BASE;
+	else
+		primary->port_ctl_base = ata->pcs->bar1;
+	
 	primary->irq = ATA_PRIMARY_IRQ;
 	primary->id=0;
 	
-	secondary->port_bmr_base=bmr;
-	secondary->port_cmd_base = ATA_SECONDARY_CMD_BASE;
-	secondary->port_ctl_base = ATA_SECONDARY_CTL_BASE;
+	secondary->port_bmr_base=bmr+0x8;
+	
+	if(ata->pcs->bar2 == 0 || ata->pcs->bar2 == 1)
+		secondary->port_cmd_base = ATA_SECONDARY_CMD_BASE;
+	else
+		secondary->port_cmd_base = ata->pcs->bar2;
+		
+	if(ata->pcs->bar3 == 0 || ata->pcs->bar3 == 1)
+		secondary->port_ctl_base = ATA_SECONDARY_CTL_BASE;
+	else
+		secondary->port_ctl_base = ata->pcs->bar3;
+	
 	secondary->irq = ATA_SECONDARY_IRQ;
 	secondary->id=1;
 	return 0;
@@ -111,7 +132,7 @@ int identify_atapi()
 int init_ata_controller(struct ata_controller *cont){
 	cont->irqwait=1;
 	int i;
-	if(ATA_DMA_ENABLE) {
+	if(!ATA_DMA_ENABLE) {
 		/* We poll for PIO, so we don't really need IRQs if we don't have dma */
 		for (i = 0; i < 2; i++) {
 			ata_reg_outb(cont, REG_DEVICE, DEVICE_DEV(i));
@@ -206,7 +227,7 @@ int init_ata_controller(struct ata_controller *cont){
 		read_partitions(cont, &cont->devices[i], node);
 	}
 	
-	if (cont->port_bmr_base && 0) {
+	if (cont->port_bmr_base) {
 		unsigned buf;
 		unsigned p;
 		if(!cont->prdt_virt) {

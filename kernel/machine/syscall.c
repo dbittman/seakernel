@@ -148,9 +148,9 @@ int check_pointers(volatile registers_t *regs)
 
 __attribute__((optimize("O0"))) int syscall_handler(volatile registers_t *regs)
 {
-	if (regs->eax >= num_syscalls)
+	if(unlikely(regs->eax >= num_syscalls))
 		return -ENOSYS;
-	if(!syscall_table[regs->eax])
+	if(unlikely(!syscall_table[regs->eax]))
 		return -ENOSYS;
 	volatile int ret;
 	__super_sti();

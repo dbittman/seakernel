@@ -5,7 +5,6 @@
 #include <block.h>
 struct ata_controller *primary, *secondary;
 struct pci_device *ata_pci;
-mutex_t *dma_mutex;
 int api=0;
 struct dev_rec *nodes;
 
@@ -26,7 +25,7 @@ int ata_rw_multiple(int rw, int dev, u64 blk_, char *buf, int count)
 	if(blk >= device->length)
 		return 0;
 	int ret;
-	if(cont->dma_use && 0)
+	if(cont->dma_use)
 		ret = ata_dma_rw(cont, device, rw, blk, buf, count);
 	else
 		ret = ata_pio_rw(cont, device, rw, blk, (unsigned char *)buf, count);
@@ -85,8 +84,6 @@ int ioctl_ata(int min, int cmd, int arg)
 #include <sys/fcntl.h>
 int module_install()
 {
-	dma_mutex = create_mutex(0);
-	dma_busy=0;
 	nodes = (struct dev_rec *)kmalloc(sizeof(struct dev_rec));
 	api=0;
 	__a=__b=__c=__d=0;
@@ -97,6 +94,9 @@ int module_install()
 	{
 		if(res < 0)
 			kprintf("Error in init'ing ATA controller\n");
+		kfree(primary);
+		kfree(secondary);
+		kfree(nodes);
 		return EEXIST;
 	}
 	register_interrupt_handler(32 + ATA_PRIMARY_IRQ, &ata_irq_handler);
@@ -137,6 +137,5 @@ int module_exit()
 	kfree(primary);
 	kfree(secondary);
 	kfree(nodes);
-	destroy_mutex(dma_mutex);
 	return 0;
 }

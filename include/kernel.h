@@ -123,6 +123,10 @@ static inline void get_kernel_version(char *b)
 		p = (PRE_VER - 7);
 	sprintf(b, "%d.%d%c%c%d", MAJ_VER, MIN_VER, t ? '-' : 0, t, p);
 }
+
+#define likely(x)       __builtin_expect((x),1)
+#define unlikely(x)     __builtin_expect((x),0)
+
 void print_trace(unsigned int MaxFrames);
 void panic(int flags, char *fmt, ...);
 void serial_puts(int, char *);

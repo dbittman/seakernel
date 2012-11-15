@@ -147,7 +147,7 @@ __attribute__((always_inline)) static inline void restore_context()
 void schedule()
 {
 	__super_cli();
-	if(!current_task || !kernel_task)
+	if(unlikely(!current_task || !kernel_task))
 		return;
 	u32int esp, ebp, eip;
 	eip = read_eip();
@@ -156,7 +156,7 @@ void schedule()
 		post_context_switch();
 		return;
 	}
-	if(!eip)
+	if(unlikely(!eip))
 		panic(PANIC_NOSYNC, "schedule(): Invalid eip");
 	
 	store_context(eip);
@@ -180,7 +180,7 @@ void check_alarms()
 	task_t *t = alarm_list_start;
 	task_critical();
 	while(t) {
-		if(!(--t->alrm_count))
+		if(unlikely(!(--t->alrm_count)))
 		{
 			task_t *r = alarm_list_start;
 			while(r && r->alarm_next != t) r = r->alarm_next;

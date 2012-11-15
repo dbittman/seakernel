@@ -65,7 +65,7 @@ struct ata_device *get_ata_device(int min, int *part)
 	return &primary->devices[dev];
 }
 
-
+/* TODO: These should be atomic operations... */
 void ata_irq_handler(registers_t regs)
 {
 	task_critical();

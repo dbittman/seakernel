@@ -18,8 +18,7 @@ GASFLAGS=--32
 include make.inc
 RAMFILES=data-initrd/usr/sbin/fsck usr/sbin/fsck data-initrd/usr/sbin/fsck.ext2 usr/sbin/fsck.ext2 \
 	 data-initrd/preinit.sh /preinit.sh data-initrd/etc/fstab etc/fstab \
-	 data-initrd/bin/bash /sh data-initrd/bin/modprobe /modprobe data-initrd/bin/mount /mount data-initrd/bin/chroot /chroot \
-	 data-initrd/bin/cp /cp data-initrd/a /a data-initrd/cp2 /cp2 data-initrd/diff diff data-initrd/ls /ls
+	 data-initrd/bin/bash /sh data-initrd/bin/modprobe /modprobe data-initrd/bin/mount /mount data-initrd/bin/chroot /chroot 
 
 # This is all the objects to be compiled and linked into the kernel
 include kernel/make.inc

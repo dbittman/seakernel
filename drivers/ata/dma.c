@@ -10,18 +10,29 @@ typedef struct {
 	unsigned short last;
 }__attribute__((packed)) prdtable_t;
 
+/* TODO: Multiple buffers, are we filling the buffer at the right time when we write... */
+/* Also, make the partition reading use the defualt mode, not PIO always */
+/* fix fsck reporting errors */
 int ata_dma_init(struct ata_controller *cont, struct ata_device *dev, 
 	int size, int rw, unsigned char *buffer)
 {
+	int num_entries = (size / (64*1024))+1;
+	int i;
 	prdtable_t *t = (prdtable_t *)cont->prdt_virt;
-	t->addr = cont->dma_buf_phys;
-	t->size = size;
+	unsigned offset=0;
+	for(i=0;i<num_entries;i++, t++) {
+		t->addr = cont->dma_buf_phys + offset;
+		int this_size = (size-offset);
+		if(this_size >= (64*1024)) this_size=0;
+		t->size = size;
+		t->last = 0;
+		offset += this_size ? this_size : (64*1024);
+	}
+	assert(offset == (unsigned)size);
 	t->last = 0x8000;
-	
-	outl(cont->port_bmr_base + BMR_PRDT, (unsigned)cont->prdt_phys);
-	
 	if (rw == WRITE)
 		memcpy(cont->dma_buf_virt, buffer, size);
+	outl(cont->port_bmr_base + BMR_PRDT, (unsigned)cont->prdt_phys);
 	return 1;
 }
 
@@ -59,6 +70,7 @@ int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw,
 	unsigned blk, char *buf, int count)
 {
 	unsigned size=512;
+	/* TODO: MULTIPLE ENTRIES IN THE PRD TABLE */
 	if(count > 128)
 		panic(0, "not implemented");
 	mutex_on(cont->wait);

@@ -46,6 +46,7 @@ void init_kernel_symbols(void)
 	add_kernel_symbol(write_block_cache);
 	add_kernel_symbol(printk);
 	add_kernel_symbol(kprintf);
+	add_kernel_symbol(panic_assert);
 	add_kernel_symbol(sprintf);
 	add_kernel_symbol(inb);
 	add_kernel_symbol(pfs_cn_node);

@@ -17,12 +17,6 @@ int init_ata_device()
 		ata->flags = PCI_ERROR;
 		return -1;
 	}
-	//bmr = ata->pcs->bar4;
-	//kprintf("BMR0 = %x (%d)\n", ata->pcs->bar0, ata->pcs->bar0);
-	//kprintf("BMR1 = %x (%d)\n", ata->pcs->bar1, ata->pcs->bar1);
-	//kprintf("BMR2 = %x (%d)\n", ata->pcs->bar2, ata->pcs->bar2);
-	//kprintf("BMR3 = %x (%d)\n", ata->pcs->bar3, ata->pcs->bar3);
-	//kprintf("BMR4 = %x (%d)\n", bmr, bmr);
 	ata_pci = ata;
 	primary->port_bmr_base=bmr;
 	if(ata->pcs->bar0 == 0 || ata->pcs->bar0 == 1)
@@ -106,6 +100,7 @@ int read_partitions(struct ata_controller *cont, struct ata_device *dev, char *n
 		memcpy(&dev->ptable[i], &part, sizeof(part));
 		if(dev->ptable[i].sysid)
 		{
+			printk(0, "[ata]: drive %d: read partition start=%d, len=%d\n", dev->id, dev->ptable[i].start_lba, dev->ptable[i].length);
 			int a = cont->id * 2 + dev->id;
 			char tmp[17];
 			memset(tmp, 0, 17);
@@ -141,6 +136,8 @@ int init_ata_controller(struct ata_controller *cont){
 		}
 	}
 	struct ata_device dev;
+	
+
 	for (i = 0; i <= 1; i++)
 	{
 		dev.id=i;
@@ -148,6 +145,7 @@ int init_ata_controller(struct ata_controller *cont){
 		dev.flags=0;
 		outb(cont->port_cmd_base+REG_DEVICE, 0xA0 | (i ? 0x10 : 0));//id==1 -> slave
 		ATA_DELAY(cont);
+		outb(cont->port_cmd_base+REG_COMMAND, 0);
 		outb(cont->port_cmd_base+REG_SEC_CNT, 0);
 		outb(cont->port_cmd_base+REG_LBA_LOW, 0);
 		outb(cont->port_cmd_base+REG_LBA_MID, 0);
@@ -224,9 +222,9 @@ int init_ata_controller(struct ata_controller *cont){
 		memcpy(&cont->devices[i], &dev, sizeof(struct ata_device));
 		char node[16];
 		create_device(cont, &cont->devices[i], node);
+		printk(0, "[ata]: drive %d: enumerating partitions\n", dev.id);
 		read_partitions(cont, &cont->devices[i], node);
 	}
-	
 	if (cont->port_bmr_base) {
 		unsigned buf;
 		unsigned p;
@@ -242,5 +240,6 @@ int init_ata_controller(struct ata_controller *cont){
 			cont->dma_use=ATA_DMA_ENABLE;
 		}
 	}
+	
 	return 0;
 }

@@ -25,8 +25,8 @@ int ata_rw_multiple(int rw, int dev, u64 blk_, char *buf, int count)
 	if(blk >= device->length)
 		return 0;
 	int ret;
-	if(cont->dma_use)
-		ret = ata_dma_rw(cont, device, rw, blk, buf, count);
+	if(cont->dma_use && 1)
+		ret = ata_dma_rw(cont, device, rw, blk, (unsigned char *)buf, count);
 	else
 		ret = ata_pio_rw(cont, device, rw, blk, (unsigned char *)buf, count);
 	return ret;
@@ -107,6 +107,19 @@ int module_install()
 	secondary->wait = create_mutex(0);
 	init_ata_controller(primary);
 	init_ata_controller(secondary);
+	
+	//char pb[512];
+	//primary->dma_use=0;
+	//int r = ata_rw_main(READ, 0, 2050, pb);
+	//primary->dma_use=1;
+	//char buf[512];
+	//r = ata_rw_main(READ, 0, 2050, buf);
+	//kprintf("got %d\n", r);
+	//for(r=0;r<512;r++)
+	//	if(buf[r] != pb[r]) kprintf("%d: %x %x\n", r, (unsigned char)buf[r], (unsigned char)pb[r]);
+	
+	//for(;;);
+	
 	return 0;
 }
 

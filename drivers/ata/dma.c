@@ -13,6 +13,8 @@ typedef struct {
 /* TODO: Multiple buffers, are we filling the buffer at the right time when we write... */
 /* Also, make the partition reading use the defualt mode, not PIO always */
 /* fix fsck reporting errors */
+/* add time-out */
+/* error handling */
 int ata_dma_init(struct ata_controller *cont, struct ata_device *dev, 
 	int size, int rw, unsigned char *buffer)
 {
@@ -24,7 +26,7 @@ int ata_dma_init(struct ata_controller *cont, struct ata_device *dev,
 		t->addr = cont->dma_buf_phys + offset;
 		int this_size = (size-offset);
 		if(this_size >= (64*1024)) this_size=0;
-		t->size = size;
+		t->size = this_size;
 		t->last = 0;
 		offset += this_size ? this_size : (64*1024);
 	}
@@ -37,9 +39,9 @@ int ata_dma_init(struct ata_controller *cont, struct ata_device *dev,
 }
 
 int ata_start_command(struct ata_controller *cont, struct ata_device *dev, 
-	unsigned block, char rw, int count)
+	u64 block, char rw, int count)
 {
-	unsigned long long addr = block;
+	u64 addr = block;
 	unsigned char cmd=0;
 	if(rw == READ)
 		cmd = 0x25;
@@ -47,15 +49,24 @@ int ata_start_command(struct ata_controller *cont, struct ata_device *dev,
 		cmd = 0x35;
 	outb(cont->port_cmd_base+REG_DEVICE, 0x40 | (dev->id << 4));
 	ATA_DELAY(cont);
-	outb(cont->port_cmd_base+REG_SEC_CNT, 0x00);
+	/*outb(cont->port_cmd_base+REG_SEC_CNT, (unsigned char)(count >> 8));
 	outb(cont->port_cmd_base+REG_LBA_LOW, (unsigned char)(addr >> 24));
 	outb(cont->port_cmd_base+REG_LBA_MID, (unsigned char)(addr >> 32));
 	outb(cont->port_cmd_base+REG_LBA_HIG, (unsigned char)(addr >> 40));
-	outb(cont->port_cmd_base+REG_SEC_CNT, count);
+	outb(cont->port_cmd_base+REG_SEC_CNT, (unsigned char)count);
 	outb(cont->port_cmd_base+REG_LBA_LOW, (unsigned char)addr);
-	outb(cont->port_cmd_base+REG_LBA_MID, (unsigned char)(addr >> 8));
-	outb(cont->port_cmd_base+REG_LBA_HIG, (unsigned char)(addr >> 16));
+	outb(cont->port_cmd_base+REG_LBA_MID, (unsigned char)(addr >> 8 ));
+	outb(cont->port_cmd_base+REG_LBA_HIG, (unsigned char)(addr >> 16)); */
 	
+	outb(cont->port_cmd_base+REG_SEC_CNT, (unsigned char)((count >> 8)  & 0xFF));
+	outb(cont->port_cmd_base+REG_LBA_LOW, (unsigned char)((addr  >> 24) & 0xFF));
+	outb(cont->port_cmd_base+REG_LBA_MID, (unsigned char)((addr  >> 32) & 0xFF));
+	outb(cont->port_cmd_base+REG_LBA_HIG, (unsigned char)((addr  >> 40) & 0xFF));
+	outb(cont->port_cmd_base+REG_SEC_CNT, (unsigned char)(        count & 0xFF));
+	outb(cont->port_cmd_base+REG_LBA_LOW, (unsigned char)(         addr & 0xFF));
+	outb(cont->port_cmd_base+REG_LBA_MID, (unsigned char)((addr  >> 8)  & 0xFF));
+	outb(cont->port_cmd_base+REG_LBA_HIG, (unsigned char)((addr  >> 16) & 0xFF));
+	//kprintf(">>> %d\n", addr);
 	while(1)
 	{
 		int x = ata_reg_inb(cont, REG_STATUS);
@@ -67,24 +78,21 @@ int ata_start_command(struct ata_controller *cont, struct ata_device *dev,
 }
 
 int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw, 
-	unsigned blk, char *buf, int count)
+	u64 blk, unsigned char *buf, int count)
 {
+	//kprintf("doing dma: %d %d %d\n", dev->id, (unsigned)blk, count);
 	unsigned size=512;
-	/* TODO: MULTIPLE ENTRIES IN THE PRD TABLE */
-	if(count > 128)
-		panic(0, "not implemented");
 	mutex_on(cont->wait);
 	ata_dma_init(cont, dev, size * count, rw, (unsigned char *)buf);
-	ATA_DELAY(cont);
+	
 	uint8_t cmdReg = inb(cont->port_bmr_base + BMR_COMMAND);
 	cmdReg = (rw == READ ? 8 : 0);
 	outb(cont->port_bmr_base, cmdReg);
-	
 	unsigned char st = inb(cont->port_bmr_base + BMR_STATUS);
 	st &= ~BMR_STATUS_ERROR; //clear error bit
 	st &= ~BMR_STATUS_IRQ; //clear irq bit
 	outb(cont->port_bmr_base + BMR_STATUS, st);
-	ATA_DELAY(cont);
+	
 	while(1)
 	{
 		int x = ata_reg_inb(cont, REG_STATUS);
@@ -93,55 +101,47 @@ int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw,
 	}
 	
 	ata_start_command(cont, dev, blk, rw, count);
-	ATA_DELAY(cont);
 	cmdReg = inb(cont->port_bmr_base + BMR_COMMAND);
 	cmdReg |= 0x1 | (rw == READ ? 8 : 0);
-	
 	cont->irqwait=0;
+	int ret = size * count;
 	outb(cont->port_bmr_base, cmdReg);
-	while(!cont->irqwait) {
-		ATA_DELAY(cont);
+	while(ret) {
 		st = inb(cont->port_bmr_base + BMR_STATUS);
 		uint8_t sus = ata_reg_inb(cont, REG_STATUS);
-		//printk(5, "%d: %x %x %x\n", cont->irqwait, st, sus, !(sus & STATUS_BSY));
-		if(st & 0x2)
-			panic(PANIC_NOSYNC, "DMA err");
+		if(st & 0x2) {
+			outb(cont->port_bmr_base + BMR_STATUS, 0x2);
+			ret=0;
+		}
 		if(sus & STATUS_ERR)
-			panic(PANIC_NOSYNC, "Error in reg_stat");
-		if(!(sus & STATUS_BSY))
+			ret=0;
+		if(!(sus & STATUS_BSY) && (st & 0x4) && !(st & 0x1))
 			break;
-		if(!(st & 0x4))
-			continue;
 	}
 	st = inb(cont->port_bmr_base + BMR_COMMAND);
 	outb(cont->port_bmr_base + BMR_COMMAND, st & ~0x1);
 	
 	uint8_t status = ata_reg_inb(cont, REG_STATUS);
-	if (!(status & STATUS_ERR)) {
-		if(st & 0x2)
-			goto try_again;
-	} else
-	{
-		try_again:
-		printk(1, "[ata]: DMA operation on %d:%d failed (%x %x). Falling back to PIO mode (%d more)\n", 
-			cont->id, dev->id, status, st, --cont->dma_use);
-		/* Error in the transfer. We assume that the data is junk. Fall back to PIO mode */
-		mutex_off(cont->wait);
-		return ata_pio_rw(cont, dev, rw, (unsigned long long)blk, 
-			(unsigned char *)buf, 512*count);
-	}
-	if (rw == READ)
+	if (rw == READ && ret)
 		memcpy(buf, cont->dma_buf_virt, size * count);
+	st = inb(cont->port_bmr_base + BMR_STATUS);
 	
-
-	inb(cont->port_bmr_base + BMR_STATUS);
-	ata_reg_inb(cont, REG_STATUS);
+	if(!ret)
+	{
+		kprintf("[ata]: dma transfer failed (start=%d, len=%d), resetting...\n", blk, count);
+		/* An error occured in the drive - we must issue a drive reset command */
+		outb(cont->port_ctl_base, 0x4);
+		ATA_DELAY(cont);
+		outb(cont->port_ctl_base, 0x0);
+		ATA_DELAY(cont);
+	}
+	
 	mutex_off(cont->wait);
-	return size * count;
+	return ret;
 }
 
 int ata_dma_rw(struct ata_controller *cont, struct ata_device *dev, int rw, 
-	unsigned blk, char *buf, int count)
+	u64 blk, unsigned char *buf, int count)
 {
 	return ata_dma_rw_do(cont, dev, rw, blk, buf, count);
 }

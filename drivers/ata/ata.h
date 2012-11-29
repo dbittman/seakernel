@@ -2,8 +2,7 @@
 #define ATA_H
 #include <pci.h>
 #include <mod.h>
-#undef asm
-#define asm __asm__
+
 /* Most of these definitions and support functions have been borrowed from CDI */
 #define PCI_CLASS_ATA           0x01
 #define PCI_SUBCLASS_ATA        0x01
@@ -110,8 +109,8 @@ struct ata_controller {
     volatile unsigned long long irqwait;
     unsigned                       prdt_phys;
     uint64_t*                       prdt_virt;
-    unsigned                        dma_buf_phys;
-    void*                       dma_buf_virt;
+    unsigned                        dma_buf_phys, dma_buf_phys2;
+    void*                       dma_buf_virt, *dma_buf_virt2;
     struct ata_device           devices[2];
     mutex_t*                    wait;
     struct ata_device *selected;
@@ -186,7 +185,7 @@ static inline void ata_reg_outw(struct ata_controller* controller,
  */
 static inline void ata_insw(uint16_t port, void* buffer, uint32_t count)
 {
-    asm volatile("rep insw" : "+D"(buffer), "+c"(count) : "d"(port) : "memory");
+    asm("rep insw" : "+D"(buffer), "+c"(count) : "d"(port) : "memory");
 }
 
 /**
@@ -198,7 +197,7 @@ static inline void ata_insw(uint16_t port, void* buffer, uint32_t count)
  */
 static inline void ata_outsw(uint16_t port, void* buffer, uint32_t count)
 {
-    asm volatile("rep outsw" : "+S"(buffer), "+c"(count) : "d"(port) : "memory");
+    asm("rep outsw" : "+S"(buffer), "+c"(count) : "d"(port) : "memory");
 }
 
 static inline void outsw(unsigned long addr, const void *buffer, int count)

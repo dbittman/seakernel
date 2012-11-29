@@ -21,9 +21,9 @@ int atapi_pio_rw(struct ata_controller *cont, struct ata_device *dev, int rw,
 	outb (cont->port_cmd_base+5, 2048 >> 8);
 	outb (cont->port_cmd_base+REG_COMMAND, 0xA0);       /* ATA PACKET command */
 	while ((status = inb (cont->port_cmd_base+REG_STATUS) & 0x80))     /* BUSY */
-		asm volatile ("pause");
+		asm ("pause");
 	while (!((status = inb (cont->port_cmd_base+REG_STATUS)) & 0x8) && !(status & 0x1))
-		asm volatile ("pause");
+		asm ("pause");
 	/* DRQ or ERROR set */
 	if (status & 0x1) {
 		size = -1;

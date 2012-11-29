@@ -68,16 +68,24 @@ struct ata_device *get_ata_device(int min, int *part)
 /* TODO: These should be atomic operations... */
 void ata_irq_handler(registers_t regs)
 {
-	task_critical();
-	primary->irqwait++;
-	task_uncritical();
+	char st = inb(primary->port_bmr_base + BMR_STATUS);
+	if(st & 0x4) {
+		primary->irqwait++;
+		ata_reg_inb(primary, REG_STATUS);
+		inb(primary->port_bmr_base + BMR_STATUS);
+		outb(primary->port_bmr_base + BMR_STATUS, 0x4);
+	}
 }
 
 void ata_irq_handler2(registers_t regs)
 {
-	task_critical();
-	secondary->irqwait++;
-	task_uncritical();
+	char st = inb(secondary->port_bmr_base + BMR_STATUS);
+	if(st & 0x4) {
+		secondary->irqwait++;
+		ata_reg_inb(secondary, REG_STATUS);
+		inb(secondary->port_bmr_base + BMR_STATUS);
+		outb(secondary->port_bmr_base + BMR_STATUS, 0x4);
+	}
 }
 
 int ata_wait_irq(struct ata_controller *cont)

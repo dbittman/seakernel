@@ -123,7 +123,7 @@ int identify_atapi()
 {
 	return 0;
 }
-
+extern char ata_dma_buf[];
 int init_ata_controller(struct ata_controller *cont){
 	cont->irqwait=1;
 	int i;
@@ -136,8 +136,35 @@ int init_ata_controller(struct ata_controller *cont){
 		}
 	}
 	struct ata_device dev;
+		if (cont->port_bmr_base) {
+		unsigned buf;
+		unsigned p;
+		if(!cont->prdt_virt) {
+			buf = (unsigned)kmalloc_ap(0x1000, &p);
+			cont->prdt_virt = (uint64_t *)buf;
+			cont->prdt_phys = p;
+		}
+		if(!cont->dma_buf_virt) {
+			
+			
+			buf = (unsigned)kmalloc_ap(ATA_DMA_MAXSIZE*2, &p);
+			unsigned v = buf + ATA_DMA_MAXSIZE;
+			v &= ~(0xFFFF);
+			
+			
+			cont->dma_buf_virt = (void *)ata_dma_buf;
+			cont->dma_buf_phys = (unsigned)ata_dma_buf;
+			cont->dma_use=ATA_DMA_ENABLE;
+			
+			
+			//buf = (unsigned)kmalloc_ap(ATA_DMA_MAXSIZE, &p);
+			//cont->dma_buf_virt2 = (void *)buf;
+			//cont->dma_buf_phys2 = p;
+			
+			
+		}
+	}
 	
-
 	for (i = 0; i <= 1; i++)
 	{
 		dev.id=i;
@@ -222,24 +249,9 @@ int init_ata_controller(struct ata_controller *cont){
 		memcpy(&cont->devices[i], &dev, sizeof(struct ata_device));
 		char node[16];
 		create_device(cont, &cont->devices[i], node);
-		printk(0, "[ata]: drive %d: enumerating partitions\n", dev.id);
+		printk(0, "[ata]: controller %s, drive %d: enumerating partitions\n", cont == primary ? "primary" : "secondary", dev.id);
 		read_partitions(cont, &cont->devices[i], node);
 	}
-	if (cont->port_bmr_base) {
-		unsigned buf;
-		unsigned p;
-		if(!cont->prdt_virt) {
-			buf = (unsigned)kmalloc_ap(0x1000, &p);
-			cont->prdt_virt = (uint64_t *)buf;
-			cont->prdt_phys = p;
-		}
-		if(!cont->dma_buf_virt) {
-			buf = (unsigned)kmalloc_ap(ATA_DMA_MAXSIZE, &p);
-			cont->dma_buf_virt = (void *)buf;
-			cont->dma_buf_phys = p;
-			cont->dma_use=ATA_DMA_ENABLE;
-		}
-	}
-	
+
 	return 0;
 }

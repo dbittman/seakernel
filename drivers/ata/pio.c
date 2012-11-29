@@ -71,7 +71,7 @@ int ata_pio_rw(struct ata_controller *cont, struct ata_device *dev,
 		for (idx = 0; idx < count*256; idx++)
 		{
 			tmpword = buffer[idx * 2] | (buffer[idx * 2 + 1] << 8);
-			asm volatile ("outw %1, %0"::"dN" 
+			asm ("outw %1, %0"::"dN" 
 				((short)(cont->port_cmd_base+REG_DATA)), "a" ((short)tmpword));
 		}
 	}

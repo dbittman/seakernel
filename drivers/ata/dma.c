@@ -15,32 +15,36 @@ typedef struct {
 /* fix fsck reporting errors */
 /* add time-out */
 /* error handling */
+/* ******* RW_MULTIPLE SEEMS TO CAUSE PROBLEMS
+ * ******* FIX IRQ GENERATION */
+ /* Fix that secondary controller is not initiallized */
+ /* Add better way to allocate DMA buffers */
 int ata_dma_init(struct ata_controller *cont, struct ata_device *dev, 
 	int size, int rw, unsigned char *buffer)
 {
-	int num_entries = (size / (64*1024))+1;
+	int num_entries = ((size-1) / (64*1024))+1;
 	int i;
 	prdtable_t *t = (prdtable_t *)cont->prdt_virt;
 	unsigned offset=0;
 	for(i=0;i<num_entries;i++) {
-		t->addr = cont->dma_buf_phys + offset;
-		int this_size = (size-offset);
+		t->addr = i ? cont->dma_buf_phys2 : cont->dma_buf_phys;
+		unsigned this_size = (size-offset);
 		if(this_size >= (64*1024)) this_size=0;
-		t->size = this_size;
+		t->size = (unsigned short)this_size;
 		t->last = 0;
+		if (rw == WRITE)
+			memcpy(i ? cont->dma_buf_virt2 : cont->dma_buf_virt, buffer+offset, this_size);
 		offset += this_size ? this_size : (64*1024);
 		if((i+1) < num_entries) t++;
 	}
 	assert(offset == (unsigned)size);
 	t->last = 0x8000;
-	if (rw == WRITE)
-		memcpy(cont->dma_buf_virt, buffer, size);
 	outl(cont->port_bmr_base + BMR_PRDT, (unsigned)cont->prdt_phys);
 	return 1;
 }
 
 int ata_start_command(struct ata_controller *cont, struct ata_device *dev, 
-	u64 block, char rw, int count)
+	u64 block, char rw, unsigned short count)
 {
 	u64 addr = block;
 	unsigned char cmd=0;
@@ -50,7 +54,6 @@ int ata_start_command(struct ata_controller *cont, struct ata_device *dev,
 		cmd = 0x35;
 	outb(cont->port_cmd_base+REG_DEVICE, 0x40 | (dev->id << 4));
 	ATA_DELAY(cont);
-	
 	outb(cont->port_cmd_base+REG_SEC_CNT, (unsigned char)((count >> 8)  & 0xFF));
 	outb(cont->port_cmd_base+REG_LBA_LOW, (unsigned char)((addr  >> 24) & 0xFF));
 	outb(cont->port_cmd_base+REG_LBA_MID, (unsigned char)((addr  >> 32) & 0xFF));
@@ -70,12 +73,10 @@ int ata_start_command(struct ata_controller *cont, struct ata_device *dev,
 }
 
 int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw, 
-	u64 blk, unsigned char *buf, int count)
+	u64 blk, unsigned char *buf, unsigned count)
 {
 	unsigned size=512;
 	mutex_on(cont->wait);
-	
-	ata_dma_init(cont, dev, size * count, rw, (unsigned char *)buf);
 	
 	uint8_t cmdReg = inb(cont->port_bmr_base + BMR_COMMAND);
 	cmdReg = (rw == READ ? 8 : 0);
@@ -91,7 +92,7 @@ int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw,
 		if(!(x & STATUS_BSY))
 			break;
 	}
-	
+	ata_dma_init(cont, dev, size * count, rw, (unsigned char *)buf);
 	ata_start_command(cont, dev, blk, rw, count);
 	
 	cmdReg = inb(cont->port_bmr_base + BMR_COMMAND);
@@ -100,25 +101,15 @@ int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw,
 	int ret = size * count;
 	outb(cont->port_bmr_base + BMR_COMMAND, cmdReg);
 	while(ret) {
-		st = inb(cont->port_bmr_base + BMR_STATUS);
-		uint8_t sus = ata_reg_inb(cont, REG_STATUS);
-		if(st & 0x2) {
-			outb(cont->port_bmr_base + BMR_STATUS, 0x2);
-			ret=0;
-		}
-		if(sus & STATUS_ERR)
-			ret=0;
-		if(!(sus & STATUS_BSY) && (st & 0x4) && !(st & 0x1))
-			break;
+		if(cont->irqwait) break;
+		schedule();
 	}
 	st = inb(cont->port_bmr_base + BMR_COMMAND);
 	outb(cont->port_bmr_base + BMR_COMMAND, st & ~0x1);
 	
-	uint8_t status = ata_reg_inb(cont, REG_STATUS);
 	st = inb(cont->port_bmr_base + BMR_STATUS);
 	if (rw == READ && ret)
 		memcpy(buf, cont->dma_buf_virt, size * count);
-	
 	if(!ret)
 	{
 		kprintf("[ata]: dma transfer failed (start=%d, len=%d), resetting...\n", (unsigned)blk, count);
@@ -130,7 +121,7 @@ int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw,
 	}
 	
 	mutex_off(cont->wait);
-	return ret;
+	return ret ? ret : -EIO;
 }
 
 int ata_dma_rw(struct ata_controller *cont, struct ata_device *dev, int rw, 

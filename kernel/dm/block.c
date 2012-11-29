@@ -173,7 +173,11 @@ unsigned block_read_multiple(blockdevice_t *bd, int dev, u64 start,
 				unsigned x = count+1;
 				while(x < num && !get_block_cache(dev, start+x, buf + x*bd->blksz))
 					x++;
-				unsigned int r = do_block_read_multiple(bd, dev, start+count, x-count, buf + count*bd->blksz);
+				unsigned r;
+				if(x-count == 1)
+					r = block_rw(READ, dev, start+count, buf+count*bd->blksz, bd)/bd->blksz;
+				else
+					r = do_block_read_multiple(bd, dev, start+count, x-count, buf + count*bd->blksz);
 				if(r != x-count)
 					return count+r;
 				count = x;

@@ -100,7 +100,7 @@ int read_partitions(struct ata_controller *cont, struct ata_device *dev, char *n
 		memcpy(&dev->ptable[i], &part, sizeof(part));
 		if(dev->ptable[i].sysid)
 		{
-			printk(0, "[ata]: drive %d: read partition start=%d, len=%d\n", dev->id, dev->ptable[i].start_lba, dev->ptable[i].length);
+			printk(0, "[ata]: %d:%d: read partition start=%d, len=%d\n", cont->id, dev->id, dev->ptable[i].start_lba, dev->ptable[i].length);
 			int a = cont->id * 2 + dev->id;
 			char tmp[17];
 			memset(tmp, 0, 17);
@@ -119,139 +119,134 @@ int read_partitions(struct ata_controller *cont, struct ata_device *dev, char *n
 	return 0;
 }
 
-int identify_atapi()
-{
-	return 0;
-}
 extern char ata_dma_buf[];
-int init_ata_controller(struct ata_controller *cont){
-	cont->irqwait=1;
-	int i;
-	if(!ATA_DMA_ENABLE) {
-		/* We poll for PIO, so we don't really need IRQs if we don't have dma */
-		for (i = 0; i < 2; i++) {
-			ata_reg_outb(cont, REG_DEVICE, DEVICE_DEV(i));
-			ATA_DELAY(cont);
-			ata_reg_outb(cont, REG_CONTROL, CONTROL_NIEN);
+
+void allocate_dma(struct ata_controller *cont)
+{
+	unsigned buf;
+	unsigned p;
+	if(!cont->prdt_virt) {
+		buf = (unsigned)kmalloc_ap(0x1000, &p);
+		cont->prdt_virt = (uint64_t *)buf;
+		cont->prdt_phys = p;
+	}
+	if(!cont->dma_buf_virt) {
+		int ret = allocate_dma_buffer(64*1024, &buf, &p);
+		if(ret == -1)
+		{
+			kprintf("[ata]: could not allocate DMA buffer\n");
+			cont->dma_use=0;
+			return;
 		}
+		cont->dma_buf_virt = (void *)buf;
+		cont->dma_buf_phys = (unsigned)p;
+		cont->dma_use=ATA_DMA_ENABLE;
+	}
+}
+
+int init_ata_controller(struct ata_controller *cont)
+{
+	cont->enabled=1;
+	int i;
+	/* we don't need interrupts during the identification */
+	for (i = 0; i < 2; i++) {
+		ata_reg_outb(cont, REG_DEVICE, DEVICE_DEV(i));
+		ATA_DELAY(cont);
+		ata_reg_outb(cont, REG_CONTROL, CONTROL_NIEN);
 	}
 	struct ata_device dev;
-		if (cont->port_bmr_base) {
-		unsigned buf;
-		unsigned p;
-		if(!cont->prdt_virt) {
-			buf = (unsigned)kmalloc_ap(0x1000, &p);
-			cont->prdt_virt = (uint64_t *)buf;
-			cont->prdt_phys = p;
-		}
-		if(!cont->dma_buf_virt) {
-			
-			
-			buf = (unsigned)kmalloc_ap(ATA_DMA_MAXSIZE*2, &p);
-			unsigned v = buf + ATA_DMA_MAXSIZE;
-			v &= ~(0xFFFF);
-			
-			
-			cont->dma_buf_virt = (void *)ata_dma_buf;
-			cont->dma_buf_phys = (unsigned)ata_dma_buf;
-			cont->dma_use=ATA_DMA_ENABLE;
-			
-			
-			//buf = (unsigned)kmalloc_ap(ATA_DMA_MAXSIZE, &p);
-			//cont->dma_buf_virt2 = (void *)buf;
-			//cont->dma_buf_phys2 = p;
-			
-			
-		}
-	}
-	
+	if(cont->port_bmr_base)
+		allocate_dma(cont);
+	unsigned char in=0;
+	unsigned char m, h;
 	for (i = 0; i <= 1; i++)
 	{
 		dev.id=i;
 		dev.controller = cont;
 		dev.flags=0;
-		outb(cont->port_cmd_base+REG_DEVICE, 0xA0 | (i ? 0x10 : 0));//id==1 -> slave
+		
+		outb(cont->port_cmd_base+REG_DEVICE, i ? 0xB0 : 0xA0);
 		ATA_DELAY(cont);
-		outb(cont->port_cmd_base+REG_COMMAND, 0);
-		outb(cont->port_cmd_base+REG_SEC_CNT, 0);
+		
+		if(!inb(cont->port_cmd_base+REG_STATUS)) continue;
+		
+		/* reset the LBA ports, and send the identify command */
 		outb(cont->port_cmd_base+REG_LBA_LOW, 0);
 		outb(cont->port_cmd_base+REG_LBA_MID, 0);
 		outb(cont->port_cmd_base+REG_LBA_HIG, 0);
 		outb(cont->port_cmd_base+REG_COMMAND, COMMAND_IDENTIFY);
-		unsigned char in=0;
-		unsigned char m, h;
+		ATA_DELAY(cont);
+		
+		/* wait until we get READY, ABORT, or no device */
 		while(1)
 		{
 			in = inb(cont->port_cmd_base+REG_STATUS);
-			if((m=inb(cont->port_cmd_base+REG_LBA_MID)) 
-					|| (h=inb(cont->port_cmd_base+REG_LBA_HIG)))
-				break;
-			if(!in)
-			{
-				cont->devices[i].flags=0;
-				break;
-			}
-			if(!(in & STATUS_BSY) && (in & STATUS_DRQ))
-				break;
-			if(in & STATUS_ERR)
+			if((!(in & STATUS_BSY) && (in & STATUS_DRQ)) || in & STATUS_ERR || !in)
 				break;
 		}
-		if(!in || in & STATUS_ERR)
+		
+		/* no device here. go to the next device */
+		if(!in) 
+			continue;
+		/* we got an ABORT response. This means that the device is likely
+		 * an ATAPI or a SATA drive. */
+		if(in & STATUS_ERR)
 		{
-			if(m == 0x14)
+			m=inb(cont->port_cmd_base+REG_LBA_MID);
+			h=inb(cont->port_cmd_base+REG_LBA_HIG);
+			if((m == 0x14 && h == 0xEB) || (m == 0x69 && h == 0x96))
 			{
-				printk(3, "[ata]: Found an ATAPI device: ");
 				dev.flags |= F_ATAPI;
+				/* ATAPI devices get the ATAPI IDENTIFY command */
+				outb(cont->port_cmd_base+REG_COMMAND, COMMAND_IDENTIFY_ATAPI);
+				ATA_DELAY(cont);
 			} else
-			{
-				cont->devices[i].flags=0;
 				continue;
-			}
-		} else
-			printk(3, "[ata]: Found an ATA device: ");
-		printk(3, "%d:%d", cont->id, i);
+		}
+		
 		dev.flags |= F_EXIST;
-		if(!(dev.flags & F_ATAPI)) {
+		int dma_ok = 1; //TODO
+		if((dev.flags & F_ATAPI))
+			dma_ok=0;
+		
 		unsigned short tmp[256];
 		int idx;
 		for (idx = 0; idx < 256; idx++)
-		{
 			tmp[idx] = inw(cont->port_cmd_base+REG_DATA);
-		}
-		if(tmp[83] & 0x400) {
-			printk(2, "\tlba48");
-			dev.flags |= F_LBA48;
-		}
+		
+		unsigned lba48_is_supported = tmp[83] & 0x400;
 		unsigned lba28 = *(unsigned *)(tmp+60);
 		unsigned long long lba48 = *(unsigned long long *)(tmp+100);
-		if(!lba28 && !lba48)
-		{
-			cont->devices[i].flags=0;
-			printk(2, "\n");
-			continue;
-		}
+		
 		if(lba48)
 			dev.length = lba48;
-		if(lba28 && !lba48)
-		{
+		else if(lba28) {
 			dev.length = lba28;
 			dev.flags |= F_LBA28;
 		}
-		printk(2, "\tLength = %d sectors (%d MB)\n", (unsigned)dev.length, 
-			((unsigned)dev.length/2)/1024);
-		} else
-		{
-			identify_atapi();
-			dev.length=~0;
-			dev.flags |= F_LBA28;
-			printk(2, "\n");
+		
+		/* if we do dma, we need to re-enable interrupts... */
+		if(dma_ok) {
+			ata_reg_outb(cont, REG_CONTROL, 0);
+			dev.flags |= F_DMA;
 		}
+		printk(2, "[ata]: %d:%d: %s, flags=0x%x, length = %d sectors (%d MB)\n", 
+			cont->id, dev.id, 
+			dev.flags & F_ATAPI ? "atapi" : (dev.flags & F_SATA ? "sata" : 
+			(dev.flags & F_SATAPI ? "satapi" : "pata")),
+			dev.flags, (unsigned)dev.length, 
+			((unsigned)dev.length/2)/1024);
+		
+		if(lba48 && !lba48_is_supported)
+			printk(2, "[ata]: %d:%d: conflict in lba48 support reporting\n");
+		else
+			dev.flags |= F_LBA48;
+		
 		memcpy(&cont->devices[i], &dev, sizeof(struct ata_device));
 		char node[16];
 		create_device(cont, &cont->devices[i], node);
-		printk(0, "[ata]: controller %s, drive %d: enumerating partitions\n", cont == primary ? "primary" : "secondary", dev.id);
-		read_partitions(cont, &cont->devices[i], node);
+		if(!(dev.flags & F_ATAPI) && !(dev.flags & F_SATAPI))
+			read_partitions(cont, &cont->devices[i], node);
 	}
-
 	return 0;
 }

@@ -36,14 +36,14 @@ const char *elf_lookup_symbol (uint32_t addr, elf32_t *elf)
 	return 0;
 }
 
-char ata_dma_buf[0x1000 * 32];
+
 
 void init_kernel_symbols(void)
 {
 	uint32_t i;
 	for(i = 0; i < MAX_SYMS; i++)
 		export_syms[i].ptr = 0;
-	add_kernel_symbol(ata_dma_buf);
+	add_kernel_symbol(allocate_dma_buffer);
 	add_kernel_symbol(_add_kernel_symbol);
 	add_kernel_symbol(do_iremove);
 	add_kernel_symbol(write_block_cache);

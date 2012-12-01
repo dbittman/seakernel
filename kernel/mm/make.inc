@@ -1,5 +1,6 @@
 KOBJS+=kernel/mm/area.o \
 kernel/mm/clone.o \
+kernel/mm/dma.o \
 kernel/mm/free.o \
 kernel/mm/kmalloc.o \
 kernel/mm/memory.o \

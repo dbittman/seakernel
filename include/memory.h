@@ -77,6 +77,7 @@ void pm_free_page(addr_t addr);
 unsigned int vm_getattrib(addr_t v, unsigned *p);
 extern void copy_page_physical(addr_t, addr_t);
 extern void copy_page_physical_half(addr_t, addr_t);
+int allocate_dma_buffer(size_t length, addr_t *virtual, addr_t *physical);
 int vm_cleanup(page_dir_t *, unsigned *);
 int pm_stat_mem(struct mem_stat *s);
 void vm_free_page_table(int tbl, addr_t *t/* VIRTUAL ADDRESS */, addr_t *);

@@ -3,6 +3,7 @@
 #include <pci.h>
 #include "ata.h"
 #include <block.h>
+#include <sys/fcntl.h>
 struct ata_controller *primary, *secondary;
 struct pci_device *ata_pci;
 int api=0;
@@ -58,14 +59,7 @@ int ioctl_ata(int min, int cmd, int arg)
 	}
 	if(cmd == 1)
 	{
-		/* Reload partition table */
-		mutex_on(primary->wait);
-		mutex_on(secondary->wait);
-		remove_devices();
-		init_ata_controller(primary);
-		init_ata_controller(secondary);
-		mutex_off(primary->wait);
-		mutex_off(secondary->wait);
+		kprintf("[ata]: reload partition tables - not implemented\n");
 		return 0;
 	}
 	if(cmd == -7)
@@ -81,7 +75,7 @@ int ioctl_ata(int min, int cmd, int arg)
 	}
 	return -EINVAL;
 }
-#include <sys/fcntl.h>
+
 int module_install()
 {
 	nodes = (struct dev_rec *)kmalloc(sizeof(struct dev_rec));
@@ -100,13 +94,15 @@ int module_install()
 		return EEXIST;
 	}
 	register_interrupt_handler(32 + ATA_PRIMARY_IRQ, &ata_irq_handler);
-	register_interrupt_handler(32 + ATA_SECONDARY_IRQ, &ata_irq_handler2);
+	register_interrupt_handler(32 + ATA_SECONDARY_IRQ, &ata_irq_handler);
 	api = set_availablebd(atapi_rw_main, 2048, ioctl_atapi, 0, 0);
 	set_blockdevice(3, ata_rw_main, 512, ioctl_ata, ata_rw_multiple, 0);
 	primary->wait = create_mutex(0);
 	secondary->wait = create_mutex(0);
+	primary->id=0;
+	secondary->id=1;
 	init_ata_controller(primary);
-	//init_ata_controller(secondary);
+	init_ata_controller(secondary);
 	return 0;
 }
 
@@ -118,7 +114,6 @@ int module_deps(char *b)
 
 int module_exit()
 {
-	
 	if(api) {
 		printk(1, "[ata]: Syncing disks...\n");
 		ata_disk_sync(primary);

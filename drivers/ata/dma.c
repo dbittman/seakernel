@@ -19,6 +19,7 @@ typedef struct {
  * ******* FIX IRQ GENERATION */
  /* Fix that secondary controller is not initiallized */
  /* Add better way to allocate DMA buffers */
+ /* support LBA28 */
 int ata_dma_init(struct ata_controller *cont, struct ata_device *dev, 
 	int size, int rw, unsigned char *buffer)
 {

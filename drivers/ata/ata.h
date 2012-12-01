@@ -54,6 +54,8 @@
                                 STATUS_DRQ | STATUS_ERR)
 
 #define COMMAND_IDENTIFY        0xEC
+#define COMMAND_IDENTIFY_ATAPI  0xA1
+
 
 #define CONTROL_HOB             (1 << 7)
 #define CONTROL_SRST            (1 << 2)
@@ -99,6 +101,7 @@ struct ata_device {
 };
 
 struct ata_controller {
+	uint8_t						enabled;
     uint8_t                     id;
     uint16_t                    port_cmd_base;
     uint16_t                    port_ctl_base;

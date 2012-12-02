@@ -119,8 +119,6 @@ int read_partitions(struct ata_controller *cont, struct ata_device *dev, char *n
 	return 0;
 }
 
-extern char ata_dma_buf[];
-
 void allocate_dma(struct ata_controller *cont)
 {
 	unsigned buf;
@@ -194,12 +192,16 @@ int init_ata_controller(struct ata_controller *cont)
 		{
 			m=inb(cont->port_cmd_base+REG_LBA_MID);
 			h=inb(cont->port_cmd_base+REG_LBA_HIG);
-			if((m == 0x14 && h == 0xEB) || (m == 0x69 && h == 0x96))
+			if((m == 0x14 && h == 0xEB))
 			{
 				dev.flags |= F_ATAPI;
 				/* ATAPI devices get the ATAPI IDENTIFY command */
 				outb(cont->port_cmd_base+REG_COMMAND, COMMAND_IDENTIFY_ATAPI);
 				ATA_DELAY(cont);
+			} else if(m==0x3c && h==0xc3) {
+				dev.flags |= F_SATA;
+			} else if(m == 0x69 && h == 0x96) {
+				dev.flags |= F_SATAPI;
 			} else
 				continue;
 		}

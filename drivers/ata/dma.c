@@ -10,6 +10,8 @@ typedef struct {
 	unsigned short last;
 }__attribute__((packed)) prdtable_t;
 
+/* error handling */
+/* fix potential-deadlock warning */
 int ata_dma_init(struct ata_controller *cont, struct ata_device *dev, 
 	int size, int rw, unsigned char *buffer)
 {
@@ -164,5 +166,15 @@ int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw,
 int ata_dma_rw(struct ata_controller *cont, struct ata_device *dev, int rw, 
 	u64 blk, unsigned char *buf, int count)
 {
+	if(count >= 128) {
+		int i=0;
+		int ret=0;
+		for(i=0;i<count / 128;i++)
+		{
+			ret += ata_dma_rw_do(cont, dev, rw, blk + i*128, buf + i*128*512, 128);
+		}
+		ret += ata_dma_rw_do(cont, dev, rw, blk+i*128, buf + i*128*512, count - i*128);
+		return ret;
+	}
 	return ata_dma_rw_do(cont, dev, rw, blk, buf, count);
 }

@@ -10,16 +10,8 @@ typedef struct {
 	unsigned short last;
 }__attribute__((packed)) prdtable_t;
 
-/* TODO: Multiple buffers, are we filling the buffer at the right time when we write... */
-/* Also, make the partition reading use the defualt mode, not PIO always */
-/* fix fsck reporting errors */
 /* add time-out */
 /* error handling */
-/* ******* RW_MULTIPLE SEEMS TO CAUSE PROBLEMS
- * ******* FIX IRQ GENERATION */
- /* Fix that secondary controller is not initiallized */
- /* Add better way to allocate DMA buffers */
- /* support LBA28 */
 int ata_dma_init(struct ata_controller *cont, struct ata_device *dev, 
 	int size, int rw, unsigned char *buffer)
 {
@@ -27,21 +19,28 @@ int ata_dma_init(struct ata_controller *cont, struct ata_device *dev,
 	int i;
 	prdtable_t *t = (prdtable_t *)cont->prdt_virt;
 	unsigned offset=0;
+	if(num_entries >= 512) return -1;
 	for(i=0;i<num_entries;i++) {
-		t->addr = i ? cont->dma_buf_phys2 : cont->dma_buf_phys;
+		if(!(t->addr = cont->dma_buf_phys[i])) {
+			unsigned phys, virt;
+			if(allocate_dma_buffer(64*1024, &virt, &phys) == -1)
+				return -1;
+			t->addr = cont->dma_buf_phys[i] = phys;
+			cont->dma_buf_virt[i] = virt;
+		}
 		unsigned this_size = (size-offset);
 		if(this_size >= (64*1024)) this_size=0;
 		t->size = (unsigned short)this_size;
 		t->last = 0;
 		if (rw == WRITE)
-			memcpy(i ? cont->dma_buf_virt2 : cont->dma_buf_virt, buffer+offset, this_size);
+			memcpy((void *)cont->dma_buf_virt[i], buffer+offset, this_size);
 		offset += this_size ? this_size : (64*1024);
 		if((i+1) < num_entries) t++;
 	}
 	assert(offset == (unsigned)size);
 	t->last = 0x8000;
 	outl(cont->port_bmr_base + BMR_PRDT, (unsigned)cont->prdt_phys);
-	return 1;
+	return 0;
 }
 
 int ata_start_command(struct ata_controller *cont, struct ata_device *dev, 
@@ -50,25 +49,33 @@ int ata_start_command(struct ata_controller *cont, struct ata_device *dev,
 	u64 addr = block;
 	unsigned char cmd=0;
 	if(rw == READ)
-		cmd = 0x25;
+		cmd = (dev->flags & F_LBA48 ? 0x25 : 0xC8);
 	else
-		cmd = 0x35;
-	outb(cont->port_cmd_base+REG_DEVICE, 0x40 | (dev->id << 4));
+		cmd = (dev->flags & F_LBA48 ? 0x35 : 0xCA);
+	if(!(dev->flags & F_LBA48))
+	{
+		outb(cont->port_cmd_base+REG_DEVICE, 0xE0 | (dev->id << 4) | ((block >> 24) & 0x0F));
+	} else
+		outb(cont->port_cmd_base+REG_DEVICE, 0x40 | (dev->id << 4));
 	ATA_DELAY(cont);
-	outb(cont->port_cmd_base+REG_SEC_CNT, (unsigned char)((count >> 8)  & 0xFF));
-	outb(cont->port_cmd_base+REG_LBA_LOW, (unsigned char)((addr  >> 24) & 0xFF));
-	outb(cont->port_cmd_base+REG_LBA_MID, (unsigned char)((addr  >> 32) & 0xFF));
-	outb(cont->port_cmd_base+REG_LBA_HIG, (unsigned char)((addr  >> 40) & 0xFF));
+	if(dev->flags & F_LBA48) {
+		outb(cont->port_cmd_base+REG_SEC_CNT, (unsigned char)((count >> 8)  & 0xFF));
+		outb(cont->port_cmd_base+REG_LBA_LOW, (unsigned char)((addr  >> 24) & 0xFF));
+		outb(cont->port_cmd_base+REG_LBA_MID, (unsigned char)((addr  >> 32) & 0xFF));
+		outb(cont->port_cmd_base+REG_LBA_HIG, (unsigned char)((addr  >> 40) & 0xFF));
+	}
 	outb(cont->port_cmd_base+REG_SEC_CNT, (unsigned char)(        count & 0xFF));
 	outb(cont->port_cmd_base+REG_LBA_LOW, (unsigned char)(         addr & 0xFF));
 	outb(cont->port_cmd_base+REG_LBA_MID, (unsigned char)((addr  >> 8)  & 0xFF));
 	outb(cont->port_cmd_base+REG_LBA_HIG, (unsigned char)((addr  >> 16) & 0xFF));
+	//unsigned timeout=1000;
 	while(1)
 	{
 		int x = ata_reg_inb(cont, REG_STATUS);
 		if(!(x & STATUS_BSY) && (x & STATUS_DRDY))
 			break;
 	}
+	//if(!timeout) panic(0, "A");
 	outb(cont->port_cmd_base+REG_COMMAND, cmd);
 	return 1;
 }
@@ -93,7 +100,11 @@ int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw,
 		if(!(x & STATUS_BSY))
 			break;
 	}
-	ata_dma_init(cont, dev, size * count, rw, (unsigned char *)buf);
+	if(ata_dma_init(cont, dev, size * count, rw, (unsigned char *)buf) == -1)
+	{
+		printk(4, "[ata]: could not allocate enough dma space for the specified transfer\n");
+		return -EIO;
+	}
 	ata_start_command(cont, dev, blk, rw, count);
 	
 	cmdReg = inb(cont->port_bmr_base + BMR_COMMAND);

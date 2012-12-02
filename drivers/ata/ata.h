@@ -110,13 +110,13 @@ struct ata_controller {
     int                         irq_use;
     int                         dma_use;
     volatile unsigned long long irqwait;
-    unsigned                       prdt_phys;
-    uint64_t*                       prdt_virt;
-    unsigned                        dma_buf_phys, dma_buf_phys2;
-    void*                       dma_buf_virt, *dma_buf_virt2;
+    unsigned                    prdt_phys;
+    uint64_t*                   prdt_virt;
+    unsigned                    dma_buf_phys[512];
+    unsigned                    dma_buf_virt[512];
     struct ata_device           devices[2];
     mutex_t*                    wait;
-    struct ata_device *selected;
+    struct ata_device *         selected;
 };
 
 struct dev_rec

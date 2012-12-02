@@ -138,8 +138,8 @@ void allocate_dma(struct ata_controller *cont)
 			cont->dma_use=0;
 			return;
 		}
-		cont->dma_buf_virt = (void *)buf;
-		cont->dma_buf_phys = (unsigned)p;
+		cont->dma_buf_virt[0] = (unsigned)buf;
+		cont->dma_buf_phys[0] = (unsigned)p;
 		cont->dma_use=ATA_DMA_ENABLE;
 	}
 }
@@ -208,6 +208,8 @@ int init_ata_controller(struct ata_controller *cont)
 		int dma_ok = 1; //TODO
 		if((dev.flags & F_ATAPI))
 			dma_ok=0;
+		else
+			dev.flags |= F_DMA;
 		
 		unsigned short tmp[256];
 		int idx;

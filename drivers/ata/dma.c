@@ -10,8 +10,6 @@ typedef struct {
 	unsigned short last;
 }__attribute__((packed)) prdtable_t;
 
-/* add time-out */
-/* error handling */
 int ata_dma_init(struct ata_controller *cont, struct ata_device *dev, 
 	int size, int rw, unsigned char *buffer)
 {
@@ -68,16 +66,19 @@ int ata_start_command(struct ata_controller *cont, struct ata_device *dev,
 	outb(cont->port_cmd_base+REG_LBA_LOW, (unsigned char)(         addr & 0xFF));
 	outb(cont->port_cmd_base+REG_LBA_MID, (unsigned char)((addr  >> 8)  & 0xFF));
 	outb(cont->port_cmd_base+REG_LBA_HIG, (unsigned char)((addr  >> 16) & 0xFF));
-	//unsigned timeout=1000;
-	while(1)
+	int timeout=100000;
+	while(timeout--)
 	{
 		int x = ata_reg_inb(cont, REG_STATUS);
 		if(!(x & STATUS_BSY) && (x & STATUS_DRDY))
 			break;
 	}
-	//if(!timeout) panic(0, "A");
+	if(timeout <= 0) {
+		printk(4, "[ata]: timeout on waiting for ready on command writing\n");
+		return -1;
+	}
 	outb(cont->port_cmd_base+REG_COMMAND, cmd);
-	return 1;
+	return 0;
 }
 
 int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw, 
@@ -94,34 +95,58 @@ int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw,
 	st &= ~BMR_STATUS_IRQ; //clear irq bit
 	outb(cont->port_bmr_base + BMR_STATUS, st);
 	
-	while(1)
+	int timeout=100000;
+	while(timeout--)
 	{
 		int x = ata_reg_inb(cont, REG_STATUS);
 		if(!(x & STATUS_BSY))
 			break;
+	}
+	if(timeout <= 0) {
+		printk(4, "[ata]: timeout on waiting for ready\n");
+		return -EIO;
 	}
 	if(ata_dma_init(cont, dev, size * count, rw, (unsigned char *)buf) == -1)
 	{
 		printk(4, "[ata]: could not allocate enough dma space for the specified transfer\n");
 		return -EIO;
 	}
-	ata_start_command(cont, dev, blk, rw, count);
+	if(ata_start_command(cont, dev, blk, rw, count) == -1)
+	{
+		printk(4, "[ata]: error in starting command sequence\n");
+		return -EIO;
+	}
 	
 	cmdReg = inb(cont->port_bmr_base + BMR_COMMAND);
 	cmdReg |= 0x1 | (rw == READ ? 8 : 0);
 	cont->irqwait=0;
 	int ret = size * count;
 	outb(cont->port_bmr_base + BMR_COMMAND, cmdReg);
-	while(ret) {
+	timeout=1000000;
+	while(ret && timeout--) {
 		if(cont->irqwait) break;
 		schedule();
+	}
+	if(timeout <= 0) {
+		printk(4, "[ata]: timeout on waiting for data transfer\n");
+		return -EIO;
 	}
 	st = inb(cont->port_bmr_base + BMR_COMMAND);
 	outb(cont->port_bmr_base + BMR_COMMAND, st & ~0x1);
 	
 	st = inb(cont->port_bmr_base + BMR_STATUS);
-	if (rw == READ && ret)
-		memcpy(buf, cont->dma_buf_virt, size * count);
+	if (rw == READ && ret) {
+		int num_entries = ((size-1) / (64*1024))+1;
+		int i;
+		for(i=0;i<num_entries;i++) {
+			int sz;
+			if((i+1) == num_entries)
+				sz = size*count;
+			else
+				sz = 64*1024;
+			memcpy(buf + i*64*1024, (void *)cont->dma_buf_virt[i], sz);
+		}
+	}
 	if(!ret)
 	{
 		kprintf("[ata]: dma transfer failed (start=%d, len=%d), resetting...\n", (unsigned)blk, count);

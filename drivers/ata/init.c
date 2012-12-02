@@ -130,7 +130,7 @@ void allocate_dma(struct ata_controller *cont)
 		cont->prdt_virt = (uint64_t *)buf;
 		cont->prdt_phys = p;
 	}
-	if(!cont->dma_buf_virt) {
+	if(!cont->dma_buf_virt[0]) {
 		int ret = allocate_dma_buffer(64*1024, &buf, &p);
 		if(ret == -1)
 		{

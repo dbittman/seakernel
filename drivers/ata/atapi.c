@@ -75,10 +75,7 @@ int atapi_rw_main(int rw, int dev, u64 blk_, char *buf)
 		return 0;
 	}
 	int ret;
-	if(cont->dma_use && 0)
-		;
-	else
-		ret = atapi_pio_rw(cont, device, rw, blk, (unsigned char*)buf);
+	ret = atapi_pio_rw(cont, device, rw, blk, (unsigned char*)buf);
 	mutex_off(cont->wait);
 	return ret;
 }

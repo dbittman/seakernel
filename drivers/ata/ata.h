@@ -74,13 +74,14 @@
 
 #define ATA_DMA_MAXSIZE         (64 * 1024)
 
-#define F_ATAPI   0x1
-#define F_DMA     0x2
-#define F_LBA28   0x4
-#define F_LBA48   0x8
-#define F_EXIST  0x10
-#define F_SATA   0x20
-#define F_SATAPI 0x40
+#define F_ATAPI    0x1
+#define F_DMA      0x2
+#define F_LBA28    0x4
+#define F_LBA48    0x8
+#define F_EXIST   0x10
+#define F_SATA    0x20
+#define F_SATAPI  0x40
+#define F_ENABLED 0x80
 /* Fuck your extended partitions. */
 struct partition {
 	char flag;
@@ -107,7 +108,6 @@ struct ata_controller {
     uint16_t                    port_ctl_base;
     uint16_t                    port_bmr_base;
     uint16_t                    irq;
-    int                         irq_use;
     int                         dma_use;
     volatile unsigned long long irqwait;
     unsigned                    prdt_phys;

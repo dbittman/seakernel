@@ -242,14 +242,18 @@ int init_ata_controller(struct ata_controller *cont)
 			((unsigned)dev.length/2)/1024);
 		
 		if(lba48 && !lba48_is_supported)
-			printk(2, "[ata]: %d:%d: conflict in lba48 support reporting\n");
+			printk(2, "[ata]: %d:%d: conflict in lba48 support reporting\n", cont->id, dev.id);
 		else
 			dev.flags |= F_LBA48;
 		
+		if(dev.flags & F_LBA28 || dev.flags & F_LBA48)
+			dev.flags |= F_ENABLED;
+		else
+			printk(2, "[ata]: %d:%d: device reports no LBA accessing modes. Disabling this device.\n", cont->id, dev.id);
 		memcpy(&cont->devices[i], &dev, sizeof(struct ata_device));
 		char node[16];
 		create_device(cont, &cont->devices[i], node);
-		if(!(dev.flags & F_ATAPI) && !(dev.flags & F_SATAPI))
+		if((dev.flags & F_ENABLED) && !(dev.flags & F_ATAPI) && !(dev.flags & F_SATAPI))
 			read_partitions(cont, &cont->devices[i], node);
 	}
 	return 0;

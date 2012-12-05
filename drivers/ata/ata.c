@@ -15,6 +15,7 @@ int ata_rw_multiple(int rw, int dev, u64 blk, char *buf, int count)
 	if(!count) return 0;
 	struct ata_device *device = get_ata_device(dev, &part);
 	struct ata_controller *cont = device->controller;
+	if(!cont->enabled || !(device->flags & F_ENABLED)) return 0;
 	if(!(device->flags & F_EXIST)) {
 		return 0;
 	}
@@ -26,7 +27,7 @@ int ata_rw_multiple(int rw, int dev, u64 blk, char *buf, int count)
 	if(blk+count > device->length)
 		return 0;
 	int ret;
-	if(cont->dma_use)
+	if(device->flags & F_DMA && cont->dma_use)
 		ret = ata_dma_rw(cont, device, rw, blk, (unsigned char *)buf, count);
 	else
 		ret = ata_pio_rw(cont, device, rw, blk, (unsigned char *)buf, count);

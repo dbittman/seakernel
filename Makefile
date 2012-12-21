@@ -1,6 +1,7 @@
 # Makefile for SeaKernel...
 # Please use include files to add to things...
 # All C files to be compiled and linked into the kernel---ish
+include sea_defines.inc
 CC=i586-pc-seaos-gcc
 LD=i586-pc-seaos-ld
 # Flags for programs
@@ -27,6 +28,8 @@ include kernel/make.inc
 DKOBJS=$(KOBJS)
 
 os: can_build make.deps
+	@echo post-processing configuration...
+	@tools/config.rb .config.cfg
 	@#echo -n Calculating dependencies...
 	@#$(MAKE) -s deps
 	@#echo ready
@@ -86,6 +89,9 @@ clean_s:
 
 clean:
 	@-$(MAKE) -s clean_s > /dev/null 2>/dev/null
+
+config:
+	tools/conf.rb config.cfg
 
 can_build:
 	@echo -n "Checking for configuration (if this fails, please run ./configure)..."

@@ -1,7 +1,10 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include <../.config>
+#include <../sea_defines.h>
+
+#define BITS_PER_LONG 32
+#define LOCK_PREFIX "lock "
 
 #define KMALLOC_INIT slab_init
 #define KMALLOC_ALLOC do_kmalloc_slab

@@ -46,14 +46,18 @@ file.each do |line|
 	symbol = line.split("=")
 	key = symbol[0].strip
 	value = symbol[1].strip
-	h_val = case value
-		when "y", "Y" then 1
-		when "n", "N" then 0
-		else '"' + value + '"'
+	if value == "y" || value == "Y"
+		h_val = 1
+	elsif value == "n" || value == "N"
+		h_val = 0
+	elsif value.to_i.to_s == value
+		h_val = value
+	else
+		h_val = '"' + value + '"'
 	end
 	
 	h_file.puts("#define " + key + " " + h_val.to_s)
-	inc_file.puts(key + "=" + h_val.to_s)
+	inc_file.puts(key + "=" + value.to_s)
 end
 file.close
 h_file.close

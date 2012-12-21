@@ -3,10 +3,11 @@
 # processes a .cfg file
 
 $output_array = Array.new
-$path_array = [""]
+$path_array = []
 $node_array = Array.new
 $output_file = ".config.cfg"
-$input_file = "kernel.cfg"
+$input_files = []
+$debugging = false
 
 class Node
 	attr_accessor :name
@@ -17,8 +18,9 @@ class Node
 	attr_accessor :key
 	attr_accessor :result
 	attr_accessor :dnwv
+	attr_accessor :depends
 	def initialize(k)
-		puts "new node: #{k}"
+		if $debugging then puts "new node: #{k}" end
 		@key = k
 		@path = $path_array.dup
 		@default = nil
@@ -27,11 +29,13 @@ class Node
 		@desc = nil
 		@result = nil
 		@dnwv = nil
+		@depends = nil
 	end
 
 	def parse_line(line)
+		if $debugging then puts "parsing: #{line}" end
 		if @desc != nil
-			@desc << line
+			@desc << "\n" + line
 		else
 			kv = line.split("=")
 			if kv[0].nil? || kv[1].nil?
@@ -47,12 +51,32 @@ class Node
 				@default=kv[1].dup.strip
 			when "dnwv"
 				@dnwv=kv[1].dup.strip
+			when "depends"
+				@depends=kv[1].dup.strip
 			when "desc"
 				@desc=kv[1].dup.strip
 			end
 		end
 	end
-
+	
+	def check_deps
+		if @depends.nil?
+			return true
+		end
+		ar = @depends.split(",")
+		ar.each do |dep|
+			$node_array.each do |n|
+				if n.key == dep
+					if n.result == "n"
+						return false
+					end
+				end
+			end
+		end
+		return true
+	end
+	
+	
 end
 
 config_header = <<DOC
@@ -64,7 +88,7 @@ DOC
 def get_input(question, array, default)
 	while true
 		printf("%s%s%s? ", question, array.nil? ? "" : " (" + array.join("/") + ")", (default != nil) ? " [#{default}]" : "")
-		input = gets.downcase.chomp
+		input = $stdin.gets.downcase.chomp
 		if input == "" && default != nil
 			puts "--> #{default}"
 			return default
@@ -78,6 +102,7 @@ end
 
 def process_file(path)
 	temp = ""
+	if $debugging then puts "reading file: #{path}" end
 	file = File.open(path, "r")
 	lines = Array.new
 	file.each do |line|
@@ -108,10 +133,11 @@ def process_file(path)
 			lines.insert(nindex + 2, b[1].strip)
 		elsif line.index("}")
 			popped = $path_array.pop
-			puts "popping: got #{popped}"
+			if $debugging then puts "popping: #{popped}" end
 			temp.clear
 			if popped.index("=")
 				# popped a node! Add it to the chain
+				if $debugging then puts "adding node #{node.key} to chain" end
 				$node_array.push(node.dup)
 				node = nil
 			end
@@ -123,7 +149,7 @@ def process_file(path)
 				$path_array.push(a[0].dup.strip)
 			end
 			temp.clear
-			puts "pushed: #{$path_array[-1]}"
+			if $debugging then puts "pushed: #{$path_array[-1]}" end
 			lines.insert(nindex, a[1])
 			if $path_array.last.index("=")
 				key = $path_array.last.split("=")
@@ -142,20 +168,47 @@ def process_file(path)
 				$stderr.puts "specify file to include from!"
 				exit 1
 			end
-			process_file(c[1].strip)
+			c[1].strip!
+			if $debugging then puts "including file: #{c[1]}" end
+			process_file(c[1])
 		else
 			temp << line
 		end
 	end
+	if $debugging then puts "end of file: #{path}" end
 end
 
-process_file($input_file)
+ARGV.each_index do |idx|
+	opt = ARGV[idx]
+	if opt == "-o" || opt == "--output"
+		$output_file = ARGV[idx+1].dup
+		ARGV.delete_at(idx+1);
+	elsif opt == "-d"
+		$debugging = true
+	else
+		$input_files.push(opt.dup)
+	end
+end
+
+if $debugging then puts "building chain..." end
+
+$input_files.each { |file| process_file(file) }
+
+if $debugging then puts "chain build. Asking questions..." end
 
 $node_array.each do |node|
 	path = node.path.dup
 	path.pop
 	printf("%s/ : %s\n%s\n", path.join("/"), node.key, node.desc)
-	result = get_input(node.name, node.ans.nil? ? nil : node.ans.split(","), node.default)
+	result=nil
+	# check dependencies
+	if node.check_deps == false
+		puts node.name + "?"
+		puts "--> n (DEPEND)"
+		result="n"
+	else
+		result = get_input(node.name, node.ans.nil? ? nil : node.ans.split(","), node.default)
+	end
 	puts ""
 	node.result = result
 end

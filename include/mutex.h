@@ -29,4 +29,6 @@ void init_mutexes();
 #define destroy_mutex(m) (__destroy_mutex(m, __FILE__, __LINE__))
 #define MUTEX_COUNT (~(unsigned)0)
 
+#define mutex_not_owner(i) ((i)->pid != (int)current_task->pid)
+
 #endif

@@ -105,16 +105,19 @@ int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw,
 			break;
 	}
 	if(timeout <= 0) {
+		mutex_off(cont->wait);
 		printk(4, "[ata]: timeout on waiting for ready\n");
 		return -EIO;
 	}
 	if(ata_dma_init(cont, dev, size * count, rw, (unsigned char *)buf) == -1)
 	{
+		mutex_off(cont->wait);
 		printk(4, "[ata]: could not allocate enough dma space for the specified transfer\n");
 		return -EIO;
 	}
 	if(ata_start_command(cont, dev, blk, rw, count) == -1)
 	{
+		mutex_off(cont->wait);
 		printk(4, "[ata]: error in starting command sequence\n");
 		return -EIO;
 	}
@@ -130,6 +133,7 @@ int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw,
 		schedule();
 	}
 	if(timeout <= 0) {
+		mutex_off(cont->wait);
 		printk(4, "[ata]: timeout on waiting for data transfer\n");
 		return -EIO;
 	}

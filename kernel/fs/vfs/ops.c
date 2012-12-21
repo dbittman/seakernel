@@ -24,9 +24,10 @@ int change_ireq(struct inode *i, int c)
 {
 	int ret=0;
 	if(!i) return 0;
-	mutex_on(&i->lock);
+	char unlock;
+	if((unlock=mutex_not_owner(&i->lock))) mutex_on(&i->lock);
 	ret = (i->required += c);
-	mutex_off(&i->lock);
+	if(unlock) mutex_off(&i->lock);
 	return ret;
 }
 
@@ -73,9 +74,10 @@ int add_inode(struct inode *b, struct inode *i)
 	 * create this structure for each one. */
 	if(!ll_is_active((&b->children)))
 		ll_create(&b->children);
-	mutex_on(&b->lock);
+	char unlock;
+	if((unlock=mutex_not_owner(&b->lock))) mutex_on(&b->lock);
 	ret = do_add_inode(b, i);
-	mutex_off(&b->lock);
+	if(unlock) mutex_off(&b->lock);
 	return ret;
 }
 
@@ -124,14 +126,15 @@ int do_iremove(struct inode *i, int flag)
 	struct inode *parent = i->parent;
 	if(!parent) return -1;
 	assert(parent != i);
-	mutex_on(&parent->lock);
+	char unlock;
+	if((unlock=mutex_not_owner(&parent->lock))) mutex_on(&parent->lock);
 	if(!flag && (get_ref_count(i) || i->children.head) && flag != 3)
 		panic(0, "Attempted to iremove inode with count > 0 or children! (%s)", 
 			i->name);
 	if(flag != 3) 
 		i->unreal=1;
 	ll_remove(&parent->children, i->node);
-	mutex_off(&parent->lock);
+	if(unlock) mutex_off(&parent->lock);
 	if(flag != 3)
 		free_inode(i, (flag == 2) ? 1 : 0);
 	return 0;

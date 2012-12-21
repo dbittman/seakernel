@@ -32,13 +32,11 @@ void serial_puts(int port, char *s)
 {
 	if(!serial_initialized)
 		return;
-	mutex_on(&serial_m);
 	while(*s)
 	{
 		write_serial(0x3f8, *s);
 		s++;
 	}
-	mutex_off(&serial_m);
 }
 
 int serial_rw(int rw, int min, char *b, size_t c)

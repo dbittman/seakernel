@@ -32,7 +32,7 @@ int iput(struct inode *i)
 	if(!i)
 		return -EINVAL;
 	assert(!i->unreal);
-	mutex_on(&i->lock);
+	if(mutex_not_owner(&i->lock)) mutex_on(&i->lock);
 	int ret = do_iput(i);
 	if(ret)
 		reset_mutex(&i->lock);

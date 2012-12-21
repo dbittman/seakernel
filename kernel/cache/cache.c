@@ -91,10 +91,10 @@ cache_t *get_empty_cache(int (*sync)(struct ce_t *), char *name)
 	return c;
 }
 
-int cache_add_element(cache_t *c, struct ce_t *obj)
+int cache_add_element(cache_t *c, struct ce_t *obj, int locked)
 {
 	accessed_cache(c);
-	mutex_on(&c->lock);
+	if(!locked) mutex_on(&c->lock);
 	
 	chash_add(c->hash, obj->id, obj->key, obj);
 	
@@ -105,7 +105,7 @@ int cache_add_element(cache_t *c, struct ce_t *obj)
 	obj->prev = 0;
 	c->count++;
 	obj->acount=1;
-	mutex_off(&c->lock);
+	if(!locked) mutex_off(&c->lock);
 	return 0;
 }
 
@@ -120,8 +120,9 @@ struct ce_t *find_cache_element(cache_t *c, u64 id, u64 key)
 
 int do_cache_object(cache_t *c, u64 id, u64 key, int sz, char *buf, int dirty)
 {
+	accessed_cache(c);
 	mutex_on(&c->lock);
-	struct ce_t *obj = find_cache_element(c, id, key);
+	struct ce_t *obj = chash_search(c->hash, id, key);
 	if(obj)
 	{
 		memcpy(obj->data, buf, obj->length);
@@ -136,7 +137,7 @@ int do_cache_object(cache_t *c, u64 id, u64 key, int sz, char *buf, int dirty)
 	set_dirty(c, obj, dirty);
 	obj->key = key;
 	obj->id = id;
-	cache_add_element(c, obj);
+	cache_add_element(c, obj, 1);
 	mutex_off(&c->lock);
 	return 0;
 }

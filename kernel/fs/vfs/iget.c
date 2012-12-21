@@ -70,9 +70,10 @@ struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, int *req)
 struct inode *lookup(struct inode *i, char *path)
 {
 	int req=0;
-	mutex_on(&i->lock);
+	char unlock;
+	if((unlock=mutex_not_owner(&i->lock))) mutex_on(&i->lock);
 	struct inode *ret = do_lookup(i, path, 1, 0, &req);
-	mutex_off(&i->lock);
+	if(unlock) mutex_off(&i->lock);
 	if(ret) change_icount(ret, 1);
 	if(req) change_ireq(i, -1);
 	if(ret && S_ISLNK(ret->mode))

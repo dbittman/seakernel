@@ -4,7 +4,7 @@
 #include <task.h>
 #include <mutex.h>
 cpu_t primary_cpu;
-#ifdef CONFIG_SMP
+#if CONFIG_SMP
 cpu_t *cpu_list;
 mutex_t cpulist_lock;
 #endif
@@ -82,7 +82,7 @@ void parse_cpuid(cpu_t *me)
 		cpuid_get_cpu_brand(&cpuid);
 	memcpy(&(me->cpuid), &cpuid, sizeof(me->cpuid));
 }
-#ifdef CONFIG_SMP
+#if CONFIG_SMP
 void remove_cpu(cpu_t *c)
 {
 	mutex_on(&cpulist_lock);
@@ -127,12 +127,12 @@ int probe_smp();
 #endif
 void init_main_cpu()
 {
-#ifdef CONFIG_SMP
+#if CONFIG_SMP
 	cpu_list = &primary_cpu;
 	memset(cpu_list, 0, sizeof(*cpu_list));
 #endif
 	primary_cpu.flags = CPU_UP | CPU_RUNNING;
-#ifdef CONFIG_SMP
+#if CONFIG_SMP
 	create_mutex(&cpulist_lock);
 #endif
 	printk(KERN_MSG, "Initializing CPU...\n");
@@ -141,7 +141,7 @@ void init_main_cpu()
 	init_sse(&primary_cpu);
 	printk(KERN_EVERY, "done\n");
 	initAcpi();
-#ifdef CONFIG_SMP
+#if CONFIG_SMP
 	probe_smp();
 #endif
 }

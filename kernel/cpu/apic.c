@@ -1,6 +1,6 @@
 /* Defines functions to program the LAPIC and the IOAPIC (if present) */
 #include <config.h>
-#ifdef CONFIG_SMP
+#if CONFIG_SMP
 #include <kernel.h>
 #include <cpu.h>
 #include <task.h>

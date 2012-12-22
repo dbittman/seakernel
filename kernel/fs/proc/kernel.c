@@ -14,7 +14,7 @@ int proc_read_bcache(char *buf, int off, int len);
 int proc_append_buffer(char *buffer, char *data, int off, int len, 
 		int req_off, int req_len);
 
-#ifdef CONFIG_SMP
+#if CONFIG_SMP
 int proc_cpu(char rw, struct inode *inode, int m, char *buf, int off, int len)
 {
 	int total_len=0;
@@ -51,6 +51,8 @@ int proc_cpu(char rw, struct inode *inode, int m, char *buf, int off, int len)
 }
 #endif
 
+#if CONFIG_MODULES
+
 int proc_mods(char rw, struct inode *n, int min, char *buf, int off, int len)
 {
 	if(rw == READ) {
@@ -76,6 +78,8 @@ int proc_mods(char rw, struct inode *n, int min, char *buf, int off, int len)
 	}
 	return -EINVAL;
 }
+
+#endif
 
 int proc_kern_rw(char rw, struct inode *inode, int m, char *buf, int off, int len)
 {

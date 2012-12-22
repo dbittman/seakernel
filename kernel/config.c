@@ -42,7 +42,7 @@ long sys_sysconf(int cmd)
 			 * we can use immediately without fucking over other things */
 			break;
 		case _SC_NPROCESSORS_ONLN:
-#ifdef CONFIG_SMP
+#if CONFIG_SMP
 			extern unsigned imps_num_cpus;
 			return imps_num_cpus;
 #else

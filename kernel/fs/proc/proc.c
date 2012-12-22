@@ -22,8 +22,12 @@ int *pfs_table[64] = {
  (int *)0, //Tasking
  (int *)proc_vfs, //VFS
  (int *)proc_kern_rw, //Kernel
+#if CONFIG_MODULES
  (int *)proc_mods, //Modules
-#ifdef CONFIG_SMP
+#else
+ 0,
+#endif
+#if CONFIG_SMP
  (int *)proc_cpu,
 #else
  0,
@@ -123,7 +127,7 @@ void init_proc_fs()
 	pfs_cn("mem", S_IFREG, 0, 0);
 	struct inode *si = pfs_cn("sched", S_IFDIR, 1, 0);
 	pfs_cn_node(si, "pri_tty", S_IFREG, 1, 1);
-#ifdef CONFIG_SMP
+#if CONFIG_SMP
 	si = pfs_cn("cpu", S_IFDIR, 1, 0);
 	cpu_t *cp = cpu_list;
 	while(cp)

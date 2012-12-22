@@ -28,8 +28,6 @@ include kernel/make.inc
 DKOBJS=$(KOBJS)
 
 os: can_build make.deps
-	@echo post-processing configuration...
-	@tools/config.rb .config.cfg
 	@#echo -n Calculating dependencies...
 	@#$(MAKE) -s deps
 	@#echo ready
@@ -92,6 +90,8 @@ clean:
 
 config:
 	tools/conf.rb config.cfg
+	@echo post-processing configuration...
+	@tools/config.rb .config.cfg
 
 can_build:
 	@echo -n "Checking for configuration (if this fails, please run ./configure)..."

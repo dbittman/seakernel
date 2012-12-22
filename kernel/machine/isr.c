@@ -113,7 +113,7 @@ void ack(int n)
 			outb(0xA0, 0x20);
 		outb(0x20, 0x20);
 	}
-#ifdef CONFIG_SMP
+#if CONFIG_SMP
 	lapic_eoi();
 #endif
 }

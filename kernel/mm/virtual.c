@@ -40,7 +40,7 @@ void vm_init(unsigned id_map_to)
 		mapper++;
 	}
 	id_tables=mapper;
-#ifdef CONFIG_SMP
+#if CONFIG_SMP
 	id_map_apic(pd);
 #endif
 	/* Pre-map the heap's tables */

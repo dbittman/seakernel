@@ -100,12 +100,12 @@ void delay_sleep(int t)
 {
 	long end = ticks+t+1;
 	__super_sti();
-#ifdef CONFIG_SMP
+#if CONFIG_SMP
 	lapic_eoi();
 #endif
 	while(ticks < end)
 	{
-#ifdef CONFIG_SMP
+#if CONFIG_SMP
 		lapic_eoi();
 #endif
 		sti();

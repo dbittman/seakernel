@@ -23,7 +23,9 @@ void kernel_shutdown()
 	current_task->prev = kernel_task;
 	sys_sync(PRINT_LEVEL);
 	unmount_all();
+#if CONFIG_MODULES
 	unload_all_modules(1);
+#endif
 	kprintf("Everything under the sun is in tune, but the sun is eclipsed by the moon.\n");
 }
 

@@ -2,7 +2,7 @@
 #include <memory.h>
 #include <task.h>
 volatile task_t *kernel_task=0, *alarm_list_start=0;
-#ifndef CONFIG_SMP
+#if !(CONFIG_SMP)
 volatile task_t *current_task=0;
 #endif
 extern volatile page_dir_t *kernel_dir;
@@ -30,8 +30,6 @@ void init_multitasking()
 
 void switch_to_user_mode()
 {
-	if(!DO_USER_MODE)
-		panic(PANIC_NOSYNC, "User-mode is not specified!");
 	set_kernel_stack(current_task->kernel_stack + (KERN_STACK_SIZE-64));
 	do_switch_to_user_mode();
 }

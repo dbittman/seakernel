@@ -53,7 +53,7 @@ inline static int engage_new_stack(task_t *new, task_t *parent)
 	u32int esp;
 	asm("mov %%esp, %0" : "=r"(esp));
 	asm("mov %%ebp, %0" : "=r"(ebp));
-	if(new->pid > 0 && DO_USER_MODE && esp > TOP_TASK_MEM) {
+	if(new->pid > 0 && esp > TOP_TASK_MEM) {
 		new->esp=(esp-parent->kernel_stack) + new->kernel_stack;
 		new->ebp=(ebp-parent->kernel_stack) + new->kernel_stack;
 		copy_update_stack(new->kernel_stack, parent->kernel_stack, KERN_STACK_SIZE);

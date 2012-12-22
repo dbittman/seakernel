@@ -1,4 +1,5 @@
 /* handles exporting of kernel symbols */
+
 #include <kernel.h>
 #include <string.h>
 #include <dev.h>
@@ -36,7 +37,7 @@ const char *elf_lookup_symbol (uint32_t addr, elf32_t *elf)
 	return 0;
 }
 
-
+#if CONFIG_MODULES
 
 void init_kernel_symbols(void)
 {
@@ -111,10 +112,11 @@ void init_kernel_symbols(void)
 	add_kernel_symbol(wait_flag_except);
 	_add_kernel_symbol((unsigned)(unsigned *)&curcons, "curcons");
 	_add_kernel_symbol((unsigned)(char *)&tables, "tables");
-#ifndef CONFIG_SMP
-	_add_kernel_symbol((unsigned)(task_t **)&current_task, "current_task");
-#else
+#if CONFIG_SMP
 	add_kernel_symbol(get_cpu);
+#else
+	_add_kernel_symbol((unsigned)(task_t **)&current_task, "current_task");
+
 #endif
 	_add_kernel_symbol((unsigned)(task_t **)&kernel_task, "kernel_task");
 	_add_kernel_symbol((unsigned)(cpu_t *)&primary_cpu, "primary_cpu");
@@ -261,3 +263,4 @@ intptr_t get_section_offset(uint8_t * buf, uint32_t info)
 	sh = (elf32_section_header_t*)(buf + eh->shoff + (info * eh->shsize));
 	return sh->offset;
 }
+#endif

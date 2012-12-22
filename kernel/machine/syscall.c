@@ -16,7 +16,7 @@ unsigned int num_syscalls=0;
 //#define SC_DEBUG 1
 int sys_null()
 {
-#ifdef DEBUG
+#if DEBUG
 	kprintf("[kernel]: Null system call (%d) called in task %d\n", 
 			current_task->system, current_task->pid);
 #endif
@@ -57,8 +57,21 @@ void *syscall_table[129] = {
 	
 	SC sys_ioctl, SC sys_null, SC dfs_cn, SC remove_dfs_node, 
 	SC sys_null, SC sys_null, SC sys_null, SC sys_null,
-	SC sys_null, SC execve, SC sys_load_module, SC sys_unload_module, 
-	SC canweunload, SC unload_all_modules, SC get_pid, SC /**32*/sys_getppid,
+	SC sys_null, SC execve, 
+
+#if CONFIG_MODULES
+	SC sys_load_module, 
+	SC sys_unload_module, 
+	SC canweunload, 
+	SC unload_all_modules, 
+#else
+	SC sys_null,
+	SC sys_null,
+	SC sys_null,
+	SC sys_null,
+#endif
+
+	SC get_pid, SC /**32*/sys_getppid,
 	
 	SC sys_link, SC unlink, SC get_ref_count, SC get_pwd, 
 	SC sys_getpath, SC sys_null, SC chroot, SC chdir,

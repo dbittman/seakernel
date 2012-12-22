@@ -1,4 +1,6 @@
+
 #include <kernel.h>
+#if (CONFIG_MODULES)
 #include <elf.h>
 #include <fs.h>
 #include <task.h>
@@ -220,3 +222,4 @@ int sys_unload_module(char *path, int flags)
 		return -EPERM;
 	return do_unload_module(path, flags);
 }
+#endif

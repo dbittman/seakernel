@@ -6,6 +6,9 @@
 #define BITS_PER_LONG 32
 #define LOCK_PREFIX "lock "
 
+#define DEF_PRINT_LEVEL CONFIG_LOG_LEVEL
+#define MAX_TASKS (CONFIG_MAX_TASKS)
+
 #define KMALLOC_INIT slab_init
 #define KMALLOC_ALLOC do_kmalloc_slab
 #define KMALLOC_FREE  do_kfree_slab
@@ -16,13 +19,13 @@
 //#define SLAB_DEBUG
 #define RANGE_MUL 1.4
 #define STACK_LOCATION 0xB0021000
-#define STACK_SIZE 0x20000
+#define STACK_SIZE (CONFIG_STACK_PAGES * 0x1000)
 
 //#define CONFIG_SMP 1
 
 #define OOM_KILL 1
 #define OOM_SLEEP 2
-#define OOM_HANDLER OOM_KILL
+#define OOM_HANDLER CONFIG_OOM_HANDLER
 
 #define TOP_TASK_MEM       0xB8000000
 #define TOP_TASK_MEM_EXEC  0xB0000000
@@ -53,6 +56,7 @@
 //#define SWAP_DEBUG 1
 
 /* dev, fs */
+/* TODO: CONFIGURATION */
 #define NUM_CACHES 128
 #define NUM_TREES 1024
 #define CACHE_CAP 20000
@@ -63,11 +67,11 @@
 #define CACHE_READ 1
 
 /* video */
-#define MAX_CONSOLES 12
+#define MAX_CONSOLES 10
 
 /* task */
-#define SCHED_TTY 1
-#define SCHED_TTY_CYC 550
+#define SCHED_TTY CONFIG_SCHED_TTY
+#define SCHED_TTY_CYC CONFIG_SCHED_TTY_AMOUNT
 
 #define MAJ_VER 0
 #define MIN_VER 2

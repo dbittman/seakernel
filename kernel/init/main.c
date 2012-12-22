@@ -115,7 +115,9 @@ void kmain(struct multiboot *mboot_header, u32int initial_stack)
 	puts(" Booting Up ~\n\r");
 	
 	init_cache();
+#if CONFIG_MODULES
 	init_module_system();
+#endif
 	init_syscalls();
 	load_initrd(mtboot);
 	install_timer(1000);

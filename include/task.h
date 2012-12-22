@@ -32,7 +32,7 @@
 #define PRIO_PGRP    2
 #define PRIO_USER    3
 
-#ifdef CONFIG_SMP
+#if CONFIG_SMP
 #define current_task (__get_current_task())
 #endif
 
@@ -130,7 +130,7 @@ typedef volatile struct task_struct
 
 extern volatile task_t *kernel_task, *tokill, *alarm_list_start;
 
-#ifdef CONFIG_SMP
+#if CONFIG_SMP
 #include <cpu.h>
 static inline __attribute__((always_inline))  volatile task_t *__get_current_task()
 {
@@ -149,12 +149,12 @@ extern volatile task_t *current_task;
 static inline __attribute__((always_inline)) 
 void set_current_task_dp(task_t *t, int cpu)
 {
-#ifndef CONFIG_SMP
-	current_task = t;
-	return;
-#else
+#if CONFIG_SMP
 	cpu_t *c = get_cpu(cpu);
 	c->current = (void *)t;
+#else
+	current_task = t;
+	return;
 #endif
 }
 
@@ -310,14 +310,14 @@ static inline int __is_valid_user_ptr(void *p, char flags)
 	unsigned addr = (unsigned)p;
 	if(!addr && !flags) return 0;
 	if(addr < TOP_LOWER_KERNEL && addr) {
-#ifdef DEBUG
+#if DEBUG
 		printk(5, "[kernel]: warning - task %d passed ptr %x to syscall (invalid)\n", 
 			current_task->pid, addr);
 #endif
 		return 0;
 	}
 	if(addr >= KMALLOC_ADDR_START) {
-#ifdef DEBUG
+#if DEBUG
 		printk(5, "[kernel]: warning - task %d passed ptr %x to syscall (invalid)\n", 
 			current_task->pid, addr);
 #endif

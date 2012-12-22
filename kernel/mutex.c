@@ -76,7 +76,7 @@ __attribute__((optimize("O0"))) void __mutex_on(mutex_t *m,
 	int i=0;
 	char lock_was_raised = (current_task->flags & TF_LOCK) ? 1 : 0;
 	engage_full_system_lock();
-	if(m->count) kprintf("double lock: %s:%d\n", file, line);
+	//if(m->count) kprintf("double lock: %s:%d\n", file, line);
 	/* This must be garunteed to only break when the mutex is free. */
 	while(m->count > 0 && (unsigned)m->pid != current_task->pid) {
 #if 1

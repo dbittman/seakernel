@@ -164,7 +164,7 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	sys_close(desc);
 	if(!eip) {
 		printk(5, "[exec]: Tried to execute an invalid ELF file!\n");
-#ifdef DEBUG
+#if DEBUG
 		panic(0, "");
 #endif
 		exit(0);
@@ -189,23 +189,20 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	__super_cli();
 	if(EXEC_LOG == 2) 
 		printk(0, "[%d]: Performing call\n", t->pid);
-	if(DO_USER_MODE) /* We are currently inside a system call. We must return 
+	/* We are currently inside a system call. We must return 
 	to usermode before we call */
-	{
-		assert(current_task->argv && current_task->env);
-		set_kernel_stack(current_task->kernel_stack + (KERN_STACK_SIZE-64));
-		__sync_synchronize();
-		__asm__ __volatile__ ("mov %0, %%esp;\
-			mov %0, %%ebp; \
-			push %1; \
-			push %2; \
-			push %3; \
-			call do_switch_to_user_mode; \
-			call *%4;\
-		"::"r"(STACK_LOCATION-64), "r"(current_task->env), 
-			"r"(current_task->argv), "r"(argc), "r"(eip):"memory");
-	} else
-		panic(0, "This feature is no longer supported");
+	assert(current_task->argv && current_task->env);
+	set_kernel_stack(current_task->kernel_stack + (KERN_STACK_SIZE-64));
+	__sync_synchronize();
+	__asm__ __volatile__ ("mov %0, %%esp;\
+		mov %0, %%ebp; \
+		push %1; \
+		push %2; \
+		push %3; \
+		call do_switch_to_user_mode; \
+		call *%4;\
+	"::"r"(STACK_LOCATION-64), "r"(current_task->env), 
+		"r"(current_task->argv), "r"(argc), "r"(eip):"memory");
 	exit(0);
 	for(;;);
 	error:

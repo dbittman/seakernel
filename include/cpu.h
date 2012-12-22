@@ -38,7 +38,7 @@ void setup_fpu(cpu_t *);
 #define CR4_OSXMMEXCPT  (1 << 10)
 
 
-#ifdef CONFIG_SMP
+#if CONFIG_SMP
 /* The following definitions are taken from http://www.uruk.org/mps/ */
 extern cpu_t *cpu_list;
 

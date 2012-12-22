@@ -57,7 +57,7 @@ void print_pf(int x, registers_t *regs, unsigned cr2)
 		printk(x, ", in syscall %d", current_task->system);
 	printk(x, "\n");
 }
-#ifdef DEBUG
+#if DEBUG
 #define dont_panic 0
 #else
 #define dont_panic 1

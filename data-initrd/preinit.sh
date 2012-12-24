@@ -5,7 +5,6 @@ modprobe -d / /pci
 modprobe -d / /partitions 
 modprobe -d / /ata 
 modprobe -d / /ext2 
-#modprobe -d / /iso9660
 
 echo " ok"
 

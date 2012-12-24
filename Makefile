@@ -1,28 +1,21 @@
-# Makefile for SeaKernel...
-# Please use include files to add to things...
-# All C files to be compiled and linked into the kernel---ish
 include sea_defines.inc
-CC=i586-pc-seaos-gcc
-LD=i586-pc-seaos-ld
-# Flags for programs
-CFLAGS_NO = -g -m32 -nostdlib -nostdinc -fno-builtin -ffreestanding \
-          -I../include -Iinclude -I ../../include -I ../../../include \
-          -D__KERNEL__ -D__DEBUG__ -std=c99 -Wall -Wextra \
-           -Wformat-security -Wformat-nonliteral\
-	  -Wno-strict-aliasing -Wshadow -Wpointer-arith -Wcast-align -Wno-unused \
-	  -Wnested-externs -Waddress -Winline -Wno-long-long -mno-red-zone -fno-omit-frame-pointer 
 
-CFLAGS = $(CFLAGS_NO) -O3 
+CFLAGS = -O3 -g -std=c99 -nostdlib -nostdinc \
+		 -fno-builtin -ffreestanding \
+         -I../include -Iinclude -I ../../include -I ../../../include \
+         -D__KERNEL__ -D__DEBUG__ \
+         -Wall -Wextra -Wformat-security -Wformat-nonliteral \
+	     -Wno-strict-aliasing -Wshadow -Wpointer-arith -Wcast-align \
+	     -Wno-unused -Wnested-externs -Waddress -Winline \
+	     -Wno-long-long -mno-red-zone -fno-omit-frame-pointer 
+
 LDFLAGS=-T kernel/link.ld -m seaos_i386
 ASFLAGS=-felf32
 GASFLAGS=--32
 include make.inc
-RAMFILES=data-initrd/usr/sbin/fsck usr/sbin/fsck data-initrd/usr/sbin/fsck.ext2 usr/sbin/fsck.ext2 \
-	 data-initrd/preinit.sh /preinit.sh data-initrd/etc/fstab etc/fstab \
-	 data-initrd/bin/bash /sh data-initrd/bin/modprobe /modprobe data-initrd/bin/mount /mount data-initrd/bin/chroot /chroot 
 
-# This is all the objects to be compiled and linked into the kernel
 include kernel/make.inc
+include drivers/make.inc
 
 #For dependencies
 DKOBJS=$(KOBJS)
@@ -34,10 +27,8 @@ os: can_build make.deps
 	@echo Building kernel...
 	@$(MAKE) -s os_s
 
-include drivers/make.inc
-
 deps_kernel:
-	@echo Refreshing Dependencies...
+	@echo refreshing dependencies...
 	@-rm make.deps 2> /dev/null
 	for i in $(DKOBJS) ; do \
 		echo -n $$i >> make.deps ; \
@@ -68,8 +59,9 @@ os_s: $(KOBJS) $(AOBJS)
 	echo Building modules, pass 1...
 	$(MAKE) -C drivers
 	echo "Building initrd..."
-	-exec ./tools/mkird $(RAMFILES) > /dev/null
+	-./tools/ird.rb initrd.conf > /dev/null
 	mv skernel.1 skernel
+
 all: make.deps
 	@$(MAKE) -s os
 
@@ -92,6 +84,11 @@ config:
 	tools/conf.rb config.cfg
 	@echo post-processing configuration...
 	@tools/config.rb .config.cfg
+	
+defconfig:
+	tools/conf.rb -d config.cfg
+	@echo post-processing configuration...
+	@tools/config.rb .config.cfg
 
 can_build:
 	@echo -n "Checking for configuration (if this fails, please run ./configure)..."
@@ -100,5 +97,16 @@ can_build:
 
 love:
 	@echo Not war
+	
+help:
+	@echo "make [target]"
+	@echo "Useful targets:"
+	@echo -e " config:\truns the configuration utility"
+	@echo -e " defconfig:\tcreates a default configuration"
+	@echo -e " clean:\t\tremoves compiled objects from the source tree"
+	@echo -e " deps:\t\trecalculates dependencies for the source tree"
+	@echo -e " install:\tcopies the compiled binaries to their proper locations in the file system"
+	@echo -e " all,os:\tcompiles the kernel"
+	@echo
 
 include ./tools/quietrules.make

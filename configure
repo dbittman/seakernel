@@ -6,9 +6,12 @@ echo "Allgood" > tools/confed
 
 if [ -e /proc/seaos ]; then
 	echo "SYSNAME=seaos" > make.inc
-	#sh tools/nodeps.sh
+	echo "CC=gcc" >> make.inc
+	echo "LD=ld" >> make.inc
 else
 	echo "SYSNAME=linux" > make.inc
+	echo "CC=i586-pc-seaos-gcc" >> make.inc
+	echo "LD=i586-pc-seaos-ld" >> make.inc
 fi
 echo -n "KERNEL_VERSION=" >> make.inc
 cat version >> make.inc

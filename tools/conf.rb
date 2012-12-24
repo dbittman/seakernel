@@ -8,7 +8,7 @@ $node_array = Array.new
 $output_file = ".config.cfg"
 $input_files = []
 $debugging = false
-
+$default_config=false
 class Node
 	attr_accessor :name
 	attr_accessor :desc
@@ -183,8 +183,10 @@ ARGV.each_index do |idx|
 	if opt == "-o" || opt == "--output"
 		$output_file = ARGV[idx+1].dup
 		ARGV.delete_at(idx+1);
-	elsif opt == "-d"
+	elsif opt == "-$"
 		$debugging = true
+	elsif opt == "-d"
+		$default_config = true
 	else
 		$input_files.push(opt.dup)
 	end
@@ -200,13 +202,23 @@ $node_array.each do |node|
 	path = node.path.dup
 	path.pop
 	printf("%s/ : %s\n%s\n", path.join("/"), node.key, node.desc)
+	if (node.depends != "" && !node.depends.nil?)
+		puts "depends on: #{node.depends}"
+	end
 	result=nil
 	# check dependencies
 	if node.check_deps == false
 		puts node.name + "?"
 		puts "--> n (DEPEND)"
 		result="n"
-	else
+	elsif $default_config
+		if !node.default.nil?
+			puts node.name + "?"
+			result = node.default
+			puts "--> #{result} (DEFAULT)"
+		end
+	end
+	if result.nil?
 		result = get_input(node.name, node.ans.nil? ? nil : node.ans.split(","), node.default)
 	end
 	puts ""

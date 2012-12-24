@@ -3,14 +3,9 @@ NAME=fat
 OUTPUT=$(NAME).m
 all: make.deps $(OUTPUT)
 
-CFLAGS=-std=c99 -Wall -Wextra \
-          -Wformat-security -Wformat-nonliteral -fno-rename-registers -fno-regmove\
-	  -Wshadow -Wpointer-arith -Wcast-align -Wno-unused \
-	  -Wnested-externs -Winline -Wno-long-long -mno-red-zone -c -O3 -m32 -I../include -I./include -I../../include -I../../../include -ffreestanding -fno-common -nostdlib
-
 %.o: %.c
 	echo -n -e "[CC] M\t$(NAME)/$@     \n"
-	$(CC) $(CFLAGS) $< -o $@
+	$(CC) $(MCFLAGS) $< -o $@
 
 
 $(OUTPUT): $(OFILES)
@@ -22,7 +17,7 @@ clean:
 	@-rm *.o $(OUTPUT).stage1 $(OUTPUT) make.deps
 
 deps:
-	@$(CC) $(CFLAGS) -MM -MP ${OFILES:.o=.c} | sed -e "s@^\(.*\)\.o:@\1.o:@" > make.deps
+	@$(CC) $(MCFLAGS) -MM -MP ${OFILES:.o=.c} | sed -e "s@^\(.*\)\.o:@\1.o:@" > make.deps
 
 make.deps:
 	@touch make.deps

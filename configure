@@ -42,4 +42,27 @@ else
 fi
 
 echo "Allgood" > tools/confed
+
+cat > initrd.conf <<EOF
+# default ramdisk listing for seaos
+# fileformat is local-file:initrd-file.
+
+data-initrd/usr/sbin/fsck       : /usr/sbin/fsck
+data-initrd/usr/sbin/fsck.ext2  : /usr/sbin/fsck.ext2
+data-initrd/preinit.sh          : /preinit.sh
+data-initrd/etc/fstab           : /etc/fstab
+data-initrd/bin/bash            : /sh
+data-initrd/bin/modprobe        : /modprobe
+data-initrd/bin/mount           : /mount
+data-initrd/bin/chroot          : /chroot
+
+drivers/built/ata               : /ata
+drivers/built/ext2			    : /ext2
+drivers/built/pci			    : /pci
+drivers/built/keyboard			: /keyboard
+drivers/built/partitions		: /partitions
+
+EOF
+
+
 echo "okay! all done!"

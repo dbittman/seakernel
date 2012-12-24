@@ -11,7 +11,7 @@ all: make.deps $(OUTPUT)
 $(OUTPUT): $(OFILES)
 	echo -n -e "[LD] M\t$(NAME)/$@         \n"
 	$(LD) $(OFILES) -o $(OUTPUT).stage1 -m seaos_i386 -r ../../library/klib.a  -T ../link.ld
-	cat ../head ../head2 $(OUTPUT).stage1 > $(OUTPUT)
+	cat ../head $(OUTPUT).stage1 > $(OUTPUT)
 
 clean:
 	@-rm *.o $(OUTPUT).stage1 $(OUTPUT) make.deps

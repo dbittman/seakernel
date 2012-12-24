@@ -81,15 +81,15 @@ install: $(MODULES)
 	echo -n -e "[LD] M \t$@                 \n"
 	$(LD) $@.0 -o $@.1 -m seaos_i386 -r ../library/klib.a -T link.ld
 	rm $@.0
-	cat head head2 $@.1 > $@
+	cat head $@.1 > $@
 	rm $@.1
 
 clean:
-	@-rm make.deps $(MODULES)
-	@-$(MAKE) -C ext2 clean
-	@-$(MAKE) -C ata clean
-	@-$(MAKE) -C fat clean
-	@-$(MAKE) -C iso9660 clean
+	@-rm make.deps $(MODULES) 2>/dev/null
+	@-$(MAKE) -C ext2 clean 2>/dev/null
+	@-$(MAKE) -C ata clean 2>/dev/null
+	@-$(MAKE) -C fat clean 2>/dev/null
+	@-$(MAKE) -C iso9660 clean 2>/dev/null
 
 deps:
 	@-rm make.deps 2> /dev/null

@@ -1,20 +1,45 @@
 #!/bin/sh
+
+echo -n "KERNEL_VERSION=" > make.inc
+cat version >> make.inc
+rm make.deps 2>/dev/null
+
+echo "configure will compile tools and set build variables based on"
+echo "which sytem type it detects."
+
 echo -e -n "compiling tools..."
-gcc tools/make_initrd.c -O3 -o tools/mkird 
-printf "done\nprocessing configuration..."
-echo "Allgood" > tools/confed
+gcc -std=c99 tools/make_initrd.c -O3 -o tools/mkird 
+printf "done\nprocessing configuration...\n"
+
+if ! which ruby > /dev/null; then
+	echo "*** Ruby wasn't found on your system. It's fine, but you will need to"
+	echo "*** provide your own config files, and generate the initrd manually."
+fi
+
+SYSNAME=""
 
 if [ -e /proc/seaos ]; then
-	echo "SYSNAME=seaos" > make.inc
+	SYSNAME="seaos"
+else
+	SYSNAME="linux"
+fi
+
+echo -ne "It would appear that you're running $SYSNAME, but let's make sure.\nWhat OS are you running (seaos/linux)? [$SYSNAME] "
+read inp
+
+if [ "$inp" != "" ]; then
+	SYSNAME=$inp
+fi
+
+if [ "$SYSNAME" == "seaos" ]; then
+	echo "SYSNAME=seaos" >> make.inc
 	echo "CC=gcc" >> make.inc
 	echo "LD=ld" >> make.inc
 else
-	echo "SYSNAME=linux" > make.inc
+	echo "SYSNAME=linux" >> make.inc
 	echo "CC=i586-pc-seaos-gcc" >> make.inc
 	echo "LD=i586-pc-seaos-ld" >> make.inc
 fi
-echo -n "KERNEL_VERSION=" >> make.inc
-cat version >> make.inc
-echo >> make.inc
-printf "done\n"
-rm make.deps
+
+echo "Allgood" > tools/confed
+echo "okay! all done!"

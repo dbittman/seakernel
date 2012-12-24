@@ -1,6 +1,9 @@
+# seaos kernel makefile 
 include sea_defines.inc
-
-CFLAGS = -O3 -g -std=c99 -nostdlib -nostdinc \
+include make.inc
+ARCH=x86
+export ARCH
+CFLAGS_NOARCH = -O3 -g -std=c99 -nostdlib -nostdinc \
 		 -fno-builtin -ffreestanding \
          -I../include -Iinclude -I ../../include -I ../../../include \
          -D__KERNEL__ -D__DEBUG__ \
@@ -9,42 +12,30 @@ CFLAGS = -O3 -g -std=c99 -nostdlib -nostdinc \
 	     -Wno-unused -Wnested-externs -Waddress -Winline \
 	     -Wno-long-long -mno-red-zone -fno-omit-frame-pointer 
 
-LDFLAGS=-T kernel/link.ld -m seaos_i386
-ASFLAGS=-felf32
-GASFLAGS=--32
-include make.inc
+include arch/${ARCH}/make.inc
+
+CFLAGS  = ${CFLAGS_NOARCH} ${CFLAGS_ARCH}
+LDFLAGS = ${LDFLAGS_ARCH}
+ASFLAGS = ${ASFLAGS_ARCH}
+GASFLAGS= ${GASFLAGS_ARCH}
 
 include kernel/make.inc
 include drivers/make.inc
-
-#For dependencies
-DKOBJS=$(KOBJS)
 
 os: can_build make.deps
 	@echo Building kernel...
 	@$(MAKE) -s os_s
 
-deps_kernel:
-	@echo refreshing dependencies...
-	@-rm make.deps 2> /dev/null
-	for i in $(DKOBJS) ; do \
-		echo -n $$i >> make.deps ; \
-		$(CC) $(CFLAGS) -MM `echo $$i | sed -e "s@^\(.*\)\.o@\1.c@"` | sed -e "s@^\(.*\)\.o:@:@" >> make.deps; \
-	done
+DOBJS=$(KOBJS)
+DCFLAGS=$(CFLAGS)
+export OBJ_EXT=o
+include deps.inc
 
 deps:
 	@touch make.deps
-	@${MAKE} -s deps_kernel
+	@${MAKE} -s do_deps
 	@${MAKE} -s -C library deps
 	@${MAKE} -s -C drivers deps
-
-make.deps: #$(DKOBJS:.o=.c)
-	@touch make.deps
-	@$(MAKE) -s deps_kernel
-
-ifneq ($(MAKECMDGOALS),clean)
--include make.deps
-endif
 
 link: $(AOBJS) $(KOBJS) library/klib.a
 	echo "[LD]	skernel"
@@ -71,19 +62,19 @@ install:
 
 clean_s:
 	@-rm  $(AOBJS) $(KOBJS) $(CLEAN) initrd.img skernel make.deps 2> /dev/null
-	@-$(MAKE) -s -C library clean > /dev/null
-	@-$(MAKE) -s -C drivers clean > /dev/null
+	@-$(MAKE) -s -C library clean &> /dev/null
+	@-$(MAKE) -s -C drivers clean &> /dev/null
 
 clean:
 	@-$(MAKE) -s clean_s > /dev/null 2>/dev/null
 
 config:
-	tools/conf.rb config.cfg
+	@tools/conf.rb config.cfg
 	@echo post-processing configuration...
 	@tools/config.rb .config.cfg
 	
 defconfig:
-	tools/conf.rb -d config.cfg
+	@tools/conf.rb -d config.cfg
 	@echo post-processing configuration...
 	@tools/config.rb .config.cfg
 

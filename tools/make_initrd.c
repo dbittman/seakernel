@@ -31,7 +31,7 @@ int main(int argc, char **argv)
 		FILE *stream = fopen(argv[i*2+1], "r");
 		if(stream == 0)
 		{
-			printf("Error: file not found: %s\n", argv[i*2+1]);
+			fprintf(stderr, "Error: file not found: %s\n", argv[i*2+1]);
 			return 1;
 		}
 		fseek(stream, 0, SEEK_END);

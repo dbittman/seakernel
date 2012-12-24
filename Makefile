@@ -21,9 +21,6 @@ include drivers/make.inc
 DKOBJS=$(KOBJS)
 
 os: can_build make.deps
-	@#echo -n Calculating dependencies...
-	@#$(MAKE) -s deps
-	@#echo ready
 	@echo Building kernel...
 	@$(MAKE) -s os_s
 

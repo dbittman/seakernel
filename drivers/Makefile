@@ -1,7 +1,7 @@
 include ../make.inc
 include ../sea_defines.inc
 
-MCFLAGS=-std=c99 -c -g -O3 -fno-rename-registers \
+MCFLAGS=-std=c99 -g -O3 -fno-rename-registers \
 		-fno-regmove -D__KERNEL__ -mno-red-zone -nostdinc -ffreestanding \
 		-fno-common -nostdlib -m32 \
 		-I include -I../include -I./include -I../../include \
@@ -64,9 +64,9 @@ install: $(MODULES)
 
 %.m: %.c
 	echo -n -e "[CC] M \t$<                 \n"
-	$(CC) $(MCFLAGS) $< -o $@.0
+	$(CC) $(MCFLAGS) $< -c -o $@.0
 	echo -n -e "[LD] M \t$@                 \n"
-	$(LD) $@.0 -o $@.1 -m seaos_i386 -r ../library/klib.a -T link.ld
+	$(CC) $(MCFLAGS) $@.0 -o $@.1 -Wl,-mseaos_i386 -Wl,-r ../library/klib.a -Wl,-Tlink.ld -lgcc -static -static-libgcc
 	rm $@.0
 	cat head $@.1 > $@
 	rm $@.1
@@ -82,4 +82,4 @@ clean:
 export OBJ_EXT=m
 export DOBJS=${MODULES}
 export DCFLAGS=${MCFLAGS}
-include ../deps.inc
+include ../tools/make/deps.inc

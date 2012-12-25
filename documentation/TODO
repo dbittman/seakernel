@@ -1,0 +1,65 @@
+
+Known Bugs include:
+ * running ./configure on packages that use config.guess to figure out the
+   system name will result in them not being able to figure out the build system.
+   workaround: run ./configure --build=i586-pc-seaos
+ * Various display errors in ncurses applications sometimes due to the features
+   listed in the termcap file not being fully implemented yet
+ * Running man will result in 'less' complaining that the terminal is not
+   fully functional
+ * If you read/write enough data to and from block devices, eventually the
+   system will run out of memory. This is because there is currently no limit
+   on the cache (will be fixed for beta-2)
+ * There is a memory leak if you run a shell script. Looks like 4KB per run
+ * Make doesn't seem to recompile targets if their sources change
+ * There is nothing preventing circular links from causing a stack overrun
+ * Make doesn't like running with the job server (-j*) - results in "interrupted
+   system call"
+ * df doesn't seem to properly report disk usage
+ * device or resource busy when unmounting /mnt
+Things that need more testing:
+ * loop devices
+ * file locks
+ * compiling GNU software on the system
+
+Todo:
+	* event system (register events, blocking for IO...)
+	  such that a high priority process will get automatically resched'd if it unblocks
+Roadmap:
+0.2 B2
+	* bugfixes
+	* mmfiles
+	* better signals (-kernel_stack2)
+	* limit cache size
+	* add chaining to file descriptors (and modify the return value for the sysconf entry)
+	* remove all code thats not mine from the kernel
+	* can compile GNU software
+	* fix memory leaks (sh <script> has a leak)
+	* new random driver
+
+0.2 RC1
+	* All ported software works properly
+	* documentation
+	* link looks at directory permissions
+	* no clobbering of strings
+	* make sure all features listed in termcap are properly implemented
+
+0.2: good userspace system and stable single-cpu kernel
+
+0.3 B1
+	* smp
+	* mutexes work in smp
+	* bugfixes
+0.3 B2
+	* sockets
+	* implement userspace drivers and allowing ring-3 writing of IOports
+
+0.3 RC1
+	* documentation
+	* optimizations
+
+0.3: basic SMP support, good IPC (sockets), bugfixes, feature completion. Good kernel. Possibility of userspace drivers
+
+0.4: Networking, drivers, more software, optimizations.
+
+0.5: Fully installable and usable OS

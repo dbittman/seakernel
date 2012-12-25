@@ -6,7 +6,7 @@ all: make.deps $(OUTPUT)
 
 %.o: %.c
 	echo -n -e "[CC] M\t$(NAME)/$@     \n"
-	$(CC) $(MCFLAGS) $< -o $@
+	$(CC) $(MCFLAGS) $< -c -o $@
 
 $(OUTPUT): $(OFILES)
 	echo -n -e "[LD] M\t$(NAME)/$@         \n"

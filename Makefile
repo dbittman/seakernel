@@ -1,6 +1,17 @@
 # seaos kernel makefile 
+ifneq ($(MAKECMDGOALS),distclean)
+ifneq ($(MAKECMDGOALS),config)
+ifneq ($(MAKECMDGOALS),defconfig)
 include sea_defines.inc
+endif
+endif
 include make.inc
+endif
+
+export CC
+export LD
+export AR
+
 ARCH=x86
 export ARCH
 CFLAGS_NOARCH = -O3 -g -std=c99 -nostdlib -nostdinc \
@@ -14,10 +25,10 @@ CFLAGS_NOARCH = -O3 -g -std=c99 -nostdlib -nostdinc \
 
 include arch/${ARCH}/make.inc
 
-CFLAGS  = ${CFLAGS_NOARCH} ${CFLAGS_ARCH}
-LDFLAGS = ${LDFLAGS_ARCH}
-ASFLAGS = ${ASFLAGS_ARCH}
-GASFLAGS= ${GASFLAGS_ARCH}
+export CFLAGS  = ${CFLAGS_NOARCH} ${CFLAGS_ARCH}
+export LDFLAGS = ${LDFLAGS_ARCH}
+export ASFLAGS = ${ASFLAGS_ARCH}
+export GASFLAGS= ${GASFLAGS_ARCH}
 
 include kernel/make.inc
 include drivers/make.inc
@@ -29,7 +40,7 @@ os: can_build make.deps
 DOBJS=$(KOBJS)
 DCFLAGS=$(CFLAGS)
 export OBJ_EXT=o
-include deps.inc
+include tools/make/deps.inc
 
 deps:
 	@touch make.deps
@@ -39,7 +50,7 @@ deps:
 
 link: $(AOBJS) $(KOBJS) library/klib.a
 	echo "[LD]	skernel"
-	$(LD) $(LDFLAGS) -o skernel.1 $(AOBJS) $(KOBJS) library/klib.a
+	$(CC) $(CFLAGS) $(LDFLAGS) -o skernel.1 $(AOBJS) $(KOBJS) library/klib.a -lgcc -static-libgcc -static
 
 os_s: $(KOBJS) $(AOBJS) 
 	$(MAKE) -s -C library
@@ -67,6 +78,12 @@ clean_s:
 
 clean:
 	@-$(MAKE) -s clean_s > /dev/null 2>/dev/null
+
+distclean: clean
+	@-rm -f sea_defines.{h,inc} 2>/dev/null
+	@-rm -f initrd.conf make.inc 2>/dev/null
+	@-rm -f tools/{confed,mkird} 2>/dev/null
+	@-rm -f make.deps drivers/make.deps
 
 config:
 	@tools/conf.rb config.cfg
@@ -97,4 +114,4 @@ help:
 	@echo -e " all,os:\tcompiles the kernel"
 	@echo
 
-include ./tools/quietrules.make
+include tools/make/rules.inc

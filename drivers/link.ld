@@ -10,7 +10,7 @@ SECTIONS
         data = .; _data = .; __data = .;
         *(.data)
         *(.rodata)
-	*(.bss)
+		*(.bss)
     }
 
 }

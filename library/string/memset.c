@@ -47,24 +47,23 @@ void *memset(void *s, int c, size_t count)
 		if(!(count % 4))
 		{
 			register unsigned l = (c << 24) | (c << 16) | (c << 8) | c;
-			asm("rep stosl" : "=c"(ret) : "D"(ptr), "c"(count/4), "a"(l));
+			__asm__ __volatile__("rep stosl" : "=c"(ret) : "D"(ptr), "c"(count/4), "a"(l));
 			break;
 		}
 		else if(!count % 2)
 		{
-			register unsigned short s = (c << 8) | c;
-			asm("rep stosw" : "=c"(ret) : "D"(ptr), "c"(count/2), "a"(s));
+			register unsigned short sa = (c << 8) | c;
+			__asm__ __volatile__("rep stosw" : "=c"(ret) : "D"(ptr), "c"(count/2), "a"(sa));
 			break;
 		} else
 		{
 			int len = count % 4;
 			if(count == 3)
 				len=1;
-			asm("rep stosb" : "=c"(ret) : "D"(ptr), "c"(len), "a"(c));
+			__asm__ __volatile__("rep stosb" : "=c"(ret) : "D"(ptr), "c"(len), "a"(c));
 			ptr+=len;
 			count-=len;
 		}
 	}
 	return s;
 }
-

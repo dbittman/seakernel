@@ -4,11 +4,14 @@ do_deps:
 		echo -n $$i >> make.deps ; \
 		$(CC) $(DCFLAGS) -MM `echo $$i | sed -e "s@^\(.*\)\.${OBJ_EXT}@\1.c@"` | sed -e "s@^\(.*\)\.o:@:@" >> make.deps; \
 	done
+	
 
 make.deps:
 	@touch make.deps
 	@${MAKE} -s do_deps
 
 ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
 -include make.deps
+endif
 endif

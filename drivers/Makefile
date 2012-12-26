@@ -1,14 +1,14 @@
 include ../make.inc
 include ../sea_defines.inc
-
+include ../arch/$(ARCH)/drivers/make.inc
 MCFLAGS=-std=c99 -g -O3 -fno-rename-registers \
 		-fno-regmove -D__KERNEL__ -mno-red-zone -nostdinc -ffreestanding \
-		-fno-common -nostdlib -m32 \
+		-fno-common -nostdlib \
 		-I include -I../include -I./include -I../../include \
 		-I../../../include \
 		-Wall -Wextra -Wformat-security -Wformat-nonliteral -Wshadow \
 		-Wpointer-arith -Wcast-align -Wno-unused -Wnested-externs \
-		-Winline -Wno-long-long 
+		-Winline -Wno-long-long $(CFLAGS_ARCH)
 
 export MCFLAGS
 export CC
@@ -66,7 +66,7 @@ install: $(MODULES)
 	echo -n -e "[CC] M \t$<                 \n"
 	$(CC) $(MCFLAGS) $< -c -o $@.0
 	echo -n -e "[LD] M \t$@                 \n"
-	$(CC) $(MCFLAGS) $@.0 -o $@.1 -Wl,-mseaos_i386 -Wl,-r ../library/klib.a -Wl,-Tlink.ld -lgcc -static -static-libgcc
+	$(CC) $(MCFLAGS) $(LDFLAGS_ARCH) $@.0 -o $@.1 -Wl,-r,-Tlink.ld ../library/klib.a -lgcc -static
 	rm $@.0
 	cat head $@.1 > $@
 	rm $@.1

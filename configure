@@ -43,6 +43,9 @@ else
 	echo "AR=i586-pc-seaos-ar" >> make.inc
 fi
 
+echo "ARCH=x86" >> make.inc
+echo "export ARCH" >> make.inc
+
 echo "Allgood" > tools/confed
 
 cat > initrd.conf <<EOF

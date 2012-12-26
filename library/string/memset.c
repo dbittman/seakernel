@@ -33,37 +33,10 @@
 #include <string.h>
 
 /* Experimentally off - libc_hidden_proto(memset) */
-void *memset(void *s, int c, size_t count)
+void *memset(void *m, int c, size_t n)
 {
-	int ret;
-	char *ptr = (char *)s;
-	if(count == 1)
-	{
-		*ptr = (char)c;
-		return ptr;
-	}
-	while(count)
-	{
-		if(!(count % 4))
-		{
-			register unsigned l = (c << 24) | (c << 16) | (c << 8) | c;
-			__asm__ __volatile__("rep stosl" : "=c"(ret) : "D"(ptr), "c"(count/4), "a"(l));
-			break;
-		}
-		else if(!count % 2)
-		{
-			register unsigned short sa = (c << 8) | c;
-			__asm__ __volatile__("rep stosw" : "=c"(ret) : "D"(ptr), "c"(count/2), "a"(sa));
-			break;
-		} else
-		{
-			int len = count % 4;
-			if(count == 3)
-				len=1;
-			__asm__ __volatile__("rep stosb" : "=c"(ret) : "D"(ptr), "c"(len), "a"(c));
-			ptr+=len;
-			count-=len;
-		}
-	}
-	return s;
+	char *s = (char *) m;
+	while (n--)
+		*s++ = (char) c;
+	return m;
 }

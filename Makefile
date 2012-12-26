@@ -11,9 +11,6 @@ endif
 export CC
 export LD
 export AR
-
-ARCH=x86
-export ARCH
 CFLAGS_NOARCH = -O3 -g -std=c99 -nostdlib -nostdinc \
 		 -fno-builtin -ffreestanding \
          -I../include -Iinclude -I ../../include -I ../../../include \

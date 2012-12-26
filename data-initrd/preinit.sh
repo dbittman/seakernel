@@ -14,7 +14,7 @@ else
 fi
 
 if [[ "$1" = "/" ]]; then
-	# the user instructed us to use the initrd as /. Just start a shell
+	# the user instructed us to use the initrd as root. Just start a shell
 	sh
 else
 	fsck -p -T -C $1

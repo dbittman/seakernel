@@ -27,7 +27,7 @@ klib.a: $(KLIBO) $(STRINGOBJS)
 
 string: $(STRINGOBJS)
 	$(AR) rcs string/slib.a $(STRINGOBJS)
-	
+
 clean:
 	@rm -f *.a $(STRINGOBJS) $(KLIBO) make.deps
 

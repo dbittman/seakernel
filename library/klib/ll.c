@@ -72,13 +72,8 @@ struct llist *ll_create(struct llist *list)
 /* should list be null, we allocate one for us and return it. */
 struct llist *ll_create_lockless(struct llist *list)
 {
-	if(list == 0) {
-		list = (struct llist *)kmalloc(sizeof(struct llist));
-		list->flags |= LL_ALLOC;
-	} else
-		list->flags = 0;
-	list->head = 0;
-	list->flags |= LL_ACTIVE | LL_LOCKLESS;
+	list = ll_create(list);
+	list->flags |= LL_LOCKLESS;
 	return list;
 }
 

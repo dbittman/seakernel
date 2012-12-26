@@ -1,12 +1,17 @@
 echo -n "Loading modules..."
 export PATH=$PATH:/:.:/usr/sbin
-modprobe -d / /keyboard 
-modprobe -d / /pci 
-modprobe -d / /partitions 
-modprobe -d / /ata 
-modprobe -d / /ext2 
-
-echo " ok"
+MODS="keyboard pci partitions ata ext2"
+err=0
+for i in $MODS; do
+	if ! modprobe -d / $i ; then
+		err=1
+	fi
+done
+if [[ $err == 0 ]]; then
+	echo " ok"
+else
+	echo " FAIL"
+fi
 
 if [[ "$1" = "/" ]]; then
 	# the user instructed us to use the initrd as /. Just start a shell

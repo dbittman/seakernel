@@ -20,7 +20,9 @@ CFLAGS_NOARCH = -O3 -g -std=c99 -nostdlib -nostdinc \
 	     -Wno-unused -Wnested-externs -Waddress -Winline \
 	     -Wno-long-long -mno-red-zone -fno-omit-frame-pointer 
 
+ifneq ($(MAKECMDGOALS),distclean)
 include arch/${ARCH}/make.inc
+endif
 
 export CFLAGS  = ${CFLAGS_NOARCH} ${CFLAGS_ARCH}
 export LDFLAGS = ${LDFLAGS_ARCH}

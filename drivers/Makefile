@@ -1,6 +1,16 @@
-include ../make.inc
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),config)
+ifneq ($(MAKECMDGOALS),defconfig)
 include ../sea_defines.inc
+endif
+endif
+include ../make.inc
+endif
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
 include ../arch/$(ARCH)/drivers/make.inc
+endif
+endif
 MCFLAGS=-std=c99 -g -O3 -fno-rename-registers \
 		-fno-regmove -D__KERNEL__ -mno-red-zone -nostdinc -ffreestanding \
 		-fno-common -nostdlib \

@@ -2,23 +2,15 @@
 	echo -n -e "[CC]\t$@        \n"
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
-STRINGOBJS= string/memchr.o \
-			string/memcpy.o \
-			string/memmove.o \
-			string/memset.o \
-			string/strcat.o \
-			string/strchr.o \
-			string/strcmp.o \
-			string/strcpy.o \
-			string/strlen.o \
-			string/strncat.o \
-			string/strncmp.o \
-			string/strncpy.o \
-			string/strnlen.o \
-			string/strrchr.o \
-			string/strtok.o
-KLIBO = klib/crc32.o \
-		klib/ll.o 
+-include ../make.inc
+-include ../sea_defines.inc
+
+include ../arch/$(ARCH)/library/make.inc
+
+KLIBO = klib/ll.o \
+		klib/strtoint.o
+
+-include arch/$(ARCH)/library/make.inc
 
 all: make.deps klib.a
 

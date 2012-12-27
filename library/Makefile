@@ -15,7 +15,8 @@ STRINGOBJS= string/memchr.o \
 			string/strncmp.o \
 			string/strncpy.o \
 			string/strnlen.o \
-			string/strrchr.o
+			string/strrchr.o \
+			string/strtok.o
 KLIBO = klib/crc32.o \
 		klib/ll.o 
 

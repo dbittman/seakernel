@@ -1,12 +1,13 @@
 # seaos kernel makefile 
-ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(MAKECMDGOALS),config)
 ifneq ($(MAKECMDGOALS),defconfig)
+
 include sea_defines.inc
+
 endif
 endif
+
 include make.inc
-endif
 
 export CC
 export LD
@@ -20,9 +21,7 @@ CFLAGS_NOARCH = -O3 -g -std=c99 -nostdlib -nostdinc \
 	     -Wno-unused -Wnested-externs -Waddress -Winline \
 	     -Wno-long-long -mno-red-zone -fno-omit-frame-pointer 
 
-ifneq ($(MAKECMDGOALS),distclean)
 include arch/${ARCH}/make.inc
-endif
 
 export CFLAGS  = ${CFLAGS_NOARCH} ${CFLAGS_ARCH}
 export LDFLAGS = ${LDFLAGS_ARCH}
@@ -70,18 +69,16 @@ install:
 	@cp -f initrd.img /sys/initrd
 	@make -C drivers install VERSION=${KERNEL_VERSION}
 
-clean_s:
+clean:
 	@-rm  $(AOBJS) $(KOBJS) $(CLEAN) initrd.img skernel make.deps 2> /dev/null
 	@-$(MAKE) -s -C library clean &> /dev/null
 	@-$(MAKE) -s -C drivers clean &> /dev/null
 
-clean:
-	@-$(MAKE) -s clean_s > /dev/null 2>/dev/null
-
-distclean: clean
-	@-rm -f sea_defines.{h,inc} 2>/dev/null
-	@-rm -f initrd.conf make.inc 2>/dev/null
-	@-rm -f tools/{confed,mkird} 2>/dev/null
+distclean: 
+	@-$(MAKE) -s clean
+	@-rm -f sea_defines.{h,inc} 
+	@-rm -f initrd.conf make.inc
+	@-rm -f tools/{confed,mkird}
 	@-rm -f make.deps drivers/make.deps
 
 config:

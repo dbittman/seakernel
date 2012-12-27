@@ -52,17 +52,21 @@ int strcmp(const char *cs, const char *ct)
 	    :"1" (cs),"2" (ct));
     return __res;
 }
-int memcmp(const void* buf1,
-           const void* buf2,
-           unsigned int count)
+
+int memcmp(const void* m1,
+           const void* m2,
+           unsigned int n)
 {
-    if(!count)
-        return(0);
-
-    while(--count && *(char*)buf1 == *(char*)buf2 ) {
-        buf1 = (char*)buf1 + 1;
-        buf2 = (char*)buf2 + 1;
-    }
-
-    return(*((unsigned char*)buf1) - *((unsigned char*)buf2));
+	unsigned char *s1 = (unsigned char *) m1;
+	unsigned char *s2 = (unsigned char *) m2;
+	while (n--)
+	{
+		if (*s1 != *s2)
+		{
+			return *s1 - *s2;
+		}
+		s1++;
+		s2++;
+	}
+	return 0;
 }

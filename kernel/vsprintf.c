@@ -35,13 +35,14 @@ static int skip_atoi(const char **s)
 #define SPECIAL	32		/* 0x */
 #define SMALL	64		/* use 'abcdef' instead of 'ABCDEF' */
 
-int do_div(int *n, int base)
+static int do_div(int *n, int base)
 {
+	if(!n) return 0;
 	int num = *n;
-	int __res;
-	__asm__("divl %4":"=a" (num),"=d" (__res):"0" (num),"1" (0),"r" (base));
+	int ret = num % base;
+	num = num / base;
 	*n = num;
-	return __res;
+	return ret;
 }
 
 static char * number(char * str, int num, int base, int size, int precision ,int type)

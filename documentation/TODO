@@ -28,14 +28,22 @@ Todo:
 Roadmap:
 0.2 B2
 	* bugfixes
-	* mmfiles
 	* better signals (-kernel_stack2)
-	* limit cache size
 	* add chaining to file descriptors (and modify the return value for the sysconf entry)
 	* remove all code thats not mine from the kernel
-	* can compile GNU software
-	* fix memory leaks (sh <script> has a leak)
+	* redesign locking
+	* split out arch dependent stuff
+	* add atomic operations, and implement accordingly
 	* new random driver
+	* finalize build system
+	* add if statements to config files
+	* really stabilize kernel
+
+0.2 B3
+	* mmfiles
+	* limit cache size
+	* can compile GNU software
+	* port ruby
 
 0.2 RC1
 	* All ported software works properly
@@ -43,6 +51,7 @@ Roadmap:
 	* link looks at directory permissions
 	* no clobbering of strings
 	* make sure all features listed in termcap are properly implemented
+	* fix memory leaks (sh <script> has a leak)
 
 0.2: good userspace system and stable single-cpu kernel
 

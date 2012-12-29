@@ -77,12 +77,12 @@ typedef struct exit_status {
 typedef volatile struct task_struct
 {
 	volatile unsigned magic;
-	volatile addr_t pid, eip, ebp, _ebp, esp, _esp, osp, obp, oip;
+	volatile addr_t pid, eip, ebp, esp;
 	page_dir_t *pd;
 	volatile int state, old_state, critical, critical_c;
 	volatile char critical_stack[256];
-	unsigned int system, osystem; 
-	addr_t kernel_stack, kernel_stack2;
+	unsigned int system; 
+	addr_t kernel_stack;
 	int cur_ts, priority;
 	
 	volatile addr_t *waitflag, waiting_ret;
@@ -91,7 +91,6 @@ typedef volatile struct task_struct
 	volatile long tick;
 	volatile unsigned flags;
 	int flag;
-	unsigned wm;
 	
 	unsigned stime, utime;
 	unsigned t_cutime, t_cstime;
@@ -99,8 +98,8 @@ typedef volatile struct task_struct
 	volatile unsigned num_pages;
 	unsigned last;
 	ex_stat exit_reason, we_res, *exlist;
-	registers_t reg_b;	
-	registers_t *regs, *sysregs;
+	registers_t reg_b;
+	registers_t *regs;
 	unsigned mem_usage_calc;
 	volatile unsigned wait_again, path_loc_start;
 	unsigned num_swapped;
@@ -108,7 +107,6 @@ typedef volatile struct task_struct
 	volatile addr_t heap_start, heap_end, he_red;
 	char command[128];
 	char **argv, **env;
-	unsigned arg_l[128], env_l[128];
 	int cmask;
 	int tty;
 	struct inode *root, *pwd;

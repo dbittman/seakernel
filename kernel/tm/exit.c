@@ -81,7 +81,6 @@ void release_task(task_t *p)
 	pm_free_page(p->pd[1022] & PAGE_MASK); /* Free the self-ref'ing page table */
 	kfree(p->pd);
 	kfree((void *)p->kernel_stack);
-	kfree((void *)p->kernel_stack2);
 	kfree((void *)p);
 }
 

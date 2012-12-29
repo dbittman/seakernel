@@ -20,7 +20,6 @@ void init_multitasking()
 	task->pd = (page_dir_t *)kernel_dir;
 	task->stack_end=STACK_LOCATION;
 	task->kernel_stack = kmalloc(KERN_STACK_SIZE+8);
-	task->kernel_stack2 = kmalloc(KERN_STACK_SIZE+8);
 	task->priority = 1;
 	task->magic = TASK_MAGIC;
 	set_current_task_dp(task, 0);

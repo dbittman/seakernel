@@ -28,7 +28,6 @@ Todo:
 Roadmap:
 0.2 B2
 	* bugfixes
-	* better signals (-kernel_stack2)
 	* remove all code thats not mine from the kernel
 	* redesign locking
 	* split out arch dependent stuff
@@ -45,6 +44,8 @@ Roadmap:
 	* limit cache size
 	* can compile GNU software
 	* port ruby
+	* system call conditions (like iptables)
+	* user-space io port access
 
 0.2 RC1
 	* All ported software works properly

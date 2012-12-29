@@ -101,7 +101,7 @@ void *syscall_table[129] = {
 	SC sys_utime, SC sys_gethostname, SC sys_gsetpriority, SC sys_uname, 
 	SC sys_gethost, SC sys_getserv, SC sys_setserv, SC sys_syslog,
 	SC sys_posix_fsstat, SC sys_null, SC sys_null, SC sys_null, 
-	SC sys_null, SC sys_null, SC sys_waitagain, SC /**128*/sys_ret_sig,
+	SC sys_null, SC sys_null, SC sys_waitagain, SC /**128*/sys_null /* RESERVED*/,
 };
 
 void init_syscalls()

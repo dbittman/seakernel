@@ -90,7 +90,7 @@ isr80:
     cli                         ; Disable interrupts.
     push byte 0
     push byte 80                ; Push the interrupt number
-    jmp isr_common_stub
+    jmp syscall_entry_asm
 
 ; In isr.c
 extern isr_handler
@@ -144,5 +144,26 @@ irq_common_stub:
 
     popa                     ; Pops edi,esi,ebp...
     add esp, 8     ; Cleans up the pushed error code and pushed ISR number
-    sti
+    iret           ; pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP
+
+extern entry_syscall_handler
+syscall_entry_asm:
+    pusha                    ; Pushes edi,esi,ebp,esp,ebx,edx,ecx,eax
+
+    mov ax, ds               ; Lower 16-bits of eax = ds.
+    push eax                 ; save the data segment descriptor
+
+    mov ax, 0x10  ; load the kernel data segment descriptor
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+
+    call entry_syscall_handler
+    pop ebx        ; reload the original data segment descriptor
+    mov ds, bx
+    mov es, bx
+    mov fs, bx
+
+    popa                     ; Pops edi,esi,ebp...
+    add esp, 8     ; Cleans up the pushed error code and pushed ISR number
     iret           ; pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP

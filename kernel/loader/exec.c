@@ -18,7 +18,7 @@ task_t *preexec(task_t *t, int desc)
 		panic(0, "Invalid task in exec (%d)", t->pid);
 	clear_resources(t);
 	self_free(0);
-	memset((void *)t->sig_queue, 0, sizeof(int) * 128);
+	t->sigd=0;
 	memset((void *)t->signal_act, 0, sizeof(struct sigaction) * 128);
 	return 0;
 }

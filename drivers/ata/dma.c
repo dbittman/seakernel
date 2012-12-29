@@ -129,6 +129,7 @@ int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw,
 	outb(cont->port_bmr_base + BMR_COMMAND, cmdReg);
 	timeout=1000000;
 	while(ret && timeout--) {
+		__super_sti();
 		if(cont->irqwait) break;
 		schedule();
 	}

@@ -100,7 +100,6 @@ void kill_task(unsigned int pid)
 	}
 	task->state = TASK_SUICIDAL;
 	task_full_uncritical();
-	memset((void *)task->sig_queue, 0, 128*sizeof(int));
 	task->sigd = 0; /* fuck your signals */
 	if(task == current_task)
 		force_schedule();

@@ -29,17 +29,18 @@ Roadmap:
 0.2 B2
 	* bugfixes
 	* better signals (-kernel_stack2)
-	* add chaining to file descriptors (and modify the return value for the sysconf entry)
 	* remove all code thats not mine from the kernel
 	* redesign locking
 	* split out arch dependent stuff
 	* add atomic operations, and implement accordingly
-	* new random driver
 	* finalize build system
 	* add if statements to config files
 	* really stabilize kernel
+	* interrupt context
 
 0.2 B3
+	* new random driver
+	* add chaining to file descriptors (and modify the return value for the sysconf entry)
 	* mmfiles
 	* limit cache size
 	* can compile GNU software

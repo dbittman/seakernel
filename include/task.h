@@ -100,7 +100,7 @@ typedef volatile struct task_struct
 	unsigned last;
 	ex_stat exit_reason, we_res, *exlist;
 	registers_t reg_b;	
-	registers_t *regs;
+	registers_t *regs, *sysregs;
 	unsigned mem_usage_calc;
 	volatile unsigned wait_again, path_loc_start;
 	unsigned num_swapped;
@@ -120,9 +120,8 @@ typedef volatile struct task_struct
 	
 	struct sigaction signal_act[128];
 	volatile sigset_t sig_mask, global_sig_mask;
-	volatile unsigned sigd, cur_sig;
+	volatile unsigned sigd;
 	sigset_t old_mask;
-	int sig_queue[128];
 	unsigned alrm_count;
 	unsigned freed, allocated;
 	volatile struct task_struct *next, *prev, *parent, *waiting, *alarm_next;
@@ -357,7 +356,7 @@ __attribute__((always_inline)) inline static int task_is_runable(task_t *task)
 	return (int)(task->state == TASK_RUNNING 
 		|| task->state == TASK_SUICIDAL 
 		|| task->state == TASK_SIGNALED 
-		|| (task->state == TASK_ISLEEP && (task->sig_queue[0] || task->sigd)));
+		|| (task->state == TASK_ISLEEP && (task->sigd)));
 }
 
 #endif

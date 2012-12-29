@@ -9,16 +9,17 @@ extern int current_hz;
 extern void exec_rem_sig_wrap();
 unsigned int vm_setattrib(unsigned v, short attr);
 
-int sys_ret_sig()
-{
-	/* Set our flags and jump to the saved eip */
-	__super_cli();
-	lock_scheduler();
-	current_task->flags |= TF_RETSIG;
-	asm("jmp *%0"::"r"(current_task->oip));
-	for(;;);
-}
+char signal_return_injector[7] = {
+	0xB8,
+	0x80,
+	0x00,
+	0x00,
+	0x00,
+	0xCD,
+	0x80
+};
 
+#define SIGSTACK (STACK_LOCATION - (STACK_SIZE + PAGE_SIZE + 8))
 void handle_signal(task_t *t, int sig)
 {
 	assert(t == current_task);
@@ -32,65 +33,33 @@ void handle_signal(task_t *t, int sig)
 	if(!(sa->sa_flags & SA_NODEFER))
 		t->sig_mask |= (1 << sig);
 	if(sa->_sa_func._sa_handler && sig != SIGKILL && sig != SIGSEGV 
-			&& !current_task->system)
+			&& !current_task->system && current_task->regs 
+			&& current_task->regs->useresp < 0xC0000000 
+			&& current_task->regs->useresp > 0xB0000000)
 	{
-		/* Define all variables up front */
-		void (*handler)(int) = sa->_sa_func._sa_handler;
-		int ret;
-		__super_cli();
-		lock_scheduler();
-		u32int old_stack_pointer;
-		u32int old_base_pointer;
-		current_task->cur_sig = sig;
-		/* Backup the current stack information */
-		asm("mov %%esp, %0" : "=r" (old_stack_pointer));
-		asm("mov %%ebp, %0" : "=r" (old_base_pointer));
-		current_task->obp = old_base_pointer;
-		current_task->osp = old_stack_pointer;
-		current_task->osystem = current_task->system;
-		/* Switch the current stack for a new one */
-		current_task->oip = current_task->kernel_stack2;
-		current_task->kernel_stack2 = current_task->kernel_stack;
-		current_task->kernel_stack = current_task->oip;
-		set_kernel_stack(current_task->kernel_stack + (KERN_STACK_SIZE-64));
-		asm("\
-			mov %0, %%esp;       \
-			mov %0, %%ebp;       \
-		"::"r"(current_task->kernel_stack + (KERN_STACK_SIZE-64)));
-		current_task->flags &= ~TF_RETSIG;
-		/* Save this location */
-		current_task->oip = read_eip();
-		if(current_task->flags & TF_RETSIG)
-		{
-			/* Switch kernel stack to main one */
-			current_task->oip = current_task->kernel_stack;
-			current_task->kernel_stack = current_task->kernel_stack2;
-			current_task->kernel_stack2 = current_task->oip;
-			asm("\
-				mov %1, %%esp;       \
-				mov %0, %%ebp;       \
-			"::"r"(current_task->obp), "r"(current_task->osp));
-			set_kernel_stack(current_task->kernel_stack + (KERN_STACK_SIZE-64));
-			/* Unset flags and return to scheduler */
-			current_task->system = current_task->osystem;
-			current_task->oip = current_task->obp = current_task->osp = 
-				current_task->cur_sig = 0;
-			current_task->flags &= ~TF_RETSIG;
-			unlock_scheduler();
-			goto out;
-		}
-		/* Switch over to ring-3 */
-		__super_cli();
-		unlock_scheduler();
-		asm("\
-			mov %0, %%esp;       \
-			mov %0, %%ebp;       \
-		"::"r"(STACK_LOCATION + (STACK_SIZE-64)));
-		switch_to_user_mode();
-		((struct sigaction *)&(current_task->signal_act[current_task->cur_sig]))->_sa_func._sa_handler(current_task->cur_sig);
-		/* syscall back into the kernel */
-		asm("int $0x80":"=a"(ret):"0" (128), "b" (0), "c" (0), "d" (0), "S" (0), "D" (0));
-		for(;;);
+		/* user-space signal handing design:
+		 * 
+		 * we exploit the fact the iret pops back everything in the stack, and that
+		 * we have access to those stack element. We trick iret into popping
+		 * back modified values of things, after pushing what looks like the
+		 * first half of a subprocedure call to the new stack location for the 
+		 * signal handler.
+		 * 
+		 * We set the return address of this 'function call' to be a bit of 
+		 * injector code, listed above, which simply does a system call (128).
+		 * This syscall copies back the original interrupt stack frame and 
+		 * immediately goes back to the isr common handler to perform the iret
+		 * back to where we were executing before.
+		 */
+		memcpy((void *)&current_task->reg_b, (void *)current_task->regs, sizeof(registers_t));
+		volatile registers_t *iret = current_task->regs;
+		iret->useresp = SIGSTACK;
+		/* push the argument (signal number) */
+		*(unsigned *)(iret->useresp) = sig;
+		iret->useresp -= 4;
+		/* push the return address */
+		*(unsigned *)(iret->useresp) = (unsigned)signal_return_injector;
+		iret->eip = (unsigned)sa->_sa_func._sa_handler;
 	}
 	else if(!(sa->_sa_func._sa_handler && sig != SIGKILL && sig != SIGSEGV))
 	{
@@ -122,21 +91,10 @@ void handle_signal(task_t *t, int sig)
 					schedule();
 				}
 				break;
-			
 		}
 	}
 	out:
 	t->sig_mask = t->old_mask;
-}
-
-int do_extra_sigs(task_t *task, int sig)
-{
-	int i;
-	for(i=0;i<128 && task->sig_queue[i];i++);
-	if(i >= 128)
-		return -EINVAL;
-	task->sig_queue[i] = sig;
-	return 0;
 }
 
 int do_send_signal(int pid, int __sig, int p)
@@ -168,8 +126,6 @@ int do_send_signal(int pid, int __sig, int p)
 		if(__sig < 32 && (task->sig_mask & (1<<__sig)) && __sig != SIGKILL)
 			return -EACCES;
 	}
-	if(__sig >= 32)
-		return do_extra_sigs(task, __sig);
 	/* We need to reschedule if we signal ourselves, so that we can handle it. 
 	 * The vast majority of signals below 32 require immediate handling, so we 
 	 * force a reschedule. */

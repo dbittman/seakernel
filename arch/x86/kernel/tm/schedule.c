@@ -65,7 +65,6 @@ __attribute__((always_inline)) inline task_t *get_next_task()
 
 __attribute__((always_inline)) static inline void post_context_switch()
 {
-	__super_cli();
 	if(current_task->state == TASK_SUICIDAL) {
 		task_critical();
 		task_suicide();
@@ -82,40 +81,19 @@ __attribute__((always_inline)) static inline void post_context_switch()
 		force_schedule();
 		return;
 	}
-	unsigned sig;
-	if(current_task->sigd)
-		sig = current_task->sigd;
-	else
-		sig = current_task->sig_queue[0];
+	unsigned sig = current_task->sigd;
 	/* We only process signals if we aren't in a system call.
 	 * this is because if a task is suddenly interrupted inside an
 	 * important syscall while doing something important the results
 	 * could be very bad. Any syscall that waits will need to include
 	 * a method of detecting signals and returning safely. */
-	if(sig && !(current_task->flags & TF_INSIG) && !current_task->system)
+	if(sig && !current_task->system && current_task->regs)
 	{
-		task_critical();
-		__super_cli();
-		current_task->flags |= TF_INSIG;
-		current_task->old_state = current_task->state;
 		current_task->state = TASK_RUNNING;
-		/* Update the queue */
-		if(sig >= 32) {
-			memcpy((void *)current_task->sig_queue, 
-					(void *)(current_task->sig_queue+1), 128);
-			current_task->sig_queue[127]=0;
-		}
 		current_task->sigd=0;
 		/* Jump to the signal handler */
 		handle_signal((task_t *)current_task, sig);
-		__super_cli();
-		current_task->state = current_task->old_state;
-		current_task->flags &= ~TF_INSIG;
-		task_full_uncritical();
-		if(current_task->state != TASK_RUNNING) 
-			force_schedule();
 	}
-	__super_sti();
 }
 
 __attribute__((always_inline)) static inline void store_context(unsigned eip)
@@ -138,12 +116,13 @@ __attribute__((always_inline)) static inline void store_context(unsigned eip)
 __attribute__((always_inline)) static inline void restore_context()
 {
 	/* Update some last-minute things. The stack. */
-	set_kernel_stack(current_task->kernel_stack+(KERN_STACK_SIZE-64));
+	set_kernel_stack(((current_task->flags & TF_INSIG) ? current_task->kernel_stack2 : current_task->kernel_stack) + (KERN_STACK_SIZE-64));
 }
 
 /*This is the magic super awesome and important kernel function 'schedule()'. 
  * It is arguable the most important function. Here we store the current 
  * task's context, search for the next process to run, and load it's context.*/
+unsigned globa;
 void schedule()
 {
 	__super_cli();
@@ -152,27 +131,31 @@ void schedule()
 	u32int esp, ebp, eip;
 	eip = read_eip();
 	
-	if (eip == 0xFFFFFFFF){
-		post_context_switch();
-		return;
-	}
+	//if (eip == 0xFFFFFFFF) {
+	//	post_context_switch();
+	//	return;
+	//}
+	globa = eip;
 	if(unlikely(!eip))
 		panic(PANIC_NOSYNC, "schedule(): Invalid eip");
 	
 	store_context(eip);
 	volatile task_t *new = (volatile task_t *)get_next_task();
-	set_current_task_dp(new, 0 /* this should be the current CPU */);
+	set_current_task_dp(new, 0 /* TODO: this should be the current CPU */);
 	restore_context();
-	task_full_uncritical();
-	cli();
 	asm("         \
 		mov %1, %%esp;       \
 		mov %2, %%ebp;       \
 		mov %3, %%cr3;       \
-		mov $0xFFFFFFFF, %%eax; \
-		jmp *%0           "
+		mov $0xFFFFFFFF, %%eax;" \
 	: : "r"(current_task->eip), "r"(current_task->esp), "r"(current_task->ebp), 
 			"r"(current_task->pd[1023]&PAGE_MASK) : "eax");
+	if(current_task->eip == globa)
+	{
+		post_context_switch();
+		return;
+	}
+	asm("jmp *%0"::"r"(current_task->eip));
 }
 
 void check_alarms()

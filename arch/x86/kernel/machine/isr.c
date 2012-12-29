@@ -118,15 +118,22 @@ void ack(int n)
 #endif
 }
 
+void entry_syscall_handler(volatile registers_t regs)
+{
+	int_count[0x80]++;
+	ack(0x80);
+	if(regs.eax == 128) {
+		memcpy((void *)&regs, (void *)&current_task->reg_b, sizeof(registers_t));
+		return;
+	}
+	syscall_handler(&regs);
+}
+
 /* This gets called from our ASM interrupt handler stub. */
 void isr_handler(volatile registers_t regs)
 {
 	int_count[regs.int_no]++;
 	ack(regs.int_no);
-	if(regs.int_no == 80) {
-		syscall_handler(&regs);
-		return;
-	}
 	char called=0;
 	handlist_t *f = &interrupt_handlers[regs.int_no];
 	while(f)
@@ -143,9 +150,13 @@ void isr_handler(volatile registers_t regs)
 		faulted(regs.int_no);
 }
 
-void irq_handler(registers_t regs)
+void irq_handler(volatile registers_t regs)
 {
-	current_task->regs = &regs;
+	char clear_regs=0;
+	if(!current_task->regs) {
+		clear_regs=1;
+		current_task->regs = &regs;
+	}
 	int_count[regs.int_no]++;
 	ack(regs.int_no);
 	handlist_t *f = &interrupt_handlers[regs.int_no];
@@ -156,6 +167,9 @@ void irq_handler(registers_t regs)
 			handler(regs);
 		f=f->next;
 	}
+	cli();
+	if(clear_regs)
+		current_task->regs=0;
 }
 
 void int_sys_init()

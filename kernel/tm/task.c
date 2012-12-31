@@ -29,7 +29,7 @@ void init_multitasking()
 
 void switch_to_user_mode()
 {
-	set_kernel_stack(current_task->kernel_stack + (KERN_STACK_SIZE-64));
+	set_kernel_stack(current_task->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
 	do_switch_to_user_mode();
 }
 

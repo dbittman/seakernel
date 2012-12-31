@@ -107,7 +107,6 @@ void *syscall_table[129] = {
 void init_syscalls()
 {
 	register_interrupt_handler (0x80, (isr_t)&syscall_handler);
-	register_interrupt_handler (80, (isr_t)&syscall_handler);
 	num_syscalls = sizeof(syscall_table)/sizeof(void *);
 }
 
@@ -166,12 +165,12 @@ __attribute__((optimize("O0"))) int syscall_handler(volatile registers_t *regs)
 	if(unlikely(!syscall_table[regs->eax]))
 		return -ENOSYS;
 	volatile int ret;
-	__super_sti();
 	if(!check_pointers(regs))
 		return -EINVAL;
+	enter_system(regs->eax);
 	if(got_signal(current_task))
 		force_schedule();
-	enter_system(regs->eax);
+	__super_sti();
 	current_task->freed = current_task->allocated=0;
 #ifdef SC_DEBUG
 	if(current_task->tty == curcons->tty) 

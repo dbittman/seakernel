@@ -36,6 +36,7 @@ Roadmap:
 	* add if statements to config files
 	* really stabilize kernel
 	* interrupt context
+	* where to send ctrl-c to?
 
 0.2 B3
 	* new random driver

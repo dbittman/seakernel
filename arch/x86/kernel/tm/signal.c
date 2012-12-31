@@ -20,22 +20,16 @@ char signal_return_injector[7] = {
 };
 
 #define SIGSTACK (STACK_LOCATION - (STACK_SIZE + PAGE_SIZE + 8))
-void handle_signal(task_t *t, int sig)
+void handle_signal(task_t *t)
 {
-	assert(t == current_task);
 	t->exit_reason.sig=0;
-	struct sigaction *sa = (struct sigaction *)&(t->signal_act[sig]);
-	/*if(sig == SIGCHILD && sa->sa_flags & SA_NOCLDSTOP)
-		return;
-	*/
+	struct sigaction *sa = (struct sigaction *)&(t->signal_act[t->sigd]);
 	t->old_mask = t->sig_mask;
 	t->sig_mask |= sa->sa_mask;
 	if(!(sa->sa_flags & SA_NODEFER))
-		t->sig_mask |= (1 << sig);
-	if(sa->_sa_func._sa_handler && sig != SIGKILL && sig != SIGSEGV 
-			&& !current_task->system && current_task->regs 
-			&& current_task->regs->useresp < 0xC0000000 
-			&& current_task->regs->useresp > 0xB0000000)
+		t->sig_mask |= (1 << t->sigd);
+	if(sa->_sa_func._sa_handler && t->sigd != SIGKILL && t->sigd != SIGSEGV 
+			&& t->regs)
 	{
 		/* user-space signal handing design:
 		 * 
@@ -51,50 +45,55 @@ void handle_signal(task_t *t, int sig)
 		 * immediately goes back to the isr common handler to perform the iret
 		 * back to where we were executing before.
 		 */
-		memcpy((void *)&current_task->reg_b, (void *)current_task->regs, sizeof(registers_t));
-		volatile registers_t *iret = current_task->regs;
+		memcpy((void *)&t->reg_b, (void *)t->regs, sizeof(registers_t));
+		volatile registers_t *iret = t->regs;
 		iret->useresp = SIGSTACK;
 		/* push the argument (signal number) */
-		*(unsigned *)(iret->useresp) = sig;
-		iret->useresp -= 4;
+		*(unsigned *)(iret->useresp) = t->sigd;
+		iret->useresp -= STACK_ELEMENT_SIZE;
 		/* push the return address */
 		*(unsigned *)(iret->useresp) = (unsigned)signal_return_injector;
 		iret->eip = (unsigned)sa->_sa_func._sa_handler;
+		t->sigd = 0;
 	}
-	else if(!(sa->_sa_func._sa_handler && sig != SIGKILL && sig != SIGSEGV))
+	else if(!sa->_sa_func._sa_handler)
 	{
 		/* Default Handlers */
-		switch(sig)
+		switch(t->sigd)
 		{
 			case SIGHUP : case SIGKILL: case SIGQUIT: case SIGPIPE: case SIGBUS:
 			case SIGABRT: case SIGTRAP: case SIGSEGV: case SIGALRM: case SIGFPE:
 			case SIGILL : case SIGPAGE: case SIGINT : case SIGTERM: case SIGUSR1: 
 			case SIGUSR2:
 				t->exit_reason.cause=__EXITSIG;
-				t->exit_reason.sig=sig;
+				t->exit_reason.sig=t->sigd;
 				kill_task(t->pid);
 				break;
 			case SIGUSLEEP:
-				if(t->uid >= current_task->uid) {
+				if(t->uid >= t->uid) {
 					t->state = TASK_USLEEP;
 					t->tick=0;
 				}
 				break;
 			case SIGSTOP: 
 				t->exit_reason.cause=__STOPSIG;
-				t->exit_reason.sig=sig; /* Fall through */
+				t->exit_reason.sig=t->sigd; /* Fall through */
 			case SIGISLEEP:
-				if(t->uid >= current_task->uid) {
+				if(t->uid >= t->uid) {
 					t->state = TASK_ISLEEP; 
 					t->tick=0;
-					task_full_uncritical();
-					schedule();
 				}
 				break;
 		}
+		t->sig_mask = t->old_mask;
+		t->sigd = 0;
+		current_task->flags &= ~TF_INSIG;
+		if(t == current_task)
+			schedule();
+	} else {
+		t->sig_mask = t->old_mask;
+		current_task->flags &= ~TF_INSIG;
 	}
-	out:
-	t->sig_mask = t->old_mask;
 }
 
 int do_send_signal(int pid, int __sig, int p)

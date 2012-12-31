@@ -3,8 +3,21 @@
 
 #include <../sea_defines.h>
 
-#define BITS_PER_LONG 32
-#define LOCK_PREFIX "lock "
+#define TYPE_ARCH_X86 1
+#define TYPE_ARCH_X86_64 2
+
+#if CONFIG_ARCH == TYPE_ARCH_X86
+	#define STACK_ELEMENT_SIZE 4
+	#define BITS_PER_LONG 32
+	#define LOCK_PREFIX "lock "
+#elif CONFIG_ARCH == TYPE_ARCH_X86_64
+	#define STACK_ELEMENT_SIZE 8
+	#define BITS_PER_LONG 64
+	#define LOCK_PREFIX "lock "
+	#warning "This is not implemented. Kernel will compile for x86 32 bit"
+#else
+	#error "unsupported architecture"
+#endif
 
 #define DEF_PRINT_LEVEL CONFIG_LOG_LEVEL
 #define MAX_TASKS (CONFIG_MAX_TASKS)

@@ -182,36 +182,27 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	memset((void *)end_l, 0, 0x1000-(end_l%0x1000));
 	memset((void *)(end+0x1000), 0, 0x1000);
 	memset((void *)(STACK_LOCATION - STACK_SIZE), 0, STACK_SIZE);
-	__sync_synchronize();
 	/* Release everything */
-	current_task->state = TASK_RUNNING;
-	task_full_uncritical();
-	__super_cli();
 	if(EXEC_LOG == 2) 
 		printk(0, "[%d]: Performing call\n", t->pid);
-	/* We are currently inside a system call. We must return 
-	to usermode before we call */
-	assert(current_task->argv && current_task->env);
-	set_kernel_stack(current_task->kernel_stack + (KERN_STACK_SIZE-64));
-	__sync_synchronize();
-	__asm__ __volatile__ ("mov %0, %%esp;\
-		mov %0, %%ebp; \
-		push %1; \
-		push %2; \
-		push %3; \
-		call do_switch_to_user_mode; \
-		call *%4;\
-	"::"r"(STACK_LOCATION-64), "r"(current_task->env), 
-		"r"(current_task->argv), "r"(argc), "r"(eip):"memory");
-	exit(0);
-	for(;;);
+	
+	/* we clear this out, so we don't accidentally handle a signal...*/
+	t->regs=0;
+	/* don't ya just love iret? */
+	t->sysregs->useresp = t->sysregs->ebp = STACK_LOCATION - STACK_ELEMENT_SIZE;
+	*(unsigned *)t->sysregs->useresp = (unsigned)t->env;
+	t->sysregs->useresp -= STACK_ELEMENT_SIZE;
+	*(unsigned *)t->sysregs->useresp = (unsigned)t->argv;
+	t->sysregs->useresp -= STACK_ELEMENT_SIZE;
+	*(unsigned *)t->sysregs->useresp = (unsigned)argc;
+	t->sysregs->useresp -= STACK_ELEMENT_SIZE;
+
+	t->sysregs->eip = eip;
 	error:
-	if(err) return err;
-	return -1234;
+	return err;
 }
 
 int execve(char *path, char **argv, char **env)
 {
-	int ret = do_exec((task_t *)current_task, path, argv, env);
-	return ret;
+	return do_exec((task_t *)current_task, path, argv, env);
 }

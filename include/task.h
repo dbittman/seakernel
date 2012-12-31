@@ -99,7 +99,7 @@ typedef volatile struct task_struct
 	unsigned last;
 	ex_stat exit_reason, we_res, *exlist;
 	registers_t reg_b;
-	registers_t *regs;
+	registers_t *regs, *sysregs;
 	unsigned mem_usage_calc;
 	volatile unsigned wait_again, path_loc_start;
 	unsigned num_swapped;
@@ -189,7 +189,7 @@ void release_task(task_t *p);
 int wait_task(unsigned pid, int state);
 void delay(int);
 int send_signal(int, int);
-void handle_signal(task_t *t, int sig);
+void handle_signal(task_t *t);
 void wait_flag_except(unsigned *f, int fo);
 struct file *get_file_pointer(task_t *t, int n);
 void remove_file_pointer(task_t *t, int n);
@@ -297,7 +297,7 @@ static __attribute__((always_inline)) inline void task_full_uncritical()
 
 static __attribute__((always_inline)) inline void enter_system(int sys)
 {
-	current_task->system=sys;
+	current_task->system=(!sys ? -1 : sys);
 	lower_flag(TF_DIDLOCK);
 	current_task->cur_ts/=2;
 }
@@ -327,7 +327,6 @@ static __attribute__((always_inline)) inline void exit_system()
 {
 	current_task->last = current_task->system;
 	current_task->system=0;
-	task_full_uncritical();
 }
 
 static inline int GET_MAX_TS(task_t *t)

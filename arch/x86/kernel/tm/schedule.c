@@ -2,6 +2,10 @@
 #include <kernel.h>
 #include <memory.h>
 #include <task.h>
+#if DEBUG
+#include <elf.h>
+#endif
+
 mutex_t scheding;
 
 void _overflow(char *type)
@@ -81,19 +85,24 @@ __attribute__((always_inline)) static inline void post_context_switch()
 		force_schedule();
 		return;
 	}
-	unsigned sig = current_task->sigd;
 	/* We only process signals if we aren't in a system call.
 	 * this is because if a task is suddenly interrupted inside an
 	 * important syscall while doing something important the results
 	 * could be very bad. Any syscall that waits will need to include
 	 * a method of detecting signals and returning safely. */
-	if(sig && !current_task->system && current_task->regs)
+	if(current_task->sigd && !current_task->system && !(current_task->flags & TF_INSIG))
 	{
+		current_task->flags |= TF_INSIG;
 		current_task->state = TASK_RUNNING;
-		current_task->sigd=0;
 		/* Jump to the signal handler */
-		handle_signal((task_t *)current_task, sig);
+		handle_signal((task_t *)current_task);
 	}
+#if DEBUG
+	if(current_task->pid != 0 && !current_task->system && current_task->regs && current_task->regs->useresp > 0xC0000000) {
+		const char *name = elf_lookup_symbol(current_task->regs->eip, &kernel_elf);
+		panic(0, "A: %d: %x: %s", current_task->system, current_task->regs->eip, name);
+	}
+#endif
 }
 
 __attribute__((always_inline)) static inline void store_context(unsigned eip)
@@ -116,7 +125,7 @@ __attribute__((always_inline)) static inline void store_context(unsigned eip)
 __attribute__((always_inline)) static inline void restore_context()
 {
 	/* Update some last-minute things. The stack. */
-	set_kernel_stack(current_task->kernel_stack + (KERN_STACK_SIZE-64));
+	set_kernel_stack(current_task->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
 }
 
 /*This is the magic super awesome and important kernel function 'schedule()'. 

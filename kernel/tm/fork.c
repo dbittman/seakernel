@@ -55,9 +55,11 @@ inline static int engage_new_stack(task_t *new, task_t *parent)
 	if(new->pid > 0 && esp > TOP_TASK_MEM) {
 		new->esp=(esp-parent->kernel_stack) + new->kernel_stack;
 		new->ebp=(ebp-parent->kernel_stack) + new->kernel_stack;
+		new->sysregs = (parent->sysregs - parent->kernel_stack) + new->kernel_stack;
 		copy_update_stack(new->kernel_stack, parent->kernel_stack, KERN_STACK_SIZE);
 		return 1;
 	} else {
+		new->sysregs = parent->sysregs;
 		new->esp=esp;
 		new->ebp=ebp;
 		return 0;

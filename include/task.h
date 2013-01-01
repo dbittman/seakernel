@@ -26,7 +26,7 @@
 #define TF_LOCK     128
 #define TF_REQMEM   256
 #define TF_DYING    512
-#define TF_RETSIG  1024
+//#define TF_RETSIG  1024
 #define TF_INSIG   2048
 #define PRIO_PROCESS 1
 #define PRIO_PGRP    2

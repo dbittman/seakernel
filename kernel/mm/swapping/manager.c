@@ -209,7 +209,7 @@ int sys_swapoff(char *node, unsigned flags)
 	return 0;
 }
 
-unsigned tmp_page;
+extern unsigned tmp_page;
 int do_page_out_task_addr(task_t *t, unsigned addr)
 {
 	if(!t)
@@ -303,11 +303,11 @@ int swap_task(task_t *t)
 	return tot;
 }
 
-void __KT_pager()
+void __KT_swapper()
 {
-	tmp_page = pm_alloc_page();
-	for(;;)
-	{
+	
+	//for(;;)
+	//{
 		delay(1000);
 		
 		if(num_swapdev)
@@ -343,7 +343,7 @@ void __KT_pager()
 				}
 			}
 		}
-	}
+	//}
 }
 
 int sys_swaptask(unsigned pid)

@@ -303,11 +303,7 @@ int keyboard_int()
 
 void do_keyboard_int()
 {
-	task_critical();
-	super_cli();
 	keyboard_int();
-	super_sti();
-	task_uncritical();
 	flush_port();
 }
 

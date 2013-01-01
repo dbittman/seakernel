@@ -57,8 +57,10 @@ int vm_copy_dir(page_dir_t *from, page_dir_t *new, char cow)
 page_dir_t *vm_clone(page_dir_t *pd, char cow)
 {
 	/* Create new directory and copy it */
+#if CONFIG_SWAP
 	if(current_task && current_task->num_swapped)
 		swap_in_all_the_pages(current_task);
+#endif
 	unsigned int new_p;
 	page_dir_t *new = (page_dir_t *)kmalloc_ap(PAGE_SIZE, &new_p);
 	vm_copy_dir(pd, new, cow);

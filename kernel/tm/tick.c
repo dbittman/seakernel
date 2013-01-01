@@ -30,7 +30,6 @@ inline static void do_run_scheduler()
 	if(!current_task || 
 		(current_task->critical) || 
 		(current_task->flags&TF_DYING) || 
-		(current_task->flags&TF_RETSIG) ||
 		(current_task->flags&TF_LOCK))
 		return;
 	if(scheding.count) return;

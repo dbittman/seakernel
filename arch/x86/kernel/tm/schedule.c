@@ -170,7 +170,6 @@ void schedule()
 void check_alarms()
 {
 	task_t *t = alarm_list_start;
-	task_critical();
 	while(t) {
 		if(unlikely(!(--t->alrm_count)))
 		{
@@ -185,9 +184,8 @@ void check_alarms()
 				t->alarm_next=0;
 			}
 			t->flags &= ~TF_ALARM;
-			do_send_signal(t->pid, SIGALRM, 1);
+			t->sigd = SIGALRM;
 		}
 		t=t->alarm_next;
 	}
-	task_uncritical();
 }

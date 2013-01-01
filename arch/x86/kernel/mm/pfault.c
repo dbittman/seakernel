@@ -66,6 +66,7 @@ void page_fault(registers_t regs)
 {
 	uint32_t cr2, err_code = regs.err_code;
 	__asm__ volatile ("mov %%cr2, %0" : "=r" (cr2));
+#if CONFIG_SWAP
 	/* Has the page been swapped out? NOTE: We must always check this first */
 	if(current_task && num_swapdev && current_task->num_swapped && 
 			swap_in_page((task_t *)current_task, cr2 & PAGE_MASK) == 0) {
@@ -73,6 +74,7 @@ void page_fault(registers_t regs)
 			cr2 & PAGE_MASK, current_task->pid);
 		return;
 	}
+#endif
 	
 	if(pfault_mmf_check(err_code, cr2))
 		return;

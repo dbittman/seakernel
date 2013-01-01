@@ -67,7 +67,9 @@ void init_memory(struct multiboot *m)
 	vm_init_2();
 	primary_cpu.flags |= CPU_PAGING;
 	mmu_ready=1;
+#if CONFIG_SWAP
 	init_swap();
+#endif
 }
 
 int pm_stat_mem(struct mem_stat *s)

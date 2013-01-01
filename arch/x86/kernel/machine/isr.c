@@ -179,7 +179,6 @@ void irq_handler(volatile registers_t regs)
 			handler(regs);
 		f=f->next;
 	}
-	cli();
 	if(clear_regs)
 		current_task->regs=0;
 }

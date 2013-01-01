@@ -89,6 +89,7 @@ int proc_kern_rw(char rw, struct inode *inode, int m, char *buf, int off, int le
 		switch(m) {
 			case 3:
 				/* List swap devices */
+#if CONFIG_SWAP
 				if(!s)
 				{
 					total_len += proc_append_buffer(buf, 
@@ -108,6 +109,9 @@ int proc_kern_rw(char rw, struct inode *inode, int m, char *buf, int off, int le
 					s=s->next;
 				}
 				return total_len;
+#else
+				return 0;
+#endif
 			case 4:
 				return proc_read_int(buf, off, len);
 			case 6:

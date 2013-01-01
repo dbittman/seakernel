@@ -81,7 +81,17 @@ void *syscall_table[129] = {
 	SC sys_null, SC sys_mmap, SC sys_munmap, SC sys_sync, 
 	SC rmdir, SC sys_fsync, SC sys_alarm, SC sys_select,
 	SC sys_null, SC sys_null, SC sys_sysconf, SC sys_setsid, 
-	SC sys_setpgid, SC sys_swapon, SC sys_swapoff, SC /**64*/sys_nice,
+	SC sys_setpgid, 
+
+#if CONFIG_SWAP
+	SC sys_swapon, 
+	SC sys_swapoff, 
+#else
+	SC sys_null,
+	SC sys_null,
+#endif
+	
+	SC /**64*/sys_nice,
 	
 	SC sys_null, SC sys_null, SC sys_null, SC task_stat, 
 	SC sys_null, SC sys_null, SC delay, SC kernel_reset,
@@ -91,8 +101,14 @@ void *syscall_table[129] = {
 	SC sys_null, SC sys_null, SC sys_pipe, SC set_signal, 
 	SC sys_null, SC sys_null, SC sys_null, SC sys_null,
 	SC get_time, SC get_timer_th, SC sys_isstate, SC sys_wait3, 
-	SC sys_null, SC sys_null, SC sys_getcwdlen, SC /**96*/sys_swaptask,
-	
+	SC sys_null, SC sys_null, SC sys_getcwdlen, 
+
+#if CONFIG_SWAP
+	SC /**96*/sys_swaptask,
+#else
+	SC /**96*/sys_null,
+#endif
+
 	SC sys_dirstat, SC sys_sigact, SC sys_access, SC sys_chmod, 
 	SC sys_fcntl, SC sys_dirstat_fd, SC sys_getdepth, SC sys_waitpid,
 	SC sys_mknod, SC sys_symlink, SC sys_readlink, SC sys_umask, 

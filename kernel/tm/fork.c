@@ -96,11 +96,10 @@ int fork()
 	task_t *parent = (task_t *)current_task;
 	new->pd = newspace;
 	copy_task_struct(new, parent);
-	int mp = new->pid;
 	lock_scheduler();
 	/* Copy the stack */
 	cli();
-	int usr = engage_new_stack(new, parent);
+	engage_new_stack(new, parent);
 	/* Set the state as frozen temporarily, so that it doesn't accidentally run.
 	 * And then add it to the queue */
 	new->state = TASK_FROZEN;

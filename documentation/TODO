@@ -33,8 +33,6 @@ Roadmap:
 	* add if statements to config files
 	* really stabilize kernel
 	* make page fault simply set a flag in the pager task to handle errors
-	* fork!!!
-	* get rid of copy_update_stack
 
 0.2 B3
 	* new random driver

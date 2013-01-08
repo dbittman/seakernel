@@ -6,9 +6,6 @@
 #include <task.h>
 #include <init.h>
 extern int current_hz;
-extern void exec_rem_sig_wrap();
-unsigned int vm_setattrib(unsigned v, short attr);
-
 char signal_return_injector[7] = {
 	0xB8,
 	0x80,
@@ -78,6 +75,8 @@ void handle_signal(task_t *t)
 				}
 				break;
 			case SIGSTOP: 
+				if(!(sa->sa_flags & SA_NOCLDSTOP))
+					t->parent->sigd=SIGCHILD;
 				t->exit_reason.cause=__STOPSIG;
 				t->exit_reason.sig=t->sigd; /* Fall through */
 			case SIGISLEEP:

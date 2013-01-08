@@ -45,7 +45,7 @@ Roadmap:
 	* port ruby
 	* system call conditions (like iptables)
 	* user-space io port access
-
+	* SA_RESTART
 0.2 RC1
 	* All ported software works properly
 	* documentation

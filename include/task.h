@@ -251,11 +251,6 @@ void _unlock_scheduler(char *f, int l)
 
 static inline int got_signal(task_t *t)
 {
-	/* Ignore some kernel-generated signals */
-	if(t->sigd == SIGCHILD && 
-	!(((struct sigaction *)&(t->signal_act
-	[t->sigd]))->_sa_func._sa_handler))
-		return 0;
 	return (t->sigd);
 }
 

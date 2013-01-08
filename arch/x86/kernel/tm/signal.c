@@ -52,6 +52,7 @@ void handle_signal(task_t *t)
 		iret->eip = (unsigned)sa->_sa_func._sa_handler;
 		t->cursig = t->sigd;
 		t->sigd=0;
+		/* sysregs is only set when we are in a syscall */
 		if(t->sysregs) t->flags |= TF_JUMPIN;
 	}
 	else if(!sa->_sa_func._sa_handler && !t->system)

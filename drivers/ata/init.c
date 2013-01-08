@@ -17,6 +17,8 @@ int init_ata_device()
 		ata->flags = PCI_ERROR;
 		return -1;
 	}
+	/* allow this device bus-mastering mode */
+	pci_write_dword(ata->bus, ata->dev, ata->func, 4, 7);
 	ata_pci = ata;
 	primary->port_bmr_base=bmr;
 	if(ata->pcs->bar0 == 0 || ata->pcs->bar0 == 1)

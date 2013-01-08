@@ -68,4 +68,8 @@ struct pci_device *pci_locate_device(unsigned short vendor, unsigned short devic
 unsigned pci_get_base_address(struct pci_device *device);
 struct pci_device *pci_locate_devices(unsigned short vendor, 
 	unsigned short device, int i);
+void pci_write_dword(const uint16_t bus, const uint16_t dev, 
+	const uint16_t func, const uint32_t reg, unsigned data);
+uint32_t pci_read_dword(const uint16_t bus, const uint16_t dev, 
+	const uint16_t func, const uint32_t reg);
 #endif

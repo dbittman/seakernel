@@ -135,6 +135,15 @@ uint32_t pci_read_dword(const uint16_t bus, const uint16_t dev,
 	((uint32_t)func << 8) | (reg & ~3));
 	return inl(0xCFC + (reg & 3));
 }
+
+void pci_write_dword(const uint16_t bus, const uint16_t dev, 
+	const uint16_t func, const uint32_t reg, unsigned data)
+{
+	outl(0xCF8, 0x80000000L | ((uint32_t)bus << 16) |((uint32_t)dev << 11) |
+	((uint32_t)func << 8) | (reg & ~3));
+	outl(0xCFC + (reg & 3), data);
+}
+
 /* Returns a kamlloc'd struct of pci config space */
 struct pci_config_space *get_pci_config(int bus, int dev, int func)
 {
@@ -312,7 +321,8 @@ int module_install()
 	add_kernel_symbol(pci_locate_devices);
 	add_kernel_symbol(pci_locate_class);
 	add_kernel_symbol(pci_get_base_address);
-	
+	add_kernel_symbol(pci_read_dword);
+	add_kernel_symbol(pci_write_dword);
 	return 0;
 }
 
@@ -325,6 +335,8 @@ int module_exit()
 	remove_kernel_symbol("pci_locate_devices");
 	remove_kernel_symbol("pci_locate_class");
 	remove_kernel_symbol("pci_get_base_address");
+	remove_kernel_symbol("pci_read_dword");
+	remove_kernel_symbol("pci_write_dword");
 	destroy_mutex(pci_mutex);
 	return 0;
 }

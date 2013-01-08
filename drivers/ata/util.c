@@ -72,7 +72,6 @@ void ata_irq_handler(registers_t regs)
 	if(st & 0x4) {
 		cont->irqwait++;
 		ata_reg_inb(cont, REG_STATUS);
-		inb(cont->port_bmr_base + BMR_STATUS);
 		outb(cont->port_bmr_base + BMR_STATUS, 0x4);
 	}
 }

@@ -10,8 +10,6 @@ typedef struct {
 	unsigned short last;
 }__attribute__((packed)) prdtable_t;
 
-/* error handling */
-/* fix potential-deadlock warning */
 int ata_dma_init(struct ata_controller *cont, struct ata_device *dev, 
 	int size, int rw, unsigned char *buffer)
 {
@@ -53,9 +51,8 @@ int ata_start_command(struct ata_controller *cont, struct ata_device *dev,
 	else
 		cmd = (dev->flags & F_LBA48 ? 0x35 : 0xCA);
 	if(!(dev->flags & F_LBA48))
-	{
 		outb(cont->port_cmd_base+REG_DEVICE, 0xE0 | (dev->id << 4) | ((block >> 24) & 0x0F));
-	} else
+	else
 		outb(cont->port_cmd_base+REG_DEVICE, 0x40 | (dev->id << 4));
 	ATA_DELAY(cont);
 	if(dev->flags & F_LBA48) {
@@ -126,10 +123,10 @@ int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw,
 	cmdReg |= 0x1 | (rw == READ ? 8 : 0);
 	cont->irqwait=0;
 	int ret = size * count;
+	__super_sti();
 	outb(cont->port_bmr_base + BMR_COMMAND, cmdReg);
 	timeout=1000000;
 	while(ret && timeout--) {
-		__super_sti();
 		if(cont->irqwait) break;
 		schedule();
 	}
@@ -142,6 +139,8 @@ int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw,
 	outb(cont->port_bmr_base + BMR_COMMAND, st & ~0x1);
 	
 	st = inb(cont->port_bmr_base + BMR_STATUS);
+	if(st & 2)
+		ret=0;
 	if (rw == READ && ret) {
 		int num_entries = ((size-1) / (64*1024))+1;
 		int i;

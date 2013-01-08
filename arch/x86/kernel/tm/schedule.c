@@ -2,10 +2,6 @@
 #include <kernel.h>
 #include <memory.h>
 #include <task.h>
-#if DEBUG
-#include <elf.h>
-#endif
-
 mutex_t scheding;
 
 void _overflow(char *type)
@@ -97,18 +93,9 @@ __attribute__((always_inline)) static inline void post_context_switch()
 		handle_signal((task_t *)current_task);
 		/* if we've gotten here, then we are interruptible or running.
 		 * set the state to running since interruptible tasks fully
-		 * wake up when signaled, but only if we actually did something */
-		//if(!current_task->sigd || current_task->system)
-			current_task->state = TASK_RUNNING;
-		//else
-		//	schedule();
+		 * wake up when signaled */
+		current_task->state = TASK_RUNNING;
 	}
-#if DEBUG
-	if(current_task->pid != 0 && !current_task->system && current_task->regs && current_task->regs->useresp > 0xC0000000) {
-		const char *name = elf_lookup_symbol(current_task->regs->eip, &kernel_elf);
-		panic(0, "A: %d: %x: %s", current_task->system, current_task->regs->eip, name);
-	}
-#endif
 }
 
 __attribute__((always_inline)) static inline void store_context(unsigned eip)

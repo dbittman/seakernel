@@ -55,11 +55,12 @@ void handle_signal(task_t *t)
 		iret->eip = (unsigned)sa->_sa_func._sa_handler;
 		t->cursig = t->sigd;
 		t->sigd=0;
-		t->flags |= TF_JUMPIN;
+		if(t->sysregs) t->flags |= TF_JUMPIN;
 	}
 	else if(!sa->_sa_func._sa_handler && !t->system)
 	{
 		/* Default Handlers */
+		t->flags |= TF_SCHED;
 		switch(t->sigd)
 		{
 			case SIGHUP : case SIGKILL: case SIGQUIT: case SIGPIPE: 
@@ -85,12 +86,13 @@ void handle_signal(task_t *t)
 					t->tick=0;
 				}
 				break;
+			default:
+				t->flags &= ~TF_SCHED;
+				break;
 		}
 		t->sig_mask = t->old_mask;
 		t->sigd = 0;
 		t->flags &= ~TF_INSIG;
-		if(t == current_task)
-			t->flags |= TF_SCHED;
 	} else {
 		t->sig_mask = t->old_mask;
 		t->flags &= ~TF_INSIG;
@@ -142,7 +144,7 @@ int do_send_signal(int pid, int __sig, int p)
 	if(task == current_task) {
 		task_full_uncritical();
 		unlock_scheduler();
-		force_schedule();
+		task->flags |= TF_SCHED;
 	}
 	return 0;
 }

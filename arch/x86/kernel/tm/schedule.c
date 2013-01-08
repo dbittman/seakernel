@@ -124,8 +124,7 @@ void schedule()
 	__super_cli();
 	if(unlikely(!current_task || !kernel_task))
 		return;
-	u32int eip;
-	eip = read_eip();
+	u32int eip = read_eip();
 	store_context(eip);
 	volatile task_t *new = (volatile task_t *)get_next_task();
 	set_current_task_dp(new, 0 /* TODO: this should be the current CPU */);
@@ -137,10 +136,7 @@ void schedule()
 	: : "r"(current_task->eip), "r"(current_task->esp), "r"(current_task->ebp), 
 			"r"(current_task->pd[1023]&PAGE_MASK) : "eax");
 	if(likely(!(current_task->flags & TF_FORK)))
-	{
-		post_context_switch();
-		return;
-	}
+		return (void) post_context_switch();
 	current_task->flags &= ~TF_FORK;
 	asm("jmp *%0"::"r"(current_task->eip));
 }

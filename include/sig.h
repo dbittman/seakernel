@@ -72,7 +72,7 @@ struct sigaction
 #define SIGALRM  14 
 #define SIGPAGE 15 /* Page fault */
 #define SIGMSG  16
-#define SIGPARENT 17
+//#define SIGPARENT 17
 #define SIGWAIT 18
 #define SIGILL 19
 #define SIGOUT 20

@@ -90,12 +90,18 @@ __attribute__((always_inline)) static inline void post_context_switch()
 	 * important syscall while doing something important the results
 	 * could be very bad. Any syscall that waits will need to include
 	 * a method of detecting signals and returning safely. */
-	if(current_task->sigd && !current_task->system && !(current_task->flags & TF_INSIG))
+	if(current_task->sigd && !(current_task->flags & TF_INSIG) && !(current_task->flags & TF_KTASK) && current_task->pid)
 	{
 		current_task->flags |= TF_INSIG;
-		current_task->state = TASK_RUNNING;
 		/* Jump to the signal handler */
 		handle_signal((task_t *)current_task);
+		/* if we've gotten here, then we are interruptible or running.
+		 * set the state to running since interruptible tasks fully
+		 * wake up when signaled, but only if we actually did something */
+		//if(!current_task->sigd || current_task->system)
+			current_task->state = TASK_RUNNING;
+		//else
+		//	schedule();
 	}
 #if DEBUG
 	if(current_task->pid != 0 && !current_task->system && current_task->regs && current_task->regs->useresp > 0xC0000000) {
@@ -107,16 +113,12 @@ __attribute__((always_inline)) static inline void post_context_switch()
 
 __attribute__((always_inline)) static inline void store_context(unsigned eip)
 {
-	u32int esp, ebp;
-	asm("mov %%esp, %0" : "=r"(esp));
-	asm("mov %%ebp, %0" : "=r"(ebp));
-	/* No, we didn't switch tasks. Save some register values and switch */
+	asm("mov %%esp, %0" : "=r"(current_task->esp));
+	asm("mov %%ebp, %0" : "=r"(current_task->ebp));
 	current_task->eip = eip;
-	current_task->esp = esp;
-	current_task->ebp = ebp;
 	/* Check for stack over-run */
-	if(!esp || (!(esp >= TOP_TASK_MEM_EXEC && esp < TOP_TASK_MEM) 
-			&& !(esp >= KMALLOC_ADDR_START && esp < KMALLOC_ADDR_END)))
+	if(!current_task->esp || (!(current_task->esp >= TOP_TASK_MEM_EXEC && current_task->esp < TOP_TASK_MEM) 
+			&& !(current_task->esp >= KMALLOC_ADDR_START && current_task->esp < KMALLOC_ADDR_END)))
 		_overflow("stack");
 	if(current_task->heap_end && current_task->heap_end >= TOP_USER_HEAP)
 		_overflow("heap");
@@ -127,27 +129,16 @@ __attribute__((always_inline)) static inline void restore_context()
 	/* Update some last-minute things. The stack. */
 	set_kernel_stack(current_task->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
 }
-
 /*This is the magic super awesome and important kernel function 'schedule()'. 
  * It is arguable the most important function. Here we store the current 
  * task's context, search for the next process to run, and load it's context.*/
-unsigned globa;
 void schedule()
 {
 	__super_cli();
 	if(unlikely(!current_task || !kernel_task))
 		return;
-	u32int esp, ebp, eip;
+	u32int eip;
 	eip = read_eip();
-	
-	//if (eip == 0xFFFFFFFF) {
-	//	post_context_switch();
-	//	return;
-	//}
-	globa = eip;
-	if(unlikely(!eip))
-		panic(PANIC_NOSYNC, "schedule(): Invalid eip");
-	
 	store_context(eip);
 	volatile task_t *new = (volatile task_t *)get_next_task();
 	set_current_task_dp(new, 0 /* TODO: this should be the current CPU */);
@@ -155,15 +146,15 @@ void schedule()
 	asm("         \
 		mov %1, %%esp;       \
 		mov %2, %%ebp;       \
-		mov %3, %%cr3;       \
-		mov $0xFFFFFFFF, %%eax;" \
+		mov %3, %%cr3;"
 	: : "r"(current_task->eip), "r"(current_task->esp), "r"(current_task->ebp), 
 			"r"(current_task->pd[1023]&PAGE_MASK) : "eax");
-	if(current_task->eip == globa)
+	if(likely(!(current_task->flags & TF_FORK)))
 	{
 		post_context_switch();
 		return;
 	}
+	current_task->flags &= ~TF_FORK;
 	asm("jmp *%0"::"r"(current_task->eip));
 }
 

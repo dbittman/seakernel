@@ -54,14 +54,15 @@ int tty_raise_action(int min, int sig)
 		return 0;
 	if(shutting_down)
 		return 0;
-	task_t *t = kernel_task->next;
 	task_critical();
+	task_t *t = kernel_task->next;
 	while(t)
 	{
 		if(t->tty == min) {
 			/* we were able to raise a signal. clear the input stream */
 			consoles[min].inpos=0;
 			t->sigd = sig;
+			t->flags |= TF_SCHED;
 		}
 		t=t->next;
 	}

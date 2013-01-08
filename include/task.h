@@ -16,18 +16,20 @@
 #define __STOPSIG  4
 #define TASK_MAGIC 0xDEADBEEF
 #define FILP_HASH_LEN 512
-#define TF_WMUTEX     1
-#define TF_EXITING    2
-#define TF_ALARM      4
-#define TF_DIDLOCK    8
-#define TF_SWAP      16
-#define TF_KTASK     32
-#define TF_SWAPQUEUE 64
-#define TF_LOCK     128
-#define TF_REQMEM   256
-#define TF_DYING    512
-//#define TF_RETSIG  1024
-#define TF_INSIG   2048
+#define TF_WMUTEX     0x1
+#define TF_EXITING    0x2
+#define TF_ALARM      0x4
+#define TF_DIDLOCK    0x8
+#define TF_SWAP      0x10
+#define TF_KTASK     0x20
+#define TF_SWAPQUEUE 0x40
+#define TF_LOCK      0x80
+#define TF_REQMEM   0x100
+#define TF_DYING    0x200
+#define TF_FORK     0x400
+#define TF_INSIG    0x800
+#define TF_SCHED   0x1000
+#define TF_JUMPIN  0x2000
 #define PRIO_PROCESS 1
 #define PRIO_PGRP    2
 #define PRIO_USER    3
@@ -118,7 +120,7 @@ typedef volatile struct task_struct
 	
 	struct sigaction signal_act[128];
 	volatile sigset_t sig_mask, global_sig_mask;
-	volatile unsigned sigd;
+	volatile unsigned sigd, cursig;
 	sigset_t old_mask;
 	unsigned alrm_count;
 	unsigned freed, allocated;
@@ -250,15 +252,11 @@ void _unlock_scheduler(char *f, int l)
 static inline int got_signal(task_t *t)
 {
 	/* Ignore some kernel-generated signals */
-	if(current_task->sigd == SIGCHILD && 
-	!(((struct sigaction *)&(current_task->signal_act
-	[current_task->sigd]))->_sa_func._sa_handler))
+	if(t->sigd == SIGCHILD && 
+	!(((struct sigaction *)&(t->signal_act
+	[t->sigd]))->_sa_func._sa_handler))
 		return 0;
-	if(current_task->sigd == SIGPARENT && 
-	!(((struct sigaction *)&(current_task->signal_act
-	[current_task->sigd]))->_sa_func._sa_handler))
-		return 0;
-	return (current_task->sigd);
+	return (t->sigd);
 }
 
 static __attribute__((always_inline)) inline int count_tasks()

@@ -9,12 +9,10 @@ Known Bugs include:
    fully functional
  * If you read/write enough data to and from block devices, eventually the
    system will run out of memory. This is because there is currently no limit
-   on the cache (will be fixed for beta-2)
+   on the cache (will be fixed for beta-3)
  * There is a memory leak if you run a shell script. Looks like 4KB per run
  * Make doesn't seem to recompile targets if their sources change
  * There is nothing preventing circular links from causing a stack overrun
- * Make doesn't like running with the job server (-j*) - results in "interrupted
-   system call"
  * df doesn't seem to properly report disk usage
  * device or resource busy when unmounting /mnt
 Things that need more testing:
@@ -29,13 +27,15 @@ Roadmap:
 0.2 B2
 	* bugfixes
 	* remove all code thats not mine from the kernel
-	* redesign locking
+	* redesign locking (add r/w locks)
 	* add atomic operations, and implement accordingly
 	* finalize build system
 	* add if statements to config files
 	* really stabilize kernel
 	* make page fault simply set a flag in the pager task to handle errors
-	
+	* fork!!!
+	* get rid of copy_update_stack
+
 0.2 B3
 	* new random driver
 	* add chaining to file descriptors (and modify the return value for the sysconf entry)

@@ -201,10 +201,19 @@ __attribute__((optimize("O0"))) int syscall_handler(volatile registers_t *regs)
 		printk(SC_DEBUG, "syscall %d: %d ret %d, took %d ticks\n", 
 				current_task->pid, current_task->system, ret, ticks - or_t);
 #endif
+	if(current_task->flags & TF_SCHED)
+	{
+		current_task->flags &= ~TF_SCHED;
+		schedule();
+	}
 	cli();
 	exit_system();
 	/* store the return value in the regs */
 	regs->eax = ret;
+	if((current_task->flags & TF_INSIG) && (current_task->flags & TF_JUMPIN)) {
+		current_task->reg_b.eax=ret;
+		current_task->flags &= ~TF_JUMPIN;
+	}
 	return ret;
 }
 

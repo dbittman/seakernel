@@ -187,6 +187,8 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 		printk(0, "[%d]: Performing call\n", t->pid);
 	
 	/* we clear this out, so we don't accidentally handle a signal...*/
+	cli();
+	current_task->flags &= ~TF_SCHED;
 	t->regs=0;
 	/* don't ya just love iret? */
 	t->sysregs->useresp = t->sysregs->ebp = STACK_LOCATION - STACK_ELEMENT_SIZE;

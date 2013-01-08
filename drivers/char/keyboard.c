@@ -338,6 +338,7 @@ int module_install()
 	}
 	register_interrupt_handler(IRQ1, (isr_t)&do_keyboard_int);
 	flush_port();
+	printk(1, "[keyboard]: initialized keyboard\n");
 	return 0;
 }
 

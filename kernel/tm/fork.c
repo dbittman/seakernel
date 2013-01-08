@@ -42,6 +42,7 @@ void copy_task_struct(task_t *new, task_t *parent)
 		sizeof(struct sigaction));
 	/* This actually duplicates the handles... */
 	copy_file_handles(parent, new);
+	new->flags = TF_FORK;
 }
 
 __attribute__((always_inline)) 
@@ -98,8 +99,8 @@ int fork()
 	int mp = new->pid;
 	lock_scheduler();
 	/* Copy the stack */
-	__super_cli();
-	engage_new_stack(new, parent);
+	cli();
+	int usr = engage_new_stack(new, parent);
 	/* Set the state as frozen temporarily, so that it doesn't accidentally run.
 	 * And then add it to the queue */
 	new->state = TASK_FROZEN;

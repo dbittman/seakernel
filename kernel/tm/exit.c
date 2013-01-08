@@ -164,10 +164,7 @@ void exit(int code)
 	while(ch)
 	{
 		if(ch->parent == t)
-		{
-			do_send_signal(ch->pid, SIGPARENT, 1);
 			ch->parent = 0;
-		}
 		if(ch->waiting == t)
 		{
 			do_send_signal(ch->pid, SIGWAIT, 1);

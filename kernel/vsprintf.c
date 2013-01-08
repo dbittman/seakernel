@@ -289,3 +289,4 @@ void printk(int l, const char *fmt, ...)
 	tty_write(0, printbuf, strlen(printbuf));
 	va_end(args);
 }
+#warning "make this so they dont touch locking"

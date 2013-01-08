@@ -18,7 +18,6 @@ char signal_return_injector[7] = {
 	0xCD,
 	0x80
 };
-
 #define SIGSTACK (STACK_LOCATION - (STACK_SIZE + PAGE_SIZE + 8))
 void handle_signal(task_t *t)
 {
@@ -28,8 +27,8 @@ void handle_signal(task_t *t)
 	t->sig_mask |= sa->sa_mask;
 	if(!(sa->sa_flags & SA_NODEFER))
 		t->sig_mask |= (1 << t->sigd);
-	if(sa->_sa_func._sa_handler && t->sigd != SIGKILL && t->sigd != SIGSEGV 
-			&& t->regs)
+	volatile registers_t *iret = t->regs;
+	if(sa->_sa_func._sa_handler && iret)
 	{
 		/* user-space signal handing design:
 		 * 
@@ -45,26 +44,28 @@ void handle_signal(task_t *t)
 		 * immediately goes back to the isr common handler to perform the iret
 		 * back to where we were executing before.
 		 */
-		memcpy((void *)&t->reg_b, (void *)t->regs, sizeof(registers_t));
-		volatile registers_t *iret = t->regs;
+		memcpy((void *)&t->reg_b, (void *)iret, sizeof(registers_t));
 		iret->useresp = SIGSTACK;
+		iret->useresp -= STACK_ELEMENT_SIZE;
 		/* push the argument (signal number) */
 		*(unsigned *)(iret->useresp) = t->sigd;
 		iret->useresp -= STACK_ELEMENT_SIZE;
 		/* push the return address */
 		*(unsigned *)(iret->useresp) = (unsigned)signal_return_injector;
 		iret->eip = (unsigned)sa->_sa_func._sa_handler;
-		t->sigd = 0;
+		t->cursig = t->sigd;
+		t->sigd=0;
+		t->flags |= TF_JUMPIN;
 	}
-	else if(!sa->_sa_func._sa_handler)
+	else if(!sa->_sa_func._sa_handler && !t->system)
 	{
 		/* Default Handlers */
 		switch(t->sigd)
 		{
-			case SIGHUP : case SIGKILL: case SIGQUIT: case SIGPIPE: case SIGBUS:
-			case SIGABRT: case SIGTRAP: case SIGSEGV: case SIGALRM: case SIGFPE:
-			case SIGILL : case SIGPAGE: case SIGINT : case SIGTERM: case SIGUSR1: 
-			case SIGUSR2:
+			case SIGHUP : case SIGKILL: case SIGQUIT: case SIGPIPE: 
+			case SIGBUS : case SIGABRT: case SIGTRAP: case SIGSEGV: 
+			case SIGALRM: case SIGFPE : case SIGILL : case SIGPAGE: 
+			case SIGINT : case SIGTERM: case SIGUSR1: case SIGUSR2:
 				t->exit_reason.cause=__EXITSIG;
 				t->exit_reason.sig=t->sigd;
 				kill_task(t->pid);
@@ -87,12 +88,13 @@ void handle_signal(task_t *t)
 		}
 		t->sig_mask = t->old_mask;
 		t->sigd = 0;
-		current_task->flags &= ~TF_INSIG;
+		t->flags &= ~TF_INSIG;
 		if(t == current_task)
-			schedule();
+			t->flags |= TF_SCHED;
 	} else {
 		t->sig_mask = t->old_mask;
-		current_task->flags &= ~TF_INSIG;
+		t->flags &= ~TF_INSIG;
+		t->flags |= TF_SCHED;
 	}
 }
 
@@ -113,6 +115,7 @@ int do_send_signal(int pid, int __sig, int p)
 		if(task->parent) task = task->parent;
 		task->wait_again=current_task->pid;
 	}
+	if(__sig > 32) return -EINVAL;
 	/* We may always signal ourselves */
 	if(task != current_task) {
 		if(!p && pid != 0 && (current_task->uid) && !current_task->system)

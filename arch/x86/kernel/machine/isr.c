@@ -126,19 +126,16 @@ void entry_syscall_handler(volatile registers_t regs)
 		memcpy((void *)&regs, (void *)&current_task->reg_b, sizeof(registers_t));
 		current_task->sig_mask = current_task->old_mask;
 		current_task->flags &= ~TF_INSIG;
+		current_task->flags &= ~TF_JUMPIN;
+		current_task->cursig=0;
 		return;
 	}
-	assert(!current_task->sysregs);
-	char clear_regs=0;
-	if(!current_task->regs) {
-		clear_regs=1;
-		current_task->regs = &regs;
-	}
+	assert(!current_task->sysregs && !current_task->regs);
+	current_task->regs = &regs;
 	current_task->sysregs = &regs;
 	syscall_handler(&regs);
 	current_task->sysregs=0;
-	if(clear_regs)
-		current_task->regs=0;
+	current_task->regs=0;
 }
 
 /* This gets called from our ASM interrupt handler stub. */

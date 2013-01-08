@@ -64,6 +64,7 @@ void print_pf(int x, registers_t *regs, unsigned cr2)
 #endif
 void page_fault(registers_t regs)
 {
+	current_task->regs=0;
 	uint32_t cr2, err_code = regs.err_code;
 	__asm__ volatile ("mov %%cr2, %0" : "=r" (cr2));
 #if CONFIG_SWAP

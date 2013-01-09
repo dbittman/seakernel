@@ -18,7 +18,10 @@ int init_ata_device()
 		return -1;
 	}
 	/* allow this device bus-mastering mode */
-	pci_write_dword(ata->bus, ata->dev, ata->func, 4, 7);
+	unsigned short cmd = ata->pcs->command | 4;
+	ata->pcs->command = cmd;
+	pci_write_dword(ata->bus, ata->dev, ata->func, 4, cmd);
+	
 	ata_pci = ata;
 	primary->port_bmr_base=bmr;
 	if(ata->pcs->bar0 == 0 || ata->pcs->bar0 == 1)

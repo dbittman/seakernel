@@ -48,7 +48,7 @@ typedef struct console_driver_s console_driver_t;
 extern vterm_t consoles[];
 
 extern vterm_t *curcons, *kernel_console, *log_console;
-
+void console_puts(vterm_t *c, char *s);
 void set_text_mode();
 int tty_write(int min, char *buf, size_t len);
 int tty_read(int min, char *buf, size_t len);
@@ -65,7 +65,7 @@ int serial_rw(int, int, char *, size_t);
 int tty_ioctl(int min, int cmd, int arg);
 int ttyx_ioctl(int min, int cmd, int arg);
 void puts(char *s);
-void tty_init(vterm_t **, vterm_t **);
+void tty_init(vterm_t **);
 void create_console(vterm_t *con);
 void destroy_console(vterm_t *con);
 void init_console(vterm_t *con, console_driver_t *driver);

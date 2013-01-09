@@ -401,7 +401,7 @@ int tty_select(int min, int rw)
 	return ttyx_select(min=current_task->tty, rw);
 }
 
-void tty_init(vterm_t **k, vterm_t **l)
+void tty_init(vterm_t **k)
 {
 	int i;
 	assert(MAX_CONSOLES > 9);
@@ -411,7 +411,6 @@ void tty_init(vterm_t **k, vterm_t **l)
 		consoles[i].tty=i;
 	}
 	*k = &consoles[0];
-	*l = &consoles[9];
 }
 
 void console_init_stage2()
@@ -424,4 +423,5 @@ void console_init_stage2()
 	consoles[1].x=consoles[0].x;
 	consoles[1].y=consoles[0].y;
 	switch_console(&consoles[1]);
+	log_console = &consoles[9];
 }

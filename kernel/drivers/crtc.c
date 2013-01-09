@@ -46,8 +46,6 @@ void crtc_console_put(vterm_t *con, char c)
 {
 	if(!con || con == kernel_console)
 		con=curcons;
-	task_critical();
-	super_cli();
 	if(c == 0x08) {
 		if(con->x)
 			con->x--;
@@ -72,8 +70,6 @@ void crtc_console_put(vterm_t *con, char c)
 		if(con->y >= con->scrollb && con->rend.scroll)
 			crtc_scrolldown(con);
 	}
-	super_sti();
-	task_uncritical();
 }
 
 void crtc_putchar(char *mem, char c, char attr, int x, int y, int w)

@@ -244,27 +244,22 @@ int vsprintf(char *buf, const char *fmt, va_list args)
 int sprintf(char *buf, const char *fmt, ...)
 { 
 	va_list args;
-	int i=0;
 	va_start(args, fmt);
 	vsprintf(buf, fmt, args);
-	i=0;
 	va_end(args);
-	return i;
+	return strlen(buf);
 }
 
 /* This WILL print to the screen */
-int kprintf(const char *fmt, ...)
+void kprintf(const char *fmt, ...)
 {
 	char printbuf[2024];
 	va_list args;
-	int i=0;
 	va_start(args, fmt);
 	vsprintf(printbuf, fmt, args);
-	i=0;
-	tty_write(0, printbuf, strlen(printbuf));
+	puts(printbuf);
 	serial_puts(0, printbuf);
 	va_end(args);
-	return i;
 }
 
 /* Will print to screen only if the printlevel is above the log-level */
@@ -275,18 +270,11 @@ void printk(int l, const char *fmt, ...)
 	int i=0;
 	va_start(args, fmt);
 	vsprintf(printbuf, fmt, args);
-	if(l >= LOGL_SERIAL) {
+	if(l >= LOGL_SERIAL)
 		serial_puts(0, printbuf);
-		
-	}
-	if(l >= LOGL_LOGTTY)
-		tty_write(9, printbuf, strlen(printbuf));
-	if(l < PRINT_LEVEL) {
-		va_end(args);
-		return;
-	}
-	i=0;
-	tty_write(0, printbuf, strlen(printbuf));
+	if(l >= LOGL_LOGTTY && log_console)
+		console_puts(log_console, printbuf);
+	if(l >= PRINT_LEVEL)
+		puts(printbuf);
 	va_end(args);
 }
-#warning "make this so they dont touch locking"

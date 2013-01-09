@@ -6,13 +6,21 @@
 #include <mutex.h>
 extern void update_cursor(int);
 vterm_t *curcons=0;
-vterm_t *kernel_console, *log_console;
+vterm_t *kernel_console, *log_console=0;
 extern console_driver_t crtc_drv;
 /* Simple way to display messages before tty and vsprintf get working */
+void console_puts(vterm_t *c, char *s)
+{
+	while(s && *s && c) {
+		c->rend.putch(c, *s);
+		if(*(s++) == '\n')
+			c->rend.putch(c, '\r');
+	}
+}
+
 void puts(char *s)
 {
-	while(s && *s)
-		kernel_console->rend.putch(kernel_console, *(s++));
+	console_puts(kernel_console, s);
 }
 
 void destroy_console(vterm_t *con)
@@ -61,7 +69,7 @@ void switch_console(vterm_t *new)
 
 void console_init_stage1()
 {
-	tty_init(&kernel_console, &log_console);
+	tty_init(&kernel_console);
 	create_console(kernel_console);
 	kernel_console->vmem=kernel_console->cur_mem
 						=kernel_console->video=(char *)VIDEO_MEMORY;

@@ -57,11 +57,7 @@ void print_pf(int x, registers_t *regs, unsigned cr2)
 		printk(x, ", in syscall %d", current_task->system);
 	printk(x, "\n");
 }
-#if DEBUG
-#define dont_panic 0
-#else
-#define dont_panic 1
-#endif
+
 void page_fault(registers_t regs)
 {
 	current_task->regs=0;
@@ -76,16 +72,13 @@ void page_fault(registers_t regs)
 		return;
 	}
 #endif
-	
 	if(pfault_mmf_check(err_code, cr2))
 		return;
-	
 	if(map_in_page(cr2, err_code))
 		return;
-	__super_cli();
-	if(USER_TASK || dont_panic)
+	if(USER_TASK)
 	{
-		printk(!(dont_panic) ? 5 : 0, "[pf]: Invalid Memory Access in task %d: eip=%x addr=%x flags=%x\n", 
+		printk(0, "[pf]: Invalid Memory Access in task %d: eip=%x addr=%x flags=%x\n", 
 			current_task->pid, regs.eip, cr2, err_code);
 		print_pf(0, &regs, cr2);
 		kprintf("[pf]: Segmentation Fault\n");
@@ -100,11 +93,10 @@ void page_fault(registers_t regs)
 		if(kernel_task)
 		{
 			/* Page fault while panicing */
-			super_cli();
+			cli();
 			for(;;) asm("nop");
 		}
 		panic(PANIC_MEM | PANIC_NOSYNC, "Early Page Fault");
 	}
-	
 	panic(PANIC_MEM | PANIC_NOSYNC, "Page Fault");
 }

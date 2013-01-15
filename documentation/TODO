@@ -32,8 +32,6 @@ Roadmap:
 	
 	* redesign locking (add r/w locks)
 	* add atomic operations, and implement accordingly
-	
-	* make page fault simply set a flag in the pager task to handle errors
 
 0.2 B3
 	* new random driver

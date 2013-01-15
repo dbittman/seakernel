@@ -14,6 +14,7 @@ export LD
 export AR
 CFLAGS_NOARCH = -O3 -g -std=c99 -nostdlib -nostdinc \
 		 -fno-builtin -ffreestanding \
+		 -Iarch/${ARCH}/include \
          -I../include -Iinclude -I ../../include -I ../../../include \
          -D__KERNEL__ -D__DEBUG__ \
          -Wall -Wextra -Wformat-security -Wformat-nonliteral \

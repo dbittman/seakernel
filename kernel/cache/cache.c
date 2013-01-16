@@ -47,7 +47,6 @@ void remove_dlist(cache_t *c, struct ce_t *e)
 
 int set_dirty(cache_t *c, struct ce_t *e, int dirty)
 {
-	mutex_on(&c->dlock);
 	int old = e->dirty;
 	e->dirty=dirty;
 	if(dirty)
@@ -64,7 +63,6 @@ int set_dirty(cache_t *c, struct ce_t *e, int dirty)
 			remove_dlist(c, e);
 		}
 	}
-	mutex_off(&c->dlock);
 	return old;
 }
 
@@ -74,8 +72,7 @@ cache_t *get_empty_cache(int (*sync)(struct ce_t *), char *name)
 	c->sync = sync;
 	c->syncing=0;
 	c->dirty=0;
-	create_mutex(&c->lock);
-	create_mutex(&c->dlock);
+	c->rwl = rwlock_create(0);
 	c->count=0;
 	c->slow=1000;
 	c->hash = chash_create(100000);
@@ -94,7 +91,7 @@ cache_t *get_empty_cache(int (*sync)(struct ce_t *), char *name)
 int cache_add_element(cache_t *c, struct ce_t *obj, int locked)
 {
 	accessed_cache(c);
-	if(!locked) mutex_on(&c->lock);
+	if(!locked) rwlock_acquire(c->rwl, RWL_WRITER);
 	
 	chash_add(c->hash, obj->id, obj->key, obj);
 	
@@ -105,51 +102,54 @@ int cache_add_element(cache_t *c, struct ce_t *obj, int locked)
 	obj->prev = 0;
 	c->count++;
 	obj->acount=1;
-	if(!locked) mutex_off(&c->lock);
+	if(!locked) rwlock_release(c->rwl, RWL_WRITER);
 	return 0;
 }
 
 struct ce_t *find_cache_element(cache_t *c, u64 id, u64 key)
 {
 	accessed_cache(c);
-	mutex_on(&c->lock);
-	struct ce_t *ret = chash_search(c->hash, id, key);
-	mutex_off(&c->lock);
+	rwlock_acquire(c->rwl, RWL_READER);
+	struct ce_t *ret = c->hash ? chash_search(c->hash, id, key) : 0;
+	rwlock_release(c->rwl, RWL_READER);
 	return ret;
 }
 
 int do_cache_object(cache_t *c, u64 id, u64 key, int sz, char *buf, int dirty)
 {
 	accessed_cache(c);
-	mutex_on(&c->lock);
+	rwlock_acquire(c->rwl, RWL_READER);
 	struct ce_t *obj = chash_search(c->hash, id, key);
 	if(obj)
 	{
+		rwlock_escalate(c->rwl, RWL_WRITER);
 		memcpy(obj->data, buf, obj->length);
 		set_dirty(c, obj, dirty);
-		mutex_off(&c->lock);
+		rwlock_release(c->rwl, RWL_WRITER);
 		return 0;
 	}
 	obj = (struct ce_t *)kmalloc(sizeof(struct ce_t));
 	obj->data = (char *)kmalloc(sz);
 	obj->length = sz;
+	obj->rwl = rwlock_create(0);
 	memcpy(obj->data, buf, sz);
-	set_dirty(c, obj, dirty);
 	obj->key = key;
 	obj->id = id;
+	rwlock_escalate(c->rwl, RWL_WRITER);
+	set_dirty(c, obj, dirty);
 	cache_add_element(c, obj, 1);
-	mutex_off(&c->lock);
+	rwlock_release(c->rwl, RWL_WRITER);
 	return 0;
 }
 
 /* WARNING: This does not sync!!! */
-void remove_element(cache_t *c, struct ce_t *o)
+void remove_element(cache_t *c, struct ce_t *o, int locked)
 {
 	if(!o) return;
 	if(o->dirty)
 		panic(PANIC_NOSYNC, "tried to remove non-sync'd element");
 	
-	mutex_on(&c->lock);
+	if(!locked) rwlock_acquire(c->rwl, RWL_WRITER);
 	if(o->dirty)
 		set_dirty(c, o, 0);
 	assert(c->count);
@@ -163,36 +163,30 @@ void remove_element(cache_t *c, struct ce_t *o)
 		o->next->prev = o->prev;
 	else
 		c->tail = o->prev;
-	chash_delete(c->hash, o->id, o->key);
+	if(c->hash) chash_delete(c->hash, o->id, o->key);
 	if(o->data)
 		kfree(o->data);
+	rwlock_destroy(o->rwl);
 	kfree(o);
-	mutex_off(&c->lock);
+	if(!locked) rwlock_release(c->rwl, RWL_WRITER);
 }
 
-void remove_element_byid(cache_t *c, u64 id, u64 key)
+int do_sync_element(cache_t *c, struct ce_t *e, int locked)
 {
-	mutex_on(&c->lock);
-	struct ce_t *o = find_cache_element(c, id, key);
-	remove_element(c, o);
-	mutex_off(&c->lock);
-}
-
-void try_remove_element(cache_t *c, struct ce_t* o)
-{
-	if(o->dirty) return;
-	mutex_on(&c->lock);
-	remove_element(c, o);
-	mutex_off(&c->lock);
+	int ret=0;
+	rwlock_acquire(e->rwl, RWL_READER);
+	if(c->sync)
+		ret = c->sync(e);
+	if(!locked) rwlock_acquire(c->rwl, RWL_WRITER);
+	set_dirty(c, e, 0);
+	rwlock_release(e->rwl, RWL_READER);
+	if(!locked) rwlock_release(c->rwl, RWL_WRITER);
+	return ret;
 }
 
 int sync_element(cache_t *c, struct ce_t *e)
 {
-	int ret=0;
-	if(c->sync)
-		ret = c->sync(e);
-	set_dirty(c, e, 0);
-	return ret;
+	return do_sync_element(c, e, 0);
 }
 
 void sync_cache(cache_t *c)
@@ -207,13 +201,10 @@ void sync_cache(cache_t *c)
 	while(1)
 	{
 		if(!c->dlist) break;
-		
-		mutex_on(&c->lock);
-		mutex_on(&c->dlock);
+		rwlock_acquire(c->rwl, RWL_WRITER);
 		obj = c->dlist;
 		if(!obj) {
-			mutex_off(&c->dlock);
-			mutex_off(&c->lock);
+			rwlock_release(c->rwl, RWL_WRITER);
 			c->syncing=0;
 			break;
 		}
@@ -223,9 +214,8 @@ void sync_cache(cache_t *c)
 		printk(shutting_down ? 4 : 0, "\r[cache]: Syncing '%s': %d/%d (%d.%d%%)...   "
 				,c->name, i, num, (i*100)/num, ((i*1000)/num) % 10);
 		
-		sync_element(c, obj);
-		mutex_off(&c->dlock);
-		mutex_off(&c->lock);
+		do_sync_element(c, obj, 1);
+		rwlock_release(c->rwl, RWL_WRITER);
 		
 		if(got_signal(current_task)) {
 			return;
@@ -241,17 +231,17 @@ void sync_cache(cache_t *c)
 
 int destroy_all_id(cache_t *c, u64 id)
 {
-	mutex_on(&c->lock);
+	rwlock_acquire(c->rwl, RWL_WRITER);
 	struct ce_t *o = c->list;
 	while(o) {
 		if(o->id == id) {
 			if(o->dirty)
-				sync_element(c, o);
-			remove_element(c, o);
+				do_sync_element(c, o, 1);
+			remove_element(c, o, 1);
 		}
 		o=o->next;
 	}
-	mutex_off(&c->lock);
+	rwlock_release(c->rwl, RWL_WRITER);
 	return 0;
 }
 
@@ -259,15 +249,12 @@ int destroy_cache(cache_t *c)
 {
 	/* Sync with forced removal */
 	printk(1, "[cache]: Destroying cache '%s'...\n", c->name);
+	chash_t *h = c->hash;
+	c->hash = 0;
 	sync_cache(c);
 	/* Destroy the tree */
-	mutex_on(&c->lock);
-	
-	chash_destroy(c->hash);
-	
-	mutex_off(&c->lock);
-	destroy_mutex(&c->lock);
-	destroy_mutex(&c->dlock);
+	chash_destroy(h);
+	rwlock_destroy(c->rwl);
 	mutex_on(&cl_mutex);
 	if(c->prev)
 		c->prev->next = c->next;

@@ -43,6 +43,7 @@ Roadmap:
 	* system call conditions (like iptables)
 	* user-space io port access
 	* SA_RESTART
+	* better cache destroy
 0.2 RC1
 	* All ported software works properly
 	* documentation

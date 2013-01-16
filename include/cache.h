@@ -1,6 +1,8 @@
 #ifndef CACHE_H
 #define CACHE_H
 
+#include <rwlock.h>
+
 typedef struct chash_chain_s {
 	void *ptr;
 	u64 id, key;
@@ -20,6 +22,7 @@ struct ce_t {
 	unsigned atime;
 	unsigned acount;
 	dev_t dev;
+	rwlock_t *rwl;
 	struct ce_t *next_dirty, *next;
 	struct ce_t *prev_dirty, *prev;
 };
@@ -29,7 +32,7 @@ typedef struct cache_t_s {
 	unsigned count, acc, slow, syncing;
 	chash_t *hash;
 	int (*sync)(struct ce_t *);
-	mutex_t lock, dlock;
+	rwlock_t *rwl;
 	char name[32];
 	struct ce_t *dlist, *list, *tail;
 	struct cache_t_s *next, *prev;
@@ -52,7 +55,7 @@ struct ce_t *find_cache_element(cache_t *, u64 id, u64 key);
 void sync_cache(cache_t *);
 int destroy_cache(cache_t *);
 int sync_element(cache_t *, struct ce_t *e);
-void remove_element(cache_t *, struct ce_t *o);
+void remove_element(cache_t *, struct ce_t *o, int);
 void do_sync_of_mounted();
 int kernel_cache_sync();
 void sync_dm();

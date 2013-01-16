@@ -15,6 +15,7 @@ typedef volatile struct {
 rwlock_t *rwlock_create(rwlock_t *lock);
 void rwlock_destroy(rwlock_t *lock);
 void rwlock_acquire(rwlock_t *lock, unsigned flags);
+void rwlock_escalate(rwlock_t *lock, unsigned flags);
 void rwlock_release(rwlock_t *lock, unsigned flags);
 
 #endif

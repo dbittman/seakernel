@@ -43,6 +43,37 @@ void rwlock_acquire(rwlock_t *lock, unsigned flags)
 	}
 }
 
+void rwlock_escalate(rwlock_t *lock, unsigned flags)
+{
+	assert(lock->magic == RWLOCK_MAGIC);
+	assert(lock->locks);
+	if(lock->locks == 1 && (flags & RWL_READER)) {
+		/* change from a writer lock to a reader lock. This is easy. */
+		add_atomic(&lock->locks, 2);
+		/* and now reset the write_lock */
+		btr_atomic(&lock->locks, 0);
+	} else if(lock->locks % 2 == 0 && (flags & RWL_WRITER)) {
+		/* change from a reader to a writer. This is, of course,
+		 * less simple. We must wait until we are the only reader, and
+		 * then attempt a switch */
+		while(1) {
+			while(lock->locks != 2) schedule();
+			/* now, spinlock-acquire the write_lock bit */
+			while(bts_atomic(&lock->locks, 0))
+				schedule();
+			if(lock->locks == 3)
+			{
+				/* remove our read lock */
+				sub_atomic(&lock->locks, 2);
+				break;
+			}
+			/* failed to grab the write_lock bit before a task
+			 * added itself */
+			btr_atomic(&lock->locks, 0);
+		}
+	}
+}
+
 void rwlock_release(rwlock_t *lock, unsigned flags)
 {
 	assert(lock->magic == RWLOCK_MAGIC);

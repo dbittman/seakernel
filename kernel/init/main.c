@@ -114,7 +114,6 @@ void kmain(struct multiboot *mboot_header, u32int initial_stack)
 	puts(ver);
 	puts(" Booting Up ~\n\r");
 	
-	init_cache();
 #if CONFIG_MODULES
 	init_module_system();
 #endif
@@ -130,6 +129,7 @@ void kmain(struct multiboot *mboot_header, u32int initial_stack)
 	console_init_stage2();
 	parse_kernel_cmd((char *)mboot_header->cmdline);
 	init_multitasking();
+	init_cache();
 	init_dm();
 	init_vfs();
 	/* Load the rest... */

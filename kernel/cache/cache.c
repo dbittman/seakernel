@@ -6,8 +6,8 @@
 #include <kernel.h>
 #include <cache.h>
 #include <task.h>
-mutex_t cl_mutex;
-cache_t *cache_list=0;
+#include <ll.h>
+struct llist *cache_list;
 void accessed_cache(cache_t *c)
 {
 	c->slow=100;
@@ -16,7 +16,7 @@ void accessed_cache(cache_t *c)
 
 int init_cache()
 {
-	create_mutex(&cl_mutex);
+	cache_list = ll_create(0);
 	return 0;
 }
 
@@ -78,11 +78,7 @@ cache_t *get_empty_cache(int (*sync)(struct ce_t *), char *name)
 	c->hash = chash_create(100000);
 	strncpy(c->name, name, 32);
 	
-	mutex_on(&cl_mutex);
-	c->next = cache_list;
-	if(cache_list) cache_list->prev = c;
-	cache_list = c;
-	mutex_off(&cl_mutex);
+	ll_insert(cache_list, c);
 	
 	printk(0, "[cache]: Allocated new cache '%s'\n", name);
 	return c;
@@ -255,24 +251,31 @@ int destroy_cache(cache_t *c)
 	/* Destroy the tree */
 	chash_destroy(h);
 	rwlock_destroy(c->rwl);
-	mutex_on(&cl_mutex);
-	if(c->prev)
-		c->prev->next = c->next;
-	else
-		cache_list = c->next;
-	if(c->next) 
-		c->next->prev = c->prev;
-	mutex_off(&cl_mutex);
+	struct llistnode *cur, *next;
+	cache_t *ent;
+	mutex_on(&cache_list->lock);
+	ll_for_each_entry_safe(cache_list, cur, next, cache_t *, ent)
+	{
+		if(ent == c) {
+			ll_remove(cache_list, cur);
+			break;
+		}
+		ll_maybe_reset_loop(cache_list, cur, next);
+	}
+	mutex_off(&cache_list->lock);
 	printk(1, "[cache]: Cache '%s' destroyed\n", c->name);
 	return 1;
 }
 
 int kernel_cache_sync()
 {
-	cache_t *c = cache_list;
-	while(c) {
-		sync_cache(c);
-		c=c->next;
+	struct llistnode *cur;
+	cache_t *ent;
+	mutex_on(&cache_list->lock);
+	ll_for_each_entry(cache_list, cur, cache_t *, ent)
+	{
+		sync_cache(ent);
 	}
+	mutex_off(&cache_list->lock);
 	return 0;
 }

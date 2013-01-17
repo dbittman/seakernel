@@ -1,4 +1,4 @@
-# seaos kernel makefile 
+# seakernel makefile 
 ifneq ($(MAKECMDGOALS),config)
 ifneq ($(MAKECMDGOALS),defconfig)
 

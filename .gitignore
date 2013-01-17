@@ -1,0 +1,13 @@
+*.o
+*.m
+*.deps
+*.stage1
+*.a
+.config.cfg
+.config
+sea_defines.h
+sea_defines.inc
+*.img
+initrd.conf
+skernel
+tools/mkird

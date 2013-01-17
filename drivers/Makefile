@@ -53,7 +53,7 @@ all_s: make.deps $(MODULES)
 	for i in "$(SUBDIRS)"; do \
 		$(MAKE) -s -C $$i ;\
 	done
-
+	@-mkdir -p built
 	@-rm -rf built/*
 	@-for i in $(MODULES); do \
 		MOD=`basename $$i | sed -e "s@^\(.*\)\.m@\1@"` ; \

@@ -95,13 +95,12 @@ enum {
 	RTL_TXCFG_MDMA_2K = 0x700,  // 2K DMA Burst
 	RTL_TXCFG_RR_48 = 0x20,     // 48 (16 + 2 * 16) Tx Retry count
 };
-
+char rx_buf[0x2000 + 16];
 int rtl8139_init(rtl8139dev_t *dev)
 {
 	if(!rtl8139_reset(dev->addr))
 		return -1;
-	
-	dev->rec_buf = (char *)kmalloc(0x10000);
+	dev->rec_buf = rx_buf;
 	
 	outb(dev->addr+0x50, 0xC0);
 	
@@ -140,18 +139,19 @@ int rtl8139_init(rtl8139dev_t *dev)
 	outb(dev->addr+0x37, 0x08 | 0x04);
 	
 	// enable all good irqs
-	outw(dev->addr+0x3C, 0x3);
+	outw(dev->addr+0x3C, 15);
 	outw(dev->addr+0x3E, 0xffff);
 	return 0;
 }
 
-int recieve(rtl8139dev_t *dev)
+int recieve(rtl8139dev_t *dev, unsigned short data)
 {
 	printk(1, "[rtl]: TRACE: Recieve packet\n");
+	outw(dev->addr + 0x3E, data);
 	return 0;
 }
 
-int rtl8139_int(registers_t *regs)
+int rtl8139_int(registers_t regs)
 {
 	printk(1, "[rtl]: TRACE: Got irq\n");
 	while(1)
@@ -161,23 +161,31 @@ int rtl8139_int(registers_t *regs)
 			break;
 		if(data&0x01)
 		{
+			printk(0, "recieve %d...\n", regs.int_no);
 			rtl8139dev_t *t = (rtl8139dev_t *)cards;
 			while(t) {
-				if(t->inter == regs->int_no)
-					recieve(t);
+				if((t->inter+IRQ0) == regs.int_no)
+					recieve(t, data);
 				t=t->next;
 			}
+			break;
 		}
 		else if((data & 0x4) == 0) {
+			/* this isn't handled right, probably. Especially the IRQ
+			 * ACK */
 			printk(1, "[rtl]: Device error: %x\n", data);
 			rtl8139dev_t *t = (rtl8139dev_t *)cards;
 			while(t) {
-				if(t->inter == regs->int_no)
+				if((t->inter+IRQ0) == regs.int_no) {
+					outw(t->addr + 0x3E, 0x4);
 					rtl8139_reset(t->addr);
+				}
 				t=t->next;
 			}
+			break;
 		}
 	}
+	
 	return 0;
 }
 
@@ -191,23 +199,33 @@ int rtl8139_load_device_pci(struct pci_device *device)
 		return 1;
 	}
 	rtl8139dev_t *dev = create_new_device(addr, device);
+	//rtl8139dev_t *dev = cards = (void *)kmalloc(sizeof(rtl8139dev_t));
+	//dev->addr = addr;
+	//dev->device = device;
 	printk(1, "[rtl8139]: Initiating rtl8139 controller (%x.%x.%x)...\n", 
 		device->bus, device->dev, device->func);
 	if(rtl8139_init(dev))
 		ret++;
 	
 	if(ret){
+		delete_device(dev);
 		printk(1, "[rtl8139]: Device error when trying to initialize\n");
 		device->flags |= PCI_ERROR;
 		return -1;
 	}
+	
+	unsigned short cmd = device->pcs->command | 4;
+	device->pcs->command = cmd;
+	pci_write_dword(device->bus, device->dev, device->func, 4, cmd);
+	
 	struct inode *i = dfs_cn("rtl8139", S_IFCHR, rtl8139_maj, rtl8139_min++);
 	dev->node = i;
-	printk(1, "[rtl8139]: Success!\n");
 	device->flags |= PCI_ENGAGED;
 	device->flags |= PCI_DRIVEN;
 	dev->inter = device->pcs->interrupt_line;
-	register_interrupt_handler(dev->inter, (isr_t)&rtl8139_int);
+	register_interrupt_handler(dev->inter + IRQ0, (isr_t)&rtl8139_int);
+	printk(1, "[rtl8139]: registered interrupt line %d\n", dev->inter);
+	printk(1, "[rtl8139]: Success!\n");
 	return 0;
 }
 
@@ -239,6 +257,7 @@ int module_install()
 {
 	rtl8139_min=0;
 	cards=0;
+	kprintf("--> cards=%x\n", cards);
 	rtl8139_maj = set_availablecd(rtl8139_rw_main, ioctl_rtl8139, 0);
 	int i=0;
 	printk(1, "[rtl8139]: Scanning PCI bus...\n");

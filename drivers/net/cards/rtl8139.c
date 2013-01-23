@@ -3,6 +3,8 @@
 #include <pci.h>
 #include <mod.h>
 #include <char.h>
+#include <ll.h>
+
 int rtl8139_maj=-1, rtl8139_min=0;
 typedef struct rtl8139_dev_s
 {
@@ -11,33 +13,32 @@ typedef struct rtl8139_dev_s
 	struct inode *node;
 	
 	char *rec_buf;
-	
-	struct rtl8139_dev_s *next, *prev;
 } rtl8139dev_t;
-volatile rtl8139dev_t *cards;
+struct llist *rtl_cards;
 
 rtl8139dev_t *create_new_device(unsigned addr, struct pci_device *device)
 {
 	rtl8139dev_t *d = (rtl8139dev_t *)kmalloc(sizeof(rtl8139dev_t));
 	d->addr = addr;
 	d->device = device;
-	rtl8139dev_t *t = (rtl8139dev_t *)cards;
-	cards = d;
-	d->next = t;
-	if(t)
-		t->prev=d;
-	
+	ll_insert(rtl_cards, d);
 	return d;
 }
 
 void delete_device(rtl8139dev_t *d)
 {
-	if(d->prev)
-		d->prev->next = d->next;
-	if(d->next)
-		d->next->prev = d->prev;
-	if(d == cards)
-		cards = d->next;
+	struct llistnode *cur, *next;
+	rtl8139dev_t *ent;
+	mutex_on(&rtl_cards->lock);
+	ll_for_each_entry_safe(rtl_cards, cur, next, rtl8139dev_t *, ent)
+	{
+		if(ent == d) {
+			ll_remove(rtl_cards, cur);
+			break;
+		}
+		ll_maybe_reset_loop(rtl_cards, cur, next);
+	}
+	mutex_off(&rtl_cards->lock);
 	kfree(d->rec_buf);
 	kfree(d);
 }

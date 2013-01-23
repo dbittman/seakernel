@@ -13,6 +13,7 @@
 #include <cache.h>
 #include <cpu.h>
 #include <multiboot.h>
+#include <rwlock.h>
 
 kernel_symbol_t export_syms[MAX_SYMS];
 const char *elf_lookup_symbol (uint32_t addr, elf32_t *elf)
@@ -159,6 +160,11 @@ void init_kernel_symbols(void)
 	add_kernel_symbol(remove_kernel_symbol);
 	add_kernel_symbol(do_send_signal);
 	add_kernel_symbol(switch_console);
+	add_kernel_symbol(rwlock_acquire);
+	add_kernel_symbol(rwlock_release);
+	add_kernel_symbol(rwlock_escalate);
+	add_kernel_symbol(rwlock_create);
+	add_kernel_symbol(rwlock_destroy);
 }
 
 char *get_symbol_string(uint8_t *buf, uint32_t index)
@@ -199,7 +205,7 @@ void _add_kernel_symbol(const intptr_t func, const char * funcstr)
 			break;
 	}
 	if(i >= MAX_SYMS)
-		return;
+		panic(0, "ran out of space on symbol table");
 	export_syms[i].name = funcstr;
 	export_syms[i].ptr = func;
 }

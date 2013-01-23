@@ -70,6 +70,7 @@ void ata_irq_handler(registers_t regs)
 	struct ata_controller *cont = (regs.int_no == (32+ATA_PRIMARY_IRQ) ? primary : secondary);
 	char st = inb(cont->port_bmr_base + BMR_STATUS);
 	if(st & 0x4) {
+		//printk(0, "got irq: %d\n", regs.int_no);
 		cont->irqwait++;
 		ata_reg_inb(cont, REG_STATUS);
 		outb(cont->port_bmr_base + BMR_STATUS, 0x4);

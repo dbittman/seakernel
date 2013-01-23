@@ -221,7 +221,8 @@ int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int force)
 			}
 			cur = n;
 		}
-	} else if(error)
+	}
+	if(error)
 		return _MOD_FAIL;
 	mod->entry=module_entry;
 	mod->exiter=module_exiter;

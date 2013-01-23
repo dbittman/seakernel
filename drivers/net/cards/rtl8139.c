@@ -143,7 +143,6 @@ int rtl8139_int(registers_t regs)
 			break;
 		if(data&0x01)
 		{
-			printk(0, "recieve %d...\n", regs.int_no);
 			rtl8139dev_t *t=0;
 			struct llistnode *cur;
 			rwlock_acquire(&rtl_cards->rwl, RWL_READER);

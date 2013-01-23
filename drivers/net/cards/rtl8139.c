@@ -14,7 +14,6 @@ typedef struct rtl8139_dev_s
 	
 	struct rtl8139_dev_s *next, *prev;
 } rtl8139dev_t;
-
 volatile rtl8139dev_t *cards;
 
 rtl8139dev_t *create_new_device(unsigned addr, struct pci_device *device)

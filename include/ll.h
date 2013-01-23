@@ -1,6 +1,7 @@
 #ifndef K_LL_H
 #define K_LL_H
 #include <types.h>
+#include <rwlock.h>
 struct llistnode {
 	struct llistnode *next, *prev;
 	void *entry;
@@ -8,7 +9,7 @@ struct llistnode {
 
 struct llist {
 	struct llistnode *head;
-	mutex_t lock;
+	rwlock_t rwl;
 	char flags;
 };
 
@@ -37,6 +38,7 @@ struct llist {
 struct llist *ll_create(struct llist *list);
 void ll_destroy(struct llist *list);
 void ll_remove(struct llist *list, struct llistnode *node);
+void ll_remove_entry(struct llist *list, void *search);
 struct llistnode *ll_insert(struct llist *list, void *entry);
 struct llist *ll_create_lockless(struct llist *list);
 

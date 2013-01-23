@@ -16,7 +16,8 @@ struct llistnode *ll_insert(struct llist *list, void *entry)
 {
 	assert(list && ll_is_active(list));
 	struct llistnode *new = (struct llistnode *)kmalloc(sizeof(struct llistnode));
-	if(!(list->flags & LL_LOCKLESS)) mutex_on(&list->lock);
+	if(!(list->flags & LL_LOCKLESS)) 
+		rwlock_acquire(&list->rwl, RWL_WRITER);
 	struct llistnode *old = list->head;
 	list->head = new;
 	list->head->next = old ? old : list->head;
@@ -30,29 +31,54 @@ struct llistnode *ll_insert(struct llist *list, void *entry)
 	 * return statement, we don't want to return an incorrect pointer.
 	 * Thus, we backup the new pointer and return it. */
 	old = list->head;
-	if(!(list->flags & LL_LOCKLESS)) mutex_off(&list->lock);
+	if(!(list->flags & LL_LOCKLESS))
+		rwlock_release(&list->rwl, RWL_WRITER);
 	return old;
 }
 
-void ll_remove(struct llist *list, struct llistnode *node)
+void ll_do_remove(struct llist *list, struct llistnode *node, char locked)
 {
 	assert(list && node && ll_is_active(list));
-	if(!(list->flags & LL_LOCKLESS)) mutex_on(&list->lock);
+	if(!(list->flags & LL_LOCKLESS) && !locked)
+		rwlock_acquire(&list->rwl, RWL_WRITER);
 	if(list->head == node) {
 		/* Lets put the head at the next node, in case theres a search. */
 		list->head = node->next;
 		/* Now, is this the only node in the list? */
 		if(list->head == node) {
 			list->head = 0;
-			if(!(list->flags & LL_LOCKLESS)) mutex_off(&list->lock);
+			if(!(list->flags & LL_LOCKLESS) && !locked)
+				rwlock_release(&list->rwl, RWL_WRITER);
 			kfree(node);
 			return;
 		}
 	}
 	node->prev->next = node->next;
 	node->next->prev = node->prev;
-	if(!(list->flags & LL_LOCKLESS)) mutex_off(&list->lock);
+	if(!(list->flags & LL_LOCKLESS) && !locked)
+		rwlock_release(&list->rwl, RWL_WRITER);
 	kfree(node);
+}
+
+void ll_remove(struct llist *list, struct llistnode *node)
+{
+	ll_do_remove(list, node, 0);
+}
+
+void ll_remove_entry(struct llist *list, void *search)
+{
+	struct llistnode *cur, *next;
+	void *ent;
+	rwlock_acquire(&list->rwl, RWL_WRITER);
+	ll_for_each_entry_safe(list, cur, next, void *, ent)
+	{
+		if(ent == search) {
+			ll_do_remove(list, cur, 1);
+			break;
+		}
+		ll_maybe_reset_loop(list, cur, next);
+	}
+	rwlock_release(&list->rwl, RWL_WRITER);
 }
 
 /* should list be null, we allocate one for us and return it. */
@@ -63,7 +89,7 @@ struct llist *ll_create(struct llist *list)
 		list->flags |= LL_ALLOC;
 	} else
 		list->flags = 0;
-	create_mutex(&list->lock);
+	rwlock_create(&list->rwl);
 	list->head = 0;
 	list->flags |= LL_ACTIVE;
 	return list;
@@ -82,7 +108,7 @@ void ll_destroy(struct llist *list)
 	assert(list && !list->head);
 	if(!ll_is_active(list))
 		return;
-	destroy_mutex(&list->lock);
+	rwlock_destroy(&list->rwl);
 	list->flags &= ~LL_ACTIVE;
 	if(list->flags & LL_ALLOC)
 		kfree(list);

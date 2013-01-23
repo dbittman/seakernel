@@ -10,17 +10,17 @@ struct inode *get_sb_table(int _n)
 	int n=_n;
 	struct mountlst *m=0;
 	struct llistnode *cur;
-	mutex_on(&mountlist->lock);
+	rwlock_acquire(&mountlist->rwl, RWL_READER);
 	ll_for_each_entry(mountlist, cur, struct mountlst *, m)
 	{
 		if(!n) break;
 		n--;
 	}
 	if(cur == mountlist->head && _n) {
-		mutex_off(&mountlist->lock);
+		rwlock_release(&mountlist->rwl, RWL_READER);
 		return 0;
 	}
-	mutex_off(&mountlist->lock);
+	rwlock_release(&mountlist->rwl, RWL_READER);
 	if(n) return 0;
 	return m ? m->i : 0;
 }
@@ -29,12 +29,12 @@ struct mountlst *get_mount(struct inode *i)
 {
 	struct mountlst *m=0;
 	struct llistnode *cur;
-	mutex_on(&mountlist->lock);
+	rwlock_acquire(&mountlist->rwl, RWL_READER);
 	ll_for_each_entry(mountlist, cur, struct mountlst *, m)
 	{
 		if(m->i == i) break;
 	}
-	mutex_off(&mountlist->lock);
+	rwlock_release(&mountlist->rwl, RWL_READER);
 	return (m && (m->i == i)) ? m : 0;
 }
 
@@ -49,26 +49,26 @@ void unmount_all()
 {
 	struct mountlst *m;
 	struct llistnode *cur, *next;
-	mutex_on(&mountlist->lock);
+	rwlock_acquire(&mountlist->rwl, RWL_WRITER);
 	ll_for_each_entry_safe(mountlist, cur, next, struct mountlst *, m)
 	{
 		do_unmount(m->i->mount_parent, 1);
 		ll_maybe_reset_loop(mountlist, cur, next);
 		ll_remove(mountlist, cur);
 	}
-	mutex_off(&mountlist->lock);
+	rwlock_release(&mountlist->rwl, RWL_WRITER);
 }
 
 void do_sync_of_mounted()
 {
-	mutex_on(&mountlist->lock);
+	rwlock_acquire(&mountlist->rwl, RWL_READER);
 	struct mountlst *m;
 	struct llistnode *cur;
 	ll_for_each_entry(mountlist, cur, struct mountlst *, m)
 	{
 		vfs_callback_fssync(m->i);
 	}
-	mutex_off(&mountlist->lock);
+	rwlock_release(&mountlist->rwl, RWL_READER);
 }
 
 int register_sbt(char *name, int ver, int (*sbl)(dev_t,u64,char *))
@@ -85,16 +85,16 @@ struct inode *sb_callback(char *fsn, dev_t dev, u64 block, char *n)
 {
 	struct llistnode *cur;
 	struct sblktbl *s;
-	mutex_on(&sblist->lock);
+	rwlock_acquire(&sblist->rwl, RWL_READER);
 	ll_for_each_entry(sblist, cur, struct sblktbl *, s)
 	{
 		if(!strcmp(fsn, s->name))
 		{
-			mutex_off(&sblist->lock);
+			rwlock_release(&sblist->rwl, RWL_READER);
 			return s->sb_load(dev, block, n);
 		}
 	}
-	mutex_off(&sblist->lock);
+	rwlock_release(&sblist->rwl, RWL_READER);
 	return 0;
 }
 
@@ -102,16 +102,16 @@ struct inode *sb_check_all(dev_t dev, u64 block, char *n)
 {
 	struct llistnode *cur;
 	struct sblktbl *s;
-	mutex_on(&sblist->lock);
+	rwlock_acquire(&sblist->rwl, RWL_READER);
 	ll_for_each_entry(sblist, cur, struct sblktbl *, s)
 	{
 		struct inode *i = s->sb_load(dev, block, n);
 		if(i) {
-			mutex_off(&sblist->lock);
+			rwlock_release(&sblist->rwl, RWL_READER);
 			return i;
 		}
 	}
-	mutex_off(&sblist->lock);
+	rwlock_release(&sblist->rwl, RWL_READER);
 	return 0;
 }
 
@@ -119,17 +119,17 @@ int unregister_sbt(char *name)
 {
 	struct llistnode *cur;
 	struct sblktbl *s;
-	mutex_on(&sblist->lock);
+	rwlock_acquire(&sblist->rwl, RWL_WRITER);
 	ll_for_each_entry(sblist, cur, struct sblktbl *, s)
 	{
 		if(!strcmp(name, s->name))
 		{
 			ll_remove(sblist, s->node);
 			kfree(s);
-			mutex_off(&sblist->lock);
+			rwlock_release(&sblist->rwl, RWL_WRITER);
 			return 0;
 		}
 	}
-	mutex_off(&sblist->lock);
+	rwlock_release(&sblist->rwl, RWL_WRITER);
 	return -ENOENT;
 }

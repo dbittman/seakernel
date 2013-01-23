@@ -251,18 +251,7 @@ int destroy_cache(cache_t *c)
 	/* Destroy the tree */
 	chash_destroy(h);
 	rwlock_destroy(c->rwl);
-	struct llistnode *cur, *next;
-	cache_t *ent;
-	mutex_on(&cache_list->lock);
-	ll_for_each_entry_safe(cache_list, cur, next, cache_t *, ent)
-	{
-		if(ent == c) {
-			ll_remove(cache_list, cur);
-			break;
-		}
-		ll_maybe_reset_loop(cache_list, cur, next);
-	}
-	mutex_off(&cache_list->lock);
+	ll_remove_entry(cache_list, c);
 	printk(1, "[cache]: Cache '%s' destroyed\n", c->name);
 	return 1;
 }
@@ -271,11 +260,11 @@ int kernel_cache_sync()
 {
 	struct llistnode *cur;
 	cache_t *ent;
-	mutex_on(&cache_list->lock);
+	rwlock_acquire(&cache_list->rwl, RWL_READER);
 	ll_for_each_entry(cache_list, cur, cache_t *, ent)
 	{
 		sync_cache(ent);
 	}
-	mutex_off(&cache_list->lock);
+	rwlock_release(&cache_list->rwl, RWL_READER);
 	return 0;
 }

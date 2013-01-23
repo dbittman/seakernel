@@ -25,61 +25,43 @@ rtl8139dev_t *create_new_device(unsigned addr, struct pci_device *device)
 	return d;
 }
 
-void delete_device(rtl8139dev_t *d)
-{
-	struct llistnode *cur, *next;
-	rtl8139dev_t *ent;
-	mutex_on(&rtl_cards->lock);
-	ll_for_each_entry_safe(rtl_cards, cur, next, rtl8139dev_t *, ent)
-	{
-		if(ent == d) {
-			ll_remove(rtl_cards, cur);
-			break;
-		}
-		ll_maybe_reset_loop(rtl_cards, cur, next);
-	}
-	mutex_off(&rtl_cards->lock);
-	kfree(d->rec_buf);
-	kfree(d);
-}
-
 int rtl8139_reset(int base_addr)
 {
-        unsigned timeout=10;
-        char done=0;
-        while(1) {
-                outb(base_addr+0x50, inb(base_addr+0x50)|(0x03 << 6));
-                outb(base_addr+0x52, 0x00);
-                delay(10);
-                if(done)
-                        break;
-                outb(base_addr+0x37, 0x10);
-                while(--timeout){
-                        delay(10);
-                        if(!(inb(base_addr+0x37)&(1<<4)))
-                                break;
-                }
-                if(timeout < 1) {
-                        printk(KERN_WARN, "RTL8139: An error occured\n");
-                        return 0;
-                }
-                done++;
-        }
-        outw(base_addr+0x62, 0x3300);
-        if((inb(base_addr+0x52) & 0x04) == 0)
-                printk(KERN_WARN, "Warning - RTL8139: PIO not enabled\n");
-        timeout=10;
-        while(--timeout)
-        {
-                if((inw(base_addr+0x64) & 0x2C) == 0x2C)
-                        break;
-                delay(50);
-        }
-        if(timeout < 1) {
-                printk(KERN_WARN, "RTL8139: An error occured\n");
-                return 0;
-        }
-        return 1;
+	unsigned timeout=10;
+	char done=0;
+	while(1) {
+			outb(base_addr+0x50, inb(base_addr+0x50)|(0x03 << 6));
+			outb(base_addr+0x52, 0x00);
+			delay(10);
+			if(done)
+					break;
+			outb(base_addr+0x37, 0x10);
+			while(--timeout){
+					delay(10);
+					if(!(inb(base_addr+0x37)&(1<<4)))
+							break;
+			}
+			if(timeout < 1) {
+					printk(KERN_WARN, "RTL8139: An error occured\n");
+					return 0;
+			}
+			done++;
+	}
+	outw(base_addr+0x62, 0x3300);
+	if((inb(base_addr+0x52) & 0x04) == 0)
+			printk(KERN_WARN, "Warning - RTL8139: PIO not enabled\n");
+	timeout=10;
+	while(--timeout)
+	{
+			if((inw(base_addr+0x64) & 0x2C) == 0x2C)
+					break;
+			delay(50);
+	}
+	if(timeout < 1) {
+			printk(KERN_WARN, "RTL8139: An error occured\n");
+			return 0;
+	}
+	return 1;
 }
 
 enum {
@@ -162,26 +144,32 @@ int rtl8139_int(registers_t regs)
 		if(data&0x01)
 		{
 			printk(0, "recieve %d...\n", regs.int_no);
-			rtl8139dev_t *t = (rtl8139dev_t *)cards;
-			while(t) {
+			rtl8139dev_t *t=0;
+			struct llistnode *cur;
+			rwlock_acquire(&rtl_cards->rwl, RWL_READER);
+			ll_for_each_entry(rtl_cards, cur, rtl8139dev_t *, t);
+			{
 				if((t->inter+IRQ0) == regs.int_no)
 					recieve(t, data);
-				t=t->next;
 			}
+			rwlock_release(&rtl_cards->rwl, RWL_READER);
 			break;
 		}
 		else if((data & 0x4) == 0) {
 			/* this isn't handled right, probably. Especially the IRQ
 			 * ACK */
 			printk(1, "[rtl]: Device error: %x\n", data);
-			rtl8139dev_t *t = (rtl8139dev_t *)cards;
-			while(t) {
+			rtl8139dev_t *t=0;
+			struct llistnode *cur;
+			rwlock_acquire(&rtl_cards->rwl, RWL_READER);
+			ll_for_each_entry(rtl_cards, cur, rtl8139dev_t *, t);
+			{
 				if((t->inter+IRQ0) == regs.int_no) {
 					outw(t->addr + 0x3E, 0x4);
 					rtl8139_reset(t->addr);
 				}
-				t=t->next;
 			}
+			rwlock_release(&rtl_cards->rwl, RWL_READER);
 			break;
 		}
 	}
@@ -199,16 +187,15 @@ int rtl8139_load_device_pci(struct pci_device *device)
 		return 1;
 	}
 	rtl8139dev_t *dev = create_new_device(addr, device);
-	//rtl8139dev_t *dev = cards = (void *)kmalloc(sizeof(rtl8139dev_t));
-	//dev->addr = addr;
-	//dev->device = device;
 	printk(1, "[rtl8139]: Initiating rtl8139 controller (%x.%x.%x)...\n", 
 		device->bus, device->dev, device->func);
 	if(rtl8139_init(dev))
 		ret++;
 	
 	if(ret){
-		delete_device(dev);
+		kfree(dev->rec_buf);
+		ll_remove_entry(rtl_cards, dev);
+		kfree(dev);
 		printk(1, "[rtl8139]: Device error when trying to initialize\n");
 		device->flags |= PCI_ERROR;
 		return -1;
@@ -239,11 +226,10 @@ int rtl8139_unload_device_pci(rtl8139dev_t *dev)
 	device->flags &= ~PCI_DRIVEN;
 	iremove_force(dev->node);
 	unregister_interrupt_handler(dev->inter, (isr_t)&rtl8139_int);
-	delete_device(dev);
 	return 0;
 }
 
-int rtl8139_rw_main(int rw, int min, char *buf, int count)
+int rtl8139_rw_main(int rw, int min, char *buf, unsigned int count)
 {
 	return 0;
 }
@@ -256,8 +242,7 @@ int ioctl_rtl8139(int min, int cmd, int arg)
 int module_install()
 {
 	rtl8139_min=0;
-	cards=0;
-	kprintf("--> cards=%x\n", cards);
+	rtl_cards = ll_create(0);
 	rtl8139_maj = set_availablecd(rtl8139_rw_main, ioctl_rtl8139, 0);
 	int i=0;
 	printk(1, "[rtl8139]: Scanning PCI bus...\n");
@@ -280,8 +265,15 @@ int module_deps(char *b)
 int module_exit()
 {
 	printk(1, "[rtl8139]: Shutting down all cards...\n");
-	while(cards) /* this call updates 'cards' within it. */
-		rtl8139_unload_device_pci((rtl8139dev_t *)cards);
+	struct llistnode *cur;
+	rtl8139dev_t *ent;
+	ll_for_each_entry(rtl_cards, cur, rtl8139dev_t *, ent)
+	{
+		rtl8139_unload_device_pci(ent);
+		kfree(ent->rec_buf);
+		kfree(ent);
+	}
+	ll_destroy(rtl_cards);
 	unregister_char_device(rtl8139_maj);
 	return 0;
 }

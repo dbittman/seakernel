@@ -29,10 +29,10 @@ Roadmap:
 	* bugfixes
 	* remove all code thats not mine from the kernel
 	* really stabilize kernel
-	
+	* rewrite the module loader
 	* redesign locking (add r/w locks)
 	* add atomic operations, and implement accordingly
-
+	* ata bus=1
 0.2 B3
 	* new random driver
 	* add chaining to file descriptors (and modify the return value for the sysconf entry)

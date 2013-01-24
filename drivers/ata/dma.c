@@ -83,6 +83,7 @@ int ata_start_command(struct ata_controller *cont, struct ata_device *dev,
 int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw, 
 	u64 blk, unsigned char *buf, unsigned count)
 {
+	//pci_write_dword(ata_pci->bus, ata_pci->dev, ata_pci->func, 4, ata_pci->pcs->command);
 	unsigned size=512;
 	mutex_on(cont->wait);
 	
@@ -129,12 +130,13 @@ int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw,
 	while(ret && timeout--) {
 		if(cont->irqwait) break;
 		schedule();
-		st = inb(cont->port_bmr_base + BMR_STATUS);
-		if(st & BMR_STATUS_ERROR)
+		char wst = inb(cont->port_bmr_base + BMR_STATUS);
+		if(wst & BMR_STATUS_ERROR)
 			ret=0;
 		st = inb(cont->port_cmd_base+REG_STATUS);
-		if(st & STATUS_ERR)
+		if(st & STATUS_ERR || st & STATUS_DF)
 			ret=0;
+		//printk(0, "wait... %x %x\n", st, wst);
 	}
 	if(timeout <= 0) {
 		mutex_off(cont->wait);

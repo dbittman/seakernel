@@ -191,7 +191,7 @@ int module_install()
 		unregister_block_device(loop_maj);
 		return EINVAL;
 	}
-	create_mutex(&loop_mutex);
+	mutex_create(&loop_mutex);
 	dfs_cn("loop0", S_IFBLK, loop_maj, 0);
 	loop_devices=0;
 	add_loop_device(0);
@@ -205,7 +205,7 @@ int module_exit()
 	while(loop_devices)
 		remove_loop_device(loop_devices);
 	mutex_release(&loop_mutex);
-	destroy_mutex(&loop_mutex);
+	mutex_destroy(&loop_mutex);
 	return 0;
 }
 

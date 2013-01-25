@@ -42,7 +42,7 @@ int proc_set_callback(int major, int( *callback)(char rw, struct inode *inode,
 int pci_add_device(struct pci_device *dev)
 {
 	if(!dev) return 0;
-	mutex_on(pci_mutex);
+	mutex_acquire(pci_mutex);
 	struct pci_device *tmp = pci_list;
 	pci_list = dev;
 	dev->next = tmp;
@@ -57,7 +57,7 @@ int pci_add_device(struct pci_device *dev)
 void pci_remove_device(struct pci_device *dev)
 {
 	if(!dev) return;
-	mutex_on(pci_mutex);
+	mutex_acquire(pci_mutex);
 	if(dev->prev)
 		dev->prev->next = dev->next;
 	if(dev->next)
@@ -310,7 +310,7 @@ int pci_proc_call(char rw, struct inode *inode, int m, char *buf, int off, int l
 int module_install()
 {
 	pci_list=0;
-	pci_mutex = create_mutex(0);
+	pci_mutex = mutex_create(0);
 	proc_pci_maj = proc_get_major();
 	proc_pci=pfs_cn("pci", S_IFDIR, proc_pci_maj, 0);
 	proc_set_callback(proc_pci_maj, pci_proc_call);
@@ -337,7 +337,7 @@ int module_exit()
 	remove_kernel_symbol("pci_get_base_address");
 	remove_kernel_symbol("pci_read_dword");
 	remove_kernel_symbol("pci_write_dword");
-	destroy_mutex(pci_mutex);
+	mutex_destroy(pci_mutex);
 	return 0;
 }
 

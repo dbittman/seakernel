@@ -19,12 +19,12 @@ void remove_devices()
 
 int ata_disk_sync(struct ata_controller *cont)
 {
-	mutex_on(cont->wait);
+	mutex_acquire(cont->wait);
 	delay_sleep(100);
-	mutex_off(cont->wait);
+	mutex_release(cont->wait);
 	return 0;
 	printk(1, "[ata]: Syncing controller %d\n", cont->id);
-	mutex_on(cont->wait);
+	mutex_acquire(cont->wait);
 	outb(cont->port_cmd_base+REG_COMMAND, 0xEA);
 	int x = 30000;
 	while(--x)
@@ -34,7 +34,7 @@ int ata_disk_sync(struct ata_controller *cont)
 		{
 			printk(6, "[ata]: Disk Cache Flush command failed in controller %d\n", 
 				cont->id);
-			mutex_off(cont->wait);
+			mutex_release(cont->wait);
 			return -1;
 		}
 		if(!(poll & STATUS_BSY))
@@ -46,11 +46,11 @@ int ata_disk_sync(struct ata_controller *cont)
 	{
 		printk(6, "[ata]: Disk Cache Flush command timed out in controller %d\n", 
 			cont->id);
-		mutex_off(cont->wait);
+		mutex_release(cont->wait);
 		return -1;
 	}
 	delay_sleep(100);
-	mutex_off(cont->wait);
+	mutex_release(cont->wait);
 	return 0;
 }
 

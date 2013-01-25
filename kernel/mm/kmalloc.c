@@ -16,16 +16,16 @@ void install_kmalloc(char *name, unsigned (*init)(unsigned, unsigned),
 	strncpy(kmalloc_name, name, 128);
 	if(init)
 		init(KMALLOC_ADDR_START, KMALLOC_ADDR_END);
-	create_mutex(&km_m);
+	mutex_create(&km_m);
 }
 
 inline unsigned do_kmalloc(unsigned sz, char align)
 {
 	if(!do_kmalloc_wrap)
 		panic(PANIC_MEM | PANIC_NOSYNC, "No kernel-level allocator installed!");
-	mutex_on(&km_m);
+	mutex_acquire(&km_m);
 	unsigned ret = do_kmalloc_wrap(sz, align);
-	mutex_off(&km_m);
+	mutex_release(&km_m);
 	if(!ret || ret >= KMALLOC_ADDR_END || ret < KMALLOC_ADDR_START)
 		panic(PANIC_MEM | PANIC_NOSYNC, "kmalloc returned impossible address");
 	memset((void *)ret, 0, sz);
@@ -61,10 +61,10 @@ unsigned kmalloc_ap(unsigned s, unsigned *p)
 void kfree(void *pt)
 {
 	if(!pt) return;
-	mutex_on(&km_m);
+	mutex_acquire(&km_m);
 	if(do_kfree_wrap)
 		do_kfree_wrap(pt);
 	else
 		panic(PANIC_MEM | PANIC_NOSYNC, "No kfree installed!");
-	mutex_off(&km_m);
+	mutex_release(&km_m);
 }

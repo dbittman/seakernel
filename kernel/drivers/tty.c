@@ -91,12 +91,12 @@ __attribute__((optimize("O0"))) int tty_read(int min, char *buf, size_t len)
 		wait_flag_except((unsigned *)(&con->inpos), 0);
 		if(got_signal(current_task))
 			return -EINTR;
-		mutex_on(&con->inlock);
+		mutex_acquire(&con->inlock);
 		t=con->input[0];
 		con->inpos--;
 		if(con->inpos)
 			memmove(con->input, con->input+1, con->inpos+1);
-		mutex_off(&con->inlock);
+		mutex_release(&con->inlock);
 		if(con->rend.update_cursor)
 			con->rend.update_cursor(con);
 		if(t == '\b' && !cb && count)
@@ -133,12 +133,12 @@ int tty_write(int min, char *buf, size_t len)
 	if(!con->flag)
 		return -ENOENT;
 	size_t i=0;
-	mutex_on(&con->wlock);
+	mutex_acquire(&con->wlock);
 	/* putch handles printable characters and control characters. 
 	 * We handle escape codes */
 	while(i<len) {
 		if(got_signal(current_task)) {
-			mutex_off(&con->wlock);
+			mutex_release(&con->wlock);
 			return -EINTR;
 		}
 		if(*buf){
@@ -164,7 +164,7 @@ int tty_write(int min, char *buf, size_t len)
 	out:
 	if(con->rend.update_cursor)
 		con->rend.update_cursor(con);
-	mutex_off(&con->wlock);
+	mutex_release(&con->wlock);
 	return len;
 }
 
@@ -249,12 +249,12 @@ int ttyx_ioctl(int min, int cmd, int arg)
 				arg = '\n';
 			if(con->term.c_iflag & IGNCR && arg == '\r')
 				break;
-			mutex_on(&con->inlock);
+			mutex_acquire(&con->inlock);
 			if(con->inpos < 256) {
 				con->input[con->inpos] = (char)arg;
 				con->inpos++;
 			}
-			mutex_off(&con->inlock);
+			mutex_release(&con->inlock);
 			if(!(con->term.c_lflag & ECHO) && arg != '\b' && arg != '\n')
 				break;
 			if(!(con->term.c_lflag & ECHOE) && arg == '\b')

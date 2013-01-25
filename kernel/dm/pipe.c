@@ -8,7 +8,7 @@ pipe_t *create_pipe()
 	pipe_t *pipe = (pipe_t *)kmalloc(sizeof(pipe_t));
 	pipe->length = PIPE_SIZE;
 	pipe->buffer = (char *)kmalloc(PIPE_SIZE+1);
-	pipe->lock = create_mutex(0);
+	pipe->lock = mutex_create(0);
 	return pipe;
 }
 
@@ -23,7 +23,7 @@ static struct inode *create_anon_pipe()
 	node->mode = S_IFIFO | 0x1FF;
 	node->count=2;
 	node->f_count=2;
-	create_mutex(&node->lock);
+	mutex_create(&node->lock);
 	
 	pipe_t *pipe = create_pipe();
 	pipe->count=2;
@@ -60,7 +60,7 @@ void free_pipe(struct inode *i)
 {
 	if(!i || !i->pipe) return;
 	kfree((void *)i->pipe->buffer);
-	destroy_mutex(i->pipe->lock);
+	mutex_destroy(i->pipe->lock);
 	kfree(i->pipe);
 	i->pipe=0;
 }
@@ -79,14 +79,14 @@ __attribute__((optimize("O0"))) int read_pipe(struct inode *ino, char *buffer, s
 	if(!pipe->pending && pipe->count <= 1 && pipe->type != PIPE_NAMED)
 		return count;
 	/* block until we can get access */
-	mutex_on(pipe->lock);
+	mutex_acquire(pipe->lock);
 	while(!pipe->pending && (pipe->count > 1 && pipe->type != PIPE_NAMED 
 			&& pipe->wrcount>0)) {
-		mutex_off(pipe->lock);
+		mutex_release(pipe->lock);
 		force_schedule();
 		if(current_task->sigd)
 			return -EINTR;
-		mutex_on(pipe->lock);
+		mutex_acquire(pipe->lock);
 	}
 	ret = pipe->pending > len ? len : pipe->pending;
 	/* note: this is a quick implementation of line-buffering that should
@@ -105,7 +105,7 @@ __attribute__((optimize("O0"))) int read_pipe(struct inode *ino, char *buffer, s
 		len -= ret;
 		count+=ret;
 	}
-	mutex_off(pipe->lock);
+	mutex_release(pipe->lock);
 	return count;
 }
 
@@ -116,19 +116,19 @@ __attribute__((optimize("O0"))) int write_pipe(struct inode *ino, char *buffer, 
 	pipe_t *pipe = ino->pipe;
 	if(!pipe)
 		return -EINVAL;
-	mutex_on(pipe->lock);
+	mutex_acquire(pipe->lock);
 	/* we're writing to a pipe with no reading process! */
 	if(pipe->count <= 1 && pipe->type != PIPE_NAMED) {
-		mutex_off(pipe->lock);
+		mutex_release(pipe->lock);
 		return -EPIPE;
 	}
 	/* IO block until we can write to it */
 	while((pipe->write_pos+length)>=PIPE_SIZE) {
-		mutex_off(pipe->lock);
+		mutex_release(pipe->lock);
 		wait_flag_except((unsigned *)&pipe->write_pos, pipe->write_pos);
 		if(current_task->sigd)
 			return -EINTR;
-		mutex_on(pipe->lock);
+		mutex_acquire(pipe->lock);
 	}
 	
 	/* this shouldn't happen, but lets be safe */
@@ -136,14 +136,14 @@ __attribute__((optimize("O0"))) int write_pipe(struct inode *ino, char *buffer, 
 	{
 		printk(1, "[pipe]: warning - task %d failed to block for writing to pipe\n"
 			, current_task->pid);
-		mutex_off(pipe->lock);
+		mutex_release(pipe->lock);
 		return -EPIPE;
 	}
 	memcpy((void *)(pipe->buffer + pipe->write_pos), buffer, length);
 	pipe->length = ino->len;
 	pipe->write_pos += length;
 	pipe->pending += length;
-	mutex_off(pipe->lock);
+	mutex_release(pipe->lock);
 	return length;
 }
 

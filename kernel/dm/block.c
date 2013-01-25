@@ -22,7 +22,7 @@ blockdevice_t *set_blockdevice(int maj, int (*f)(int, int, u64, char*), int bs,
 	dev->ioctl=c;
 	dev->rw_multiple=m;
 	dev->select = s;
-	create_mutex(&dev->acl);
+	mutex_create(&dev->acl);
 	if(!c)
 		dev->ioctl=ioctl_stub;
 	dev->cache = BCACHE_WRITE | (CACHE_READ ? BCACHE_READ : 0);
@@ -34,7 +34,7 @@ int set_availablebd(int (*f)(int, int, u64, char*), int bs,
 	int (*c)(int, int, int), int (*m)(int, int, u64, char *, int), int (*s)(int, int))
 {
 	int i=10; /* first 10 devices are reserved by the system */
-	mutex_on(&bd_search_lock);
+	mutex_acquire(&bd_search_lock);
 	while(i>0) {
 		if(!get_device(DT_BLOCK, i))
 		{
@@ -43,7 +43,7 @@ int set_availablebd(int (*f)(int, int, u64, char*), int bs,
 		}
 		i++;
 	}
-	mutex_off(&bd_search_lock);
+	mutex_release(&bd_search_lock);
 	if(i < 0)
 		return -EINVAL;
 	return i;
@@ -55,22 +55,22 @@ void unregister_block_device(int n)
 	int i;
 	for(i=0;i<256;i++)
 		disconnect_block_cache(GETDEV(n, i));
-	mutex_on(&bd_search_lock);
+	mutex_acquire(&bd_search_lock);
 	device_t *dev = get_device(DT_BLOCK, n);
 	if(!dev) {
-		mutex_off(&bd_search_lock);
+		mutex_release(&bd_search_lock);
 		return;
 	}
 	void *fr = dev->ptr;
 	remove_device(DT_BLOCK, n);
-	mutex_off(&bd_search_lock);
-	destroy_mutex(&((blockdevice_t *)(dev->ptr))->acl);
+	mutex_release(&bd_search_lock);
+	mutex_destroy(&((blockdevice_t *)(dev->ptr))->acl);
 	kfree(fr);
 }
 
 void init_block_devs()
 {
-	create_mutex(&bd_search_lock);
+	mutex_create(&bd_search_lock);
 	block_cache_init();
 }
 
@@ -87,9 +87,9 @@ int do_block_rw(int rw, dev_t dev, u64 blk, char *buf, blockdevice_t *bd)
 	}
 	if(bd->rw)
 	{
-		mutex_on(&bd->acl);
+		mutex_acquire(&bd->acl);
 		int ret = (bd->rw)(rw, MINOR(dev), blk, buf);
-		mutex_off(&bd->acl);
+		mutex_release(&bd->acl);
 		return ret;
 	}
 	return -EIO;

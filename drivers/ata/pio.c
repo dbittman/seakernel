@@ -7,7 +7,7 @@ int ata_pio_rw(struct ata_controller *cont, struct ata_device *dev,
 	int rw, unsigned long long blk, unsigned char *buffer, unsigned count)
 {
 	mutex_t *lock = cont->wait;
-	mutex_on(lock);
+	mutex_acquire(lock);
 	unsigned long long addr = blk;
 	char cmd=0;
 	char lba48=0;
@@ -45,7 +45,7 @@ int ata_pio_rw(struct ata_controller *cont, struct ata_device *dev,
 	{
 		char poll = inb(cont->port_cmd_base+REG_STATUS);
 		if(poll & STATUS_ERR) {
-			mutex_off(lock);
+			mutex_release(lock);
 			return -EIO;
 		}
 		if(poll & STATUS_DRQ)
@@ -54,7 +54,7 @@ int ata_pio_rw(struct ata_controller *cont, struct ata_device *dev,
 		force_schedule();
 	}
 	if(!x) {
-		mutex_off(lock);
+		mutex_release(lock);
 		return -EIO;
 	}
 	unsigned idx;
@@ -75,6 +75,6 @@ int ata_pio_rw(struct ata_controller *cont, struct ata_device *dev,
 				((short)(cont->port_cmd_base+REG_DATA)), "a" ((short)tmpword));
 		}
 	}
-	mutex_off(lock);
+	mutex_release(lock);
 	return count*512;
 }

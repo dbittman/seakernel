@@ -12,17 +12,17 @@ mutex_t mod_mutex;
 
 int is_loaded(char *name)
 {
-	mutex_on(&mod_mutex);
+	mutex_acquire(&mod_mutex);
 	module_t *m = modules;
 	while(m) {
 		if(!strcmp(m->name, name))
 		{
-			mutex_off(&mod_mutex);
+			mutex_release(&mod_mutex);
 			return 1;
 		}
 		m=m->next;
 	}
-	mutex_off(&mod_mutex);
+	mutex_release(&mod_mutex);
 	return 0;
 }
 
@@ -83,11 +83,11 @@ int load_module(char *path, char *args, int flags)
 			return load_module(path, args, flags);
 		return -ENOEXEC;
 	}
-	mutex_on(&mod_mutex);
+	mutex_acquire(&mod_mutex);
 	module_t *old = modules;
 	modules = tmp;
 	tmp->next = old;
-	mutex_off(&mod_mutex);
+	mutex_release(&mod_mutex);
 	return ((int (*)(char *))tmp->entry)(args);
 }
 
@@ -131,7 +131,7 @@ module_t *canweunload(module_t *i)
 int do_unload_module(char *name, int flags)
 {
 	/* Is it going to work? */
-	mutex_on(&mod_mutex);
+	mutex_acquire(&mod_mutex);
 	module_t *mq = modules;
 	while(mq) {
 		if((!strcmp(mq->name, name) || !strcmp(mq->path, name)))
@@ -140,16 +140,16 @@ int do_unload_module(char *name, int flags)
 	}
 	
 	if(!mq) {
-		mutex_off(&mod_mutex);
+		mutex_release(&mod_mutex);
 		return -ENOENT;
 	}
 	/* Determine if are being depended upon or if we can unload */
 	module_t *mo;
 	if(!(flags & 1) && (mo = canweunload(mq))) {
-		mutex_off(&mod_mutex);
+		mutex_release(&mod_mutex);
 		return -EINVAL;
 	}
-	mutex_off(&mod_mutex);
+	mutex_release(&mod_mutex);
 	/* Call the unloader */
 	printk(KERN_INFO, "[mod]: Unloading Module '%s'\n", name);
 	int ret = 0;
@@ -157,7 +157,7 @@ int do_unload_module(char *name, int flags)
 		ret = ((int (*)())mq->exiter)();
 	/* Clear out the resources */
 	kfree(mq->base);
-	mutex_on(&mod_mutex);
+	mutex_acquire(&mod_mutex);
 	module_t *a = modules;
 	if(a == mq)
 		modules = mq->next;
@@ -167,7 +167,7 @@ int do_unload_module(char *name, int flags)
 		assert(a);
 		a->next = mq->next;
 	}
-	mutex_off(&mod_mutex);
+	mutex_release(&mod_mutex);
 	kfree(mq);
 	return ret;
 }
@@ -205,7 +205,7 @@ void unload_all_modules()
 
 void init_module_system()
 {
-	create_mutex(&mod_mutex);
+	mutex_create(&mod_mutex);
 	init_kernel_symbols();
 }
 

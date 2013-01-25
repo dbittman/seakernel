@@ -149,10 +149,11 @@ void init_kernel_symbols(void)
 	add_kernel_symbol(destroy_cache);
 	add_kernel_symbol(sync_cache);
 	
-	add_kernel_symbol(create_mutex);
-	add_kernel_symbol(__destroy_mutex);
-	add_kernel_symbol(__mutex_on);
-	add_kernel_symbol(__mutex_off);
+	add_kernel_symbol(mutex_create);
+	add_kernel_symbol(mutex_destroy);
+	add_kernel_symbol(mutex_release);
+	add_kernel_symbol(mutex_acquire);
+	
 	add_kernel_symbol(block_ioctl);
 	add_kernel_symbol(block_device_rw);
 	add_kernel_symbol(iput);

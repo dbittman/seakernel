@@ -46,13 +46,13 @@ int serial_rw(int rw, int min, char *b, size_t c)
 	int i=c;
 	if(rw == WRITE)
 	{
-		mutex_on(&serial_m);
+		mutex_acquire(&serial_m);
 		while(i)
 		{
 			write_serial(0x3f8, *(b++));
 			i--;
 		}
-		mutex_off(&serial_m);
+		mutex_release(&serial_m);
 		return c;
 	}
 	return 0;
@@ -60,7 +60,7 @@ int serial_rw(int rw, int min, char *b, size_t c)
 
 void init_serial()
 {
-	create_mutex(&serial_m);
+	mutex_create(&serial_m);
 	init_serial_port(0x3f8);
 	serial_initialized = 1;
 	serial_puts(0, "[kernel]: started debug serial output\n");

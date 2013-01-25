@@ -12,7 +12,7 @@ vnode_t *insert_vmem_area(vma_t *v, unsigned num_p)
 	assert(v && num_p);
 	if((num_p * PAGE_SIZE + v->addr+(v->num_ipages*PAGE_SIZE)) > v->max)
 		return 0;
-	mutex_on(&v->lock);
+	mutex_acquire(&v->lock);
 	vnode_t *n = (vnode_t *)v->first;
 	vnode_t *new=0;
 	if(!n)
@@ -32,7 +32,7 @@ vnode_t *insert_vmem_area(vma_t *v, unsigned num_p)
 		while(n && (addr_t)n < (v->addr + v->num_ipages*PAGE_SIZE))
 		{
 			if((n->addr + n->num_pages*PAGE_SIZE) + num_p*PAGE_SIZE >= v->max) {
-				mutex_off(&v->lock);
+				mutex_release(&v->lock);
 				return 0;
 			}
 			if(n->next)
@@ -47,7 +47,7 @@ vnode_t *insert_vmem_area(vma_t *v, unsigned num_p)
 				/* Do we have room for one more? */
 				if((((addr_t)n + sizeof(vnode_t)) > 
 						(v->addr+v->num_ipages*PAGE_SIZE))) {
-					mutex_off(&v->lock);
+					mutex_release(&v->lock);
 					return 0;
 				}
 				break;
@@ -55,7 +55,7 @@ vnode_t *insert_vmem_area(vma_t *v, unsigned num_p)
 			n=n->next;
 		}
 		if((addr_t)n >= (v->addr + v->num_ipages*PAGE_SIZE)) {
-			mutex_off(&v->lock);
+			mutex_release(&v->lock);
 			return 0;
 		}
 		/* n is the node to insert after. */
@@ -74,13 +74,13 @@ vnode_t *insert_vmem_area(vma_t *v, unsigned num_p)
 		assert(n->num_pages * PAGE_SIZE + n->addr <= n->next->addr);
 	}
 	v->used_nodes++;
-	mutex_off(&v->lock);
+	mutex_release(&v->lock);
 	return new;
 }
 
 int remove_vmem_area(vma_t *v, vnode_t *n)
 {
-	mutex_on(&v->lock);
+	mutex_acquire(&v->lock);
 	if(n == v->first)
 		v->first = n->next;
 	else
@@ -92,7 +92,7 @@ int remove_vmem_area(vma_t *v, vnode_t *n)
 	}
 	n->next=0;
 	v->used_nodes--;
-	mutex_off(&v->lock);
+	mutex_release(&v->lock);
 	return 0;
 }
 
@@ -100,14 +100,14 @@ vnode_t *find_vmem_area(vma_t *v, addr_t addr)
 {
 	if(!v)
 		return 0;
-	mutex_on(&v->lock);
+	mutex_acquire(&v->lock);
 	vnode_t *t = v->first;
 	while(t) {
 		if(addr >= t->addr && addr < (t->addr + t->num_pages*PAGE_SIZE))
 			break;
 		t=t->next;
 	}
-	mutex_off(&v->lock);
+	mutex_release(&v->lock);
 	return t;
 }
 
@@ -118,6 +118,6 @@ int init_vmem_area(vma_t *v, addr_t addr, unsigned max, int num_ipages)
 	v->num_ipages=num_ipages;
 	v->max = max;
 	v->used_nodes=0;
-	create_mutex(&v->lock);
+	mutex_create(&v->lock);
 	return 0;
 }

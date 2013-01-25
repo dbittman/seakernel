@@ -49,7 +49,7 @@ int pci_add_device(struct pci_device *dev)
 	if(tmp)
 		tmp->prev=dev;
 	dev->prev=0;
-	mutex_off(pci_mutex);
+	mutex_release(pci_mutex);
 	return 1;
 }
 
@@ -67,7 +67,7 @@ void pci_remove_device(struct pci_device *dev)
 	kfree(dev->pcs);
 	iremove_force(dev->node);
 	kfree(dev);
-	mutex_off(pci_mutex);
+	mutex_release(pci_mutex);
 }
 
 /* Deletes the entire linked list */

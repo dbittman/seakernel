@@ -13,7 +13,7 @@ void init_dm()
 	memset(devhash, 0, sizeof(struct devhash_s)*NUM_DT);
 	int i;
 	for(i=0;i<NUM_DT;i++) 
-		create_mutex(&devhash[i].lock);
+		mutex_create(&devhash[i].lock);
 	init_char_devs();
 	init_block_devs();
 }
@@ -24,11 +24,11 @@ device_t *get_device(int type, int major)
 		return 0;
 	int alpha = major % DH_SZ;
 	int beta = major / DH_SZ;
-	mutex_on(&devhash[type].lock);
+	mutex_acquire(&devhash[type].lock);
 	device_t *dt = devhash[type].devs[alpha];
 	while(dt && dt->beta != beta) 
 		dt=dt->next;
-	mutex_off(&devhash[type].lock);
+	mutex_release(&devhash[type].lock);
 	if(!dt->ptr) return 0;
 	return dt;
 }
@@ -39,7 +39,7 @@ device_t *get_n_device(int type, int n)
 		return 0;
 	int a=0;
 	device_t *dt=0;
-	mutex_on(&devhash[type].lock);
+	mutex_acquire(&devhash[type].lock);
 	while(!dt && a < DH_SZ)
 	{
 		dt = devhash[type].devs[a];
@@ -49,7 +49,7 @@ device_t *get_n_device(int type, int n)
 		}
 		a++;
 	}
-	mutex_off(&devhash[type].lock);
+	mutex_release(&devhash[type].lock);
 	if(!dt->ptr) return 0;
 	return dt;
 }
@@ -60,14 +60,14 @@ int add_device(int type, int major, void *str)
 		return -1;
 	int alpha = major % DH_SZ;
 	int beta = major / DH_SZ;
-	mutex_on(&devhash[type].lock);
+	mutex_acquire(&devhash[type].lock);
 	device_t *new = (device_t *)kmalloc(sizeof(device_t));
 	new->beta = beta;
 	new->ptr = str;
 	device_t *old = devhash[type].devs[alpha];
 	devhash[type].devs[alpha] = new;
 	new->next = old;
-	mutex_off(&devhash[type].lock);
+	mutex_release(&devhash[type].lock);
 	return 0;
 }
 
@@ -77,7 +77,7 @@ int remove_device(int type, int major)
 		return -1;
 	int alpha = major % DH_SZ;
 	int beta = major / DH_SZ;
-	mutex_on(&devhash[type].lock);
+	mutex_acquire(&devhash[type].lock);
 	device_t *d = devhash[type].devs[alpha];
 	device_t *p = 0;
 	while(d && d->beta != beta) {
@@ -95,7 +95,7 @@ int remove_device(int type, int major)
 		}
 		kfree(d);
 	}
-	mutex_off(&devhash[type].lock);
+	mutex_release(&devhash[type].lock);
 	return 0;
 }
 

@@ -69,14 +69,14 @@ int atapi_rw_main(int rw, int dev, u64 blk_, char *buf)
 	int part;
 	struct ata_device *device = get_ata_device(dev, &part);
 	struct ata_controller *cont = device->controller;
-	mutex_on(cont->wait);
+	mutex_acquire(cont->wait);
 	if(!(device->flags & F_EXIST)) {
-		mutex_off(cont->wait);
+		mutex_release(cont->wait);
 		return 0;
 	}
 	int ret;
 	ret = atapi_pio_rw(cont, device, rw, blk, (unsigned char*)buf);
-	mutex_off(cont->wait);
+	mutex_release(cont->wait);
 	return ret;
 }
 

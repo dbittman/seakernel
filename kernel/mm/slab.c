@@ -76,7 +76,7 @@ slab_cache_t *get_empty_scache(int size, unsigned short flags)
 {
 	assert(size);
 	unsigned i=0;
-	mutex_on(&scache_lock);
+	mutex_acquire(&scache_lock);
 	while(i < NUM_SCACHES)
 	{
 		if(((slab_cache_t *)(scache_list[i]))->id == -1)
@@ -86,7 +86,7 @@ slab_cache_t *get_empty_scache(int size, unsigned short flags)
 	/* Normally, we would panic. However, the allocator has a 
 	 * condition which might allow us to get around this. */
 	if(i == NUM_SCACHES) {
-		mutex_off(&scache_lock);
+		mutex_release(&scache_lock);
 		return 0;
 	}
 	memset(((slab_cache_t *)(scache_list[i])), 0, sizeof(slab_cache_t));
@@ -94,7 +94,7 @@ slab_cache_t *get_empty_scache(int size, unsigned short flags)
 	((slab_cache_t *)(scache_list[i]))->flags = flags;
 	((slab_cache_t *)(scache_list[i]))->obj_size = size;
 	num_scache++;
-	mutex_off(&scache_lock);
+	mutex_release(&scache_lock);
 	return scache_list[i];
 }
 
@@ -103,10 +103,10 @@ void release_scache(slab_cache_t *sc)
 	assert(sc);
 	if(sc->full || sc->partial || sc->empty)
 		return;
-	mutex_on(&scache_lock);
+	mutex_acquire(&scache_lock);
 	sc->id=-1;
 	num_scache--;
-	mutex_off(&scache_lock);
+	mutex_release(&scache_lock);
 }
 
 /* Adds a slab to a specified list in the scache. Doesn't remove the slab 
@@ -318,7 +318,7 @@ unsigned slab_init(unsigned start, unsigned end)
 	}
 	printk(1, "done\n");
 	pages_used = SLAB_NUM_INDEX+1;
-	create_mutex(&scache_lock);
+	mutex_create(&scache_lock);
 	return 0;
 }
 

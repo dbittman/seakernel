@@ -32,13 +32,13 @@ addr_t __pm_alloc_page(char *file, int line)
 	try_again:
 	ret=0;
 	if(current_task) current_task->allocated++;
-	mutex_on(&pm_mutex);
+	mutex_acquire(&pm_mutex);
 	if(paging_enabled)
 	{
 		if(pm_stack <= (PM_STACK_ADDR+sizeof(unsigned)*2)) {
 			if(current_task == kernel_task || !current_task)
 				panic(PANIC_MEM | PANIC_NOSYNC, "Ran out of physical memory");
-			mutex_off(&pm_mutex);
+			mutex_release(&pm_mutex);
 			if(OOM_HANDLER == OOM_SLEEP) {
 				if(!flag++) 
 					printk(0, "Warning - Ran out of physical memory in task %d\n", 
@@ -63,7 +63,7 @@ addr_t __pm_alloc_page(char *file, int line)
 		pm_location+=PAGE_SIZE;
 	}
 	++pm_used_pages;
-	mutex_off(&pm_mutex);
+	mutex_release(&pm_mutex);
 	if(current_task)
 		current_task->num_pages++;
 	if(!ret)
@@ -84,7 +84,7 @@ void pm_free_page(addr_t addr)
 		return;
 	}
 	if(current_task) current_task->freed++;
-	mutex_on(&pm_mutex);
+	mutex_acquire(&pm_mutex);
 	if(pm_stack_max <= pm_stack)
 	{
 		vm_map(pm_stack_max, addr, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT);
@@ -97,5 +97,5 @@ void pm_free_page(addr_t addr)
 	}
 	if(current_task && current_task->num_pages)
 		current_task->num_pages--;
-	mutex_off(&pm_mutex);
+	mutex_release(&pm_mutex);
 }

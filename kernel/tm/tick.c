@@ -32,7 +32,7 @@ inline static void do_run_scheduler()
 		(current_task->flags&TF_DYING) || 
 		(current_task->flags&TF_LOCK))
 		return;
-	if(scheding.count) return;
+	if(scheding.lock) return;
 	schedule();
 }
 

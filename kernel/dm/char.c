@@ -48,7 +48,7 @@ int set_availablecd(int (*f)(int, int, char*, size_t),
 	int (*c)(int, int, int), int (*s)(int, int))
 {
 	int i=10; /* first 10 character devices are reserved */
-	mutex_on(&cd_search_lock);
+	mutex_acquire(&cd_search_lock);
 	while(i>0) {
 		if(!get_device(DT_CHAR, i))
 		{
@@ -57,7 +57,7 @@ int set_availablecd(int (*f)(int, int, char*, size_t),
 		}
 		i++;
 	}
-	mutex_off(&cd_search_lock);
+	mutex_release(&cd_search_lock);
 	if(i < 0)
 		return -EINVAL;
 	return i;
@@ -71,7 +71,7 @@ void init_char_devs()
 	set_chardevice(3, ttyx_rw, ttyx_ioctl, ttyx_select);
 	set_chardevice(4, tty_rw, tty_ioctl, tty_select);
 	set_chardevice(5, serial_rw, 0, 0);
-	create_mutex(&cd_search_lock);
+	mutex_create(&cd_search_lock);
 }
 
 int char_rw(int rw, dev_t dev, char *buf, size_t len)
@@ -91,16 +91,16 @@ int char_rw(int rw, dev_t dev, char *buf, size_t len)
 void unregister_char_device(int n)
 {
 	printk(1, "[dev]: Unregistering char device %d\n", n);
-	mutex_on(&cd_search_lock);
+	mutex_acquire(&cd_search_lock);
 	device_t *dev = get_device(DT_CHAR, n);
 	if(!dev) {
-		mutex_off(&cd_search_lock);
+		mutex_release(&cd_search_lock);
 		return;
 	}
 	void *fr = dev->ptr;
 	dev->ptr=0;
 	remove_device(DT_CHAR, n);
-	mutex_off(&cd_search_lock);
+	mutex_release(&cd_search_lock);
 	kfree(fr);
 }
 

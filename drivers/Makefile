@@ -77,7 +77,7 @@ install: $(MODULES)
 	$(CC) $(MCFLAGS) $< -c -o $@.0
 	echo -n -e "[LD] M \t$@                 \n"
 	$(CC) $(MCFLAGS) $(LDFLAGS_ARCH) $@.0 -o $@.1 -Wl,-r,-Tlink.ld ../library/klib.a -lgcc -static
-	#rm $@.0
+	rm $@.0
 	cat head $@.1 > $@
 	rm $@.1
 

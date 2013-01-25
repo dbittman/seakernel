@@ -178,7 +178,7 @@ struct inode *fat_mount(int dev, int block, char *node)
 	out->dynamic=1;
 	out->flm = create_mutex(0);
 	out->i_ops = &fatfs_inode_ops;
-	create_mutex(&out->lock);
+	mutex_create(&out->lock);
 	
 	strncpy(out->name, (char *)"fat", 3);
 	

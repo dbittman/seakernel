@@ -85,7 +85,7 @@ int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw,
 {
 	//pci_write_dword(ata_pci->bus, ata_pci->dev, ata_pci->func, 4, ata_pci->pcs->command);
 	unsigned size=512;
-	mutex_on(cont->wait);
+	mutex_acquire(cont->wait);
 	
 	uint8_t cmdReg = inb(cont->port_bmr_base + BMR_COMMAND);
 	cmdReg = (rw == READ ? 8 : 0);
@@ -103,19 +103,19 @@ int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw,
 			break;
 	}
 	if(timeout <= 0) {
-		mutex_off(cont->wait);
+		mutex_release(cont->wait);
 		printk(4, "[ata]: timeout on waiting for ready\n");
 		return -EIO;
 	}
 	if(ata_dma_init(cont, dev, size * count, rw, (unsigned char *)buf) == -1)
 	{
-		mutex_off(cont->wait);
+		mutex_release(cont->wait);
 		printk(4, "[ata]: could not allocate enough dma space for the specified transfer\n");
 		return -EIO;
 	}
 	if(ata_start_command(cont, dev, blk, rw, count) == -1)
 	{
-		mutex_off(cont->wait);
+		mutex_release(cont->wait);
 		printk(4, "[ata]: error in starting command sequence\n");
 		return -EIO;
 	}
@@ -139,7 +139,7 @@ int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw,
 		//printk(0, "wait... %x %x\n", st, wst);
 	}
 	if(timeout <= 0) {
-		mutex_off(cont->wait);
+		mutex_release(cont->wait);
 		printk(4, "[ata]: timeout on waiting for data transfer\n");
 		return -EIO;
 	}
@@ -171,7 +171,7 @@ int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw,
 		ATA_DELAY(cont);
 	}
 	
-	mutex_off(cont->wait);
+	mutex_release(cont->wait);
 	return ret ? ret : -EIO;
 }
 

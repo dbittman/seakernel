@@ -98,8 +98,8 @@ int module_install()
 	register_interrupt_handler(32 + ATA_SECONDARY_IRQ, &ata_irq_handler);
 	api = set_availablebd(atapi_rw_main, 2048, ioctl_atapi, 0, 0);
 	set_blockdevice(3, ata_rw_main, 512, ioctl_ata, ata_rw_multiple, 0);
-	primary->wait = create_mutex(0);
-	secondary->wait = create_mutex(0);
+	primary->wait = mutex_create(0);
+	secondary->wait = mutex_create(0);
 	primary->id=0;
 	secondary->id=1;
 	init_ata_controller(primary);
@@ -120,13 +120,13 @@ int module_exit()
 		ata_disk_sync(primary);
 		ata_disk_sync(secondary);
 		delay(100);
-		mutex_on(primary->wait);
-		mutex_on(secondary->wait);
+		mutex_acquire(primary->wait);
+		mutex_acquire(secondary->wait);
 		remove_devices();
 		unregister_block_device(api);
 		ata_pci->flags = 0;
-		destroy_mutex(primary->wait);
-		destroy_mutex(secondary->wait);
+		mutex_destroy(primary->wait);
+		mutex_destroy(secondary->wait);
 		register_interrupt_handler(32 + ATA_PRIMARY_IRQ, 0);
 		register_interrupt_handler(32 + ATA_SECONDARY_IRQ, 0);
 	}

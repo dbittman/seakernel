@@ -79,12 +79,12 @@ enum {
 	RTL_TXCFG_RR_48 = 0x20,     // 48 (16 + 2 * 16) Tx Retry count
 };
 char rx_buf[0x2000 + 16];
+char tx_buf[0x1000];
 int rtl8139_init(rtl8139dev_t *dev)
 {
 	if(!rtl8139_reset(dev->addr))
 		return -1;
 	dev->rec_buf = rx_buf;
-	
 	outb(dev->addr+0x50, 0xC0);
 	
 	// enable Rx and Tx

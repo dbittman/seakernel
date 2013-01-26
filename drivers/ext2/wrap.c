@@ -138,7 +138,6 @@ int do_add_ent(struct inode *i, ext2_inode_t *inode, char *name)
 		return -EACCES;
 	if(!EXT2_INODE_IS_DIR(&dir))
 		return -ENOTDIR;
-	mutex_on(&i->lock);
 	int ret = ext2_dir_link(&dir, inode, name);
 	if(EXT2_INODE_IS_DIR(inode))
 	{
@@ -151,7 +150,6 @@ int do_add_ent(struct inode *i, ext2_inode_t *inode, char *name)
 	} else
 		ext2_inode_update(&dir);
 	update_sea_inode(i, &dir, 0);
-	mutex_off(&i->lock);
 	return 0;
 }
 
@@ -186,6 +184,7 @@ int do_wrap_ext2_link(struct inode *i, char *path)
 	if(dir->sb_idx != i->sb_idx)
 		return -EINVAL;
 	int ret = do_add_ent(dir, &inode, p ? p+1 : path);
+	rwlock_acquire(&dir->rwl, RWL_WRITER);
 	iput(dir);
 	return ret;
 }
@@ -368,9 +367,9 @@ struct inode *create_sea_inode(ext2_inode_t *in, char *name)
 	out->nblocks = in->sector_count;
 	out->sb_idx = in->fs->flag;
 	out->dynamic=1;
-	out->flm = create_mutex(0);
+	out->flm = mutex_create(0);
 	out->i_ops = &e2fs_inode_ops;
-	create_mutex(&out->lock);
+	rwlock_create(&out->rwl);
 	strncpy(out->name, name, 128);
 	return out;
 }

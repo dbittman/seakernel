@@ -85,9 +85,9 @@ int loop_up(int num, char *name)
 		mutex_acquire(&loop_mutex);
 		return -ENOENT;
 	}
-	mutex_acquire(&i->lock);
+	rwlock_acquire(&i->rwl, RWL_WRITER);
 	i->required++;
-	mutex_release(&i->lock);
+	rwlock_release(&i->rwl, RWL_WRITER);
 	loop->offset = loop->limit = loop->ro = 0;
 	loop->node = i;
 	
@@ -109,9 +109,8 @@ int loop_down(int num)
 	}
 	struct inode *i = loop->node;
 	loop->node=0;
-	mutex_acquire(&i->lock);
+	rwlock_acquire(&i->rwl, RWL_WRITER);
 	i->required--;
-	mutex_release(&i->lock);
 	iput(i);
 	return 0;
 }

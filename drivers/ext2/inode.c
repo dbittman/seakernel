@@ -160,7 +160,7 @@ static uint32_t inode_alloc(ext2_fs_t* fs, uint32_t bgnum)
 	// Bitmap laden
 	int blk = ibitmap_get_block(fs, &bg);
 	unsigned char b[ext2_sb_blocksize(fs->sb)];
-	mutex_on(fs->m_node);
+	mutex_acquire(fs->m_node);
 	ext2_read_block(fs, blk, b);
 	bitmap = (uint32_t *)b;
 	
@@ -176,7 +176,7 @@ static uint32_t inode_alloc(ext2_fs_t* fs, uint32_t bgnum)
 			}
 		}
 	}
-	mutex_off(fs->m_node);
+	mutex_release(fs->m_node);
 	return 0;
 	
 	found:
@@ -192,7 +192,7 @@ static uint32_t inode_alloc(ext2_fs_t* fs, uint32_t bgnum)
 	
 	bg.free_inodes--;
 	ext2_bg_update(fs, bgnum, &bg);
-	mutex_off(fs->m_node);
+	mutex_destroy(fs->m_node);
 	return (bgnum * fs->sb->inodes_per_group) + (i * 32) + j;
 }
 
@@ -200,18 +200,18 @@ int ext2_inode_alloc(ext2_fs_t* fs, ext2_inode_t* inode)
 {
 	uint32_t number;
 	uint32_t bgnum;
-	mutex_on(fs->m_node);
+	mutex_acquire(fs->m_node);
 	for (bgnum = 0; bgnum < ext2_sb_bgcount(fs->sb); bgnum++) {
 		number = inode_alloc(fs, bgnum);
 		if (number) {
 			goto found;
 		}
 	}
-	mutex_off(fs->m_node);
+	mutex_destroy(fs->m_node);
 	return 0;
 	
 	found:
-	mutex_off(fs->m_node);
+	mutex_destroy(fs->m_node);
 	if (!number) {
 		return 0;
 	}
@@ -229,7 +229,7 @@ int ext2_inode_free(ext2_inode_t* inode)
 	ext2_fs_t* fs = inode->fs;
 	uint32_t inode_int = ext2_inode_to_internal(fs, inode->number);
 	int i;
-	mutex_on(fs->m_node);
+	mutex_acquire(fs->m_node);
 	// dtime muss fuer geloeschte Inodes != 0 sein
 	inode->deletion_time = get_epoch_time();
 	// Inodebitmap anpassen
@@ -253,7 +253,7 @@ int ext2_inode_free(ext2_inode_t* inode)
 	
 	bg.free_inodes++;
 	ext2_bg_update(fs, bgnum, &bg);
-	mutex_off(fs->m_node);
+	mutex_destroy(fs->m_node);
 	void free_indirect_blocks(uint32_t table_block, int level)
 	{
 		uint32_t i_;
@@ -338,10 +338,10 @@ static uint32_t block_alloc(ext2_fs_t* fs, int set_zero)
 	int block;
 	uint32_t bgnum;
 	ext2_blockgroup_t bg;
-	mutex_on(fs->m_block);
+	mutex_acquire(fs->m_block);
 	bgnum = block_alloc_bg(fs, &bg);
 	if (bgnum == (uint32_t) -1) {
-		mutex_off(fs->m_block);
+		mutex_destroy(fs->m_block);
 		return 0;
 	}
 	
@@ -379,7 +379,7 @@ static uint32_t block_alloc(ext2_fs_t* fs, int set_zero)
 			}
 		}
 	}
-	mutex_off(fs->m_block);
+	mutex_destroy(fs->m_block);
 	return 0;
 	
 	found:
@@ -404,7 +404,7 @@ static uint32_t block_alloc(ext2_fs_t* fs, int set_zero)
 	ext2_bg_update(fs, bgnum, &bg);
 	
 	fs->block_prev_alloc = block_num;
-	mutex_off(fs->m_block);
+	mutex_destroy(fs->m_block);
 	return block_num;
 }
 
@@ -414,7 +414,7 @@ static uint32_t block_free(ext2_fs_t* fs, uint32_t num)
 	uint32_t bgnum;
 	int block;
 	if(!num) return 1;
-	mutex_on(fs->m_block);
+	mutex_acquire(fs->m_block);
 	num -= fs->sb->first_data_block;
 	bgnum = num / fs->sb->blocks_per_group;
 	num = num % fs->sb->blocks_per_group;
@@ -437,7 +437,7 @@ static uint32_t block_free(ext2_fs_t* fs, uint32_t num)
 	
 	bg.free_blocks++;
 	ext2_bg_update(fs, bgnum, &bg);
-	mutex_off(fs->m_block);
+	mutex_destroy(fs->m_block);
 	return 1;
 }
 

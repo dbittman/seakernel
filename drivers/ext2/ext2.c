@@ -9,20 +9,20 @@ mutex_t *fsll;
 ext2_fs_t *get_new_fsvol()
 {
 	ext2_fs_t *fs = (ext2_fs_t *)kmalloc(sizeof(ext2_fs_t));
-	mutex_on(fsll);
+	mutex_acquire(fsll);
 	ext2_fs_t *old = fs_list;
 	fs->next = old;
 	if(old) old->prev = fs;
 	fs->prev=0;
 	fs_list = fs;
 	fs->flag=fs_num++;
-	mutex_off(fsll);
+	mutex_release(fsll);
 	fs->sb = (ext2_superblock_t *)kmalloc(1024);
 	fs->block_prev_alloc=0;
 	fs->read_only=0;
-	fs->m_node = create_mutex(0);
-	fs->m_block = create_mutex(0);
-	create_mutex(&fs->ac_lock);
+	fs->m_node = mutex_create(0);
+	fs->m_block = mutex_create(0);
+	mutex_create(&fs->ac_lock);
 	char tm[32];
 	sprintf(tm, "ext2-%d", fs_num);
 	fs->cache = get_empty_cache(0, tm);
@@ -44,20 +44,20 @@ ext2_fs_t *get_fs(int v)
 void release_fsvol(ext2_fs_t *fs)
 {
 	if(!fs) return;
-	mutex_on(fsll);
+	mutex_acquire(fsll);
 	if(fs->prev)
 		fs->prev->next = fs->next;
 	else
 		fs_list = fs->next;
 	if(fs->next)
 		fs->next->prev=fs->prev;
-	mutex_off(fsll);
+	mutex_release(fsll);
 	kfree(fs->sb);
 	fs->m_node->pid=-1;
 	fs->m_block->pid=-1;
-	destroy_mutex(fs->m_node);
-	destroy_mutex(fs->m_block);
-	destroy_mutex(&fs->ac_lock);
+	mutex_destroy(fs->m_node);
+	mutex_destroy(fs->m_block);
+	mutex_destroy(&fs->ac_lock);
 	destroy_cache(fs->cache);
 	kfree(fs);
 }
@@ -75,6 +75,7 @@ struct inode *ext2_mount(dev_t dev, u64 block, char *node)
 		dev = in->dev;
 	if(in && (int)in->dev != dev)
 		printk(4, "[ext2]: Odd...node device is different from given device...\n");
+	rwlock_acquire(&in->rwl, RWL_WRITER);
 	iput(in);
 	fs->block = block;
 	fs->dev = dev;
@@ -147,7 +148,7 @@ int module_install()
 {
 	printk(1, "[ext2]: Registering filesystem\n");
 	fs_list=0;
-	fsll = create_mutex(0);
+	fsll = mutex_create(0);
 	register_sbt("ext2", 2, (int (*)(dev_t,u64,char*))ext2_mount);
 	return 0;
 }
@@ -158,7 +159,7 @@ int module_exit()
 	int i=0;
 	while(fs_list && !ext2_unmount(0, fs_list->flag));
 	unregister_sbt("ext2");
-	destroy_mutex(fsll);
+	mutex_destroy(fsll);
 	return 0;
 }
 

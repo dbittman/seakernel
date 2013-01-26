@@ -7,7 +7,7 @@
 #include <sys/fcntl.h>
 #include <block.h>
 #include <char.h>
-
+#include <rwlock.h>
 int sys_close(int fp)
 {
 	/* Make sure that we flush a mm file */
@@ -21,7 +21,7 @@ int sys_close(int fp)
 		/* okay, its a pipe. We need to do some special things
 		 * to close a pipe, like decrement the various counts.
 		 * If the counts reach zero, we free it */
-		mutex_on(f->inode->pipe->lock);
+		mutex_acquire(f->inode->pipe->lock);
 		if(f->inode->pipe->count)
 			f->inode->pipe->count--;
 		if(f->flags & _FWRITE && f->inode->pipe->wrcount 
@@ -30,14 +30,14 @@ int sys_close(int fp)
 		if(!f->inode->pipe->count && f->inode->pipe->type != PIPE_NAMED)
 			free_pipe(f->inode);
 		else
-			mutex_off(f->inode->pipe->lock);
+			mutex_release(f->inode->pipe->lock);
 	}
 	/* close devices */
 	if(S_ISCHR(f->inode->mode) && !fp)
 		char_rw(CLOSE, f->inode->dev, 0, 0);
 	else if(S_ISBLK(f->inode->mode) && !fp)
 		block_device_rw(CLOSE, f->inode->dev, 0, 0, 0);
-	mutex_on(&f->inode->lock);
+	rwlock_acquire(&f->inode->rwl, RWL_WRITER);
 	if(f->inode->f_count > 0)
 		f->inode->f_count--;
 	if(f->inode->marked_for_deletion)

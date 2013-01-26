@@ -23,7 +23,7 @@ static struct inode *create_anon_pipe()
 	node->mode = S_IFIFO | 0x1FF;
 	node->count=2;
 	node->f_count=2;
-	mutex_create(&node->lock);
+	rwlock_create(&node->rwl);
 	
 	pipe_t *pipe = create_pipe();
 	pipe->count=2;

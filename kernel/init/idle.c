@@ -49,7 +49,7 @@ struct inode *set_as_kernel_task(char *name)
 {
 	printk(1, "[kernel]: Added '%s' as kernel task\n", name);
 	struct inode *i = (struct inode *)kmalloc(sizeof(struct inode));
-	create_mutex(&i->lock);
+	rwlock_create(&i->rwl);
 	strncpy(i->name, name, INAME_LEN);
 	add_inode(kproclist, i);
 	current_task->flags |= TF_KTASK;
@@ -64,7 +64,7 @@ int init_kern_task()
 	kproclist->mode = S_IFDIR | 0xFFF;
 	kproclist->count=1;
 	kproclist->dev = 256*3;
-	create_mutex(&kproclist->lock);
+	rwlock_create(&kproclist->rwl);
 	return 0;
 }
 

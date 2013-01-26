@@ -72,12 +72,14 @@ int chroot(char *n)
 	if(!i)
 		return -ENOENT;
 	if(!is_directory(i)) {
+		rwlock_acquire(&i->rwl, RWL_WRITER);
 		iput(i);
 		return -ENOTDIR;
 	}
 	current_task->root = i;
 	change_ireq(i, 1);
 	change_ireq(old, -1);
+	rwlock_acquire(&old->rwl, RWL_WRITER);
 	iput(old);
 	chdir("/");
 	return 0;
@@ -89,16 +91,19 @@ int ichdir(struct inode *i)
 		return -EINVAL;
 	struct inode *old=current_task->pwd;
 	if(!is_directory(i)) {
+		rwlock_acquire(&i->rwl, RWL_WRITER);
 		iput(i);
 		return -ENOTDIR;
 	}
 	if(!permissions(i, MAY_EXEC)) {
+		rwlock_acquire(&i->rwl, RWL_WRITER);
 		iput(i);
 		return -EACCES;
 	}
 	current_task->pwd = i;
 	change_ireq(i, 1);
 	change_ireq(old, -1);
+	rwlock_acquire(&old->rwl, RWL_WRITER);
 	iput(old);
 	return 0;
 }
@@ -121,7 +126,7 @@ struct inode *do_readdir(struct inode *i, int num)
 		return 0;
 	struct inode *c=0;
 	if(!i->dynamic) {
-		mutex_on(&i->lock);
+		rwlock_acquire(&i->rwl, RWL_READER);
 		struct llistnode *cur;
 		ll_for_each_entry((&i->children), cur, struct inode *, c)
 		{
@@ -129,7 +134,7 @@ struct inode *do_readdir(struct inode *i, int num)
 		}
 		if(num && cur == i->children.head)
 			c=0;
-		mutex_off(&i->lock);
+		rwlock_release(&i->rwl, RWL_READER);
 	}
 	else if(i->i_ops && i->i_ops->readdir) {
 		struct inode *old=0;
@@ -154,6 +159,7 @@ struct inode *read_dir(char *n, int num)
 		return 0;
 	}
 	struct inode *ret = do_readdir(i, num);
+	rwlock_acquire(&i->rwl, RWL_WRITER);
 	iput(i);
 	return ret;
 }
@@ -163,6 +169,7 @@ struct inode *read_idir(struct inode *i, int num)
 	if(!i)
 		return 0;
 	if(!permissions(i, MAY_READ)) {
+		rwlock_acquire(&i->rwl, RWL_WRITER);
 		iput(i);
 		return 0;
 	}

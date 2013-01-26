@@ -10,7 +10,7 @@
 void init_flocks(struct inode *i)
 {
 	if(!i->flm)
-		i->flm = create_mutex(0);
+		i->flm = mutex_create(0);
 }
 
 struct flock *create_flock(int type, int whence, off_t start, size_t len)
@@ -35,7 +35,7 @@ static int is_overlap(struct flock *a, struct flock *b)
 struct flock *get_flock_blocker(struct inode *file, struct flock *l, int pos)
 {
 	if(!file || !l) return 0;
-	mutex_on(file->flm);
+	mutex_acquire(file->flm);
 	switch(l->l_whence)
 	{
 		case SEEK_SET:
@@ -54,41 +54,41 @@ struct flock *get_flock_blocker(struct inode *file, struct flock *l, int pos)
 		int q = is_overlap(l, cur);
 		if(q) {
 			if(l->l_type == F_WRLCK || cur->l_type == F_WRLCK) {
-				mutex_off(file->flm);
+				mutex_release(file->flm);
 				return cur;
 			}
 		}
 		cur = cur->next;
 	}
 	
-	mutex_off(file->flm);
+	mutex_release(file->flm);
 	return 0;
 }
 
 int can_flock(struct inode *file, struct flock *l)
 {
 	if(!file || !l) return 0;
-	mutex_on(file->flm);
+	mutex_acquire(file->flm);
 	
 	struct flock *cur = file->flocks;
 	while(cur)
 	{
 		if(is_overlap(l, cur))
 			if(l->l_type == F_WRLCK || cur->l_type == F_WRLCK) {
-				mutex_off(file->flm);
+				mutex_release(file->flm);
 				return 0;
 			}
 		cur = cur->next;
 	}
 	
-	mutex_off(file->flm);
+	mutex_release(file->flm);
 	return 1;
 }
 
 int disengage_flock(struct inode *file, struct flock *l)
 {
 	if(!file || !l) return -EINVAL;
-	mutex_on(file->flm);
+	mutex_acquire(file->flm);
 	if(l->prev)
 		l->prev->next = l->next;
 	if(l->next)
@@ -96,7 +96,7 @@ int disengage_flock(struct inode *file, struct flock *l)
 	if(file->flocks == l)
 		file->flocks = l->next ? l->next : l->prev;
 	kfree(l);
-	mutex_off(file->flm);
+	mutex_release(file->flm);
 	return 0;
 }
 
@@ -126,13 +126,13 @@ int engage_flock(struct inode *inode, struct flock *l, int pos)
 	if(LSTART(l) < 0)
 		return -EINVAL;
 	
-	mutex_on(inode->flm);
+	mutex_acquire(inode->flm);
 	struct flock *old = inode->flocks;
 	inode->flocks = l;
 	l->next = old;
 	inode->flocks->prev = l;
 	l->prev=0;
-	mutex_off(inode->flm);
+	mutex_release(inode->flm);
 	
 	return 0;
 }
@@ -141,17 +141,17 @@ struct flock *find_flock(struct inode *f, struct flock *l)
 {
 	assert(f && l);
 	struct flock *c = f->flocks;
-	mutex_on(f->flm);
+	mutex_acquire(f->flm);
 	while(c)
 	{
 		if(l->l_start == c->l_start && l->l_whence == c->l_whence 
 				&& l->l_len == c->l_len && l->l_pid == c->l_pid) {
-			mutex_off(f->flm);
+			mutex_release(f->flm);
 			return c;
 		}
 		c=c->next;
 	}
-	mutex_off(f->flm);
+	mutex_release(f->flm);
 	return 0;
 }
 
@@ -185,13 +185,13 @@ int fcntl_getlk(struct file *file, int arg)
 	struct inode *f = file->inode;
 	init_flocks(f);
 	if(!arg) return -EINVAL;
-	mutex_on(f->flm);
+	mutex_acquire(f->flm);
 	struct flock *l = get_flock_blocker(f, (struct flock *)arg, file->pos);
 	if(!l)
 		((struct flock *)arg)->l_type = F_UNLCK;
 	else
 		memcpy(((struct flock *)arg), l, sizeof(struct flock));
-	mutex_off(f->flm);
+	mutex_release(f->flm);
 	return 0;
 }
 
@@ -227,6 +227,6 @@ void destroy_flocks(struct inode *f)
 	}
 	if(f->flm) {
 		f->flm->pid=-1;
-		destroy_mutex(f->flm);
+		mutex_destroy(f->flm);
 	}
 }

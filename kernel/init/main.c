@@ -103,7 +103,6 @@ void kmain(struct multiboot *mboot_header, u32int initial_stack)
 	mtboot = mboot_header;
 	i_stack = initial_stack;
 	parse_kernel_elf(mboot_header, &kernel_elf);
-	init_mutexes();
 	load_tables();
 	init_serial();
 	console_init_stage1();

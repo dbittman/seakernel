@@ -15,8 +15,8 @@ int link(char *old, char *new)
 	i = get_idir(old, 0);
 	if(!i)
 		return -ENOENT;
-	mutex_on(&i->lock);
 	int ret = vfs_callback_link(i, new);
+	rwlock_acquire(&i->rwl, RWL_WRITER);
 	iput(i);
 	if(!ret) sys_utime(new, 0, 0);
 	return ret;

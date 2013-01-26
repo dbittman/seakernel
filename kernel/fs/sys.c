@@ -135,12 +135,20 @@ int sys_chmod(char *path, int fd, mode_t mode)
 	if(!i) return -ENOENT;
 	if(i->uid != current_task->uid && current_task->uid)
 	{
-		iput(i);
+		if(path) {
+			rwlock_acquire(&i->rwl, RWL_WRITER);
+			iput(i);
+		}
 		return -EPERM;
 	}
+	rwlock_acquire(&i->rwl, RWL_WRITER);
 	i->mode = (i->mode&~0xFFF) | mode;
+	rwlock_release(&i->rwl, RWL_WRITER);
 	sync_inode_tofs(i);
-	if(path) iput(i);
+	if(path) {
+		rwlock_acquire(&i->rwl, RWL_WRITER);
+		iput(i);
+	}
 	return 0;
 }
 
@@ -159,12 +167,21 @@ int sys_chown(char *path, int fd, uid_t uid, gid_t gid)
 	}
 	if(!i)
 		return -ENOENT;
-	if(current_task->uid && current_task->uid != i->uid)
+	if(current_task->uid && current_task->uid != i->uid) {
+		if(path) {
+			rwlock_acquire(&i->rwl, RWL_WRITER);
+			iput(i);
+		}
 		return -EPERM;
+	}
 	if(uid != -1) i->uid = uid;
 	if(gid != -1) i->gid = gid;
 	sync_inode_tofs(i);
-	if(path) iput(i);
+	if(path) 
+	{
+		rwlock_acquire(&i->rwl, RWL_WRITER);
+		iput(i);
+	}
 	return 0;
 }
 
@@ -178,6 +195,7 @@ int sys_utime(char *path, unsigned a, unsigned m)
 	i->mtime = m ? m : get_epoch_time();
 	i->atime = a ? a : get_epoch_time();
 	sync_inode_tofs(i);
+	rwlock_acquire(&i->rwl, RWL_WRITER);
 	iput(i);
 	return 0;
 }
@@ -190,6 +208,7 @@ int sys_getnodestr(char *path, char *node)
 	if(!i)
 		return -ENOENT;
 	strncpy(node, i->node_str, 128);
+	rwlock_acquire(&i->rwl, RWL_WRITER);
 	iput(i);
 	return 0;
 }
@@ -223,6 +242,7 @@ int sys_mknod(char *path, mode_t mode, dev_t dev)
 		i->pipe = create_pipe();
 		i->pipe->type = PIPE_NAMED;
 	}
+	rwlock_acquire(&i->rwl, RWL_WRITER);
 	iput(i);
 	return 0;
 }
@@ -235,6 +255,7 @@ int sys_readlink(char *_link, char *buf, int nr)
 	if(!i)
 		return -ENOENT;
 	int ret = read_fs(i, 0, nr, buf);
+	rwlock_acquire(&i->rwl, RWL_WRITER);
 	iput(i);
 	return ret;
 }
@@ -247,26 +268,30 @@ int sys_symlink(char *p2, char *p1)
 	if(!inode) inode = lget_idir(p1, 0);
 	if(inode)
 	{
+		rwlock_acquire(&inode->rwl, RWL_WRITER);
 		iput(inode);
 		return -EEXIST;
 	}
 	inode = cget_idir(p1, 0, 0x1FF);
 	if(!inode)
 		return -EACCES;
-	mutex_on(&inode->lock);
+	rwlock_acquire(&inode->rwl, RWL_WRITER);
 	inode->mode &= 0x1FF;
 	inode->mode |= S_IFLNK;
 	inode->len=0;
-	mutex_off(&inode->lock);
+	rwlock_release(&inode->rwl, RWL_WRITER);
 	int ret=0;
 	if((ret=sync_inode_tofs(inode)) < 0) {
+		rwlock_acquire(&inode->rwl, RWL_WRITER);
 		iput(inode);
 		return ret;
 	}
 	if((ret=write_fs(inode, 0, strlen(p2), p2)) < 0) {
+		rwlock_acquire(&inode->rwl, RWL_WRITER);
 		iput(inode);
 		return ret;
 	}
+	rwlock_acquire(&inode->rwl, RWL_WRITER);
 	iput(inode);
 	return 0;
 }

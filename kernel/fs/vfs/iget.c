@@ -31,6 +31,7 @@ struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, int *req)
 	if(!permissions(i, MAY_EXEC))
 		return 0;
 	struct llistnode *cur;
+	#warning "need to have a RWL_READER lock around these..."
 	ll_for_each_entry((&i->children), cur, struct inode *, temp)
 	{
 		assert(!temp->unreal);
@@ -71,9 +72,9 @@ struct inode *lookup(struct inode *i, char *path)
 {
 	int req=0;
 	char unlock;
-	if((unlock=mutex_not_owner(&i->lock))) mutex_on(&i->lock);
+	rwlock_acquire(&i->rwl, RWL_READER);
 	struct inode *ret = do_lookup(i, path, 1, 0, &req);
-	if(unlock) mutex_off(&i->lock);
+	rwlock_release(&i->rwl, RWL_READER);
 	if(ret) change_icount(ret, 1);
 	if(req) change_ireq(i, -1);
 	if(ret && S_ISLNK(ret->mode))
@@ -83,6 +84,7 @@ struct inode *lookup(struct inode *i, char *path)
 		memset(li, 0, ret->len+1);
 		read_fs(ret, 0, ret->len, li);
 		struct inode *linked = get_idir(li, i);
+		rwlock_acquire(&ret->rwl, RWL_WRITER);
 		iput(ret);
 		return linked;
 	}
@@ -93,9 +95,9 @@ struct inode *lookup(struct inode *i, char *path)
 struct inode *llookup(struct inode *i, char *path)
 {
 	int req=0;
-	mutex_on(&i->lock);
+	rwlock_acquire(&i->rwl, RWL_READER);
 	struct inode *ret = do_lookup(i, path, 1, 0, &req);
-	mutex_off(&i->lock);
+	rwlock_release(&i->rwl, RWL_READER);
 	if(ret) change_icount(ret, 1);
 	if(req) change_ireq(i, -1);
 	return ret;
@@ -106,11 +108,8 @@ struct inode *do_add_dirent(struct inode *p, char *name, int mode)
 	if(!is_directory(p))
 		return 0;
 	if(p->mount) p = p->mount->root;
-	mutex_on(&p->lock);
-	if(!permissions(p, MAY_WRITE)) {
-		mutex_off(&p->lock);
+	if(!permissions(p, MAY_WRITE))
 		return 0;
-	}
 	if(p->parent == current_task->root && !strcmp(p->name, "tmp"))
 		mode |= 0x1FF;
 	struct inode *ret = vfs_callback_create(p, name, mode);
@@ -121,7 +120,6 @@ struct inode *do_add_dirent(struct inode *p, char *name, int mode)
 		change_ireq(p, 1);
 		add_inode(p, ret);
 	}
-	mutex_off(&p->lock);
 	if(ret) {
 		change_icount(ret, 1);
 		change_ireq(p, -1);

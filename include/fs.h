@@ -5,6 +5,7 @@
 #include <pipe.h>
 #include <sys/fcntl.h>
 #include <ll.h>
+#include <rwlock.h>
 #define SEEK_SET (0)
 #define SEEK_CUR (1)
 #define SEEK_END (2)
@@ -48,7 +49,7 @@ struct inode {
 	pipe_t *pipe;
 	mount_pt_t *mount;
 	/* Locking */
-	mutex_t lock;
+	rwlock_t rwl;
 	struct flock *flocks;
 	mutex_t *flm;
 };
@@ -232,7 +233,6 @@ extern struct inode *devfs_root, *procfs_root;
 int sys_fcntl(int filedes, int cmd, int attr1, int attr2, int attr3);
 int permissions(struct inode *, mode_t);
 struct inode *create_m(char *, mode_t);
-extern mutex_t vfs_mutex;
 int sys_symlink(char *p1, char *p2);
 int sys_readlink(char *_link, char *buf, int nr);
 int change_icount(struct inode *i, int c);

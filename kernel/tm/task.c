@@ -24,7 +24,7 @@ void init_multitasking()
 	task->magic = TASK_MAGIC;
 	set_current_task_dp(task, 0);
 	kernel_task = task;
-	create_mutex(&scheding);
+	mutex_create(&scheding);
 }
 
 void switch_to_user_mode()

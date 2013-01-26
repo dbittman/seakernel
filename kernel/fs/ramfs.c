@@ -38,7 +38,7 @@ struct inode *init_ramfs()
 {
 	struct inode *i = (struct inode *)kmalloc(sizeof(struct inode));
 	i->mode = S_IFDIR | 0x1FF;
-	create_mutex(&i->lock);
+	rwlock_create(&i->rwl);
 	_strcpy(i->name, "rfs");
 	ramfs_root = i;
 	i->i_ops = &rfs_inode_ops;
@@ -49,7 +49,7 @@ struct inode *init_tmpfs()
 {
 	struct inode *i = (struct inode *)kmalloc(sizeof(struct inode));
 	i->mode = S_IFDIR | 0x1FF;
-	create_mutex(&i->lock);
+	rwlock_create(&i->rwl);
 	_strcpy(i->name, "rfs");
 	i->i_ops = &rfs_inode_ops;
 	return i;
@@ -92,9 +92,9 @@ int rfs_write(struct inode *i, off_t off, size_t len, char *b)
 		return -EINVAL;
 	if(off > i->len || off+len > (unsigned)i->len) 
 	{
-		mutex_on(&i->lock);
+		rwlock_acquire(&i->rwl, RWL_WRITER);
 		rfs_resize(i, len+off);
-		mutex_off(&i->lock);
+		rwlock_release(&i->rwl, RWL_WRITER);
 	}
 	memcpy((void *)(i->start+(addr_t)off), (void *)b, len);
 	return len;
@@ -121,7 +121,7 @@ struct inode *rfs_create(struct inode *__p, char *name, mode_t mode)
 	task_critical();
 	node->num = ramfs_node_num++;
 	task_uncritical();
-	create_mutex(&node->lock);
+	rwlock_create(&node->rwl);
 	if(!__p) add_inode(p, node);
 	return node;
 }

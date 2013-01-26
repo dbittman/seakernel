@@ -28,8 +28,8 @@ void destroy_console(vterm_t *con)
 	if(con == curcons)
 		curcons = kernel_console;
 	kfree(con->vmem);
-	destroy_mutex(&con->wlock);
-	destroy_mutex(&con->inlock);
+	mutex_destroy(&con->wlock);
+	mutex_destroy(&con->inlock);
 	con->flag=0;
 }
 
@@ -39,8 +39,8 @@ void create_console(vterm_t *con)
 	con->term.c_lflag=ECHO | ISIG | ECHONL | ICANON;
 	con->term.c_oflag=OPOST | ONLCR;
 	con->term.c_iflag=ICRNL;
-	create_mutex(&con->wlock);
-	create_mutex(&con->inlock);
+	mutex_create(&con->wlock);
+	mutex_create(&con->inlock);
 	con->flag=1;
 }
 

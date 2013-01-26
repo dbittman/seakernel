@@ -14,9 +14,7 @@ int change_icount(struct inode *i, int c)
 {
 	int ret=0;
 	if(!i) return 0;
-	mutex_on(&i->lock);
 	ret = (i->count += c);
-	mutex_off(&i->lock);
 	return ret;
 }
 
@@ -25,9 +23,7 @@ int change_ireq(struct inode *i, int c)
 	int ret=0;
 	if(!i) return 0;
 	char unlock;
-	if((unlock=mutex_not_owner(&i->lock))) mutex_on(&i->lock);
 	ret = (i->required += c);
-	if(unlock) mutex_off(&i->lock);
 	return ret;
 }
 
@@ -72,12 +68,11 @@ int add_inode(struct inode *b, struct inode *i)
 	/* To save resources and time, we only create this LL if we need to.
 	 * Since a large number of inodes are files, we do not need to 
 	 * create this structure for each one. */
+	rwlock_acquire(&b->rwl, RWL_WRITER);
 	if(!ll_is_active((&b->children)))
 		ll_create(&b->children);
-	char unlock;
-	if((unlock=mutex_not_owner(&b->lock))) mutex_on(&b->lock);
 	ret = do_add_inode(b, i);
-	if(unlock) mutex_off(&b->lock);
+	rwlock_release(&b->rwl, RWL_WRITER);
 	return ret;
 }
 
@@ -102,7 +97,7 @@ int free_inode(struct inode *i, int recur)
 		free_pipe(i);
 	if(i->start)
 		kfree((void *)i->start);
-	destroy_mutex(&i->lock);
+	rwlock_destroy(&i->rwl);
 	if(recur)
 	{
 		struct inode *c;
@@ -126,15 +121,14 @@ int do_iremove(struct inode *i, int flag)
 	struct inode *parent = i->parent;
 	if(!parent) return -1;
 	assert(parent != i);
-	char unlock;
-	if((unlock=mutex_not_owner(&parent->lock))) mutex_on(&parent->lock);
+	rwlock_acquire(&parent->rwl, RWL_WRITER);
 	if(!flag && (get_ref_count(i) || i->children.head) && flag != 3)
 		panic(0, "Attempted to iremove inode with count > 0 or children! (%s)", 
 			i->name);
 	if(flag != 3) 
 		i->unreal=1;
 	ll_remove(&parent->children, i->node);
-	if(unlock) mutex_off(&parent->lock);
+	rwlock_release(&parent->rwl, RWL_WRITER);
 	if(flag != 3)
 		free_inode(i, (flag == 2) ? 1 : 0);
 	return 0;

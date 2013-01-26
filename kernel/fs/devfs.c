@@ -18,7 +18,7 @@ void init_dev_fs()
 	devfs_root->mode = S_IFDIR | 0x1FF;
 	devfs_root->uid = devfs_root->gid = GOD;
 	devfs_root->num = -1;
-	create_mutex(&devfs_root->lock);
+	rwlock_create(&devfs_root->rwl);
 	/* Create device nodes */
 	char tty[6] = "tty";
 	int i;
@@ -45,7 +45,7 @@ struct inode *dfs_add(struct inode *q, char *name, mode_t mode, int major, int m
 	i->uid = GOD;
 	i->dev = 256*major+minor;
 	i->num = devfs_nodescount++;
-	create_mutex(&i->lock);
+	rwlock_create(&i->rwl);
 	add_inode(q, i);
 	return i;
 }

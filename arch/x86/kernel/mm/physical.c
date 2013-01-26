@@ -4,7 +4,6 @@
 #include <multiboot.h>
 #include <task.h>
 #include <swap.h>
-
 volatile addr_t pm_location=0;
 volatile addr_t pm_stack = PM_STACK_ADDR;
 volatile addr_t pm_stack_max = PM_STACK_ADDR;

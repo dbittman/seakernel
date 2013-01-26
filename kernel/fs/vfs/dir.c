@@ -63,23 +63,21 @@ int get_pwd(char *buf, int sz)
 
 int chroot(char *n)
 {
-	if(!n) return -EINVAL;
-	struct inode *i=0;
-	struct inode *old = current_task->root;
+	if(!n) 
+		return -EINVAL;
+	struct inode *i, *old = current_task->root;
 	if(current_task->uid != GOD)
 		return -EPERM;
 	i = get_idir(n, 0);
 	if(!i)
 		return -ENOENT;
 	if(!is_directory(i)) {
-		rwlock_acquire(&i->rwl, RWL_WRITER);
 		iput(i);
 		return -ENOTDIR;
 	}
 	current_task->root = i;
-	change_ireq(i, 1);
-	change_ireq(old, -1);
-	rwlock_acquire(&old->rwl, RWL_WRITER);
+	add_atomic(&i->required, 1);
+	sub_atomic(&i->required, 1);
 	iput(old);
 	chdir("/");
 	return 0;

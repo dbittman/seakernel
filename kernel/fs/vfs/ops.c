@@ -10,33 +10,6 @@ int is_directory(struct inode *i)
 	return i ? S_ISDIR(i->mode) : 0;
 }
 
-int change_icount(struct inode *i, int c)
-{
-	int ret=0;
-	if(!i) return 0;
-	ret = (i->count += c);
-	return ret;
-}
-
-int change_ireq(struct inode *i, int c)
-{
-	int ret=0;
-	if(!i) return 0;
-	char unlock;
-	ret = (i->required += c);
-	return ret;
-}
-
-int get_ref_count(struct inode *i)
-{
-	return i ? i->count : 0;
-}
-
-int get_f_ref_count(struct inode *i)
-{
-	return i ? i->f_count : 0;
-}
-
 int permissions(struct inode *i, mode_t flag)
 {
 	if(!i)
@@ -64,20 +37,28 @@ int do_add_inode(struct inode *b, struct inode *i)
 int add_inode(struct inode *b, struct inode *i)
 {
 	assert(b && i);
-	int ret;
+	/* we only request a reader, since it's likely that the node will
+	 * have children already, and we don't need to do any modifications
+	 * to the node that don't have their own locks anyway. */
+	rwlock_acquire(&b->rwl, RWL_READER);
 	/* To save resources and time, we only create this LL if we need to.
 	 * Since a large number of inodes are files, we do not need to 
 	 * create this structure for each one. */
-	rwlock_acquire(&b->rwl, RWL_WRITER);
-	if(!ll_is_active((&b->children)))
+	if(!ll_is_active((&b->children))) {
+		rwlock_escalate(&b->rwl, RWL_WRITER);
 		ll_create(&b->children);
-	ret = do_add_inode(b, i);
-	rwlock_release(&b->rwl, RWL_WRITER);
-	return ret;
+		rwlock_release(&b->rwl, RWL_WRITER);
+	} else
+		rwlock_release(&b->rwl, RWL_READER);
+	return do_add_inode(b, i);
 }
 
 int recur_total_refs(struct inode *i)
 {
+	/* TODO: WARNING: this is dangerous. We could VERY easily end up
+	 * deadlocking the system by pulling a stunt like this. Maybe we
+	 * should have inc_parent_times for inodes too? */
+	rwlock_acquire(&i->rwl, RWL_READER);
 	int x = i->count;
 	struct inode *c;
 	struct llistnode *cur;
@@ -85,6 +66,7 @@ int recur_total_refs(struct inode *i)
 	{
 		x += recur_total_refs(c);
 	}
+	rwlock_release(&i->rwl, RWL_READER);
 	return x;
 }
 
@@ -97,6 +79,7 @@ int free_inode(struct inode *i, int recur)
 		free_pipe(i);
 	if(i->start)
 		kfree((void *)i->start);
+	rwlock_release(&i->rwl, RWL_WRITER);
 	rwlock_destroy(&i->rwl);
 	if(recur)
 	{
@@ -117,9 +100,9 @@ int free_inode(struct inode *i, int recur)
 
 int do_iremove(struct inode *i, int flag)
 {
-	if(!i) return -1;
+	assert(i);
 	struct inode *parent = i->parent;
-	if(!parent) return -1;
+	assert(parent);
 	assert(parent != i);
 	rwlock_acquire(&parent->rwl, RWL_WRITER);
 	if(!flag && (get_ref_count(i) || i->children.head) && flag != 3)
@@ -128,6 +111,7 @@ int do_iremove(struct inode *i, int flag)
 	if(flag != 3) 
 		i->unreal=1;
 	ll_remove(&parent->children, i->node);
+	i->parent=0;
 	rwlock_release(&parent->rwl, RWL_WRITER);
 	if(flag != 3)
 		free_inode(i, (flag == 2) ? 1 : 0);

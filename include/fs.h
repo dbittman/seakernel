@@ -27,7 +27,7 @@ struct inode {
 	uid_t uid;
 	gid_t gid;
 	unsigned short nlink;
-	unsigned char unreal, dynamic, marked_for_deletion;
+	unsigned char dynamic, marked_for_deletion;
 	unsigned int flags;
 	off_t len;
 	addr_t start;

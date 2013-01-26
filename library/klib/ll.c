@@ -108,8 +108,10 @@ void ll_destroy(struct llist *list)
 	assert(list && !list->head);
 	if(!ll_is_active(list))
 		return;
-	rwlock_destroy(&list->rwl);
+	rwlock_acquire(&list->rwl, RWL_WRITER);
 	list->flags &= ~LL_ACTIVE;
+	rwlock_release(&list->rwl, RWL_WRITER);
+	rwlock_destroy(&list->rwl);
 	if(list->flags & LL_ALLOC)
 		kfree(list);
 }

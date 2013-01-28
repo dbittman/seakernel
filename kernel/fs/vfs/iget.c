@@ -32,35 +32,32 @@ struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, int *req)
 		return 0;
 	struct llistnode *cur;
 	#warning "need to have a RWL_READER lock around these..."
+	rwlock_acquire(&i->children->rwl, RWL_READER);
 	ll_for_each_entry((&i->children), cur, struct inode *, temp)
 	{
-		assert(!temp->unreal);
 		/* Check to see if an inode is valid. This is similar to checks in 
 		 * iput if it can be released If the validness fails, then the inode 
 		 * could very well be being released */
 		if(!strcmp(temp->name, path))
 		{
-			change_ireq(i, 1);
-			if(req) *req=1;
+			rwlock_release(&i->children->rwl, RWL_READER);
 			if(temp->mount)
 				temp = temp->mount->root;
+			add_atomic(&temp->count, 1);
 			/* Update info. We do this in case something inside the driver 
 			 * has changed the stats of this file without us knowing. */
 			vfs_callback_update(temp);
 			return temp;
 		}
 	}
+	rwlock_release(&i->children->rwl, RWL_READER);
 	/* Force Lookup */
 	if(i->dynamic && i->i_ops && i->i_ops->lookup && !ram)
 	{
 		temp = vfs_callback_lookup(i, path);
 		if(!temp)
 			return 0;
-		change_ireq(i, 1);
-		if(req) *req=1;
-		temp->count=0;
-		temp->f_count=0;
-		temp->required=0;
+		temp->count=1;
 		add_inode(i, temp);
 		return temp;
 	}
@@ -75,8 +72,6 @@ struct inode *lookup(struct inode *i, char *path)
 	rwlock_acquire(&i->rwl, RWL_READER);
 	struct inode *ret = do_lookup(i, path, 1, 0, &req);
 	rwlock_release(&i->rwl, RWL_READER);
-	if(ret) change_icount(ret, 1);
-	if(req) change_ireq(i, -1);
 	if(ret && S_ISLNK(ret->mode))
 	{
 		/* The link's actual contents contain the path to the linked file */
@@ -84,7 +79,6 @@ struct inode *lookup(struct inode *i, char *path)
 		memset(li, 0, ret->len+1);
 		read_fs(ret, 0, ret->len, li);
 		struct inode *linked = get_idir(li, i);
-		rwlock_acquire(&ret->rwl, RWL_WRITER);
 		iput(ret);
 		return linked;
 	}
@@ -98,8 +92,6 @@ struct inode *llookup(struct inode *i, char *path)
 	rwlock_acquire(&i->rwl, RWL_READER);
 	struct inode *ret = do_lookup(i, path, 1, 0, &req);
 	rwlock_release(&i->rwl, RWL_READER);
-	if(ret) change_icount(ret, 1);
-	if(req) change_ireq(i, -1);
 	return ret;
 }
 
@@ -112,17 +104,15 @@ struct inode *do_add_dirent(struct inode *p, char *name, int mode)
 		return 0;
 	if(p->parent == current_task->root && !strcmp(p->name, "tmp"))
 		mode |= 0x1FF;
+	rwlock_acquire(&p->rwl, RWL_WRITER);
 	struct inode *ret = vfs_callback_create(p, name, mode);
+	ret->count=1;
+	rwlock_release(&p->rwl, RWL_WRITER);
 	if(ret) {
 		ret->mtime = get_epoch_time();
 		ret->uid = current_task->uid;
 		ret->gid = current_task->gid;
-		change_ireq(p, 1);
 		add_inode(p, ret);
-	}
-	if(ret) {
-		change_icount(ret, 1);
-		change_ireq(p, -1);
 		sync_inode_tofs(ret);
 	}
 	return ret;
@@ -195,8 +185,9 @@ struct inode *do_get_idir(char *p_path, struct inode *b, int use_link,
 			if(did_create && ret)
 				*did_create=1;
 		}
+		#warning "should do iput here..."
 		if(prev)
-			change_icount(prev, -1);
+			sub_atomic(&prev->count, 1);
 		if(!ret)
 			return 0;
 		prev = ret;

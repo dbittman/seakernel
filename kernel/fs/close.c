@@ -8,6 +8,7 @@
 #include <block.h>
 #include <char.h>
 #include <rwlock.h>
+#include <atomic.h>
 int sys_close(int fp)
 {
 	/* Make sure that we flush a mm file */
@@ -15,7 +16,7 @@ int sys_close(int fp)
 	struct file *f = get_file_pointer((task_t *) current_task, fp);
 	if(!f)
 		return -EBADF;
-	assert(f->inode && !f->inode->unreal && f->inode->f_count);
+	assert(f->inode && f->inode->f_count);
 	if(f->inode->pipe)
 	{
 		/* okay, its a pipe. We need to do some special things
@@ -37,10 +38,7 @@ int sys_close(int fp)
 		char_rw(CLOSE, f->inode->dev, 0, 0);
 	else if(S_ISBLK(f->inode->mode) && !fp)
 		block_device_rw(CLOSE, f->inode->dev, 0, 0, 0);
-	rwlock_acquire(&f->inode->rwl, RWL_WRITER);
-	if(f->inode->f_count > 0)
-		f->inode->f_count--;
-	if(f->inode->marked_for_deletion)
+	if(!sub_atomic(&f->inode->f_count, 1) && f->inode->marked_for_deletion)
 		do_unlink(f->inode);
 	else
 		iput(f->inode);

@@ -4,7 +4,7 @@
 #include <asm/system.h>
 #include <dev.h>
 #include <fs.h>
-
+#warning "check locking..."
 int link(char *old, char *new)
 {
 	if(!old || !new)
@@ -16,7 +16,6 @@ int link(char *old, char *new)
 	if(!i)
 		return -ENOENT;
 	int ret = vfs_callback_link(i, new);
-	rwlock_acquire(&i->rwl, RWL_WRITER);
 	iput(i);
 	if(!ret) sys_utime(new, 0, 0);
 	return ret;

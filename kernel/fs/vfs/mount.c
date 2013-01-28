@@ -23,6 +23,7 @@ int do_mount(struct inode *i, struct inode *p)
 	i->mount = (mount_pt_t *)kmalloc(sizeof(mount_pt_t));
 	i->mount->root = p;
 	i->mount->parent = i;
+	add_atomic(&i->count, 1);
 	p->mount_parent = i;
 	rwlock_release(&i->rwl, RWL_WRITER);
 	struct mountlst *ent = (void *)kmalloc(sizeof(struct mountlst));
@@ -54,7 +55,6 @@ int s_mount(char *name, int dev, u64 block, char *fsname, char *no)
 	int ret = mount(name, i);
 	if(!ret) return 0;
 	vfs_callback_unmount(i, i->sb_idx);
-	rwlock_acquire(&i->rwl, RWL_WRITER);
 	iput(i);
 	return ret;
 }
@@ -82,7 +82,6 @@ int sys_mount2(char *node, char *to, char *name, char *opts, int flags)
 	if(!i)
 		return -ENOENT;
 	int dev = i->dev;
-	rwlock_acquire(&i->rwl, RWL_WRITER);
 	iput(i);
 	return s_mount(to, dev, 0, name, node);
 }
@@ -101,21 +100,30 @@ int do_unmount(struct inode *i, int flags)
 	if(!is_directory(i))
 		return -ENOTDIR;
 	struct inode *m = i->mount->root;
-	if(m->required || m->count>1)
+	rwlock_acquire(&m->rwl, RWL_READER);
+	if(m->count>1) {
+		rwlock_release(&m->rwl, RWL_READER);
 		return -EBUSY;
+	}
+	rwlock_acquire(&i->rwl, RWL_WRITER);
 	mount_pt_t *mt = i->mount;
 	i->mount=0;
-	lock_scheduler();
+	//lock_scheduler();
 	int c = recur_total_refs(m);
 	if(c && (!(flags&1) && !current_task->uid))
 	{
 		i->mount=mt;
-		unlock_scheduler();
+		rwl_release(&i->rwl, RWL_WRITER);
+		rwl_release(&m->rwl, RWL_READER);
+		//unlock_scheduler();
 		return -EBUSY;
 	}
-	unlock_scheduler();
+	//unlock_scheduler();
 	vfs_callback_unmount(m, m->sb_idx);
+	rwl_release(&i->rwl, RWL_WRITER);
+	rwl_escalate(&m->rwl, RWL_WRITER);
 	m->mount_parent=0;
+	rwl_release(&m->rwl, RWL_WRITER);
 	struct mountlst *lst = get_mount(m);
 	ll_remove(mountlist, lst->node);
 	kfree(lst);
@@ -137,7 +145,6 @@ int unmount(char *n, int flags)
 	struct inode *got = i;
 	i = i->mount_parent;
 	int ret = do_unmount(i, flags);
-	rwlock_acquire(ret ? &got->rwl : &i->rwl, RWL_WRITER);
 	if(ret) iput(got);
 	else iput(i);
 	return ret;

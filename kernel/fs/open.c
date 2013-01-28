@@ -9,6 +9,7 @@
 #include <sys/fcntl.h>
 #include <char.h>
 #include <block.h>
+#include <atomic.h>
 
 struct file *d_sys_open(char *name, int flags, mode_t _mode, int *error, int *num)
 {
@@ -29,21 +30,17 @@ struct file *d_sys_open(char *name, int flags, mode_t _mode, int *error, int *nu
 		return 0;
 	}
 	/* If CREAT and EXCL are set, and the file exists, return */
-	
 	if(flags & _FCREAT && flags & _FEXCL && !did_create) {
-		rwlock_acquire(&inode->rwl, RWL_WRITER);
 		iput(inode);
 		*error = -EEXIST;
 		return 0;
 	}
 	if(flags & _FREAD && !permissions(inode, MAY_READ)) {
-		rwlock_acquire(&inode->rwl, RWL_WRITER);
 		iput(inode);
 		*error = -EACCES;
 		return 0;
 	}
 	if(flags & _FWRITE && !permissions(inode, MAY_WRITE)) {
-		rwlock_acquire(&inode->rwl, RWL_WRITER);
 		iput(inode);
 		*error = -EACCES;
 		return 0;
@@ -55,9 +52,9 @@ struct file *d_sys_open(char *name, int flags, mode_t _mode, int *error, int *nu
 	f->pos=0;
 	f->count=1;
 	f->fd_flags &= ~FD_CLOEXEC;
-	rwlock_acquire(&inode->rwl, RWL_WRITER);
-	inode->f_count++;
-	rwlock_release(&inode->rwl, RWL_WRITER);
+	rwlock_acquire(&inode->rwl, RWL_READER);
+	add_atomic(&inode->count, 1);
+	rwlock_release(&inode->rwl, RWL_READER);
 	ret = add_file_pointer((task_t *)current_task, f);
 	if(num) *num = ret;
 	if(S_ISCHR(inode->mode) && !(flags & _FNOCTTY))
@@ -66,12 +63,12 @@ struct file *d_sys_open(char *name, int flags, mode_t _mode, int *error, int *nu
 	{
 		rwlock_acquire(&inode->rwl, RWL_WRITER);
 		inode->len=0;
-		sync_inode_tofs(inode);
 		rwlock_release(&inode->rwl, RWL_WRITER);
+		sync_inode_tofs(inode);
 	}
 	if(S_ISFIFO(inode->mode) && inode->pipe) {
 		mutex_acquire(inode->pipe->lock);
-		inode->pipe->count++;
+		add_atomic(&inode->pipe->count, 1);
 		mutex_release(inode->pipe->lock);
 	}
 	return f;
@@ -98,12 +95,11 @@ int duplicate(task_t *t, int fp, int n)
 		return -EBADF;
 	struct file *new=(struct file *)kmalloc(sizeof(struct file));
 	new->inode = f->inode;
-	assert(new->inode && new->inode->count && new->inode->f_count 
-			&& !new->inode->unreal);
+	assert(new->inode && new->inode->count && new->inode->f_count);
 	new->count=1;
 	rwlock_acquire(&f->inode->rwl, RWL_WRITER);
-	f->inode->count++;
-	f->inode->f_count++;
+	add_atomic(&f->inode->count, 1);
+	add_atomic(&f->inode->f_count, 1);
 	rwlock_release(&f->inode->rwl, RWL_WRITER);
 	new->flags = f->flags;
 	new->fd_flags = f->fd_flags;
@@ -111,8 +107,8 @@ int duplicate(task_t *t, int fp, int n)
 	new->pos = f->pos;
 	if(f->inode->pipe && !f->inode->pipe->type) {
 		mutex_acquire(f->inode->pipe->lock);
-		++f->inode->pipe->count;
-		if(f->flags & _FWRITE) f->inode->pipe->wrcount++;
+		add_atomic(&f->inode->pipe->count, 1);
+		if(f->flags & _FWRITE) add_atomic(&f->inode->pipe->wrcount, 1);
 		mutex_release(f->inode->pipe->lock);
 	}
 	int ret = 0;

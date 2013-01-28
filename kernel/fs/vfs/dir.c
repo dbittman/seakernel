@@ -76,9 +76,9 @@ int chroot(char *n)
 		return -ENOTDIR;
 	}
 	current_task->root = i;
-	add_atomic(&i->required, 1);
-	sub_atomic(&i->required, 1);
 	iput(old);
+	/* we call chdir here and not ichdir so that the count will again
+	 * be incremented */
 	chdir("/");
 	return 0;
 }
@@ -89,19 +89,14 @@ int ichdir(struct inode *i)
 		return -EINVAL;
 	struct inode *old=current_task->pwd;
 	if(!is_directory(i)) {
-		rwlock_acquire(&i->rwl, RWL_WRITER);
 		iput(i);
 		return -ENOTDIR;
 	}
 	if(!permissions(i, MAY_EXEC)) {
-		rwlock_acquire(&i->rwl, RWL_WRITER);
 		iput(i);
 		return -EACCES;
 	}
 	current_task->pwd = i;
-	change_ireq(i, 1);
-	change_ireq(old, -1);
-	rwlock_acquire(&old->rwl, RWL_WRITER);
 	iput(old);
 	return 0;
 }
@@ -135,12 +130,9 @@ struct inode *do_readdir(struct inode *i, int num)
 		rwlock_release(&i->rwl, RWL_READER);
 	}
 	else if(i->i_ops && i->i_ops->readdir) {
-		struct inode *old=0;
-		old = vfs_callback_readdir(i, num);
-		if(!old) 
-			return 0;
-		old->count=1;
-		c = old;
+		c = vfs_callback_readdir(i, num);
+		if(c)
+			c->count=1;
 	}
 	return c;
 }
@@ -157,7 +149,6 @@ struct inode *read_dir(char *n, int num)
 		return 0;
 	}
 	struct inode *ret = do_readdir(i, num);
-	rwlock_acquire(&i->rwl, RWL_WRITER);
 	iput(i);
 	return ret;
 }
@@ -166,10 +157,7 @@ struct inode *read_idir(struct inode *i, int num)
 {
 	if(!i)
 		return 0;
-	if(!permissions(i, MAY_READ)) {
-		rwlock_acquire(&i->rwl, RWL_WRITER);
-		iput(i);
+	if(!permissions(i, MAY_READ))
 		return 0;
-	}
 	return do_readdir(i, num);
 }

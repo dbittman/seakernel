@@ -2,6 +2,7 @@
 #include <kernel.h>
 #include <task.h>
 #include <fs.h>
+#include <atomic.h>
 
 struct file_ptr *get_file_handle(task_t *t, int n)
 {
@@ -27,9 +28,7 @@ void remove_file_pointer(task_t *t, int n)
 	if(!f)
 		return;
 	t->filp[n] = 0;
-	task_critical();
-	f->fi->count--;
-	task_uncritical();
+	sub_atomic(&f->fi->count, 1);
 	if(!f->fi->count)
 		kfree(f->fi);
 	kfree(f);
@@ -81,25 +80,22 @@ void copy_file_handles(task_t *p, task_t *n)
 			struct file_ptr *fp = (void *)kmalloc(sizeof(struct file_ptr));
 			fp->num = c;
 			fp->fi = p->filp[c]->fi;
-			task_critical();
-			fp->fi->count++;
-			task_uncritical();
+			add_atomic(&fp->fi->count, 1);
 			struct inode *i = fp->fi->inode;
-			assert(i && i->count && i->f_count && !i->unreal);
-			rwlock_acquire(&i->rwl, RWL_WRITER);
-			i->count++;
-			i->f_count++;
-			rwlock_release(&i->rwl, RWL_WRITER);
+			assert(i && i->count && i->f_count);
+			rwlock_acquire(&i->rwl, RWL_READER);
+			add_atomic(&i->count, 1);
+			add_atomic(&i->f_count, 1);
+			rwlock_release(&i->rwl, RWL_READER);
 			if(i->pipe && !i->pipe->type) {
 				mutex_acquire(i->pipe->lock);
-				++i->pipe->count;
+				add_atomic(&i->pipe->count, 1);
 				if(fp->fi->flags & _FWRITE) 
-					i->pipe->wrcount++;
+					add_atomic(&i->pipe->wrcount, 1);
 				mutex_release(i->pipe->lock);
 			}
 			n->filp[c] = fp;
 		}
-		
 		c++;
 	}
 }

@@ -111,9 +111,10 @@ int do_iremove(struct inode *i, int flag)
 		panic(0, "Attempted to iremove inode with count > 0 or children! (%s)", 
 			i->name);
 	/* remove the count added by having this child */
+	i->parent=0;
+	#warning "we should iput here..."
 	sub_atomic(&parent->count, 1);
 	ll_remove(&parent->children, i->node);
-	i->parent=0;
 	rwlock_release(&parent->rwl, RWL_WRITER);
 	if(flag != 3)
 		free_inode(i, (flag == 2) ? 1 : 0);

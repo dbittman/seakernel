@@ -32,7 +32,7 @@ struct inode {
 	off_t len;
 	addr_t start;
 	unsigned int nblocks, ctime, atime, mtime;
-	int count, f_count, newlocks, required;
+	int count, f_count, newlocks;
 	/* Identification */
 	char name[INAME_LEN];
 	unsigned int dev;

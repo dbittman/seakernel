@@ -37,10 +37,12 @@ int do_add_inode(struct inode *b, struct inode *i)
 int add_inode(struct inode *b, struct inode *i)
 {
 	assert(b && i);
-	/* we only request a reader, since it's likely that the node will
-	 * have children already, and we don't need to do any modifications
-	 * to the node that don't have their own locks anyway. */
+	/* we can get away with a read lock here, since the only critical
+	 * counting functions that could cause problems decrease only, and
+	 * they use write locks. This will save time */
 	rwlock_acquire(&b->rwl, RWL_READER);
+	/* one count per child. Tax deductions! */
+	add_atomic(&b->count, 1);
 	/* To save resources and time, we only create this LL if we need to.
 	 * Since a large number of inodes are files, we do not need to 
 	 * create this structure for each one. */
@@ -72,7 +74,7 @@ int recur_total_refs(struct inode *i)
 
 int free_inode(struct inode *i, int recur)
 {
-	assert(i);
+	assert(i && !i->parent);
 	assert(recur || !i->children.head);
 	destroy_flocks(i);
 	if(i->pipe)
@@ -108,8 +110,8 @@ int do_iremove(struct inode *i, int flag)
 	if(!flag && (get_ref_count(i) || i->children.head) && flag != 3)
 		panic(0, "Attempted to iremove inode with count > 0 or children! (%s)", 
 			i->name);
-	if(flag != 3) 
-		i->unreal=1;
+	/* remove the count added by having this child */
+	sub_atomic(&parent->count, 1);
 	ll_remove(&parent->children, i->node);
 	i->parent=0;
 	rwlock_release(&parent->rwl, RWL_WRITER);

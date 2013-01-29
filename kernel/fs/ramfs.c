@@ -2,9 +2,10 @@
 #include <memory.h>
 #include <task.h>
 #include <fs.h>
+#include <atomic.h>
 struct inode *ramfs_root;
 int ramfs_sane(struct inode *i);
-unsigned int ramfs_node_num=1;
+unsigned int ramfs_node_num=0;
 int ramfs_op_dummy()
 {
 	return 0;
@@ -105,10 +106,6 @@ struct inode *rfs_create(struct inode *__p, char *name, mode_t mode)
 	struct inode *r, *p=__p;
 	if(!__p)
 		p = ramfs_root;
-	if((r = (struct inode *)get_idir(name, p)))
-	{
-		return r;
-	}
 	struct inode *node;
 	node = (struct inode *)kmalloc(sizeof(struct inode));
 	strncpy(node->name, name, INAME_LEN);
@@ -118,9 +115,7 @@ struct inode *rfs_create(struct inode *__p, char *name, mode_t mode)
 	node->i_ops = &rfs_inode_ops;
 	node->mode = mode | 0x1FF;
 	node->start = (int)kmalloc(1);
-	task_critical();
-	node->num = ramfs_node_num++;
-	task_uncritical();
+	node->num = add_atomic(&ramfs_node_num, 1);
 	rwlock_create(&node->rwl);
 	if(!__p) add_inode(p, node);
 	return node;

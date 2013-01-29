@@ -4,6 +4,9 @@
 #include <asm/system.h>
 #include <dev.h>
 #include <fs.h>
+#include <atomic.h>
+#include <rwlock.h>
+
 #warning "check locking..."
 int link(char *old, char *new)
 {
@@ -40,7 +43,7 @@ int do_unlink(struct inode *i)
 		iput(i);
 		return 0;
 	}
-	if(i->count > 1 || i->required || i->mount || i->mount_parent)
+	if(i->count > 1 || i->mount || i->mount_parent)
 		err = -EBUSY;
 	int ret = err ? 0 : vfs_callback_unlink(i);
 	(err) ? iput(i) : iremove_force(i);
@@ -77,7 +80,7 @@ int rmdir(char *f)
 		iput(i);
 		return 0;
 	}
-	if(i->count > 1 || i->required || i->mount || i->mount_parent)
+	if(i->count > 1 || i->mount || i->mount_parent)
 		err = -EBUSY;
 	int ret = err ? 0 : vfs_callback_rmdir(i);
 	(err) ? iput(i) : iremove_force(i);

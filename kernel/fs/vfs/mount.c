@@ -5,6 +5,8 @@
 #include <dev.h>
 #include <fs.h>
 #include <ll.h>
+#include <atomic.h>
+#include <rwlock.h>
 struct inode *init_tmpfs();
 
 int do_mount(struct inode *i, struct inode *p)
@@ -113,17 +115,17 @@ int do_unmount(struct inode *i, int flags)
 	if(c && (!(flags&1) && !current_task->uid))
 	{
 		i->mount=mt;
-		rwl_release(&i->rwl, RWL_WRITER);
-		rwl_release(&m->rwl, RWL_READER);
+		rwlock_release(&i->rwl, RWL_WRITER);
+		rwlock_release(&m->rwl, RWL_READER);
 		//unlock_scheduler();
 		return -EBUSY;
 	}
 	//unlock_scheduler();
 	vfs_callback_unmount(m, m->sb_idx);
-	rwl_release(&i->rwl, RWL_WRITER);
-	rwl_escalate(&m->rwl, RWL_WRITER);
+	rwlock_release(&i->rwl, RWL_WRITER);
+	rwlock_escalate(&m->rwl, RWL_WRITER);
 	m->mount_parent=0;
-	rwl_release(&m->rwl, RWL_WRITER);
+	rwlock_release(&m->rwl, RWL_WRITER);
 	struct mountlst *lst = get_mount(m);
 	ll_remove(mountlist, lst->node);
 	kfree(lst);

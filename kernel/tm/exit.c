@@ -155,8 +155,6 @@ void exit(int code)
 	free_stack();
 	clear_resources(t);
 	close_all_files(t);
-	change_ireq(t->root, -1);
-	change_ireq(t->pwd, -1);
 	iput(t->root);
 	iput(t->pwd);
 	/* Send out some signals */

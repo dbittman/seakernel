@@ -38,6 +38,8 @@ int sys_close(int fp)
 		char_rw(CLOSE, f->inode->dev, 0, 0);
 	else if(S_ISBLK(f->inode->mode) && !fp)
 		block_device_rw(CLOSE, f->inode->dev, 0, 0, 0);
+		
+		#warning "this wont work if other things have a count on the inode"
 	if(!sub_atomic(&f->inode->f_count, 1) && f->inode->marked_for_deletion)
 		do_unlink(f->inode);
 	else

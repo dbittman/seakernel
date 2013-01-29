@@ -4,6 +4,8 @@
 #include <asm/system.h>
 #include <dev.h>
 #include <fs.h>
+#include <atomic.h>
+#include <rwlock.h>
 
 struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, int *req)
 {
@@ -13,44 +15,59 @@ struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, int *req)
 	if(aut) {
 		if(!strcmp(path, ".."))
 		{
-			if(i == current_task->root)
+			if(i == current_task->root) {
+				rwlock_acquire(&i->rwl, RWL_READER);
+				add_atomic(&i->count, 1);
+				rwlock_release(&i->rwl, RWL_READER);
 				return i;
+			}
 			if(i->mount_parent)
 				i = i->mount_parent;
 			if(!i->parent || !i) 
 				return 0;
 			i = i->parent;
+			rwlock_acquire(&i->rwl, RWL_READER);
+			add_atomic(&i->count, 1);
+			rwlock_release(&i->rwl, RWL_READER);
 			return i;
 		}
-		if(!strcmp(path, "."))
+		if(!strcmp(path, ".")) {
+			rwlock_acquire(&i->rwl, RWL_READER);
+			add_atomic(&i->count, 1);
+			rwlock_release(&i->rwl, RWL_READER);
 			return i;
+		}
 	}
 	/* Access? */
 	if(!is_directory(i))
 		return 0;
 	if(!permissions(i, MAY_EXEC))
 		return 0;
-	struct llistnode *cur;
-	#warning "need to have a RWL_READER lock around these..."
-	rwlock_acquire(&i->children->rwl, RWL_READER);
-	ll_for_each_entry((&i->children), cur, struct inode *, temp)
-	{
-		/* Check to see if an inode is valid. This is similar to checks in 
-		 * iput if it can be released If the validness fails, then the inode 
-		 * could very well be being released */
-		if(!strcmp(temp->name, path))
+	if(ll_is_active(&i->children)) {
+		struct llistnode *cur;
+		#warning "need to have a RWL_READER lock around these..."
+		rwlock_acquire(&i->children.rwl, RWL_READER);
+		ll_for_each_entry((&i->children), cur, struct inode *, temp)
 		{
-			rwlock_release(&i->children->rwl, RWL_READER);
-			if(temp->mount)
-				temp = temp->mount->root;
-			add_atomic(&temp->count, 1);
-			/* Update info. We do this in case something inside the driver 
-			 * has changed the stats of this file without us knowing. */
-			vfs_callback_update(temp);
-			return temp;
+			/* Check to see if an inode is valid. This is similar to checks in 
+			 * iput if it can be released If the validness fails, then the inode 
+			 * could very well be being released */
+			if(!strcmp(temp->name, path))
+			{
+				rwlock_release(&i->children.rwl, RWL_READER);
+				if(temp->mount)
+					temp = temp->mount->root;
+				rwlock_acquire(&i->rwl, RWL_READER);
+				add_atomic(&temp->count, 1);
+				rwlock_release(&i->rwl, RWL_READER);
+				/* Update info. We do this in case something inside the driver 
+				 * has changed the stats of this file without us knowing. */
+				vfs_callback_update(temp);
+				return temp;
+			}
 		}
+		rwlock_release(&i->children.rwl, RWL_READER);
 	}
-	rwlock_release(&i->children->rwl, RWL_READER);
 	/* Force Lookup */
 	if(i->dynamic && i->i_ops && i->i_ops->lookup && !ram)
 	{
@@ -58,7 +75,7 @@ struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, int *req)
 		if(!temp)
 			return 0;
 		temp->count=1;
-		add_inode(i, temp);
+		do_add_inode(i, temp, 1);
 		return temp;
 	}
 	return 0;

@@ -50,6 +50,7 @@ int sys_stat(char *f, struct stat *statbuf, int lin)
 	i = (struct inode *) (lin ? lget_idir(f, 0) : get_idir(f, 0));
 	if(!i)
 		return -ENOENT;
+	kprintf("%d: STAT: %s: %x: %d\n", current_task->pid, f, i, lin);
 	do_stat(i, statbuf);
 	iput(i);
 	return 0;
@@ -64,7 +65,11 @@ int sys_dirstat(char *dir, unsigned num, char *namebuf, struct stat *statbuf)
 		return -ESRCH;
 	do_stat(i, statbuf);
 	strncpy(namebuf, i->name, 128);
-	if(i->dynamic) free_inode(i, 0);
+	if(i->dynamic) 
+	{
+		rwlock_acquire(&i->rwl, RWL_WRITER);
+		free_inode(i, 0);
+	}
 	return 0;
 }
 
@@ -79,7 +84,11 @@ int sys_dirstat_fd(int fd, unsigned num, char *namebuf, struct stat *statbuf)
 		return -ESRCH;
 	do_stat(i, statbuf);
 	strncpy(namebuf, i->name, 128);
-	if(i->dynamic) free_inode(i, 0);
+	if(i->dynamic) 
+	{
+		rwlock_acquire(&i->rwl, RWL_WRITER);
+		free_inode(i, 0);
+	}
 	return 0;
 }
 

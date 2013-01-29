@@ -2,6 +2,7 @@
 #include <kernel.h>
 #include <memory.h>
 #include <task.h>
+#include <atomic.h>
 extern void copy_update_stack(unsigned old, unsigned new, unsigned length);
 
 void copy_task_struct(task_t *new, task_t *parent)
@@ -9,12 +10,12 @@ void copy_task_struct(task_t *new, task_t *parent)
 	new->parent = parent;
 	new->pid = next_pid++;
 	if(parent->root) {
-		change_icount((new->root = parent->root), 1);
-		change_ireq(new->root, 1);
+		new->root = parent->root;
+		add_atomic(&new->root->count, 1);
 	}
 	if(parent->pwd) {
-		change_icount((new->pwd = parent->pwd), 1);
-		change_ireq(new->pwd, 1);
+		new->pwd = parent->pwd;
+		add_atomic(&new->pwd->count, 1);
 	}
 	new->uid = parent->uid;
 	new->magic = TASK_MAGIC;

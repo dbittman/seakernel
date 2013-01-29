@@ -6,6 +6,7 @@
 ext2_fs_t *fs_list;
 unsigned fs_num=0;
 mutex_t *fsll;
+#warning "use LL!!!!"
 ext2_fs_t *get_new_fsvol()
 {
 	ext2_fs_t *fs = (ext2_fs_t *)kmalloc(sizeof(ext2_fs_t));
@@ -75,7 +76,6 @@ struct inode *ext2_mount(dev_t dev, u64 block, char *node)
 		dev = in->dev;
 	if(in && (int)in->dev != dev)
 		printk(4, "[ext2]: Odd...node device is different from given device...\n");
-	rwlock_acquire(&in->rwl, RWL_WRITER);
 	iput(in);
 	fs->block = block;
 	fs->dev = dev;

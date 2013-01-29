@@ -151,8 +151,8 @@ void init_kernel_symbols(void)
 	
 	add_kernel_symbol(mutex_create);
 	add_kernel_symbol(mutex_destroy);
-	add_kernel_symbol(mutex_release);
-	add_kernel_symbol(mutex_acquire);
+	add_kernel_symbol(__mutex_release);
+	add_kernel_symbol(__mutex_acquire);
 	
 	add_kernel_symbol(block_ioctl);
 	add_kernel_symbol(block_device_rw);
@@ -161,9 +161,9 @@ void init_kernel_symbols(void)
 	add_kernel_symbol(remove_kernel_symbol);
 	add_kernel_symbol(do_send_signal);
 	add_kernel_symbol(switch_console);
-	add_kernel_symbol(rwlock_acquire);
+	add_kernel_symbol(__rwlock_acquire);
 	add_kernel_symbol(rwlock_release);
-	add_kernel_symbol(rwlock_escalate);
+	add_kernel_symbol(__rwlock_escalate);
 	add_kernel_symbol(rwlock_create);
 	add_kernel_symbol(rwlock_destroy);
 }

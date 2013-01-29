@@ -5,9 +5,17 @@
 #include <dev.h>
 #include <fs.h>
 #include <fcntl.h>
+#include <atomic.h>
+#include <rwlock.h>
+
 int is_directory(struct inode *i)
 {
 	return i ? S_ISDIR(i->mode) : 0;
+}
+
+int get_ref_count(struct inode *i)
+{
+	return i->count;
 }
 
 int permissions(struct inode *i, mode_t flag)
@@ -25,7 +33,7 @@ int permissions(struct inode *i, mode_t flag)
 	return flag & i->mode;
 }
 
-int do_add_inode(struct inode *b, struct inode *i)
+int actually_do_add_inode(struct inode *b, struct inode *i)
 {
 	if(!is_directory(b))
 		panic(0, "tried to add an inode to a file");
@@ -34,13 +42,14 @@ int do_add_inode(struct inode *b, struct inode *i)
 	return 0;
 }
 
-int add_inode(struct inode *b, struct inode *i)
+int do_add_inode(struct inode *b, struct inode *i, int locked)
 {
 	assert(b && i);
 	/* we can get away with a read lock here, since the only critical
 	 * counting functions that could cause problems decrease only, and
 	 * they use write locks. This will save time */
-	rwlock_acquire(&b->rwl, RWL_READER);
+	if(!locked) rwlock_acquire(&b->rwl, RWL_READER);
+	else assert((b->rwl.locks) >= 2);
 	/* one count per child. Tax deductions! */
 	add_atomic(&b->count, 1);
 	/* To save resources and time, we only create this LL if we need to.
@@ -49,10 +58,11 @@ int add_inode(struct inode *b, struct inode *i)
 	if(!ll_is_active((&b->children))) {
 		rwlock_escalate(&b->rwl, RWL_WRITER);
 		ll_create(&b->children);
-		rwlock_release(&b->rwl, RWL_WRITER);
-	} else
+		if(!locked) rwlock_release(&b->rwl, RWL_WRITER);
+		else rwlock_escalate(&b->rwl, RWL_READER);
+	} else if(!locked)
 		rwlock_release(&b->rwl, RWL_READER);
-	return do_add_inode(b, i);
+	return actually_do_add_inode(b, i);
 }
 
 int recur_total_refs(struct inode *i)
@@ -107,9 +117,9 @@ int do_iremove(struct inode *i, int flag)
 	assert(parent);
 	assert(parent != i);
 	rwlock_acquire(&parent->rwl, RWL_WRITER);
-	if(!flag && (get_ref_count(i) || i->children.head) && flag != 3)
-		panic(0, "Attempted to iremove inode with count > 0 or children! (%s)", 
-			i->name);
+	if(!flag && (i->count || i->children.head) && flag != 3)
+		panic(0, "Attempted to iremove inode with count > 0 or children! %d (%s)", 
+			i->count, i->name);
 	/* remove the count added by having this child */
 	i->parent=0;
 	#warning "we should iput here..."

@@ -24,6 +24,7 @@ Things that need more testing:
 Todo:
 	* event system (register events, blocking for IO...)
 	  such that a high priority process will get automatically resched'd if it unblocks
+
 Roadmap:
 0.2 B2
 	* bugfixes
@@ -54,23 +55,3 @@ Roadmap:
 	* no clobbering of strings
 	* make sure all features listed in termcap are properly implemented
 	* fix memory leaks (sh <script> has a leak)
-
-0.2: good userspace system and stable single-cpu kernel
-
-0.3 B1
-	* smp
-	* mutexes work in smp
-	* bugfixes
-0.3 B2
-	* sockets
-	* implement userspace drivers and allowing ring-3 writing of IOports
-
-0.3 RC1
-	* documentation
-	* optimizations
-
-0.3: basic SMP support, good IPC (sockets), bugfixes, feature completion. Good kernel. Possibility of userspace drivers
-
-0.4: Networking, drivers, more software, optimizations.
-
-0.5: Fully installable and usable OS

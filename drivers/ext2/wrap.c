@@ -184,7 +184,6 @@ int do_wrap_ext2_link(struct inode *i, char *path)
 	if(dir->sb_idx != i->sb_idx)
 		return -EINVAL;
 	int ret = do_add_ent(dir, &inode, p ? p+1 : path);
-	rwlock_acquire(&dir->rwl, RWL_WRITER);
 	iput(dir);
 	return ret;
 }

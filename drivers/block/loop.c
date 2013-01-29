@@ -5,6 +5,7 @@
 #include <cache.h>
 #include <block.h>
 #include <mod.h>
+#warning "make this use ll.c"
 struct loop_device {
 	struct inode *node;
 	int min;
@@ -85,9 +86,6 @@ int loop_up(int num, char *name)
 		mutex_acquire(&loop_mutex);
 		return -ENOENT;
 	}
-	rwlock_acquire(&i->rwl, RWL_WRITER);
-	i->required++;
-	rwlock_release(&i->rwl, RWL_WRITER);
 	loop->offset = loop->limit = loop->ro = 0;
 	loop->node = i;
 	
@@ -109,8 +107,6 @@ int loop_down(int num)
 	}
 	struct inode *i = loop->node;
 	loop->node=0;
-	rwlock_acquire(&i->rwl, RWL_WRITER);
-	i->required--;
 	iput(i);
 	return 0;
 }

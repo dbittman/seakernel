@@ -11,17 +11,25 @@
 #include <rwlock.h>
 #include <task.h>
 
-void rwlock_acquire(rwlock_t *lock, unsigned flags)
+void __rwlock_acquire(rwlock_t *lock, unsigned flags, char *file, int line)
 {
+	//if(strcmp("kernel/cache/cache.c", file)) printk(0, "TRACE: acquire rwl (%d) (%d): %s:%d\n", lock->locks, flags, file, line);
 	assert(lock->magic == RWLOCK_MAGIC);
+	int timeout;
 	while(1) 
 	{
 		/* if we're trying to get a writer lock, we need to wait until the
 		 * lock is completely cleared */
-		while((flags & RWL_WRITER) && lock->locks) schedule();
+		timeout = 1000;
+		while((flags & RWL_WRITER) && lock->locks && --timeout) schedule();
+		if(timeout == 0)
+			panic(0, "(1) waited too long to acquire the lock:%s:%d\n", file, line);
 		/* now, spinlock-acquire the write_lock bit */
-		while(bts_atomic(&lock->locks, 0))
+		timeout = 1000;
+		while(bts_atomic(&lock->locks, 0) && --timeout)
 			schedule();
+		if(timeout == 0)
+			panic(0, "(2) waited too long to acquire the lock:%s:%d\n", file, line);
 		/* if we're trying to read, we need to increment the locks by 2
 		 * thus skipping over the write_lock bit */
 		if(flags & RWL_READER) {
@@ -43,10 +51,11 @@ void rwlock_acquire(rwlock_t *lock, unsigned flags)
 	}
 }
 
-void rwlock_escalate(rwlock_t *lock, unsigned flags)
+void __rwlock_escalate(rwlock_t *lock, unsigned flags, char *file, int line)
 {
 	assert(lock->magic == RWLOCK_MAGIC);
 	assert(lock->locks);
+	//if(strcmp("kernel/cache/cache.c", file)) printk(0, "TRACE: escalate rwl (%d) (%d): %s:%d\n", lock->locks, flags, file, line);
 	if(lock->locks == 1 && (flags & RWL_READER)) {
 		/* change from a writer lock to a reader lock. This is easy. */
 		add_atomic(&lock->locks, 2);
@@ -57,10 +66,16 @@ void rwlock_escalate(rwlock_t *lock, unsigned flags)
 		 * less simple. We must wait until we are the only reader, and
 		 * then attempt a switch */
 		while(1) {
-			while(lock->locks != 2) schedule();
+			int timeout = 1000;
+			while(lock->locks != 2 && --timeout) schedule();
+			if(timeout == 0)
+				panic(0, "(1) waited too long to acquire the lock:%s:%d\n", file, line);
 			/* now, spinlock-acquire the write_lock bit */
-			while(bts_atomic(&lock->locks, 0))
+			timeout=1000;
+			while(bts_atomic(&lock->locks, 0) && --timeout)
 				schedule();
+			if(timeout == 0)
+				panic(0, "(2) waited too long to acquire the lock:%s:%d\n", file, line);
 			if(lock->locks == 3)
 			{
 				/* remove our read lock */
@@ -78,10 +93,15 @@ void rwlock_release(rwlock_t *lock, unsigned flags)
 {
 	assert(lock->magic == RWLOCK_MAGIC);
 	assert(lock->locks);
-	if(flags & RWL_READER)
+	//printk(0, "TRACE: release rwl (%d) (%d)\n", lock->locks, flags);
+	if(flags & RWL_READER) {
+		assert(lock->locks >= 2);
 		sub_atomic(&lock->locks, 2);
-	else if(flags & RWL_WRITER)
+	}
+	else if(flags & RWL_WRITER) {
+		assert(lock->locks == 1);
 		btr_atomic(&lock->locks, 0);
+	}
 }
 
 rwlock_t *rwlock_create(rwlock_t *lock)

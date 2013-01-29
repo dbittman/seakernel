@@ -11,9 +11,12 @@ typedef struct {
 	int pid;
 } mutex_t;
 
-void mutex_acquire(mutex_t *m);
-void mutex_release(mutex_t *m);
+void __mutex_acquire(mutex_t *m,char*,int);
+void __mutex_release(mutex_t *m,char*,int);
 mutex_t *mutex_create(mutex_t *m);
 void mutex_destroy(mutex_t *m);
+
+#define mutex_acquire(m) __mutex_acquire(m, __FILE__, __LINE__)
+#define mutex_release(m) __mutex_release(m, __FILE__, __LINE__)
 
 #endif

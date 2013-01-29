@@ -123,12 +123,14 @@ int do_iremove(struct inode *i, int flag);
 #define cget_idir(path,in_st,x) do_get_idir(path, in_st, 1, x, 0)
 #define ctget_idir(path,in_st,x,res) do_get_idir(path, in_st, 1, x, res)
 
+#define add_inode(a,b) do_add_inode(a, b, 0)
+
 extern struct llist *mountlist;
 int sys_chdir(char *n, int fd);
 int ichdir(struct inode *i);
 int sys_sync();
 int sync_inode_tofs(struct inode *i);
-int add_inode(struct inode *b, struct inode *i);
+int do_add_inode(struct inode *b, struct inode *i, int);
 int remove_inode(struct inode *b, char *name);
 int get_path_string(struct inode *p, char *path, int);
 struct inode *do_get_idir(char *path, struct inode *b, int, int, int *);
@@ -198,7 +200,6 @@ int sys_readpos(int fp, char *buf, size_t count);
 int sys_writepos(int fp, char *buf, size_t count);
 int is_directory(struct inode *i);
 int get_ref_count(struct inode *i);
-int add_inode(struct inode *b, struct inode *i);
 int free_inode(struct inode *i, int);
 int remove_inode(struct inode *b, char *name);
 struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, int *);

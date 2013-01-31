@@ -53,7 +53,6 @@ struct file *d_sys_open(char *name, int flags, mode_t _mode, int *error, int *nu
 	f->count=1;
 	f->fd_flags &= ~FD_CLOEXEC;
 	//rwlock_acquire(&inode->rwl, RWL_READER);
-	add_atomic(&inode->count, 1);
 	add_atomic(&inode->f_count, 1);
 	//rwlock_release(&inode->rwl, RWL_READER);
 	ret = add_file_pointer((task_t *)current_task, f);

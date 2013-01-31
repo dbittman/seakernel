@@ -138,7 +138,7 @@ void do_task_stat(struct task_stat *s, task_t *t)
 	s->argv = t->argv;
 	s->pid = t->pid;
 	s->cmd = (char *)t->command;
-	s->mem_usage = get_task_mem_usage(t) * 0x1000;
+	//s->mem_usage = get_task_mem_usage(t) * 0x1000;
 }
 
 int task_pstat(unsigned int pid, struct task_stat *s)

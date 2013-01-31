@@ -13,19 +13,19 @@
 
 void __rwlock_acquire(rwlock_t *lock, unsigned flags, char *file, int line)
 {
-	//if(strcmp("kernel/cache/cache.c", file)) printk(0, "TRACE: acquire rwl (%d) (%d): %s:%d\n", lock->locks, flags, file, line);
+	//if(strcmp("kernel/cache/cache.c", file)) printk(0, "TRACE: %d: acquire rwl %x (%d) (%d): %s:%d\n", current_task->pid, lock, lock->locks, flags, file, line);
 	assert(lock->magic == RWLOCK_MAGIC);
 	int timeout;
 	while(1) 
 	{
 		/* if we're trying to get a writer lock, we need to wait until the
 		 * lock is completely cleared */
-		timeout = 1000;
+		timeout = 10000;
 		while((flags & RWL_WRITER) && lock->locks && --timeout) schedule();
 		if(timeout == 0)
 			panic(0, "(1) waited too long to acquire the lock:%s:%d\n", file, line);
 		/* now, spinlock-acquire the write_lock bit */
-		timeout = 1000;
+		timeout = 10000;
 		while(bts_atomic(&lock->locks, 0) && --timeout)
 			schedule();
 		if(timeout == 0)
@@ -36,7 +36,6 @@ void __rwlock_acquire(rwlock_t *lock, unsigned flags, char *file, int line)
 			add_atomic(&lock->locks, 2);
 			/* and now reset the write_lock */
 			btr_atomic(&lock->locks, 0);
-			assert(lock->locks && !(lock->locks & 1));
 			break;
 		}
 		if(flags & RWL_WRITER) {
@@ -55,7 +54,7 @@ void __rwlock_escalate(rwlock_t *lock, unsigned flags, char *file, int line)
 {
 	assert(lock->magic == RWLOCK_MAGIC);
 	assert(lock->locks);
-	//if(strcmp("kernel/cache/cache.c", file)) printk(0, "TRACE: escalate rwl (%d) (%d): %s:%d\n", lock->locks, flags, file, line);
+	//if(strcmp("kernel/cache/cache.c", file)) printk(0, "TRACE: %d: escalate rwl %x (%d) (%d): %s:%d\n", current_task->pid, lock, lock->locks, flags, file, line);
 	if(lock->locks == 1 && (flags & RWL_READER)) {
 		/* change from a writer lock to a reader lock. This is easy. */
 		add_atomic(&lock->locks, 2);
@@ -66,12 +65,12 @@ void __rwlock_escalate(rwlock_t *lock, unsigned flags, char *file, int line)
 		 * less simple. We must wait until we are the only reader, and
 		 * then attempt a switch */
 		while(1) {
-			int timeout = 1000;
+			int timeout = 10000;
 			while(lock->locks != 2 && --timeout) schedule();
 			if(timeout == 0)
 				panic(0, "(1) waited too long to acquire the lock:%s:%d\n", file, line);
 			/* now, spinlock-acquire the write_lock bit */
-			timeout=1000;
+			timeout=10000;
 			while(bts_atomic(&lock->locks, 0) && --timeout)
 				schedule();
 			if(timeout == 0)

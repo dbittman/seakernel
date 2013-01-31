@@ -55,14 +55,11 @@ int do_add_inode(struct inode *b, struct inode *i, int locked)
 	/* To save resources and time, we only create this LL if we need to.
 	 * Since a large number of inodes are files, we do not need to 
 	 * create this structure for each one. */
-	if(!ll_is_active((&b->children))) {
-		rwlock_escalate(&b->rwl, RWL_WRITER);
+	if(!ll_is_active((&b->children))) 
 		ll_create(&b->children);
-		if(!locked) rwlock_release(&b->rwl, RWL_WRITER);
-		else rwlock_escalate(&b->rwl, RWL_READER);
-	} else if(!locked)
-		rwlock_release(&b->rwl, RWL_READER);
-	return actually_do_add_inode(b, i);
+	actually_do_add_inode(b, i);
+	if(!locked) rwlock_release(&b->rwl, RWL_READER);
+	return 0;
 }
 
 int recur_total_refs(struct inode *i)
@@ -110,13 +107,13 @@ int free_inode(struct inode *i, int recur)
 	return 0;
 }
 
-int do_iremove(struct inode *i, int flag)
+int do_iremove(struct inode *i, int flag, int locked)
 {
 	assert(i);
 	struct inode *parent = i->parent;
 	assert(parent);
 	assert(parent != i);
-	rwlock_acquire(&parent->rwl, RWL_WRITER);
+	if(!locked) rwlock_acquire(&parent->rwl, RWL_WRITER);
 	if(!flag && (i->count || i->children.head) && flag != 3)
 		panic(0, "Attempted to iremove inode with count > 0 or children! %d (%s)", 
 			i->count, i->name);
@@ -125,7 +122,7 @@ int do_iremove(struct inode *i, int flag)
 	#warning "we should iput here..."
 	sub_atomic(&parent->count, 1);
 	ll_remove(&parent->children, i->node);
-	rwlock_release(&parent->rwl, RWL_WRITER);
+	if(!locked) rwlock_release(&parent->rwl, RWL_WRITER);
 	if(flag != 3)
 		free_inode(i, (flag == 2) ? 1 : 0);
 	return 0;

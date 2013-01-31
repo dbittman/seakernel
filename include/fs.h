@@ -110,12 +110,12 @@ int vfs_callback_unmount (struct inode *i, unsigned int n);
 int vfs_callback_fsstat (struct inode *i, struct posix_statfs *s);
 int vfs_callback_fssync (struct inode *i);
 int vfs_callback_update (struct inode *i);
-int do_iremove(struct inode *i, int flag);
+int do_iremove(struct inode *i, int flag, int);
 
-#define iremove_recur(i)  do_iremove(i, 2)
-#define iremove(i)        do_iremove(i, 0)
-#define iremove_nofree(i) do_iremove(i, 3)
-#define iremove_force(i)  do_iremove(i, 1)
+#define iremove_recur(i)  do_iremove(i, 2, 0)
+#define iremove(i)        do_iremove(i, 0, 0)
+#define iremove_nofree(i) do_iremove(i, 3, 0)
+#define iremove_force(i)  do_iremove(i, 1, 0)
 
 #define get_idir(path,in_st) do_get_idir(path, in_st, 0, 0, 0)
 #define lget_idir(path,in_st) do_get_idir(path, in_st, 1, 0, 0)

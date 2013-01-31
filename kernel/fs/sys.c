@@ -110,8 +110,13 @@ int sys_getdepth(int fd)
 		return -EBADF;
 	struct inode *i = file->inode;
 	int x=1;
-	while(i->parent != current_task->root)
-		x++, i=i->parent;
+	while(i != current_task->root && i) {
+		x++;
+		if(i->mount_parent)
+			i = i->mount_parent;
+		else
+			i = i->parent;
+	}
 	return x;
 }
 
@@ -119,9 +124,20 @@ int sys_getcwdlen()
 {
 	struct inode *i = current_task->pwd;
 	if(!i) return 0;
-	int x=1;
-	while(i->parent != current_task->root)
-		x++, i=i->parent;
+	int x=64;
+	while(i && i->parent)
+	{
+		if(i->mount_parent)
+			i = i->mount_parent;
+		x += strlen(i->name)+1;
+		i = i->parent;
+		if(i == current_task->root)
+			break;
+		if(i->mount_parent)
+			i = i->mount_parent;
+		if(i == current_task->root)
+			break;
+	}
 	return x;
 }
 

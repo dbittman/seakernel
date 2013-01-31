@@ -83,10 +83,8 @@ void copy_file_handles(task_t *p, task_t *n)
 			add_atomic(&fp->fi->count, 1);
 			struct inode *i = fp->fi->inode;
 			assert(i && i->count && i->f_count);
-			rwlock_acquire(&i->rwl, RWL_READER);
 			add_atomic(&i->count, 1);
 			add_atomic(&i->f_count, 1);
-			rwlock_release(&i->rwl, RWL_READER);
 			if(i->pipe && !i->pipe->type) {
 				mutex_acquire(i->pipe->lock);
 				add_atomic(&i->pipe->count, 1);

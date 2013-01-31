@@ -53,6 +53,7 @@ int s_mount(char *name, int dev, u64 block, char *fsname, char *no)
 		i=sb_callback(fsname, dev, block, no);
 	if(!i)
 		return -EIO;
+	i->count=1;
 	i->dev = dev;
 	int ret = mount(name, i);
 	if(!ret) return 0;

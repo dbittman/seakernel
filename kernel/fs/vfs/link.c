@@ -46,7 +46,12 @@ int do_unlink(struct inode *i)
 	if(i->count > 1 || i->mount || i->mount_parent)
 		err = -EBUSY;
 	int ret = err ? 0 : vfs_callback_unlink(i);
-	(err) ? iput(i) : iremove_force(i);
+	if(err)
+		iput(i);
+	else {
+		rwlock_acquire(&i->rwl, RWL_WRITER);
+		iremove_force(i);
+	}
 	return err ? err : ret;
 }
 
@@ -83,6 +88,11 @@ int rmdir(char *f)
 	if(i->count > 1 || i->mount || i->mount_parent)
 		err = -EBUSY;
 	int ret = err ? 0 : vfs_callback_rmdir(i);
-	(err) ? iput(i) : iremove_force(i);
+	if(err)
+		iput(i);
+	else {
+		rwlock_acquire(&i->rwl, RWL_WRITER);
+		iremove_force(i);
+	}
 	return err ? err : ret;
 }

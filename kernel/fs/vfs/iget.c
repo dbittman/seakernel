@@ -32,9 +32,7 @@ struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, int *req)
 			return i;
 		}
 		if(!strcmp(path, ".")) {
-			rwlock_acquire(&i->rwl, RWL_READER);
 			add_atomic(&i->count, 1);
-			rwlock_release(&i->rwl, RWL_READER);
 			return i;
 		}
 	}
@@ -123,7 +121,7 @@ struct inode *do_add_dirent(struct inode *p, char *name, int mode)
 		mode |= 0x1FF;
 	rwlock_acquire(&p->rwl, RWL_WRITER);
 	struct inode *ret = vfs_callback_create(p, name, mode);
-	ret->count=1;
+	if(ret) ret->count=1;
 	rwlock_release(&p->rwl, RWL_WRITER);
 	if(ret) {
 		ret->mtime = get_epoch_time();
@@ -157,11 +155,14 @@ struct inode *do_get_idir(char *p_path, struct inode *b, int use_link,
 		from = current_task->root;
 		++path;
 	}
-	if(!*path)
+	if(!*path) {
+		if(from) add_atomic(&from->count, 1);
 		return from;
+	}
 	if(!from)
 		return 0;
-	struct inode *ret=from, *prev=0;
+	add_atomic(&from->count, 1);
+	struct inode *ret=from, *prev=from;
 	char *a = path;
 	char *current = path;
 	int dir_f;
@@ -180,6 +181,7 @@ struct inode *do_get_idir(char *p_path, struct inode *b, int use_link,
 				*(a++) = 0;
 			}
 		}
+		if(!*current) break;
 		/* Make sure we lookup inside a directory that a link is pointing to */
 		if(use_link && S_ISLNK(ret->mode)) {
 			/* The link's actual contents contain the path to the linked file */
@@ -187,8 +189,14 @@ struct inode *do_get_idir(char *p_path, struct inode *b, int use_link,
 			memset(li, 0, ret->len+1);
 			read_fs(ret, 0, ret->len, li);
 			struct inode *linked = get_idir(li, prev);
-			if(!linked)
+			if(!linked) {
+				if(prev) {
+					rwlock_acquire(&prev->rwl, RWL_WRITER);
+					sub_atomic(&prev->count, 1);
+					rwlock_release(&prev->rwl, RWL_WRITER);
+				}
 				return 0;
+			}
 			ret = linked;
 		}
 		struct inode *old = ret;
@@ -202,9 +210,11 @@ struct inode *do_get_idir(char *p_path, struct inode *b, int use_link,
 			if(did_create && ret)
 				*did_create=1;
 		}
-		#warning "should do iput here..."
-		if(prev)
+		if(prev) {
+			rwlock_acquire(&prev->rwl, RWL_WRITER);
 			sub_atomic(&prev->count, 1);
+			rwlock_release(&prev->rwl, RWL_WRITER);
+		}
 		if(!ret)
 			return 0;
 		prev = ret;

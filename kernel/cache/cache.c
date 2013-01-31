@@ -114,11 +114,10 @@ struct ce_t *find_cache_element(cache_t *c, u64 id, u64 key)
 int do_cache_object(cache_t *c, u64 id, u64 key, int sz, char *buf, int dirty)
 {
 	accessed_cache(c);
-	rwlock_acquire(c->rwl, RWL_READER);
+	rwlock_acquire(c->rwl, RWL_WRITER);
 	struct ce_t *obj = chash_search(c->hash, id, key);
 	if(obj)
 	{
-		rwlock_escalate(c->rwl, RWL_WRITER);
 		memcpy(obj->data, buf, obj->length);
 		set_dirty(c, obj, dirty);
 		rwlock_release(c->rwl, RWL_WRITER);
@@ -131,7 +130,6 @@ int do_cache_object(cache_t *c, u64 id, u64 key, int sz, char *buf, int dirty)
 	memcpy(obj->data, buf, sz);
 	obj->key = key;
 	obj->id = id;
-	rwlock_escalate(c->rwl, RWL_WRITER);
 	set_dirty(c, obj, dirty);
 	cache_add_element(c, obj, 1);
 	rwlock_release(c->rwl, RWL_WRITER);

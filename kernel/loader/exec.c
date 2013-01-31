@@ -155,8 +155,8 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	/* Preexec - This is the point of no return. Here we close out unneeded 
 	 * file descs, free up the page directory and clear up the resources 
 	 * of the task */
-	if(EXEC_LOG) 
-		printk(0, "Executing (task %d, tty %d): %s\n", t->pid, t->tty, path);
+	if(EXEC_LOG)
+		printk(0, "Executing (task %d, tty %d, cwd=%s): %s\n", t->pid, t->tty, current_task->pwd->name, path);
 	strncpy((char *)t->command, path, 128);
 	preexec(t, desc);
 	if(!process_elf(mem, desc, &eip, &end))

@@ -24,7 +24,7 @@
 #define TF_KTASK     0x20
 #define TF_SWAPQUEUE 0x40
 #define TF_LOCK      0x80
-#define TF_REQMEM   0x100
+
 #define TF_DYING    0x200
 #define TF_FORK     0x400
 #define TF_INSIG    0x800
@@ -102,7 +102,7 @@ typedef volatile struct task_struct
 	ex_stat exit_reason, we_res, *exlist;
 	registers_t reg_b;
 	registers_t *regs, *sysregs;
-	unsigned mem_usage_calc;
+	unsigned phys_mem_usage;
 	volatile unsigned wait_again, path_loc_start;
 	unsigned num_swapped;
 	
@@ -336,11 +336,6 @@ struct inode *set_as_kernel_task(char *name);
 __attribute__((always_inline)) inline static int task_is_runable(task_t *task)
 {
 	assert(task);
-	if(task->flags & TF_REQMEM) {
-		task->old_state = task->state;
-		task->state = TASK_RUNNING;
-		return 1;
-	}
 	if(task->state == TASK_FROZEN || task->state == TASK_DEAD)
 		return 0;
 	return (int)(task->state == TASK_RUNNING 

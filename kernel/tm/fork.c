@@ -44,6 +44,7 @@ void copy_task_struct(task_t *new, task_t *parent)
 	/* This actually duplicates the handles... */
 	copy_file_handles(parent, new);
 	new->flags = TF_FORK;
+	new->phys_mem_usage = parent->phys_mem_usage;
 }
 
 __attribute__((always_inline)) 

@@ -70,17 +70,6 @@ __attribute__((always_inline)) static inline void post_context_switch()
 		task_suicide();
 		panic(PANIC_NOSYNC, "Suicide failed");
 	}
-	if(current_task->flags & TF_REQMEM)
-	{
-		/* We have been asked to calculate out memory usage. */
-		task_critical();
-		current_task->flags &= ~TF_REQMEM;
-		current_task->mem_usage_calc = get_mem_usage();
-		current_task->state = current_task->old_state;
-		task_uncritical();
-		force_schedule();
-		return;
-	}
 	/* We only process signals if we aren't in a system call.
 	 * this is because if a task is suddenly interrupted inside an
 	 * important syscall while doing something important the results

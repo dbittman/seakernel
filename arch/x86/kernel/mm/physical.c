@@ -30,7 +30,10 @@ addr_t __pm_alloc_page(char *file, int line)
 	unsigned flag=0;
 	try_again:
 	ret=0;
-	if(current_task) current_task->allocated++;
+	if(current_task) {
+		current_task->allocated++;
+		current_task->phys_mem_usage++;
+	}
 	mutex_acquire(&pm_mutex);
 	if(paging_enabled)
 	{
@@ -82,7 +85,10 @@ void pm_free_page(addr_t addr)
 		panic(PANIC_MEM | PANIC_NOSYNC, "tried to free invalic physical address");
 		return;
 	}
-	if(current_task) current_task->freed++;
+	if(current_task) {
+		current_task->freed++;
+		current_task->phys_mem_usage--;
+	}
 	mutex_acquire(&pm_mutex);
 	if(pm_stack_max <= pm_stack)
 	{

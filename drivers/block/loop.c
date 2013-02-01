@@ -83,7 +83,7 @@ int loop_up(int num, char *name)
 	
 	struct inode *i = get_idir(name, 0);
 	if(!i) {
-		mutex_acquire(&loop_mutex);
+		mutex_release(&loop_mutex);
 		return -ENOENT;
 	}
 	loop->offset = loop->limit = loop->ro = 0;
@@ -108,6 +108,7 @@ int loop_down(int num)
 	struct inode *i = loop->node;
 	loop->node=0;
 	iput(i);
+	mutex_release(&loop_mutex);
 	return 0;
 }
 
@@ -196,10 +197,8 @@ int module_install()
 int module_exit()
 {
 	unregister_block_device(loop_maj);
-	mutex_acquire(&loop_mutex);
 	while(loop_devices)
 		remove_loop_device(loop_devices);
-	mutex_release(&loop_mutex);
 	mutex_destroy(&loop_mutex);
 	return 0;
 }

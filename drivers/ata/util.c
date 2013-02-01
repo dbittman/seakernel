@@ -10,7 +10,10 @@ void remove_devices()
 	{
 		next1 = nodes->next;
 		nodes->node->count=0;
-		iremove_force(nodes->node);
+		#warning "better way of doing this...better way for modules to create device files in general"
+		//if(nodes->node) {
+		//	rwlock_acquire(&(nodes->node->rwl), RWL_WRITER);
+		//}
 		kfree(nodes);
 		nodes = next1;
 	}

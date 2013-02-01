@@ -80,7 +80,10 @@ int module_install()
 
 int module_exit()
 {
-	if(df) iremove_force(df);
+	if(df) {
+		rwlock_acquire(&df->rwl, RWL_WRITER);
+		iremove_force(df);
+	}
 	if(rand_maj > 0) unregister_char_device(rand_maj);
 	return 0;
 }

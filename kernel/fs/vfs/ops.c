@@ -111,18 +111,19 @@ int do_iremove(struct inode *i, int flag, int locked)
 {
 	assert(i);
 	struct inode *parent = i->parent;
-	assert(parent);
 	assert(parent != i);
-	if(!locked) rwlock_acquire(&parent->rwl, RWL_WRITER);
+	if(!locked && parent) rwlock_acquire(&parent->rwl, RWL_WRITER);
 	if(!flag && (i->count || i->children.head) && flag != 3)
 		panic(0, "Attempted to iremove inode with count > 0 or children! %d (%s)", 
 			i->count, i->name);
 	/* remove the count added by having this child */
 	i->parent=0;
 	#warning "we should iput here..."
-	sub_atomic(&parent->count, 1);
-	ll_remove(&parent->children, i->node);
-	if(!locked) rwlock_release(&parent->rwl, RWL_WRITER);
+	if(parent) {
+		sub_atomic(&parent->count, 1);
+		ll_remove(&parent->children, i->node);
+		if(!locked) rwlock_release(&parent->rwl, RWL_WRITER);
+	}
 	if(flag != 3)
 		free_inode(i, (flag == 2) ? 1 : 0);
 	return 0;

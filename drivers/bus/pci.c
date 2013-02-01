@@ -65,7 +65,10 @@ void pci_remove_device(struct pci_device *dev)
 	if(pci_list == dev)
 		pci_list = dev->prev ? dev->prev : dev->next;
 	kfree(dev->pcs);
-	iremove_force(dev->node);
+	if(dev->node) {
+		rwlock_acquire(&dev->node->rwl, RWL_WRITER);
+		iremove_force(dev->node);
+	}
 	kfree(dev);
 	mutex_release(pci_mutex);
 }
@@ -329,6 +332,7 @@ int module_install()
 int module_exit()
 {
 	pci_destroy_list();
+	rwlock_acquire(&proc_pci->rwl, RWL_WRITER);
 	iremove_force(proc_pci);
 	proc_set_callback(proc_pci_maj, 0);
 	remove_kernel_symbol("pci_locate_device");

@@ -47,16 +47,15 @@ int load_superblocktable()
 
 void unmount_all()
 {
+	assert(shutting_down);
 	struct mountlst *m;
 	struct llistnode *cur, *next;
-	rwlock_acquire(&mountlist->rwl, RWL_WRITER);
 	ll_for_each_entry_safe(mountlist, cur, next, struct mountlst *, m)
 	{
 		do_unmount(m->i->mount_parent, 1);
 		ll_maybe_reset_loop(mountlist, cur, next);
 		ll_remove(mountlist, cur);
 	}
-	rwlock_release(&mountlist->rwl, RWL_WRITER);
 }
 
 void do_sync_of_mounted()
@@ -124,7 +123,7 @@ int unregister_sbt(char *name)
 	{
 		if(!strcmp(name, s->name))
 		{
-			ll_remove(sblist, s->node);
+			ll_do_remove(sblist, s->node, 1);
 			kfree(s);
 			rwlock_release(&sblist->rwl, RWL_WRITER);
 			return 0;

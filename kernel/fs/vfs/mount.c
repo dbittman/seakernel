@@ -130,8 +130,10 @@ int do_unmount(struct inode *i, int flags)
 	struct mountlst *lst = get_mount(m);
 	ll_remove(mountlist, lst->node);
 	kfree(lst);
-	if(m != devfs_root && m != procfs_root)
+	if(m != devfs_root && m != procfs_root) {
+		rwlock_acquire(&m->rwl, RWL_WRITER);
 		iremove_recur(m);
+	}
 	kfree(mt);
 	return 0;
 }

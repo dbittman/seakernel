@@ -225,8 +225,6 @@ void destroy_flocks(struct inode *f)
 		l=l->next;
 		kfree(tok);
 	}
-	if(f->flm) {
-		f->flm->pid=-1;
+	if(f->flm) 
 		mutex_destroy(f->flm);
-	}
 }

@@ -72,7 +72,7 @@ int module_install()
 	rand_maj = set_availablecd(rand_rw, rand_ioctl, 0);
 	if(rand_maj == -1)
 		return EINVAL;
-	df = dfs_cn("random", S_IFCHR, rand_maj, 0);
+	df = devfs_add(devfs_root, "random", S_IFCHR, rand_maj, 0);
 	seed=get_epoch_time();
 	a1=seed;
 	return 0;
@@ -80,10 +80,8 @@ int module_install()
 
 int module_exit()
 {
-	if(df) {
-		rwlock_acquire(&df->rwl, RWL_WRITER);
-		iremove_force(df);
-	}
+	if(df)
+		devfs_remove(df);
 	if(rand_maj > 0) unregister_char_device(rand_maj);
 	return 0;
 }

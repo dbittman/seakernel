@@ -19,9 +19,11 @@ int do_mount(struct inode *i, struct inode *p)
 		return -ENOTDIR;
 	if(!is_directory(p))
 		return -EIO;
-	if(i->mount)
-		return -EBUSY;
 	rwlock_acquire(&i->rwl, RWL_WRITER);
+	if(i->mount) {
+		rwlock_release(&i->rwl, RWL_WRITER);
+		return -EBUSY;
+	}
 	i->mount = (mount_pt_t *)kmalloc(sizeof(mount_pt_t));
 	i->mount->root = p;
 	i->mount->parent = i;
@@ -56,7 +58,8 @@ int s_mount(char *name, int dev, u64 block, char *fsname, char *no)
 	i->count=1;
 	i->dev = dev;
 	int ret = mount(name, i);
-	if(!ret) return 0;
+	if(!ret) 
+		return 0;
 	vfs_callback_unmount(i, i->sb_idx);
 	iput(i);
 	return ret;
@@ -103,37 +106,24 @@ int do_unmount(struct inode *i, int flags)
 	if(!is_directory(i))
 		return -ENOTDIR;
 	struct inode *m = i->mount->root;
-	rwlock_acquire(&m->rwl, RWL_READER);
-	if(m->count>1) {
-		rwlock_release(&m->rwl, RWL_READER);
+	rwlock_acquire(&m->rwl, RWL_WRITER);
+	if(m->count>1 && (!(flags&1) && !current_task->uid)) {
+		rwlock_release(&m->rwl, RWL_WRITER);
 		return -EBUSY;
 	}
 	rwlock_acquire(&i->rwl, RWL_WRITER);
 	mount_pt_t *mt = i->mount;
 	i->mount=0;
-	//lock_scheduler();
-	int c = recur_total_refs(m);
-	if(c && (!(flags&1) && !current_task->uid))
-	{
-		i->mount=mt;
-		rwlock_release(&i->rwl, RWL_WRITER);
-		rwlock_release(&m->rwl, RWL_READER);
-		//unlock_scheduler();
-		return -EBUSY;
-	}
-	//unlock_scheduler();
 	vfs_callback_unmount(m, m->sb_idx);
 	rwlock_release(&i->rwl, RWL_WRITER);
-	rwlock_escalate(&m->rwl, RWL_WRITER);
 	m->mount_parent=0;
-	rwlock_release(&m->rwl, RWL_WRITER);
 	struct mountlst *lst = get_mount(m);
 	ll_remove(mountlist, lst->node);
 	kfree(lst);
-	if(m != devfs_root && m != procfs_root) {
-		rwlock_acquire(&m->rwl, RWL_WRITER);
+	if(m != devfs_root && m != procfs_root)
 		iremove_recur(m);
-	}
+	else
+		rwlock_release(&m->rwl, RWL_WRITER);
 	kfree(mt);
 	return 0;
 }
@@ -147,10 +137,10 @@ int unmount(char *n, int flags)
 		return -ENOENT;
 	if(!i->mount_parent)
 		return -ENOENT;
-	struct inode *got = i;
+	iput(i);
 	i = i->mount_parent;
 	int ret = do_unmount(i, flags);
-	if(ret) iput(got);
-	else iput(i);
+	if(!ret)
+		iput(i);
 	return ret;
 }

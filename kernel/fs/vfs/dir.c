@@ -4,7 +4,7 @@
 #include <asm/system.h>
 #include <dev.h>
 #include <fs.h>
-
+#include <atomic.h>
 int do_get_path_string(struct inode *p, char *path, int max)
 {
 	if(!p)
@@ -76,10 +76,9 @@ int chroot(char *n)
 		return -ENOTDIR;
 	}
 	current_task->root = i;
+	add_atomic(&i->count, 1);
+	ichdir(i);
 	iput(old);
-	/* we call chdir here and not ichdir so that the count will again
-	 * be incremented */
-	chdir("/");
 	return 0;
 }
 
@@ -130,8 +129,7 @@ struct inode *do_readdir(struct inode *i, int num)
 		rwlock_release(&i->rwl, RWL_READER);
 	}
 	else if(i->i_ops && i->i_ops->readdir) {
-		c = vfs_callback_readdir(i, num);
-		if(c)
+		if((c = vfs_callback_readdir(i, num)))
 			c->count=1;
 	}
 	return c;

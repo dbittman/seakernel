@@ -31,8 +31,8 @@ int dosyscall(int num, int a, int b, int c, int d, int e);
 
 #define SYS_IOCTL 		 17
 #define SYS_UNUSED0		 18
-#define SYS_DFSCN 		 19 /* Create devfs node */
-#define SYS_DFSRN 		 20 /* Remove dfs node */
+#define SYS_UNUSED23	 19
+#define SYS_UNUSED24 	 20
 
 #define SYS_UNUSED2 	 25
 #define SYS_EXECVE		 26

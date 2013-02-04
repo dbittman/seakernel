@@ -181,7 +181,7 @@ int rtl8139_load_device_pci(struct pci_device *device)
 	//device->pcs->command = cmd;
 	//pci_write_dword(device->bus, device->dev, device->func, 4, cmd);
 	
-	struct inode *i = dfs_cn("rtl8139", S_IFCHR, rtl8139_maj, rtl8139_min++);
+	struct inode *i = devfs_add(devfs_root, "rtl8139", S_IFCHR, rtl8139_maj, rtl8139_min++);
 	dev->node = i;
 	device->flags |= PCI_ENGAGED;
 	device->flags |= PCI_DRIVEN;
@@ -200,7 +200,7 @@ int rtl8139_unload_device_pci(rtl8139dev_t *dev)
 		device->dev, device->func);
 	device->flags &= ~PCI_ENGAGED;
 	device->flags &= ~PCI_DRIVEN;
-	iremove_force(dev->node);
+	devfs_remove(dev->node);
 	unregister_interrupt_handler(dev->inter, (isr_t)&rtl8139_int);
 	return 0;
 }

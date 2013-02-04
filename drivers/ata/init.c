@@ -77,7 +77,7 @@ int create_device(struct ata_controller *cont, struct ata_device *dev, char *nod
 		v=__a++;
 	memset(node, 0, 16);
 	sprintf(node, "%cd%c", n, 'a' + v);
-	struct inode *i = dfs_cn(node, S_IFBLK, maj, a);
+	struct inode *i = devfs_add(devfs_root, node, S_IFBLK, maj, a);
 	struct dev_rec *d = nodes;
 	struct dev_rec *new = (struct dev_rec *)kmalloc(sizeof(*d));
 	new->node=i;
@@ -110,7 +110,7 @@ int read_partitions(struct ata_controller *cont, struct ata_device *dev, char *n
 			char tmp[17];
 			memset(tmp, 0, 17);
 			sprintf(tmp, "%s%d", node, i+1);
-			struct inode *in = dfs_cn(tmp, S_IFBLK, (dev->flags & F_ATAPI 
+			struct inode *in = devfs_add(devfs_root, tmp, S_IFBLK, (dev->flags & F_ATAPI 
 				|| dev->flags & F_SATAPI) ? api : 3, a+(i+1)*4);
 			struct dev_rec *dr = nodes;
 			struct dev_rec *new = (struct dev_rec *)kmalloc(sizeof(*dr));

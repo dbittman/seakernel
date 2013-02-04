@@ -87,8 +87,6 @@ void init_kernel_symbols(void)
 	add_kernel_symbol(set_availablecd);
 	add_kernel_symbol(unregister_block_device);
 	add_kernel_symbol(unregister_char_device);
-	add_kernel_symbol(dfs_cn);
-	add_kernel_symbol(remove_dfs_node);
 	add_kernel_symbol(get_device);
 	add_kernel_symbol(block_read);
 	add_kernel_symbol(do_block_rw);

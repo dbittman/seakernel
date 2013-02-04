@@ -70,8 +70,8 @@ int loop_rw(int rw, int minor, u64 block, char *buf)
 
 int loop_up(int num, char *name)
 {
-	mutex_acquire(&loop_mutex);
 	struct loop_device *loop = get_loop(num);
+	mutex_acquire(&loop_mutex);
 	if(!loop) {
 		mutex_release(&loop_mutex);
 		return -EINVAL;
@@ -95,8 +95,8 @@ int loop_up(int num, char *name)
 
 int loop_down(int num)
 {
-	mutex_acquire(&loop_mutex);
 	struct loop_device *loop = get_loop(num);
+	mutex_acquire(&loop_mutex);
 	if(!loop) {
 		mutex_release(&loop_mutex);
 		return -EINVAL;
@@ -166,7 +166,7 @@ int ioctl_main(int min, int cmd, int arg)
 				iput(i);
 				return -EEXIST;
 			}
-			dfs_cn(tmp, S_IFBLK, loop_maj, arg);
+			devfs_add(devfs_root, tmp, S_IFBLK, loop_maj, arg);
 			add_loop_device(arg);
 			break;
 		default:
@@ -188,7 +188,7 @@ int module_install()
 		return EINVAL;
 	}
 	mutex_create(&loop_mutex);
-	dfs_cn("loop0", S_IFBLK, loop_maj, 0);
+	devfs_add(devfs_root, "loop0", S_IFBLK, loop_maj, 0);
 	loop_devices=0;
 	add_loop_device(0);
 	return 0;

@@ -160,9 +160,7 @@ int sys_chmod(char *path, int fd, mode_t mode)
 			iput(i);
 		return -EPERM;
 	}
-	rwlock_acquire(&i->rwl, RWL_WRITER);
 	i->mode = (i->mode&~0xFFF) | mode;
-	rwlock_release(&i->rwl, RWL_WRITER);
 	sync_inode_tofs(i);
 	if(path)
 		iput(i);
@@ -204,10 +202,8 @@ int sys_utime(char *path, unsigned a, unsigned m)
 	struct inode *i = get_idir(path, 0);
 	if(!i)
 		return -ENOENT;
-	rwlock_acquire(&i->rwl, RWL_WRITER);
 	i->mtime = m ? m : get_epoch_time();
 	i->atime = a ? a : get_epoch_time();
-	rwlock_release(&i->rwl, RWL_WRITER);
 	sync_inode_tofs(i);
 	iput(i);
 	return 0;
@@ -284,14 +280,11 @@ int sys_symlink(char *p2, char *p1)
 	inode = cget_idir(p1, 0, 0x1FF);
 	if(!inode)
 		return -EACCES;
-	rwlock_acquire(&inode->rwl, RWL_WRITER);
 	inode->mode &= 0x1FF;
 	inode->mode |= S_IFLNK;
 	inode->len=0;
-	rwlock_release(&inode->rwl, RWL_WRITER);
 	int ret=0;
 	if((ret=sync_inode_tofs(inode)) < 0) {
-		rwlock_acquire(&inode->rwl, RWL_WRITER);
 		iput(inode);
 		return ret;
 	}

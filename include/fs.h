@@ -126,6 +126,9 @@ int do_iremove(struct inode *i, int flag, int);
 #define add_inode(a,b) do_add_inode(a, b, 0)
 
 extern struct llist *mountlist;
+struct inode *devfs_add(struct inode *q, char *name, mode_t mode, int major, int minor);
+struct inode *devfs_create(struct inode *base, char *name, mode_t mode);
+void devfs_remove(struct inode *i);
 int sys_chdir(char *n, int fd);
 int ichdir(struct inode *i);
 int sys_sync();
@@ -156,11 +159,9 @@ int sys_dirstat(char *dir, unsigned num, char *namebuf, struct stat *statbuf);
 int pfs_write(struct inode *i, off_t pos, size_t len, char *buffer);
 int pfs_read(struct inode *i, off_t pos, size_t len, char *buffer);
 struct inode *pfs_cn(char *name, mode_t mode, int major, int minor);
-void remove_dfs_node(char *name);
 int sys_getpath(int f, char *b, int);
 struct inode *read_dir(char *, int num);
 int mount(char *d, struct inode *p);
-struct inode *dfs_cn(char *name, mode_t mode, int major, int minor);
 int link(char *old, char *new);
 int create_node(struct inode *i, char *name, mode_t mode, int maj, int min);
 int write_fs(struct inode *i, off_t off, size_t len, char *b);

@@ -55,7 +55,7 @@ void *syscall_table[129] = {
 	SC sys_stat, SC sys_isatty, SC sys_seek, SC send_signal, 
 	SC sys_sbrk, SC times, SC sys_dup, SC sys_dup2,
 	
-	SC sys_ioctl, SC sys_null, SC dfs_cn, SC remove_dfs_node, 
+	SC sys_ioctl, SC sys_null, SC sys_null, SC sys_null, 
 	SC sys_null, SC sys_null, SC sys_null, SC sys_null,
 	SC sys_null, SC execve, 
 

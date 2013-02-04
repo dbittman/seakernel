@@ -86,11 +86,9 @@ void copy_file_handles(task_t *p, task_t *n)
 			add_atomic(&i->count, 1);
 			add_atomic(&i->f_count, 1);
 			if(i->pipe && !i->pipe->type) {
-				mutex_acquire(i->pipe->lock);
 				add_atomic(&i->pipe->count, 1);
-				if(fp->fi->flags & _FWRITE) 
+				if(fp->fi->flags & _FWRITE)
 					add_atomic(&i->pipe->wrcount, 1);
-				mutex_release(i->pipe->lock);
 			}
 			n->filp[c] = fp;
 		}

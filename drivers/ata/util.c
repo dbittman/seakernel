@@ -11,9 +11,8 @@ void remove_devices()
 		next1 = nodes->next;
 		nodes->node->count=0;
 		#warning "better way of doing this...better way for modules to create device files in general"
-		//if(nodes->node) {
-		//	rwlock_acquire(&(nodes->node->rwl), RWL_WRITER);
-		//}
+		if(nodes->node)
+			devfs_remove(nodes->node);
 		kfree(nodes);
 		nodes = next1;
 	}

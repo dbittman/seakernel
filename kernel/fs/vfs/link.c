@@ -7,7 +7,6 @@
 #include <atomic.h>
 #include <rwlock.h>
 
-#warning "check locking..."
 int link(char *old, char *new)
 {
 	if(!old || !new)
@@ -34,24 +33,26 @@ int do_unlink(struct inode *i)
 		err = -EISDIR;
 	if(!permissions(i->parent, MAY_WRITE))
 		err = -EACCES;
+	rwlock_acquire(&i->rwl, RWL_WRITER);
 	if(i->f_count) {
 		/* we allow any open files to keep this in existance until 
 		 * it has been closed everywhere. if this flag is marked, and 
 		 * we call close() and are the last process to do so, the file
 		 * gets unlinked */
 		i->marked_for_deletion=1;
+		rwlock_release(&i->rwl, RWL_WRITER);
 		iput(i);
 		return 0;
 	}
-	if(i->count > 1 || i->mount || i->mount_parent)
+	if(i->count > 1 || (i->pipe && i->pipe->count))
 		err = -EBUSY;
 	int ret = err ? 0 : vfs_callback_unlink(i);
-	if(err)
+	if(err) {
+		rwlock_release(&i->rwl, RWL_WRITER);
 		iput(i);
-	else {
-		rwlock_acquire(&i->rwl, RWL_WRITER);
-		iremove_force(i);
 	}
+	else
+		iremove_force(i);
 	return err ? err : ret;
 }
 
@@ -59,6 +60,7 @@ int unlink(char *f)
 {
 	if(!f) return -EINVAL;
 	struct inode *i;
+	/* TODO: wtf? */
 	if(strchr(f, '*'))
 		return -ENOENT;
 	i = lget_idir(f, 0);
@@ -77,22 +79,24 @@ int rmdir(char *f)
 	if(!i)
 		return -ENOENT;
 	int err = 0;
+	rwlock_acquire(&i->rwl, RWL_WRITER);
 	if(inode_has_children(i))
 		err = -ENOTEMPTY;
 	if(!permissions(i->parent, MAY_WRITE))
 		err = -EACCES;
 	if(i->f_count) {
+		rwlock_release(&i->rwl, RWL_WRITER);
 		iput(i);
 		return 0;
 	}
-	if(i->count > 1 || i->mount || i->mount_parent)
+	if(i->count > 1)
 		err = -EBUSY;
 	int ret = err ? 0 : vfs_callback_rmdir(i);
-	if(err)
+	if(err) {
+		rwlock_release(&i->rwl, RWL_WRITER);
 		iput(i);
-	else {
-		rwlock_acquire(&i->rwl, RWL_WRITER);
-		iremove_force(i);
 	}
+	else
+		iremove_force(i);
 	return err ? err : ret;
 }

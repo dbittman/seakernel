@@ -50,7 +50,6 @@ int sys_stat(char *f, struct stat *statbuf, int lin)
 	i = (struct inode *) (lin ? lget_idir(f, 0) : get_idir(f, 0));
 	if(!i)
 		return -ENOENT;
-	//kprintf("%d: STAT: %s: %x: %d\n", current_task->pid, f, i, lin);
 	do_stat(i, statbuf);
 	iput(i);
 	return 0;

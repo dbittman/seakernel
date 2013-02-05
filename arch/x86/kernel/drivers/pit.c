@@ -4,13 +4,14 @@
 #include <kernel.h>
 #include <isr.h>
 #include <task.h>
+#include <atomic.h>
 int current_hz=1000;
 volatile long ticks=0;
 void do_tick();
 
 static void timer_handler(registers_t r)
 {
-	++ticks;
+	add_atomic(&ticks, 1);
 	/* engage the idle task occasionally */
 	if((ticks % current_hz*10) == 0)
 		__engage_idle();

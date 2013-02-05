@@ -16,6 +16,7 @@
 #include <kernel.h>
 #include <memory.h>
 #include <task.h>
+#include <atomic.h>
 
 slab_cache_t *scache_list[NUM_SCACHES];
 unsigned slab_start=0, slab_end=0;
@@ -53,7 +54,7 @@ vnode_t *alloc_slab(unsigned np)
 		return 0;
 	assert(n->num_pages >= np);
 	pages_used += np;
-	num_slab++;
+	add_atomic(&num_slab, 1);
 	return n;
 }
 
@@ -69,7 +70,7 @@ void free_slab(slab_t *slab)
 			vm_unmap(j);
 	}
 	remove_vmem_area(&slab_area_alloc, t);
-	num_slab--;
+	sub_atomic(&num_slab, 1);
 }
 
 slab_cache_t *get_empty_scache(int size, unsigned short flags)
@@ -93,7 +94,7 @@ slab_cache_t *get_empty_scache(int size, unsigned short flags)
 	((slab_cache_t *)(scache_list[i]))->id = i;
 	((slab_cache_t *)(scache_list[i]))->flags = flags;
 	((slab_cache_t *)(scache_list[i]))->obj_size = size;
-	num_scache++;
+	add_atomic(&num_scache, 1);
 	mutex_release(&scache_lock);
 	return scache_list[i];
 }
@@ -105,7 +106,7 @@ void release_scache(slab_cache_t *sc)
 		return;
 	mutex_acquire(&scache_lock);
 	sc->id=-1;
-	num_scache--;
+	sub_atomic(&num_scache, 1);
 	mutex_release(&scache_lock);
 }
 

@@ -75,13 +75,9 @@ static void rfs_resize(struct inode *i, off_t s)
 		return;
 	addr_t new = (addr_t)kmalloc(s);
 	if(i->len > s)
-	{
 		memcpy((void *)new, (void *)i->start, s);
-	}
 	else
-	{
 		memcpy((void *)new, (void *)i->start, i->len);
-	}
 	kfree((void *)i->start);
 	i->start = new;
 	i->len = s;

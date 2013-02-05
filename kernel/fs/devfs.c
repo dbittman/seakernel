@@ -6,6 +6,8 @@
 #include <block.h>
 #include <fs.h>
 #include <elf.h>
+#include <atomic.h>
+
 struct inode *devfs_root;
 int devfs_nodescount=1;
 extern struct inode_operations devfs_inode_ops;
@@ -53,7 +55,7 @@ struct inode *devfs_create(struct inode *base, char *name, mode_t mode)
 	i->mode = mode | 0x1FF;
 	i->uid = GOD;
 	i->dev = 0;
-	i->num = devfs_nodescount++;
+	i->num = add_atomic(&devfs_nodescount, 1);
 	rwlock_create(&i->rwl);
 	add_inode(base, i);
 	return i;

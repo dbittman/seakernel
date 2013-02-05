@@ -7,6 +7,8 @@
 #include <cache.h>
 #include <task.h>
 #include <ll.h>
+#include <atomic.h>
+
 struct llist *cache_list;
 void accessed_cache(cache_t *c)
 {
@@ -53,13 +55,13 @@ int set_dirty(cache_t *c, struct ce_t *e, int dirty)
 	{
 		if(old != dirty) {
 			add_dlist(c, e);
-			c->dirty++;
+			add_atomic(&c->dirty, 1);
 		}
 	} else
 	{
 		if(old != dirty) {
 			assert(c->dirty);
-			c->dirty--;
+			sub_atomic(&c->dirty, 1);
 			remove_dlist(c, e);
 		}
 	}
@@ -147,7 +149,7 @@ void remove_element(cache_t *c, struct ce_t *o, int locked)
 	if(o->dirty)
 		set_dirty(c, o, 0);
 	assert(c->count);
-	c->count--;
+	sub_atomic(&c->count, 1);
 	
 	if(o->prev)
 		o->prev->next = o->next;

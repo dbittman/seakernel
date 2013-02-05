@@ -5,6 +5,8 @@
 #include <task.h>
 #include <cpu.h>
 #include <elf.h>
+#include <atomic.h>
+
 extern char *exception_messages[];
 handlist_t interrupt_handlers[256];
 volatile long int_count[256];
@@ -120,7 +122,7 @@ void ack(int n)
 
 void entry_syscall_handler(volatile registers_t regs)
 {
-	int_count[0x80]++;
+	add_atomic(&int_count[0x80], 1);
 	ack(0x80);
 	if(regs.eax == 128) {
 		memcpy((void *)&regs, (void *)&current_task->reg_b, sizeof(registers_t));
@@ -141,7 +143,7 @@ void entry_syscall_handler(volatile registers_t regs)
 /* This gets called from our ASM interrupt handler stub. */
 void isr_handler(volatile registers_t regs)
 {
-	int_count[regs.int_no]++;
+	add_atomic(&int_count[regs.int_no], 1);
 	ack(regs.int_no);
 	char called=0;
 	handlist_t *f = &interrupt_handlers[regs.int_no];
@@ -166,7 +168,7 @@ void irq_handler(volatile registers_t regs)
 		clear_regs=1;
 		current_task->regs = &regs;
 	}
-	int_count[regs.int_no]++;
+	add_atomic(&int_count[regs.int_no], 1);
 	ack(regs.int_no);
 	handlist_t *f = &interrupt_handlers[regs.int_no];
 	while(f)

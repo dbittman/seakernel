@@ -8,7 +8,7 @@ extern void copy_update_stack(unsigned old, unsigned new, unsigned length);
 void copy_task_struct(task_t *new, task_t *parent)
 {
 	new->parent = parent;
-	new->pid = next_pid++;
+	new->pid = add_atomic(&next_pid, 1)-1;
 	if(parent->root) {
 		new->root = parent->root;
 		add_atomic(&new->root->count, 1);

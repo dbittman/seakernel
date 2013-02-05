@@ -174,7 +174,7 @@ int check_pointers(volatile registers_t *regs)
 	return 1;
 }
 
-__attribute__((optimize("O0"))) int syscall_handler(volatile registers_t *regs)
+int syscall_handler(volatile registers_t *regs)
 {
 	if(unlikely(regs->eax >= num_syscalls))
 		return -ENOSYS;

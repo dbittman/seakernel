@@ -70,7 +70,7 @@ int tty_raise_action(int min, int sig)
 	return 0;
 }
 
-__attribute__((optimize("O0"))) int tty_read(int min, char *buf, size_t len)
+int tty_read(int min, char *buf, size_t len)
 {
 	if((unsigned)min > MAX_CONSOLES)
 		return -ENOENT;

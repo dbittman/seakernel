@@ -91,7 +91,7 @@ int get_status_int(int pid, int *st, int *__pid)
 	return res;
 }
 
-__attribute__((optimize("O0"))) int sys_waitpid(int pid, int *st, int opt)
+int sys_waitpid(int pid, int *st, int opt)
 {
 	if(!pid || pid < -1)
 		return -ENOSYS;

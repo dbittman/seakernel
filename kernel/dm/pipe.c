@@ -65,7 +65,7 @@ void free_pipe(struct inode *i)
 	i->pipe=0;
 }
 
-__attribute__((optimize("O0"))) int read_pipe(struct inode *ino, char *buffer, size_t length)
+int read_pipe(struct inode *ino, char *buffer, size_t length)
 {
 	if(!ino || !buffer)
 		return -EINVAL;
@@ -109,7 +109,7 @@ __attribute__((optimize("O0"))) int read_pipe(struct inode *ino, char *buffer, s
 	return count;
 }
 
-__attribute__((optimize("O0"))) int write_pipe(struct inode *ino, char *buffer, size_t length)
+int write_pipe(struct inode *ino, char *buffer, size_t length)
 {
 	if(!ino || !buffer)
 		return -EINVAL;

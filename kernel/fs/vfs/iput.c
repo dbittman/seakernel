@@ -19,7 +19,6 @@ int iput(struct inode *i)
 	if(i->count > 0)
 		sub_atomic(&i->count, 1);
 	/* check if there is something preventing us from deleting the inode. */
-	#warning "figure out better pipe ref counting"
 	if(i->count || !i->dynamic || (i->pipe && i->pipe->count)) {
 		if(parent) rwlock_release(&parent->rwl, RWL_WRITER);
 		rwlock_release(&i->rwl, RWL_WRITER);

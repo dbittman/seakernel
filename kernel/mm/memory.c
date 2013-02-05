@@ -4,6 +4,7 @@
 #include <task.h>
 #include <swap.h>
 #include <cpu.h>
+#include <elf.h>
 extern unsigned int end;
 void slab_stat(struct mem_stat *s);
 void process_memorymap(struct multiboot *mboot)
@@ -70,6 +71,14 @@ void init_memory(struct multiboot *m)
 #if CONFIG_SWAP
 	init_swap();
 #endif
+	add_kernel_symbol(__kmalloc);
+	add_kernel_symbol(kmalloc_ap);
+	add_kernel_symbol(kmalloc_a);
+	add_kernel_symbol(kmalloc_p);
+	add_kernel_symbol(kfree);
+	add_kernel_symbol(vm_map);
+	add_kernel_symbol(vm_unmap);
+	add_kernel_symbol(vm_unmap_only);
 }
 
 int pm_stat_mem(struct mem_stat *s)

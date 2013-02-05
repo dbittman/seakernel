@@ -16,6 +16,7 @@
 #include <sys/fcntl.h>
 #include <errno.h>
 #include <mutex.h>
+
 extern char shutting_down;
 extern volatile int panicing;
 extern volatile unsigned int __allow_idle;

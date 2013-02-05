@@ -4,7 +4,7 @@
 #include <fs.h>
 #include <sys/stat.h>
 #include <block.h>
-
+#include <elf.h>
 struct devhash_s devhash[NUM_DT];
 
 void init_dm()
@@ -16,6 +16,19 @@ void init_dm()
 		mutex_create(&devhash[i].lock);
 	init_char_devs();
 	init_block_devs();
+	add_kernel_symbol(block_rw);
+	add_kernel_symbol(block_ioctl);
+	add_kernel_symbol(block_device_rw);
+	add_kernel_symbol(set_availablebd);
+	add_kernel_symbol(set_availablecd);
+	add_kernel_symbol(unregister_block_device);
+	add_kernel_symbol(unregister_char_device);
+	add_kernel_symbol(get_device);
+	add_kernel_symbol(block_read);
+	add_kernel_symbol(do_block_rw);
+	add_kernel_symbol(block_write);
+	add_kernel_symbol(set_blockdevice);
+	add_kernel_symbol(set_chardevice);
 }
 
 device_t *get_device(int type, int major)

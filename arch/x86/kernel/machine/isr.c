@@ -192,6 +192,10 @@ void int_sys_init()
 		interrupt_handlers[i].prev=0;
 		interrupt_handlers[i].block=0;
 	}
+	_add_kernel_symbol((unsigned)(char *)&tables, "tables");
+	add_kernel_symbol(register_interrupt_handler);
+	add_kernel_symbol(unregister_interrupt_handler);
+	add_kernel_symbol(get_interrupt_handler);
 }
 
 void print_stack_trace(unsigned int max)

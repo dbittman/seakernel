@@ -5,6 +5,7 @@
 #include <asm/system.h>
 #include <char.h>
 #include <mutex.h>
+#include <elf.h>
 mutex_t serial_m;
 char serial_initialized=0;
 
@@ -64,4 +65,5 @@ void init_serial()
 	init_serial_port(0x3f8);
 	serial_initialized = 1;
 	serial_puts(0, "[kernel]: started debug serial output\n");
+	add_kernel_symbol(serial_puts);
 }

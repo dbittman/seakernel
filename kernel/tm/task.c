@@ -1,6 +1,7 @@
 #include <kernel.h>
 #include <memory.h>
 #include <task.h>
+#include <elf.h>
 volatile task_t *kernel_task=0, *alarm_list_start=0;
 #if !(CONFIG_SMP)
 volatile task_t *current_task=0;
@@ -25,6 +26,26 @@ void init_multitasking()
 	set_current_task_dp(task, 0);
 	kernel_task = task;
 	mutex_create(&scheding);
+	add_kernel_symbol(delay);
+	add_kernel_symbol(delay_sleep);
+	add_kernel_symbol(schedule);
+	add_kernel_symbol(force_schedule);
+	add_kernel_symbol(run_scheduler);
+	add_kernel_symbol(exit);
+	add_kernel_symbol(sys_setsid);
+	add_kernel_symbol(fork);
+	add_kernel_symbol(kill_task);
+	add_kernel_symbol(__wait_flag);
+	add_kernel_symbol(wait_flag_except);
+	add_kernel_symbol(do_send_signal);
+	add_kernel_symbol(dosyscall);
+#if CONFIG_SMP
+	add_kernel_symbol(get_cpu);
+#else
+	_add_kernel_symbol((unsigned)(task_t **)&current_task, "current_task");
+#endif
+	_add_kernel_symbol((unsigned)(task_t **)&kernel_task, "kernel_task");
+	_add_kernel_symbol((unsigned)(struct inode **)&kproclist, "kproclist");
 }
 
 void switch_to_user_mode()

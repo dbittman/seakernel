@@ -9,7 +9,7 @@
 #include <char.h>
 #include <atomic.h>
 #include <rwlock.h>
-
+#include <elf.h>
 extern volatile long ticks;
 int system_setup=0;
 /* This function is called once at the start of the init process initialization.
@@ -46,6 +46,27 @@ int sys_setup(int a)
 void init_vfs()
 {
 	load_superblocktable();
+	add_kernel_symbol(do_iremove);
+	add_kernel_symbol(pfs_cn_node);
+	add_kernel_symbol(pfs_cn);
+	add_kernel_symbol(sys_open);
+	add_kernel_symbol(sys_read);
+	add_kernel_symbol(set_as_kernel_task);
+	add_kernel_symbol(sys_write);
+	add_kernel_symbol(sys_close);
+	add_kernel_symbol(read_fs);
+	add_kernel_symbol(write_fs);
+	add_kernel_symbol(sys_ioctl);
+	add_kernel_symbol(proc_append_buffer);
+	add_kernel_symbol(sys_stat);
+	add_kernel_symbol(sys_fstat);
+	add_kernel_symbol(register_sbt);
+	add_kernel_symbol(unregister_sbt);
+	add_kernel_symbol(iput);
+	_add_kernel_symbol((unsigned)(struct inode **)&devfs_root, "devfs_root");
+	add_kernel_symbol(do_get_idir);
+	add_kernel_symbol(proc_set_callback);
+	add_kernel_symbol(proc_get_major);
 }
 
 int sys_seek(int fp, off_t pos, unsigned whence)

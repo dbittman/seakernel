@@ -8,7 +8,7 @@
 #include <task.h>
 #include <ll.h>
 #include <atomic.h>
-
+#include <elf.h>
 struct llist *cache_list;
 void accessed_cache(cache_t *c)
 {
@@ -18,6 +18,15 @@ void accessed_cache(cache_t *c)
 
 int init_cache()
 {
+	add_kernel_symbol(get_empty_cache);
+	add_kernel_symbol(find_cache_element);
+	add_kernel_symbol(do_cache_object);
+	add_kernel_symbol(remove_element);
+	add_kernel_symbol(sync_element);
+	add_kernel_symbol(destroy_cache);
+	add_kernel_symbol(sync_cache);
+	add_kernel_symbol(write_block_cache);
+	add_kernel_symbol(disconnect_block_cache);
 	cache_list = ll_create(0);
 	return 0;
 }

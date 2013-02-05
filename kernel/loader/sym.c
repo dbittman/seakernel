@@ -45,125 +45,40 @@ void init_kernel_symbols(void)
 	uint32_t i;
 	for(i = 0; i < MAX_SYMS; i++)
 		export_syms[i].ptr = 0;
-	add_kernel_symbol(allocate_dma_buffer);
+	/* symbol functions */
+	add_kernel_symbol(find_kernel_function);
+	add_kernel_symbol(remove_kernel_symbol);
 	add_kernel_symbol(_add_kernel_symbol);
-	add_kernel_symbol(do_iremove);
-	add_kernel_symbol(write_block_cache);
+	add_kernel_symbol(panic_assert);
+	add_kernel_symbol(panic);
+	/* basic kernel functions */
 	add_kernel_symbol(printk);
 	add_kernel_symbol(kprintf);
-	add_kernel_symbol(panic_assert);
 	add_kernel_symbol(sprintf);
+	add_kernel_symbol(memset);
+	add_kernel_symbol(memcpy);
+	add_kernel_symbol(_strcpy);
 	add_kernel_symbol(inb);
-	add_kernel_symbol(pfs_cn_node);
-	add_kernel_symbol(pfs_cn);
 	add_kernel_symbol(outb);
 	add_kernel_symbol(inw);
 	add_kernel_symbol(outw);
 	add_kernel_symbol(inl);
-	add_kernel_symbol(ttyx_ioctl);
 	add_kernel_symbol(outl);
-	//add_kernel_symbol(set_console_font);
-	add_kernel_symbol(vm_unmap_only);
-	add_kernel_symbol(delay);
-	add_kernel_symbol(delay_sleep);
-	add_kernel_symbol(memset);
-	add_kernel_symbol(memcpy);
-	add_kernel_symbol(_strcpy);
-	add_kernel_symbol(proc_set_callback);
-	add_kernel_symbol(proc_get_major);
-	add_kernel_symbol(panic);
-	add_kernel_symbol(schedule);
-	add_kernel_symbol(force_schedule);
-	add_kernel_symbol(run_scheduler);
-	add_kernel_symbol(do_get_idir);
-	add_kernel_symbol(register_interrupt_handler);
-	add_kernel_symbol(unregister_interrupt_handler);
-	add_kernel_symbol(get_interrupt_handler);
-	add_kernel_symbol(serial_puts);
-	add_kernel_symbol(set_blockdevice);
-	add_kernel_symbol(set_chardevice);
-	add_kernel_symbol(exit);
-	add_kernel_symbol(set_availablebd);
-	add_kernel_symbol(set_availablecd);
-	add_kernel_symbol(unregister_block_device);
-	add_kernel_symbol(unregister_char_device);
-	add_kernel_symbol(get_device);
-	add_kernel_symbol(block_read);
-	add_kernel_symbol(do_block_rw);
-	add_kernel_symbol(block_write);
-	add_kernel_symbol(sys_setsid);
-	//add_kernel_symbol(setup_console_video);
-	add_kernel_symbol(__kmalloc);
-	add_kernel_symbol(kmalloc_ap);
-	add_kernel_symbol(kmalloc_a);
-	add_kernel_symbol(kmalloc_p);
-	add_kernel_symbol(kfree);
-	add_kernel_symbol(dosyscall);
-	add_kernel_symbol(vm_map);
-	add_kernel_symbol(vm_unmap);
-	add_kernel_symbol(init_console);
-	add_kernel_symbol(create_console);
-	add_kernel_symbol(destroy_console);
-	//add_kernel_symbol(set_console_callbacks);
-	add_kernel_symbol(fork);
-	add_kernel_symbol(kill_task);
-	add_kernel_symbol(__wait_flag);
-	add_kernel_symbol(wait_flag_except);
-	_add_kernel_symbol((unsigned)(unsigned *)&curcons, "curcons");
-	_add_kernel_symbol((unsigned)(char *)&tables, "tables");
-#if CONFIG_SMP
-	add_kernel_symbol(get_cpu);
-#else
-	_add_kernel_symbol((unsigned)(task_t **)&current_task, "current_task");
-
-#endif
-	_add_kernel_symbol((unsigned)(task_t **)&kernel_task, "kernel_task");
-	_add_kernel_symbol((unsigned)(cpu_t *)&primary_cpu, "primary_cpu");
-	_add_kernel_symbol((unsigned)(struct inode **)&kproclist, "kproclist");
-	_add_kernel_symbol((unsigned)(struct inode **)&devfs_root, "devfs_root");
-	add_kernel_symbol(sys_open);
-	add_kernel_symbol(sys_read);
-	add_kernel_symbol(set_as_kernel_task);
-	add_kernel_symbol(sys_write);
-	add_kernel_symbol(sys_close);
-	add_kernel_symbol(read_fs);
-	add_kernel_symbol(write_fs);
-	add_kernel_symbol(sys_ioctl);
-	add_kernel_symbol(proc_append_buffer);
-	add_kernel_symbol(sys_stat);
-	add_kernel_symbol(sys_fstat);
 	_add_kernel_symbol((unsigned)__super_cli, "__super_cli");
 	_add_kernel_symbol((unsigned)__super_sti, "__super_sti");
-	add_kernel_symbol(get_epoch_time);
-	add_kernel_symbol(disconnect_block_cache);
-	add_kernel_symbol(register_sbt);
-	add_kernel_symbol(unregister_sbt);
-	add_kernel_symbol(block_rw);
-	add_kernel_symbol(get_empty_cache);
-	add_kernel_symbol(find_cache_element);
-	add_kernel_symbol(do_cache_object);
-	add_kernel_symbol(remove_element);
-	add_kernel_symbol(sync_element);
-	add_kernel_symbol(destroy_cache);
-	add_kernel_symbol(sync_cache);
-	
 	add_kernel_symbol(mutex_create);
 	add_kernel_symbol(mutex_destroy);
 	add_kernel_symbol(__mutex_release);
 	add_kernel_symbol(__mutex_acquire);
-	
-	add_kernel_symbol(block_ioctl);
-	add_kernel_symbol(block_device_rw);
-	add_kernel_symbol(iput);
-	add_kernel_symbol(find_kernel_function);
-	add_kernel_symbol(remove_kernel_symbol);
-	add_kernel_symbol(do_send_signal);
-	add_kernel_symbol(switch_console);
 	add_kernel_symbol(__rwlock_acquire);
 	add_kernel_symbol(rwlock_release);
 	add_kernel_symbol(__rwlock_escalate);
 	add_kernel_symbol(rwlock_create);
 	add_kernel_symbol(rwlock_destroy);
+	
+	/* these systems export these, but have no initialization function */
+	add_kernel_symbol(get_epoch_time);
+	add_kernel_symbol(allocate_dma_buffer);
 }
 
 char *get_symbol_string(uint8_t *buf, uint32_t index)

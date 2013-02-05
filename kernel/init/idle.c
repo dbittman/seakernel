@@ -65,6 +65,7 @@ int init_kern_task()
 	kproclist->count=1;
 	kproclist->dev = 256*3;
 	rwlock_create(&kproclist->rwl);
+	_add_kernel_symbol((unsigned)(struct inode **)&kproclist, "kproclist");
 	return 0;
 }
 

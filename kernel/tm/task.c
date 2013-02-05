@@ -45,7 +45,6 @@ void init_multitasking()
 	_add_kernel_symbol((unsigned)(task_t **)&current_task, "current_task");
 #endif
 	_add_kernel_symbol((unsigned)(task_t **)&kernel_task, "kernel_task");
-	_add_kernel_symbol((unsigned)(struct inode **)&kproclist, "kproclist");
 }
 
 void switch_to_user_mode()

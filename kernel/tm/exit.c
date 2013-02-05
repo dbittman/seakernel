@@ -192,6 +192,7 @@ void exit(int code)
 	raise_flag(TF_DYING);
 	set_as_dead(t);
 	unlock_scheduler();
+	task_full_uncritical();
 	force_schedule();
 	panic(PANIC_NOSYNC, "and you may ask yourself...how did I get here?");
 }

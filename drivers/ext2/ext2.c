@@ -3,21 +3,16 @@
 #include <kernel.h>
 #include <fs.h>
 #include <dev.h>
-ext2_fs_t *fs_list;
+#include <ll.h>
+#include <rwlock.h>
+#include <atomic.h>
+struct llist *fslist;
 unsigned fs_num=0;
-mutex_t *fsll;
-#warning "use LL!!!!"
+
 ext2_fs_t *get_new_fsvol()
 {
 	ext2_fs_t *fs = (ext2_fs_t *)kmalloc(sizeof(ext2_fs_t));
-	mutex_acquire(fsll);
-	ext2_fs_t *old = fs_list;
-	fs->next = old;
-	if(old) old->prev = fs;
-	fs->prev=0;
-	fs_list = fs;
-	fs->flag=fs_num++;
-	mutex_release(fsll);
+	fs->flag=add_atomic(&fs_num, 1);
 	fs->sb = (ext2_superblock_t *)kmalloc(1024);
 	fs->block_prev_alloc=0;
 	fs->read_only=0;
@@ -27,32 +22,31 @@ ext2_fs_t *get_new_fsvol()
 	char tm[32];
 	sprintf(tm, "ext2-%d", fs_num);
 	fs->cache = get_empty_cache(0, tm);
+	fs->llnode = ll_insert(fslist, fs);
 	return fs;
 }
 
 ext2_fs_t *get_fs(int v)
 {
-	ext2_fs_t *f = fs_list;
-	while(f)
+	rwlock_acquire(&fslist->rwl, RWL_READER);
+	struct llistnode *cur;
+	ext2_fs_t *f;
+	ll_for_each_entry(fslist, cur, ext2_fs_t *, f)
 	{
 		if(f->flag == v)
+		{
+			rwlock_release(&fslist->rwl, RWL_READER);
 			return f;
-		f=f->next;
+		}
 	}
+	rwlock_release(&fslist->rwl, RWL_READER);
 	return 0;
 }
 
 void release_fsvol(ext2_fs_t *fs)
 {
 	if(!fs) return;
-	mutex_acquire(fsll);
-	if(fs->prev)
-		fs->prev->next = fs->next;
-	else
-		fs_list = fs->next;
-	if(fs->next)
-		fs->next->prev=fs->prev;
-	mutex_release(fsll);
+	ll_remove_entry(fslist, fs);
 	kfree(fs->sb);
 	fs->m_node->pid=-1;
 	fs->m_block->pid=-1;
@@ -147,8 +141,7 @@ int ext2_unmount(struct inode *i, int v)
 int module_install()
 {
 	printk(1, "[ext2]: Registering filesystem\n");
-	fs_list=0;
-	fsll = mutex_create(0);
+	fslist = ll_create(0);
 	register_sbt("ext2", 2, (int (*)(dev_t,u64,char*))ext2_mount);
 	return 0;
 }
@@ -157,9 +150,19 @@ int module_exit()
 {
 	printk(1, "[ext2]: Unmounting all ext2 filesystems\n");
 	int i=0;
-	while(fs_list && !ext2_unmount(0, fs_list->flag));
 	unregister_sbt("ext2");
-	mutex_destroy(fsll);
+	if(ll_is_active(fslist)) 
+	{
+		struct llistnode *cur, *next;
+		ext2_fs_t *f=0;
+		ll_for_each_entry_safe(fslist, cur, next, ext2_fs_t *, f);
+		{
+			if(f)
+				ext2_unmount(0, f->flag);
+			ll_maybe_reset_loop(fslist, cur, next);
+		}
+	}
+	ll_destroy(fslist);
 	return 0;
 }
 

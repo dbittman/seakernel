@@ -79,7 +79,7 @@ int ioctl_ata(int min, int cmd, int arg)
 
 int module_install()
 {
-	nodes = (struct dev_rec *)kmalloc(sizeof(struct dev_rec));
+	nodes=0;
 	api=0;
 	__a=__b=__c=__d=0;
 	primary   = (struct ata_controller *)kmalloc(sizeof(struct ata_controller));

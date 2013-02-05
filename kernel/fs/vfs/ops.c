@@ -62,23 +62,6 @@ int do_add_inode(struct inode *b, struct inode *i, int locked)
 	return 0;
 }
 
-int recur_total_refs(struct inode *i)
-{
-	/* TODO: WARNING: this is dangerous. We could VERY easily end up
-	 * deadlocking the system by pulling a stunt like this. Maybe we
-	 * should have inc_parent_times for inodes too? */
-	rwlock_acquire(&i->rwl, RWL_READER);
-	int x = i->count;
-	struct inode *c;
-	struct llistnode *cur;
-	ll_for_each_entry((&i->children), cur, struct inode *, c)
-	{
-		x += recur_total_refs(c);
-	}
-	rwlock_release(&i->rwl, RWL_READER);
-	return x;
-}
-
 int free_inode(struct inode *i, int recur)
 {
 	assert(i && !i->parent);
@@ -118,11 +101,13 @@ int do_iremove(struct inode *i, int flag, int locked)
 			i->count, i->name);
 	/* remove the count added by having this child */
 	i->parent=0;
-	#warning "we should iput here..."
 	if(parent) {
-		sub_atomic(&parent->count, 1);
 		ll_remove(&parent->children, i->node);
-		if(!locked) rwlock_release(&parent->rwl, RWL_WRITER);
+		if(!locked) {
+			rwlock_release(&parent->rwl, RWL_WRITER);
+			iput(parent);
+		} else
+			sub_atomic(&parent->count, 1);
 	}
 	if(flag != 3)
 		free_inode(i, (flag == 2) ? 1 : 0);

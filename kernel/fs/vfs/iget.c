@@ -43,7 +43,6 @@ struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, int *req)
 		return 0;
 	if(ll_is_active(&i->children)) {
 		struct llistnode *cur;
-		#warning "need to have a RWL_READER lock around these..."
 		rwlock_acquire(&i->children.rwl, RWL_READER);
 		ll_for_each_entry((&i->children), cur, struct inode *, temp)
 		{

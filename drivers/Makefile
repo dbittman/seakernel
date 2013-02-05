@@ -14,6 +14,9 @@ endif
 MCFLAGS=-std=c99 -g -O3 -fno-rename-registers \
 		-fno-regmove -D__KERNEL__ -mno-red-zone -nostdinc -ffreestanding \
 		-fno-common -nostdlib \
+		-I../arch/${ARCH}/include \
+		-Iarch/${ARCH}/include \
+		-I../../arch/${ARCH}/include \
 		-I include -I../include -I./include -I../../include \
 		-I../../../include \
 		-Wall -Wextra -Wformat-security -Wformat-nonliteral -Wshadow \

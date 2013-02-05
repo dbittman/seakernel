@@ -241,15 +241,20 @@ int module_deps(char *b)
 int module_exit()
 {
 	printk(1, "[rtl8139]: Shutting down all cards...\n");
-	struct llistnode *cur;
-	rtl8139dev_t *ent;
-	ll_for_each_entry(rtl_cards, cur, rtl8139dev_t *, ent)
+	unregister_char_device(rtl8139_maj);
+	if(ll_is_active(rtl_cards))
 	{
-		rtl8139_unload_device_pci(ent);
-		kfree(ent->rec_buf);
-		kfree(ent);
+		struct llistnode *cur, *next;
+		rtl8139dev_t *ent;
+		ll_for_each_entry_safe(rtl_cards, cur, next, rtl8139dev_t *, ent)
+		{
+			//rtl8139_unload_device_pci(ent);
+			ll_remove(rtl_cards, cur);
+			//kfree(ent->rec_buf);
+			//kfree(ent);
+			ll_maybe_reset_loop(rtl_cards, cur, next);
+		}
 	}
 	ll_destroy(rtl_cards);
-	unregister_char_device(rtl8139_maj);
 	return 0;
 }

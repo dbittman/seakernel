@@ -5,51 +5,46 @@
 #include <cache.h>
 #include <block.h>
 #include <mod.h>
-#warning "make this use ll.c"
+#include <ll.h>
 struct loop_device {
 	struct inode *node;
 	int min;
 	unsigned limit;
 	unsigned offset;
 	unsigned ro;
-	struct loop_device *prev, *next;
-} *loop_devices;
-mutex_t loop_mutex;
+};
+
+struct llist *loops;
 int loop_maj = -1;
 
 struct loop_device *get_loop(int num) 
 {
-	mutex_acquire(&loop_mutex);
-	struct loop_device *loop = loop_devices;
-	while(loop && loop->min != num) loop = loop->next;
-	mutex_release(&loop_mutex);
-	return loop;
+	rwlock_acquire(&loops->rwl, RWL_READER);
+	struct llistnode *cur;
+	struct loop_device *ld;
+	ll_for_each_entry(loops, cur, struct loop_device *, ld)
+	{
+		if(ld->min == num)
+		{
+			rwlock_release(&loops->rwl, RWL_READER);
+			return ld;
+		}
+	}
+	rwlock_release(&loops->rwl, RWL_READER);
+	return 0;
 }
 
 void add_loop_device(int num)
 {
 	struct loop_device *new = (void *)kmalloc(sizeof(struct loop_device));
 	new->min = num;
-	mutex_acquire(&loop_mutex);
-	struct loop_device *old = loop_devices;
-	loop_devices = new;
-	new->next = old;
-	new->prev=0;
-	if(old) old->prev = new;
-	mutex_release(&loop_mutex);
+	ll_insert(loops, new);
 }
 
 void remove_loop_device(struct loop_device *loop)
 {
 	if(!loop) return;
-	mutex_acquire(&loop_mutex);
-	if(loop->prev)
-		loop->prev->next = loop->next;
-	else
-		loop_devices = loop->next;
-	if(loop->next)
-		loop->next->prev = loop->prev;
-	mutex_release(&loop_mutex);
+	ll_remove_entry(loops, loop);
 	kfree(loop);
 }
 
@@ -71,44 +66,30 @@ int loop_rw(int rw, int minor, u64 block, char *buf)
 int loop_up(int num, char *name)
 {
 	struct loop_device *loop = get_loop(num);
-	mutex_acquire(&loop_mutex);
-	if(!loop) {
-		mutex_release(&loop_mutex);
+	if(!loop) 
 		return -EINVAL;
-	}
-	if(loop->node) {
-		mutex_release(&loop_mutex);
+	if(loop->node) 
 		return -EBUSY;
-	}
 	
 	struct inode *i = get_idir(name, 0);
-	if(!i) {
-		mutex_release(&loop_mutex);
+	if(!i)
 		return -ENOENT;
-	}
 	loop->offset = loop->limit = loop->ro = 0;
 	loop->node = i;
 	
-	mutex_release(&loop_mutex);
 	return 0;
 }
 
 int loop_down(int num)
 {
 	struct loop_device *loop = get_loop(num);
-	mutex_acquire(&loop_mutex);
-	if(!loop) {
-		mutex_release(&loop_mutex);
+	if(!loop)
 		return -EINVAL;
-	}
-	if(!loop->node) {
-		mutex_release(&loop_mutex);
+	if(!loop->node)
 		return -EINVAL;
-	}
 	struct inode *i = loop->node;
 	loop->node=0;
 	iput(i);
-	mutex_release(&loop_mutex);
 	return 0;
 }
 
@@ -187,9 +168,8 @@ int module_install()
 		unregister_block_device(loop_maj);
 		return EINVAL;
 	}
-	mutex_create(&loop_mutex);
+	loops = ll_create(0);
 	devfs_add(devfs_root, "loop0", S_IFBLK, loop_maj, 0);
-	loop_devices=0;
 	add_loop_device(0);
 	return 0;
 }
@@ -197,9 +177,18 @@ int module_install()
 int module_exit()
 {
 	unregister_block_device(loop_maj);
-	while(loop_devices)
-		remove_loop_device(loop_devices);
-	mutex_destroy(&loop_mutex);
+	if(ll_is_active(loops))
+	{
+		struct llistnode *cur, *next;
+		struct loop_device *ld;
+		ll_for_each_entry_safe(loops, cur, next, struct loop_device *, ld)
+		{
+			ll_remove(loops, cur);
+			//kfree(ld);
+			ll_maybe_reset_loop(loops, cur, next);
+		}
+	}
+	ll_destroy(loops);
 	return 0;
 }
 

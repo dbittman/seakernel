@@ -8,7 +8,7 @@
 #include <time.h>
 #define uint64_t asdasdasd
 #include "sb.h"
-
+#include <ll.h>
 typedef struct e2_vol_data {
 	int flag;
 	unsigned long long dev, block;
@@ -19,7 +19,7 @@ typedef struct e2_vol_data {
 	char read_only;
 	mutex_t *m_node, *m_block, *m_inode, ac_lock;
 	cache_t *cache;
-	struct e2_vol_data *next, *prev;
+	struct llistnode *llnode;
 } ext2_fs_t;
 
 typedef char ext2_inode_type_t;

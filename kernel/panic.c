@@ -72,7 +72,6 @@ void panic(int flags, char *fmt, ...)
 void panic_assert(const char *file, u32int line, const char *desc)
 {
 	__super_cli();
-	task_critical();
 	printk(KERN_CRIT, "Some code f*cked up (%s @ %d): %s.\n", file, line, desc);
 	panic(0, "Assertion Fail");
 }

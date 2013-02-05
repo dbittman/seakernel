@@ -28,7 +28,6 @@ void inc_parent_times(task_t *t, int u, int s)
 inline static void do_run_scheduler()
 {
 	if(!current_task || 
-		(current_task->critical) || 
 		(current_task->flags&TF_DYING) || 
 		(current_task->flags&TF_LOCK))
 		return;
@@ -38,17 +37,9 @@ inline static void do_run_scheduler()
 
 void run_scheduler()
 {
-	if(current_task->critical)
-		panic(PANIC_NOSYNC, "Critical task tried to reschedule");
 	do_run_scheduler();
 }
 
-void force_schedule()
-{
-	if(current_task->critical)
-		panic(PANIC_NOSYNC, "Critical task tried to force schedule");
-	schedule();
-}
 #define __SYS 0, 1
 #define __USR 1, 0
 void do_tick()
@@ -65,8 +56,6 @@ void do_tick()
 			current_task->system ? __SYS : __USR);
 	}
 	check_alarms();
-	if(current_task->critical)
-		return;
 	if(current_task != kernel_task) {
 		if(task_is_runable(current_task) && current_task->cur_ts>0 
 				&& --current_task->cur_ts)
@@ -86,13 +75,12 @@ void delay(int t)
 	{
 		__super_sti();
 		while(ticks < end)
-			force_schedule();
+			schedule();
 		return;
 	}
 	current_task->tick=end;
 	current_task->state=TASK_USLEEP;
-	task_full_uncritical();
-	force_schedule();
+	schedule();
 }
 
 void delay_sleep(int t)

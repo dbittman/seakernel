@@ -52,7 +52,7 @@ int map_in_page(unsigned int cr2, unsigned err_code)
 
 void print_pf(int x, registers_t *regs, unsigned cr2)
 {
-	printk(x, "Occured in task %d.\n\tstate=%d, flags=%d, F=%d, magic=%x.\n\tlast syscall=%d, kernel is %slocked", current_task->pid, current_task->state, current_task->flags, current_task->flag, current_task->magic, current_task->last, current_task->critical ? "" : "un");
+	printk(x, "Occured in task %d.\n\tstate=%d, flags=%d, F=%d, magic=%x.\n\tlast syscall=%d", current_task->pid, current_task->state, current_task->flags, current_task->flag, current_task->magic, current_task->last);
 	if(current_task->system) 
 		printk(x, ", in syscall %d", current_task->system);
 	printk(x, "\n");

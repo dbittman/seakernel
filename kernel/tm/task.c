@@ -29,7 +29,7 @@ void init_multitasking()
 	add_kernel_symbol(delay);
 	add_kernel_symbol(delay_sleep);
 	add_kernel_symbol(schedule);
-	add_kernel_symbol(force_schedule);
+	add_kernel_symbol(schedule);
 	add_kernel_symbol(run_scheduler);
 	add_kernel_symbol(exit);
 	add_kernel_symbol(sys_setsid);

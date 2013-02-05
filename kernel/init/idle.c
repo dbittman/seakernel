@@ -91,7 +91,7 @@ int kernel_idle_task()
 	 * that we wont need anymore */
 	while(!cleared_args)
 	{
-		force_schedule();
+		schedule();
 		__KT_clear_args();
 	}
 	/* Now enter the main idle loop, waiting to do periodic cleanup */

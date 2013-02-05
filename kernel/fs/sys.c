@@ -24,7 +24,6 @@ int sys_setup(int a)
 {
 	if(system_setup)
 	{
-		task_full_uncritical();
 		schedule();
 		return 1;
 	}
@@ -408,7 +407,7 @@ int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 			ret = total_set;
 		if((!wait && timeout) || is_ok)
 			break;
-		force_schedule();
+		schedule();
 		if(got_signal(current_task))
 			return -EINTR;
 	}

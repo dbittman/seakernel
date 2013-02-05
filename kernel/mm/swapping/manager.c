@@ -220,7 +220,7 @@ int do_page_out_task_addr(task_t *t, unsigned addr)
 		return -1;
 	char tmp[4096];
 	addr &= PAGE_MASK;
-	task_critical();
+	lock_scheduler();
 	int oldstate = t->state;
 	/* Make sure the task doesn't run til we are finished */
 	t->state = TASK_FROZEN;
@@ -236,7 +236,7 @@ int do_page_out_task_addr(task_t *t, unsigned addr)
 	vm_switch(current_task->pd);
 	//current_dir = current_task->pd;
 	flush_pd();
-	task_uncritical();
+	unlock_scheduler();
 	if(!attr) {
 		t->state = oldstate;
 		return -1;
@@ -250,7 +250,7 @@ int do_page_out_task_addr(task_t *t, unsigned addr)
 		/* Unmaps the above allocation */
 		vm_unmap_only(addr);
 		/* If that worked, lets unmap it. */
-		task_critical();
+		lock_scheduler();
 		vm_switch(t->pd);
 		flush_pd();
 		//current_dir = t->pd;
@@ -258,7 +258,7 @@ int do_page_out_task_addr(task_t *t, unsigned addr)
 		vm_switch(current_task->pd);
 		//current_dir = current_task->pd;
 		flush_pd();
-		task_uncritical();
+		unlock_scheduler();
 	} else
 	{
 		/* If it didn't work, we need to unmap and free what we 
@@ -318,11 +318,11 @@ void __KT_swapper()
 				if(p->flags & TF_SWAPQUEUE)
 				{
 					p->flags &= ~TF_SWAPQUEUE;
-					task_uncritical();
+					unlock_scheduler();
 					swap_task(p);
 					printk(2, "[swap]: Swapped out %d pages (%d KB) from task %d\n", 
 						p->num_swapped, p->num_swapped/4, p->pid);
-					task_critical();
+					lock_scheduler();
 				}
 				p=p->next;
 			}

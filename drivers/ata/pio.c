@@ -51,7 +51,7 @@ int ata_pio_rw(struct ata_controller *cont, struct ata_device *dev,
 		if(poll & STATUS_DRQ)
 			break;
 		ATA_DELAY(cont);
-		force_schedule();
+		schedule();
 	}
 	if(!x) {
 		mutex_release(lock);

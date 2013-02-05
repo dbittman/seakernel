@@ -83,7 +83,7 @@ int read_pipe(struct inode *ino, char *buffer, size_t length)
 	while(!pipe->pending && (pipe->count > 1 && pipe->type != PIPE_NAMED 
 			&& pipe->wrcount>0)) {
 		mutex_release(pipe->lock);
-		force_schedule();
+		schedule();
 		if(current_task->sigd)
 			return -EINTR;
 		mutex_acquire(pipe->lock);

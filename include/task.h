@@ -81,8 +81,7 @@ typedef volatile struct task_struct
 	volatile unsigned magic;
 	volatile addr_t pid, eip, ebp, esp;
 	page_dir_t *pd;
-	volatile int state, old_state, critical, critical_c;
-	volatile char critical_stack[256];
+	volatile int state, old_state;
 	unsigned int system; 
 	addr_t kernel_stack;
 	int cur_ts, priority;
@@ -160,7 +159,6 @@ void set_current_task_dp(task_t *t, int cpu)
 #define raise_flag(f) current_task->flags |= f
 #define lower_flag(f) current_task->flags &= ~f
 void delay_sleep(int t);
-void force_schedule();
 void take_issue_with_current_task();
 void clear_resources(task_t *);
 int times(struct tms *buf);
@@ -264,28 +262,6 @@ static __attribute__((always_inline)) inline int count_tasks()
 		t=(task_t *)t->next;
 	}
 	return i;
-}
-
-static __attribute__((always_inline)) inline void task_critical()
-{
-	//if(!current_task) return;
-	cli();
-	current_task->critical+=1;
-}
-
-static __attribute__((always_inline))  inline void task_uncritical()
-{
-	//if(!current_task) return;
-	cli();
-	if(current_task->critical > 0)
-		current_task->critical--;
-}
-
-static __attribute__((always_inline)) inline void task_full_uncritical()
-{
-	//if(!current_task) return;
-	current_task->critical=0;
-	current_task->critical_c=0;
 }
 
 static __attribute__((always_inline)) inline void enter_system(int sys)

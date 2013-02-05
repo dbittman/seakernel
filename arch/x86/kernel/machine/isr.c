@@ -86,8 +86,6 @@ void faulted(int fuckoff)
 	{
 		printk(5, "%s occured in task %d (F=%d): He's dead, Jim.\n", 
 				exception_messages[fuckoff], current_task->pid, current_task->flag);
-		if(current_task->critical)
-			current_task->critical=0;
 		switch(fuckoff)
 		{
 			case 0: case 5: case 6: case 13:
@@ -103,8 +101,7 @@ void faulted(int fuckoff)
 				kill_task(current_task->pid);
 				break;
 		}
-		task_full_uncritical();
-		force_schedule();
+		schedule();
 	}
 }
 

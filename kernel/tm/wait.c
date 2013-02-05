@@ -22,7 +22,7 @@ int wait_task(unsigned pid, int state)
 			task = get_task_pid(pid);
 			if(!task || task->state == state)
 				break;
-			force_schedule();
+			schedule();
 		}
 	}
 	int ret = current_task->waiting_ret;
@@ -33,14 +33,12 @@ void __wait_flag(unsigned *f, int fo, char *file, int line)
 {
 	if(f && (int)*f == fo)
 		return;
-	if(current_task->critical)
-		task_full_uncritical();
 	again:
 	current_task->waitflag=f;
 	current_task->wait_for=fo;
 	current_task->state = TASK_ISLEEP;
 	current_task->waiting_true=0;
-	force_schedule();
+	schedule();
 	if(!got_signal(current_task) && f && (int)*f != fo)
 		goto again;
 	/* Reset the waitflag pointer to indicate that we are no longer
@@ -53,14 +51,12 @@ void wait_flag_except(unsigned *f, int fo)
 {
 	if(f && (int)*f != fo)
 		return;
-	if(current_task->critical)
-		task_full_uncritical();
 	again:
 	current_task->waitflag=f;
 	current_task->wait_for=fo;
 	current_task->state = TASK_ISLEEP;
 	current_task->waiting_true=1;
-	force_schedule();
+	schedule();
 	if(!got_signal(current_task) && f && (int)*f == fo)
 		goto again;
 	/* Reset the waitflag pointer to indicate that we are no longer
@@ -110,7 +106,7 @@ int sys_waitpid(int pid, int *st, int opt)
 	t = (pid == -1 ? 0 : get_task_pid(pid));
 	if(t) {
 		if(!(opt & 1)) {
-			force_schedule();
+			schedule();
 			goto top;
 		}
 		return 0;
@@ -120,14 +116,14 @@ int sys_waitpid(int pid, int *st, int opt)
 		res = get_status_int(pid, &code, &gotpid);
 	else {
 		if(!(opt & 1)) {
-			force_schedule();
+			schedule();
 			goto top;
 		}
 		return 0;
 	}
 	if(res) {
 		if(!(opt & 1)) {
-			force_schedule();
+			schedule();
 			goto top;
 		}
 		return 0;

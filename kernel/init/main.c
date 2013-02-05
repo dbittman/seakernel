@@ -142,7 +142,6 @@ void kmain(struct multiboot *mboot_header, u32int initial_stack)
 	printk(KERN_MILE, "[kernel]: Kernel is setup (%2.2d:%2.2d:%2.2d, %s, kv=%d, ts=%d bytes: ok)\n", 
 	       kernel_start_time.tm_hour, kernel_start_time.tm_min, 
 	       kernel_start_time.tm_sec, kernel_name, KVERSION, sizeof(task_t));
-	task_full_uncritical();
 	__super_sti();
 	if(!fork())
 		init();

@@ -3,6 +3,7 @@
 #include <pci.h>
 #include "ata.h"
 #include <block.h>
+#include <atomic.h>
 void remove_devices()
 {
 	struct dev_rec *next1;
@@ -71,8 +72,7 @@ void ata_irq_handler(registers_t regs)
 	struct ata_controller *cont = (regs.int_no == (32+ATA_PRIMARY_IRQ) ? primary : secondary);
 	char st = inb(cont->port_bmr_base + BMR_STATUS);
 	if(st & 0x4) {
-		//printk(0, "got irq: %d\n", regs.int_no);
-		cont->irqwait++;
+		add_atomic(&cont->irqwait, 1);
 		ata_reg_inb(cont, REG_STATUS);
 		outb(cont->port_bmr_base + BMR_STATUS, 0x4);
 	}

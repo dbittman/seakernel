@@ -45,9 +45,8 @@ addr_t __pm_alloc_page(char *file, int line)
 				if(!flag++) 
 					printk(0, "Warning - Ran out of physical memory in task %d\n", 
 							current_task->pid);
-				task_full_uncritical();
 				__engage_idle();
-				force_schedule();
+				schedule();
 				goto try_again;
 			} else if(OOM_HANDLER == OOM_KILL)
 			{

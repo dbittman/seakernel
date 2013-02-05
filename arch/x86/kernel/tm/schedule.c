@@ -66,7 +66,6 @@ __attribute__((always_inline)) inline task_t *get_next_task()
 __attribute__((always_inline)) static inline void post_context_switch()
 {
 	if(current_task->state == TASK_SUICIDAL) {
-		task_critical();
 		task_suicide();
 		panic(PANIC_NOSYNC, "Suicide failed");
 	}

@@ -98,10 +98,9 @@ void kill_task(unsigned int pid)
 		return;
 	}
 	task->state = TASK_SUICIDAL;
-	task_full_uncritical();
 	task->sigd = 0; /* fuck your signals */
 	if(task == current_task)
-		force_schedule();
+		schedule();
 }
 
 int get_exit_status(int pid, int *status, int *retval, int *signum, int *__pid)
@@ -192,7 +191,6 @@ void exit(int code)
 	raise_flag(TF_DYING);
 	set_as_dead(t);
 	unlock_scheduler();
-	task_full_uncritical();
-	force_schedule();
+	schedule();
 	panic(PANIC_NOSYNC, "and you may ask yourself...how did I get here?");
 }

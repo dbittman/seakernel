@@ -185,7 +185,7 @@ int syscall_handler(volatile registers_t *regs)
 		return -EINVAL;
 	enter_system(regs->eax);
 	if(got_signal(current_task))
-		force_schedule();
+		schedule();
 	__super_sti();
 	current_task->freed = current_task->allocated=0;
 #ifdef SC_DEBUG

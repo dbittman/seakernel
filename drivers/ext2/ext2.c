@@ -18,6 +18,8 @@ ext2_fs_t *get_new_fsvol()
 	fs->read_only=0;
 	fs->m_node = mutex_create(0);
 	fs->m_block = mutex_create(0);
+	mutex_create(&fs->bg_lock);
+	mutex_create(&fs->fs_lock);
 	mutex_create(&fs->ac_lock);
 	char tm[32];
 	sprintf(tm, "ext2-%d", fs_num);
@@ -53,6 +55,8 @@ void release_fsvol(ext2_fs_t *fs)
 	mutex_destroy(fs->m_node);
 	mutex_destroy(fs->m_block);
 	mutex_destroy(&fs->ac_lock);
+	mutex_destroy(&fs->bg_lock);
+	mutex_destroy(&fs->fs_lock);
 	destroy_cache(fs->cache);
 	kfree(fs);
 }

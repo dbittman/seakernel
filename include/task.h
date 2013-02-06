@@ -7,29 +7,31 @@
 #include <sig.h>
 #include <mmfile.h>
 #include <dev.h>
-#define GOD 0 
-#define ISGOD(x) (current_task->uid == GOD)
+
 #define KERN_STACK_SIZE 0x16000
+
 #define __EXIT     0
 #define __COREDUMP 1
 #define __EXITSIG  2
 #define __STOPSIG  4
-#define TASK_MAGIC 0xDEADBEEF
-#define FILP_HASH_LEN 512
-#define TF_WMUTEX     0x1
-#define TF_EXITING    0x2
-#define TF_ALARM      0x4
-#define TF_DIDLOCK    0x8
-#define TF_SWAP      0x10
-#define TF_KTASK     0x20
-#define TF_SWAPQUEUE 0x40
-#define TF_LOCK      0x80
 
-#define TF_DYING    0x200
-#define TF_FORK     0x400
-#define TF_INSIG    0x800
-#define TF_SCHED   0x1000
-#define TF_JUMPIN  0x2000
+#define TASK_MAGIC 0xCAFEBABE
+#define FILP_HASH_LEN 512
+
+/* flags for different task states */
+#define TF_EXITING    0x2 /* entering the exit() function */
+#define TF_ALARM      0x4 /* we have an alarm we are waiting for */
+#define TF_SWAP      0x10 /* swapped out */
+#define TF_KTASK     0x20 /* this is a kernel process */
+#define TF_SWAPQUEUE 0x40 /* waiting to swap */
+#define TF_LOCK      0x80 /* locked. the scheduler will not change out of this task */
+#define TF_DYING    0x200 /* waiting to be reaped */
+#define TF_FORK     0x400 /* newly forked, but hasn't been run yet */
+#define TF_INSIG    0x800 /* inside a signal */
+#define TF_SCHED   0x1000 /* we request a reschedule after this syscall completes */
+#define TF_JUMPIN  0x2000 /* going to jump to a signal handler on the next IRET
+						   * used by the syscall handler to determine if it needs to back up
+						   * it's return value */
 #define PRIO_PROCESS 1
 #define PRIO_PGRP    2
 #define PRIO_USER    3
@@ -79,32 +81,41 @@ typedef struct exit_status {
 typedef volatile struct task_struct
 {
 	volatile unsigned magic;
+	/* used for storing context */
 	volatile addr_t pid, eip, ebp, esp;
 	page_dir_t *pd;
-	volatile int state, old_state;
+	/* current state of the task (see sig.h) */
+	volatile int state;
+	volatile unsigned flags;
+	int flag;
+	/* current system call (-1 for the kernel) */
 	unsigned int system; 
 	addr_t kernel_stack;
+	/* timeslicing */
 	int cur_ts, priority;
 	
+	/* waiting on something? */
 	volatile addr_t *waitflag, waiting_ret;
 	unsigned wait_for;
 	char waiting_true;
 	volatile long tick;
-	volatile unsigned flags;
-	int flag;
 	
+	/* accounting */
 	unsigned stime, utime;
 	unsigned t_cutime, t_cstime;
 	volatile addr_t stack_end;
 	volatile unsigned num_pages;
-	unsigned last;
+	unsigned last; /* the previous systemcall */
 	ex_stat exit_reason, we_res, *exlist;
-	registers_t reg_b;
+	/* pushed registers by the interrupt handlers */
+	registers_t reg_b; /* backup */
 	registers_t *regs, *sysregs;
 	unsigned phys_mem_usage;
+	unsigned freed, allocated;
 	volatile unsigned wait_again, path_loc_start;
 	unsigned num_swapped;
 	
+	/* executable accounting */
 	volatile addr_t heap_start, heap_end, he_red;
 	char command[128];
 	char **argv, **env;
@@ -117,12 +128,13 @@ typedef volatile struct task_struct
 	mmf_t *mm_files;
 	vma_t *mmf_priv_space, *mmf_share_space;
 	
+	/* signal handling */
 	struct sigaction signal_act[128];
 	volatile sigset_t sig_mask, global_sig_mask;
 	volatile unsigned sigd, cursig;
 	sigset_t old_mask;
 	unsigned alrm_count;
-	unsigned freed, allocated;
+	
 	volatile struct task_struct *next, *prev, *parent, *waiting, *alarm_next;
 } task_t;
 
@@ -158,6 +170,7 @@ void set_current_task_dp(task_t *t, int cpu)
 
 #define raise_flag(f) current_task->flags |= f
 #define lower_flag(f) current_task->flags &= ~f
+
 void delay_sleep(int t);
 void take_issue_with_current_task();
 void clear_resources(task_t *);
@@ -225,10 +238,10 @@ void task_suicide();
 extern unsigned ret_values_size;
 extern unsigned *ret_values;
 void set_signal(int sig, unsigned hand);
-extern mutex_t scheding;
 int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds, 
 	struct timeval *timeout);
 int swap_in_page(task_t *, unsigned);
+
 #define wait_flag(a, b) __wait_flag(a, b, __FILE__, __LINE__)
 #define lock_scheduler() _lock_scheduler(__FILE__, __LINE__);
 #define unlock_scheduler() _unlock_scheduler(__FILE__, __LINE__);
@@ -236,15 +249,15 @@ int swap_in_page(task_t *, unsigned);
 static inline  __attribute__((always_inline))  
 void _lock_scheduler(char *f, int l)
 {
-	current_task->flags |= TF_LOCK;
-	__super_cli();
+	if(current_task)
+		current_task->flags |= TF_LOCK;
 }
 
 static inline  __attribute__((always_inline))  
 void _unlock_scheduler(char *f, int l)
 {
-	current_task->flags &= ~TF_LOCK;
-	__super_sti();
+	if(current_task)
+		current_task->flags &= ~TF_LOCK;
 }
 
 static inline int got_signal(task_t *t)
@@ -252,22 +265,9 @@ static inline int got_signal(task_t *t)
 	return (t->sigd);
 }
 
-static __attribute__((always_inline)) inline int count_tasks()
-{
-	task_t *t = (task_t *)kernel_task;
-	int i=0;
-	while(t)
-	{
-		i++;
-		t=(task_t *)t->next;
-	}
-	return i;
-}
-
 static __attribute__((always_inline)) inline void enter_system(int sys)
 {
 	current_task->system=(!sys ? -1 : sys);
-	lower_flag(TF_DIDLOCK);
 	current_task->cur_ts/=2;
 }
 
@@ -300,7 +300,7 @@ static __attribute__((always_inline)) inline void exit_system()
 
 static inline int GET_MAX_TS(task_t *t)
 {
-	if(t->flags & TF_EXITING || t->flags & TF_WMUTEX)
+	if(t->flags & TF_EXITING)
 		return 1;
 	int x = t->priority;
 	if(t->tty == curcons->tty)
@@ -312,12 +312,37 @@ struct inode *set_as_kernel_task(char *name);
 __attribute__((always_inline)) inline static int task_is_runable(task_t *task)
 {
 	assert(task);
-	if(task->state == TASK_FROZEN || task->state == TASK_DEAD)
+	if(task->state == TASK_DEAD)
 		return 0;
 	return (int)(task->state == TASK_RUNNING 
 		|| task->state == TASK_SUICIDAL 
-		|| task->state == TASK_SIGNALED 
 		|| (task->state == TASK_ISLEEP && (task->sigd)));
+}
+
+#if CONFIG_SMP
+#error "need to define lock_task_queue_[reading/writing]"
+#else
+
+#define lock_task_queue_reading(queue) lock_scheduler()
+#define unlock_task_queue_reading(queue) unlock_scheduler()
+
+#define lock_task_queue_writing(queue) lock_scheduler()
+#define unlock_task_queue_writing(queue) unlock_scheduler()
+
+#endif
+
+static __attribute__((always_inline)) inline int count_tasks()
+{
+	lock_task_queue_reading(0);
+	task_t *t = (task_t *)kernel_task;
+	int i=0;
+	while(t)
+	{
+		i++;
+		t=(task_t *)t->next;
+	}
+	unlock_task_queue_reading(0);
+	return i;
 }
 
 #endif

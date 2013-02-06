@@ -54,7 +54,7 @@ int sys_nice(int which, int who, int val, int flags)
 	{
 		if(who && (unsigned)who != current_task->pid)
 			return -ENOTSUP;
-		if(!flags && val < 0 && !ISGOD(current_task))
+		if(!flags && val < 0 && current_task->uid != 0)
 			return -EPERM;
 		/* Yes, this is correct */
 		if(!flags)
@@ -154,12 +154,12 @@ int task_pstat(unsigned int pid, struct task_stat *s)
 int task_stat(unsigned int num, struct task_stat *s)
 {
 	if(!s) return -EINVAL;
-	lock_scheduler();
+	lock_task_queue_reading(0);
 	task_t *t=(task_t *)kernel_task;
 	int i=num;
 	while(t && num--)
 		t = t->next;
-	unlock_scheduler();
+	unlock_task_queue_reading(0);
 	if(!t) 
 		return -ESRCH;
 	do_task_stat(s, t);

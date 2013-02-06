@@ -31,7 +31,6 @@ inline static void do_run_scheduler()
 		(current_task->flags&TF_DYING) || 
 		(current_task->flags&TF_LOCK))
 		return;
-	if(scheding.lock) return;
 	schedule();
 }
 
@@ -52,8 +51,10 @@ void do_tick()
 			: (t=(unsigned *)&current_task->utime)));
 		/* This is a pretty damn awesome statement. Basically means 
 		 * that we increment the parents t_c[u,s]time */
+		lock_task_queue_reading(0);
 		inc_parent_times(current_task->parent, 
 			current_task->system ? __SYS : __USR);
+		unlock_task_queue_reading(0);
 	}
 	check_alarms();
 	if(current_task != kernel_task) {
@@ -79,7 +80,7 @@ void delay(int t)
 		return;
 	}
 	current_task->tick=end;
-	current_task->state=TASK_USLEEP;
+	current_task->state=TASK_ISLEEP;
 	schedule();
 }
 

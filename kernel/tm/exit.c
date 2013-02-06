@@ -25,6 +25,7 @@ void set_as_dead(task_t *t)
 	}
 	if(a->next != t)
 		panic(0, "trying to release non-existant task");
+	lock_task_queue_writing(0);
 	a->next=t->next;
 	if(t->next)
 		t->next->prev = a;
@@ -40,6 +41,7 @@ void set_as_dead(task_t *t)
 	}
 	end_tokill = t;
 	t->next=0;
+	unlock_task_queue_writing(0);
 	/* You may notice a problem here (congratz if you do) - 
 	 * if the task that is being set as "dead" is the 
 	 * current task (which it always it), then 'current_task' is no 
@@ -53,7 +55,7 @@ void set_as_dead(task_t *t)
 
 int __KT_try_releasing_tasks()
 {
-	lock_scheduler();
+	lock_task_queue_writing(0);
 	task_t *t = (task_t *)tokill;
 	if(t) {
 		task_t *p = t->next;
@@ -63,7 +65,7 @@ int __KT_try_releasing_tasks()
 			/* Last one! */
 			end_tokill = 0;
 		}
-		unlock_scheduler();
+		unlock_task_queue_writing(0);
 		if(t->pid && t->state == TASK_DEAD && t != current_task)
 			release_task(t);
 	} else 
@@ -179,18 +181,16 @@ void exit(int code)
 	}
 	/* Lock out everything and modify the linked-lists */
 	lock_scheduler();
-	raise_flag(TF_DYING);
 	ex_stat *ex = t->exlist;
 	while(ex) {
 		ex_stat *n = ex->next;
 		kfree(ex);
 		ex=n;
 	}
+	unlock_scheduler();
 	/* Do these again, just in case */
-	lock_scheduler();
 	raise_flag(TF_DYING);
 	set_as_dead(t);
-	unlock_scheduler();
 	schedule();
 	panic(PANIC_NOSYNC, "and you may ask yourself...how did I get here?");
 }

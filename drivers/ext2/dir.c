@@ -86,10 +86,12 @@ int ext2_dir_change_num(ext2_inode_t* inode, char *name,
 			continue;
 		if (!strncmp((const char *)name, (const char *)entry->name, (unsigned)entry->name_len)
 			&& (unsigned)entry->name_len == strlen((const char *)name)) {
+			mutex_acquire(&inode->fs->fs_lock);
 			int old = entry->inode;
 			entry->inode = new_number;
 			ext2_inode_writedata(inode, off -  ext2_sb_blocksize(inode->fs->sb), 
 				ext2_sb_blocksize(inode->fs->sb), buf);
+			mutex_release(&inode->fs->fs_lock);
 			return old;
 		}
 		if (entry->record_len == 0)
@@ -120,10 +122,12 @@ int ext2_dir_change_type(ext2_inode_t* inode, char *name,
 		
 		if (!strncmp((const char *)name, (const char *)entry->name, 
 				entry->name_len) && entry->name_len == len) {
+			mutex_acquire(&inode->fs->fs_lock);
 			int old = entry->type;
 			entry->type = new_type;
 			ext2_inode_writedata(inode, off -  ext2_sb_blocksize(inode->fs->sb), 
 				ext2_sb_blocksize(inode->fs->sb), buf);
+			mutex_release(&inode->fs->fs_lock);
 			return old;
 		}
 		if (entry->record_len == 0)
@@ -229,10 +233,11 @@ int ext2_dir_link(ext2_inode_t* dir, ext2_inode_t* inode, const char* name)
 				newentry->record_len = entry->record_len - entry_len;
 				newentry->type = type;
 				entry->record_len = entry_len;
-				
+				mutex_acquire(&inode->fs->fs_lock);
 				ext2_inode_writedata(dir, off, ext2_sb_blocksize(inode->fs->sb), buf);
 				inode->link_count++;
 				ext2_inode_update(inode);
+				mutex_release(&inode->fs->fs_lock);
 				return 1;
 			} else
 			pos += entry->record_len;
@@ -255,9 +260,11 @@ int ext2_dir_link(ext2_inode_t* dir, ext2_inode_t* inode, const char* name)
 	newentry->inode = inode->number;
 	newentry->record_len = newentry_len;
 	newentry->type = type;
+	mutex_acquire(&inode->fs->fs_lock);
 	int r = ext2_inode_writedata(dir, pos, newentry_len, newbuf);
 	inode->link_count++;
 	ext2_inode_update(inode);
+	mutex_release(&inode->fs->fs_lock);
 	return 1;
 }
 
@@ -280,6 +287,7 @@ int ext2_dir_unlink(ext2_inode_t* dir, const char* name, int dofree)
 		{
 			if (!ext2_inode_read(dir->fs, entry->inode, &inode))
 				return 0;
+			mutex_acquire(&dir->fs->fs_lock);
 			--inode.link_count;
 			if (inode.link_count == 0 || (EXT2_INODE_IS_DIR(&inode) 
 					&& inode.link_count == 1)) {
@@ -295,10 +303,14 @@ int ext2_dir_unlink(ext2_inode_t* dir, const char* name, int dofree)
 				}
 				ext2_inode_free(&inode);
 			}
-			if (!ext2_inode_update(&inode))
+			if (!ext2_inode_update(&inode)) {
+				mutex_release(&dir->fs->fs_lock);
 				return 0;
+			}
+			
 			entry->inode = 0;
 			ext2_inode_writedata(dir, off, ext2_sb_blocksize(dir->fs->sb), buf);
+			mutex_release(&dir->fs->fs_lock);
 			return 1;
 		}
 		
@@ -336,9 +348,11 @@ int ext2_dir_create(ext2_inode_t* parent, const char* name, ext2_inode_t* newi)
 		return 0;
 	if (!ext2_inode_update(newi) || !ext2_inode_update(parent))
 		return 0;
+	mutex_acquire(&parent->fs->bg_lock);
 	ext2_bg_read(parent->fs, bgnum, &bg);
 	bg.used_directories++;
 	ext2_bg_update(parent->fs, bgnum, &bg);
+	mutex_release(&parent->fs->bg_lock);
 	return 1;
 }
 

@@ -25,7 +25,7 @@ void init_multitasking()
 	task->magic = TASK_MAGIC;
 	set_current_task_dp(task, 0);
 	kernel_task = task;
-	mutex_create(&scheding);
+	
 	add_kernel_symbol(delay);
 	add_kernel_symbol(delay_sleep);
 	add_kernel_symbol(schedule);
@@ -49,65 +49,19 @@ void init_multitasking()
 
 void switch_to_user_mode()
 {
+	/* set up the kernel stack first...*/
 	set_kernel_stack(current_task->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
 	do_switch_to_user_mode();
 }
 
 task_t *get_task_pid(int pid)
 {
-	lock_scheduler();
+	lock_task_queue_reading(0);
 	task_t *task = kernel_task;
 	while(task && task->pid != (unsigned)pid)
 		task = task->next;
-	unlock_scheduler();
+	unlock_task_queue_reading(0);
 	return task;
-}
-
-void freeze_all_tasks()
-{
-	if(current_task->uid != 0) return;
-	serial_puts(0, "Freezing all tasks...\n");
-	super_cli();
-	task_t *t = (task_t *)kernel_task->next;
-	while(t)
-	{
-		if(t != current_task) {
-			t->last = t->state;
-			t->state = TASK_FROZEN;
-		}
-		t = t->next;
-	}
-	super_sti();
-}
-
-void unfreeze_all_tasks()
-{
-	if(current_task->uid != 0) return;
-	serial_puts(0, "Unfreezing all tasks...\n");
-	super_cli();
-	task_t *t = (task_t *)kernel_task->next;
-	while(t)
-	{
-		if(t != current_task) {
-			t->state = t->last;
-		}
-		t = t->next;
-	}
-	super_sti();
-}
-
-void kill_all_tasks()
-{
-	if(current_task->uid != 0) return;
-	super_cli();
-	task_t *t = (task_t *)kernel_task->next;
-	while(t)
-	{
-		if(t != current_task && !(t->flags & TF_KTASK))
-			t->state = TASK_DEAD;
-		t = t->next;
-	}
-	super_sti();
 }
 
 int times(struct tms *buf)

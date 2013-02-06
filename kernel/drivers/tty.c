@@ -55,7 +55,7 @@ int tty_raise_action(int min, int sig)
 		return 0;
 	if(shutting_down)
 		return 0;
-	lock_scheduler();
+	lock_task_queue_reading(0);
 	task_t *t = kernel_task->next;
 	while(t)
 	{
@@ -67,7 +67,7 @@ int tty_raise_action(int min, int sig)
 		}
 		t=t->next;
 	}
-	unlock_scheduler();
+	unlock_task_queue_reading(0);
 	return 0;
 }
 

@@ -10,7 +10,10 @@ int sync_inode_tofs(struct inode *i)
 {
 	if(!i)
 		return -EINVAL;
-	return vfs_callback_sync_inode(i);
+	rwlock_acquire(&i->rwl, RWL_WRITER);
+	int r = vfs_callback_sync_inode(i);
+	rwlock_release(&i->rwl, RWL_WRITER);
+	return r;
 }
 
 struct inode *sys_create(char *path)

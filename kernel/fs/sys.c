@@ -326,7 +326,7 @@ int sys_access(char *path, mode_t mode)
 	struct inode *i = get_idir(path, 0);
 	if(!i)
 		return -ENOENT;
-	if(current_task->uid == GOD) {
+	if(current_task->uid == 0) {
 		iput(i);
 		return 0;
 	}

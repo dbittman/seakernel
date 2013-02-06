@@ -22,7 +22,7 @@ int permissions(struct inode *i, mode_t flag)
 {
 	if(!i)
 		return 0;
-	if(ISGOD(current_task))
+	if(current_task->uid == 0)
 		return 1;
 	if(current_task->uid == i->uid && (flag & i->mode))
 		return 1;

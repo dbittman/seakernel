@@ -64,9 +64,7 @@ struct inode *pfs_cn(char *name, mode_t  mode, int major, int minor)
 	i->i_ops = &procfs_inode_ops;
 	i->parent = procfs_root;
 	i->mode = mode | 0xFFF;
-	i->uid = GOD;
 	i->dev = 256*major+minor;
-	i->num = 0;
 	rwlock_create(&i->rwl);
 	add_inode(procfs_root, i);
 	return i;
@@ -81,9 +79,7 @@ struct inode *pfs_cn_node(struct inode *to, char *name, mode_t mode, int major, 
 	i->i_ops = &procfs_inode_ops;
 	i->parent = procfs_root;
 	i->mode = mode | 0x1FF;
-	i->uid = GOD;
 	i->dev = 256*major+minor;
-	i->num = 0;
 	rwlock_create(&i->rwl);
 	add_inode(to, i);
 	
@@ -120,7 +116,6 @@ void init_proc_fs()
 	procfs_root->i_ops = &procfs_inode_ops;
 	procfs_root->parent = current_task->root;
 	procfs_root->mode = S_IFDIR | 0x1FF;
-	procfs_root->uid = procfs_root->gid = GOD;
 	procfs_root->num = -1;
 	rwlock_create(&procfs_root->rwl);
 	/* Create proc nodes */

@@ -13,7 +13,8 @@ int ext2_unmount(struct inode *, unsigned v);
 int wrap_sync_inode(struct inode *i);
 int ext2_fs_stat(struct inode *i, struct posix_statfs *f);
 int ext2_dir_get_inode(ext2_inode_t* inode, char *name);
-
+int ext2_dir_change_num(ext2_inode_t* inode, char *name,
+			unsigned new_number);
 struct inode_operations e2fs_inode_ops = {
 	wrap_ext2_readfile,
 	wrap_ext2_writefile,
@@ -79,6 +80,19 @@ struct inode *wrap_ext2_lookup(struct inode *in, char *name)
 	return create_sea_inode(&inode, name);
 }
 
+int wrap_ext2_update(struct inode *i)
+{
+	if(!i)
+		return -EINVAL;
+	ext2_fs_t *fs = get_fs(i->sb_idx);
+	if(!fs) return -EINVAL;
+	ext2_inode_t inode;
+	if(!ext2_inode_read(fs, i->num, &inode))
+		return -EIO;
+	update_sea_inode(i, &inode, 0);
+	return 0;
+}
+
 int wrap_ext2_readfile(struct inode *in, off_t off, size_t len, char *buf)
 {
 	ext2_fs_t *fs = get_fs(in->sb_idx);
@@ -120,8 +134,7 @@ int wrap_ext2_writefile(struct inode *in, off_t off, size_t len, char *buf)
 	if(ret > len) ret = len;
 	return ret;
 }
-int ext2_dir_change_num(ext2_inode_t* inode, char *name,
-			unsigned new_number);
+
 int do_add_ent(struct inode *i, ext2_inode_t *inode, char *name)
 {
 	if(!i || !name || !inode) return -EINVAL;
@@ -142,11 +155,13 @@ int do_add_ent(struct inode *i, ext2_inode_t *inode, char *name)
 	if(EXT2_INODE_IS_DIR(inode))
 	{
 		int old = ext2_dir_change_num(inode, "..", dir.number);
+		mutex_acquire(&fs->fs_lock);
 		dir.link_count++;
 		ext2_inode_update(&dir);
 		ext2_inode_read(fs, old, &told);
 		told.link_count--;
 		ext2_inode_update(&told);
+		mutex_release(&fs->fs_lock);
 	} else
 		ext2_inode_update(&dir);
 	update_sea_inode(i, &dir, 0);
@@ -311,19 +326,6 @@ int wrap_sync_inode(struct inode *i)
 			ext2_dir_change_type(&par, i->name, new_type);
 		}
 	}
-	return 0;
-}
-
-int wrap_ext2_update(struct inode *i)
-{
-	if(!i)
-		return -EINVAL;
-	ext2_fs_t *fs = get_fs(i->sb_idx);
-	if(!fs) return -EINVAL;
-	ext2_inode_t inode;
-	if(!ext2_inode_read(fs, i->num, &inode))
-		return -EIO;
-	update_sea_inode(i, &inode, 0);
 	return 0;
 }
 

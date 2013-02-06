@@ -18,7 +18,6 @@ void init_dev_fs()
 	devfs_root->i_ops = &devfs_inode_ops;
 	devfs_root->parent = current_task->root;
 	devfs_root->mode = S_IFDIR | 0x1FF;
-	devfs_root->uid = devfs_root->gid = GOD;
 	devfs_root->num = -1;
 	rwlock_create(&devfs_root->rwl);
 	/* Create device nodes */
@@ -53,8 +52,6 @@ struct inode *devfs_create(struct inode *base, char *name, mode_t mode)
 	i->i_ops = &devfs_inode_ops;
 	i->parent = devfs_root;
 	i->mode = mode | 0x1FF;
-	i->uid = GOD;
-	i->dev = 0;
 	i->num = add_atomic(&devfs_nodescount, 1);
 	rwlock_create(&i->rwl);
 	add_inode(base, i);

@@ -3,9 +3,9 @@
 #define TASK_RUNNING 0
 #define TASK_ISLEEP 1
 #define TASK_USLEEP 2
-#define TASK_FROZEN 3
+//#define TASK_FROZEN 3
 #define TASK_SUICIDAL 4
-#define TASK_SIGNALED 5
+//#define TASK_SIGNALED 5
 #define TASK_DEAD (-1)
 #define sigaddset(what,sig) (*(what) |= (1<<(sig)), 0)
 #define sigdelset(what,sig) (*(what) &= ~(1<<(sig)), 0)

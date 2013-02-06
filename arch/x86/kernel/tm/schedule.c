@@ -2,7 +2,6 @@
 #include <kernel.h>
 #include <memory.h>
 #include <task.h>
-mutex_t scheding;
 
 void _overflow(char *type)
 {
@@ -24,6 +23,10 @@ __attribute__((always_inline)) inline void update_task(task_t *t)
 	}
 	else if(t->state == TASK_ISLEEP)
 	{
+		if(t->tick <= ticks && t->tick)
+			t->state = TASK_RUNNING;
+		/* if we're waiting for a flag and it sets to the value we
+		 * want, we change to running */
 		if(t->waitflag) {
 			if(!t->waiting_true){
 				if((*(t->waitflag)) == t->wait_for)
@@ -40,9 +43,11 @@ __attribute__((always_inline)) inline void update_task(task_t *t)
 __attribute__((always_inline)) inline task_t *get_next_task()
 {
 	assert(current_task && kernel_task);
+	lock_task_queue_reading(0);
 	task_t *prev = (task_t *)current_task;
 	task_t *t = (task_t *)(prev->next);
 	if(!t) t = (task_t *)kernel_task;
+	unlock_task_queue_reading(0);
 	while(t)
 	{
 		assert(t);
@@ -51,8 +56,10 @@ __attribute__((always_inline)) inline task_t *get_next_task()
 		update_task(t);
 		if(task_is_runable(t))
 			return t;
+		lock_task_queue_reading(0);
 		if(!(t = t->next))
 			t = (task_t *)kernel_task;
+		unlock_task_queue_reading(0);
 		/* This way the kernel can sleep without being in danger of 
 		 * causing a lockup. Basically, if the kernel is the only
 		 * runnable task, it gets forced to run */
@@ -74,7 +81,8 @@ __attribute__((always_inline)) static inline void post_context_switch()
 	 * important syscall while doing something important the results
 	 * could be very bad. Any syscall that waits will need to include
 	 * a method of detecting signals and returning safely. */
-	if(current_task->sigd && !(current_task->flags & TF_INSIG) && !(current_task->flags & TF_KTASK) && current_task->pid)
+	if(current_task->sigd && !(current_task->flags & TF_INSIG) 
+		&& !(current_task->flags & TF_KTASK) && current_task->pid)
 	{
 		current_task->flags |= TF_INSIG;
 		/* Jump to the signal handler */

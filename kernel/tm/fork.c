@@ -71,13 +71,14 @@ inline static int engage_new_stack(task_t *new, task_t *parent)
 
 __attribute__((always_inline)) inline static void add_task(task_t *new)
 {
-	asm("cli");
+	lock_task_queue_writing(0);
 	task_t *t = kernel_task->next;
 	if(t)
 		t->prev = new;
 	new->prev = kernel_task;
 	new->next = t;
 	kernel_task->next = new;
+	unlock_task_queue_writing(0);
 }
 
 int fork()
@@ -98,14 +99,13 @@ int fork()
 	task_t *parent = (task_t *)current_task;
 	new->pd = newspace;
 	copy_task_struct(new, parent);
-	lock_scheduler();
+	/* Set the state as usleep temporarily, so that it doesn't accidentally run.
+	 * And then add it to the queue */
+	new->state = TASK_USLEEP;
+	add_task(new);
 	/* Copy the stack */
 	cli();
 	engage_new_stack(new, parent);
-	/* Set the state as frozen temporarily, so that it doesn't accidentally run.
-	 * And then add it to the queue */
-	new->state = TASK_FROZEN;
-	add_task(new);
 	/* Here we read the EIP of this exact location. The parent then sets the
 	 * eip of the child to this. On the reschedule for the child, it will 
 	 * start here as well. */
@@ -117,7 +117,6 @@ int fork()
 		new->state = TASK_RUNNING;
 		/* And unlock everything and reschedule */
 		__engage_idle();
-		unlock_scheduler();
 		return new->pid;
 	}
 	return 0;

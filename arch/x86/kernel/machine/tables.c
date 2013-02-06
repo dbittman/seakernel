@@ -141,7 +141,6 @@ void idt_set_gate(u8int num, u32int base, u16int sel, u8int flags)
 
 void load_tables_ap()
 {
-	__super_cli();
 	init_gdt();
 	init_idt();
 	write_tss(5, 0x10, 0x0);
@@ -150,7 +149,6 @@ void load_tables_ap()
 
 void load_tables()
 {
-	__super_cli();
 	init_gdt();
 	init_idt();
 	init_pic();

@@ -1,12 +1,12 @@
 #ifndef __SIG_H
 #define __SIG_H
+
 #define TASK_RUNNING 0
 #define TASK_ISLEEP 1
 #define TASK_USLEEP 2
-//#define TASK_FROZEN 3
 #define TASK_SUICIDAL 4
-//#define TASK_SIGNALED 5
 #define TASK_DEAD (-1)
+
 #define sigaddset(what,sig) (*(what) |= (1<<(sig)), 0)
 #define sigdelset(what,sig) (*(what) &= ~(1<<(sig)), 0)
 #define sigemptyset(what)   (*(what) = 0, 0)
@@ -26,13 +26,13 @@ typedef unsigned long sigset_t;
 
 #define SA_NOCLDSTOP	0x00000001
 #define SA_NOCLDWAIT	0x00000002
-#define SA_SIGINFO	0x00000004
-#define SA_ONSTACK	0x08000000
-#define SA_RESTART	0x10000000
-#define SA_NODEFER	0x40000000
+#define SA_SIGINFO		0x00000004
+#define SA_ONSTACK		0x08000000
+#define SA_RESTART		0x10000000
+#define SA_NODEFER		0x40000000
 #define SA_RESETHAND	0x80000000
-#define SA_NOMASK	SA_NODEFER
-#define SA_ONESHOT	SA_RESETHAND
+#define SA_NOMASK		SA_NODEFER
+#define SA_ONESHOT		SA_RESETHAND
 
 typedef void (*_sig_func_ptr)(int);
 struct sigaction
@@ -72,7 +72,7 @@ struct sigaction
 #define SIGALRM  14 
 #define SIGPAGE 15 /* Page fault */
 #define SIGMSG  16
-//#define SIGPARENT 17
+
 #define SIGWAIT 18
 #define SIGILL 19
 #define SIGOUT 20
@@ -86,6 +86,7 @@ struct sigaction
 #define SIGTTOU 26
 #define SIGFPE 27
 #define SIGBUS 28
+
 #define MSGGET_PEEK 0
 #define MSGGET_GET  1
 

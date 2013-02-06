@@ -1,3 +1,9 @@
+/* mutex.c - Handles mutual exclusion locks 
+ * copyright 2013 Daniel Bittman
+ * 
+ * These are much simpler than RWlocks. They only use 1 bit and can be
+ * in only two states: locked or unlocked. 
+ */
 #include <atomic.h>
 #include <mutex.h>
 #include <kernel.h>
@@ -5,9 +11,11 @@
 
 void __mutex_acquire(mutex_t *m, char *file, int line)
 {
+	/* are we re-locking ourselves? */
 	if(m->lock && m->pid == (int)current_task->pid)
 		panic(0, "task %d tried to relock mutex (%s:%d)", m->pid, file, line);
 	assert(m->magic == MUTEX_MAGIC);
+	/* wait until we can set bit 0. once this is done, we have the lock */
 	while(bts_atomic(&m->lock, 0))
 		schedule();
 	m->pid = current_task->pid;

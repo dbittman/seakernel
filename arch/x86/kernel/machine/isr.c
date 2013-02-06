@@ -122,11 +122,15 @@ void entry_syscall_handler(volatile registers_t regs)
 	add_atomic(&int_count[0x80], 1);
 	ack(0x80);
 	if(regs.eax == 128) {
+		/* the injection code at the end of the signal handler calls
+		 * a syscall with eax = 128. So here we handle returning from
+		 * a signal handler. First, copy back the old registers, and
+		 * reset flags and signal stuff */
 		memcpy((void *)&regs, (void *)&current_task->reg_b, sizeof(registers_t));
 		current_task->sig_mask = current_task->old_mask;
+		current_task->cursig=0;
 		current_task->flags &= ~TF_INSIG;
 		current_task->flags &= ~TF_JUMPIN;
-		current_task->cursig=0;
 		return;
 	}
 	assert(!current_task->sysregs && !current_task->regs);

@@ -15,8 +15,6 @@ void kernel_shutdown()
 {
 	current_task->uid=0;
 	shutting_down=1;
-	/** Write the system-down stuffs */
-	/* Unload modules, unmount stuff, sync stuff, kill all tasks*/
 	cli();
 	lock_scheduler();
 	kernel_task->next = current_task;

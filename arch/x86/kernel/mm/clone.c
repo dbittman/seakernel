@@ -6,7 +6,6 @@
 #include <swap.h>
 
 /* Accepts virtual, returns virtual */
-
 int vm_do_copy_table(int i, page_dir_t *new, page_dir_t *from)
 {
 	unsigned *table;

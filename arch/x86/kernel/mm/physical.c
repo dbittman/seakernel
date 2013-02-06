@@ -37,6 +37,7 @@ addr_t __pm_alloc_page(char *file, int line)
 	mutex_acquire(&pm_mutex);
 	if(paging_enabled)
 	{
+		/* out of physical memory!! */
 		if(pm_stack <= (PM_STACK_ADDR+sizeof(unsigned)*2)) {
 			if(current_task == kernel_task || !current_task)
 				panic(PANIC_MEM | PANIC_NOSYNC, "Ran out of physical memory");

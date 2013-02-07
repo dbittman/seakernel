@@ -3,13 +3,14 @@
 
 #ifndef KERNEL_H
 #define KERNEL_H
-#define asm __sync_synchronize(); __asm__ __volatile__
+
+
+#include <asm/system.h>
 #include <types.h>
 #include <string.h>
 #include <config.h>
 #include <vsprintf.h>
 #include <console.h>
-#include <asm/system.h>
 #include <memory.h>
 #include <syscall.h>
 #include <time.h>
@@ -20,9 +21,11 @@
 extern char shutting_down;
 extern volatile int panicing;
 extern volatile unsigned int __allow_idle;
+
 #define PANIC_NOSYNC 1
 #define PANIC_MEM    2
 #define __UTSNAMELEN 65
+
 struct utsname {
     char sysname[__UTSNAMELEN];
     char nodename[__UTSNAMELEN];

@@ -4,7 +4,6 @@
 #include <mutex.h>
 #define TTY_IBLEN 256
 
-#define HOLY_SHITBALLS 9
 #define KERN_PANIC 8
 #define KERN_CRIT 7
 #define KERN_ERROR 6

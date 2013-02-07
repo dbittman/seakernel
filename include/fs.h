@@ -6,6 +6,7 @@
 #include <sys/fcntl.h>
 #include <ll.h>
 #include <rwlock.h>
+
 #define SEEK_SET (0)
 #define SEEK_CUR (1)
 #define SEEK_END (2)
@@ -13,6 +14,7 @@
 #define MAY_EXEC      0100
 #define MAY_WRITE     0200
 #define MAY_READ      0400
+
 extern struct sblktbl *sb_table;
 #define INAME_LEN 128
 
@@ -129,6 +131,7 @@ extern struct llist *mountlist;
 struct inode *devfs_add(struct inode *q, char *name, mode_t mode, int major, int minor);
 struct inode *devfs_create(struct inode *base, char *name, mode_t mode);
 void devfs_remove(struct inode *i);
+
 int sys_chdir(char *n, int fd);
 int ichdir(struct inode *i);
 int sys_sync();

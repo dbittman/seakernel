@@ -65,6 +65,7 @@ struct vbecontrollerinfo {
    short videomodes[2];           // isa vbeFarPtr
    short totalMemory;             // as # of 64KB blocks
 };
+
 struct vbemodeinfo {
 	/* for all VBE revisions */
 	u16 mode_attr;

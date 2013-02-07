@@ -38,6 +38,7 @@ static inline int mod_fork(int *pid)
 		*pid = x;
 	return x;
 }
+
 int is_loaded(char *name);
 int load_module(char *path, char *, int);
 int unload_module(char *name);
@@ -51,4 +52,5 @@ int sys_load_module(char *path, char *args, int flags);
 int sys_unload_module(char *path, int flags);
 intptr_t find_kernel_function(char * unres);
 int load_deps_c(char *);
+
 #endif

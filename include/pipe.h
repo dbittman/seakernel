@@ -1,5 +1,8 @@
 #ifndef PIPE_H
 #define PIPE_H
+
+#include <mutex.h>
+
 #define PIPE_NAMED 1
 typedef struct pipe_struct {
 	volatile unsigned pending;

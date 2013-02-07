@@ -46,7 +46,7 @@ int map_in_page(unsigned int cr2, unsigned err_code)
 	if(USER_TASK)
 		return 0;
 	if((cr2 >= KMALLOC_ADDR_START && cr2 < KMALLOC_ADDR_END))
-		return do_map_page(cr2, PAGE_PRESENT | PAGE_USER);
+		return do_map_page(cr2, PAGE_PRESENT | PAGE_WRITE);
 	return 0;
 }
 

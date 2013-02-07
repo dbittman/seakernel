@@ -18,6 +18,7 @@ void accessed_cache(cache_t *c)
 
 int init_cache()
 {
+#if CONFIG_MODULES
 	add_kernel_symbol(get_empty_cache);
 	add_kernel_symbol(find_cache_element);
 	add_kernel_symbol(do_cache_object);
@@ -27,6 +28,7 @@ int init_cache()
 	add_kernel_symbol(sync_cache);
 	add_kernel_symbol(write_block_cache);
 	add_kernel_symbol(disconnect_block_cache);
+#endif
 	cache_list = ll_create(0);
 	return 0;
 }

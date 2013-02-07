@@ -33,8 +33,10 @@ void init_dev_fs()
 	devfs_add(devfs_root, "com0", S_IFCHR, 5, 0);
 	/* Mount the filesystem */
 	add_inode(current_task->root, devfs_root);
+#if CONFIG_MODULES
 	add_kernel_symbol(devfs_add);
 	add_kernel_symbol(devfs_remove);
+#endif
 }
 
 struct inode *devfs_add(struct inode *q, char *name, mode_t mode, int major, int minor)

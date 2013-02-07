@@ -54,7 +54,9 @@ all_s: make.deps $(MODULES)
 	echo "Building modules, pass 2..."
 	
 	for i in "$(SUBDIRS)"; do \
+		if [[ $$i != "" ]]; then \
 		$(MAKE) -s -C $$i ;\
+		fi ;\
 	done
 	@-mkdir -p built
 	@-rm -rf built/*
@@ -63,7 +65,9 @@ all_s: make.deps $(MODULES)
 		cp -f $$i built/$$MOD ;\
 	done
 	@-for i in "$(SUBDIRS)"; do \
+		if [[ $$i != "" ]]; then \
 		cp -f $$i/$$i.m built/$$i ;\
+		fi ;\
 	done
 
 install: $(MODULES)

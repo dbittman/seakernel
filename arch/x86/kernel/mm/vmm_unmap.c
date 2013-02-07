@@ -23,10 +23,10 @@ int vm_unmap(unsigned virt)
 	if(current_task && num_swapdev && current_task->num_swapped)
 		swap_in_page((task_t *)current_task, virt & PAGE_MASK);
 #endif
-	unsigned p = page_tables[(virt&PAGE_MASK)/0x1000] & PAGE_MASK;
+	unsigned p = page_tables[(virt&PAGE_MASK)/0x1000];
 	page_tables[(virt&PAGE_MASK)/0x1000] = 0;
 	__asm__ volatile ("invlpg (%0)" : : "a" (virt));
-	if(p)
-		pm_free_page(p);
+	if(p && !(p & PAGE_COW))
+		pm_free_page(p & PAGE_MASK);
 	return 0;
 }

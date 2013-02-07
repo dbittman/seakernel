@@ -45,6 +45,7 @@ int sys_setup(int a)
 void init_vfs()
 {
 	load_superblocktable();
+#if CONFIG_MODULES
 	add_kernel_symbol(do_iremove);
 	add_kernel_symbol(pfs_cn_node);
 	add_kernel_symbol(pfs_cn);
@@ -66,6 +67,7 @@ void init_vfs()
 	add_kernel_symbol(do_get_idir);
 	add_kernel_symbol(proc_set_callback);
 	add_kernel_symbol(proc_get_major);
+#endif
 }
 
 int sys_seek(int fp, off_t pos, unsigned whence)

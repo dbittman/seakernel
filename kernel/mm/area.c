@@ -17,7 +17,6 @@ vnode_t *insert_vmem_area(vma_t *v, unsigned num_p)
 	vnode_t *new=0;
 	if(!n)
 	{
-		super_cli();
 		assert(!v->nodes[0]);
 		if(!n)
 			n = (vnode_t *)v->addr;

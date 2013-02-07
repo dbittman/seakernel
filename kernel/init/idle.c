@@ -65,7 +65,9 @@ int init_kern_task()
 	kproclist->count=1;
 	kproclist->dev = 256*3;
 	rwlock_create(&kproclist->rwl);
+#if CONFIG_MODULES
 	_add_kernel_symbol((unsigned)(struct inode **)&kproclist, "kproclist");
+#endif
 	return 0;
 }
 
@@ -92,6 +94,7 @@ int kernel_idle_task()
 	while(!cleared_args)
 	{
 		schedule();
+		sti();
 		__KT_clear_args();
 	}
 	/* Now enter the main idle loop, waiting to do periodic cleanup */
@@ -104,7 +107,7 @@ int kernel_idle_task()
 			 * task. But it doesn't really matter, we'll just end up 
 			 * back here. We also ignore signals */
 			wait_flag_except((unsigned *)&__allow_idle, 0);
-			__super_sti();
+			sti();
 		}
 	}
 }

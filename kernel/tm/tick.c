@@ -74,7 +74,7 @@ void delay(int t)
 	long end = ticks + t + 1;
 	if(!current_task || current_task->pid == 0)
 	{
-		__super_sti();
+		sti();
 		while(ticks < end)
 			schedule();
 		return;
@@ -87,7 +87,7 @@ void delay(int t)
 void delay_sleep(int t)
 {
 	long end = ticks+t+1;
-	__super_sti();
+	sti();
 #if CONFIG_SMP
 	lapic_eoi();
 #endif

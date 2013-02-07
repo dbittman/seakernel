@@ -42,7 +42,7 @@ void kernel_poweroff()
 	if(current_task->uid)
 		return;
 	kernel_shutdown();
-	super_cli();
+	cli();
 	acpiPowerOff();
 	kprintf("\nYou can now turn off your computer.\n");
 	for(;;) 

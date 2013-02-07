@@ -117,7 +117,7 @@ __attribute__((always_inline)) static inline void restore_context()
  * task's context, search for the next process to run, and load it's context.*/
 void schedule()
 {
-	__super_cli();
+	cli();
 	if(unlikely(!current_task || !kernel_task))
 		return;
 	u32int eip = read_eip();

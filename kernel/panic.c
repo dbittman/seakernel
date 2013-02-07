@@ -34,7 +34,7 @@ void print_trace(unsigned int MaxFrames)
 
 void panic(int flags, char *fmt, ...)
 {
-	__super_cli();
+	cli();
 	int second_panic = panicing++;
 	int pid=0;
 	task_t *t=current_task;
@@ -62,7 +62,7 @@ void panic(int flags, char *fmt, ...)
 		kprintf("\n[panic]: Done\n");
 	} else
 		kprintf("[panic]: not syncing\n");
-	__super_cli();
+	cli();
 	for(;;)
 	{
 		asm("cli; hlt;");

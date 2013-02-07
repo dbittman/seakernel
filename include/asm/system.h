@@ -1,8 +1,8 @@
 #ifndef __ASM_SYSTEM_H
 #define __ASM_SYSTEM_H
-#define sti() if(tables) __asm__ __volatile__ ("sti": : :"memory")
-#define cli() __asm__ __volatile__ ("cli")
-#define nop() __asm__ __volatile__ ("nop")
+#define sti() if(tables) { __sync_synchronize();__asm__ __volatile__ ("sti": : :"memory"); }
+#define cli() __sync_synchronize();__asm__ __volatile__ ("cli": : :"memory")
+#define nop() __sync_synchronize();__asm__ __volatile__ ("nop")
 extern char tables;
 
 #define BS8(x) (x)

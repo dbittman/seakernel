@@ -425,10 +425,12 @@ void console_init_stage2()
 	consoles[1].y=consoles[0].y;
 	switch_console(&consoles[1]);
 	log_console = &consoles[9];
+#if CONFIG_MODULES
 	add_kernel_symbol(ttyx_ioctl);
 	add_kernel_symbol(init_console);
 	add_kernel_symbol(create_console);
 	add_kernel_symbol(destroy_console);
 	add_kernel_symbol(switch_console);
 	_add_kernel_symbol((unsigned)(unsigned *)&curcons, "curcons");
+#endif
 }

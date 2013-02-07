@@ -20,8 +20,6 @@
 extern char shutting_down;
 extern volatile int panicing;
 extern volatile unsigned int __allow_idle;
-#define super_cli __super_cli
-#define super_sti __super_sti
 #define PANIC_NOSYNC 1
 #define PANIC_MEM    2
 #define __UTSNAMELEN 65
@@ -49,18 +47,6 @@ struct utsname {
 		w();\
 		printk(5, "Assertion failed: %s", #c); \
 		}
-
-static inline void __super_cli()
-{
-	__sync_synchronize();
-	__asm__ volatile("cli");
-}
-
-static inline void __super_sti()
-{
-	__sync_synchronize();
-	__asm__ volatile("sti");
-}
 
 static inline void outb(short port, char value)
 {

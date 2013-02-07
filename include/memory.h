@@ -93,6 +93,7 @@ int self_free_table(int t);
 void pm_free_page(addr_t addr);
 void vm_init_2();
 void vm_init_tracking();
+unsigned int vm_setattrib(unsigned v, short attr);
 void setup_kernelstack(int);
 extern void zero_page_physical(addr_t);
 #define kmalloc(a) __kmalloc(a, __FILE__, __LINE__)

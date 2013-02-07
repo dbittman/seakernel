@@ -24,7 +24,7 @@ char interrupt_controller=0;
 void register_interrupt_handler(u8int num, isr_t handler)
 {
 	handlist_t *n;
-	super_cli();
+	cli();
 	if(mmu_ready && interrupt_handlers[num].handler)
 	{
 		handlist_t *f = &interrupt_handlers[num];
@@ -40,12 +40,12 @@ void register_interrupt_handler(u8int num, isr_t handler)
 		n = &interrupt_handlers[num];
 	n->handler = handler;
 	n->n = num;
-	super_sti();
+	sti();
 }
 
 void unregister_interrupt_handler(u8int n, isr_t handler)
 {
-	super_cli();
+	cli();
 	handlist_t *f = &interrupt_handlers[n];
 	while(f)
 	{
@@ -61,7 +61,7 @@ void unregister_interrupt_handler(u8int n, isr_t handler)
 		}
 		f=f->next;
 	}
-	super_sti();
+	sti();
 }
 
 handlist_t *get_interrupt_handler(u8int n)
@@ -193,10 +193,12 @@ void int_sys_init()
 		interrupt_handlers[i].prev=0;
 		interrupt_handlers[i].block=0;
 	}
+#if CONFIG_MODULES
 	_add_kernel_symbol((unsigned)(char *)&tables, "tables");
 	add_kernel_symbol(register_interrupt_handler);
 	add_kernel_symbol(unregister_interrupt_handler);
 	add_kernel_symbol(get_interrupt_handler);
+#endif
 }
 
 void print_stack_trace(unsigned int max)

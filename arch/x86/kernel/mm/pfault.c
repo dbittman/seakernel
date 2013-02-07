@@ -74,6 +74,20 @@ void page_fault(registers_t regs)
 #endif
 	if(pfault_mmf_check(err_code, cr2))
 		return;
+	
+	unsigned at = vm_getattrib(cr2, 0);
+	if(at & PAGE_COW)
+	{
+		//printk(0, "mapping COW page: %x\n", cr2);
+		char tmp[PAGE_SIZE];
+		memcpy(tmp, (void *)(cr2 & PAGE_MASK), PAGE_SIZE);
+		vm_map(cr2 & PAGE_MASK, pm_alloc_page(), (at & ~PAGE_COW) | PAGE_WRITE, MAP_NOCLEAR);
+		flush_pd();
+		memcpy((void *)(cr2 & PAGE_MASK), tmp, PAGE_SIZE);
+		//printk(0, "done mapping\n");
+		return;
+	}
+	
 	if(map_in_page(cr2, err_code))
 		return;
 	if(USER_TASK)

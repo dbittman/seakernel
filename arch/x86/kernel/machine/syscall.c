@@ -186,7 +186,7 @@ int syscall_handler(volatile registers_t *regs)
 	enter_system(regs->eax);
 	if(got_signal(current_task))
 		schedule();
-	__super_sti();
+	sti();
 	current_task->freed = current_task->allocated=0;
 #ifdef SC_DEBUG
 	if(current_task->tty == curcons->tty) 

@@ -16,6 +16,7 @@ void init_dm()
 		mutex_create(&devhash[i].lock);
 	init_char_devs();
 	init_block_devs();
+#if CONFIG_MODULES
 	add_kernel_symbol(block_rw);
 	add_kernel_symbol(block_ioctl);
 	add_kernel_symbol(block_device_rw);
@@ -29,6 +30,7 @@ void init_dm()
 	add_kernel_symbol(block_write);
 	add_kernel_symbol(set_blockdevice);
 	add_kernel_symbol(set_chardevice);
+#endif
 }
 
 device_t *get_device(int type, int major)

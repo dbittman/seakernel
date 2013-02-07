@@ -64,8 +64,6 @@ void init_kernel_symbols(void)
 	add_kernel_symbol(outw);
 	add_kernel_symbol(inl);
 	add_kernel_symbol(outl);
-	_add_kernel_symbol((unsigned)__super_cli, "__super_cli");
-	_add_kernel_symbol((unsigned)__super_sti, "__super_sti");
 	add_kernel_symbol(mutex_create);
 	add_kernel_symbol(mutex_destroy);
 	add_kernel_symbol(__mutex_release);

@@ -6,7 +6,7 @@
 #include <swap.h>
 
 /* Accepts virtual, returns virtual */
-int vm_do_copy_table(int i, page_dir_t *new, page_dir_t *from)
+int vm_do_copy_table(int i, page_dir_t *new, page_dir_t *from, char cow)
 {
 	unsigned *table;
 	unsigned table_phys;
@@ -47,7 +47,7 @@ int vm_copy_dir(page_dir_t *from, page_dir_t *new, char cow)
 		if((i < id_tables) || (i >= D))
 			new[i] = from[i];
 		else
-			vm_do_copy_table(i, new, from);
+			vm_do_copy_table(i, new, from, cow);
 	}
 	return 0;
 }

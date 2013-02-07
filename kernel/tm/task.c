@@ -25,7 +25,7 @@ void init_multitasking()
 	task->magic = TASK_MAGIC;
 	set_current_task_dp(task, 0);
 	kernel_task = task;
-	
+#if CONFIG_MODULES
 	add_kernel_symbol(delay);
 	add_kernel_symbol(delay_sleep);
 	add_kernel_symbol(schedule);
@@ -45,6 +45,7 @@ void init_multitasking()
 	_add_kernel_symbol((unsigned)(task_t **)&current_task, "current_task");
 #endif
 	_add_kernel_symbol((unsigned)(task_t **)&kernel_task, "kernel_task");
+#endif
 }
 
 void switch_to_user_mode()

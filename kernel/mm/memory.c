@@ -71,6 +71,7 @@ void init_memory(struct multiboot *m)
 #if CONFIG_SWAP
 	init_swap();
 #endif
+#if CONFIG_MODULES
 	add_kernel_symbol(__kmalloc);
 	add_kernel_symbol(kmalloc_ap);
 	add_kernel_symbol(kmalloc_a);
@@ -79,6 +80,7 @@ void init_memory(struct multiboot *m)
 	add_kernel_symbol(vm_map);
 	add_kernel_symbol(vm_unmap);
 	add_kernel_symbol(vm_unmap_only);
+#endif
 }
 
 int pm_stat_mem(struct mem_stat *s)

@@ -145,5 +145,7 @@ void init_main_cpu()
 #if CONFIG_SMP
 	probe_smp();
 #endif
+#if CONFIG_MODULES
 	_add_kernel_symbol((unsigned)(cpu_t *)&primary_cpu, "primary_cpu");
+#endif
 }

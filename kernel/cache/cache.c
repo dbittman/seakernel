@@ -28,6 +28,8 @@ int init_cache()
 	add_kernel_symbol(sync_cache);
 	add_kernel_symbol(write_block_cache);
 	add_kernel_symbol(disconnect_block_cache);
+	add_kernel_symbol(destroy_all_id);
+	add_kernel_symbol(kernel_cache_sync);
 #endif
 	cache_list = ll_create(0);
 	return 0;

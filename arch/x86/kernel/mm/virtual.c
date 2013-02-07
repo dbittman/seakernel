@@ -34,9 +34,13 @@ void vm_init(unsigned id_map_to)
 		pd[mapper] = pm_alloc_page() | PAGE_PRESENT | PAGE_USER;
 		pt = (unsigned int *)(pd[mapper] & PAGE_MASK);
 		memset(pt, 0, 0x1000);
+		/* we map as user for now, since the init() function runs in
+		 * ring0 for a short amount of time and needs read access to the
+		 * kernel code. This is later re-mapped by the kernel idle 
+		 * process with proper protection flags */
 		for(i=0;i<1024;i++)
 			pt[i] = (mapper*1024*0x1000 + 0x1000*i) | PAGE_PRESENT 
-				| ((mapper+i) ? PAGE_USER : PAGE_USER);
+						| PAGE_USER;
 		mapper++;
 	}
 	id_tables=mapper;
@@ -47,7 +51,7 @@ void vm_init(unsigned id_map_to)
 	unsigned heap_pd_idx = PAGE_DIR_IDX(KMALLOC_ADDR_START / 0x1000);
 	for(i=heap_pd_idx;i<(int)PAGE_DIR_IDX(KMALLOC_ADDR_END / 0x1000);i++)
 	{
-		pd[i] = pm_alloc_page() | PAGE_PRESENT | PAGE_USER;
+		pd[i] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
 		pt = (unsigned int *)(pd[i] & PAGE_MASK);
 		memset(pt, 0, 0x1000);
 	}

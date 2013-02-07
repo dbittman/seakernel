@@ -137,7 +137,7 @@ void do_task_stat(struct task_stat *s, task_t *t)
 	s->tty = t->tty;
 	s->argv = t->argv;
 	s->pid = t->pid;
-	s->cmd = (char *)t->command;
+	strncpy(s->cmd, (char *)t->command, 128);
 	s->mem_usage = t->pid ? t->phys_mem_usage * 4 : 0;
 }
 

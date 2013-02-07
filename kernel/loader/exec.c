@@ -157,8 +157,8 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	 * of the task */
 	if(EXEC_LOG)
 		printk(0, "Executing (task %d, tty %d, cwd=%s): %s\n", t->pid, t->tty, current_task->pwd->name, path);
-	strncpy((char *)t->command, path, 128);
 	preexec(t, desc);
+	strncpy((char *)t->command, path, 128);
 	if(!process_elf(mem, desc, &eip, &end))
 		eip=0;
 	sys_close(desc);

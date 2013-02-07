@@ -1,7 +1,6 @@
 /* This file handles the kernel task. It has a couple of purposes: 
  * -> Provides a task to run if all other tasks have slept
  * -> Cleans up after tasks that exit
- * -> Reaps the cache
  * Note: We want to spend as little time here as possible, since it's 
  * cleanup code can run slowly and when theres
  * nothing else to do. So we reschedule often.
@@ -21,7 +20,6 @@
 void get_timed(struct tm *now);
 int __KT_try_releasing_tasks();
 extern char *stuff_to_pass[128];
-extern char cleared_args;
 extern int argc_STP;
 extern char tmp_cmd_line[2048];
 extern int init_pid;
@@ -29,20 +27,21 @@ extern int init_pid;
 volatile unsigned int __allow_idle=1;
 struct inode *kproclist;
 extern struct inode *procfs_kprocdir;
-static inline void __KT_clear_args()
+static inline int __KT_clear_args()
 {
 	/* Clear out the alloc'ed arguments */
-	if(!cleared_args && next_pid > (unsigned)(init_pid+1) && init_pid)
+	if(next_pid > (unsigned)(init_pid+1) && init_pid)
 	{
-		printk(1, "[idle]: Clearing kernel arguments...\n");
+		printk(1, "[idle]: clearing unused kernel memory...\n");
 		int w=0;
 		for(;w<128;w++)
 		{
 			if(stuff_to_pass[w] && (unsigned)stuff_to_pass[w] > KMALLOC_ADDR_START)
 				kfree(stuff_to_pass[w]);
 		}
-		cleared_args=1;
+		return 1;
 	}
+	return 0;
 }
 
 struct inode *set_as_kernel_task(char *name)
@@ -53,7 +52,7 @@ struct inode *set_as_kernel_task(char *name)
 	strncpy(i->name, name, INAME_LEN);
 	add_inode(kproclist, i);
 	current_task->flags |= TF_KTASK;
-	strncpy((char *)current_task->command, name, INAME_LEN);
+	strncpy((char *)current_task->command, name, 128);
 	return i;
 }
 
@@ -91,12 +90,20 @@ int kernel_idle_task()
 	set_as_kernel_task("kidle");
 	/* First stage is to wait until we can clear various allocated things
 	 * that we wont need anymore */
-	while(!cleared_args)
+	while(!__KT_clear_args())
 	{
 		schedule();
 		sti();
-		__KT_clear_args();
 	}
+	cli();
+	printk(1, "[kernel]: remapping lower memory with protection flags...\n");
+	unsigned addr = 0;
+	while(addr != TOP_LOWER_KERNEL)
+	{
+		vm_setattrib(addr, PAGE_PRESENT | PAGE_WRITE);
+		addr += PAGE_SIZE;
+	}
+	sti();
 	/* Now enter the main idle loop, waiting to do periodic cleanup */
 	for(;;) {
 		task=__KT_try_releasing_tasks();

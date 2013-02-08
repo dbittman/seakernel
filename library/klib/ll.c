@@ -82,7 +82,7 @@ void ll_remove_entry(struct llist *list, void *search)
 }
 
 /* should list be null, we allocate one for us and return it. */
-struct llist *ll_create(struct llist *list)
+struct llist *ll_do_create(struct llist *list, unsigned flags)
 {
 	if(list == 0) {
 		list = (struct llist *)kmalloc(sizeof(struct llist));
@@ -91,15 +91,7 @@ struct llist *ll_create(struct llist *list)
 		list->flags = 0;
 	rwlock_create(&list->rwl);
 	list->head = 0;
-	list->flags |= LL_ACTIVE;
-	return list;
-}
-
-/* should list be null, we allocate one for us and return it. */
-struct llist *ll_create_lockless(struct llist *list)
-{
-	list = ll_create(list);
-	list->flags |= LL_LOCKLESS;
+	list->flags |= (LL_ACTIVE | flags);
 	return list;
 }
 

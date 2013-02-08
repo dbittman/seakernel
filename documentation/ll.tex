@@ -3,22 +3,22 @@
 \usepackage[utf8]{inputenc}
 \usepackage{lmodern}
 \usepackage[english]{babel}
+\usepackage{listings}
+\pagestyle{headings}
 \begin{document}
 \begin{noindent}
-\begin{center}
-\textbf{LINKED LISTS}
-\end{center}
+
+\section{Linked Lists}
 
 Linked lists, being a very common data structure, have been implemented
 in the kernel library for ease of use. 
 
-
-\textit{Functions and Macros}
+\subsection{Functions and Macros}
 
 \begin{itemize}
-\item \textit{struct llist *}\textbf{ll\_create}(\textit{struct llist *}list)
-	Creates a linked list
-\item ll\_destroy
+\item \textit{struct llist *}\textbf{ll\_create}(\textit{struct llist *}list, \textit{char} flags) \\
+Creates a linked list
+\item \lstinline!void ll_destroy(struct llist *)!
 \item ll\_insert
 \item ll\_remove
 \item ll\_remove\_element

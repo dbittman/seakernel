@@ -17,7 +17,7 @@ struct llist {
 #define LL_ALLOC    2
 #define LL_LOCKLESS 4
 #define ll_is_active(list) ((list)->flags & LL_ACTIVE)
-
+#define ll_is_empty(list) (!((list)->head))
 #define ll_entry(type,node) ((type)((node)->entry))
 
 #define ll_for_each(list,curnode) \

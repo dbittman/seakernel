@@ -44,6 +44,5 @@ void ll_do_remove(struct llist *list, struct llistnode *node, char);
 void ll_remove(struct llist *list, struct llistnode *node);
 void ll_remove_entry(struct llist *list, void *search);
 struct llistnode *ll_insert(struct llist *list, void *entry);
-struct llist *ll_create_lockless(struct llist *list);
 
 #endif

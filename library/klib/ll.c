@@ -82,7 +82,7 @@ void ll_remove_entry(struct llist *list, void *search)
 }
 
 /* should list be null, we allocate one for us and return it. */
-struct llist *ll_do_create(struct llist *list, unsigned flags)
+struct llist *ll_do_create(struct llist *list, char flags)
 {
 	if(list == 0) {
 		list = (struct llist *)kmalloc(sizeof(struct llist));

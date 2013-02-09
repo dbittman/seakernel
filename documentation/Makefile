@@ -5,7 +5,7 @@ all: pdf
 
 pdf:
 	@-mkdir -p built
-	@for i in "${latex_files}"; do \
+	@for i in ${latex_files}; do \
 		pdflatex -output-directory=built $$i ;\
 	done
 

@@ -1,0 +1,91 @@
+\documentclass[a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[english]{babel}
+\pagestyle{headings}
+\usepackage{listings}
+\usepackage{color}
+\input{include}
+\begin{document}
+
+\section{Reader/Writer Locks}
+
+These locks are designed for locking critical code that is accessed in one of two ways, reading
+some data or writing some data. For example, a read lock would be established to loop though a 
+linked-list, but a write lock would be needed to actually modify the linked-list. These function provide
+functionality for reader/writer locks.
+
+There may be any number of reader locks acquired on the same lock, but only one writer. In addition, 
+the writer may only be established if there are no readers, and a reader may only be established if
+there is no write lock.
+
+Internally, the lock state is maintained by an unsigned integer, where the 0th bit indicates the 
+state of the write lock, and the rest of the bits are the read lock counts. If the 0th bit is 1, then
+there is a writer lock established. Each time a reader lock is acquired, the lock state integer is
+incremented by two (skips over the 0th bit), and each time a reader lock is release it is decremented
+by two. This allows compact storage of the lock state information, and allows reducing the accesses of
+the state integer to atomic operations.
+
+\subsection{Definitions}
+\begin{itemize}
+\item \texttt{\textit{rwlock\_t}} 
+\begin{lstlisting}
+typedef volatile struct {
+	volatile unsigned magic, flags;
+	volatile unsigned long locks;
+} rwlock_t;
+\end{lstlisting}
+\item \texttt{RWL\_READER}
+\item \texttt{RWL\_WRITER}
+\end{itemize}
+
+% \lstset{language=C,caption={Descriptive Caption Text},label=DescriptiveLabel}
+
+\subsection{Functions and Macros}
+
+\begin{itemize}
+\item \function{rwlock\_t *}{rwlock\_create}{\argument{rwlock\_t*}{rwl}} \\
+Takes in a pointer to a \texttt{\textit{rwlock\_t}} structure (optional). If \texttt{rwl} is null, allocates
+memory from kmalloc and returns that. Otherwise returns \texttt{rwl}. Sets up an \texttt{\textit{rwlock\_t}}
+structure to be used as a reader/writer lock.
+
+\item \function{void}{rwlock\_destroy}{\argument{rwlock\_t*}{rwl}} \\
+Resets values inside \texttt{rwl}. If the lock is currently locked by anything,
+this will cause a kernel panic. If \texttt{rwl} was allocated from \method{kmalloc} (from \method{rwlock\_create}(0)), this frees it.
+
+\item \function{void}{rwlock\_acquire}{\argument{rwlock\_t*}{rwl}, \argument{int}{flags}} \\
+Blocks until a lock of type specified by \texttt{flags} can be acquired. \texttt{flags} may
+be \texttt{RWL\_READER} or \texttt{RWL\_WRITER}. 
+\item \function{void}{rwlock\_escalate}{\argument{rwlock\_t*}{rwl}, \argument{int}{flags}} \\
+Changes the lock from the current state to the state spcified by \texttt{flags}. Valid calls are either
+the lock is a read lock, and \texttt{RWL\_WRITER} is passed or the lock is a write lock, and \texttt{RWL\_READER}
+is passed. Only call this function if there is already an establish lock by the calling process.
+\item \function{void}{rwlock\_release}{\argument{rwlock\_t*}{rwl}, \argument{int}{flags}} \\
+Releases an acquired lock, of type specified by \texttt{flags}. The lock may be in either a reader or a writer state to call this, but
+make sure to tell it to release the correct state! If a reader lock is establish and this is called
+with flags as \texttt{RWL\_WRITER}, bad things will happen!
+\end{itemize}
+
+\subsection{Usage}
+\begin{lstlisting}
+#include <rwlock.h>
+
+rwlock_t *rwl = rwl_create(0);
+rwlock_acquire(rwl, RWL_READER);
+/* reading stuff.... */
+rwlock_escalate(rwl, RWL_WRITER);
+/* write stuff */
+rwlock_escalate(rwl, RWL_READER);
+/* read stuff again */
+rwlock_release(rwl, RWL_READER);
+
+rwlock_destroy(rwl);
+\end{lstlisting}
+\subsection{Files}
+\begin{itemize}
+\item \texttt{include/rwlock.h}
+\item \texttt{kernel/rwlock.c}
+\end{itemize}
+
+\end{document}

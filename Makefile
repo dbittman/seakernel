@@ -97,6 +97,10 @@ can_build:
 	@test -e tools/confed
 	@echo "All good"
 
+doc:
+	make -s -C documentation pdf
+	make -s -C documentation aux_clean
+
 love:
 	@echo Not war
 	

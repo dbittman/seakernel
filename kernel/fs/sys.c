@@ -224,6 +224,10 @@ int sys_utime(char *path, unsigned a, unsigned m)
 	struct inode *i = get_idir(path, 0);
 	if(!i)
 		return -ENOENT;
+	if(current_task->uid && current_task->uid != i->uid) {
+		iput(i);
+		return -EPERM;
+	}
 	i->mtime = m ? m : get_epoch_time();
 	i->atime = a ? a : get_epoch_time();
 	sync_inode_tofs(i);

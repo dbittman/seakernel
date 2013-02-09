@@ -32,3 +32,14 @@
   tabsize=4,                      % sets default tabsize to 2 spaces
   title=\lstname                  % show the filename of files included with \lstinputlisting; also try caption instead of title
 }
+
+\newcommand{\kernelname}{seakernel}
+\newcommand{\kernelversion}{0.2}
+
+\usepackage{fancyhdr}
+
+\pagestyle{fancy}
+\cfoot{}
+\fancyfoot[LE,RO]{\thepage}           % page number in "outer" position of footer line
+\fancyfoot[RE,LO]{\kernelname\ \kernelversion} % other info in "inner" position of footer line
+\renewcommand{\footrulewidth}{0.4pt}% default is 0pt

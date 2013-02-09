@@ -6,9 +6,9 @@
 \pagestyle{headings}
 \usepackage{listings}
 \usepackage{color}
-\begin{document}
-\include{include}
+\input{include}
 
+\begin{document}
 \section{Linked Lists}
 
 Provides abstrated and uniform access to  a linked-list type data structure
@@ -42,11 +42,11 @@ struct llistnode {
 \item \function{struct llist *}{ll\_create}{\argument{struct llist*}{list}} \\
 Takes in a pointer to an uninitialized list (optional). Returns a new list. 
 If \texttt{list} is null this function will allocate a new list with 
-kmalloc and return a pointer to that.
+\method{kmalloc} and return a pointer to that.
 
 \item \function{void}{ll\_destroy}{\argument{struct llist*}{list}} \\
 Takes in a pointer to an initialized and empty list, and resets the values
-inside the structure. If the list was allocated with kmalloc, it is freed.
+inside the structure. If the list was allocated with \method{kmalloc}, it is freed.
 This function will panic if the list is not empty. 
 \item \function{struct llistnode *}{ll\_insert}{\argument{struct llist*}{list}, \argument{void*}{entry}} \\
 Inserts \texttt{entry} into \texttt{list}. The insert is done at the head of the list. 

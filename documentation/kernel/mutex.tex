@@ -1,0 +1,80 @@
+\documentclass[a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[english]{babel}
+\usepackage{listings}
+\usepackage{color}
+\input{include}
+\begin{document}
+
+\section{Mutexes}
+
+Mutexes are locks that may either be locked or unlocked. They prevent sections of
+critical code from being accessed by more than one process at a time.
+
+\subsection{Definitions}
+\begin{itemize}
+
+\item \texttt{\textit{mutex\_t}} 
+\begin{lstlisting}
+typedef struct {
+	unsigned magic; /* for debugging */
+	unsigned lock; /* the state of the lock */
+	unsigned flags;
+	int pid; /* owner (-1 for unowned) */
+} mutex_t;
+\end{lstlisting}
+
+\end{itemize}
+
+\subsection{Functions and Macros}
+\begin{itemize}
+\item \function{mutex\_t *}{mutex\_create}{\argument{mutex\_t*}{mutex}} \\
+Takes in a pointer to an already existing mutex (optional). If \texttt{mutex} is 
+null, it returns a pointer to a kmalloc'd mutex. The returned pointer
+is a pointer to a mutex that has been initialized so it is ready to use.
+
+\item \function{void}{mutex\_destroy}{\argument{mutex\_t*}{mutex}} \\
+Takes in a pointer to a mutex. Resets the flags, and if the mutex was allocated
+with \method{kmalloc} (in \method{mutex\_create}), it frees it.
+\item \function{void}{mutex\_acquire}{\argument{mutex\_t*}{mutex}} 
+Blocks until the mutex can be acquired. Once this returns,
+the calling process has exclusive access to the code block until \method{mutex\_release} is called.
+Calling this in the same process again before releasing the mutex will cause a kernel panic.
+\item \function{void}{mutex\_release}{\argument{mutex\_t*}{mutex}} 
+Releases the mutex. Calling this without first acquiring the mutex will cause a kernel panic.
+\end{itemize}
+\subsection{Usage}
+% \lstset{language=C,caption={Descriptive Caption Text},label=DescriptiveLabel}
+\begin{lstlisting}
+#include <mutex.h>
+
+mutex_t mutex1;
+mutex_t *mutex2;
+
+mutex_create(&mutex1);
+mutex2 = mutex_create(0);
+
+mutex_acquire(&mutex1);
+/* critical code */
+mutex_release(&mutex1);
+
+mutex_acquire(mutex2);
+/* other critical code */
+mutex_release(mutex2);
+
+mutex_destroy(&mutex1);
+mutex_destroy(mutex2);
+
+\end{lstlisting}
+
+
+\subsection{Files}
+\begin{itemize}
+\item \texttt{include/mutex.h}
+\item \texttt{kernel/mutex.c}
+\end{itemize}
+
+
+\end{document}

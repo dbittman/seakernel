@@ -1,0 +1,103 @@
+\section{Linked Lists}
+
+Provides abstrated and uniform access to  a linked-list type data structure
+across the kernel. These lists are kept internally as non-circular doubly 
+linked-lists with a pointer to the head.
+
+\subsection{Definitions}
+
+\begin{itemize}
+\item \texttt{\textit{struct llist}}
+\begin{lstlisting}
+struct llist {
+	struct llistnode *head;
+	rwlock_t rwl;
+	char flags;
+}
+\end{lstlisting}
+
+\item \texttt{\textit{struct llistnode}}
+\begin{lstlisting}
+struct llistnode {
+	struct llistnode *next, *prev;
+	void *entry;
+}
+\end{lstlisting}
+\end{itemize}
+
+\subsection{Functions and Macros}
+
+\begin{itemize}
+\item \function{struct llist *}{ll\_create}{\argument{struct llist*}{list}} \\
+Takes in a pointer to an uninitialized list (optional). Returns a new list. 
+If \texttt{list} is null this function will allocate a new list with 
+\method{kmalloc} and return a pointer to that.
+
+\item \function{void}{ll\_destroy}{\argument{struct llist*}{list}} \\
+Takes in a pointer to an initialized and empty list, and resets the values
+inside the structure. If the list was allocated with \method{kmalloc}, it is freed.
+This function will panic if the list is not empty. 
+\item \function{struct llistnode *}{ll\_insert}{\argument{struct llist*}{list}, \argument{void*}{entry}} \\
+Inserts \texttt{entry} into \texttt{list}. The insert is done at the head of the list. 
+Returns a pointer to the element of the list that contains the pointer to \texttt{entry}.
+This is useful for removing the element later. This function will attempt to acquire a writer lock
+on the list.
+
+\item \function{void}{ll\_remove}{\argument{struct llist*}{list}, \argument{struct llistnode*}{node}} \\
+Removes \texttt{node} from \texttt{list}. Note that this requires a pointer to the node that contains
+the pointer to entry (as passed to \method{ll\_insert}), not the entry itself. This function will attempt to acquire 
+a writer lock on the list.
+
+\item \function{void}{ll\_remove\_element}{\argument{struct llist*}{list}, \argument{void*}{entry}} \\
+Removes \texttt{entry} from \texttt{list}. Unlike \method{ll\_remove}, this function will search the
+list for entry, and then remove it. This function will attempt to acquire a writer lock on the list.
+
+\item \function{char}{ll\_is\_active}{\argument{struct llist*}{list}} \\
+Returns true if the list is initialized and ready to be used. False otherwise.
+
+\item \function{unsigned}{ll\_is\_empty}{\argument{struct llist*}{list}} \\
+Returns true if the list is empty. False otherwise. This does not check if the list is initialized.
+
+\item \macro{ll\_for\_each}{list,curnode} \\
+This macro gets pre-processed into a for loop that loops though the list. On each iteration of the loop,
+curnode points to the current node of the list. \texttt{list} should be of type \texttt{\textit{struct llist *}}
+and \texttt{curnode} should be of type \texttt{\textit{struct llistnode *}} (this holds for all ll\_for macros).
+
+\item \macro{ll\_for\_each\_entry}{list,curnode,type,entry} \\
+Same as \method{ll\_for\_each}, except that the loop automatically gets the entry
+for each node and puts it in \texttt{entry}. \texttt{type} denotes the type of the
+pointer that entry is.
+
+\item \macro{ll\_for\_each\_safe}{list,curnode,next} \\
+Loops through the list, setting \texttt{curnode} to each node on each iteration, except that it
+also backs up the next node for the next iteration so the list may be modified inside the loop.
+If the list is modified inside the loop, it is important to call \method{ll\_maybe\_reset\_loop} before
+the next iteration.
+
+\item \macro{ll\_for\_each\_entry\_safe}{list,curnode,next,type,entry} \\
+Same as \method{ll\_for\_each\_safe}, except that it also sets a \texttt{entry} to the
+current entry of the list as well.
+
+\item \macro{ll\_maybe\_reset\_loop}{list,curnode,next} \\
+Looks to see if something happened in the loop that would require the loop to restart. This should be
+called if the list is modified from inside the loop.
+\end{itemize}
+
+It is important to note three things about the loop macros:
+\begin{enumerate}
+\item The loop macros do NOT guarantee that each entry is presented only once. If the list is modified
+while the loop is running, the same entry may show up twice. Editing the list from inside a loop is not safe.
+Special care must be taken when doing this.
+
+\item The loop macros do NOT acquire any locks on the list while running. To use the loop macros, you should
+first acquire at least a reader lock on the entire list.
+
+\item After the loop terminates, the values of curnode, next, and entry may not be zero - in fact, 
+their values outside the loop are undefined by the loop macros.
+\end{enumerate}
+
+\subsection{Files}
+\begin{itemize}
+\item \texttt{include/ll.h}
+\item \texttt{library/klib/ll.c}
+\end{itemize}

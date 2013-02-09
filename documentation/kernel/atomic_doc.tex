@@ -1,0 +1,23 @@
+\section{Atomic}
+Atomic operations are provided for changing the value of memory locations
+safely in a multiprocessor environment. These are very architechture dependent.
+
+\subsection{Functions and Macros}
+These function should operate the in the same way as their assembly counterparts
+in terms of return values as results (add returns the new value on x86, etc).
+\begin{itemize}
+\item \macro{atomic\_add}{ptr,value} \\
+Atomically adds \texttt{value} to \texttt{*ptr} and returns the new value of \texttt{*ptr}.
+\item \macro{atomic\_sub}{ptr,value} \\
+Atomically subtracts \texttt{value} from \texttt{*ptr} and returns the new value of \texttt{*ptr}.
+\item \macro{atomic\_bts}{ptr,bitnumber} \\
+Atomically executes the x86 bts instruction on \texttt{*ptr} with bitnumber \texttt{bitnumber}.
+\item \macro{atomic\_btr}{ptr,bitnumber} \\
+Atomically executes the x86 btr instruction on \texttt{*ptr} with bitnumber \texttt{bitnumber}.
+\end{itemize}
+
+\subsection{Files}
+\begin{itemize}
+\item \texttt{arch/\$(ARCH)/include/atomic.h}
+\item \texttt{arch/\$(ARCH)/include/atomic.h}
+\end{itemize}

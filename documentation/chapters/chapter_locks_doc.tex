@@ -1,0 +1,16 @@
+
+The kernel provides several different locking mechanisms, each with their own advantages
+and disadvantages.
+\begin{itemize}
+\item \textbf{atomic operations} are the fastest, but also only safe
+for single variable data modifications.
+\item \textbf{mutexes} are still quite fast, but have no distinction between
+reading or writing. These will cause a process to block until it can acquire the lock.
+\item \textbf{reader/writer locks} are slower than mutexes, but allow better control
+over what a process may do with a set of data. These allow for much better safe concurrent
+access. These may cause processes to block as well.
+\end{itemize}
+
+\input{ kernel/mutex_doc }
+\input{ kernel/rwlock_doc }
+\input{ kernel/atomic_doc }

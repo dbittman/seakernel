@@ -1,0 +1,19 @@
+\documentclass[twoside]{book}
+
+\input{include}
+\chead{}
+\fancyhf{}
+\fancyhead[RE]{\textit{ \nouppercase{\leftmark}} }
+\fancyhead[LO]{\textit{ \nouppercase{\rightmark}} }
+\fancyfoot[LE,RO]{\thepage}           % page number in "outer" position of footer line
+\fancyfoot[RE,LO]{\kernelname\ \kernelversion} % other info in "inner" position of footer line
+\renewcommand{\footrulewidth}{0.4pt}% default is 0pt
+
+\begin{document}
+\chapter{Locking and Synchronization}
+\include {chapters/chapter_locks_doc}
+\chapter{Data Structures}
+\include {chapters/chapter_datastructures_doc}
+\chapter{Memory Management}
+\include {chapters/chapter_mm_doc}
+\end{document}

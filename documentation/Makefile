@@ -6,9 +6,9 @@ include kernel/make.inc
 all: pdf
 
 pdf:
-	@-mkdir -p built
+	@-mkdir -p built/individual
 	@for i in ${latex_files}; do \
-		pdflatex -output-directory=built $$i ;\
+		pdflatex -output-directory=built/individual $$i ;\
 	done
 	
 	@-mkdir -p built/chapters
@@ -16,7 +16,7 @@ pdf:
 		pdflatex -output-directory=built/chapters $$i ;\
 	done
 	
-	@pdflatex main.tex
+	@pdflatex -output-directory=built main.tex
 	
 	@$(MAKE) -s aux_clean
 	

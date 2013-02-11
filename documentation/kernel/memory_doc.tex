@@ -1,0 +1,178 @@
+\section{Physical Memory Management}
+This system divides the physical memory of the system in pages, and
+keeps track of which pages are used and which are free.
+\subsection{Definitions}
+\begin{itemize}
+\item \texttt{typedef unsigned int addr\_t}
+\item \texttt{pm\_num\_pages}: Number of pages of available memory
+\item \texttt{pm\_used\_pages}: Number of pages currently allocated
+\end{itemize}
+\subsection{Functions and Macros}
+
+\begin{itemize}
+\item \function{addr\_t}{pm\_alloc\_page}{} \\
+Returns a page from the free page list and removes it from the list.
+\item \function{void}{pm\_free\_page}{\argument{addr\_t}{address}} \\
+Puts a page spcified by \texttt{address} back in the free page list.
+\end{itemize}
+
+\subsection{Internals}
+The free page list is really a stack that grows upwards from \texttt{PM\_STACK\_ADDR}
+to \texttt{PM\_STACK\_ADDR\_TOP}. The mappings of this area of memory are maintained by
+pages passed to \method{pm\_free\_page} should a page of that area need to be mapped.
+\subsection{Out of Memory Handler}
+The action taken by the physical memory manager when the system is deemed `out of memory'
+is specified by the config option \texttt{CONFIG\_OOM\_HANDLER}. The valid values of this are:
+\begin{itemize}
+\item \texttt{OOM\_KILL} will kill the process that caused the out of memory error.
+\item \texttt{OOM\_SLEEP} will block the calling process until memory is available. This option
+can easily cause the kernel to lock up.
+\item any other value will have the kernel panic on an out of memory error.
+\end{itemize}
+\subsection{Files}
+\begin{itemize}
+\item \texttt{arch/\$(ARCH)/kernel/mm/physical.c}
+\item \texttt{include/mm.h}
+\end{itemize}
+
+\section{Virtual Memory Management}
+This system handles virtual memory and mapping virtual address spaces. It also provides
+functions for cloning an address space for new processes.
+\subsection{Definitions}
+\begin{itemize}
+\item \texttt{mmu\_ready}: Memory management has been fully initialized and paging is enabled
+\item \texttt{MAP\_NOCLEAR}
+\end{itemize}
+
+\subsection{Functions and Macros}
+
+\begin{itemize}
+
+\item \function{void}{vm\_switch}{\argument{page\_dir\_t*}{pd}} \\
+Takes in the virtual address of a page directory, and switching the processor
+over to use this directory.
+
+\item \function {unsigned}{vm\_getmap}{\argument{unsigned}{address}, \argument{unsigned*}{map}} \\
+Sets \texttt{*map} to, and returns, the physical address that is mapped to the virtual address specified
+by \texttt{address}.
+
+\item \function {unsigned}{vm\_getattrib}{\argument{unsigned}{address}, \argument{unsigned*}{ptr}} \\
+Sets \texttt{*map} to, and returns, the attributes of the page associated with the virtual address
+specified by \texttt{address}.
+
+\item \function {unsigned}{vm\_setattrib}{\argument{unsigned}{address}, \argument{short}{attr}} \\
+Sets the attributes of the page associated with the virtual address specified by \texttt{address}
+to \texttt{attr}.
+
+\item \function {page\_dir\_t *}{vm\_clone}{\argument{page\_dir\_t*}{dir}, \argument{char}{cow}} \\
+Clones the directory \texttt{dir}, but leaves certain sections of the page directory pointing to the same
+locations as \texttt{dir} in order to allow the kernel memory to be mapped uniformly across all page
+directories. The \texttt{cow} flag specifies whether to set the new directory to copy on write, 1 for
+enable, 0 for disable (this feature is unimplemented).
+
+\item \function {int}{self\_free}{\argument{int}{flags}} \\
+Frees all areas of the current address space except for the user-space stack.
+
+\item \function {int}{free\_stack}{} \\
+Frees the user-space stack of the current address space.
+
+\item \function {int}{vm\_map}{\argument{unsigned}{virt}, \argument{unsigned}{phys}, \argument{unsigned}{attrib}, \argument{unsigned}{options}} \\
+Maps the virtual address specified by \texttt{virt} to physical address \texttt{phys}, assigns the mapping the attributes
+specified by \texttt{attrib}, and zeros the page. \texttt{options} are as follows:
+\begin{itemize}
+\item \texttt{MAP\_NOCLEAR} will not zero the page after the mapping has been completed.
+\end{itemize}
+
+\item \function {int}{vm\_unmap\_only}{\argument{unsigned}{virt}} \\
+Removes the mapping of the virtual address specified by \texttt{virt}, and
+executes \texttt{invlpg} on the address (which flushes the entry in the
+translation lookaside buffer for this address. This will not free the
+page allocated for the page table that this address resided in.
+
+\item \function {int}{vm\_unmap}{\argument{unsigned}{virt}} \\
+Calls \method{vm\_unmap\_only} on \texttt{virt}, and then frees the
+physical page that was mapped there.
+
+\item \macro{PAGE\_DIR\_IDX}{page} \\
+Calculates the page directory index for \texttt{page} (the page number, calulated
+by dividing an address by \texttt{PAGE\_SIZE}).
+
+\item \macro{PAGE\_TABLE\_IDX}{page} \\
+Calculates the page table index for \texttt{page} (the page number, calulated
+by dividing an address by \texttt{PAGE\_SIZE}).
+
+\item \macro{PAGE\_DIR\_PHYS}{dir} \\
+Returns the physical address of the directory \texttt{dir} (a virtual address).
+
+\item \macro{disable\_paging}{} \\
+Disables paging.
+
+\item \macro{enable\_paging}{} \\
+Enables paging.
+
+\item \macro{flush\_pd}{} \\
+Rewrites CR3 (x86) with its current value, which should flush the entire
+TLB.
+
+\item \function{void}{map\_if\_not\_mapped}{\argument{addr\_t}{loc}} \\
+Checks to see if the virtual address specified by \texttt{loc} is mapped
+and if not, maps a new physical page to that address and zeros it.
+
+\item \function{void}{map\_if\_not\_mapped\_noclear}{\argument{addr\_t}{loc}} \\
+Same as \method{map\_if\_not\_mapped}, except it does not zero the memory.
+
+\end{itemize}
+
+\subsection{Internals}
+
+Page faults are handled in \texttt{pfault.c}. The system checks if
+the address faulted upon is an error, or needs to have a physical page
+mapped to it (for example, the task's user-space heap). If it is an error, 
+then the page fault handler sends a SIGSEGV to the task if it is in ring3
+or panics if it is in ring0.
+
+The layout of the page directory is as follows: 
+\begin{itemize}
+\item \texttt{0} to \texttt{TOP\_LOWER\_KERNEL}
+contains memory for the kernel to use, and contains the identity mapped section
+of memory that holds the kernel executable. This area is linked when cloned.
+
+\item \texttt{SOLIB\_RELOC\_START} to \texttt{SOLIB\_RELOC\_END}
+contains the area where shared libraries will be loaded (this feature
+is unimplemented). 
+
+\item \texttt{EXEC\_MINIMUM} is the lowest location where executables may
+be loaded.
+
+\item \texttt{TOP\_USER\_HEAP} is the highest location where the heap may extend to.
+
+\item \texttt{MMF\_PRIV\_START} to \texttt{MMF\_PRIV\_END} is where memory mapped
+files that are private to this process.
+
+\item \texttt{TOP\_TASK\_MEM\_EXEC} to \texttt{TOP\_TASK\_MEM} contains the stack
+and other structures that are maintained across execve calls.
+
+\item \texttt{MMF\_SHARED\_START} to \texttt{MMF\_SHARE\_END} contains memory mapped
+files that are shared among processes. This area is linked when cloned.
+
+\item \texttt{KMALLOC\_ADDR\_START} to \texttt{KMALLOC\_ADDR\_END} contains the
+memory that is allowed to be allocated by \method{kmalloc}. This area is linked
+when cloned. This area is linked when cloned.
+
+\item \texttt{PM\_STACK\_ADDR} to \texttt{PM\_STACK\_ADDR\_TOP} contains the
+physical memory stack.
+
+\end{itemize}
+
+\subsection{Files}
+\begin{itemize}
+
+\item \texttt{arch/\$(ARCH)/kernel/mm/clone.c}
+\item \texttt{arch/\$(ARCH)/kernel/mm/free.c}
+\item \texttt{arch/\$(ARCH)/kernel/mm/page.s}
+\item \texttt{arch/\$(ARCH)/kernel/mm/pfault.c}
+\item \texttt{arch/\$(ARCH)/kernel/mm/virtual.c}
+\item \texttt{arch/\$(ARCH)/kernel/mm/vmm\_map.c}
+\item \texttt{arch/\$(ARCH)/kernel/mm/vmm\_unmap.c}
+
+\end{itemize}

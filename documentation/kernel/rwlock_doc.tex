@@ -56,6 +56,12 @@ make sure to tell it to release the correct state! If a reader lock is establish
 with flags as \texttt{RWL\_WRITER}, bad things will happen!
 \end{itemize}
 
+\subsection{Configuration}
+\begin{itemize}
+\item \texttt{CONFIG\_DEBUG} will cause the \method{rwlock\_acquire} and \method{rwlock\_escalate}
+methods to track how long a task blocks for a lock, and if it times-out it will panic.
+\end{itemize}
+
 \subsection{Usage}
 \begin{lstlisting}
 #include <rwlock.h>

@@ -13,7 +13,7 @@
 #define PAGE_WRITE     0x2
 #define PAGE_USER      0x4
 #define PAGE_COW       512
-#define PAGE_SIZE 0x1000
+#define PAGE_SIZE 	   0x1000
 
 #define MAP_NOCLEAR   0x2
 #define MAP_CRIT      0x1

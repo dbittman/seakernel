@@ -78,6 +78,29 @@ typedef struct exit_status {
  * 
  * current_task points to the task currently running.
  */
+#warning "really do this? We could just have each process decide what to share...see the clone call"
+typedef volatile struct thread_struct
+{
+	unsigned tid, eip, ebp, esp;
+	int state;
+	unsigned flags;
+	unsigned int system, last;
+	addr_t kernel_stack;
+	
+	volatile addr_t *waitflag, waiting_ret;
+	unsigned wait_for;
+	
+	volatile long tick;
+	unsigned stime, utime, ptime;
+	unsigned t_cutime, t_cstime, t_cptime;
+	addr_t stack_end;
+	registers_t reg_b, *regs, *sysregs;
+	unsigned wait_again;
+	
+	unsigned sigd, cursig;
+	sigset_t t_sigmask, t_oldmask;
+} thread_t;
+
 typedef volatile struct task_struct
 {
 	volatile unsigned magic;

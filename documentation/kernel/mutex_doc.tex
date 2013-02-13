@@ -16,22 +16,29 @@ typedef struct {
 } mutex_t;
 \end{lstlisting}
 
+\item \texttt{MT\_NOSCHED}
+
 \end{itemize}
 
 \subsection{Functions and Macros}
 \begin{itemize}
-\item \function{mutex\_t *}{mutex\_create}{\argument{mutex\_t*}{mutex}} \\
+\item \function{mutex\_t *}{mutex\_create}{\argument{mutex\_t*}{mutex}, \argument{unsigned}{flags}} \\
 Takes in a pointer to an already existing mutex (optional). If \texttt{mutex} is 
 null, it returns a pointer to a kmalloc'd mutex. The returned pointer
-is a pointer to a mutex that has been initialized so it is ready to use.
+is a pointer to a mutex that has been initialized so it is ready to use. Sets the mutex's flags
+to \texttt{flags}.
 
 \item \function{void}{mutex\_destroy}{\argument{mutex\_t*}{mutex}} \\
 Takes in a pointer to a mutex. Resets the flags, and if the mutex was allocated
 with \method{kmalloc} (in \method{mutex\_create}), it frees it.
 \item \function{void}{mutex\_acquire}{\argument{mutex\_t*}{mutex}} 
-Blocks until the mutex can be acquired. Once this returns,
+Blocks (by calling \method{schedule}) until the mutex can be acquired. Once this returns,
 the calling process has exclusive access to the code block until \method{mutex\_release} is called.
 Calling this in the same process again before releasing the mutex will cause a kernel panic.
+The function is affected by the mutex's flags are as follows:
+\begin{itemize}
+\item \texttt{MT\_NOSCHED} causes the function to not call schedule while it is blocking.
+\end{itemize}
 \item \function{void}{mutex\_release}{\argument{mutex\_t*}{mutex}} 
 Releases the mutex. Calling this without first acquiring the mutex will cause a kernel panic.
 \end{itemize}

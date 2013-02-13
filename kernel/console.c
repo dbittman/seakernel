@@ -39,8 +39,8 @@ void create_console(vterm_t *con)
 	con->term.c_lflag=ECHO | ISIG | ECHONL | ICANON;
 	con->term.c_oflag=OPOST | ONLCR;
 	con->term.c_iflag=ICRNL;
-	mutex_create(&con->wlock);
-	mutex_create(&con->inlock);
+	mutex_create(&con->wlock, 0);
+	mutex_create(&con->inlock, 0);
 	con->flag=1;
 }
 

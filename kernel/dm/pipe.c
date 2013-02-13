@@ -8,7 +8,7 @@ pipe_t *create_pipe()
 	pipe_t *pipe = (pipe_t *)kmalloc(sizeof(pipe_t));
 	pipe->length = PIPE_SIZE;
 	pipe->buffer = (char *)kmalloc(PIPE_SIZE+1);
-	pipe->lock = mutex_create(0);
+	pipe->lock = mutex_create(0, 0);
 	return pipe;
 }
 

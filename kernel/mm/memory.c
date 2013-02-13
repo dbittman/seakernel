@@ -61,7 +61,7 @@ void process_memorymap(struct multiboot *mboot)
 void init_memory(struct multiboot *m)
 {
 	printk(KERN_DEBUG, "[mm]: Setting up Memory Management...\n");
-	mutex_create(&pm_mutex);
+	mutex_create(&pm_mutex, 0);
 	vm_init(pm_location);
 	process_memorymap(m);
 	install_kmalloc(KMALLOC_NAME, KMALLOC_INIT, KMALLOC_ALLOC, KMALLOC_FREE);

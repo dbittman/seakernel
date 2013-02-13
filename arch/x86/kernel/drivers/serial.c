@@ -63,7 +63,7 @@ int serial_rw(int rw, int min, char *b, size_t c)
 
 void init_serial()
 {
-	mutex_create(&serial_m);
+	mutex_create(&serial_m, 0);
 	init_serial_port(0x3f8);
 	serial_initialized = 1;
 	serial_puts(0, "[kernel]: started debug serial output\n");

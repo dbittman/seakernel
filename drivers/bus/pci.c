@@ -313,7 +313,7 @@ int pci_proc_call(char rw, struct inode *inode, int m, char *buf, int off, int l
 int module_install()
 {
 	pci_list=0;
-	pci_mutex = mutex_create(0);
+	pci_mutex = mutex_create(0, 0);
 	proc_pci_maj = proc_get_major();
 	proc_pci=pfs_cn("pci", S_IFDIR, proc_pci_maj, 0);
 	proc_set_callback(proc_pci_maj, pci_proc_call);

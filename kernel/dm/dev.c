@@ -13,7 +13,7 @@ void init_dm()
 	memset(devhash, 0, sizeof(struct devhash_s)*NUM_DT);
 	int i;
 	for(i=0;i<NUM_DT;i++) 
-		mutex_create(&devhash[i].lock);
+		mutex_create(&devhash[i].lock, 0);
 	init_char_devs();
 	init_block_devs();
 #if CONFIG_MODULES

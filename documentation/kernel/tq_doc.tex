@@ -1,0 +1,23 @@
+\section{Task/Thread Queues}
+
+\subsection{Definitions}
+
+\subsection{Functions and Macros}
+
+\begin{itemize}
+\item \function{tqueue\_t *}{tqueue\_create}{\argument{tqueue\_t*}{tq}, \argument{unsigned}{flags}} \\
+Creates a new tqueue and returns a pointer to it. If \texttt{tq} is null, it allocates
+one using \method{kmalloc}. Otherwise it uses the passed structure.
+
+\item \function{void}{tqueue\_destroy}{\argument{tqueue\_t*}{tq}} \\
+Cleans up a tqueue element and \method{kfree}'s it if it was allocated when created.
+\end{itemize}
+\subsection{Internals}
+
+\subsection{Configuration}
+
+% other subsections here
+
+\subsection{Usage}
+
+\subsection{Files}

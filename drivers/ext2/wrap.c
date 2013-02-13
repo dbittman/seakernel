@@ -368,7 +368,7 @@ struct inode *create_sea_inode(ext2_inode_t *in, char *name)
 	out->nblocks = in->sector_count;
 	out->sb_idx = in->fs->flag;
 	out->dynamic=1;
-	out->flm = mutex_create(0);
+	out->flm = mutex_create(0, 0);
 	out->i_ops = &e2fs_inode_ops;
 	rwlock_create(&out->rwl);
 	strncpy(out->name, name, 128);

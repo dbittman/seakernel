@@ -10,7 +10,7 @@
 void init_flocks(struct inode *i)
 {
 	if(!i->flm)
-		i->flm = mutex_create(0);
+		i->flm = mutex_create(0, 0);
 }
 
 struct flock *create_flock(int type, int whence, off_t start, size_t len)

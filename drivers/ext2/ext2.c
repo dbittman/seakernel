@@ -16,11 +16,11 @@ ext2_fs_t *get_new_fsvol()
 	fs->sb = (ext2_superblock_t *)kmalloc(1024);
 	fs->block_prev_alloc=0;
 	fs->read_only=0;
-	fs->m_node = mutex_create(0);
-	fs->m_block = mutex_create(0);
-	mutex_create(&fs->bg_lock);
-	mutex_create(&fs->fs_lock);
-	mutex_create(&fs->ac_lock);
+	fs->m_node = mutex_create(0, 0);
+	fs->m_block = mutex_create(0, 0);
+	mutex_create(&fs->bg_lock, 0);
+	mutex_create(&fs->fs_lock, 0);
+	mutex_create(&fs->ac_lock, 0);
 	char tm[32];
 	sprintf(tm, "ext2-%d", fs_num);
 	fs->cache = get_empty_cache(0, tm);

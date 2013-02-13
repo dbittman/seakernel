@@ -71,7 +71,7 @@ void init_char_devs()
 	set_chardevice(3, ttyx_rw, ttyx_ioctl, ttyx_select);
 	set_chardevice(4, tty_rw, tty_ioctl, tty_select);
 	set_chardevice(5, serial_rw, 0, 0);
-	mutex_create(&cd_search_lock);
+	mutex_create(&cd_search_lock, 0);
 }
 
 int char_rw(int rw, dev_t dev, char *buf, size_t len)

@@ -16,8 +16,10 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 		panic(0, "task %d tried to relock mutex (%s:%d)", m->pid, file, line);
 	assert(m->magic == MUTEX_MAGIC);
 	/* wait until we can set bit 0. once this is done, we have the lock */
-	while(bts_atomic(&m->lock, 0))
-		schedule();
+	while(bts_atomic(&m->lock, 0)) {
+		if(!(m->flags & MT_NOSCHED))
+			schedule();
+	}
 	m->pid = current_task->pid;
 }
 
@@ -31,13 +33,13 @@ void __mutex_release(mutex_t *m, char *file, int line)
 	btr_atomic(&m->lock, 0);
 }
 
-mutex_t *mutex_create(mutex_t *m)
+mutex_t *mutex_create(mutex_t *m, unsigned flags)
 {
 	if(!m) {
 		m = (void *)kmalloc(sizeof(mutex_t));
-		m->flags |= MT_ALLOC;
+		m->flags |= (MT_ALLOC | flags);
 	} else
-		m->flags=0;
+		m->flags=flags;
 	m->lock=0;
 	m->magic = MUTEX_MAGIC;
 	return m;

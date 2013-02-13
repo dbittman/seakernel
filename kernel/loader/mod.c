@@ -205,7 +205,7 @@ void unload_all_modules()
 
 void init_module_system()
 {
-	mutex_create(&mod_mutex);
+	mutex_create(&mod_mutex, 0);
 }
 
 int sys_load_module(char *path, char *args, int flags)

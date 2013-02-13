@@ -22,7 +22,7 @@ blockdevice_t *set_blockdevice(int maj, int (*f)(int, int, u64, char*), int bs,
 	dev->ioctl=c;
 	dev->rw_multiple=m;
 	dev->select = s;
-	mutex_create(&dev->acl);
+	mutex_create(&dev->acl, 0);
 	if(!c)
 		dev->ioctl=ioctl_stub;
 	dev->cache = BCACHE_WRITE | (CACHE_READ ? BCACHE_READ : 0);
@@ -70,7 +70,7 @@ void unregister_block_device(int n)
 
 void init_block_devs()
 {
-	mutex_create(&bd_search_lock);
+	mutex_create(&bd_search_lock, 0);
 	block_cache_init();
 }
 

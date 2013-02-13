@@ -319,7 +319,7 @@ unsigned slab_init(unsigned start, unsigned end)
 	}
 	printk(1, "done\n");
 	pages_used = SLAB_NUM_INDEX+1;
-	mutex_create(&scache_lock);
+	mutex_create(&scache_lock, 0);
 	return 0;
 }
 

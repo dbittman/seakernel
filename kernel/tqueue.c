@@ -3,7 +3,7 @@
 #include <tqueue.h>
 #include <mutex.h>
 #include <ll.h>
-
+#warning "clear and start interrupts around mutexes"
 tqueue_t *tqueue_create(tqueue_t *tq, unsigned flags)
 {
 	if(!tq) {
@@ -11,7 +11,7 @@ tqueue_t *tqueue_create(tqueue_t *tq, unsigned flags)
 		tq->flags = (TQ_ALLOC | flags);
 	} else
 		tq->flags=flags;
-	mutex_create(&tq->lock, 0);
+	mutex_create(&tq->lock, MT_NOSCHED);
 	ll_create_lockless(&tq->tql);
 	return tq;
 }

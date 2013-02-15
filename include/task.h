@@ -7,6 +7,9 @@
 #include <sig.h>
 #include <mmfile.h>
 #include <dev.h>
+#include <tqueue.h>
+
+extern tqueue_t *primary_queue;
 
 #define KERN_STACK_SIZE 0x16000
 
@@ -78,8 +81,7 @@ typedef struct exit_status {
  * 
  * current_task points to the task currently running.
  */
-#warning "really do this? We could just have each process decide what to share...see the clone call"
-typedef volatile struct thread_struct
+/*typedef volatile struct thread_struct
 {
 	unsigned tid, eip, ebp, esp;
 	int state;
@@ -100,7 +102,7 @@ typedef volatile struct thread_struct
 	unsigned sigd, cursig;
 	sigset_t t_sigmask, t_oldmask;
 } thread_t;
-
+*/
 typedef volatile struct task_struct
 {
 	volatile unsigned magic;
@@ -157,8 +159,8 @@ typedef volatile struct task_struct
 	volatile unsigned sigd, cursig;
 	sigset_t old_mask;
 	unsigned alrm_count;
-	
-	volatile struct task_struct *next, *prev, *parent, *waiting, *alarm_next;
+	struct llistnode *listnode;
+	volatile struct task_struct *parent, *waiting, *alarm_next;
 } task_t;
 
 extern volatile task_t *kernel_task, *tokill, *alarm_list_start;
@@ -353,19 +355,5 @@ __attribute__((always_inline)) inline static int task_is_runable(task_t *task)
 #define unlock_task_queue_writing(queue) unlock_scheduler()
 
 #endif
-
-static __attribute__((always_inline)) inline int count_tasks()
-{
-	lock_task_queue_reading(0);
-	task_t *t = (task_t *)kernel_task;
-	int i=0;
-	while(t)
-	{
-		i++;
-		t=(task_t *)t->next;
-	}
-	unlock_task_queue_reading(0);
-	return i;
-}
 
 #endif

@@ -52,6 +52,9 @@ a writer lock on the list.
 Removes \texttt{entry} from \texttt{list}. Unlike \method{ll\_remove}, this function will search the
 list for entry, and then remove it. This function will attempt to acquire a writer lock on the list.
 
+\item \function{void *}{ll\_remove\_head}{\argument{struct llist*}{list}} \\
+Removes the head entry in the list, and returns it. If the list is empty, it returns null.
+
 \item \function{char}{ll\_is\_active}{\argument{struct llist*}{list}} \\
 Returns true if the list is initialized and ready to be used. False otherwise.
 

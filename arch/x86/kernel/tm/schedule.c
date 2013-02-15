@@ -45,8 +45,7 @@ __attribute__((always_inline)) inline task_t *get_next_task()
 	assert(current_task && kernel_task);
 	lock_task_queue_reading(0);
 	task_t *prev = (task_t *)current_task;
-	task_t *t = (task_t *)(prev->next);
-	if(!t) t = (task_t *)kernel_task;
+	task_t *t = tqueue_next(primary_queue);
 	unlock_task_queue_reading(0);
 	while(t)
 	{
@@ -56,10 +55,7 @@ __attribute__((always_inline)) inline task_t *get_next_task()
 		update_task(t);
 		if(task_is_runable(t))
 			return t;
-		lock_task_queue_reading(0);
-		if(!(t = t->next))
-			t = (task_t *)kernel_task;
-		unlock_task_queue_reading(0);
+		t = tqueue_next(primary_queue);
 		/* This way the kernel can sleep without being in danger of 
 		 * causing a lockup. Basically, if the kernel is the only
 		 * runnable task, it gets forced to run */

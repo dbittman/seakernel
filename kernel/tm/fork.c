@@ -69,23 +69,12 @@ inline static int engage_new_stack(task_t *new, task_t *parent)
 	}
 }
 
-__attribute__((always_inline)) inline static void add_task(task_t *new)
-{
-	lock_task_queue_writing(0);
-	task_t *t = kernel_task->next;
-	if(t)
-		t->prev = new;
-	new->prev = kernel_task;
-	new->next = t;
-	kernel_task->next = new;
-	unlock_task_queue_writing(0);
-}
-
 int fork()
 {
 	if(!current_task || !kernel_task)
 		panic(PANIC_NOSYNC, "fork() called before tasking can work!");
-	assert(count_tasks() < MAX_TASKS || MAX_TASKS == -1);
+	/* TODO */
+	//assert(count_tasks() < MAX_TASKS || MAX_TASKS == -1);
 	unsigned eip;
 	flush_pd();
 	task_t *new = (task_t *)kmalloc(sizeof(task_t));
@@ -102,7 +91,7 @@ int fork()
 	/* Set the state as usleep temporarily, so that it doesn't accidentally run.
 	 * And then add it to the queue */
 	new->state = TASK_USLEEP;
-	add_task(new);
+	new->listnode = tqueue_insert(primary_queue, (void *)new);
 	/* Copy the stack */
 	cli();
 	engage_new_stack(new, parent);

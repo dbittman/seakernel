@@ -126,6 +126,20 @@ cpu_t *get_cpu(int id)
 
 int probe_smp();
 #endif
+
+int set_int(unsigned new)
+{
+	unsigned old = primary_cpu.flags&CPU_INTER;
+	if(!new) {
+		primary_cpu.flags &= ~CPU_INTER;
+		asm("cli");
+	} else if(tables) {
+		primary_cpu.flags |= CPU_INTER;
+		asm("sti");
+	}
+	return old;
+}
+
 void init_main_cpu()
 {
 #if CONFIG_SMP
@@ -147,5 +161,6 @@ void init_main_cpu()
 #endif
 #if CONFIG_MODULES
 	_add_kernel_symbol((unsigned)(cpu_t *)&primary_cpu, "primary_cpu");
+	add_kernel_symbol(set_int);
 #endif
 }

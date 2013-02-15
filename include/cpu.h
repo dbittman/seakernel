@@ -27,6 +27,7 @@ void add_cpu(cpu_t *c);
 #define CPU_SSE     0x8
 #define CPU_FPU    0x10
 #define CPU_PAGING 0x20
+#define CPU_INTER  0x40
 extern cpu_t primary_cpu;
 
 void parse_cpuid(cpu_t *);
@@ -186,6 +187,7 @@ void add_ioapic(struct imps_ioapic *ioapic);
 void init_ioapic();
 void lapic_eoi();
 void init_pic();
+
 extern unsigned imps_lapic_addr;
 extern unsigned bootstrap;
 #define EBDA_SEG_ADDR			0x40E

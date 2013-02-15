@@ -36,7 +36,7 @@ struct llistnode *ll_insert(struct llist *list, void *entry)
 	return old;
 }
 
-void ll_do_remove(struct llist *list, struct llistnode *node, char locked)
+void *ll_do_remove(struct llist *list, struct llistnode *node, char locked)
 {
 	assert(list && node && ll_is_active(list));
 	if(!(list->flags & LL_LOCKLESS) && !locked)
@@ -49,36 +49,37 @@ void ll_do_remove(struct llist *list, struct llistnode *node, char locked)
 			list->head = 0;
 			if(!(list->flags & LL_LOCKLESS) && !locked)
 				rwlock_release(&list->rwl, RWL_WRITER);
-			kfree(node);
-			return;
+			return node;
 		}
 	}
 	node->prev->next = node->next;
 	node->next->prev = node->prev;
 	if(!(list->flags & LL_LOCKLESS) && !locked)
 		rwlock_release(&list->rwl, RWL_WRITER);
-	kfree(node);
+	return node;
 }
 
 void ll_remove(struct llist *list, struct llistnode *node)
 {
-	ll_do_remove(list, node, 0);
+	kfree(ll_do_remove(list, node, 0));
 }
 
 void ll_remove_entry(struct llist *list, void *search)
 {
 	struct llistnode *cur, *next;
 	void *ent;
-	rwlock_acquire(&list->rwl, RWL_WRITER);
+	if(!(list->flags & LL_LOCKLESS)) 
+		rwlock_acquire(&list->rwl, RWL_WRITER);
 	ll_for_each_entry_safe(list, cur, next, void *, ent)
 	{
 		if(ent == search) {
-			ll_do_remove(list, cur, 1);
+			kfree(ll_do_remove(list, cur, 1));
 			break;
 		}
 		ll_maybe_reset_loop(list, cur, next);
 	}
-	rwlock_release(&list->rwl, RWL_WRITER);
+	if(!(list->flags & LL_LOCKLESS)) 
+		rwlock_release(&list->rwl, RWL_WRITER);
 }
 
 /* should list be null, we allocate one for us and return it. */
@@ -100,10 +101,26 @@ void ll_destroy(struct llist *list)
 	assert(list && !list->head);
 	if(!ll_is_active(list))
 		return;
-	rwlock_acquire(&list->rwl, RWL_WRITER);
+	if(!(list->flags & LL_LOCKLESS)) 
+		rwlock_acquire(&list->rwl, RWL_WRITER);
 	list->flags &= ~LL_ACTIVE;
-	rwlock_release(&list->rwl, RWL_WRITER);
+	if(!(list->flags & LL_LOCKLESS)) 
+		rwlock_release(&list->rwl, RWL_WRITER);
 	rwlock_destroy(&list->rwl);
 	if(list->flags & LL_ALLOC)
 		kfree(list);
+}
+
+void *ll_remove_head(struct llist *list)
+{
+	void *ent;
+	if(!(list->flags & LL_LOCKLESS)) 
+		rwlock_acquire(&list->rwl, RWL_WRITER);
+	ent = list->head->entry;
+	if(ent)
+		kfree(ll_do_remove(list, list->head, 1));
+		
+	if(!(list->flags & LL_LOCKLESS)) 
+		rwlock_release(&list->rwl, RWL_WRITER);
+	return ent;
 }

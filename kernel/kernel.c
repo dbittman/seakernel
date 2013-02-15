@@ -17,9 +17,6 @@ void kernel_shutdown()
 	shutting_down=1;
 	cli();
 	lock_scheduler();
-	kernel_task->next = current_task;
-	current_task->next=0;
-	current_task->prev = kernel_task;
 	sys_sync(PRINT_LEVEL);
 	unmount_all();
 #if CONFIG_MODULES

@@ -91,13 +91,27 @@ int sys_waitpid(int pid, int *st, int opt)
 {
 	if(!pid || pid < -1)
 		return -ENOSYS;
-	task_t *t;
-	for(t=kernel_task->next;pid == -1 && t;t=t->next) {
-		if(t->parent == current_task)
-			break;
+	task_t *t=kernel_task;
+	if(pid == -1) {
+		/* find first child */
+		t=0;
+		set_int(0);
+		mutex_acquire(&primary_queue->lock);
+		struct llistnode *cur;
+		task_t *tmp;
+		ll_for_each_entry(&primary_queue->tql, cur, task_t *, tmp)
+		{
+			if(tmp->parent == current_task)
+			{
+				t = tmp;
+				break;
+			}
+		}
+		mutex_release(&primary_queue->lock);
+		set_int(1);
+		if(!t && !current_task->exlist)
+			return -ECHILD;
 	}
-	if(!t && !current_task->exlist)
-		return -ECHILD;
 	top:
 	if(current_task->sigd && 
 	((struct sigaction *)&(current_task->signal_act

@@ -55,19 +55,21 @@ int tty_raise_action(int min, int sig)
 		return 0;
 	if(shutting_down)
 		return 0;
-	lock_task_queue_reading(0);
-	task_t *t = kernel_task->next;
-	while(t)
+	set_int(0);
+	mutex_acquire(&primary_queue->lock);
+	struct llistnode *cur;
+	task_t *t;
+	ll_for_each_entry(&primary_queue->tql, cur, task_t *, t)
 	{
-		if(t->tty == min) {
-			/* we were able to raise a signal. clear the input stream */
+		if(t->tty == min)
+		{
 			consoles[min].inpos=0;
 			t->sigd = sig;
 			t->flags |= TF_SCHED;
 		}
-		t=t->next;
 	}
-	unlock_task_queue_reading(0);
+	mutex_release(&primary_queue->lock);
+	set_int(1);
 	return 0;
 }
 

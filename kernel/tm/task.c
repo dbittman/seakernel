@@ -2,6 +2,7 @@
 #include <memory.h>
 #include <task.h>
 #include <elf.h>
+#include <tqueue.h>
 volatile task_t *kernel_task=0, *alarm_list_start=0;
 #if !(CONFIG_SMP)
 volatile task_t *current_task=0;
@@ -10,6 +11,8 @@ extern volatile page_dir_t *kernel_dir;
 volatile unsigned next_pid=0;
 volatile task_t *tokill=0, *end_tokill=0;
 extern void do_switch_to_user_mode();
+struct llist *kill_queue=0;
+tqueue_t *primary_queue=0;
 
 void init_multitasking()
 {
@@ -25,6 +28,10 @@ void init_multitasking()
 	task->magic = TASK_MAGIC;
 	set_current_task_dp(task, 0);
 	kernel_task = task;
+	kill_queue = ll_create(0);
+	primary_queue = tqueue_create(0, 0);
+	kernel_task->listnode = tqueue_insert(primary_queue, (void *)kernel_task);
+	
 #if CONFIG_MODULES
 	add_kernel_symbol(delay);
 	add_kernel_symbol(delay_sleep);
@@ -57,12 +64,26 @@ void switch_to_user_mode()
 
 task_t *get_task_pid(int pid)
 {
-	lock_task_queue_reading(0);
-	task_t *task = kernel_task;
-	while(task && task->pid != (unsigned)pid)
-		task = task->next;
-	unlock_task_queue_reading(0);
-	return task;
+	//lock_task_queue_reading(0);
+	//task_t *task = kernel_task;
+	//while(task && task->pid != (unsigned)pid)
+	//	task = task->next;
+	//unlock_task_queue_reading(0);
+	set_int(0);
+	mutex_acquire(&primary_queue->lock);
+	struct llistnode *cur;
+	task_t *tmp, *t=0;
+	ll_for_each_entry(&primary_queue->tql, cur, task_t *, tmp)
+	{
+		if(tmp->pid == (unsigned)pid)
+		{
+			t = tmp;
+			break;
+		}
+	}
+	mutex_release(&primary_queue->lock);
+	set_int(1);
+	return t;
 }
 
 int times(struct tms *buf)

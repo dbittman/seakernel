@@ -133,6 +133,10 @@ void entry_syscall_handler(volatile registers_t regs)
 		current_task->flags &= ~TF_JUMPIN;
 		return;
 	}
+	/* we don't change the interrupt status flag in the CPU struct until
+	 * we get here because the above code will simply return before it
+	 * because it becomes a problem. */
+	set_int(0);
 	assert(!current_task->sysregs && !current_task->regs);
 	current_task->regs = &regs;
 	current_task->sysregs = &regs;
@@ -144,6 +148,7 @@ void entry_syscall_handler(volatile registers_t regs)
 /* This gets called from our ASM interrupt handler stub. */
 void isr_handler(volatile registers_t regs)
 {
+	set_int(0);
 	add_atomic(&int_count[regs.int_no], 1);
 	ack(regs.int_no);
 	char called=0;
@@ -164,6 +169,7 @@ void isr_handler(volatile registers_t regs)
 
 void irq_handler(volatile registers_t regs)
 {
+	set_int(0);
 	char clear_regs=0;
 	if(!current_task->regs) {
 		clear_regs=1;

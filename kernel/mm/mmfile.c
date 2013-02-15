@@ -235,7 +235,10 @@ void clear_mmfiles(task_t *t, int exiting)
 	/* Unlink memory */
 	lock_scheduler();
 	task_t *q = kernel_task;
-	while(q && q->mmf_share_space != t->mmf_share_space) q=q->next;
+	///
+	///
+	///
+	///while(q && q->mmf_share_space != t->mmf_share_space) q=q->next;
 	if(!q)
 		kfree(t->mmf_share_space);
 	lock_scheduler();
@@ -268,6 +271,6 @@ void mmf_sync()
 	while(t)
 	{
 		check_mmf_and_flush(t, -1);
-		t=t->next;
+		//////////////////////////////t=t->next;
 	}
 }

@@ -98,7 +98,8 @@ int kernel_idle_task()
 	cli();
 	printk(1, "[kernel]: remapping lower memory with protection flags...\n");
 	unsigned addr = 0;
-	while(addr != TOP_LOWER_KERNEL)
+	#warning "this should be fixed..."
+	while(0 && addr != TOP_LOWER_KERNEL)
 	{
 		/* set it to write. We don't actually have to do this, because
 		 * ring0 code may always access memory. As long as the PAGE_USER

@@ -4,7 +4,7 @@
 #include <kernel.h>
 #include <memory.h>
 #include <task.h>
-extern task_t *end_tokill;
+extern struct llist *kill_queue;
 
 void clear_resources(task_t *t)
 {
@@ -15,62 +15,17 @@ void set_as_dead(task_t *t)
 {
 	assert(t);
 	t->state = TASK_DEAD;
-	task_t *a = (task_t *)t->prev;
-	if(!a)
-	{
-		if(t == (task_t *)kernel_task) 
-			panic(PANIC_NOSYNC, "kernel trying to exit");
-		else 
-			panic(PANIC_NOSYNC, "D-LL task queue is messed up");
-	}
-	if(a->next != t)
-		panic(0, "trying to release non-existant task");
-	lock_task_queue_writing(0);
-	a->next=t->next;
-	if(t->next)
-		t->next->prev = a;
-	t->prev=0;
+	tqueue_remove(primary_queue, t->listnode);
+	t->listnode = ll_insert(kill_queue, (void *)t);
 	/* Add to death */
-	if((tokill && !end_tokill) || (!tokill && end_tokill))
-		panic(PANIC_NOSYNC, "deletion queue is f*cked up");
-	if(!tokill)
-		tokill = t;
-	else {
-		task_t *p = (task_t *)end_tokill;
-		p->next = t;
-	}
-	end_tokill = t;
-	t->next=0;
-	unlock_task_queue_writing(0);
-	/* You may notice a problem here (congratz if you do) - 
-	 * if the task that is being set as "dead" is the 
-	 * current task (which it always it), then 'current_task' is no 
-	 * longer a valid pointer!! However, this is cleared up nicely, 
-	 * because anything that calls set_as_dead must schedule directly 
-	 * afterwards. Since we always set t->next=0 (for the new LL), 
-	 * the scheduler will see that and automatically start from the 
-	 * kernel task. Fancy, right? */
 	__engage_idle();
 }
 
 int __KT_try_releasing_tasks()
 {
-	lock_task_queue_writing(0);
-	task_t *t = (task_t *)tokill;
-	if(t) {
-		task_t *p = t->next;
-		tokill=p;
-		if(t == end_tokill)
-		{
-			/* Last one! */
-			end_tokill = 0;
-		}
-		unlock_task_queue_writing(0);
-		if(t->pid && t->state == TASK_DEAD && t != current_task)
-			release_task(t);
-	} else 
-		unlock_scheduler();
-	return (int)tokill;
+	task_t *t = ll_remove_head(kill_queue);
+	if(t) release_task(t);
+	return !ll_is_empty(kill_queue);
 }
 
 void release_task(task_t *p)
@@ -159,22 +114,25 @@ void exit(int code)
 	iput(t->root);
 	iput(t->pwd);
 	/* Send out some signals */
-	task_t *ch = (task_t *)kernel_task; 
-	while(ch)
+	set_int(0);
+	mutex_acquire(&primary_queue->lock);
+	struct llistnode *cur;
+	task_t *tmp;
+	ll_for_each_entry(&primary_queue->tql, cur, task_t *, tmp)
 	{
-		if(ch->parent == t)
-			ch->parent = 0;
-		if(ch->waiting == t)
+		if(tmp->parent == t)
+			tmp->parent=0;
+		if(tmp->waiting == t)
 		{
-			do_send_signal(ch->pid, SIGWAIT, 1);
-			ch->waiting=0;
-			ch->waiting_ret = code;
-			memcpy((void *)&ch->we_res, (void *)&t->exit_reason, 
+			do_send_signal(tmp->pid, SIGWAIT, 1);
+			tmp->waiting=0;
+			tmp->waiting_ret = code;
+			memcpy((void *)&tmp->we_res, (void *)&t->exit_reason, 
 				sizeof(t->exit_reason));
-			ch->we_res.pid = t->pid;
+			tmp->we_res.pid = t->pid;
 		}
-		ch = ch->next;
 	}
+	mutex_release(&primary_queue->lock);
 	if(t->parent) {
 		do_send_signal(t->parent->pid, SIGCHILD, 1);
 		t->parent = t->parent->parent;

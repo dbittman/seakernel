@@ -40,9 +40,9 @@ struct llist {
 
 struct llist *ll_do_create(struct llist *list, char flags);
 void ll_destroy(struct llist *list);
-void ll_do_remove(struct llist *list, struct llistnode *node, char);
+void *ll_do_remove(struct llist *list, struct llistnode *node, char);
 void ll_remove(struct llist *list, struct llistnode *node);
 void ll_remove_entry(struct llist *list, void *search);
 struct llistnode *ll_insert(struct llist *list, void *entry);
-
+void *ll_remove_head(struct llist *list);
 #endif

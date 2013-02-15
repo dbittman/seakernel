@@ -38,6 +38,7 @@ struct llist {
 #define ll_create(a) ll_do_create(a, 0)
 #define ll_create_lockless(a) ll_do_create(a, LL_LOCKLESS)
 
+struct llistnode *ll_do_insert(struct llist *list, struct llistnode *new, void *entry);
 struct llist *ll_do_create(struct llist *list, char flags);
 void ll_destroy(struct llist *list);
 void *ll_do_remove(struct llist *list, struct llistnode *node, char);

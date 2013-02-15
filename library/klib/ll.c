@@ -12,10 +12,8 @@
 #include <mutex.h>
 #include <task.h>
 
-struct llistnode *ll_insert(struct llist *list, void *entry)
+struct llistnode *ll_do_insert(struct llist *list, struct llistnode *new, void *entry)
 {
-	assert(list && ll_is_active(list));
-	struct llistnode *new = (struct llistnode *)kmalloc(sizeof(struct llistnode));
 	if(!(list->flags & LL_LOCKLESS)) 
 		rwlock_acquire(&list->rwl, RWL_WRITER);
 	struct llistnode *old = list->head;
@@ -34,6 +32,13 @@ struct llistnode *ll_insert(struct llist *list, void *entry)
 	if(!(list->flags & LL_LOCKLESS))
 		rwlock_release(&list->rwl, RWL_WRITER);
 	return old;
+}
+
+struct llistnode *ll_insert(struct llist *list, void *entry)
+{
+	assert(list && ll_is_active(list));
+	struct llistnode *new = (struct llistnode *)kmalloc(sizeof(struct llistnode));
+	return ll_do_insert(list, new, entry);
 }
 
 void *ll_do_remove(struct llist *list, struct llistnode *node, char locked)

@@ -133,6 +133,7 @@ void schedule()
 	asm("jmp *%0"::"r"(current_task->eip));
 }
 
+#warning "make this a priority queue...or a heap...or something better"
 void check_alarms()
 {
 	task_t *t = alarm_list_start;

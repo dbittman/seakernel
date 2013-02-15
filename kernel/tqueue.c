@@ -4,6 +4,15 @@
 #include <mutex.h>
 #include <ll.h>
 
+/* the rules for tqueue's are simple:
+ * 1) you MUST disable interrupts when accessing them. This makes
+ *    it safe for single-cpu machines to use these.
+ * 2) you MUST acquire the mutex to access them. This makes it safe
+ *    for multi-cpu machines to use them too.
+ * 3) While accessing them, you MAY NOT call any functions that may
+ *    possibly reschedule, enable interrupts, or access tqueues.
+ */
+
 tqueue_t *tqueue_create(tqueue_t *tq, unsigned flags)
 {
 	if(!tq) {
@@ -26,24 +35,15 @@ void tqueue_destroy(tqueue_t *tq)
 
 struct llistnode *tqueue_insert(tqueue_t *tq, void *item)
 {
+	struct llistnode *ret = (void *)kmalloc(sizeof(struct llistnode));
 	int old = set_int(0);
 	mutex_acquire(&tq->lock);
-	struct llistnode *ret = ll_insert(&tq->tql, item);
+	ll_do_insert(&tq->tql, ret, item);
 	if(!tq->current)
 		tq->current = tq->tql.head;
 	mutex_release(&tq->lock);
 	set_int(old);
 	return ret;
-}
-
-void tqueue_remove_entry(tqueue_t *tq, void *item)
-{
-	int old = set_int(0);
-	mutex_acquire(&tq->lock);
-	if(tq->current->entry == item) tq->current=0;
-	ll_remove_entry(&tq->tql, item);
-	mutex_release(&tq->lock);
-	set_int(old);
 }
 
 void tqueue_remove(tqueue_t *tq, struct llistnode *i)

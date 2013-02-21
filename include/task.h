@@ -326,16 +326,4 @@ __attribute__((always_inline)) inline static int task_is_runable(task_t *task)
 		|| (task->state == TASK_ISLEEP && (task->sigd)));
 }
 
-#if CONFIG_SMP
-#error "need to define lock_task_queue_[reading/writing]"
-#else
-
-#define lock_task_queue_reading(queue) lock_scheduler()
-#define unlock_task_queue_reading(queue) unlock_scheduler()
-
-#define lock_task_queue_writing(queue) lock_scheduler()
-#define unlock_task_queue_writing(queue) unlock_scheduler()
-
-#endif
-
 #endif

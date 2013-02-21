@@ -43,10 +43,8 @@ __attribute__((always_inline)) inline void update_task(task_t *t)
 __attribute__((always_inline)) inline task_t *get_next_task()
 {
 	assert(current_task && kernel_task);
-	lock_task_queue_reading(0);
 	task_t *prev = (task_t *)current_task;
 	task_t *t = tqueue_next(primary_queue);
-	unlock_task_queue_reading(0);
 	while(t)
 	{
 		assert(t);

@@ -41,8 +41,8 @@ struct llistnode *tqueue_insert(tqueue_t *tq, void *item)
 	int old = set_int(0);
 	mutex_acquire(&tq->lock);
 	ll_do_insert(&tq->tql, ret, item);
-	//if(!tq->current)
-	//	tq->current = tq->tql.head;
+	if(!tq->current)
+		tq->current = tq->tql.head;
 	mutex_release(&tq->lock);
 	set_int(old);
 	return ret;

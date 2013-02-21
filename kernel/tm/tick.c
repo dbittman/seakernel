@@ -51,10 +51,8 @@ void do_tick()
 			: (t=(unsigned *)&current_task->utime)));
 		/* This is a pretty damn awesome statement. Basically means 
 		 * that we increment the parents t_c[u,s]time */
-		lock_task_queue_reading(0);
 		inc_parent_times(current_task->parent, 
 			current_task->system ? __SYS : __USR);
-		unlock_task_queue_reading(0);
 	}
 	check_alarms();
 	if(current_task != kernel_task) {

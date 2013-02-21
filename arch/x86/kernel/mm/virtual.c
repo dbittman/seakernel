@@ -8,6 +8,7 @@ volatile page_dir_t *kernel_dir=0;
 unsigned *page_directory=(unsigned *)DIR_PHYS, *page_tables=(unsigned *)TBL_PHYS;
 unsigned int cr0temp;
 int id_tables=0;
+struct pd_data *pd_cur_data = (struct pd_data *)PDIR_DATA;
 extern void id_map_apic(page_dir_t *);
 /* This function will setup a paging environment with a basic page dir, 
  * enough to process the memory map passed by grub */
@@ -26,7 +27,8 @@ void vm_init(unsigned id_map_to)
 	memset(pt, 0, 0x1000);
 	pt[1023] = (unsigned int) pd | PAGE_PRESENT | PAGE_WRITE;
 	pd[1023] = (unsigned int) pd | PAGE_PRESENT | PAGE_WRITE;
-	
+	/* we don't create an accounting page for this one, since this page directory is only
+	 * temporary */
 	/* Identity map the kernel */
 	unsigned mapper=0;
 	int i;

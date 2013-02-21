@@ -152,6 +152,8 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	_strcpy((char *)path_loc, path);
 	path = (char *)path_loc;
 	t->path_loc_start = path_loc;
+	if(pd_cur_data->count > 1)
+		printk(0, "[exec]: Not sure what to do here...\n");
 	/* Preexec - This is the point of no return. Here we close out unneeded 
 	 * file descs, free up the page directory and clear up the resources 
 	 * of the task */

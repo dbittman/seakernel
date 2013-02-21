@@ -24,6 +24,15 @@
 #define PAGE_DIR_PHYS(x) (x[1023]&PAGE_MASK)
 typedef unsigned int page_dir_t;
 
+struct pd_data {
+	unsigned count;
+	mutex_t lock;
+};
+
+#define PD_MAGIC_UNREF 0xFAFAFAFA
+
+extern struct pd_data *pd_cur_data;
+
 extern volatile addr_t pm_location;
 extern volatile addr_t pm_stack;
 extern volatile addr_t pm_stack_max;

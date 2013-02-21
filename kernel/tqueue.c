@@ -3,7 +3,6 @@
 #include <tqueue.h>
 #include <mutex.h>
 #include <ll.h>
-<<<<<<< HEAD
 
 /* the rules for tqueue's are simple:
  * 1) you MUST disable interrupts when accessing them. This makes
@@ -14,9 +13,8 @@
  *    possibly reschedule, enable interrupts, or access tqueues.
  */
 
-=======
 #warning "clear and start interrupts around mutexes"
->>>>>>> dc2ff62bf36c70ab076bede5d0ef359ddb1df4fa
+
 tqueue_t *tqueue_create(tqueue_t *tq, unsigned flags)
 {
 	if(!tq) {

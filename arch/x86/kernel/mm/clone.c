@@ -40,7 +40,8 @@ int vm_copy_dir(page_dir_t *from, page_dir_t *new, char cow)
 {
 	int i=0;
 	int D = PAGE_DIR_IDX(TOP_TASK_MEM/PAGE_SIZE);
-	for(i=0;i<1022;++i)
+	int F = PAGE_DIR_IDX(PDIR_INFO_START/PAGE_SIZE);
+	for(i=0;i<F;++i)
 	{
 		if(!from[i])
 			continue;
@@ -72,5 +73,18 @@ page_dir_t *vm_clone(page_dir_t *pd, char cow)
 	tmp[1023] = new_p | PAGE_PRESENT | PAGE_WRITE;
 	new[1022] = tmp_p | PAGE_PRESENT | PAGE_WRITE;
 	vm_unmap_only((unsigned)tmp);
+	/* map in a page for accounting */
+	tmp_p = pm_alloc_page();
+	vm_map((unsigned)tmp, tmp_p, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT);
+	flush_pd();
+	unsigned pda = tmp[0] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+	vm_unmap_only((unsigned)tmp);
+	vm_map((unsigned)tmp, pda, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT);
+	memset(tmp, 0, PAGE_SIZE);
+	struct pd_data *info = (struct pd_data *)tmp;
+	info->count=1;
+	mutex_create(&info->lock, MT_NOSCHED);
+	vm_unmap_only((unsigned)tmp);
+	new[PAGE_DIR_IDX(PDIR_DATA/PAGE_SIZE)] = tmp_p | PAGE_PRESENT | PAGE_WRITE;	
 	return new;
 }

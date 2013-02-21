@@ -56,6 +56,10 @@
 #define PM_STACK_ADDR      0xE0000000
 #define PM_STACK_ADDR_TOP  0xF0000000
 
+#define PDIR_INFO_START    0xF0000000
+
+#define PDIR_DATA		   0xF0000000
+
 #define DIR_PHYS           0xFFBFF000
 #define TBL_PHYS           0xFFC00000
 

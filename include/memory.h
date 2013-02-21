@@ -15,6 +15,7 @@
 #define PAGE_COW       512
 #define PAGE_SIZE 	   0x1000
 
+#define MAP_PDLOCKED    0x4
 #define MAP_NOCLEAR   0x2
 #define MAP_CRIT      0x1
 #define MAP_NORM      0x0
@@ -61,14 +62,20 @@ extern int id_tables;
 #define flush_pd() \
  __asm__ __volatile__("movl %%cr3,%%eax\n\tmovl %%eax,%%cr3": : :"ax", "eax")
 
+#define vm_unmap(x) vm_do_unmap(x, 0)
+#define vm_unmap_only(x) vm_do_unmap_only(x, 0)
+
+#define vm_getattrib(a, b) vm_do_getattrib(a, b, 0)
+#define vm_getmap(a, b) vm_do_getmap(a, b, 0)
+
 void page_fault(registers_t r);
 int vm_map_all(addr_t virt, addr_t phys, unsigned attr);
 void vm_init(unsigned id_map_to);
 void vm_switch(page_dir_t *n/*VIRTUAL ADDRESS*/);
 int vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned);
-int vm_unmap(addr_t virt);
+int vm_do_unmap(addr_t virt, unsigned);
 int vm_unmap_all(addr_t virt);
-unsigned int vm_getmap(addr_t v, addr_t *p);
+unsigned int vm_do_getmap(addr_t v, addr_t *p, unsigned);
 page_dir_t *vm_clone(page_dir_t *pd, char);
 page_dir_t *vm_copy(page_dir_t *pd);
 void process_memorymap(struct multiboot *mboot);
@@ -82,7 +89,7 @@ addr_t do_kmalloc_slab(size_t sz, char align);
 void do_kfree_slab(void *ptr);
 unsigned slab_init(addr_t start, addr_t end);
 void pm_free_page(addr_t addr);
-unsigned int vm_getattrib(addr_t v, unsigned *p);
+unsigned int vm_do_getattrib(addr_t v, unsigned *p, unsigned);
 extern void copy_page_physical(addr_t, addr_t);
 extern void copy_page_physical_half(addr_t, addr_t);
 int allocate_dma_buffer(size_t length, addr_t *virtual, addr_t *physical);
@@ -96,7 +103,7 @@ addr_t kmalloc_a(size_t s);
 addr_t kmalloc_ap(size_t s, unsigned *);
 addr_t kmalloc_p(size_t s, unsigned *);
 int self_free(int);
-int vm_unmap_only(addr_t v);
+int vm_do_unmap_only(addr_t v, unsigned);
 int self_free_table(int t);
 void pm_free_page(addr_t addr);
 void vm_init_2();

@@ -29,8 +29,8 @@ void print_pfe(int x, registers_t *regs, unsigned cr2)
 int do_map_page(unsigned addr, unsigned attr)
 {
 	addr &= PAGE_MASK;
-	if(!vm_getmap(addr, 0))
-		vm_map(addr, pm_alloc_page(), attr, MAP_CRIT);
+	if(!vm_do_getmap(addr, 0, 1))
+		vm_map(addr, pm_alloc_page(), attr, MAP_CRIT | MAP_PDLOCKED);
 	return 1;
 }
 
@@ -74,8 +74,9 @@ void page_fault(registers_t regs)
 #endif
 	if(pfault_mmf_check(err_code, cr2))
 		return;
-	
-	unsigned at = vm_getattrib(cr2, 0);
+	if(kernel_task)
+		mutex_acquire(&pd_cur_data->lock);
+	unsigned at = vm_do_getattrib(cr2, 0, 1);
 	if(at & PAGE_COW)
 	{
 		//printk(0, "mapping COW page: %x\n", cr2);
@@ -85,11 +86,18 @@ void page_fault(registers_t regs)
 		flush_pd();
 		memcpy((void *)(cr2 & PAGE_MASK), tmp, PAGE_SIZE);
 		//printk(0, "done mapping\n");
+		if(kernel_task)
+			mutex_release(&pd_cur_data->lock);
 		return;
 	}
 	
-	if(map_in_page(cr2, err_code))
+	if(map_in_page(cr2, err_code)) {
+		if(kernel_task)
+			mutex_release(&pd_cur_data->lock);
 		return;
+	}
+	if(kernel_task)
+		mutex_release(&pd_cur_data->lock);
 	if(USER_TASK)
 	{
 		printk(0, "[pf]: Invalid Memory Access in task %d: eip=%x addr=%x flags=%x\n", 

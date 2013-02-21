@@ -59,10 +59,10 @@ __attribute__((always_inline)) inline task_t *get_next_task()
 		/* This way the kernel can sleep without being in danger of 
 		 * causing a lockup. Basically, if the kernel is the only
 		 * runnable task, it gets forced to run */
-		if(t == prev && !task_is_runable(t))
+		if(t && t == prev && !task_is_runable(t))
 			return (task_t *)kernel_task;
 	}
-	panic(PANIC_NOSYNC, "get_next_task(): Task became null pointer!");
+	panic(PANIC_NOSYNC, "get_next_task(): Task became null pointer!", t);
 	return (task_t *)0;
 }
 

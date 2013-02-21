@@ -78,8 +78,8 @@ void init_memory(struct multiboot *m)
 	add_kernel_symbol(kmalloc_p);
 	add_kernel_symbol(kfree);
 	add_kernel_symbol(vm_map);
-	add_kernel_symbol(vm_unmap);
-	add_kernel_symbol(vm_unmap_only);
+	add_kernel_symbol(vm_do_unmap);
+	add_kernel_symbol(vm_do_unmap_only);
 #endif
 }
 

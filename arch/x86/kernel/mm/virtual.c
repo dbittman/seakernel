@@ -90,16 +90,21 @@ void vm_switch(page_dir_t *n/*VIRTUAL ADDRESS*/)
 	__asm__ volatile ("mov %0, %%cr3" : : "r" (n[1023]&PAGE_MASK));
 }
 
-unsigned int vm_getmap(unsigned v, unsigned *p)
+unsigned int vm_do_getmap(unsigned v, unsigned *p, unsigned locked)
 {
 	unsigned *pd = page_directory;
 	unsigned int vp = (v&PAGE_MASK) / 0x1000;
 	unsigned int pt_idx = PAGE_DIR_IDX(vp);
 	if(!pd[pt_idx])
 		return 0;
+	if(kernel_task && !locked)
+		mutex_acquire(&pd_cur_data->lock);
+	unsigned ret = page_tables[vp] & PAGE_MASK;
+	if(kernel_task && !locked)
+		mutex_release(&pd_cur_data->lock);
 	if(p)
-		*p = page_tables[vp] & PAGE_MASK;
-	return (page_tables[vp] & PAGE_MASK);
+		*p = ret;
+	return ret;
 }
 
 unsigned int vm_setattrib(unsigned v, short attr)
@@ -109,19 +114,28 @@ unsigned int vm_setattrib(unsigned v, short attr)
 	unsigned int pt_idx = PAGE_DIR_IDX(vp);
 	if(!pd[pt_idx])
 		return 0;
+	if(kernel_task)
+		mutex_acquire(&pd_cur_data->lock);
 	(page_tables[vp] &= PAGE_MASK);
 	(page_tables[vp] |= attr);
+	if(kernel_task)
+		mutex_release(&pd_cur_data->lock);
 	return 0;
 }
 
-unsigned int vm_getattrib(unsigned v, unsigned *p)
+unsigned int vm_do_getattrib(unsigned v, unsigned *p, unsigned locked)
 {
 	unsigned *pd = page_directory;
 	unsigned int vp = (v&PAGE_MASK) / 0x1000;
 	unsigned int pt_idx = PAGE_DIR_IDX(vp);
 	if(!pd[pt_idx])
 		return 0;
+	if(kernel_task && !locked)
+		mutex_acquire(&pd_cur_data->lock);
+	unsigned ret = page_tables[vp] & ATTRIB_MASK;
+	if(kernel_task && !locked)
+		mutex_release(&pd_cur_data->lock);
 	if(p)
-		*p = page_tables[vp] & ATTRIB_MASK;
-	return (page_tables[vp] & ATTRIB_MASK);
+		*p = ret;
+	return ret;
 }

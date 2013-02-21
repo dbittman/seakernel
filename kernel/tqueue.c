@@ -64,7 +64,7 @@ void *tqueue_next(tqueue_t *tq)
 	int old = set_int(0);
 	mutex_acquire(&tq->lock);
 	if(tq->current) tq->current = tq->current->next;
-	/* can't use else here. Need to catch the case when current.next is
+	/* can't use else here. Need to catch the case when current->next is
 	 * null above */
 	if(!tq->current) tq->current = tq->tql.head;
 	void *ret = tq->current->entry;

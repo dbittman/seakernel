@@ -12,7 +12,7 @@ int vm_do_copy_table(int i, page_dir_t *new, page_dir_t *from, char cow)
 	unsigned table_phys;
 	table = (unsigned *)VIRT_TEMP;
 	table_phys = pm_alloc_page();
-	vm_map((unsigned)table, table_phys, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT);
+	vm_map((unsigned)table, table_phys, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_PDLOCKED);
 	flush_pd();
 	memset((void *)table, 0, PAGE_SIZE);
 	unsigned virt = i*PAGE_SIZE*1024;
@@ -21,7 +21,7 @@ int vm_do_copy_table(int i, page_dir_t *new, page_dir_t *from, char cow)
 	int q;
 	for(q=0;virt<((unsigned)((i+1)*PAGE_SIZE*1024));virt+=PAGE_SIZE, ++q)
 	{
-		if(vm_getmap(virt, &phyz) && vm_getattrib(virt, &attrib))
+		if(vm_do_getmap(virt, &phyz, 1) && vm_do_getattrib(virt, &attrib, 1))
 		{
 			/* OK, this page exists, we have the physical address of it too */
 			unsigned page = pm_alloc_page();
@@ -30,7 +30,7 @@ int vm_do_copy_table(int i, page_dir_t *new, page_dir_t *from, char cow)
 		}
 	}
 	new[i] = table_phys | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
-	vm_unmap_only((unsigned)table);
+	vm_do_unmap_only((unsigned)table, 1);
 	return 0;
 }
 
@@ -63,23 +63,25 @@ page_dir_t *vm_clone(page_dir_t *pd, char cow)
 #endif
 	unsigned int new_p;
 	page_dir_t *new = (page_dir_t *)kmalloc_ap(PAGE_SIZE, &new_p);
+	if(kernel_task)
+		mutex_acquire(&pd_cur_data->lock);
 	vm_copy_dir(pd, new, cow);
 	/* Now set the self refs (DIR_PHYS, TBL_PHYS) */
 	new[1023] = new_p | PAGE_PRESENT | PAGE_WRITE;
 	unsigned *tmp = (unsigned *)VIRT_TEMP;
 	unsigned tmp_p = pm_alloc_page();
-	vm_map((unsigned)tmp, tmp_p, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT);
+	vm_map((unsigned)tmp, tmp_p, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_PDLOCKED);
 	flush_pd();
 	tmp[1023] = new_p | PAGE_PRESENT | PAGE_WRITE;
 	new[1022] = tmp_p | PAGE_PRESENT | PAGE_WRITE;
-	vm_unmap_only((unsigned)tmp);
+	vm_do_unmap_only((unsigned)tmp, 1);
 	/* map in a page for accounting */
 	tmp_p = pm_alloc_page();
-	vm_map((unsigned)tmp, tmp_p, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT);
+	vm_map((unsigned)tmp, tmp_p, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_PDLOCKED);
 	flush_pd();
 	unsigned pda = tmp[0] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
-	vm_unmap_only((unsigned)tmp);
-	vm_map((unsigned)tmp, pda, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT);
+	vm_do_unmap_only((unsigned)tmp, 1);
+	vm_map((unsigned)tmp, pda, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_PDLOCKED);
 	memset(tmp, 0, PAGE_SIZE);
 	struct pd_data *info = (struct pd_data *)tmp;
 	info->count=1;
@@ -89,8 +91,10 @@ page_dir_t *vm_clone(page_dir_t *pd, char cow)
 	 * calling schedule() may be problematic inside code that is locked by
 	 * this, but it may not be an issue. We'll see. */
 	mutex_create(&info->lock, MT_NOSCHED);
-	vm_unmap_only((unsigned)tmp);
-	new[PAGE_DIR_IDX(PDIR_DATA/PAGE_SIZE)] = tmp_p | PAGE_PRESENT | PAGE_WRITE;	
+	vm_do_unmap_only((unsigned)tmp, 1);
+	new[PAGE_DIR_IDX(PDIR_DATA/PAGE_SIZE)] = tmp_p | PAGE_PRESENT | PAGE_WRITE;
+	if(kernel_task)
+		mutex_release(&pd_cur_data->lock);
 	return new;
 }
 

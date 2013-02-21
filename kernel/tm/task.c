@@ -26,12 +26,11 @@ void init_multitasking()
 	task->kernel_stack = kmalloc(KERN_STACK_SIZE+8);
 	task->priority = 1;
 	task->magic = TASK_MAGIC;
-	set_current_task_dp(task, 0);
-	kernel_task = task;
 	kill_queue = ll_create(0);
 	primary_queue = tqueue_create(0, 0);
-	kernel_task->listnode = tqueue_insert(primary_queue, (void *)kernel_task);
-	
+	task->listnode = tqueue_insert(primary_queue, (void *)task);
+	kernel_task = task;
+	set_current_task_dp(task, 0);
 #if CONFIG_MODULES
 	add_kernel_symbol(delay);
 	add_kernel_symbol(delay_sleep);

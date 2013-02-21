@@ -83,8 +83,23 @@ page_dir_t *vm_clone(page_dir_t *pd, char cow)
 	memset(tmp, 0, PAGE_SIZE);
 	struct pd_data *info = (struct pd_data *)tmp;
 	info->count=1;
+	/* create the lock. We assume that the only time that two threads
+	 * may be trying to access this lock at the same time is when they're
+	 * running on different processors, thus we get away with NOSCHED. Also, 
+	 * calling schedule() may be problematic inside code that is locked by
+	 * this, but it may not be an issue. We'll see. */
 	mutex_create(&info->lock, MT_NOSCHED);
 	vm_unmap_only((unsigned)tmp);
 	new[PAGE_DIR_IDX(PDIR_DATA/PAGE_SIZE)] = tmp_p | PAGE_PRESENT | PAGE_WRITE;	
 	return new;
+}
+
+page_dir_t *vm_copy(page_dir_t *pd)
+{
+	/* all this function does is increase the count of 
+	 * the current page directory and return it. */
+	mutex_acquire(&pd_cur_data->lock);
+	pd_cur_data->count++;
+	mutex_release(&pd_cur_data->lock);
+	return pd;
 }

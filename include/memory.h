@@ -29,8 +29,6 @@ struct pd_data {
 	mutex_t lock;
 };
 
-#define PD_MAGIC_UNREF 0xFAFAFAFA
-
 extern struct pd_data *pd_cur_data;
 
 extern volatile addr_t pm_location;
@@ -72,6 +70,7 @@ int vm_unmap(addr_t virt);
 int vm_unmap_all(addr_t virt);
 unsigned int vm_getmap(addr_t v, addr_t *p);
 page_dir_t *vm_clone(page_dir_t *pd, char);
+page_dir_t *vm_copy(page_dir_t *pd);
 void process_memorymap(struct multiboot *mboot);
 void pm_init(int start, struct multiboot *);
 int free_stack();

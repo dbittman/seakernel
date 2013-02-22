@@ -42,6 +42,17 @@ void serial_puts(int port, char *s)
 	mutex_release(&serial_m);
 }
 
+void serial_puts_nolock(int port, char *s)
+{
+	if(!serial_initialized)
+		return;
+	while(*s)
+	{
+		write_serial(0x3f8, *s);
+		s++;
+	}
+}
+
 int serial_rw(int rw, int min, char *b, size_t c)
 {
 	if(!serial_initialized) 

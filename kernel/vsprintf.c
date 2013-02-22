@@ -248,7 +248,7 @@ int sprintf(char *buf, const char *fmt, ...)
 	va_end(args);
 	return strlen(buf);
 }
-
+void serial_puts_nolock(int port, char *s);
 /* This WILL print to the screen */
 void kprintf(const char *fmt, ...)
 {
@@ -257,7 +257,10 @@ void kprintf(const char *fmt, ...)
 	va_start(args, fmt);
 	vsprintf(printbuf, fmt, args);
 	puts(printbuf);
-	serial_puts(0, printbuf);
+	if(current_task)
+		serial_puts(0, printbuf);
+	else
+		serial_puts_nolock(0, printbuf);
 	va_end(args);
 }
 

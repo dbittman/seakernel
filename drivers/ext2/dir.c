@@ -292,7 +292,9 @@ int ext2_dir_unlink(ext2_inode_t* dir, const char* name, int dofree)
 			if (inode.link_count == 0 || (EXT2_INODE_IS_DIR(&inode) 
 					&& inode.link_count == 1)) {
 				if (EXT2_INODE_IS_DIR(&inode)) {
+					mutex_release(&dir->fs->fs_lock);
 					ext2_dir_unlink(&inode, "..", 1);
+					mutex_acquire(&dir->fs->fs_lock);
 					inode.link_count--;
 					bgnum = ext2_inode_to_internal(inode.fs, inode.number) /
 					inode.fs->sb->inodes_per_group;

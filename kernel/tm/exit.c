@@ -150,6 +150,7 @@ void exit(int code)
 		ex=n;
 	}
 	unlock_scheduler();
+	raise_flag(TF_DYING);
 	set_as_dead(t);
 	
 	char flag_last_page_dir_task=0;

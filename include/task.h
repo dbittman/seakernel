@@ -28,9 +28,6 @@ extern tqueue_t *primary_queue;
 #define TF_KTASK      0x20 /* this is a kernel process */
 #define TF_SWAPQUEUE  0x40 /* waiting to swap */
 #define TF_LOCK       0x80 /* locked. the scheduler will not change out of this task */
-#define TF_LAST_PDIR 0x100 /* this is the last task referencing it's page directory.
-							* this is used to tell the kernel to free the page directory
-							* when it cleans up this task */
 #define TF_DYING     0x200 /* waiting to be reaped */
 #define TF_FORK      0x400 /* newly forked, but hasn't been run yet */
 #define TF_INSIG     0x800 /* inside a signal */
@@ -38,6 +35,9 @@ extern tqueue_t *primary_queue;
 #define TF_JUMPIN   0x2000 /* going to jump to a signal handler on the next IRET
 						   * used by the syscall handler to determine if it needs to back up
 						   * it's return value */
+#define TF_LAST_PDIR 0x4000 /* this is the last task referencing it's page directory.
+							* this is used to tell the kernel to free the page directory
+							* when it cleans up this task */
 #define PRIO_PROCESS 1
 #define PRIO_PGRP    2
 #define PRIO_USER    3

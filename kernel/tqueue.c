@@ -13,8 +13,6 @@
  *    possibly reschedule, enable interrupts, or access tqueues.
  */
 
-#warning "clear and start interrupts around mutexes"
-
 tqueue_t *tqueue_create(tqueue_t *tq, unsigned flags)
 {
 	if(!tq) {

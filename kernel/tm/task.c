@@ -39,7 +39,7 @@ void init_multitasking()
 	add_kernel_symbol(run_scheduler);
 	add_kernel_symbol(exit);
 	add_kernel_symbol(sys_setsid);
-	add_kernel_symbol(fork);
+	add_kernel_symbol(do_fork);
 	add_kernel_symbol(kill_task);
 	add_kernel_symbol(__wait_flag);
 	add_kernel_symbol(wait_flag_except);
@@ -63,11 +63,7 @@ void switch_to_user_mode()
 
 task_t *get_task_pid(int pid)
 {
-	//lock_task_queue_reading(0);
-	//task_t *task = kernel_task;
-	//while(task && task->pid != (unsigned)pid)
-	//	task = task->next;
-	//unlock_task_queue_reading(0);
+	#warning "need to clean this shit up"
 	set_int(0);
 	mutex_acquire(&primary_queue->lock);
 	struct llistnode *cur;

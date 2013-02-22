@@ -145,7 +145,6 @@ void kmain(struct multiboot *mboot_header, u32int initial_stack)
 	sti();
 	if(!fork())
 		init();
-	
 	/* The kernel task has all rights, and it always in the 'system' */
 	sys_setsid();
 	enter_system(255);

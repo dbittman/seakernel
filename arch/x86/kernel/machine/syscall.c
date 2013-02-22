@@ -50,7 +50,7 @@ int sys_syslog(int level, char *buf, int len, int ctl)
 void *syscall_table[129] = {
 	SC sys_setup,
 	
-	SC exit, SC fork, SC wait_task, SC sys_readpos, 
+	SC exit, SC do_fork, SC wait_task, SC sys_readpos, 
 	SC sys_writepos, SC sys_open_posix, SC sys_close, SC sys_fstat,
 	SC sys_stat, SC sys_isatty, SC sys_seek, SC send_signal, 
 	SC sys_sbrk, SC times, SC sys_dup, SC sys_dup2,

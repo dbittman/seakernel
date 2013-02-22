@@ -178,6 +178,10 @@ void set_current_task_dp(task_t *t, int cpu)
 #define raise_flag(f) current_task->flags |= f
 #define lower_flag(f) current_task->flags &= ~f
 
+#define FORK_SHAREDIR 0x1
+
+#define fork() do_fork(0)
+
 void delay_sleep(int t);
 void take_issue_with_current_task();
 void clear_resources(task_t *);
@@ -190,7 +194,7 @@ int set_uid(int new);
 void release_mutexes(task_t *t);
 int get_gid();
 int get_uid();
-int fork();
+int do_fork(unsigned);
 int read_eip();
 int get_exit_status(int pid, int *status, int *retval, int *signum, int *);
 int sys_waitpid(int pid, int *st, int opt);

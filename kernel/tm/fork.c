@@ -69,7 +69,7 @@ inline static int engage_new_stack(task_t *new, task_t *parent)
 	}
 }
 
-int fork()
+int do_fork(unsigned flags)
 {
 	if(!current_task || !kernel_task)
 		panic(PANIC_NOSYNC, "fork() called before tasking can work!");
@@ -78,7 +78,11 @@ int fork()
 	unsigned eip;
 	flush_pd();
 	task_t *new = (task_t *)kmalloc(sizeof(task_t));
-	page_dir_t *newspace = vm_clone(current_task->pd, 0);
+	page_dir_t *newspace;
+	if(flags & FORK_SHAREDIR)
+		newspace = vm_copy(current_task->pd);
+	else
+		newspace = vm_clone(current_task->pd, 0);
 	if(!newspace)
 	{
 		kfree((void *)new);

@@ -37,12 +37,13 @@ void release_task(task_t *p)
 	
 	/* Is this page table marked as unreferenced? */
 	if(p->flags & TF_LAST_PDIR) {
+		kprintf("releasing page dir\n");
 		/* Free the accounting page table */
 		pm_free_page(p->pd[PAGE_DIR_IDX(PDIR_DATA/PAGE_SIZE)] & PAGE_MASK);
-		/* Free the self-ref'ing page table */
-		pm_free_page(p->pd[1022] & PAGE_MASK);
-		kfree(p->pd);
 	}
+	/* Free the self-ref'ing page table */
+	pm_free_page(p->pd[1022] & PAGE_MASK);
+	kfree(p->pd);
 	kfree((void *)p->kernel_stack);
 	kfree((void *)p);
 }
@@ -113,6 +114,7 @@ void exit(int code)
 	t->exit_reason.ret = code;
 	add_exit_stat((task_t *)t->parent, (ex_stat *)&t->exit_reason);
 	/* Clear out system resources */
+	//free_stack(); /* free up memory that is thread-specific */
 	clear_resources(t);
 	close_all_files(t);
 	iput(t->root);
@@ -152,7 +154,6 @@ void exit(int code)
 	unlock_scheduler();
 	raise_flag(TF_DYING);
 	set_as_dead(t);
-	
 	char flag_last_page_dir_task=0;
 	mutex_acquire(&pd_cur_data->lock);
 	flag_last_page_dir_task = --pd_cur_data->count == 0 ? 1 : 0;
@@ -160,7 +161,6 @@ void exit(int code)
 	if(flag_last_page_dir_task) {
 		/* no one else is referencing this directory. Clean it up... */
 		self_free(0);
-		free_stack();
 		vm_unmap(PDIR_DATA);
 		raise_flag(TF_LAST_PDIR);
 	}

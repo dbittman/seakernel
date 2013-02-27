@@ -35,6 +35,7 @@ extern char shutting_down;
 
 /* system calls that we'll need */
 #define u_fork() dosyscall(SYS_FORK,0,0,0,0,0)
+#define u_fork2() dosyscall(SYS_FORK,FORK_SHAREDIR,0,0,0,0)
 #define u_exit(x) dosyscall(SYS_EXIT,x,0,0,0,0)
 #define u_wait(p, s) dosyscall(SYS_WAIT,p,s,0,0,0)
 #define u_execve(p, a, e) dosyscall(SYS_EXECVE,(int)p,(int)a,(int)e,0,0)

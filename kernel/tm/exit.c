@@ -37,7 +37,6 @@ void release_task(task_t *p)
 	
 	/* Is this page table marked as unreferenced? */
 	if(p->flags & TF_LAST_PDIR) {
-		kprintf("releasing page dir\n");
 		/* Free the accounting page table */
 		pm_free_page(p->pd[PAGE_DIR_IDX(PDIR_DATA/PAGE_SIZE)] & PAGE_MASK);
 	}
@@ -114,7 +113,7 @@ void exit(int code)
 	t->exit_reason.ret = code;
 	add_exit_stat((task_t *)t->parent, (ex_stat *)&t->exit_reason);
 	/* Clear out system resources */
-	//free_stack(); /* free up memory that is thread-specific */
+	free_stack(); /* free up memory that is thread-specific */
 	clear_resources(t);
 	close_all_files(t);
 	iput(t->root);

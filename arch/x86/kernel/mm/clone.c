@@ -138,5 +138,5 @@ page_dir_t *vm_copy(page_dir_t *pd)
 	new[account] = pd[account];
 	if(kernel_task)
 		mutex_release(&pd_cur_data->lock);
-	return pd;
+	return new;
 }

@@ -34,6 +34,7 @@ MODULES-$(CONFIG_MODULE_RAND)	    += char/rand.m
 MODULES-$(CONFIG_MODULE_SYNC) 	    += other/sync.m
 MODULES-$(CONFIG_MODULE_ETHERNET)   += net/ethernet.m
 MODULES-$(CONFIG_MODULE_IPV4)	    += net/ipv4.m
+MODULES-$(CONFIG_MODULE_SOCKET)		+= net/socket.m
 MODULES-$(CONFIG_MODULE_I825XX)     += net/cards/i825xx.m
 MODULES-$(CONFIG_MODULE_RTL8139)    += net/cards/rtl8139.m
 MODULES-$(CONFIG_MODULE_PARTITIONS) += partitions/partitions.m

@@ -1,23 +1,86 @@
 \section{Task/Thread Queues}
-
+These are an abstraction to linked lists that provide a safe way to
+keep a list of processes that must be safely read and safely written
+even by the scheduler itself. There are extra restrictions on these
+lists that make this safety reasonable. Task queues are used by the main
+scheduler system to keep track of tasks.
 \subsection{Definitions}
+
+\begin{lstlisting}
+typedef struct {
+	unsigned flags;
+	/* this lock is initialized with NOSCHED (see mutexes). */
+	mutex_t lock;
+	/* current node. Initialized to null. This points into the linked list */
+	struct llistnode *current;
+	struct llist tql;
+} tqueue_t;
+\end{lstlisting}
 
 \subsection{Functions and Macros}
 
 \begin{itemize}
 \item \function{tqueue\_t *}{tqueue\_create}{\argument{tqueue\_t*}{tq}, \argument{unsigned}{flags}} \\
 Creates a new tqueue and returns a pointer to it. If \texttt{tq} is null, it allocates
-one using \method{kmalloc}. Otherwise it uses the passed structure.
+one using \method{kmalloc}. Otherwise it uses the passed structure. \texttt{flags} currently has no use.
 
 \item \function{void}{tqueue\_destroy}{\argument{tqueue\_t*}{tq}} \\
 Cleans up a tqueue element and \method{kfree}'s it if it was allocated when created.
+
+\item \function{struct llistnode *}{tqueue\_insert}{\argument{tqueue\_t*}{tq}, \argument{void*}{item}} \\
+Inserts and element \texttt{item} into the task queue \texttt{tq}. If \texttt{tq->current} is \texttt{null},
+then it will be set to the head of the list. This may be the object that was inserted, but it is not
+guaranteed to be so.
+
+\item \function{void}{tqueue\_remove}{\argument{tqueue\_t*}{tq}, \argument{struct llistnode*}{node}} \\
+Removes the linked list node \texttt{node}. Does not free the item inside the node. If \texttt{tq->current}
+was pointing to \texttt{node}, then it is set to \texttt{null} (though this may change).
+
+\item \function{void *}{tqueue\_next}{\argument{tqueue\_t*}{tq}} \\
+Returns what could be thought of as the next item in the list after \texttt{tq->current}. This 
+functionality will become abstracted such that any data structure may be used - currently it
+is the next item in the linked list. If \texttt{tq->current} is \texttt{null}, this sets it to
+the head of the list and returns the head's item.
+
 \end{itemize}
 \subsection{Internals}
 
-\subsection{Configuration}
+We must be careful not to schedule while inside one of the functions that
+access a task queue. The scheduler accesses the task queues, so that could
+cause...issues...Therefore there are multiple stages of locks that must be maintained
+inside these functions. Each function first disables interrupts, then acquired
+the mutex. After it's done, it releases the mutex and re-enables interrupts.
+There are two cases to consider here:
+\begin{itemize}
 
-% other subsections here
+\item \textbf{Single-Processor Systems}:
+This works because when interrupts are disabled the processor will not
+get interrupted, so there will not be a reschedule getting in the way. The interrupts
+creates all the safety needed when accessing these data structures.
 
-\subsection{Usage}
+\item \textbf{Multi-Processor Systems}:
+These are more complicated. After interrupts are disabled, all we've done
+is made sure that the current processor wont screw around with the task queue; other
+processors are still running. Thus the mutex is acquired to prevent other processors
+from accessing the code at the same time.
+\end{itemize}
+
+
+The functions must take great care not to call any functions that do any of the following:
+\begin{itemize}
+\item Change interrupt state
+\item Call any locking functions
+\item Rescedule for any reason
+\item Access any other task queue
+\end{itemize}
+If a function must do one of these things, it must wait until after it
+has properly released the task queue before doing so (for example, the remove function
+releases the task queue and only then frees the node).
 
 \subsection{Files}
+\begin{itemize}
+
+\item \texttt{include/tqueue.h}
+\item \texttt{kernel/tqueue.c}
+
+\end{itemize}

@@ -267,6 +267,8 @@ void clear_mmfiles(task_t *t, int exiting)
 
 void mmf_sync()
 {
+#warning "fix this. AND ABSTRACT TASK SEARCHING!!!"
+return;
 	task_t *t = (task_t *)kernel_task;
 	while(t)
 	{

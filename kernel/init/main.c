@@ -178,6 +178,7 @@ void init()
 	int ret=0;
 	int pid;
 	init_pid = current_task->pid+1;
+	
 	/* Our last moments in kernel mode... */
 	switch_to_user_mode();
 	/* We have to be careful now. If we try to call any kernel functions

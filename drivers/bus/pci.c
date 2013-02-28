@@ -301,9 +301,12 @@ int pci_proc_call(char rw, struct inode *inode, int m, char *buf, int off, int l
 			tmp=tmp->next;
 		}
 		if(tmp) {
+			
 			c += proc_append_buffer(buf, (void *)tmp, 
 				c, sizeof(struct pci_device), off, len);
-			memcpy(buf, (unsigned char *)tmp, sizeof(struct pci_device));
+			((struct pci_device *)buf)->pcs = (struct pci_config_space *)(buf + c);
+			c += proc_append_buffer(buf, (void *)tmp->pcs, 
+				c, sizeof(struct pci_config_space), off, len);
 		}
 		return c;
 	}

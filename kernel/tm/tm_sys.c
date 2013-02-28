@@ -166,20 +166,7 @@ int task_pstat(unsigned int pid, struct task_stat *s)
 int task_stat(unsigned int num, struct task_stat *s)
 {
 	if(!s) return -EINVAL;
-	set_int(0);
-	mutex_acquire(&primary_queue->lock);
-	struct llistnode *cur;
-	task_t *tmp, *t=0;
-	ll_for_each_entry(&primary_queue->tql, cur, task_t *, tmp)
-	{
-		if(!num--)
-		{
-			t = tmp;
-			break;
-		}
-	}
-	mutex_release(&primary_queue->lock);
-	set_int(1);
+	task_t *t = search_tqueue(primary_queue, TSEARCH_ENUM, num, 0, 0);
 	if(!t) 
 		return -ESRCH;
 	do_task_stat(s, t);

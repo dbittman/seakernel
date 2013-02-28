@@ -42,6 +42,13 @@ extern tqueue_t *primary_queue;
 #define PRIO_PGRP    2
 #define PRIO_USER    3
 
+#define TSEARCH_FINDALL  0x1
+#define TSEARCH_PID      0x2
+#define TSEARCH_UID      0x4
+#define TSEARCH_EUID     0x8
+#define TSEARCH_TTY     0x10
+#define TSEARCH_PARENT  0x20
+#define TSEARCH_ENUM    0x40
 #if CONFIG_SMP
 #define current_task (__get_current_task())
 #endif
@@ -181,7 +188,7 @@ void set_current_task_dp(task_t *t, int cpu)
 #define FORK_SHAREDIR 0x1
 
 #define fork() do_fork(0)
-
+task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned value, void (*action)(task_t *, int), int arg);
 void delay_sleep(int t);
 void take_issue_with_current_task();
 void clear_resources(task_t *);

@@ -129,7 +129,7 @@ void exit(int code)
 			tmp->parent=0;
 		if(tmp->waiting == t)
 		{
-			do_send_signal(tmp->pid, SIGWAIT, 1);
+			tmp->sigd = SIGWAIT;
 			tmp->waiting=0;
 			tmp->waiting_ret = code;
 			memcpy((void *)&tmp->we_res, (void *)&t->exit_reason, 

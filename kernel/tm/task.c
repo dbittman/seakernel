@@ -63,22 +63,7 @@ void switch_to_user_mode()
 
 task_t *get_task_pid(int pid)
 {
-	#warning "need to clean this shit up"
-	set_int(0);
-	mutex_acquire(&primary_queue->lock);
-	struct llistnode *cur;
-	task_t *tmp, *t=0;
-	ll_for_each_entry(&primary_queue->tql, cur, task_t *, tmp)
-	{
-		if(tmp->pid == (unsigned)pid)
-		{
-			t = tmp;
-			break;
-		}
-	}
-	mutex_release(&primary_queue->lock);
-	set_int(1);
-	return t;
+	return search_tqueue(primary_queue, TSEARCH_PID, pid, 0, 0);
 }
 
 int times(struct tms *buf)

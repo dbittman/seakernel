@@ -49,27 +49,20 @@ void tty_putch(vterm_t *con, int ch)
 	con->rend.putch(con, ch);
 }
 
+void __tty_found_task_raise_action(task_t *t, int arg)
+{
+	t->sigd = arg;
+	t->flags |= TF_SCHED;
+}
+
 int tty_raise_action(int min, int sig)
 {
 	if(!(consoles[min].term.c_lflag & ISIG))
 		return 0;
 	if(shutting_down)
 		return 0;
-	set_int(0);
-	mutex_acquire(&primary_queue->lock);
-	struct llistnode *cur;
-	task_t *t;
-	ll_for_each_entry(&primary_queue->tql, cur, task_t *, t)
-	{
-		if(t->tty == min)
-		{
-			consoles[min].inpos=0;
-			t->sigd = sig;
-			t->flags |= TF_SCHED;
-		}
-	}
-	mutex_release(&primary_queue->lock);
-	set_int(1);
+	if(search_tqueue(primary_queue, TSEARCH_FINDALL | TSEARCH_TTY, min, __tty_found_task_raise_action, sig))
+		consoles[min].inpos=0;
 	return 0;
 }
 

@@ -135,6 +135,7 @@ typedef volatile struct task_struct
 	char **argv, **env;
 	int cmask;
 	int tty;
+	unsigned long slice;
 	struct inode *root, *pwd;
 	struct file_ptr *filp[FILP_HASH_LEN];
 	uid_t uid, _uid;

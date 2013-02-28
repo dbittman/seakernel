@@ -105,6 +105,7 @@ __attribute__((always_inline)) static inline void restore_context()
 {
 	/* Update some last-minute things. The stack. */
 	set_kernel_stack(current_task->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
+	/* keep track of when we got to run */
 	current_task->slice = ticks;
 }
 /*This is the magic super awesome and important kernel function 'schedule()'. 

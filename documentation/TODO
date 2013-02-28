@@ -1,26 +1,3 @@
-
-Known Bugs include:
- * running ./configure on packages that use config.guess to figure out the
-   system name will result in them not being able to figure out the build system.
-   workaround: run ./configure --build=i586-pc-seaos
- * Various display errors in ncurses applications sometimes due to the features
-   listed in the termcap file not being fully implemented yet
- * Running man will result in 'less' complaining that the terminal is not
-   fully functional
- * If you read/write enough data to and from block devices, eventually the
-   system will run out of memory. This is because there is currently no limit
-   on the cache (will be fixed for beta-3)
- * There is a memory leak if you run a shell script. Looks like 4KB per run
- * Make doesn't seem to recompile targets if their sources change
- * There is nothing preventing circular links from causing a stack overrun
- * df doesn't seem to properly report disk usage
- * device or resource busy when unmounting /mnt
-
-Things that need more testing:
- * loop devices
- * file locks
- * compiling GNU software on the system
-
 Todo:
 	* event system (register events, blocking for IO...)
 	  such that a high priority process will get automatically resched'd if it unblocks

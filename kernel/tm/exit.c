@@ -135,6 +135,7 @@ void exit(int code)
 			memcpy((void *)&tmp->we_res, (void *)&t->exit_reason, 
 				sizeof(t->exit_reason));
 			tmp->we_res.pid = t->pid;
+			task_resume(tmp);
 		}
 	}
 	mutex_release(&primary_queue->lock);

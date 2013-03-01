@@ -13,7 +13,7 @@ int wait_task(unsigned pid, int state)
 	if(state == -1)
 		/* We wait for it to be dead. When it is, we recieve a signal, 
 		 * so why loop? */
-		wait_flag((unsigned *)&current_task->waiting, 0);
+		task_pause(task);
 	else {
 		/* So, here we just wait until either the task exits or the 
 		 * state becomes equal. Unfortunately we are forced to check 

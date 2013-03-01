@@ -89,6 +89,8 @@ void copy_file_handles(task_t *p, task_t *n)
 				add_atomic(&i->pipe->count, 1);
 				if(fp->fi->flags & _FWRITE)
 					add_atomic(&i->pipe->wrcount, 1);
+				task_unblock_all(i->pipe->read_blocked);
+				task_unblock_all(i->pipe->write_blocked);
 			}
 			n->filp[c] = fp;
 		}

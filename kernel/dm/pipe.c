@@ -9,6 +9,8 @@ pipe_t *create_pipe()
 	pipe->length = PIPE_SIZE;
 	pipe->buffer = (char *)kmalloc(PIPE_SIZE+1);
 	pipe->lock = mutex_create(0, 0);
+	pipe->read_blocked = ll_create(0);
+	pipe->write_blocked = ll_create(0);
 	return pipe;
 }
 
@@ -61,6 +63,8 @@ void free_pipe(struct inode *i)
 	if(!i || !i->pipe) return;
 	kfree((void *)i->pipe->buffer);
 	mutex_destroy(i->pipe->lock);
+	ll_destroy(i->pipe->read_blocked);
+	ll_destroy(i->pipe->write_blocked);
 	kfree(i->pipe);
 	i->pipe=0;
 }
@@ -78,12 +82,12 @@ int read_pipe(struct inode *ino, char *buffer, size_t length)
 	/* should we even try reading? (empty pipe with no writing processes=no) */
 	if(!pipe->pending && pipe->count <= 1 && pipe->type != PIPE_NAMED)
 		return count;
-	/* block until we can get access */
+	/* block until we have stuff to read */
 	mutex_acquire(pipe->lock);
 	while(!pipe->pending && (pipe->count > 1 && pipe->type != PIPE_NAMED 
 			&& pipe->wrcount>0)) {
 		mutex_release(pipe->lock);
-		schedule();
+		task_block(pipe->read_blocked, (task_t *)current_task);
 		if(current_task->sigd)
 			return -EINTR;
 		mutex_acquire(pipe->lock);
@@ -105,6 +109,7 @@ int read_pipe(struct inode *ino, char *buffer, size_t length)
 		len -= ret;
 		count+=ret;
 	}
+	task_unblock_all(pipe->write_blocked);
 	mutex_release(pipe->lock);
 	return count;
 }
@@ -125,7 +130,7 @@ int write_pipe(struct inode *ino, char *buffer, size_t length)
 	/* IO block until we can write to it */
 	while((pipe->write_pos+length)>=PIPE_SIZE) {
 		mutex_release(pipe->lock);
-		wait_flag_except((unsigned *)&pipe->write_pos, pipe->write_pos);
+		task_block(pipe->write_blocked, (task_t *)current_task);
 		if(current_task->sigd)
 			return -EINTR;
 		mutex_acquire(pipe->lock);
@@ -143,6 +148,9 @@ int write_pipe(struct inode *ino, char *buffer, size_t length)
 	pipe->length = ino->len;
 	pipe->write_pos += length;
 	pipe->pending += length;
+	/* now, unblock the tasks */
+	task_unblock_all(pipe->read_blocked);
+	task_unblock_all(pipe->write_blocked);
 	mutex_release(pipe->lock);
 	return length;
 }

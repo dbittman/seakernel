@@ -149,7 +149,7 @@ typedef volatile struct task_struct
 	volatile unsigned sigd, cursig;
 	sigset_t old_mask;
 	unsigned alrm_count;
-	struct llistnode *listnode;
+	struct llistnode *listnode, *blocknode;
 	volatile struct task_struct *parent, *waiting, *alarm_next;
 } task_t;
 
@@ -260,7 +260,11 @@ void set_signal(int sig, unsigned hand);
 int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds, 
 	struct timeval *timeout);
 int swap_in_page(task_t *, unsigned);
-
+void task_block(struct llist *list, task_t *task);
+void task_pause(task_t *t);
+void task_unblock_all(struct llist *list);
+void task_unblock(struct llist *list, task_t *t);
+void task_resume(task_t *t);
 #define wait_flag(a, b) __wait_flag(a, b, __FILE__, __LINE__)
 #define lock_scheduler() _lock_scheduler(__FILE__, __LINE__);
 #define unlock_scheduler() _unlock_scheduler(__FILE__, __LINE__);

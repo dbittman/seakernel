@@ -2,6 +2,7 @@
 #define PIPE_H
 
 #include <mutex.h>
+#include <ll.h>
 
 #define PIPE_NAMED 1
 typedef struct pipe_struct {
@@ -12,6 +13,7 @@ typedef struct pipe_struct {
 	mutex_t *lock;
 	char type;
 	volatile int count, wrcount;
+	struct llist *read_blocked, *write_blocked;
 } pipe_t;
 
 int sys_mkfifo(char *path, mode_t mode);

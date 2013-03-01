@@ -76,3 +76,45 @@ int times(struct tms *buf)
 	}
 	return ticks;
 }
+
+void task_pause(task_t *t)
+{
+	/* don't care what other processors do */
+	cli();
+	t->state = TASK_ISLEEP;
+	schedule();
+	sti();
+}
+
+void task_resume(task_t *t)
+{
+	t->state = TASK_RUNNING;
+}
+
+void task_block(struct llist *list, task_t *task)
+{
+	task->blocknode = ll_insert(list, (void *)task);
+	if(task == current_task) task_pause(task);
+}
+
+void task_unblock(struct llist *list, task_t *t)
+{
+	ll_remove(list, t->blocknode);
+	t->blocknode = 0;
+	task_resume(t);
+}
+
+void task_unblock_all(struct llist *list)
+{
+	rwlock_acquire(&list->rwl, RWL_WRITER);
+	struct llistnode *cur, *next;
+	task_t *entry;
+	ll_for_each_entry_safe(list, cur, next, task_t *, entry)
+	{
+		ll_do_remove(list, cur, 1);
+		entry->blocknode = 0;
+		task_resume(entry);
+		ll_maybe_reset_loop(list, cur, next);
+	}
+	rwlock_release(&list->rwl, RWL_WRITER);
+}

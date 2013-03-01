@@ -102,6 +102,8 @@ int duplicate(task_t *t, int fp, int n)
 	if(f->inode->pipe && !f->inode->pipe->type) {
 		add_atomic(&f->inode->pipe->count, 1);
 		if(f->flags & _FWRITE) add_atomic(&f->inode->pipe->wrcount, 1);
+		task_unblock_all(f->inode->pipe->read_blocked);
+		task_unblock_all(f->inode->pipe->write_blocked);
 	}
 	int ret = 0;
 	if(n)

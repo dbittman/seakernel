@@ -30,8 +30,10 @@ int sys_close(int fp)
 			sub_atomic(&f->inode->pipe->wrcount, 1);
 		if(!f->inode->pipe->count && f->inode->pipe->type != PIPE_NAMED)
 			free_pipe(f->inode);
-		else
+		else {
+			task_unblock_all(f->inode->pipe->read_blocked);
 			mutex_release(f->inode->pipe->lock);
+		}
 	}
 	/* close devices */
 	if(S_ISCHR(f->inode->mode) && !fp)

@@ -2,6 +2,7 @@
 #define CONSOLE_H
 #include <termios.h>
 #include <mutex.h>
+#include <ll.h>
 #define TTY_IBLEN 256
 
 #define KERN_PANIC 8
@@ -27,7 +28,7 @@ typedef struct vterm_s {
 	int tty;
 	char nocur, no_wrap;
 	mutex_t wlock, inlock;
-	unsigned exlock;
+	struct llist input_block;
 	struct termios term;
 	struct renderer {
 		void (*scroll)(struct vterm_s *);

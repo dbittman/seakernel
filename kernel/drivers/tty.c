@@ -84,10 +84,14 @@ int tty_read(int min, char *buf, size_t len)
 	while(1) {
 		if(con->rend.update_cursor)
 			con->rend.update_cursor(con);
-		wait_flag_except((unsigned *)(&con->inpos), 0);
-		if(got_signal(current_task))
-			return -EINTR;
 		mutex_acquire(&con->inlock);
+		while(!con->inpos) {
+			mutex_release(&con->inlock);
+			task_block(&con->input_block, (task_t *)current_task);
+			if(got_signal(current_task))
+				return -EINTR;
+			mutex_acquire(&con->inlock);
+		}
 		t=con->input[0];
 		con->inpos--;
 		if(con->inpos)
@@ -250,6 +254,7 @@ int ttyx_ioctl(int min, int cmd, int arg)
 				con->input[con->inpos] = (char)arg;
 				con->inpos++;
 			}
+			task_unblock_all(&con->input_block);
 			mutex_release(&con->inlock);
 			if(!(con->term.c_lflag & ECHO) && arg != '\b' && arg != '\n')
 				break;
@@ -261,6 +266,7 @@ int ttyx_ioctl(int min, int cmd, int arg)
 			tty_putch(con, arg);
 			if(con->rend.update_cursor)
 				con->rend.update_cursor(con);
+			
 			break;
 		case 18:
 			return con->term.c_oflag;
@@ -293,14 +299,6 @@ int ttyx_ioctl(int min, int cmd, int arg)
 			//	con->term.c_oflag |= CBREAK;
 			break;
 		case 25:
-			if(arg) {
-				wait_flag(&con->exlock, 0);
-				if(got_signal(current_task))
-					return -EINTR;
-				con->exlock = current_task->pid;
-			} else
-				if(con->exlock == (unsigned)get_pid())
-					con->exlock=0;
 			break;
 		case 26:
 			if(con->rend.clear_cursor && arg)

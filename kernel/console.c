@@ -41,6 +41,7 @@ void create_console(vterm_t *con)
 	con->term.c_iflag=ICRNL;
 	mutex_create(&con->wlock, 0);
 	mutex_create(&con->inlock, 0);
+	ll_create(&con->input_block);
 	con->flag=1;
 }
 

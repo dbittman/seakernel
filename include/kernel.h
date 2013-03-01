@@ -87,16 +87,6 @@ static inline int inl(short port)
 	return ret;
 }
 
-static inline void __engage_idle()
-{
-	__allow_idle=1;
-}
-
-static inline void __disengage_idle()
-{
-	__allow_idle=0;
-}
-
 static inline void get_kernel_version(char *b)
 {
 	char t = 'a';

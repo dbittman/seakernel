@@ -6,7 +6,7 @@
 #include <fs.h>
 #include <fcntl.h>
 #define LSTART(a) (a->l_start + a->l_pos)
-
+#warning "rewrite with proper locking"
 void init_flocks(struct inode *i)
 {
 	if(!i->flm)
@@ -207,8 +207,8 @@ int fcntl_setlkw(struct file *file, int arg)
 			return 0;
 		if(ret != -EAGAIN)
 			return -EACCES;
-		f->newlocks=0;
-		wait_flag_except((unsigned *)&f->newlocks, 0);
+		//f->newlocks=0;
+		//wait_flag_except((unsigned *)&f->newlocks, 0);
 		if(got_signal(current_task))
 			return -EINTR;
 	}

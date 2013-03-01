@@ -24,7 +24,6 @@ extern int argc_STP;
 extern char tmp_cmd_line[2048];
 extern int init_pid;
 
-volatile unsigned int __allow_idle=1;
 struct inode *kproclist;
 extern struct inode *procfs_kprocdir;
 static inline int __KT_clear_args()
@@ -117,7 +116,7 @@ int kernel_idle_task()
 			 * may awaken the kernel at any time if its the only runable
 			 * task. But it doesn't really matter, we'll just end up 
 			 * back here. We also ignore signals */
-			wait_flag_except((unsigned *)&__allow_idle, 0);
+			task_pause((task_t *)current_task);
 			sti();
 		}
 	}

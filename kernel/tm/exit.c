@@ -25,7 +25,7 @@ int __KT_try_releasing_tasks()
 {
 	task_t *t = ll_remove_head(kill_queue);
 	if(t) release_task(t);
-	return !ll_is_empty(kill_queue);
+	return ll_is_empty(kill_queue) ? 0 : 1;
 }
 
 void release_task(task_t *p)

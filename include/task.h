@@ -331,6 +331,16 @@ static inline int GET_MAX_TS(task_t *t)
 	return x;
 }
 
+static inline void __engage_idle()
+{
+	task_resume((task_t *)kernel_task);
+}
+
+static inline void __disengage_idle()
+{
+	task_pause((task_t *)kernel_task);
+}
+
 struct inode *set_as_kernel_task(char *name);
 __attribute__((always_inline)) inline static int task_is_runable(task_t *task)
 {

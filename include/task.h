@@ -9,7 +9,7 @@
 #include <dev.h>
 #include <tqueue.h>
 
-extern tqueue_t *primary_queue;
+extern tqueue_t *primary_queue, *active_queue;
 
 #define KERN_STACK_SIZE 0x16000
 
@@ -68,30 +68,6 @@ typedef struct exit_status {
 	struct exit_status *next, *prev;
 } ex_stat;
 
-/** I believe its fair to describe the storage of tasks. 
- * There are many linked lists.
- * 
- * First, theres the basic master list. kernel_task is 
- * start, and every task is DLL'd to it.
- * 
- * Second, there is the family list. This is kept track 
- * of by 'parent'. Each task's parent field points to the 
- * task that created it.
- * 
- * Third, there is 'waiting'. This is used when a task is 
- * waiting on another task, and points to it.
- * 
- * Fourth, there is the alarm list. This is a single linked 
- * list that is a list of all tasks that are waiting for alarms.
- * 
- * If a task is dead, it goes to the 'dead queue'. the tokill 
- * list. This is DLL, using the next and prev fields.
- * 
- * alarm_list_start is the first alarmed task.
- * 
- * current_task points to the task currently running.
- */
-
 typedef volatile struct task_struct
 {
 	volatile unsigned magic;
@@ -147,7 +123,7 @@ typedef volatile struct task_struct
 	volatile unsigned sigd, cursig;
 	sigset_t old_mask;
 	unsigned alrm_count;
-	struct llistnode *listnode, *blocknode;
+	struct llistnode *listnode, *blocknode, *activenode;
 	volatile struct task_struct *parent, *waiting, *alarm_next;
 } task_t;
 
@@ -214,13 +190,11 @@ void exit(int);
 task_t *get_next_task();
 void kill_task(unsigned int);
 int sys_getppid();
-void __wait_flag(unsigned *f, int, char *file, int line);
 void release_task(task_t *p);
 int wait_task(unsigned pid, int state);
 void delay(int);
 int send_signal(int, int);
 void handle_signal(task_t *t);
-void wait_flag_except(unsigned *f, int fo);
 struct file *get_file_pointer(task_t *t, int n);
 void remove_file_pointer(task_t *t, int n);
 int add_file_pointer(task_t *t, struct file *f);
@@ -263,7 +237,6 @@ void task_pause(task_t *t);
 void task_unblock_all(struct llist *list);
 void task_unblock(struct llist *list, task_t *t);
 void task_resume(task_t *t);
-#define wait_flag(a, b) __wait_flag(a, b, __FILE__, __LINE__)
 #define lock_scheduler() _lock_scheduler(__FILE__, __LINE__);
 #define unlock_scheduler() _unlock_scheduler(__FILE__, __LINE__);
 

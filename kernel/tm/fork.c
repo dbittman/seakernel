@@ -96,6 +96,7 @@ int do_fork(unsigned flags)
 	 * And then add it to the queue */
 	new->state = TASK_USLEEP;
 	new->listnode = tqueue_insert(primary_queue, (void *)new);
+	new->activenode = tqueue_insert(active_queue, (void *)new);
 	/* Copy the stack */
 	cli();
 	engage_new_stack(new, parent);

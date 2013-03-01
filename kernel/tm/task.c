@@ -12,7 +12,7 @@ volatile unsigned next_pid=0;
 volatile task_t *tokill=0, *end_tokill=0;
 extern void do_switch_to_user_mode();
 struct llist *kill_queue=0;
-tqueue_t *primary_queue=0;
+tqueue_t *primary_queue=0, *active_queue=0;
 
 void init_multitasking()
 {
@@ -28,7 +28,9 @@ void init_multitasking()
 	task->magic = TASK_MAGIC;
 	kill_queue = ll_create(0);
 	primary_queue = tqueue_create(0, 0);
+	active_queue = tqueue_create(0, 0);
 	task->listnode = tqueue_insert(primary_queue, (void *)task);
+	task->activenode = tqueue_insert(active_queue, (void *)task);
 	kernel_task = task;
 	set_current_task_dp(task, 0);
 #if CONFIG_MODULES
@@ -92,11 +94,14 @@ void task_resume(task_t *t)
 void task_block(struct llist *list, task_t *task)
 {
 	task->blocknode = ll_insert(list, (void *)task);
+	tqueue_remove(active_queue, task->activenode);
+	task->activenode = 0;
 	if(task == current_task) task_pause(task);
 }
 
 void task_unblock(struct llist *list, task_t *t)
 {
+	t->activenode = tqueue_insert(active_queue, (void *)t);
 	ll_remove(list, t->blocknode);
 	t->blocknode = 0;
 	task_resume(t);
@@ -109,6 +114,7 @@ void task_unblock_all(struct llist *list)
 	task_t *entry;
 	ll_for_each_entry_safe(list, cur, next, task_t *, entry)
 	{
+		entry->activenode = tqueue_insert(active_queue, (void *)entry);
 		ll_do_remove(list, cur, 1);
 		entry->blocknode = 0;
 		task_resume(entry);

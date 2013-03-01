@@ -16,6 +16,7 @@ void set_as_dead(task_t *t)
 	assert(t);
 	t->state = TASK_DEAD;
 	tqueue_remove(primary_queue, t->listnode);
+	tqueue_remove(active_queue, t->activenode);
 	t->listnode = ll_insert(kill_queue, (void *)t);
 	/* Add to death */
 	__engage_idle();

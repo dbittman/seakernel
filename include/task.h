@@ -109,9 +109,7 @@ typedef volatile struct task_struct
 	int cur_ts, priority;
 	
 	/* waiting on something? */
-	volatile addr_t *waitflag, waiting_ret;
-	unsigned wait_for;
-	char waiting_true;
+	volatile addr_t waiting_ret;
 	volatile long tick;
 	
 	/* accounting */

@@ -41,8 +41,6 @@ void init_multitasking()
 	add_kernel_symbol(sys_setsid);
 	add_kernel_symbol(do_fork);
 	add_kernel_symbol(kill_task);
-	add_kernel_symbol(__wait_flag);
-	add_kernel_symbol(wait_flag_except);
 	add_kernel_symbol(do_send_signal);
 	add_kernel_symbol(dosyscall);
 #if CONFIG_SMP

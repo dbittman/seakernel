@@ -25,17 +25,6 @@ __attribute__((always_inline)) inline void update_task(task_t *t)
 	{
 		if(t->tick <= ticks && t->tick)
 			t->state = TASK_RUNNING;
-		/* if we're waiting for a flag and it sets to the value we
-		 * want, we change to running */
-		if(t->waitflag) {
-			if(!t->waiting_true){
-				if((*(t->waitflag)) == t->wait_for)
-					t->state = TASK_RUNNING;
-			} else {
-				if((*(t->waitflag)) != t->wait_for)
-					t->state = TASK_RUNNING;
-			}
-		}
 	}
 }
 /* This here is the basic scheduler - It does nothing 

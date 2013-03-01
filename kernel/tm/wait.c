@@ -29,42 +29,6 @@ int wait_task(unsigned pid, int state)
 	return ret;
 }
 
-void __wait_flag(unsigned *f, int fo, char *file, int line)
-{
-	if(f && (int)*f == fo)
-		return;
-	again:
-	current_task->waitflag=f;
-	current_task->wait_for=fo;
-	current_task->state = TASK_ISLEEP;
-	current_task->waiting_true=0;
-	schedule();
-	if(!got_signal(current_task) && f && (int)*f != fo)
-		goto again;
-	/* Reset the waitflag pointer to indicate that we are no longer
-	 * waiting */
-	current_task->state = TASK_RUNNING;
-	current_task->waitflag=0;
-}
-
-void wait_flag_except(unsigned *f, int fo)
-{
-	if(f && (int)*f != fo)
-		return;
-	again:
-	current_task->waitflag=f;
-	current_task->wait_for=fo;
-	current_task->state = TASK_ISLEEP;
-	current_task->waiting_true=1;
-	schedule();
-	if(!got_signal(current_task) && f && (int)*f == fo)
-		goto again;
-	/* Reset the waitflag pointer to indicate that we are no longer
-	 * waiting */
-	current_task->state = TASK_RUNNING;
-	current_task->waitflag=0;
-}
-
 int get_status_int(int pid, int *st, int *__pid)
 {
 	int ret_val = 0, sig_number=0;

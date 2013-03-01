@@ -140,7 +140,6 @@ void do_task_stat(struct task_stat *s, task_t *t)
 	assert(s && t);
 	s->stime = t->stime;
 	s->utime = t->utime;
-	s->waitflag = (unsigned *)t->waitflag;
 	s->state = t->state;
 	s->uid = t->uid;
 	s->gid = t->gid;

@@ -72,7 +72,7 @@ int init_kern_task()
 int kernel_idle_task()
 {
 	int task, cache;
-	if(!fork())
+	if(1 && !fork())
 	{
 		set_as_kernel_task("kpager");
 		/* This task likes to...fuck about with it's page directory.
@@ -108,16 +108,17 @@ int kernel_idle_task()
 	}
 	sti();
 	/* Now enter the main idle loop, waiting to do periodic cleanup */
+	printk(0, "[idle]: entering background loop\n");
 	for(;;) {
+		//printk(0, ".");
 		task=__KT_try_releasing_tasks();
 		if(!task && init_pid) {
-			__disengage_idle();
 			/* Note that, while we go into a wait here, the scheduler 
 			 * may awaken the kernel at any time if its the only runable
 			 * task. But it doesn't really matter, we'll just end up 
 			 * back here. We also ignore signals */
-			task_pause((task_t *)current_task);
-			sti();
+			__disengage_idle();
 		}
+		sti();
 	}
 }

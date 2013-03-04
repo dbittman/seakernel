@@ -68,6 +68,10 @@ __attribute__((always_inline)) static inline void post_context_switch()
 		 * wake up when signaled */
 		current_task->state = TASK_RUNNING;
 	}
+	if(current_task->flags & TF_SETINT) {
+		current_task->flags &= ~TF_SETINT;
+		set_int(1);
+	}
 }
 
 __attribute__((always_inline)) static inline void store_context(unsigned eip)
@@ -95,9 +99,10 @@ __attribute__((always_inline)) static inline void restore_context()
  * task's context, search for the next process to run, and load it's context.*/
 void schedule()
 {
-	cli();
 	if(unlikely(!current_task || !kernel_task))
 		return;
+	if(set_int(0))
+		current_task->flags |= TF_SETINT;
 	store_context(read_eip());
 	volatile task_t *new = (volatile task_t *)get_next_task();
 	set_current_task_dp(new, 0 /* TODO: this should be the current CPU */);

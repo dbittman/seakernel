@@ -38,6 +38,9 @@ extern tqueue_t *primary_queue, *active_queue;
 #define TF_LAST_PDIR 0x4000 /* this is the last task referencing it's page directory.
 							* this is used to tell the kernel to free the page directory
 							* when it cleans up this task */
+#define TF_SETINT    0x8000 /* was schedule called with interrupts enabled? if so, 
+							 * we need to re-enable them when we schedule into this
+							 * task */
 #define PRIO_PROCESS 1
 #define PRIO_PGRP    2
 #define PRIO_USER    3

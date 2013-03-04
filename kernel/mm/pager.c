@@ -1,6 +1,6 @@
 #include <kernel.h>
 #include <memory.h>
-
+#include <task.h>
 unsigned tmp_page;
 void __KT_pager()
 {
@@ -8,6 +8,8 @@ void __KT_pager()
 	for(;;) {
 #if CONFIG_SWAP
 		__KT_swapper();
+#else
+		//schedule();
 #endif
 	}
 }

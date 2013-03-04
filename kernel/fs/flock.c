@@ -6,7 +6,6 @@
 #include <fs.h>
 #include <fcntl.h>
 #define LSTART(a) (a->l_start + a->l_pos)
-#warning "rewrite with proper locking"
 void init_flocks(struct inode *i)
 {
 	if(!i->flm)
@@ -35,7 +34,6 @@ static int is_overlap(struct flock *a, struct flock *b)
 struct flock *get_flock_blocker(struct inode *file, struct flock *l, int pos)
 {
 	if(!file || !l) return 0;
-	mutex_acquire(file->flm);
 	switch(l->l_whence)
 	{
 		case SEEK_SET:
@@ -54,41 +52,34 @@ struct flock *get_flock_blocker(struct inode *file, struct flock *l, int pos)
 		int q = is_overlap(l, cur);
 		if(q) {
 			if(l->l_type == F_WRLCK || cur->l_type == F_WRLCK) {
-				mutex_release(file->flm);
 				return cur;
 			}
 		}
 		cur = cur->next;
 	}
 	
-	mutex_release(file->flm);
 	return 0;
 }
 
 int can_flock(struct inode *file, struct flock *l)
 {
 	if(!file || !l) return 0;
-	mutex_acquire(file->flm);
 	
 	struct flock *cur = file->flocks;
 	while(cur)
 	{
 		if(is_overlap(l, cur))
 			if(l->l_type == F_WRLCK || cur->l_type == F_WRLCK) {
-				mutex_release(file->flm);
 				return 0;
 			}
 		cur = cur->next;
 	}
-	
-	mutex_release(file->flm);
 	return 1;
 }
 
 int disengage_flock(struct inode *file, struct flock *l)
 {
 	if(!file || !l) return -EINVAL;
-	mutex_acquire(file->flm);
 	if(l->prev)
 		l->prev->next = l->next;
 	if(l->next)
@@ -96,7 +87,6 @@ int disengage_flock(struct inode *file, struct flock *l)
 	if(file->flocks == l)
 		file->flocks = l->next ? l->next : l->prev;
 	kfree(l);
-	mutex_release(file->flm);
 	return 0;
 }
 
@@ -126,14 +116,12 @@ int engage_flock(struct inode *inode, struct flock *l, int pos)
 	if(LSTART(l) < 0)
 		return -EINVAL;
 	
-	mutex_acquire(inode->flm);
 	struct flock *old = inode->flocks;
 	inode->flocks = l;
 	l->next = old;
 	inode->flocks->prev = l;
 	l->prev=0;
-	mutex_release(inode->flm);
-	
+
 	return 0;
 }
 
@@ -141,17 +129,14 @@ struct flock *find_flock(struct inode *f, struct flock *l)
 {
 	assert(f && l);
 	struct flock *c = f->flocks;
-	mutex_acquire(f->flm);
 	while(c)
 	{
 		if(l->l_start == c->l_start && l->l_whence == c->l_whence 
 				&& l->l_len == c->l_len && l->l_pid == c->l_pid) {
-			mutex_release(f->flm);
 			return c;
 		}
 		c=c->next;
 	}
-	mutex_release(f->flm);
 	return 0;
 }
 
@@ -163,16 +148,22 @@ int fcntl_setlk(struct file *file, int arg)
 	init_flocks(file->inode);
 	struct inode *f = file->inode;
 	struct flock *p = (struct flock *)arg;
+	mutex_acquire(f->flm);
 	if(p->l_type == F_UNLCK)
 	{
 		p->l_pid = get_pid();
 		p = find_flock(f, p);
-		if(!p)
+		if(!p) {
+			mutex_release(f->flm);
 			return -EAGAIN;
-		return disengage_flock(f, p);
+		}
+		int x = disengage_flock(f, p);
+		mutex_release(f->flm);
+		return x;
 	}
 	p = create_flock(p->l_type, p->l_whence, p->l_start, p->l_len);
 	int ret = engage_flock(f, p, file->pos);
+	mutex_release(f->flm);
 	if(ret < 0)
 		kfree(p);
 	return ret;
@@ -207,8 +198,7 @@ int fcntl_setlkw(struct file *file, int arg)
 			return 0;
 		if(ret != -EAGAIN)
 			return -EACCES;
-		//f->newlocks=0;
-		//wait_flag_except((unsigned *)&f->newlocks, 0);
+		schedule();
 		if(got_signal(current_task))
 			return -EINTR;
 	}

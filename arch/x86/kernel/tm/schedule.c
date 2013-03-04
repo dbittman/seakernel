@@ -16,16 +16,9 @@ void _overflow(char *type)
 
 __attribute__((always_inline)) inline void update_task(task_t *t)
 {
-	if(t->state == TASK_USLEEP)
-	{
-		if(t->tick <= ticks && t->tick)
-			t->state = TASK_RUNNING;
-	}
-	else if(t->state == TASK_ISLEEP)
-	{
-		if(t->tick <= ticks && t->tick)
-			t->state = TASK_RUNNING;
-	}
+	/* task's delay ran out */
+	if((t->state == TASK_USLEEP || t->state == TASK_ISLEEP) && t->tick <= ticks && t->tick)
+		t->state = TASK_RUNNING;
 }
 /* This here is the basic scheduler - It does nothing 
  * except find the next runable task */
@@ -37,8 +30,10 @@ __attribute__((always_inline)) inline task_t *get_next_task()
 	while(t)
 	{
 		assert(t);
-		if(t->magic != TASK_MAGIC)
+		if(unlikely(t->magic != TASK_MAGIC))
 			panic(0, "Invalid task (%d:%d): %x", t->pid, t->state, t->magic);
+		/* this handles everything in the "active queue". This includes
+		 * running tasks, tasks that have timed blocks... */
 		update_task(t);
 		if(task_is_runable(t))
 			return t;
@@ -55,10 +50,8 @@ __attribute__((always_inline)) inline task_t *get_next_task()
 
 __attribute__((always_inline)) static inline void post_context_switch()
 {
-	if(current_task->state == TASK_SUICIDAL) {
+	if(unlikely(current_task->state == TASK_SUICIDAL))
 		task_suicide();
-		panic(PANIC_NOSYNC, "Suicide failed");
-	}
 	/* We only process signals if we aren't in a system call.
 	 * this is because if a task is suddenly interrupted inside an
 	 * important syscall while doing something important the results
@@ -82,7 +75,7 @@ __attribute__((always_inline)) static inline void store_context(unsigned eip)
 	asm("mov %%esp, %0" : "=r"(current_task->esp));
 	asm("mov %%ebp, %0" : "=r"(current_task->ebp));
 	current_task->eip = eip;
-	/* Check for stack over-run */
+	/* Check for stack and heap overflow */
 	if(!current_task->esp || (!(current_task->esp >= TOP_TASK_MEM_EXEC && current_task->esp < TOP_TASK_MEM) 
 			&& !(current_task->esp >= KMALLOC_ADDR_START && current_task->esp < KMALLOC_ADDR_END)))
 		_overflow("stack");
@@ -105,8 +98,7 @@ void schedule()
 	cli();
 	if(unlikely(!current_task || !kernel_task))
 		return;
-	u32int eip = read_eip();
-	store_context(eip);
+	store_context(read_eip());
 	volatile task_t *new = (volatile task_t *)get_next_task();
 	set_current_task_dp(new, 0 /* TODO: this should be the current CPU */);
 	restore_context();

@@ -9,7 +9,7 @@ void __KT_pager()
 #if CONFIG_SWAP
 		__KT_swapper();
 #else
-		//schedule();
+		task_pause((task_t *)current_task);
 #endif
 	}
 }

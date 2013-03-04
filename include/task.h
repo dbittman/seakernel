@@ -127,6 +127,7 @@ typedef volatile struct task_struct
 	sigset_t old_mask;
 	unsigned alrm_count;
 	struct llistnode *listnode, *blocknode, *activenode;
+	struct llist *blocklist;
 	volatile struct task_struct *parent, *waiting, *alarm_next;
 } task_t;
 

@@ -132,7 +132,7 @@ void exit(int code)
 		{
 			tmp->sigd = SIGWAIT;
 			tmp->waiting=0;
-			tmp->waiting_ret = code;
+			tmp->waiting_ret = 0;
 			memcpy((void *)&tmp->we_res, (void *)&t->exit_reason, 
 				sizeof(t->exit_reason));
 			tmp->we_res.pid = t->pid;

@@ -129,6 +129,7 @@ int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw,
 	timeout=1000000;
 	while(ret && timeout--) {
 		if(cont->irqwait) break;
+		sti();
 		schedule();
 		char wst = inb(cont->port_bmr_base + BMR_STATUS);
 		if(wst & BMR_STATUS_ERROR)
@@ -136,7 +137,6 @@ int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw,
 		st = inb(cont->port_cmd_base+REG_STATUS);
 		if(st & STATUS_ERR || st & STATUS_DF)
 			ret=0;
-		//printk(0, "wait... %x %x\n", st, wst);
 	}
 	if(timeout <= 0) {
 		mutex_release(cont->wait);

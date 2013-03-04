@@ -13,7 +13,7 @@ int wait_task(unsigned pid, int state)
 	if(state == -1)
 		/* We wait for it to be dead. When it is, we recieve a signal, 
 		 * so why loop? */
-		task_pause(task);
+		task_pause(current_task);
 	else {
 		/* So, here we just wait until either the task exits or the 
 		 * state becomes equal. Unfortunately we are forced to check 
@@ -25,8 +25,9 @@ int wait_task(unsigned pid, int state)
 			schedule();
 		}
 	}
-	int ret = current_task->waiting_ret;
-	return ret;
+	if(current_task->sigd != SIGWAIT)
+		return -EINTR;
+	return current_task->waiting_ret;
 }
 
 int get_status_int(int pid, int *st, int *__pid)

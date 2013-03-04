@@ -72,7 +72,8 @@ int init_kern_task()
 int kernel_idle_task()
 {
 	int task, cache;
-	if(1 && !fork())
+#if CONFIG_SWAP
+	if(!fork())
 	{
 		set_as_kernel_task("kpager");
 		/* This task likes to...fuck about with it's page directory.
@@ -86,6 +87,7 @@ int kernel_idle_task()
 		sti();
 		__KT_pager();
 	}
+#endif
 	set_as_kernel_task("kidle");
 	/* First stage is to wait until we can clear various allocated things
 	 * that we wont need anymore */
@@ -110,7 +112,6 @@ int kernel_idle_task()
 	/* Now enter the main idle loop, waiting to do periodic cleanup */
 	printk(0, "[idle]: entering background loop\n");
 	for(;;) {
-		//printk(0, ".");
 		task=__KT_try_releasing_tasks();
 		if(!task && init_pid) {
 			/* Note that, while we go into a wait here, the scheduler 

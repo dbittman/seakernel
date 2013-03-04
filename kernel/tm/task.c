@@ -93,6 +93,7 @@ void task_resume(task_t *t)
 
 void task_block(struct llist *list, task_t *task)
 {
+	task->blocklist = list;
 	task->blocknode = ll_insert(list, (void *)task);
 	tqueue_remove(active_queue, task->activenode);
 	task->activenode = 0;
@@ -102,8 +103,10 @@ void task_block(struct llist *list, task_t *task)
 void task_unblock(struct llist *list, task_t *t)
 {
 	t->activenode = tqueue_insert(active_queue, (void *)t);
-	ll_remove(list, t->blocknode);
+	struct llistnode *bn = t->blocknode;
 	t->blocknode = 0;
+	t->blocklist = 0;
+	ll_remove(list, bn);
 	task_resume(t);
 }
 
@@ -115,8 +118,9 @@ void task_unblock_all(struct llist *list)
 	ll_for_each_entry_safe(list, cur, next, task_t *, entry)
 	{
 		entry->activenode = tqueue_insert(active_queue, (void *)entry);
-		ll_do_remove(list, cur, 1);
+		entry->blocklist = 0;
 		entry->blocknode = 0;
+		ll_do_remove(list, cur, 1);
 		task_resume(entry);
 		ll_maybe_reset_loop(list, cur, next);
 	}

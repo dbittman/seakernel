@@ -23,85 +23,24 @@ task_t *preexec(task_t *t, int desc)
 	return 0;
 }
 
-/* Copy the arguments and environment into a special area in memory:
- * [\0 | 1 | G | R | G | ->0 | -> First Arg | ]
- * Basically, from 0xB to 0xC we have an area where we can store task info 
- * that will hold accross exec.
- * 
- * (arg0) (arg1) (arg2) [->null] [->to arg2] [->to arg1] [->to arg0] *
- * is the way its set up. */
-#define MAX_ARGV_LEN 0x8000
-#define MAX_NUM_ARGS 0x4000
-char **copy_down_dp_give(unsigned _location, char **_dp, unsigned *count, unsigned *new_loc)
+void free_dp(char **mem, int num)
 {
-	if(!_dp || !_location)
-		return 0;
-	char **dp = _dp;
-	unsigned i=0;
-	unsigned start;
-	unsigned location = _location;
-	char **ret=0;
-	
-	map_if_not_mapped_noclear(location);
-	
-	if(dp && *dp && **dp) {
-		/* Loop through all the strings */
-		while(*dp && **dp && location > (TOP_TASK_MEM_EXEC) 
-				&& (location+MAX_ARGV_LEN) > _location)
-		{
-			if((unsigned)*dp >= TOP_LOWER_KERNEL) {
-				unsigned len = strlen(*dp);
-				location -= (len+32);
-				map_if_not_mapped_noclear(location);
-				/* Copy them in */
-				memset((void *)location, 0, len+4);
-				memcpy((void *)location, (void *)*dp, len);
-				*dp = (char *)location;
-			}
-			++dp;
-			++i;
-		}
-		*dp=0;
-		/* Create the double pointer in this memory area */
-		start = location-((i+4)*sizeof(char *));
-		map_if_not_mapped_noclear(start);
-		memcpy((void *)start, (void *)_dp, (i+1)*sizeof(char *));
-		ret = (char **)start;
-		if(count)
-			*count = i;
-		location = start-sizeof(void *);
-	} else {
-		/* If there are no strings, create a dummy with a null pointer */
-		location -= sizeof(void *);
-		ret = (char **)location;
-		*ret = 0;
+	/* an error occured and free need to kfree some things */
+	int i;
+	for(i=0;i<num;i++)
+	{
+		kfree(mem[i]);
 	}
-	if(new_loc)
-		*new_loc = (location - sizeof(void *));
-	return ret;
-}
-
-int copy_double_pointers(char **_args, char **_env, unsigned *argc)
-{
-	unsigned location = current_task->path_loc_start;
-	if(!location) location = TOP_TASK_MEM;
-	if(location < (TOP_TASK_MEM - (MAX_ARGV_LEN*2 + MAX_NUM_ARGS*4*2)))
-		location = TOP_TASK_MEM;
-	location -= sizeof(void *);
-	unsigned tmp=0;
-	current_task->argv = copy_down_dp_give(location, _args, argc, &tmp);
-	if(tmp) location = tmp;
-	current_task->env = copy_down_dp_give(location, _env, 0, &tmp);
-	return tmp;
+	kfree(mem);
 }
 
 int do_exec(task_t *t, char *path, char **argv, char **env)
 {
 	unsigned int end, i=0, eip;
-	unsigned int argc=0;
-	int envc=0;
+	unsigned int argc=0, envc=0;
 	int desc;
 	int err = 0;
+	char **backup_argv=0, **backup_env=0;
 	/* Sanity */
 	if(!t) panic(PANIC_NOSYNC, "Tried to execute with empty task");
 	if(t == kernel_task) panic(0, "Kernel is being executed at the gallows!");
@@ -146,12 +85,29 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	
 	if(EXEC_LOG == 2) 
 		printk(0, "[%d]: Copy data\n", t->pid);
-	unsigned path_loc = copy_double_pointers(argv, env, &argc);
-	path_loc -= (strlen(path) + 32);
-	map_if_not_mapped_noclear(path_loc);
-	_strcpy((char *)path_loc, path);
-	path = (char *)path_loc;
-	t->path_loc_start = path_loc;
+	/* okay, lets back up argv and env so that we can
+	 * clear out the address space and not lose data..*/
+	if(argv) {
+		while(argv[argc] && *argv[argc]) argc++;
+		backup_argv = (char **)kmalloc(sizeof(addr_t) * argc);
+		for(i=0;i<argc;i++) {
+			backup_argv[i] = (char *)kmalloc(strlen(argv[i]) + 1);
+			_strcpy(backup_argv[i], argv[i]);
+		}
+	}
+	if(env) {
+		while(env[envc] && *env[envc]) envc++;
+		backup_env = (char **)kmalloc(sizeof(addr_t) * envc);
+		for(i=0;i<envc;i++) {
+			backup_env[i] = (char *)kmalloc(strlen(env[i]) + 1);
+			_strcpy(backup_env[i], env[i]);
+		}
+	}
+	/* and the path too! */
+	char *path_backup = (char *)kmalloc(strlen(path) + 1);
+	_strcpy((char *)path_backup, path);
+	path = path_backup;
+	
 	if(pd_cur_data->count > 1)
 		printk(0, "[exec]: Not sure what to do here...\n");
 	/* Preexec - This is the point of no return. Here we close out unneeded 
@@ -166,6 +122,8 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	sys_close(desc);
 	if(!eip) {
 		printk(5, "[exec]: Tried to execute an invalid ELF file!\n");
+		free_dp(backup_argv, argc);
+		free_dp(backup_env, envc);
 #if DEBUG
 		panic(0, "");
 #endif
@@ -178,11 +136,65 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	unsigned end_l = end;
 	end = (end&PAGE_MASK);
 	map_if_not_mapped_noclear(end);
-	t->heap_start = t->heap_end = end + 0x1000;
+	/* now we need to copy back the args and env into userspace
+	 * writeable memory...yippie. */
+	unsigned args_start = end + PAGE_SIZE;
+	unsigned env_start = args_start;
+	unsigned alen = 0;
+	if(backup_argv) {
+		map_if_not_mapped_noclear(args_start);
+		memcpy((void *)args_start, backup_argv, sizeof(addr_t) * argc);
+		alen += sizeof(addr_t) * argc;
+		*(addr_t *)(args_start + alen) = 0; /* set last argument value to zero */
+		alen += sizeof(addr_t);
+		argv = (char **)args_start;
+		for(i=0;i<argc;i++)
+		{
+			char *old = argv[i];
+			char *new = (char *)(args_start+alen);
+			map_if_not_mapped_noclear((unsigned)new);
+			unsigned len = strlen(old) + 4;
+			map_if_not_mapped_noclear((unsigned)new + len + 1);
+			argv[i] = new;
+			_strcpy(new, old);
+			kfree(old);
+			alen += len;
+		}
+		kfree(backup_argv);
+	}
+	env_start = args_start + alen;
+	alen = 0;
+	if(backup_env) {
+		map_if_not_mapped_noclear(env_start);
+		memcpy((void *)env_start, backup_env, sizeof(addr_t) * envc);
+		alen += sizeof(addr_t) * envc;
+		*(addr_t *)(env_start + alen) = 0; /* set last argument value to zero */
+		alen += sizeof(addr_t);
+		env = (char **)env_start;
+		for(i=0;i<envc;i++)
+		{
+			char *old = env[i];
+			char *new = (char *)(env_start+alen);
+			map_if_not_mapped_noclear((unsigned)new);
+			unsigned len = strlen(old) + 1;
+			map_if_not_mapped_noclear((unsigned)new + len + 1);
+			env[i] = new;
+			_strcpy(new, old);
+			kfree(old);
+			alen += len;
+		}
+		kfree(backup_env);
+	}
+	end = (env_start + alen) & PAGE_MASK;
+	t->env = env;
+	t->argv = argv;
+	kfree(path);
+	
+	t->heap_start = t->heap_end = end + PAGE_SIZE;
 	map_if_not_mapped_noclear(t->heap_start);
 	/* Zero the heap and stack */
-	memset((void *)end_l, 0, 0x1000-(end_l%0x1000));
-	memset((void *)(end+0x1000), 0, 0x1000);
+	memset((void *)end_l, 0, PAGE_SIZE-(end_l%PAGE_SIZE));
+	memset((void *)(end+PAGE_SIZE), 0, PAGE_SIZE);
 	memset((void *)(STACK_LOCATION - STACK_SIZE), 0, STACK_SIZE);
 	/* Release everything */
 	if(EXEC_LOG == 2) 

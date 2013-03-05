@@ -82,8 +82,8 @@ void task_pause(task_t *t)
 	/* don't care what other processors do */
 	cli();
 	t->state = TASK_ISLEEP;
-	schedule();
 	sti();
+	schedule();
 }
 
 void task_resume(task_t *t)
@@ -93,6 +93,7 @@ void task_resume(task_t *t)
 
 void task_block(struct llist *list, task_t *task)
 {
+	__engage_idle();
 	task->blocklist = list;
 	task->blocknode = ll_insert(list, (void *)task);
 	tqueue_remove(active_queue, task->activenode);

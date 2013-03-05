@@ -203,6 +203,7 @@ int syscall_handler(volatile registers_t *regs)
 #endif
 	cli();
 	exit_system();
+	__engage_idle();
 	/* if we need to reschedule, or we have overused our timeslice
 	 * then we need to reschedule */
 	if(current_task->flags & TF_SCHED 

@@ -27,5 +27,8 @@ else
 	printf "tmp "
 	mount -t tmpfs \* /mnt/tmp
 	printf "done\n"
-	chroot /mnt /bin/sh /etc/rc/boot
+	if ! chroot /mnt /bin/sh /etc/rc/boot ; then
+		printf "** chroot failed, dropping to initrd shell **\n"
+		sh
+	fi
 fi

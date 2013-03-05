@@ -25,6 +25,8 @@ __attribute__((always_inline)) inline void update_task(task_t *t)
 __attribute__((always_inline)) inline task_t *get_next_task()
 {
 	assert(current_task && kernel_task);
+	#warning "better place for this?"
+	__engage_idle();
 	task_t *prev = (task_t *)current_task;
 	task_t *t = tqueue_next(active_queue);
 	while(t)

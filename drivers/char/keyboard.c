@@ -27,7 +27,6 @@ void flush_port()
 
 void enqueue_char(char c)
 {
-	printk(0, "%d\n", c);
 	if(c == 3 && (curcons->term.c_lflag & ICANON))
 	{
 		ttyx_ioctl(curcons->tty, 19, SIGINT);

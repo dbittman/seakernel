@@ -34,8 +34,10 @@ void release_task(task_t *p)
 	/* This is everything that the task itself cannot release. 
 	 * The kernel cleans up what little is left nicely */
 	assert(current_task == kernel_task);
-	assert(p != (task_t *)current_task);
-	
+	assert(p && p != (task_t *)current_task);
+	/* don't release the task while it's still exiting... */
+	if(!(p->flags & TF_BURIED))
+		return;
 	/* Is this page table marked as unreferenced? */
 	if(p->flags & TF_LAST_PDIR) {
 		/* Free the accounting page table */
@@ -165,7 +167,6 @@ void exit(int code)
 		vm_unmap(PDIR_DATA);
 		raise_flag(TF_LAST_PDIR);
 	}
-	vm_switch((page_dir_t *)kernel_dir);
 	schedule();
 	panic(PANIC_NOSYNC, "and you may ask yourself...how did I get here?");
 }

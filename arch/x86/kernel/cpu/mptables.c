@@ -35,7 +35,7 @@ static int
 send_ipi(unsigned int dst, unsigned int v)
 {
 	int to, send_status;
-	__super_cli();
+	cli();
 	IMPS_LAPIC_WRITE(LAPIC_ICR+0x10, (dst << 24));
 	IMPS_LAPIC_WRITE(LAPIC_ICR, v);
 
@@ -45,7 +45,7 @@ send_ipi(unsigned int dst, unsigned int v)
 		delay_sleep(1);
 		send_status = IMPS_LAPIC_READ(LAPIC_ICR) & LAPIC_ICR_STATUS_PEND;
 	} while (send_status && (to++ < 1000));
-	__super_sti();
+	sti();
 	return (to < 1000);
 }
 static int *booted = (int *)0x7200;

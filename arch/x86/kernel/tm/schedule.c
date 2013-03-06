@@ -22,12 +22,11 @@ __attribute__((always_inline)) inline void update_task(task_t *t)
 }
 /* This here is the basic scheduler - It does nothing 
  * except find the next runable task */
-__attribute__((always_inline)) inline task_t *get_next_task()
+__attribute__((always_inline)) inline task_t *get_next_task(task_t *prev)
 {
-	assert(current_task && kernel_task);
+	assert(prev && kernel_task);
 	#warning "better place for this?"
 	__engage_idle();
-	task_t *prev = (task_t *)current_task;
 	task_t *t = tqueue_next(active_queue);
 	while(t)
 	{
@@ -87,14 +86,16 @@ __attribute__((always_inline)) static inline void store_context(unsigned eip)
 		_overflow("stack");
 	if(current_task->heap_end && current_task->heap_end >= TOP_USER_HEAP)
 		_overflow("heap");
+	if(current_task->flags & TF_DYING)
+		current_task->flags |= TF_BURIED;
 }
 
-__attribute__((always_inline)) static inline void restore_context()
+__attribute__((always_inline)) static inline void restore_context(task_t *new)
 {
 	/* Update some last-minute things. The stack. */
-	set_kernel_stack(current_task->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
+	set_kernel_stack(new->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
 	/* keep track of when we got to run */
-	current_task->slice = ticks;
+	new->slice = ticks;
 }
 /*This is the magic super awesome and important kernel function 'schedule()'. 
  * It is arguable the most important function. Here we store the current 
@@ -105,16 +106,17 @@ void schedule()
 		return;
 	if(set_int(0))
 		current_task->flags |= TF_SETINT;
+	task_t *old = current_task;
 	store_context(read_eip());
-	volatile task_t *new = (volatile task_t *)get_next_task();
+	volatile task_t *new = (volatile task_t *)get_next_task(old);
 	set_current_task_dp(new, 0 /* TODO: this should be the current CPU */);
-	restore_context();
+	restore_context(new);
 	asm("         \
 		mov %1, %%esp;       \
 		mov %2, %%ebp;       \
 		mov %3, %%cr3;"
-	: : "r"(current_task->eip), "r"(current_task->esp), "r"(current_task->ebp), 
-			"r"(current_task->pd[1023]&PAGE_MASK) : "eax");
+	: : "r"(new->eip), "r"(new->esp), "r"(new->ebp), 
+			"r"(new->pd[1023]&PAGE_MASK) : "eax");
 	if(likely(!(current_task->flags & TF_FORK)))
 		return (void) post_context_switch();
 	current_task->flags &= ~TF_FORK;

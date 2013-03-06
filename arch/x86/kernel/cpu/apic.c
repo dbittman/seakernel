@@ -63,7 +63,7 @@ int program_ioapic(struct imps_ioapic *ia)
 }
 
 void lapic_eoi()
-{
+{return;
 	if(!imps_enabled)
 		return;
 	IMPS_LAPIC_WRITE(LAPIC_TPR, 0);
@@ -86,7 +86,7 @@ void calibrate_lapic_timer(unsigned freq)
 	unsigned tmp=0;
 	IMPS_LAPIC_WRITE(LAPIC_TDCR, 3);
 	IMPS_LAPIC_WRITE(LAPIC_LVTT, 32);
-	__super_cli();
+	cli();
 	outb(0x61, (inb(0x61) & 0xFD) | 1);
 	outb(0x43,0xB2);
 	//1193180/100 Hz = 11931 = 2e9bh
@@ -140,11 +140,12 @@ void id_map_apic(page_dir_t *pd)
 
 void init_ioapic()
 {
+	return;
 	if(!num_ioapic)
 		return;
 	unsigned i=0, num=0;
 	/* Disable the PIC...*/
-	__super_cli();
+	cli();
 	outb(0xA1, 0xFF);
 	outb(0x21, 0xFF);
 	interrupt_controller = 0;
@@ -167,6 +168,6 @@ void init_ioapic()
 		outb(0x22, 0x70);
 		outb(0x23, 0x01);
 	}
-	__super_sti();
+	sti();
 }
 #endif

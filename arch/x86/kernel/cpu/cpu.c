@@ -86,12 +86,12 @@ void parse_cpuid(cpu_t *me)
 #if CONFIG_SMP
 void remove_cpu(cpu_t *c)
 {
-	mutex_on(&cpulist_lock);
+	mutex_acquire(&cpulist_lock);
 	assert(c->prev);
 	c->prev->next = c->next;
 	if(c->next)
 		c->next->prev = c->prev;
-	mutex_off(&cpulist_lock);
+	mutex_release(&cpulist_lock);
 }
 
 void delete_cpu(cpu_t *c)
@@ -103,14 +103,14 @@ void delete_cpu(cpu_t *c)
 void add_cpu(cpu_t *c)
 {
 	assert(cpu_list);
-	mutex_on(&cpulist_lock);
+	mutex_acquire(&cpulist_lock);
 	cpu_t *t = cpu_list->next;
 	cpu_list->next = c;
 	c->prev = cpu_list;
 	if(t)
 		t->prev = c;
 	c->next = t;
-	mutex_off(&cpulist_lock);
+	mutex_release(&cpulist_lock);
 }
 
 cpu_t *get_cpu(int id)
@@ -148,7 +148,7 @@ void init_main_cpu()
 #endif
 	primary_cpu.flags = CPU_UP | CPU_RUNNING;
 #if CONFIG_SMP
-	create_mutex(&cpulist_lock);
+	mutex_create(&cpulist_lock, 0);
 #endif
 	printk(KERN_MSG, "Initializing CPU...\n");
 	parse_cpuid(&primary_cpu);

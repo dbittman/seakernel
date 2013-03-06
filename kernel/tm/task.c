@@ -20,6 +20,8 @@ void init_multitasking()
 	task_t *task = (task_t *)kmalloc(sizeof(task_t));
 	if(!task)
 		panic(PANIC_NOSYNC, "Unable to allocate memory for tasking?");
+	kernel_dir[PAGE_DIR_IDX(SMP_CUR_TASK / PAGE_SIZE)] = (unsigned)task;
+	
 	task->pid = next_pid++;
 	task->pd = (page_dir_t *)kernel_dir;
 	task->stack_end=STACK_LOCATION;

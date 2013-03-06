@@ -9,7 +9,7 @@
 #include <sys/sysconf.h>
 
 extern int current_hz;
-
+extern unsigned imps_num_cpus;
 long sys_sysconf(int cmd)
 {
 	int ret = -EINVAL;
@@ -43,7 +43,6 @@ long sys_sysconf(int cmd)
 			break;
 		case _SC_NPROCESSORS_ONLN:
 #if CONFIG_SMP
-			extern unsigned imps_num_cpus;
 			return imps_num_cpus;
 #else
 			return 1; /* no SMP, thus only one processor */

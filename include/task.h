@@ -41,6 +41,7 @@ extern tqueue_t *primary_queue, *active_queue;
 #define TF_SETINT    0x8000 /* was schedule called with interrupts enabled? if so, 
 							 * we need to re-enable them when we schedule into this
 							 * task */
+#define TF_BURIED   0x10000
 #define PRIO_PROCESS 1
 #define PRIO_PGRP    2
 #define PRIO_USER    3
@@ -138,11 +139,8 @@ extern volatile task_t *kernel_task, *tokill, *alarm_list_start;
 static inline __attribute__((always_inline))  volatile task_t *__get_current_task()
 {
 	unsigned t=0;
-	if(kernel_task) {
-		asm ("mov %%gs, %0" : "=r" (t));
-		cpu_t *c = get_cpu(t);
-		return c->current;
-	}
+	if(kernel_task)
+		return (task_t *)page_directory[PAGE_DIR_IDX(SMP_CUR_TASK/PAGE_SIZE)];
 	return (task_t *)t;
 }
 #else /* !CONFIG_SMP */
@@ -153,8 +151,8 @@ static inline __attribute__((always_inline))
 void set_current_task_dp(task_t *t, int cpu)
 {
 #if CONFIG_SMP
-	cpu_t *c = get_cpu(cpu);
-	c->current = (void *)t;
+	//cpu_t *c = get_cpu(cpu);
+	//c->current = (void *)t;
 #else
 	current_task = t;
 	return;

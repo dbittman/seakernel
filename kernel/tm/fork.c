@@ -88,6 +88,7 @@ int do_fork(unsigned flags)
 		kfree((void *)new);
 		return -ENOMEM;
 	}
+	newspace[PAGE_DIR_IDX(SMP_CUR_TASK/PAGE_SIZE)] = (unsigned)new;
 	/* Create the new task structure */
 	task_t *parent = (task_t *)current_task;
 	new->pd = newspace;

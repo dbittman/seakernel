@@ -273,7 +273,12 @@ void printk(int l, const char *fmt, ...)
 	va_start(args, fmt);
 	vsprintf(printbuf, fmt, args);
 	if(l >= LOGL_SERIAL)
-		serial_puts(0, printbuf);
+	{
+		if(current_task)
+			serial_puts(0, printbuf);
+		else
+			serial_puts_nolock(0, printbuf);
+	}
 	if(l >= LOGL_LOGTTY && log_console)
 		console_puts(log_console, printbuf);
 	if(l >= PRINT_LEVEL)

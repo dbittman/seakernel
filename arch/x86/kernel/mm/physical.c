@@ -35,9 +35,9 @@ addr_t __pm_alloc_page(char *file, int line)
 		current_task->allocated++;
 		current_task->phys_mem_usage++;
 	}
-	mutex_acquire(&pm_mutex);
 	if(paging_enabled)
 	{
+		mutex_acquire(&pm_mutex);
 		/* out of physical memory!! */
 		if(pm_stack <= (PM_STACK_ADDR+sizeof(unsigned)*2)) {
 			if(current_task == kernel_task || !current_task)
@@ -61,12 +61,12 @@ addr_t __pm_alloc_page(char *file, int line)
 		}
 		pm_stack -= sizeof(unsigned int);
 		ret = *(unsigned int *)pm_stack;
+		++pm_used_pages;
+		mutex_release(&pm_mutex);
 	} else {
 		ret = pm_location;
 		pm_location+=PAGE_SIZE;
 	}
-	++pm_used_pages;
-	mutex_release(&pm_mutex);
 	if(current_task)
 		current_task->num_pages++;
 	if(!ret)

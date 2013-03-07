@@ -122,7 +122,8 @@ void init_proc_fs()
 	pfs_cn("mem", S_IFREG, 0, 0);
 	struct inode *si = pfs_cn("sched", S_IFDIR, 1, 0);
 	pfs_cn_node(si, "pri_tty", S_IFREG, 1, 1);
-#if CONFIG_SMP
+#if 0
+#warning "fix this"
 	si = pfs_cn("cpu", S_IFDIR, 1, 0);
 	cpu_t *cp = cpu_list;
 	while(cp)

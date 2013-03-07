@@ -57,12 +57,14 @@ void load_tables_ap();
 void set_lapic_timer(unsigned tmp);
 extern unsigned lapic_timer_start;
 void init_lapic();
+void enable_A20();
 void cpu_entry(void)
 {
 	int myid = *booted;
 	cpu_t *cpu = get_cpu(myid);
 	asm("mov %0, %%esp" : : "r" (cpu->stack + 1020));
 	asm("mov %0, %%ebp" : : "r" (cpu->stack + 1020));
+	enable_A20();
 	load_tables_ap();
 	myid = *booted;
 	cpu = get_cpu(myid);
@@ -73,9 +75,15 @@ void cpu_entry(void)
 	cpu->flags |= CPU_UP;
 	*booted=0;
 	while(!mmu_ready);
-	//vm_switch((page_dir_t *)current_dir);
-	//cpu->flags |= CPU_PAGING;
-	//set_lapic_timer(lapic_timer_start);
+	
+	//kprintf("GOODMORNING MOTHERFUCKER: %x\n", cpu->kd_phys);
+	__asm__ volatile ("mov %0, %%cr3" : : "r" (cpu->kd_phys));
+	unsigned cr0temp;
+	enable_paging();
+	
+	//kprintf("yeah, got paging!\nallocate...\n");
+	//unsigned x = pm_alloc_page();
+	//kprintf("--> %x\n", x);
 	for(;;);
 }
 

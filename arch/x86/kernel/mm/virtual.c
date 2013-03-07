@@ -78,9 +78,22 @@ void vm_init(unsigned id_map_to)
 void vm_init_2()
 {
 	setup_kernelstack(id_tables);
-	page_dir_t *c = vm_clone(page_directory, 0);
-	kernel_dir = c;
-	vm_switch(c);
+#if CONFIG_SMP
+	cpu_t *p = cpu_list;
+	while(p)
+	{
+		printk(0, "[mm]: cloning directory for processor %d\n", p->apicid);
+		p->kd = vm_clone(page_directory, 0);
+		p->kd_phys = p->kd[1023] & PAGE_MASK;
+		printk(0, "--> %x\n", p->kd_phys);
+		p=p->next;
+	}
+#else
+	primary_cpu.kd = vm_clone(page_directory, 0);
+	primary_cpu.kd_phys = primary_cpu.kd[1023] & PAGE_MASK;
+#endif
+	kernel_dir = primary_cpu.kd;
+	vm_switch(primary_cpu.kd);
 }
 
 void vm_switch(page_dir_t *n/*VIRTUAL ADDRESS*/)

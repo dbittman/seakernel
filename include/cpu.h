@@ -1,5 +1,6 @@
 #ifndef CPU_H
 #define CPU_H
+#include <memory.h>
 typedef struct {
     char manufacturer_string[13];
     int max_basic_input_val;
@@ -15,6 +16,8 @@ typedef struct __cpu_t__ {
 	unsigned flags;
 	cpuid_t cpuid;
 	int apicid;
+	page_dir_t *kd;
+	addr_t kd_phys;
 	volatile void *current;
 	char stack[1024];
 	struct __cpu_t__ *next, *prev;

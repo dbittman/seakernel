@@ -21,7 +21,7 @@ void init_multitasking()
 	if(!task)
 		panic(PANIC_NOSYNC, "Unable to allocate memory for tasking?");
 	page_directory[PAGE_DIR_IDX(SMP_CUR_TASK / PAGE_SIZE)] = (unsigned)task;
-	
+	page_directory[PAGE_DIR_IDX(SMP_CUR_CPU / PAGE_SIZE)] = (unsigned)(&primary_cpu);
 	task->pid = next_pid++;
 	task->pd = (page_dir_t *)kernel_dir;
 	task->stack_end=STACK_LOCATION;
@@ -128,4 +128,10 @@ void task_unblock_all(struct llist *list)
 		ll_maybe_reset_loop(list, cur, next);
 	}
 	rwlock_release(&list->rwl, RWL_WRITER);
+}
+
+void move_task_cpu(task_t *t, cpu_t *cpu)
+{
+	#warning "implement something like this..."
+	#warning "CURRENT CPU IS PAGE_DIR[SMP_CUR_CPU]"
 }

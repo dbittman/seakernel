@@ -29,7 +29,6 @@ pmode_enter:
   mov ds, ax
   mov es, ax
   mov fs, ax
-  mov gs, ax
   mov ss, ax
   mov esp, 0x6900
   mov eax, DWORD [0x72FC]

@@ -129,6 +129,7 @@ int probe_smp();
 
 int set_int(unsigned new)
 {
+	#warning "this (and other places) need to use the current cpu..."
 	unsigned old = primary_cpu.flags&CPU_INTER;
 	if(!new) {
 		primary_cpu.flags &= ~CPU_INTER;

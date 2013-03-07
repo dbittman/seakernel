@@ -80,7 +80,10 @@ void cpu_entry(void)
 	__asm__ volatile ("mov %0, %%cr3" : : "r" (cpu->kd_phys));
 	unsigned cr0temp;
 	enable_paging();
-	for(;;) asm("cli;hlt");
+	sti();
+	/* well, now we wait for the scheduler to move us out of
+	 * this endless loop and into a task. */
+	while(!cpu->queue);
 }
 
 extern int bootmainloop(void);

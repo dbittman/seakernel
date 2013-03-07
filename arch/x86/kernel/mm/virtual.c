@@ -85,7 +85,6 @@ void vm_init_2()
 		printk(0, "[mm]: cloning directory for processor %d\n", p->apicid);
 		p->kd = vm_clone(page_directory, 0);
 		p->kd_phys = p->kd[1023] & PAGE_MASK;
-		printk(0, "--> %x\n", p->kd_phys);
 		p=p->next;
 	}
 #else

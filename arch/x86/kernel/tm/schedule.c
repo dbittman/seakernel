@@ -117,9 +117,9 @@ void schedule()
 		mov %3, %%cr3;"
 	: : "r"(new->eip), "r"(new->esp), "r"(new->ebp), 
 			"r"(new->pd[1023]&PAGE_MASK) : "eax");
-	if(likely(!(current_task->flags & TF_FORK)))
+	if(likely(!(new->flags & TF_FORK)))
 		return (void) post_context_switch();
-	current_task->flags &= ~TF_FORK;
+	new->flags &= ~TF_FORK;
 	asm("jmp *%0"::"r"(current_task->eip));
 }
 

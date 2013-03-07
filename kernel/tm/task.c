@@ -4,9 +4,9 @@
 #include <elf.h>
 #include <tqueue.h>
 volatile task_t *kernel_task=0, *alarm_list_start=0;
-#if !(CONFIG_SMP)
-volatile task_t *current_task=0;
-#endif
+//#if !(CONFIG_SMP)
+//volatile task_t *current_task=0;
+//#endif
 extern volatile page_dir_t *kernel_dir;
 volatile unsigned next_pid=0;
 volatile task_t *tokill=0, *end_tokill=0;
@@ -20,7 +20,7 @@ void init_multitasking()
 	task_t *task = (task_t *)kmalloc(sizeof(task_t));
 	if(!task)
 		panic(PANIC_NOSYNC, "Unable to allocate memory for tasking?");
-	kernel_dir[PAGE_DIR_IDX(SMP_CUR_TASK / PAGE_SIZE)] = (unsigned)task;
+	page_directory[PAGE_DIR_IDX(SMP_CUR_TASK / PAGE_SIZE)] = (unsigned)task;
 	
 	task->pid = next_pid++;
 	task->pd = (page_dir_t *)kernel_dir;
@@ -50,7 +50,7 @@ void init_multitasking()
 #if CONFIG_SMP
 	add_kernel_symbol(get_cpu);
 #else
-	_add_kernel_symbol((unsigned)(task_t **)&current_task, "current_task");
+	//_add_kernel_symbol((unsigned)(task_t **)&current_task, "current_task");
 #endif
 	_add_kernel_symbol((unsigned)(task_t **)&kernel_task, "kernel_task");
 #endif

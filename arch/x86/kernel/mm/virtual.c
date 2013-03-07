@@ -5,7 +5,6 @@
 #include <task.h>
 char paging_enabled=0;
 volatile page_dir_t *kernel_dir=0;
-unsigned *page_directory=(unsigned *)DIR_PHYS, *page_tables=(unsigned *)TBL_PHYS;
 unsigned int cr0temp;
 int id_tables=0;
 struct pd_data *pd_cur_data = (struct pd_data *)PDIR_DATA;

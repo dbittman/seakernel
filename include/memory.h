@@ -23,6 +23,9 @@
 #define PAGE_DIR_IDX(x) ((uint32_t)x/1024)
 #define PAGE_TABLE_IDX(x) ((uint32_t)x%1024)
 #define PAGE_DIR_PHYS(x) (x[1023]&PAGE_MASK)
+
+#define page_directory ((unsigned *)DIR_PHYS)
+#define page_tables ((unsigned *)TBL_PHYS)
 typedef unsigned int page_dir_t;
 
 struct pd_data {
@@ -44,7 +47,6 @@ extern mutex_t pm_mutex;
 extern volatile int mmu_ready;
 extern char paging_enabled;
 extern volatile page_dir_t *kernel_dir, *current_dir;
-extern addr_t *page_directory, *page_tables;
 extern int id_tables;
 
 #define disable_paging() \

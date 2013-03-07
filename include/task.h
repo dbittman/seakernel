@@ -8,6 +8,7 @@
 #include <mmfile.h>
 #include <dev.h>
 #include <tqueue.h>
+#include <cpu.h>
 
 extern tqueue_t *primary_queue, *active_queue;
 
@@ -53,9 +54,8 @@ extern tqueue_t *primary_queue, *active_queue;
 #define TSEARCH_TTY     0x10
 #define TSEARCH_PARENT  0x20
 #define TSEARCH_ENUM    0x40
-#if CONFIG_SMP
-#define current_task (__get_current_task())
-#endif
+
+#define current_task ((task_t *)page_directory[PAGE_DIR_IDX(SMP_CUR_TASK/PAGE_SIZE)])
 
 #if SCHED_TTY
 static int sched_tty = SCHED_TTY_CYC;
@@ -134,29 +134,11 @@ typedef volatile struct task_struct
 
 extern volatile task_t *kernel_task, *tokill, *alarm_list_start;
 
-#if CONFIG_SMP
-#include <cpu.h>
-static inline __attribute__((always_inline))  volatile task_t *__get_current_task()
-{
-	unsigned t=0;
-	if(kernel_task)
-		return (task_t *)page_directory[PAGE_DIR_IDX(SMP_CUR_TASK/PAGE_SIZE)];
-	return (task_t *)t;
-}
-#else /* !CONFIG_SMP */
-extern volatile task_t *current_task;
-#endif
-
 static inline __attribute__((always_inline)) 
 void set_current_task_dp(task_t *t, int cpu)
 {
-#if CONFIG_SMP
-	//cpu_t *c = get_cpu(cpu);
-	//c->current = (void *)t;
-#else
-	current_task = t;
+	
 	return;
-#endif
 }
 
 #define raise_flag(f) current_task->flags |= f

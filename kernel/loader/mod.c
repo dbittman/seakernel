@@ -88,6 +88,7 @@ int load_module(char *path, char *args, int flags)
 	modules = tmp;
 	tmp->next = old;
 	mutex_release(&mod_mutex);
+	printk(0, "[mod]: loaded module '%s' @[%x - %x]\n", path, tmp->base, tmp->base + len + 0x4000);
 	return ((int (*)(char *))tmp->entry)(args);
 }
 

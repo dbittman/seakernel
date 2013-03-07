@@ -75,7 +75,7 @@ void cpu_entry(void)
 	while(!mmu_ready);
 	//vm_switch((page_dir_t *)current_dir);
 	//cpu->flags |= CPU_PAGING;
-	set_lapic_timer(lapic_timer_start);
+	//set_lapic_timer(lapic_timer_start);
 	for(;;);
 }
 

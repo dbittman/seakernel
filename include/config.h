@@ -60,6 +60,8 @@
 
 #define PDIR_DATA		   0xF0000000
 
+/* this entry in the page directory actually just points to the current
+ * task */
 #define SMP_CUR_TASK       0xF0400000
 
 #define DIR_PHYS           0xFFBFF000

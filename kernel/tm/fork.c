@@ -88,6 +88,10 @@ int do_fork(unsigned flags)
 		kfree((void *)new);
 		return -ENOMEM;
 	}
+	/* set the address space's entry for the current task.
+	 * this is a fast and easy way to store the "what task am I" data
+	 * that gets automatically updated when the scheduler switches
+	 * into a new address space */
 	newspace[PAGE_DIR_IDX(SMP_CUR_TASK/PAGE_SIZE)] = (unsigned)new;
 	/* Create the new task structure */
 	task_t *parent = (task_t *)current_task;

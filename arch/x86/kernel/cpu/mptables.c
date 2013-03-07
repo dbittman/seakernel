@@ -80,10 +80,11 @@ void cpu_entry(void)
 	__asm__ volatile ("mov %0, %%cr3" : : "r" (cpu->kd_phys));
 	unsigned cr0temp;
 	enable_paging();
-	
-	//kprintf("yeah, got paging!\nallocate...\n");
-	//unsigned x = pm_alloc_page();
-	//kprintf("--> %x\n", x);
+	while(1) {
+	kprintf("yeah, got paging!\nallocate...\n");
+	unsigned x = pm_alloc_page();
+	kprintf("--> %x\n", x);
+}
 	for(;;);
 }
 

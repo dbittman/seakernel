@@ -4,6 +4,7 @@
 #include <kernel.h>
 #include <memory.h>
 #include <task.h>
+#include <cpu.h>
 extern struct llist *kill_queue;
 
 void clear_resources(task_t *t)
@@ -16,7 +17,7 @@ void set_as_dead(task_t *t)
 	assert(t);
 	t->state = TASK_DEAD;
 	tqueue_remove(primary_queue, t->listnode);
-	tqueue_remove(active_queue, t->activenode);
+	tqueue_remove(((cpu_t *)t->cpu)->active_queue, t->activenode);
 	t->listnode = ll_insert(kill_queue, (void *)t);
 	/* Add to death */
 	__engage_idle();

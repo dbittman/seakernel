@@ -5,7 +5,7 @@
 #include <mutex.h>
 #include <cpu.h>
 #include <memory.h>
-
+#include <atomic.h>
 int total_processors=0, tried_processors=0;
 unsigned cpu_array, cpu_array_np=0;
 unsigned bootstrap=0;
@@ -53,6 +53,22 @@ int TEST_BOOTED(unsigned a)
 {
 	return (*(unsigned *)(0x7200) == 0);
 }
+
+void cpu_k_task_entry(task_t *me)
+{
+	kprintf("GOT HERE\n");
+	page_directory[PAGE_DIR_IDX(SMP_CUR_TASK / PAGE_SIZE)] = (unsigned)me;
+	for(;;);
+	
+	kprintf("ENTRY\n");
+	
+	schedule();
+	
+	kprintf("YEEEAH\n");
+	
+	for(;;);
+}
+
 void load_tables_ap();
 void set_lapic_timer(unsigned tmp);
 extern unsigned lapic_timer_start;
@@ -76,14 +92,42 @@ void cpu_entry(void)
 	*booted=0;
 	while(!mmu_ready);
 	
-	//kprintf("GOODMORNING MOTHERFUCKER: %x\n", cpu->kd_phys);
 	__asm__ volatile ("mov %0, %%cr3" : : "r" (cpu->kd_phys));
 	unsigned cr0temp;
 	enable_paging();
-	sti();
-	/* well, now we wait for the scheduler to move us out of
-	 * this endless loop and into a task. */
-	while(!cpu->queue);
+	
+	unsigned i;
+	for(i=(unsigned int)STACK_LOCATION+STACK_SIZE; i >= (unsigned int)STACK_LOCATION - STACK_SIZE*2;i -= 0x1000) {
+		vm_map(i, pm_alloc_page(), PAGE_PRESENT | PAGE_WRITE | PAGE_USER, MAP_CRIT);
+		memset((void *)i, 0, 0x1000);
+	}
+	kprintf("Waiting for tasking...\n");
+	while(!kernel_task) cli();
+	kprintf("Enable tasks.. %x\n", cpu);
+	
+	task_t *task = (task_t *)kmalloc(sizeof(task_t));
+	page_directory[PAGE_DIR_IDX(SMP_CUR_CPU / PAGE_SIZE)] = (unsigned)(cpu);
+	task->pid = add_atomic(&next_pid, 1)-1;
+	task->pd = (page_dir_t *)cpu->kd;
+	task->stack_end=STACK_LOCATION;
+	task->kernel_stack = kmalloc(KERN_STACK_SIZE+8);
+	task->priority = 1;
+	task->magic = TASK_MAGIC;
+	cpu->active_queue = tqueue_create(0, 0);
+	task->listnode = tqueue_insert(primary_queue, (void *)task);
+	task->activenode = tqueue_insert(cpu->active_queue, (void *)task);
+	cpu->ktask = task;
+	//cpu_k_task_entry();
+	
+	//for(;;);
+	asm(" \
+		mov %0, %%eax; \
+		mov %1, %%ebx; \
+		mov %2, %%esp; \
+		mov %2, %%ebp; \
+		push %%ebx; \
+		call *%%eax;" :: "r" (cpu_k_task_entry),"r"(task),"r"(STACK_LOCATION + STACK_SIZE - STACK_ELEMENT_SIZE));
+	for(;;);
 }
 
 extern int bootmainloop(void);

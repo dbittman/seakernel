@@ -3,6 +3,7 @@
 #include <memory.h>
 #include <isr.h>
 #include <task.h>
+#include <cpu.h>
 char paging_enabled=0;
 volatile page_dir_t *kernel_dir=0;
 unsigned int cr0temp;

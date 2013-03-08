@@ -2,6 +2,7 @@
 #include <kernel.h>
 #include <memory.h>
 #include <task.h>
+#include <cpu.h>
 
 void _overflow(char *type)
 {
@@ -27,7 +28,8 @@ __attribute__((always_inline)) inline task_t *get_next_task(task_t *prev)
 	assert(prev && kernel_task);
 	#warning "better place for this?"
 	__engage_idle();
-	task_t *t = tqueue_next(active_queue);
+	cpu_t *cpu = prev->cpu;
+	task_t *t = tqueue_next(cpu->active_queue);
 	while(t)
 	{
 		assert(t);
@@ -38,7 +40,7 @@ __attribute__((always_inline)) inline task_t *get_next_task(task_t *prev)
 		update_task(t);
 		if(task_is_runable(t))
 			return t;
-		t = tqueue_next(active_queue);
+		t = tqueue_next(cpu->active_queue);
 		/* This way the kernel can sleep without being in danger of 
 		 * causing a lockup. Basically, if the kernel is the only
 		 * runnable task, it gets forced to run */
@@ -75,11 +77,10 @@ __attribute__((always_inline)) static inline void post_context_switch()
 	}
 }
 
-__attribute__((always_inline)) static inline void store_context(unsigned eip)
+__attribute__((always_inline)) static inline void store_context()
 {
 	asm("mov %%esp, %0" : "=r"(current_task->esp));
 	asm("mov %%ebp, %0" : "=r"(current_task->ebp));
-	current_task->eip = eip;
 	/* Check for stack and heap overflow */
 	if(!current_task->esp || (!(current_task->esp >= TOP_TASK_MEM_EXEC && current_task->esp < TOP_TASK_MEM) 
 			&& !(current_task->esp >= KMALLOC_ADDR_START && current_task->esp < KMALLOC_ADDR_END)))
@@ -107,7 +108,7 @@ void schedule()
 	if(set_int(0))
 		current_task->flags |= TF_SETINT;
 	task_t *old = current_task;
-	store_context(read_eip());
+	store_context();
 	volatile task_t *new = (volatile task_t *)get_next_task(old);
 	set_current_task_dp(new, 0 /* TODO: this should be the current CPU */);
 	restore_context(new);
@@ -115,7 +116,7 @@ void schedule()
 		mov %1, %%esp;       \
 		mov %2, %%ebp;       \
 		mov %3, %%cr3;"
-	: : "r"(new->eip), "r"(new->esp), "r"(new->ebp), 
+	: : "r"(0), "r"(new->esp), "r"(new->ebp), 
 			"r"(new->pd[1023]&PAGE_MASK) : "eax");
 	if(likely(!(new->flags & TF_FORK)))
 		return (void) post_context_switch();

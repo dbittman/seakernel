@@ -3,6 +3,8 @@
 #include <memory.h>
 #include <task.h>
 #include <atomic.h>
+#include <cpu.h>
+
 extern void copy_update_stack(unsigned old, unsigned new, unsigned length);
 
 void copy_task_struct(task_t *new, task_t *parent)
@@ -101,7 +103,8 @@ int do_fork(unsigned flags)
 	 * And then add it to the queue */
 	new->state = TASK_USLEEP;
 	new->listnode = tqueue_insert(primary_queue, (void *)new);
-	new->activenode = tqueue_insert(active_queue, (void *)new);
+	new->activenode = tqueue_insert(primary_cpu.active_queue, (void *)new);
+	new->cpu = &primary_cpu;
 	/* Copy the stack */
 	cli();
 	engage_new_stack(new, parent);

@@ -8,7 +8,6 @@
 #include <mmfile.h>
 #include <dev.h>
 #include <tqueue.h>
-#include <cpu.h>
 
 extern tqueue_t *primary_queue, *active_queue;
 
@@ -129,6 +128,7 @@ typedef volatile struct task_struct
 	unsigned alrm_count;
 	struct llistnode *listnode, *blocknode, *activenode;
 	struct llist *blocklist;
+	void *cpu;
 	volatile struct task_struct *parent, *waiting, *alarm_next;
 } task_t;
 

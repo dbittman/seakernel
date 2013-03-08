@@ -1,6 +1,7 @@
 #include <kernel.h>
 #include <isr.h>
 #include <task.h>
+#include <cpu.h>
 extern void ack(int);
 extern unsigned read_epi();
 extern void check_alarms();
@@ -44,6 +45,8 @@ void run_scheduler()
 void do_tick()
 {
 	if(!current_task)
+		return;
+	if(!(((cpu_t *)page_directory[PAGE_DIR_IDX(SMP_CUR_CPU / PAGE_SIZE)])->flags & CPU_TASK))
 		return;
 	if(current_task) {
 		unsigned *t;

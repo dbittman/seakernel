@@ -2,6 +2,7 @@
 #define CPU_H
 #include <memory.h>
 #include <tqueue.h>
+#include <task.h>
 typedef struct {
     char manufacturer_string[13];
     int max_basic_input_val;
@@ -19,7 +20,8 @@ typedef struct __cpu_t__ {
 	int apicid;
 	page_dir_t *kd;
 	addr_t kd_phys;
-	tqueue_t *queue;
+	tqueue_t *active_queue;
+	task_t *ktask;
 	char stack[1024];
 	struct __cpu_t__ *next, *prev;
 } cpu_t;
@@ -32,6 +34,7 @@ void add_cpu(cpu_t *c);
 #define CPU_FPU    0x10
 #define CPU_PAGING 0x20
 #define CPU_INTER  0x40
+#define CPU_TASK   0x80
 extern cpu_t primary_cpu;
 
 void parse_cpuid(cpu_t *);

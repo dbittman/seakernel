@@ -3,6 +3,7 @@
 #include <task.h>
 #include <elf.h>
 #include <tqueue.h>
+#include <cpu.h>
 volatile task_t *kernel_task=0, *alarm_list_start=0;
 //#if !(CONFIG_SMP)
 //volatile task_t *current_task=0;
@@ -12,7 +13,7 @@ volatile unsigned next_pid=0;
 volatile task_t *tokill=0, *end_tokill=0;
 extern void do_switch_to_user_mode();
 struct llist *kill_queue=0;
-tqueue_t *primary_queue=0, *active_queue=0;
+tqueue_t *primary_queue=0;
 
 void init_multitasking()
 {
@@ -28,13 +29,14 @@ void init_multitasking()
 	task->kernel_stack = kmalloc(KERN_STACK_SIZE+8);
 	task->priority = 1;
 	task->magic = TASK_MAGIC;
+	task->cpu = &primary_cpu;
 	kill_queue = ll_create(0);
 	primary_queue = tqueue_create(0, 0);
-	active_queue = tqueue_create(0, 0);
+	primary_cpu.active_queue = tqueue_create(0, 0);
 	task->listnode = tqueue_insert(primary_queue, (void *)task);
-	task->activenode = tqueue_insert(active_queue, (void *)task);
-	kernel_task = task;
+	task->activenode = tqueue_insert(primary_cpu.active_queue, (void *)task);
 	set_current_task_dp(task, 0);
+	kernel_task = task;
 #if CONFIG_MODULES
 	add_kernel_symbol(delay);
 	add_kernel_symbol(delay_sleep);
@@ -98,14 +100,14 @@ void task_block(struct llist *list, task_t *task)
 	__engage_idle();
 	task->blocklist = list;
 	task->blocknode = ll_insert(list, (void *)task);
-	tqueue_remove(active_queue, task->activenode);
+	tqueue_remove(((cpu_t *)task->cpu)->active_queue, task->activenode);
 	task->activenode = 0;
 	if(task == current_task) task_pause(task);
 }
 
 void task_unblock(struct llist *list, task_t *t)
 {
-	t->activenode = tqueue_insert(active_queue, (void *)t);
+	t->activenode = tqueue_insert(((cpu_t *)t->cpu)->active_queue, (void *)t);
 	struct llistnode *bn = t->blocknode;
 	t->blocknode = 0;
 	t->blocklist = 0;
@@ -120,7 +122,7 @@ void task_unblock_all(struct llist *list)
 	task_t *entry;
 	ll_for_each_entry_safe(list, cur, next, task_t *, entry)
 	{
-		entry->activenode = tqueue_insert(active_queue, (void *)entry);
+		entry->activenode = tqueue_insert(((cpu_t *)entry->cpu)->active_queue, (void *)entry);
 		entry->blocklist = 0;
 		entry->blocknode = 0;
 		ll_do_remove(list, cur, 1);

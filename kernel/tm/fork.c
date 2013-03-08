@@ -103,8 +103,9 @@ int do_fork(unsigned flags)
 	 * And then add it to the queue */
 	new->state = TASK_USLEEP;
 	new->listnode = tqueue_insert(primary_queue, (void *)new);
-	new->activenode = tqueue_insert(primary_cpu.active_queue, (void *)new);
-	new->cpu = &primary_cpu;
+	new->activenode = tqueue_insert(((cpu_t *)(parent->cpu))->active_queue, (void *)new);
+	new->cpu = parent->cpu;
+	newspace[PAGE_DIR_IDX(SMP_CUR_CPU/PAGE_SIZE)] = (unsigned)new->cpu;
 	/* Copy the stack */
 	cli();
 	engage_new_stack(new, parent);

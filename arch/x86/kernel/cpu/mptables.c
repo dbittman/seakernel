@@ -56,17 +56,16 @@ int TEST_BOOTED(unsigned a)
 
 void cpu_k_task_entry(task_t *me)
 {
-	kprintf("GOT HERE\n");
 	page_directory[PAGE_DIR_IDX(SMP_CUR_TASK / PAGE_SIZE)] = (unsigned)me;
+	((cpu_t *)(me->cpu))->flags |= CPU_TASK;
 	for(;;);
-	
-	kprintf("ENTRY\n");
-	
-	schedule();
-	
-	kprintf("YEEEAH\n");
-	
-	for(;;);
+	kprintf("YEEEAH %x, %x, %x\n", me, me->cpu, current_task);
+	for(;;) {
+		unsigned x = ticks + 1000;
+		while(x > ticks);
+		printk(0, "%d ", current_task->pid);
+		schedule();
+	}
 }
 
 void load_tables_ap();
@@ -78,8 +77,8 @@ void cpu_entry(void)
 {
 	int myid = *booted;
 	cpu_t *cpu = get_cpu(myid);
-	asm("mov %0, %%esp" : : "r" (cpu->stack + 1020));
-	asm("mov %0, %%ebp" : : "r" (cpu->stack + 1020));
+	asm("mov %0, %%esp" : : "r" (cpu->stack + 1000));
+	asm("mov %0, %%ebp" : : "r" (cpu->stack + 1000));
 	enable_A20();
 	load_tables_ap();
 	myid = *booted;
@@ -90,8 +89,8 @@ void cpu_entry(void)
 	init_lapic();
 	cpu->flags |= CPU_UP;
 	*booted=0;
-	while(!mmu_ready);
-	
+	#warning "need to rewrite all the cpu code"
+	while(!mmu_ready && !cpu->kd); for(;;);
 	__asm__ volatile ("mov %0, %%cr3" : : "r" (cpu->kd_phys));
 	unsigned cr0temp;
 	enable_paging();
@@ -101,9 +100,9 @@ void cpu_entry(void)
 		vm_map(i, pm_alloc_page(), PAGE_PRESENT | PAGE_WRITE | PAGE_USER, MAP_CRIT);
 		memset((void *)i, 0, 0x1000);
 	}
-	kprintf("Waiting for tasking...\n");
+	kprintf("[cpu%d]: Waiting for tasking...\n", myid);
 	while(!kernel_task) cli();
-	kprintf("Enable tasks.. %x\n", cpu);
+	kprintf("[cpu%d]: Enable tasks...\n", myid);
 	
 	task_t *task = (task_t *)kmalloc(sizeof(task_t));
 	page_directory[PAGE_DIR_IDX(SMP_CUR_CPU / PAGE_SIZE)] = (unsigned)(cpu);
@@ -117,6 +116,7 @@ void cpu_entry(void)
 	task->listnode = tqueue_insert(primary_queue, (void *)task);
 	task->activenode = tqueue_insert(cpu->active_queue, (void *)task);
 	cpu->ktask = task;
+	task->cpu = cpu;
 	//cpu_k_task_entry();
 	
 	//for(;;);

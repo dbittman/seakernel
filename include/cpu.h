@@ -22,7 +22,7 @@ typedef struct __cpu_t__ {
 	addr_t kd_phys;
 	tqueue_t *active_queue;
 	task_t *ktask;
-	char stack[1024];
+	unsigned stack[1024];
 	struct __cpu_t__ *next, *prev;
 } cpu_t;
 int initAcpi(void);

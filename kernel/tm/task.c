@@ -37,6 +37,7 @@ void init_multitasking()
 	task->activenode = tqueue_insert(primary_cpu.active_queue, (void *)task);
 	set_current_task_dp(task, 0);
 	kernel_task = task;
+	primary_cpu.flags |= CPU_TASK;
 #if CONFIG_MODULES
 	add_kernel_symbol(delay);
 	add_kernel_symbol(delay_sleep);

@@ -129,13 +129,13 @@ int probe_smp();
 
 int set_int(unsigned new)
 {
-	#warning "this (and other places) need to use the current cpu..."
-	unsigned old = primary_cpu.flags&CPU_INTER;
+	cpu_t *cpu = current_task->cpu;
+	unsigned old = cpu->flags&CPU_INTER;
 	if(!new) {
-		primary_cpu.flags &= ~CPU_INTER;
+		cpu->flags &= ~CPU_INTER;
 		asm("cli");
 	} else if(tables) {
-		primary_cpu.flags |= CPU_INTER;
+		cpu->flags |= CPU_INTER;
 		asm("sti");
 	}
 	return old;

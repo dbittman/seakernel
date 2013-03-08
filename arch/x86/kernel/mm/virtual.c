@@ -83,7 +83,7 @@ void vm_init_2()
 	cpu_t *p = cpu_list;
 	while(p)
 	{
-		printk(0, "[mm]: cloning directory for processor %d\n", p->apicid);
+		printk(0, "[mm]: cloning directory for processor (%x) %d\n", p, p->apicid);
 		p->kd = vm_clone(page_directory, 0);
 		p->kd_phys = p->kd[1023] & PAGE_MASK;
 		p=p->next;
@@ -94,6 +94,7 @@ void vm_init_2()
 #endif
 	kernel_dir = primary_cpu.kd;
 	vm_switch(primary_cpu.kd);
+	printk(0, "[mm]: using cloned directory\n");
 }
 
 void vm_switch(page_dir_t *n/*VIRTUAL ADDRESS*/)

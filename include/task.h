@@ -128,6 +128,7 @@ typedef volatile struct task_struct
 	unsigned alrm_count;
 	struct llistnode *listnode, *blocknode, *activenode;
 	struct llist *blocklist;
+	mutex_t cpu_lock;
 	void *cpu;
 	volatile struct task_struct *parent, *waiting, *alarm_next;
 } task_t;

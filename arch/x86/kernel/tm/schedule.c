@@ -97,6 +97,7 @@ __attribute__((always_inline)) static inline void restore_context(task_t *new)
 	set_kernel_stack(new->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
 	/* keep track of when we got to run */
 	new->slice = ticks;
+	((cpu_t *)new->cpu)->cur = new;
 }
 /*This is the magic super awesome and important kernel function 'schedule()'. 
  * It is arguable the most important function. Here we store the current 
@@ -108,10 +109,13 @@ void schedule()
 	if(set_int(0))
 		current_task->flags |= TF_SETINT;
 	task_t *old = current_task;
+	cpu_t *cpu = (cpu_t *)old->cpu;
+	assert(cpu->cur == old);
+	mutex_acquire(&cpu->lock);
 	store_context();
 	volatile task_t *new = (volatile task_t *)get_next_task(old);
-	set_current_task_dp(new, 0 /* TODO: this should be the current CPU */);
 	restore_context(new);
+	mutex_release(&cpu->lock);
 	asm("         \
 		mov %1, %%esp;       \
 		mov %2, %%ebp;       \

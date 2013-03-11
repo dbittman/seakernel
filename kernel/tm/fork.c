@@ -9,6 +9,7 @@ extern void copy_update_stack(unsigned old, unsigned new, unsigned length);
 
 void copy_task_struct(task_t *new, task_t *parent)
 {
+	mutex_create((mutex_t *)&new->cpu_lock, 0);
 	new->parent = parent;
 	new->pid = add_atomic(&next_pid, 1)-1;
 	if(parent->root) {
@@ -105,7 +106,6 @@ int do_fork(unsigned flags)
 	new->listnode = tqueue_insert(primary_queue, (void *)new);
 	new->activenode = tqueue_insert(((cpu_t *)(parent->cpu))->active_queue, (void *)new);
 	new->cpu = parent->cpu;
-	newspace[PAGE_DIR_IDX(SMP_CUR_CPU/PAGE_SIZE)] = (unsigned)new->cpu;
 	/* Copy the stack */
 	cli();
 	engage_new_stack(new, parent);

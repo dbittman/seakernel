@@ -5,6 +5,7 @@
 #include <cpu.h>
 #include <task.h>
 #include <mutex.h>
+#include <imps.h>
 #define MAX_IOAPIC 8
 #define write_ioapic(l,o,v) ioapic_rw(l, WRITE, o, v)
 #define read_ioapic(l,o) ioapic_rw(l, READ, o, 0)

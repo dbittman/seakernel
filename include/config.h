@@ -63,8 +63,6 @@
 /* this entry in the page directory actually just points to the current
  * task */
 #define SMP_CUR_TASK       0xF0400000
-/* points to the current CPU structure */
-#define SMP_CUR_CPU        0xF0800000
 
 #define DIR_PHYS           0xFFBFF000
 #define TBL_PHYS           0xFFC00000

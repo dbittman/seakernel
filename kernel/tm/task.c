@@ -22,7 +22,7 @@ void init_multitasking()
 	if(!task)
 		panic(PANIC_NOSYNC, "Unable to allocate memory for tasking?");
 	page_directory[PAGE_DIR_IDX(SMP_CUR_TASK / PAGE_SIZE)] = (unsigned)task;
-	page_directory[PAGE_DIR_IDX(SMP_CUR_CPU / PAGE_SIZE)] = (unsigned)(&primary_cpu);
+	mutex_create((mutex_t *)&task->cpu_lock, 0);
 	task->pid = next_pid++;
 	task->pd = (page_dir_t *)kernel_dir;
 	task->stack_end=STACK_LOCATION;
@@ -30,6 +30,7 @@ void init_multitasking()
 	task->priority = 1;
 	task->magic = TASK_MAGIC;
 	task->cpu = primary_cpu;
+	primary_cpu->cur = task;
 	kill_queue = ll_create(0);
 	primary_queue = tqueue_create(0, 0);
 	primary_cpu->active_queue = tqueue_create(0, 0);

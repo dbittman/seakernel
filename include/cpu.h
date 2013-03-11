@@ -3,6 +3,7 @@
 #include <memory.h>
 #include <tqueue.h>
 #include <task.h>
+#include <mutex.h>
 typedef struct {
     char manufacturer_string[13];
     int max_basic_input_val;
@@ -21,7 +22,8 @@ typedef struct __cpu_t__ {
 	page_dir_t *kd;
 	addr_t kd_phys;
 	tqueue_t *active_queue;
-	task_t *ktask;
+	task_t *ktask, *cur;
+	mutex_t lock;
 	unsigned stack[1024];
 	struct __cpu_t__ *next, *prev;
 } cpu_t;
@@ -36,7 +38,7 @@ cpu_t *add_cpu(cpu_t *c);
 #define CPU_INTER  0x40
 #define CPU_TASK   0x80
 extern cpu_t *primary_cpu;
-extern cpu_t cpu_array[256];
+extern cpu_t cpu_array[CONFIG_MAX_CPUS];
 extern unsigned cpu_array_num;
 void parse_cpuid(cpu_t *);
 void init_sse(cpu_t *);
@@ -49,8 +51,10 @@ void setup_fpu(cpu_t *);
 
 #if CONFIG_SMP
 /* The following definitions are taken from http://www.uruk.org/mps/ */
-
-
+extern unsigned num_cpus, num_booted_cpus, num_failed_cpus;
+int boot_cpu(unsigned id, unsigned apic_ver);
+void calibrate_lapic_timer(unsigned freq);
+extern char smp_enabled;
 #define APIC_BCAST_ID			       	0xFF
 #define	APIC_VERSION(x)				((x) & 0xFF)
 #define	APIC_MAXREDIR(x)			(((x) >> 16) & 0xFF)
@@ -100,102 +104,9 @@ void setup_fpu(cpu_t *);
 #define LAPIC_TDCR				0x3E0
 
 
-
-#define IMPS_READ(x)	(*((volatile unsigned *) (x)))
-#define IMPS_WRITE(x,y)	(*((volatile unsigned *) (x)) = (y))
-
-
-#define IMPS_MAX_CPUS			APIC_BCAST_ID
-
-#define IMPS_FPS_SIGNATURE	('_' | ('M'<<8) | ('P'<<16) | ('_'<<24))
-#define IMPS_FPS_IMCRP_BIT	0x80
-#define IMPS_FPS_DEFAULT_MAX	7
-
-#define IMPS_CTH_SIGNATURE	('P' | ('C'<<8) | ('M'<<16) | ('P'<<24))
-
-#define		IMPS_FLAG_ENABLED	1
-#define IMPS_BCT_PROCESSOR		0
-#define		IMPS_CPUFLAG_BOOT	2
-#define IMPS_BCT_BUS			1
-#define IMPS_BCT_IOAPIC			2
-#define IMPS_BCT_IO_INTERRUPT		3
-#define IMPS_BCT_LOCAL_INTERRUPT	4
-#define		IMPS_INT_INT		0
-#define		IMPS_INT_NMI		1
-#define		IMPS_INT_SMI		2
-#define		IMPS_INT_EXTINT		3
-
-struct imps_cth
-{
-	unsigned sig;
-	unsigned short base_length;
-	unsigned char spec_rev;
-	unsigned char checksum;
-	char oem_id[8];
-	char prod_id[12];
-	unsigned oem_table_ptr;
-	unsigned short oem_table_size;
-	unsigned short entry_count;
-	unsigned lapic_addr;
-	unsigned short extended_length;
-	unsigned char extended_checksum;
-	char reserved[1];
-};
-
-struct imps_fps
-{
-	unsigned sig;
-	struct imps_cth *cth_ptr;
-	unsigned char length;
-	unsigned char spec_rev;
-	unsigned char checksum;
-	unsigned char feature_info[5];
-};
-
-struct imps_processor
-{
-	unsigned char type;			/* must be 0 */
-	unsigned char apic_id;
-	unsigned char apic_ver;
-	unsigned char flags;
-	unsigned signature;
-	unsigned features;
-	char reserved[8];
-};
-
-struct imps_bus
-{
-	unsigned char type;			/* must be 1 */
-	unsigned char id;
-	char bus_type[6];
-};
-
-struct imps_ioapic
-{
-	unsigned char type;			/* must be 2 */
-	unsigned char id;
-	unsigned char ver;
-	unsigned char flags;
-	unsigned addr;
-};
-
-struct imps_interrupt
-{
-	unsigned char type;			/* must be 3 or 4 */
-	unsigned char int_type;
-	unsigned short flags;
-	unsigned char source_bus_id;
-	unsigned char source_bus_irq;
-	unsigned char dest_apic_id;
-	unsigned char dest_apic_intin;
-};
-
-void add_ioapic(struct imps_ioapic *ioapic);
-void init_ioapic();
-void lapic_eoi();
 void init_pic();
+int send_ipi(unsigned int dst, unsigned int v);
 
-extern unsigned imps_lapic_addr;
 extern unsigned bootstrap;
 #define EBDA_SEG_ADDR			0x40E
 #define BIOS_RESET_VECTOR		0x467
@@ -209,8 +120,6 @@ void writeCMOS(unsigned char addr, unsigned int value);
 #define CMOS_WRITE_BYTE(x,y) writeCMOS(x,y)
 #define CMOS_READ_BYTE(x) readCMOS(x)
 cpu_t *get_cpu(int id);
-#define IMPS_LAPIC_READ(x)  (*((volatile unsigned *) (imps_lapic_addr+(x))))
-#define IMPS_LAPIC_WRITE(x, y)   \
-   (*((volatile unsigned *) (imps_lapic_addr+(x))) = (y))
+
 #endif
 #endif

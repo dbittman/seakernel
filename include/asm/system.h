@@ -1,6 +1,13 @@
 #ifndef __ASM_SYSTEM_H
 #define __ASM_SYSTEM_H
 #define asm __sync_synchronize(); __asm__ __volatile__
+static unsigned read_msr(unsigned msr)
+{
+	unsigned res;
+	asm("rdmsr":"=a"(res):"c"(msr));
+	return res;
+}
+
 #define sti() __sync_synchronize();set_int(1);
 #define cli() __sync_synchronize();set_int(0);
 #define nop() __sync_synchronize();__asm__ __volatile__ ("nop")

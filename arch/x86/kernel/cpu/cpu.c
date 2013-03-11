@@ -4,9 +4,9 @@
 #include <task.h>
 #include <mutex.h>
 #include <elf.h>
-cpu_t *primary_cpu;
+cpu_t *primary_cpu=0;
 #if CONFIG_SMP
-cpu_t cpu_array[256];
+cpu_t cpu_array[CONFIG_MAX_CPUS];
 unsigned cpu_array_num=0;
 #endif
 
@@ -92,7 +92,10 @@ cpu_t *get_cpu(int id)
 
 cpu_t *add_cpu(cpu_t *c)
 {
+	if(cpu_array_num >= CONFIG_MAX_CPUS)
+		return 0;
 	memcpy(&cpu_array[cpu_array_num], c, sizeof(cpu_t));
+	mutex_create((mutex_t *)&(cpu_array[cpu_array_num].lock), MT_NOSCHED);
 	return &cpu_array[cpu_array_num++];
 }
 
@@ -115,11 +118,16 @@ int set_int(unsigned new)
 
 void init_main_cpu()
 {
+	memset(cpu_array, 0, sizeof(cpu_t) * CONFIG_MAX_CPUS);
+	cpu_array_num = 0;
 #if CONFIG_SMP
+	probe_smp();
+	if(!smp_enabled)
+		primary_cpu = &cpu_array[0];
+#else
 	primary_cpu = &cpu_array[0];
-	memset(cpu_array, 0, sizeof(cpu_t) * 256);
-	cpu_array_num = 1;
 #endif
+	assert(primary_cpu);
 	primary_cpu->flags = CPU_UP | CPU_RUNNING;
 	printk(KERN_MSG, "Initializing CPU...\n");
 	parse_cpuid(primary_cpu);
@@ -127,9 +135,7 @@ void init_main_cpu()
 	init_sse(primary_cpu);
 	printk(KERN_EVERY, "done\n");
 	initAcpi();
-#if CONFIG_SMP
-	probe_smp();
-#endif
+	mutex_create((mutex_t *)&primary_cpu->lock, MT_NOSCHED);
 #if CONFIG_MODULES
 	_add_kernel_symbol((unsigned)(cpu_t *)primary_cpu, "primary_cpu");
 	add_kernel_symbol(set_int);

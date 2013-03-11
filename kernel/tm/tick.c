@@ -46,7 +46,7 @@ void do_tick()
 {
 	if(!current_task)
 		return;
-	if(!(((cpu_t *)page_directory[PAGE_DIR_IDX(SMP_CUR_CPU / PAGE_SIZE)])->flags & CPU_TASK))
+	if(!(((cpu_t *)current_task->cpu)->flags & CPU_TASK))
 		return;
 	if(current_task) {
 		unsigned *t;

@@ -66,7 +66,7 @@ void init_memory(struct multiboot *m)
 	process_memorymap(m);
 	install_kmalloc(KMALLOC_NAME, KMALLOC_INIT, KMALLOC_ALLOC, KMALLOC_FREE);
 	vm_init_2();
-	primary_cpu.flags |= CPU_PAGING;
+	primary_cpu->flags |= CPU_PAGING;
 	mmu_ready=1;
 #if CONFIG_SWAP
 	init_swap();

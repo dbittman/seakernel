@@ -26,7 +26,7 @@ typedef struct __cpu_t__ {
 	struct __cpu_t__ *next, *prev;
 } cpu_t;
 int initAcpi(void);
-void add_cpu(cpu_t *c);
+cpu_t *add_cpu(cpu_t *c);
 #define CPU_UP      0x1
 #define CPU_RUNNING 0x2
 #define CPU_ERROR   0x4
@@ -35,8 +35,9 @@ void add_cpu(cpu_t *c);
 #define CPU_PAGING 0x20
 #define CPU_INTER  0x40
 #define CPU_TASK   0x80
-extern cpu_t primary_cpu;
-
+extern cpu_t *primary_cpu;
+extern cpu_t cpu_array[256];
+extern unsigned cpu_array_num;
 void parse_cpuid(cpu_t *);
 void init_sse(cpu_t *);
 void setup_fpu(cpu_t *);
@@ -48,7 +49,6 @@ void setup_fpu(cpu_t *);
 
 #if CONFIG_SMP
 /* The following definitions are taken from http://www.uruk.org/mps/ */
-extern cpu_t *cpu_list;
 
 
 #define APIC_BCAST_ID			       	0xFF

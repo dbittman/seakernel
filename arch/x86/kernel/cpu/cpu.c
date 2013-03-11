@@ -4,10 +4,10 @@
 #include <task.h>
 #include <mutex.h>
 #include <elf.h>
-cpu_t primary_cpu;
+cpu_t *primary_cpu;
 #if CONFIG_SMP
-cpu_t *cpu_list;
-mutex_t cpulist_lock;
+cpu_t cpu_array[256];
+unsigned cpu_array_num=0;
 #endif
 
 void cpuid_get_features(cpuid_t *cpuid)
@@ -84,44 +84,16 @@ void parse_cpuid(cpu_t *me)
 	memcpy(&(me->cpuid), &cpuid, sizeof(me->cpuid));
 }
 #if CONFIG_SMP
-void remove_cpu(cpu_t *c)
-{
-	mutex_acquire(&cpulist_lock);
-	assert(c->prev);
-	c->prev->next = c->next;
-	if(c->next)
-		c->next->prev = c->prev;
-	mutex_release(&cpulist_lock);
-}
-
-void delete_cpu(cpu_t *c)
-{
-	remove_cpu(c);
-	kfree(c);
-}
-
-void add_cpu(cpu_t *c)
-{
-	assert(cpu_list);
-	mutex_acquire(&cpulist_lock);
-	cpu_t *t = cpu_list->next;
-	cpu_list->next = c;
-	c->prev = cpu_list;
-	if(t)
-		t->prev = c;
-	c->next = t;
-	mutex_release(&cpulist_lock);
-}
 
 cpu_t *get_cpu(int id)
 {
-	cpu_t *c = cpu_list;
-	while(c) {
-		if(c->apicid == id)
-			break;
-		c=c->next;
-	}
-	return c;
+	return &cpu_array[id];
+}
+
+cpu_t *add_cpu(cpu_t *c)
+{
+	memcpy(&cpu_array[cpu_array_num], c, sizeof(cpu_t));
+	return &cpu_array[cpu_array_num++];
 }
 
 int probe_smp();
@@ -144,24 +116,22 @@ int set_int(unsigned new)
 void init_main_cpu()
 {
 #if CONFIG_SMP
-	cpu_list = &primary_cpu;
-	memset(cpu_list, 0, sizeof(*cpu_list));
+	primary_cpu = &cpu_array[0];
+	memset(cpu_array, 0, sizeof(cpu_t) * 256);
+	cpu_array_num = 1;
 #endif
-	primary_cpu.flags = CPU_UP | CPU_RUNNING;
-#if CONFIG_SMP
-	mutex_create(&cpulist_lock, 0);
-#endif
+	primary_cpu->flags = CPU_UP | CPU_RUNNING;
 	printk(KERN_MSG, "Initializing CPU...\n");
-	parse_cpuid(&primary_cpu);
-	setup_fpu(&primary_cpu);
-	init_sse(&primary_cpu);
+	parse_cpuid(primary_cpu);
+	setup_fpu(primary_cpu);
+	init_sse(primary_cpu);
 	printk(KERN_EVERY, "done\n");
 	initAcpi();
 #if CONFIG_SMP
 	probe_smp();
 #endif
 #if CONFIG_MODULES
-	_add_kernel_symbol((unsigned)(cpu_t *)&primary_cpu, "primary_cpu");
+	_add_kernel_symbol((unsigned)(cpu_t *)primary_cpu, "primary_cpu");
 	add_kernel_symbol(set_int);
 #endif
 }

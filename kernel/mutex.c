@@ -12,7 +12,7 @@
 void __mutex_acquire(mutex_t *m, char *file, int line)
 {
 	/* are we re-locking ourselves? */
-	if(m->lock && m->pid == (int)current_task->pid)
+	if(current_task && m->lock && m->pid == (int)current_task->pid)
 		panic(0, "task %d tried to relock mutex (%s:%d)", m->pid, file, line);
 	assert(m->magic == MUTEX_MAGIC);
 	/* wait until we can set bit 0. once this is done, we have the lock */
@@ -20,13 +20,13 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 		if(!(m->flags & MT_NOSCHED))
 			schedule();
 	}
-	m->pid = current_task->pid;
+	if(current_task) m->pid = current_task->pid;
 }
 
 void __mutex_release(mutex_t *m, char *file, int line)
 {
 	assert(m->lock);
-	if(m->pid != (int)current_task->pid)
+	if(current_task && m->pid != (int)current_task->pid)
 		panic(0, "task %d tried to release mutex it didn't own (%s:%d)", m->pid, file, line);
 	assert(m->magic == MUTEX_MAGIC);
 	m->pid = -1;

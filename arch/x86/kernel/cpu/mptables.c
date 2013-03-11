@@ -7,7 +7,6 @@
 #include <memory.h>
 #include <atomic.h>
 int total_processors=0, tried_processors=0;
-unsigned cpu_array, cpu_array_np=0;
 unsigned bootstrap=0;
 volatile int imps_release_cpus = 0;
 int imps_enabled = 0;
@@ -90,7 +89,7 @@ void cpu_entry(void)
 	cpu->flags |= CPU_UP;
 	*booted=0;
 	#warning "need to rewrite all the cpu code"
-	while(!mmu_ready && !cpu->kd); for(;;);
+	while(!mmu_ready && !cpu->kd && !kernel_dir); 
 	__asm__ volatile ("mov %0, %%cr3" : : "r" (cpu->kd_phys));
 	unsigned cr0temp;
 	enable_paging();
@@ -100,10 +99,11 @@ void cpu_entry(void)
 		vm_map(i, pm_alloc_page(), PAGE_PRESENT | PAGE_WRITE | PAGE_USER, MAP_CRIT);
 		memset((void *)i, 0, 0x1000);
 	}
-	kprintf("[cpu%d]: Waiting for tasking...\n", myid);
-	while(!kernel_task) cli();
-	kprintf("[cpu%d]: Enable tasks...\n", myid);
 	
+	printk(0, "[cpu%d]: Waiting for tasking...\n", myid);
+	while(!kernel_task) cli();
+	printk(0, "[cpu%d]: Enable tasks...\n", myid);
+	for(;;);
 	task_t *task = (task_t *)kmalloc(sizeof(task_t));
 	page_directory[PAGE_DIR_IDX(SMP_CUR_CPU / PAGE_SIZE)] = (unsigned)(cpu);
 	task->pid = add_atomic(&next_pid, 1)-1;
@@ -189,6 +189,7 @@ static void
 add_processor(struct imps_processor *proc)
 {
 	int apicid = proc->apic_id;
+	cpu_t new_cpu;
 	char str[64];
 	sprintf(str, "[smp]: booting application processors (%d / %d)...\r", tried_processors++, total_processors-1);
 	puts(str);
@@ -203,23 +204,11 @@ add_processor(struct imps_processor *proc)
 		printk(1, "\n[smp]:      found #0 (bootstrap Processor) - skipping\n");
 		return;
 	}
-	if(!cpu_array_np)
-	{
-		cpu_array_np++;
-		cpu_array = pm_alloc_page();
-	}
-	int alloc = (apicid-1)*sizeof(cpu_t) >= cpu_array_np*PAGE_SIZE;
-	if(alloc) {
-		pm_alloc_page();
-		cpu_array_np++;
-	}
-	cpu_t *cpus = (cpu_t *)cpu_array;
-	cpu_t *new_cpu = &cpus[apicid-1];
-	memset(new_cpu, 0, sizeof(cpu_t));
-	new_cpu->num=imps_num_cpus;
-	new_cpu->apicid = apicid;
-	new_cpu->flags=0;
-	add_cpu(new_cpu);
+	memset(&new_cpu, 0, sizeof(cpu_t));
+	new_cpu.num=imps_num_cpus;
+	new_cpu.apicid = apicid;
+	new_cpu.flags=0;
+	cpu_t *cp = add_cpu(&new_cpu);
 	imps_num_cpus++;
 	printk(1, "sending init interrupt...\n\t");
 	int re = boot_cpu(proc);
@@ -228,7 +217,7 @@ add_processor(struct imps_processor *proc)
 	if (re) {
 		printk(1, "BOOTED\n");
 	} else {
-		new_cpu->flags |= CPU_ERROR;
+		cp->flags |= CPU_ERROR;
 		printk(1, "FAILED\n");
 	}
 }
@@ -333,7 +322,9 @@ static void imps_read_bios(struct imps_fps *fps_ptr)
 	apicid = IMPS_LAPIC_READ(LAPIC_SPIV);
 	IMPS_LAPIC_WRITE(LAPIC_SPIV, apicid|LAPIC_SPIV_ENABLE_APIC);
 	apicid = APIC_ID(IMPS_LAPIC_READ(LAPIC_ID));
-	primary_cpu.apicid = apicid;
+	primary_cpu->apicid = apicid;
+	if(apicid)
+		panic(PANIC_NOSYNC, "NOT IMPLEMENTED: boot cpu was not ID 0");
 	if (fps_ptr->cth_ptr) {
 		char str1[16], str2[16];
 		memcpy(str1, local_cth_ptr->oem_id, 8);

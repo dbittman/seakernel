@@ -29,15 +29,15 @@ void init_multitasking()
 	task->kernel_stack = kmalloc(KERN_STACK_SIZE+8);
 	task->priority = 1;
 	task->magic = TASK_MAGIC;
-	task->cpu = &primary_cpu;
+	task->cpu = primary_cpu;
 	kill_queue = ll_create(0);
 	primary_queue = tqueue_create(0, 0);
-	primary_cpu.active_queue = tqueue_create(0, 0);
+	primary_cpu->active_queue = tqueue_create(0, 0);
 	task->listnode = tqueue_insert(primary_queue, (void *)task);
-	task->activenode = tqueue_insert(primary_cpu.active_queue, (void *)task);
+	task->activenode = tqueue_insert(primary_cpu->active_queue, (void *)task);
 	set_current_task_dp(task, 0);
 	kernel_task = task;
-	primary_cpu.flags |= CPU_TASK;
+	primary_cpu->flags |= CPU_TASK;
 #if CONFIG_MODULES
 	add_kernel_symbol(delay);
 	add_kernel_symbol(delay_sleep);

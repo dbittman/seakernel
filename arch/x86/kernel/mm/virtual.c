@@ -80,20 +80,20 @@ void vm_init_2()
 {
 	setup_kernelstack(id_tables);
 #if CONFIG_SMP
-	cpu_t *p = cpu_list;
-	while(p)
+	int i=0;
+	while(i < cpu_array_num)
 	{
-		printk(0, "[mm]: cloning directory for processor (%x) %d\n", p, p->apicid);
-		p->kd = vm_clone(page_directory, 0);
-		p->kd_phys = p->kd[1023] & PAGE_MASK;
-		p=p->next;
+		printk(0, "[mm]: cloning directory for processor %d\n", cpu_array[i].apicid);
+		cpu_array[i].kd = vm_clone(page_directory, 0);
+		cpu_array[i].kd_phys = cpu_array[i].kd[1023] & PAGE_MASK;
+		i++;
 	}
 #else
-	primary_cpu.kd = vm_clone(page_directory, 0);
-	primary_cpu.kd_phys = primary_cpu.kd[1023] & PAGE_MASK;
+	primary_cpu->kd = vm_clone(page_directory, 0);
+	primary_cpu->kd_phys = primary_cpu->kd[1023] & PAGE_MASK;
 #endif
-	kernel_dir = primary_cpu.kd;
-	vm_switch(primary_cpu.kd);
+	kernel_dir = primary_cpu->kd;
+	vm_switch(primary_cpu->kd);
 	printk(0, "[mm]: using cloned directory\n");
 }
 

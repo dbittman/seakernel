@@ -100,10 +100,9 @@ void cpu_entry(void)
 		memset((void *)i, 0, 0x1000);
 	}
 	
-	printk(0, "[cpu%d]: Waiting for tasking...\n", myid);
+	printk(0, "[cpu%d]: waiting for tasking...\n", myid);
 	while(!kernel_task) cli();
-	printk(0, "[cpu%d]: Enable tasks...\n", myid);
-	for(;;);
+	printk(0, "[cpu%d]: enable tasks...\n", myid);
 	task_t *task = (task_t *)kmalloc(sizeof(task_t));
 	page_directory[PAGE_DIR_IDX(SMP_CUR_CPU / PAGE_SIZE)] = (unsigned)(cpu);
 	task->pid = add_atomic(&next_pid, 1)-1;
@@ -118,8 +117,8 @@ void cpu_entry(void)
 	cpu->ktask = task;
 	task->cpu = cpu;
 	//cpu_k_task_entry();
-	
-	//for(;;);
+	printk(0, "[cpu%d]: idle task created\n");
+	for(;;);
 	asm(" \
 		mov %0, %%eax; \
 		mov %1, %%ebx; \

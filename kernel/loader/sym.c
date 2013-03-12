@@ -49,9 +49,10 @@ void init_kernel_symbols(void)
 	add_kernel_symbol(find_kernel_function);
 	add_kernel_symbol(remove_kernel_symbol);
 	add_kernel_symbol(_add_kernel_symbol);
+	/* basic kernel functions */
 	add_kernel_symbol(panic_assert);
 	add_kernel_symbol(panic);
-	/* basic kernel functions */
+	_add_kernel_symbol((unsigned)&kernel_state_flags, "kernel_state_flags");
 	add_kernel_symbol(printk);
 	add_kernel_symbol(kprintf);
 	add_kernel_symbol(sprintf);

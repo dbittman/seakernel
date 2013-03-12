@@ -13,7 +13,7 @@ typedef struct {
     char cache_line_size, logical_processors, lapic_id;
     char cpu_brand[49];
 } cpuid_t;
-
+#define CPU_STACK_TEMP_SIZE 1024
 typedef struct __cpu_t__ {
 	unsigned num;
 	unsigned flags;
@@ -24,7 +24,7 @@ typedef struct __cpu_t__ {
 	tqueue_t *active_queue;
 	task_t *ktask, *cur;
 	mutex_t lock;
-	unsigned stack[1024];
+	unsigned stack[CPU_STACK_TEMP_SIZE];
 	struct __cpu_t__ *next, *prev;
 } cpu_t;
 int initAcpi(void);

@@ -18,6 +18,9 @@
 #include <errno.h>
 #include <mutex.h>
 
+#define KSF_MMU 0x1
+extern unsigned kernel_state_flags;
+
 extern char shutting_down;
 extern volatile int panicing;
 extern volatile unsigned int __allow_idle;

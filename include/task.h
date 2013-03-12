@@ -54,7 +54,7 @@ extern tqueue_t *primary_queue, *active_queue;
 #define TSEARCH_PARENT  0x20
 #define TSEARCH_ENUM    0x40
 
-#define current_task ((task_t *)page_directory[PAGE_DIR_IDX(SMP_CUR_TASK/PAGE_SIZE)])
+#define current_task ((kernel_state_flags&KSF_MMU) ? ((task_t *)page_directory[PAGE_DIR_IDX(SMP_CUR_TASK/PAGE_SIZE)]) : 0)
 
 #if SCHED_TTY
 static int sched_tty = SCHED_TTY_CYC;

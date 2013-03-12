@@ -8,6 +8,11 @@ initialization */
 #include <atomic.h>
 #include <imps.h>
 
+void load_tables_ap();
+void set_lapic_timer(unsigned tmp);
+extern unsigned lapic_timer_start;
+void init_lapic();
+
 static void set_boot_flag(unsigned x)
 {
 	*(unsigned *)(BOOTFLAG_ADDR) = x;
@@ -20,59 +25,57 @@ static unsigned get_boot_flag()
 
 void cpu_k_task_entry(task_t *me)
 {
+	/* final part: set the current_task pointer to 'me', and set the 
+	 * task flags that allow the cpu to start executing */
 	page_directory[PAGE_DIR_IDX(SMP_CUR_TASK / PAGE_SIZE)] = (unsigned)me;
-	((cpu_t *)(me->cpu))->cur = me;
 	((cpu_t *)(me->cpu))->flags |= CPU_TASK;
 	for(;;);
-	//sti();
-	for(;;) schedule();
 }
 
-void load_tables_ap();
-void set_lapic_timer(unsigned tmp);
-extern unsigned lapic_timer_start;
-void init_lapic();
-void cpu_entry(void)
+/* it's important that this doesn't get inlined... */
+__attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 {
-	int myid = get_boot_flag();
-	cpu_t *cpu = get_cpu(myid);
-	asm("mov %0, %%esp" : : "r" (cpu->stack + 1000));
-	asm("mov %0, %%ebp" : : "r" (cpu->stack + 1000));
-	load_tables_ap();
-	myid = get_boot_flag();
-	cpu = get_cpu(myid);
+	cpu_t *cpu = get_cpu(apicid);
+	/* call the CPU features init code */
 	parse_cpuid(cpu);
 	setup_fpu(cpu);
 	init_sse(cpu);
 	init_lapic();
+	/* okay, we're up! Set the flag, and reset the boot flag so
+	 * other processors can initialize too */
 	cpu->flags |= CPU_UP;
 	set_boot_flag(0xFFFFFFFF);
-	while(!mmu_ready && !cpu->kd && !kernel_dir); 
+	/* now we need to wait up the memory manager is all set up */
+	while(!cpu->kd) cli();
+	/* load in the directory provided and enable paging! */
 	__asm__ volatile ("mov %0, %%cr3" : : "r" (cpu->kd_phys));
 	unsigned cr0temp;
 	enable_paging();
-	
+	/* map in the real stack */
 	unsigned i;
 	for(i=(unsigned int)STACK_LOCATION+STACK_SIZE; i >= (unsigned int)STACK_LOCATION - STACK_SIZE*2;i -= 0x1000) {
 		vm_map(i, pm_alloc_page(), PAGE_PRESENT | PAGE_WRITE | PAGE_USER, MAP_CRIT);
 		memset((void *)i, 0, 0x1000);
 	}
 	
-	printk(0, "[cpu%d]: waiting for tasking...\n", myid);
+	printk(0, "[cpu%d]: waiting for tasking...\n", apicid);
 	while(!kernel_task) cli();
-	printk(0, "[cpu%d]: enable tasks...\n", myid);
+	printk(0, "[cpu%d]: enable tasks...\n", apicid);
+	/* initialize tasking for this CPU */
 	task_t *task = (task_t *)kmalloc(sizeof(task_t));
 	task->pid = add_atomic(&next_pid, 1)-1;
 	task->pd = (page_dir_t *)cpu->kd;
 	task->stack_end=STACK_LOCATION;
-	task->kernel_stack = kmalloc(KERN_STACK_SIZE+8);
+	task->kernel_stack = kmalloc(KERN_STACK_SIZE);
 	task->priority = 1;
 	task->magic = TASK_MAGIC;
 	cpu->active_queue = tqueue_create(0, 0);
 	task->listnode = tqueue_insert(primary_queue, (void *)task);
 	task->activenode = tqueue_insert(cpu->active_queue, (void *)task);
-	cpu->ktask = task;
+	cpu->cur = cpu->ktask = task;
 	task->cpu = cpu;
+	/* set up the real stack, and call cpu_k_task_entry with a pointer to this cpu's ktask as 
+	 * the argument */
 	asm(" \
 		mov %0, %%eax; \
 		mov %1, %%ebx; \
@@ -80,7 +83,20 @@ void cpu_entry(void)
 		mov %2, %%ebp; \
 		push %%ebx; \
 		call *%%eax;" :: "r" (cpu_k_task_entry),"r"(task),"r"(STACK_LOCATION + STACK_SIZE - STACK_ELEMENT_SIZE));
-	for(;;);
+	/* we'll never get here */
+}
+
+void cpu_entry(void)
+{
+	/* load up the pmode gdt, tss, and idt */
+	load_tables_ap();
+	/* get the ID and the cpu struct so we can set a private stack */
+	int apicid = get_boot_flag();
+	cpu_t *cpu = get_cpu(apicid);
+	/* set up our private temporary tack */
+	asm("mov %0, %%esp" : : "r" (cpu->stack + (CPU_STACK_TEMP_SIZE - STACK_ELEMENT_SIZE)));
+	asm("mov %0, %%ebp" : : "r" (cpu->stack + (CPU_STACK_TEMP_SIZE - STACK_ELEMENT_SIZE)));
+	cpu_stage1_init(get_boot_flag());
 }
 
 int boot_cpu(unsigned id, unsigned apic_ver)

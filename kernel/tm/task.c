@@ -26,7 +26,7 @@ void init_multitasking()
 	task->pid = next_pid++;
 	task->pd = (page_dir_t *)kernel_dir;
 	task->stack_end=STACK_LOCATION;
-	task->kernel_stack = kmalloc(KERN_STACK_SIZE+8);
+	task->kernel_stack = kmalloc(KERN_STACK_SIZE);
 	task->priority = 1;
 	task->magic = TASK_MAGIC;
 	task->cpu = primary_cpu;

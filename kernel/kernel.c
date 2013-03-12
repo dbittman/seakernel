@@ -11,6 +11,8 @@ int sys_sync(int);
 void acpiPowerOff(void);
 int PRINT_LEVEL = DEF_PRINT_LEVEL;
 
+unsigned kernel_state_flags=0;
+
 void kernel_shutdown()
 {
 	current_task->uid=0;

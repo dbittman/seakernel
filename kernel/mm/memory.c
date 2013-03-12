@@ -68,6 +68,7 @@ void init_memory(struct multiboot *m)
 	vm_init_2();
 	primary_cpu->flags |= CPU_PAGING;
 	mmu_ready=1;
+	kernel_state_flags |= KSF_MMU;
 #if CONFIG_SWAP
 	init_swap();
 #endif

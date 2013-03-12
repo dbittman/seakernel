@@ -7,15 +7,15 @@ initialization */
 #include <memory.h>
 #include <atomic.h>
 #include <imps.h>
-extern int bootmainloop(void);
-extern int pmode_enter(void);
-extern int RMGDT(void);
-extern int GDTR(void);
 
-static int *booted = (int *)0x7200;
-int TEST_BOOTED(unsigned a)
+static void set_boot_flag(unsigned x)
 {
-	return (*(unsigned *)(0x7200) == 0);
+	*(unsigned *)(BOOTFLAG_ADDR) = x;
+}
+
+static unsigned get_boot_flag()
+{
+	return *(unsigned *)(BOOTFLAG_ADDR);
 }
 
 void cpu_k_task_entry(task_t *me)
@@ -32,23 +32,21 @@ void load_tables_ap();
 void set_lapic_timer(unsigned tmp);
 extern unsigned lapic_timer_start;
 void init_lapic();
-void enable_A20();
 void cpu_entry(void)
 {
-	int myid = *booted;
+	int myid = get_boot_flag();
 	cpu_t *cpu = get_cpu(myid);
 	asm("mov %0, %%esp" : : "r" (cpu->stack + 1000));
 	asm("mov %0, %%ebp" : : "r" (cpu->stack + 1000));
-	enable_A20();
 	load_tables_ap();
-	myid = *booted;
+	myid = get_boot_flag();
 	cpu = get_cpu(myid);
 	parse_cpuid(cpu);
 	setup_fpu(cpu);
 	init_sse(cpu);
 	init_lapic();
 	cpu->flags |= CPU_UP;
-	*booted=0;
+	set_boot_flag(0xFFFFFFFF);
 	while(!mmu_ready && !cpu->kd && !kernel_dir); 
 	__asm__ volatile ("mov %0, %%cr3" : : "r" (cpu->kd_phys));
 	unsigned cr0temp;
@@ -85,19 +83,26 @@ void cpu_entry(void)
 	for(;;);
 }
 
-
 int boot_cpu(unsigned id, unsigned apic_ver)
 {
 	int apicid = id, success = 1, to;
 	unsigned bootaddr, accept_status;
 	unsigned bios_reset_vector = BIOS_RESET_VECTOR;
+	
+	/* choose this as the bios reset vector */
 	bootaddr = 0x7000;
-	memcpy((char *)bootaddr, (void *)bootmainloop, 0x100);
-	memcpy((char *)0x7150, (void *)RMGDT, 0x50);
-	memcpy((char *)0x7100, (void *)GDTR, 0x50);
-	memcpy((char *)0x7204, (void *)pmode_enter, (0x72FC) - 0x7204);
-	*(unsigned *)(0x7200) = apicid;
-	*(unsigned *)(0x72FC) = (unsigned)cpu_entry;
+	unsigned sz = (unsigned)trampoline_end - (unsigned)trampoline_start;
+	/* copy in the 16-bit real mode entry code */
+	memcpy((void *)bootaddr, (void *)trampoline_start, sz);
+	/* to switch into protected mode, the CPU needs access to a GDT, so
+	 * give it one... */
+	memcpy((void *)(RM_GDT_START+GDT_POINTER_SIZE), (void *)rm_gdt, RM_GDT_SIZE);
+	memcpy((void *)RM_GDT_START, (void *)rm_gdt_pointer, GDT_POINTER_SIZE);
+	/* copy down the pmode_enter code as well, since this gets called
+	 * from real mode */
+	memcpy((void *)(RM_GDT_START+RM_GDT_SIZE+GDT_POINTER_SIZE), (void *)pmode_enter, (unsigned)pmode_enter_end - (unsigned)pmode_enter);
+	/* the CPU will look here to figure out it's APICID */
+	set_boot_flag(apicid);
 	/* set BIOS reset vector */
 	CMOS_WRITE_BYTE(CMOS_RESET_CODE, CMOS_RESET_JUMP);
 	*((volatile unsigned *) bios_reset_vector) = ((bootaddr & 0xFF000) << 12);
@@ -120,7 +125,7 @@ int boot_cpu(unsigned id, unsigned apic_ver)
 		}
 	}
 	to = 0;
-	while (!TEST_BOOTED(bootaddr) && to++ < 100)
+	while ((get_boot_flag(bootaddr) != 0xFFFFFFFF) && to++ < 100)
 		delay_sleep(10);
 	/* cpu didn't boot up...:( */
 	if (to >= 100)

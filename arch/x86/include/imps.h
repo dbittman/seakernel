@@ -1,10 +1,8 @@
-#ifndef __ARCH_X86_IMPS_H
-#define __ARCH_X86_IMPS_H
-
+#ifndef __ARCH_IMPS_H
+#define __ARCH_IMPS_H
 
 #define IMPS_READ(x)	(*((volatile unsigned *) (x)))
 #define IMPS_WRITE(x,y)	(*((volatile unsigned *) (x)) = (y))
-
 
 #define IMPS_MAX_CPUS			APIC_BCAST_ID
 
@@ -91,8 +89,6 @@ struct imps_interrupt
 	unsigned char dest_apic_intin;
 };
 
-
-
 extern unsigned imps_lapic_addr;
 #define IMPS_LAPIC_READ(x)  (*((volatile unsigned *) (imps_lapic_addr+(x))))
 #define IMPS_LAPIC_WRITE(x, y)   \
@@ -102,13 +98,17 @@ void add_ioapic(struct imps_ioapic *ioapic);
 void init_ioapic();
 void lapic_eoi();
 
+extern int trampoline_start(void);
+extern int trampoline_end(void);
+extern int pmode_enter(void);
+extern int pmode_enter_end(void);
+extern int rm_gdt(void);
+extern int rm_gdt_end(void);
+extern int rm_gdt_pointer(void);
 
+#define RM_GDT_SIZE 0x18
+#define GDT_POINTER_SIZE 0x4
+#define RM_GDT_START 0x7100
+#define BOOTFLAG_ADDR 0x7200
 
-
-
-
-
-
-
-
-#endif __ARCH_X86_IMPS_H
+#endif

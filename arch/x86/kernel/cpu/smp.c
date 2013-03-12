@@ -5,9 +5,10 @@
 #include <memory.h>
 #include <atomic.h>
 #include <imps.h>
-extern int imps_enabled;
+
 unsigned num_cpus=0, num_booted_cpus=0, num_failed_cpus=0;
 char smp_enabled=0;
+
 int send_ipi(unsigned int dst, unsigned int v)
 {
 	int to, send_status;

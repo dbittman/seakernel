@@ -6,7 +6,8 @@ SECTIONS
 	*(.boot)
 	code = .; _code = .; __code = .;
 	kernel_start = .;
-        *(.text)
+	*(.trampoline)
+    *(.text)
 	. = ALIGN(4096);
     }
 

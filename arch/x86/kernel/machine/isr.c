@@ -25,7 +25,7 @@ void register_interrupt_handler(u8int num, isr_t handler)
 {
 	handlist_t *n;
 	cli();
-	if(mmu_ready && interrupt_handlers[num].handler)
+	if((kernel_state_flags&KSF_MMU) && interrupt_handlers[num].handler)
 	{
 		handlist_t *f = &interrupt_handlers[num];
 		handlist_t *h = f->next;
@@ -201,7 +201,6 @@ void int_sys_init()
 		interrupt_handlers[i].block=0;
 	}
 #if CONFIG_MODULES
-	_add_kernel_symbol((unsigned)(char *)&tables, "tables");
 	add_kernel_symbol(register_interrupt_handler);
 	add_kernel_symbol(unregister_interrupt_handler);
 	add_kernel_symbol(get_interrupt_handler);

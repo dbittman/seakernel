@@ -6,7 +6,6 @@
 #include <task.h>
 #include <elf.h>
 extern int vsprintf(char *buf, const char *fmt, va_list args);
-volatile int panicing=0;
 extern unsigned end;
 
 static inline void _set_lowercase(char *b)
@@ -35,12 +34,12 @@ void print_trace(unsigned int MaxFrames)
 void panic(int flags, char *fmt, ...)
 {
 	cli();
-	int second_panic = panicing++;
+	kernel_state_flags |= KSF_PANICING;
 	int pid=0;
 	task_t *t=current_task;
 	if(t) pid=t->pid;
 	set_current_task_dp(0, 0);
-	kprintf("\n\n*** kernel panic (%d) - ", second_panic+1);
+	kprintf("\n\n*** kernel panic - ");
 	
 	char buf[512];
 	va_list args;
@@ -55,7 +54,7 @@ void panic(int flags, char *fmt, ...)
 		kprintf("current_task=%x:%d, sys=%d, flags=%x, F=%x. Stack trace:\n", t, 
 				t->pid, t->system, t->flags, t->flag);
 	print_trace(10);
-	if(pid && !second_panic && !(flags & PANIC_NOSYNC))
+	if(pid && !(flags & PANIC_NOSYNC))
 	{
 		kprintf("[panic]: syncing...");
 		sys_sync();

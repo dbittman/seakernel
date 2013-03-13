@@ -18,11 +18,12 @@
 #include <errno.h>
 #include <mutex.h>
 
-#define KSF_MMU 0x1
+#define KSF_MMU      0x1
+#define KSF_SHUTDOWN 0x2
+#define KSF_PANICING 0x4
+
 extern unsigned kernel_state_flags;
 
-extern char shutting_down;
-extern volatile int panicing;
 extern volatile unsigned int __allow_idle;
 
 #define PANIC_NOSYNC 1

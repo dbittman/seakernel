@@ -60,7 +60,7 @@ int tty_raise_action(int min, int sig)
 {
 	if(!(consoles[min].term.c_lflag & ISIG))
 		return 0;
-	if(shutting_down)
+	if((kernel_state_flags & KSF_SHUTDOWN))
 		return 0;
 	if(search_tqueue(primary_queue, TSEARCH_FINDALL | TSEARCH_TTY, min, __tty_found_task_raise_action, sig))
 		consoles[min].inpos=0;

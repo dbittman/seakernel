@@ -44,7 +44,7 @@ void run_scheduler()
 #define __USR 1, 0
 void do_tick()
 {
-	if(!current_task)
+	if(!current_task || (kernel_state_flags&KSF_PANICING))
 		return;
 	if(!(((cpu_t *)current_task->cpu)->flags & CPU_TASK))
 		return;
@@ -70,7 +70,7 @@ void do_tick()
 
 void delay(int t)
 {
-	if(shutting_down)
+	if((kernel_state_flags & KSF_SHUTDOWN))
 		return (void) delay_sleep(t);
 	long end = ticks + t + 1;
 	if(!current_task || current_task->pid == 0)

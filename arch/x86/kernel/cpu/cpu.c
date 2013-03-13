@@ -109,7 +109,7 @@ int set_int(unsigned new)
 	if(!new) {
 		cpu->flags &= ~CPU_INTER;
 		asm("cli");
-	} else if(tables) {
+	} else if(cpu->flags&CPU_RUNNING) {
 		cpu->flags |= CPU_INTER;
 		asm("sti");
 	}
@@ -128,11 +128,12 @@ void init_main_cpu()
 	primary_cpu = &cpu_array[0];
 #endif
 	assert(primary_cpu);
-	primary_cpu->flags = CPU_UP | CPU_RUNNING;
+	primary_cpu->flags = CPU_UP;
 	printk(KERN_MSG, "Initializing CPU...\n");
 	parse_cpuid(primary_cpu);
 	setup_fpu(primary_cpu);
 	init_sse(primary_cpu);
+	primary_cpu->flags |= CPU_RUNNING;
 	printk(KERN_EVERY, "done\n");
 	initAcpi();
 	mutex_create((mutex_t *)&primary_cpu->lock, MT_NOSCHED);

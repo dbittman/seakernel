@@ -156,5 +156,4 @@ void load_tables()
 	write_tss(5, 0x10, 0x0);
 	tss_flush();
 	int_sys_init();
-	tables=1;
 }

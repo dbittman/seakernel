@@ -14,7 +14,6 @@ volatile addr_t highest_page=0;
 volatile addr_t lowest_page=~0;
 
 int memory_has_been_mapped=0;
-volatile int mmu_ready=0;
 volatile addr_t placement;
 mutex_t pm_mutex;
 extern unsigned int end;

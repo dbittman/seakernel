@@ -47,7 +47,6 @@ int load_superblocktable()
 
 void unmount_all()
 {
-	assert(shutting_down);
 	struct mountlst *m;
 	struct llistnode *cur, *next;
 	ll_for_each_entry_safe(mountlist, cur, next, struct mountlst *, m)

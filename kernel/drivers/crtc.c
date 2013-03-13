@@ -136,7 +136,7 @@ void crtc_init_console(vterm_t *con)
 	con->w=80;
 	con->h=25;
 	char *vmem = con->vmem;
-	if(!vmem && mmu_ready)
+	if(!vmem && (kernel_state_flags&KSF_MMU))
 		vmem = (char *)kmalloc(80*25*2+4);
 	if(!vmem)
 		panic(0, "Couldn't allocate virtual video memory (mmu is needed)");

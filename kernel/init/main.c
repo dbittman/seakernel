@@ -99,7 +99,7 @@ void kmain(struct multiboot *mboot_header, u32int initial_stack)
 {
 	/* Store passed values, and initiate some early things
 	 * We want serial log output as early as possible */
-	shutting_down=0;
+	kernel_state_flags=0;
 	mtboot = mboot_header;
 	i_stack = initial_stack;
 	parse_kernel_elf(mboot_header, &kernel_elf);

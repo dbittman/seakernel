@@ -36,6 +36,7 @@ void cpu_k_task_entry(task_t *me)
 __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 {
 	cpu_t *cpu = get_cpu(apicid);
+	cpu->flags |= CPU_UP;
 	/* call the CPU features init code */
 	parse_cpuid(cpu);
 	setup_fpu(cpu);
@@ -43,7 +44,7 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	init_lapic();
 	/* okay, we're up! Set the flag, and reset the boot flag so
 	 * other processors can initialize too */
-	cpu->flags |= CPU_UP;
+	cpu->flags |= CPU_RUNNING;
 	set_boot_flag(0xFFFFFFFF);
 	/* now we need to wait up the memory manager is all set up */
 	while(!cpu->kd) cli();

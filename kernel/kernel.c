@@ -5,8 +5,6 @@
 #include <mod.h>
 #include <task.h>
 
-char tables=0;
-char shutting_down=0;
 int sys_sync(int);
 void acpiPowerOff(void);
 int PRINT_LEVEL = DEF_PRINT_LEVEL;
@@ -15,7 +13,7 @@ unsigned kernel_state_flags=0;
 void kernel_shutdown()
 {
 	current_task->uid=0;
-	shutting_down=1;
+	kernel_state_flags |= KSF_SHUTDOWN;
 	cli();
 	lock_scheduler();
 	sys_sync(PRINT_LEVEL);

@@ -10,7 +10,6 @@ char shutting_down=0;
 int sys_sync(int);
 void acpiPowerOff(void);
 int PRINT_LEVEL = DEF_PRINT_LEVEL;
-
 unsigned kernel_state_flags=0;
 
 void kernel_shutdown()

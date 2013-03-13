@@ -4,7 +4,6 @@
 #ifndef KERNEL_H
 #define KERNEL_H
 
-
 #include <asm/system.h>
 #include <types.h>
 #include <string.h>

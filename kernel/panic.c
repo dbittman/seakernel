@@ -34,6 +34,8 @@ void print_trace(unsigned int MaxFrames)
 void panic(int flags, char *fmt, ...)
 {
 	cli();
+	if(kernel_state_flags & KSF_PANICING)
+		for(;;) asm("cli; hlt");
 	kernel_state_flags |= KSF_PANICING;
 	int pid=0;
 	task_t *t=current_task;

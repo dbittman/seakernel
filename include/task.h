@@ -56,6 +56,8 @@ extern tqueue_t *primary_queue, *active_queue;
 
 #define current_task ((kernel_state_flags&KSF_MMU) ? ((task_t *)page_directory[PAGE_DIR_IDX(SMP_CUR_TASK/PAGE_SIZE)]) : 0)
 
+#define current_tss (&((cpu_t *)current_task->cpu)->tss)
+
 #if SCHED_TTY
 static int sched_tty = SCHED_TTY_CYC;
 #else
@@ -153,7 +155,6 @@ void delay_sleep(int t);
 void take_issue_with_current_task();
 void clear_resources(task_t *);
 int times(struct tms *buf);
-extern void set_kernel_stack(u32int stack);
 void run_scheduler();
 extern volatile long ticks;
 int set_gid(int new);

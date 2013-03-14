@@ -1,7 +1,7 @@
 #ifndef TABLES_H
 #define TABLES_H
 #include <types.h>
-
+#include <tss.h>
 struct gdt_entry_struct
 {
 	u16int limit_low;
@@ -93,10 +93,10 @@ extern void irq14();
 extern void irq15();
 
 void init_descriptor_tables(void);
-void set_kernel_stack(u32int stack);
+void set_kernel_stack(tss_entry_t *, u32int stack);
 void load_doublefault_system(void);
-void write_tss(s32int num, u16int ss0, u32int esp0);
-void gdt_set_gate(s32int,u32int,u32int,u8int,u8int);
+void write_tss(gdt_entry_t *, tss_entry_t *, s32int num, u16int ss0, u32int esp0);
+void gdt_set_gate(gdt_entry_t *, s32int,u32int,u32int,u8int,u8int);
 void idt_set_gate(u8int,u32int,u16int,u8int);
 
 #endif

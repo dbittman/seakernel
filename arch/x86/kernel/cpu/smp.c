@@ -1,3 +1,5 @@
+#include <config.h>
+#if CONFIG_SMP
 #include <kernel.h>
 #include <task.h>
 #include <mutex.h>
@@ -20,9 +22,9 @@ int send_ipi(unsigned int dst, unsigned int v)
 	to = 0;
 	do {
 		delay_sleep(1);
+		cli();
 		send_status = IMPS_LAPIC_READ(LAPIC_ICR) & LAPIC_ICR_STATUS_PEND;
 	} while (send_status && (to++ < 1000));
-	sti();
 	return (to < 1000);
 }
 
@@ -49,3 +51,4 @@ int probe_smp()
 	smp_enabled=1;
 	return 0;
 }
+#endif

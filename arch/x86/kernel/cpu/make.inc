@@ -7,4 +7,6 @@ KOBJS += arch/x86/kernel/cpu/acpi.o \
 		 arch/x86/kernel/cpu/mptables.o \
 		 arch/x86/kernel/cpu/smp.o
 
-AOBJS += arch/x86/kernel/cpu/bootstrap.o 
+ifeq ($(CONFIG_SMP),y)
+	AOBJS += arch/x86/kernel/cpu/bootstrap.o 
+endif

@@ -1,5 +1,7 @@
 /* c-entry point for application processors, and their subsequent
 initialization */
+#include <config.h>
+#if CONFIG_SMP
 #include <kernel.h>
 #include <task.h>
 #include <mutex.h>
@@ -42,10 +44,12 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	setup_fpu(cpu);
 	init_sse(cpu);
 	init_lapic();
+	printk(0, "setting flags\n");
 	/* okay, we're up! Set the flag, and reset the boot flag so
 	 * other processors can initialize too */
 	cpu->flags |= CPU_RUNNING;
 	set_boot_flag(0xFFFFFFFF);
+	printk(0, "pause\n");
 	/* now we need to wait up the memory manager is all set up */
 	while(!cpu->kd) cli();
 	/* load in the directory provided and enable paging! */
@@ -75,6 +79,7 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	task->activenode = tqueue_insert(cpu->active_queue, (void *)task);
 	cpu->cur = cpu->ktask = task;
 	task->cpu = cpu;
+	set_kernel_stack(&cpu->tss, task->kernel_stack + (KERN_STACK_SIZE - STACK_ELEMENT_SIZE));
 	/* set up the real stack, and call cpu_k_task_entry with a pointer to this cpu's ktask as 
 	 * the argument */
 	asm(" \
@@ -89,11 +94,11 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 
 void cpu_entry(void)
 {
-	/* load up the pmode gdt, tss, and idt */
-	load_tables_ap();
 	/* get the ID and the cpu struct so we can set a private stack */
 	int apicid = get_boot_flag();
 	cpu_t *cpu = get_cpu(apicid);
+	/* load up the pmode gdt, tss, and idt */
+	load_tables_ap(cpu);
 	/* set up our private temporary tack */
 	asm("mov %0, %%esp" : : "r" (cpu->stack + (CPU_STACK_TEMP_SIZE - STACK_ELEMENT_SIZE)));
 	asm("mov %0, %%ebp" : : "r" (cpu->stack + (CPU_STACK_TEMP_SIZE - STACK_ELEMENT_SIZE)));
@@ -105,7 +110,7 @@ int boot_cpu(unsigned id, unsigned apic_ver)
 	int apicid = id, success = 1, to;
 	unsigned bootaddr, accept_status;
 	unsigned bios_reset_vector = BIOS_RESET_VECTOR;
-	
+	cli();
 	/* choose this as the bios reset vector */
 	bootaddr = 0x7000;
 	unsigned sz = (unsigned)trampoline_end - (unsigned)trampoline_start;
@@ -127,7 +132,7 @@ int boot_cpu(unsigned id, unsigned apic_ver)
 	/* clear the APIC error register */
 	IMPS_LAPIC_WRITE(LAPIC_ESR, 0);
 	accept_status = IMPS_LAPIC_READ(LAPIC_ESR);
-
+	printk(0, "[smp]: booting cpu %d\n", id);
 	/* assert INIT IPI */
 	send_ipi(apicid, LAPIC_ICR_TM_LEVEL | LAPIC_ICR_LEVELASSERT | LAPIC_ICR_DM_INIT);
 	delay_sleep(10);
@@ -147,6 +152,7 @@ int boot_cpu(unsigned id, unsigned apic_ver)
 	/* cpu didn't boot up...:( */
 	if (to >= 100)
 		success = 0;
+	cli();
 	/* clear the APIC error register */
 	IMPS_LAPIC_WRITE(LAPIC_ESR, 0);
 	accept_status = IMPS_LAPIC_READ(LAPIC_ESR);
@@ -156,3 +162,5 @@ int boot_cpu(unsigned id, unsigned apic_ver)
 	*((volatile unsigned *) bios_reset_vector) = 0;
 	return success;
 }
+
+#endif

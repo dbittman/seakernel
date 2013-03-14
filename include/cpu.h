@@ -4,6 +4,7 @@
 #include <tqueue.h>
 #include <task.h>
 #include <mutex.h>
+#include <tables.h>
 typedef struct {
     char manufacturer_string[13];
     int max_basic_input_val;
@@ -24,6 +25,9 @@ typedef struct __cpu_t__ {
 	tqueue_t *active_queue;
 	task_t *ktask, *cur;
 	mutex_t lock;
+	gdt_entry_t gdt[6];
+	gdt_ptr_t gdt_ptr;
+	tss_entry_t tss;
 	unsigned stack[CPU_STACK_TEMP_SIZE];
 	struct __cpu_t__ *next, *prev;
 } cpu_t;

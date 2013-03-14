@@ -80,7 +80,7 @@ int kernel_idle_task()
 		 * So we set it's stack at a global location so it doesn't 
 		 * screw up some other task's stack. */
 		cli();
-		set_kernel_stack(current_task->kernel_stack+(KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
+		set_kernel_stack(current_tss, current_task->kernel_stack+(KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
 		asm("	mov %0, %%esp; \
 			mov %0, %%ebp; \
 			"::"r"(current_task->kernel_stack+(KERN_STACK_SIZE-STACK_ELEMENT_SIZE)));

@@ -94,7 +94,7 @@ __attribute__((always_inline)) static inline void store_context()
 __attribute__((always_inline)) static inline void restore_context(task_t *new)
 {
 	/* Update some last-minute things. The stack. */
-	set_kernel_stack(new->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
+	set_kernel_stack(current_tss, new->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
 	/* keep track of when we got to run */
 	new->slice = ticks;
 	((cpu_t *)new->cpu)->cur = new;
@@ -114,7 +114,9 @@ void schedule()
 	mutex_acquire(&cpu->lock);
 	store_context();
 	volatile task_t *new = (volatile task_t *)get_next_task(old);
-	restore_context(new);
+	restore_context(new); 
+	/* we need to call this after restore_context because in restore_context
+	 * we access current_task->cpu */
 	mutex_release(&cpu->lock);
 	asm("         \
 		mov %1, %%esp;       \

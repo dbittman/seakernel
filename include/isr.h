@@ -21,6 +21,8 @@
 #define IOINT_PIC  1
 #define IOINT_APIC 2
 
+#define EFLAGS_INT (1 << 9)
+
 typedef struct registers
 {
   volatile   u32int ds;

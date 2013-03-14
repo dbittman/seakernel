@@ -8,6 +8,8 @@ cpu_t *primary_cpu=0;
 #if CONFIG_SMP
 cpu_t cpu_array[CONFIG_MAX_CPUS];
 unsigned cpu_array_num=0;
+#else
+cpu_t priamry_cpu_data;
 #endif
 
 void cpuid_get_features(cpuid_t *cpuid)
@@ -29,9 +31,9 @@ void cpuid_get_features(cpuid_t *cpuid)
 	cpuid->model, 
 	cpuid->stepping, 
 	cpuid->type);
-	printk(KERN_EVERY, "\tCache Line Size: %u bytes | Local APIC ID: 0x%X \n", 
+	printk(KERN_EVERY, "\tCache Line Size: %d bytes | Local APIC ID: 0x%X, num logical=%d \n", 
 	       cpuid->cache_line_size, 
-	cpuid->lapic_id);
+	cpuid->lapic_id, cpuid->logical_processors);
 } 
 
 void cpuid_get_cpu_brand(cpuid_t *cpuid)
@@ -104,13 +106,13 @@ int probe_smp();
 
 int set_int(unsigned new)
 {
-	cpu_t *cpu = current_task->cpu;
-	unsigned old = cpu->flags&CPU_INTER;
+	cpu_t *cpu = current_task ? current_task->cpu : 0;
+	unsigned old = cpu ? cpu->flags&CPU_INTER : 0;
 	if(!new) {
-		cpu->flags &= ~CPU_INTER;
+		if(cpu) cpu->flags &= ~CPU_INTER;
 		asm("cli");
 	} else if(cpu->flags&CPU_RUNNING) {
-		cpu->flags |= CPU_INTER;
+		if(cpu) cpu->flags |= CPU_INTER;
 		asm("sti");
 	}
 	return old;
@@ -118,16 +120,19 @@ int set_int(unsigned new)
 
 void init_main_cpu()
 {
+#if CONFIG_SMP
 	memset(cpu_array, 0, sizeof(cpu_t) * CONFIG_MAX_CPUS);
 	cpu_array_num = 0;
-#if CONFIG_SMP
 	probe_smp();
 	if(!smp_enabled)
 		primary_cpu = &cpu_array[0];
 #else
-	primary_cpu = &cpu_array[0];
+	primary_cpu = &priamry_cpu_data;
 #endif
 	assert(primary_cpu);
+	/* reload the tables with the structs inside the CPU structure
+	 * so that we can globaly use current_tss */
+	load_tables_ap(primary_cpu);
 	primary_cpu->flags = CPU_UP;
 	printk(KERN_MSG, "Initializing CPU...\n");
 	parse_cpuid(primary_cpu);

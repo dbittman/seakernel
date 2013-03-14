@@ -20,7 +20,7 @@ typedef struct __cpu_t__ {
 	unsigned flags;
 	cpuid_t cpuid;
 	int apicid;
-	page_dir_t *kd;
+	volatile page_dir_t *kd;
 	addr_t kd_phys;
 	tqueue_t *active_queue;
 	task_t *ktask, *cur;

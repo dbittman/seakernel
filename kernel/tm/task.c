@@ -136,6 +136,28 @@ void task_unblock_all(struct llist *list)
 
 void move_task_cpu(task_t *t, cpu_t *cpu)
 {
-	#warning "implement something like this..."
-	#warning "CURRENT CPU IS PAGE_DIR[SMP_CUR_CPU]"
+	if(t->cpu == cpu) panic(0, "trying to move task to it's own cpu");
+	/* have to try to get the lock on the CPU when the task t isn't 
+	 * running on it... */
+	#warning "make this atomic"
+	if(t->flags & TF_MOVECPU)
+		panic(0, "trying to move task twice");
+	if(t == cpu->ktask)
+		panic(0, "trying to move idle task");
+	t->flags |= TF_MOVECPU;
+	cpu_t *oldcpu = t->cpu;
+	while(1)
+	{
+		mutex_acquire(&oldcpu->lock);
+		if(oldcpu->cur != t)
+			break;
+		mutex_release(&oldcpu->lock);
+		asm("pause");
+	}
+	/* ok, we have the lock and the task */
+	tqueue_remove(oldcpu->active_queue, t->activenode);
+	t->activenode = tqueue_insert(cpu->active_queue, (void *)t);
+	t->cpu = cpu;
+	mutex_release(&oldcpu->lock);
+	t->flags &= TF_MOVECPU;
 }

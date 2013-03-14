@@ -38,7 +38,7 @@ __attribute__((always_inline)) inline task_t *get_next_task(task_t *prev)
 		/* this handles everything in the "active queue". This includes
 		 * running tasks, tasks that have timed blocks... */
 		update_task(t);
-		if(task_is_runable(t))
+		if(task_is_runable(t) && !(t->flags & TF_MOVECPU))
 			return t;
 		t = tqueue_next(cpu->active_queue);
 		/* This way the kernel can sleep without being in danger of 

@@ -42,6 +42,8 @@ extern tqueue_t *primary_queue, *active_queue;
 							 * we need to re-enable them when we schedule into this
 							 * task */
 #define TF_BURIED   0x10000
+#define TF_MOVECPU  0x20000 /* something is trying to move this task to
+							 * a different CPU */
 #define PRIO_PROCESS 1
 #define PRIO_PGRP    2
 #define PRIO_USER    3

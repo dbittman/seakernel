@@ -37,6 +37,7 @@ void cpu_k_task_entry(task_t *me)
 /* it's important that this doesn't get inlined... */
 __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 {
+	/* get the cpu again... */
 	cpu_t *cpu = get_cpu(apicid);
 	cpu->flags |= CPU_UP;
 	/* call the CPU features init code */
@@ -51,7 +52,8 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	set_boot_flag(0xFFFFFFFF);
 	printk(0, "pause\n");
 	/* now we need to wait up the memory manager is all set up */
-	while(!cpu->kd) cli();
+	#warning "make this better..."
+	while(!cpu->kd) asm("cli");
 	/* load in the directory provided and enable paging! */
 	__asm__ volatile ("mov %0, %%cr3" : : "r" (cpu->kd_phys));
 	unsigned cr0temp;
@@ -64,7 +66,7 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	}
 	
 	printk(0, "[cpu%d]: waiting for tasking...\n", apicid);
-	while(!kernel_task) cli();
+	while(!kernel_task) asm("cli");
 	printk(0, "[cpu%d]: enable tasks...\n", apicid);
 	/* initialize tasking for this CPU */
 	task_t *task = (task_t *)kmalloc(sizeof(task_t));

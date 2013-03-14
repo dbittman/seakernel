@@ -34,7 +34,6 @@ static void imps_add_processor(struct imps_processor *proc)
 	if (proc->flags & (IMPS_CPUFLAG_BOOT)) {
 		primary_cpu = &cpu_array[apicid];
 		primary_cpu->apicid = apicid;
-		primary_cpu->flags = CPU_UP | CPU_RUNNING;
 		return;
 	}
 	if(!cp)

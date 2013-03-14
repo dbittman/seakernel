@@ -19,6 +19,8 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 	while(bts_atomic(&m->lock, 0)) {
 		if(!(m->flags & MT_NOSCHED))
 			schedule();
+		else
+			asm("pause"); /* the intel manuals suggest this */
 	}
 	if(current_task) m->pid = current_task->pid;
 }

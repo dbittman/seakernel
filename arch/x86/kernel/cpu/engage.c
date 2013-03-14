@@ -79,6 +79,7 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	task->activenode = tqueue_insert(cpu->active_queue, (void *)task);
 	cpu->cur = cpu->ktask = task;
 	task->cpu = cpu;
+	mutex_create(&cpu->lock, MT_NOSCHED);
 	set_kernel_stack(&cpu->tss, task->kernel_stack + (KERN_STACK_SIZE - STACK_ELEMENT_SIZE));
 	/* set up the real stack, and call cpu_k_task_entry with a pointer to this cpu's ktask as 
 	 * the argument */

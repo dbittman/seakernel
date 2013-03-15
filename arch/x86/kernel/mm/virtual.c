@@ -84,8 +84,10 @@ void vm_init_2()
 	while(i < cpu_array_num)
 	{
 		printk(0, "[mm]: cloning directory for processor %d\n", cpu_array[i].apicid);
-		cpu_array[i].kd = vm_clone(page_directory, 0);
+		/* set physical first because the CPU waits for the virtual
+		 * address to be set. */
 		cpu_array[i].kd_phys = cpu_array[i].kd[1023] & PAGE_MASK;
+		cpu_array[i].kd = vm_clone(page_directory, 0);
 		i++;
 	}
 #else

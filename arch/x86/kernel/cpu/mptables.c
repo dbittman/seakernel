@@ -33,7 +33,6 @@ static void imps_add_processor(struct imps_processor *proc)
 	cpu_t *cp = add_cpu(&new_cpu);
 	if (proc->flags & (IMPS_CPUFLAG_BOOT)) {
 		primary_cpu = &cpu_array[apicid];
-		primary_cpu->apicid = apicid;
 		return;
 	}
 	if(!cp)

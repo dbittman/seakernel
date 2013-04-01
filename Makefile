@@ -12,7 +12,7 @@ include make.inc
 export CC
 export LD
 export AR
-CFLAGS_NOARCH = -O3 -g -std=c99 -nostdlib -nostdinc \
+CFLAGS_NOARCH = -Ofast -g -std=c99 -nostdlib -nostdinc \
 		 -fno-builtin -ffreestanding \
 		 -Iarch/${ARCH}/include \
          -I../include -Iinclude -I ../../include -I ../../../include \
@@ -21,7 +21,7 @@ CFLAGS_NOARCH = -O3 -g -std=c99 -nostdlib -nostdinc \
 	     -Wno-strict-aliasing -Wshadow -Wpointer-arith -Wcast-align \
 	     -Wno-unused -Wnested-externs -Waddress -Winline \
 	     -Wno-long-long -mno-red-zone -fno-omit-frame-pointer \
-	     -Wno-unused-parameter -Wno-unused-but-set-parameter
+	     -Wno-unused-parameter -Wno-unused-but-set-parameter -nodefaultlibs
 
 include arch/${ARCH}/make.inc
 

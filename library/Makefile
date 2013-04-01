@@ -1,6 +1,6 @@
 .c.o:
 	echo -n -e "[CC]\t$@        \n"
-	@$(CC) $(CFLAGS) -c -o $@ $<
+	@$(CC) $(CFLAGS) -fno-tree-loop-distribute-patterns -c -o $@ $<
 
 -include ../make.inc
 -include ../sea_defines.inc
@@ -35,5 +35,3 @@ make.deps:
 ifneq ($(MAKECMDGOALS),clean)
 -include make.deps
 endif
-
-

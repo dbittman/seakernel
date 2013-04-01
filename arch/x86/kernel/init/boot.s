@@ -39,6 +39,11 @@ start:
    call  kmain                  ; call kernel proper
 
    cli
+   lgdt [0]
+   lidt [0]
+   sti
+   int 3
+   
 hang:
    hlt                          ; halt machine should kernel return
    jmp   hang                   ; course, this wont happen

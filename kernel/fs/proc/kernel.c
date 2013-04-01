@@ -83,7 +83,9 @@ int proc_mods(char rw, struct inode *n, int min, char *buf, int off, int len)
 
 int proc_kern_rw(char rw, struct inode *inode, int m, char *buf, int off, int len)
 {
+#if CONFIG_SWAP
 	swapdev_t *s = swaplist;
+#endif
 	int total_len=0;
 	if(rw == READ) {
 		switch(m) {

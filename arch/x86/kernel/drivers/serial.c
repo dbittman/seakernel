@@ -77,7 +77,7 @@ void init_serial()
 	mutex_create(&serial_m, 0);
 	init_serial_port(0x3f8);
 	serial_initialized = 1;
-	serial_puts(0, "[kernel]: started debug serial output\n");
+	serial_puts_nolock(0, "[kernel]: started debug serial output\n");
 #if CONFIG_MODULES
 	add_kernel_symbol(serial_puts);
 #endif

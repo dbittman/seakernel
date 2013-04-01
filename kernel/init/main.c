@@ -108,6 +108,7 @@ void kmain(struct multiboot *mboot_header, u32int initial_stack)
 #endif
 	load_tables();
 	init_serial();
+	
 	console_init_stage1();
 	
 	puts("~ SeaOS Version ");
@@ -115,7 +116,6 @@ void kmain(struct multiboot *mboot_header, u32int initial_stack)
 	get_kernel_version(ver);
 	puts(ver);
 	puts(" Booting Up ~\n\r");
-	
 #if CONFIG_MODULES
 	init_module_system();
 #endif

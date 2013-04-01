@@ -20,7 +20,8 @@ CFLAGS_NOARCH = -O3 -g -std=c99 -nostdlib -nostdinc \
          -Wall -Wextra -Wformat-security -Wformat-nonliteral \
 	     -Wno-strict-aliasing -Wshadow -Wpointer-arith -Wcast-align \
 	     -Wno-unused -Wnested-externs -Waddress -Winline \
-	     -Wno-long-long -mno-red-zone -fno-omit-frame-pointer 
+	     -Wno-long-long -mno-red-zone -fno-omit-frame-pointer -Wno-unused-parameter -Wno-unused-but-set-parameter \
+	     -fno-tree-loop-distribute-patterns
 
 include arch/${ARCH}/make.inc
 

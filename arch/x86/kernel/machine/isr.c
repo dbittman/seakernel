@@ -192,14 +192,7 @@ void irq_handler(volatile registers_t regs)
 
 void int_sys_init()
 {
-	int i;
-	for(i=0;i<256;i++) {
-		int_count[i] = 0;
-		interrupt_handlers[i].handler=0;
-		interrupt_handlers[i].next=0;
-		interrupt_handlers[i].prev=0;
-		interrupt_handlers[i].block=0;
-	}
+	memset(&interrupt_handlers, 0, sizeof(isr_t)*256);
 #if CONFIG_MODULES
 	add_kernel_symbol(register_interrupt_handler);
 	add_kernel_symbol(unregister_interrupt_handler);

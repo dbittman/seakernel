@@ -76,7 +76,7 @@ __attribute__((always_inline)) static inline void post_context_switch()
 		set_int(1);
 	}
 }
-
+//#error "the system freezes..."
 __attribute__((always_inline)) static inline void store_context()
 {
 	asm("mov %%esp, %0" : "=r"(current_task->esp));

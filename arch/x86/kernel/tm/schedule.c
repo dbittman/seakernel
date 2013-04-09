@@ -99,7 +99,7 @@ __attribute__((always_inline)) static inline void restore_context(task_t *new)
 	new->slice = ticks;
 	((cpu_t *)new->cpu)->cur = new;
 }
-/*This is the magic super awesome and important kernel function 'schedule()'. 
+/* This is the magic super awesome and important kernel function 'schedule()'. 
  * It is arguable the most important function. Here we store the current 
  * task's context, search for the next process to run, and load it's context.*/
 void schedule()
@@ -111,13 +111,13 @@ void schedule()
 	task_t *old = current_task;
 	cpu_t *cpu = (cpu_t *)old->cpu;
 	assert(cpu->cur == old);
-	mutex_acquire(&cpu->lock);
+	//mutex_acquire(&cpu->lock);
 	store_context();
 	volatile task_t *new = (volatile task_t *)get_next_task(old);
 	restore_context(new); 
 	/* we need to call this after restore_context because in restore_context
 	 * we access current_task->cpu */
-	mutex_release(&cpu->lock);
+	//mutex_release(&cpu->lock);
 	asm("         \
 		mov %1, %%esp;       \
 		mov %2, %%ebp;       \

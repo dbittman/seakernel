@@ -72,8 +72,9 @@ handlist_t *get_interrupt_handler(u8int n)
 void kernel_fault(int fuckoff)
 {
 	kprintf("Kernel Exception #%d: ", fuckoff);
-	printk(5, "Occured in task %d during systemcall %d (F=%d).\n", 
+	printk(5, "Occured in task %d during systemcall %d (F=%d).\n",
 			current_task->pid, current_task->system, current_task->flag);
+	
 	panic(0, exception_messages[fuckoff]);
 }
 

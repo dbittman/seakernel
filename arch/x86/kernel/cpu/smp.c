@@ -10,7 +10,7 @@
 
 unsigned num_cpus=0, num_booted_cpus=0, num_failed_cpus=0;
 char smp_enabled=0;
-
+extern int imps_enabled;
 int send_ipi(unsigned int dst, unsigned int v)
 {
 	int to, send_status;
@@ -42,7 +42,7 @@ int probe_smp()
 		res=imps_scan_mptables(0xF0000, 0x10000);
 	if(!res)
 		return 0;
-	
+	imps_enabled = 1;
 	printk(5, "[cpu]: CPU%s initialized (boot=%d, #APs=%d: ok)                    \n", num_cpus > 1 ? "s" : "", primary_cpu->apicid, num_booted_cpus);
 
 	init_ioapic();

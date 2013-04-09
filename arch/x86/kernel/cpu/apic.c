@@ -65,7 +65,7 @@ int program_ioapic(struct imps_ioapic *ia)
 
 void lapic_eoi()
 {return;
-	if(!imps_enabled)
+	if(!imps_enabled || interrupt_controller != IOINT_APIC)
 		return;
 	IMPS_LAPIC_WRITE(LAPIC_TPR, 0);
 	IMPS_LAPIC_WRITE(LAPIC_EOI, 0x0);
@@ -108,7 +108,7 @@ void calibrate_lapic_timer(unsigned freq)
 	if(tmp < 16) tmp = 16;
 	tmp *= 512;
 	lapic_timer_start = tmp;
-	printk(1, "[apic]: set timer initial count to %d\n", tmp);
+	printk(5, "[apic]: set timer initial count to %d\n", tmp);
 	set_lapic_timer(tmp);
 }
 
@@ -140,8 +140,7 @@ void id_map_apic(page_dir_t *pd)
 }
 
 void init_ioapic()
-{
-	return;
+{return;
 	if(!num_ioapic)
 		return;
 	unsigned i=0, num=0;
@@ -169,6 +168,7 @@ void init_ioapic()
 		outb(0x22, 0x70);
 		outb(0x23, 0x01);
 	}
+	interrupt_controller = IOINT_APIC;
 	sti();
 }
 #endif

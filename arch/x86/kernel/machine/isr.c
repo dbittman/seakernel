@@ -114,7 +114,6 @@ void ack(int n)
 		outb(0x20, 0x20);
 	}
 #if CONFIG_SMP
-#warning "yeah"
 	lapic_eoi();
 #endif
 }

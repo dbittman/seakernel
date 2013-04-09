@@ -307,6 +307,7 @@ void release_slab(slab_t *slab)
 unsigned slab_init(unsigned start, unsigned end)
 {
 	printk(1, "[slab]: Initiating slab allocator...");
+	map_if_not_mapped(start);
 	slab_start = start;
 	slab_end = end;
 	assert(start < end && start);

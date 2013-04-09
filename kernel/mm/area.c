@@ -117,6 +117,9 @@ int init_vmem_area(vma_t *v, addr_t addr, unsigned max, int num_ipages)
 	v->num_ipages=num_ipages;
 	v->max = max;
 	v->used_nodes=0;
+	int i;
+	for(i=0;i<num_ipages;i++)
+		map_if_not_mapped(addr + i * PAGE_SIZE);
 	mutex_create(&v->lock, 0);
 	return 0;
 }

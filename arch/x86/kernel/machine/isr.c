@@ -6,7 +6,7 @@
 #include <cpu.h>
 #include <elf.h>
 #include <atomic.h>
-
+#warning "This is not safe! For SMP or otherwise!"
 extern char *exception_messages[];
 handlist_t interrupt_handlers[256];
 volatile long int_count[256];

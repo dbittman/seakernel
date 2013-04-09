@@ -14,9 +14,9 @@ void install_kmalloc(char *name, unsigned (*init)(unsigned, unsigned),
 	do_kmalloc_wrap = alloc;
 	do_kfree_wrap = free;
 	strncpy(kmalloc_name, name, 128);
+	mutex_create(&km_m, 0);
 	if(init)
 		init(KMALLOC_ADDR_START, KMALLOC_ADDR_END);
-	mutex_create(&km_m, 0);
 }
 
 inline unsigned do_kmalloc(unsigned sz, char align)

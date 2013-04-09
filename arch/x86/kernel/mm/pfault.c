@@ -45,8 +45,6 @@ int map_in_page(unsigned int cr2, unsigned err_code)
 		return do_map_page(cr2, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
 	if(USER_TASK)
 		return 0;
-	if((cr2 >= KMALLOC_ADDR_START && cr2 < KMALLOC_ADDR_END))
-		return do_map_page(cr2, PAGE_PRESENT | PAGE_WRITE);
 	return 0;
 }
 
@@ -63,6 +61,13 @@ void page_fault(registers_t regs)
 	current_task->regs=0;
 	uint32_t cr2, err_code = regs.err_code;
 	__asm__ volatile ("mov %%cr2, %0" : "=r" (cr2));
+	if((cr2 >= KMALLOC_ADDR_START && cr2 < KMALLOC_ADDR_END)) {
+		kprintf("-- KMALLOC ERROR --\n");
+		print_pfe(5, &regs, cr2);
+		printk(5, "\n");
+		print_pf(5, &regs, cr2);
+		panic(PANIC_NOSYNC, "BUG: pagefault in kmalloc region");
+	}
 #if CONFIG_SWAP
 	/* Has the page been swapped out? NOTE: We must always check this first */
 	if(current_task && num_swapdev && current_task->num_swapped && 

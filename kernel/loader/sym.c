@@ -14,7 +14,7 @@
 #include <cpu.h>
 #include <multiboot.h>
 #include <rwlock.h>
-
+mutex_t sym_mutex;
 kernel_symbol_t export_syms[MAX_SYMS];
 const char *elf_lookup_symbol (uint32_t addr, elf32_t *elf)
 {
@@ -45,6 +45,7 @@ void init_kernel_symbols(void)
 	uint32_t i;
 	for(i = 0; i < MAX_SYMS; i++)
 		export_syms[i].ptr = 0;
+	mutex_create(&sym_mutex, 0);
 	/* symbol functions */
 	add_kernel_symbol(find_kernel_function);
 	add_kernel_symbol(remove_kernel_symbol);
@@ -111,7 +112,8 @@ void _add_kernel_symbol(const intptr_t func, const char * funcstr)
 {
 	uint32_t i;
 	if(func < (uint32_t)&kernel_start)
-		return;
+		panic(0, "tried to add invalid symbol %x:%s\n", func, funcstr);
+	mutex_acquire(&sym_mutex);
 	for(i = 0; i < MAX_SYMS; i++)
 	{
 		if(!export_syms[i].ptr)
@@ -121,25 +123,31 @@ void _add_kernel_symbol(const intptr_t func, const char * funcstr)
 		panic(0, "ran out of space on symbol table");
 	export_syms[i].name = funcstr;
 	export_syms[i].ptr = func;
+	mutex_release(&sym_mutex);
 }
 
 intptr_t find_kernel_function(char * unres)
 {
 	uint32_t i;
+	mutex_acquire(&sym_mutex);
 	for(i = 0; i < MAX_SYMS; i++)
 	{
 		if(export_syms[i].ptr && 
 			strlen(export_syms[i].name) == strlen(unres) &&
 			!memcmp((uint8_t*)export_syms[i].name, (uint8_t*)unres, 
-				(int)strlen(unres)))
+				(int)strlen(unres))) {
+			mutex_release(&sym_mutex);
 			return export_syms[i].ptr;
+		}
 	}
+	mutex_release(&sym_mutex);
 	return 0;
 }
 
 int remove_kernel_symbol(char * unres)
 {
 	uint32_t i;
+	mutex_acquire(&sym_mutex);
 	for(i = 0; i < MAX_SYMS; i++)
 	{
 		if(export_syms[i].ptr && 
@@ -148,9 +156,11 @@ int remove_kernel_symbol(char * unres)
 				(int)strlen(unres)))
 		{
 			export_syms[i].ptr=0;
+			mutex_release(&sym_mutex);
 			return 1;
 		}
 	}
+	mutex_release(&sym_mutex);
 	return 0;
 }
 

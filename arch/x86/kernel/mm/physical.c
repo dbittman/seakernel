@@ -100,7 +100,7 @@ void pm_free_page(addr_t addr)
 		pm_stack += sizeof(unsigned int);
 		--pm_used_pages;
 	}
+	mutex_release(&pm_mutex);
 	if(current_task && current_task->num_pages)
 		current_task->num_pages--;
-	mutex_release(&pm_mutex);
 }

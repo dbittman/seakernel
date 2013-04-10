@@ -211,7 +211,7 @@ void init_module_system()
 
 int sys_load_module(char *path, char *args, int flags)
 {
-	if(current_task->uid && !(flags & 2))
+	if(current_task->uid)
 		return -EPERM;
 	return load_module(path, args, flags);
 }

@@ -43,8 +43,6 @@ int map_in_page(unsigned int cr2, unsigned err_code)
 	}
 	if(cr2 >= TOP_TASK_MEM_EXEC && cr2 < (TOP_TASK_MEM_EXEC+STACK_SIZE*2))
 		return do_map_page(cr2, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
-	if(USER_TASK)
-		return 0;
 	return 0;
 }
 

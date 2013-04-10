@@ -150,10 +150,7 @@ int do_send_signal(int pid, int __sig, int p)
 
 int send_signal(int p, int s)
 {
-	lock_scheduler();
-	int ret = do_send_signal(p, s, 0);
-	unlock_scheduler();
-	return ret;
+	return do_send_signal(p, s, 0);
 }
 
 void set_signal(int sig, unsigned hand)

@@ -111,6 +111,7 @@ void schedule()
 	task_t *old = current_task;
 	cpu_t *cpu = (cpu_t *)old->cpu;
 	assert(cpu->cur == old);
+	#warning "..."
 	//mutex_acquire(&cpu->lock);
 	store_context();
 	volatile task_t *new = (volatile task_t *)get_next_task(old);

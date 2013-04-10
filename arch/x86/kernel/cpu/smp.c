@@ -11,22 +11,6 @@
 unsigned num_cpus=0, num_booted_cpus=0, num_failed_cpus=0;
 char smp_enabled=0;
 extern int imps_enabled;
-int send_ipi(unsigned int dst, unsigned int v)
-{
-	int to, send_status;
-	cli();
-	IMPS_LAPIC_WRITE(LAPIC_ICR+0x10, (dst << 24));
-	IMPS_LAPIC_WRITE(LAPIC_ICR, v);
-
-	/* Wait for send to finish */
-	to = 0;
-	do {
-		delay_sleep(1);
-		cli();
-		send_status = IMPS_LAPIC_READ(LAPIC_ICR) & LAPIC_ICR_STATUS_PEND;
-	} while (send_status && (to++ < 1000));
-	return (to < 1000);
-}
 
 int probe_smp()
 {

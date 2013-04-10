@@ -11,7 +11,7 @@ unsigned cpu_array_num=0;
 #else
 cpu_t priamry_cpu_data;
 #endif
-
+extern mutex_t ipi_mutex;
 void cpuid_get_features(cpuid_t *cpuid)
 {
 	int eax, ebx, ecx, edx;
@@ -121,6 +121,7 @@ int set_int(unsigned new)
 void init_main_cpu()
 {
 #if CONFIG_SMP
+	mutex_create(&ipi_mutex);
 	memset(cpu_array, 0, sizeof(cpu_t) * CONFIG_MAX_CPUS);
 	cpu_array_num = 0;
 	probe_smp();

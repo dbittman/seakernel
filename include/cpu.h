@@ -98,6 +98,11 @@ extern char smp_enabled;
 #define		LAPIC_ICR_DM_NMI		0x400
 #define		LAPIC_ICR_DM_INIT		0x500
 #define		LAPIC_ICR_DM_SIPI		0x600
+#define     LAPIC_ICR_SHORT_DEST    0x0
+#define     LAPIC_ICR_SHORT_SELF    0x1
+#define     LAPIC_ICR_SHORT_ALL     0x2
+#define     LAPIC_ICR_SHORT_OTHERS  0x3
+
 #define LAPIC_LVTT				0x320
 #define LAPIC_LVTPC		       		0x340
 #define LAPIC_LVT0				0x350
@@ -109,7 +114,7 @@ extern char smp_enabled;
 
 
 void init_pic();
-int send_ipi(unsigned int dst, unsigned int v);
+int send_ipi(unsigned char dest_shorthand, unsigned int dst, unsigned int v);
 
 extern unsigned bootstrap;
 #define EBDA_SEG_ADDR			0x40E

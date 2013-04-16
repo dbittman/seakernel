@@ -179,6 +179,7 @@ void irq_handler(volatile registers_t regs)
 	add_atomic(&int_count[regs.int_no], 1);
 	ack(regs.int_no);
 	handlist_t *f = &interrupt_handlers[regs.int_no];
+	serial_puts_nolock(0, "hi\n");
 	while(f)
 	{
 		isr_t handler = f->handler;

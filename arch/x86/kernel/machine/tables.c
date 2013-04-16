@@ -143,6 +143,8 @@ static void init_idt()
 	/* 0x80 is syscall */
 	idt_set_gate(0x80, (u32int)isr80, 0x08, 0x8E);
 	
+	idt_set_gate(0x60, (u32int)isr14, 0x08, 0x8E);
+	
 	idt_flush((u32int)&idt_ptr);
 }
 
@@ -152,8 +154,7 @@ void idt_set_gate(u8int num, u32int base, u16int sel, u8int flags)
 	idt_entries[num].base_hi = (base >> 16) & 0xFFFF;
 	idt_entries[num].sel     = sel;
 	idt_entries[num].always0 = 0;
-	idt_entries[num].flags   = flags  | 0x60;
-	
+	idt_entries[num].flags   = flags | 0x60;
 }
 
 /* each CPU gets it's own GDT and TSS, so we need to specify that here. */

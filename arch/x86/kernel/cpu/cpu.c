@@ -121,7 +121,7 @@ int set_int(unsigned new)
 void init_main_cpu()
 {
 #if CONFIG_SMP
-	mutex_create(&ipi_mutex);
+	mutex_create(&ipi_mutex, MT_NOSCHED);
 	memset(cpu_array, 0, sizeof(cpu_t) * CONFIG_MAX_CPUS);
 	cpu_array_num = 0;
 	probe_smp();
@@ -147,4 +147,11 @@ void init_main_cpu()
 	_add_kernel_symbol((unsigned)(cpu_t *)primary_cpu, "primary_cpu");
 	add_kernel_symbol(set_int);
 #endif
+
+	asm("sti");
+	kprintf("SEND IPI\n");
+	send_ipi(0, 1, 14);
+	kprintf("done\n");
+
+	for(;;);
 }

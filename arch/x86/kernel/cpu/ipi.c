@@ -17,12 +17,13 @@
 #include <atomic.h>
 #include <imps.h>
 mutex_t ipi_mutex;
-int send_ipi(unsigned int dst, unsigned int v)
+int send_ipi(unsigned char dest_shorthand, unsigned int dst, unsigned int v)
 {
 	int to, send_status;
 	int old = set_int(0);
 	mutex_acquire(&ipi_mutex);
 	IMPS_LAPIC_WRITE(LAPIC_ICR+0x10, (dst << 24));
+	unsigned lower = v | (dest_shorthand << 18);
 	IMPS_LAPIC_WRITE(LAPIC_ICR, v);
 
 	/* Wait for send to finish */

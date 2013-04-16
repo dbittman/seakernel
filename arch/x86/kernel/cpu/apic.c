@@ -77,7 +77,7 @@ void set_lapic_timer(unsigned tmp)
 		return;
 	IMPS_LAPIC_WRITE(LAPIC_TICR, tmp);
 	IMPS_LAPIC_WRITE(LAPIC_LVTT, 32 | 0x20000);
-	IMPS_LAPIC_WRITE(LAPIC_TDCR, 3);
+	IMPS_LAPIC_WRITE(LAPIC_TDCR, 1);
 }
 
 void calibrate_lapic_timer(unsigned freq)
@@ -109,7 +109,12 @@ void calibrate_lapic_timer(unsigned freq)
 	tmp *= 512;
 	lapic_timer_start = tmp;
 	printk(5, "[apic]: set timer initial count to %d\n", tmp);
-	set_lapic_timer(tmp);
+	//set_lapic_timer(0xFFFFFFFF);
+	sti();
+	
+	
+	
+	for(;;);
 }
 
 void init_lapic()
@@ -122,6 +127,8 @@ void init_lapic()
 	IMPS_LAPIC_WRITE(LAPIC_LVT0, 0x8700);
 	IMPS_LAPIC_WRITE(LAPIC_LVT1, 0x0400);
 	IMPS_LAPIC_WRITE(LAPIC_LVTE, 0x10000);
+	unsigned spiv = IMPS_LAPIC_READ(LAPIC_SPIV);
+	if(!(spiv & (1 << 8))) panic(PANIC_NOSYNC, "LAPIC enable bit not set");
 	IMPS_LAPIC_WRITE(LAPIC_SPIV, 0x0100 | 39);
 	IMPS_LAPIC_WRITE(LAPIC_LVT0, 0x8700);
 	IMPS_LAPIC_WRITE(LAPIC_LVT1, 0x0400);
@@ -136,7 +143,7 @@ void id_map_apic(page_dir_t *pd)
 	int t = PAGE_TABLE_IDX(imps_lapic_addr / 0x1000);
 	pd[a] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
 	unsigned int *pt = (unsigned int *)(pd[a] & PAGE_MASK);
-	pt[t] = (imps_lapic_addr&PAGE_MASK) | PAGE_PRESENT | PAGE_WRITE;
+	pt[t] = (imps_lapic_addr&PAGE_MASK) | PAGE_PRESENT | PAGE_WRITE | PAGE_NOCACHE;
 }
 
 void init_ioapic()

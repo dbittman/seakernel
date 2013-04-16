@@ -49,8 +49,12 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	/* okay, we're up! Set the flag, and reset the boot flag so
 	 * other processors can initialize too */
 	cpu->flags |= CPU_RUNNING;
+	sti();
 	set_boot_flag(0xFFFFFFFF);
 	printk(0, "pause\n");
+	
+	
+	for(;;) asm("sti");
 	/* now we need to wait up the memory manager is all set up */
 	#warning "make this better..."
 	while(!cpu->kd) asm("cli");
@@ -137,15 +141,15 @@ int boot_cpu(unsigned id, unsigned apic_ver)
 	accept_status = IMPS_LAPIC_READ(LAPIC_ESR);
 	printk(0, "[smp]: booting cpu %d\n", id);
 	/* assert INIT IPI */
-	send_ipi(apicid, LAPIC_ICR_TM_LEVEL | LAPIC_ICR_LEVELASSERT | LAPIC_ICR_DM_INIT);
+	send_ipi(LAPIC_ICR_SHORT_DEST, apicid, LAPIC_ICR_TM_LEVEL | LAPIC_ICR_LEVELASSERT | LAPIC_ICR_DM_INIT);
 	delay_sleep(10);
 	/* de-assert INIT IPI */
-	send_ipi(apicid, LAPIC_ICR_TM_LEVEL | LAPIC_ICR_DM_INIT);
+	send_ipi(LAPIC_ICR_SHORT_DEST, apicid, LAPIC_ICR_TM_LEVEL | LAPIC_ICR_DM_INIT);
 	delay_sleep(10);
 	if (apic_ver >= APIC_VER_NEW) {
 		int i;
 		for (i = 1; i <= 2; i++) {
-			send_ipi(apicid, LAPIC_ICR_DM_SIPI | ((bootaddr >> 12) & 0xFF));
+			send_ipi(LAPIC_ICR_SHORT_DEST, apicid, LAPIC_ICR_DM_SIPI | ((bootaddr >> 12) & 0xFF));
 			delay_sleep(1);
 		}
 	}

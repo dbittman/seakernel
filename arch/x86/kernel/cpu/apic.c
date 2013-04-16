@@ -145,21 +145,39 @@ void init_lapic(int extint)
 {
 	if(!imps_enabled)
 		return;
-	outb(0xA1, 0xFF);
-	outb(0x21, 0xFF);
-	IMPS_LAPIC_WRITE(LAPIC_TPR, 0);
+	/* TODO: Better place for this */
+	if(extint) {
+		outb(0xA1, 0xFF);
+		outb(0x21, 0xFF);
+	}
 	int i;
+	/* we may be in a state where there are interrupts left
+	 * in the registers that haven't been EOI'd. I'm pretending like
+	 * I know why that may be. Linux does this, and that's their
+	 * explination */
 	for(i=0;i<=255;i++)
 		lapic_eoi();
+	/* these are not yet configured */
 	IMPS_LAPIC_WRITE(LAPIC_DFR, 0xFFFFFFFF);
 	IMPS_LAPIC_WRITE(LAPIC_LDR, (IMPS_LAPIC_READ(LAPIC_LDR)&0x00FFFFFF)|1);
+	/* disable the timer while we set up */
 	IMPS_LAPIC_WRITE(LAPIC_LVTT, LAPIC_DISABLE);
-	IMPS_LAPIC_WRITE(LAPIC_LVT0, 0x400 | (extint ? 0 : LAPIC_DISABLE)); //external interrupts
+	/* if we accept the extint stuff (the boot processor) we need to not
+	 * mask, and set the proper flags for these entries.
+	 * LVT1: NMI
+	 * LVT0: extINT, level triggered
+	 */
+	IMPS_LAPIC_WRITE(LAPIC_LVT1, 0x400 | (extint ? 0 : LAPIC_DISABLE)); //NMI
 	IMPS_LAPIC_WRITE(LAPIC_LVT0, 0x8700 | (extint ? 0 : LAPIC_DISABLE)); //external interrupts
-	IMPS_LAPIC_WRITE(LAPIC_LVTE, 0xFF | LAPIC_DISABLE); //NMI
-	IMPS_LAPIC_WRITE(LAPIC_LVTPC, 0xFF | LAPIC_DISABLE); //NMI
+	/* disable errors (can trigger while messing with masking) and performance
+	 * counter, but also set a non-zero vector */
+	IMPS_LAPIC_WRITE(LAPIC_LVTE, 0xFF | LAPIC_DISABLE);
+	IMPS_LAPIC_WRITE(LAPIC_LVTPC, 0xFF | LAPIC_DISABLE);
 	
+	/* accept all priority levels */
 	IMPS_LAPIC_WRITE(LAPIC_TPR, 0);
+	/* finally write to the spurious interrupt register to enable
+	 * the interrupts */
 	IMPS_LAPIC_WRITE(LAPIC_SPIV, 0x0100 | 0xFF);
 }
 

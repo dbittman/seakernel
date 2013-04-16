@@ -23,8 +23,12 @@ int send_ipi(unsigned char dest_shorthand, unsigned int dst, unsigned int v)
 	int to, send_status;
 	int old = set_int(0);
 	mutex_acquire(&ipi_mutex);
+	/* Writing to the lower ICR register causes the interrupt
+	 * to get sent off (Intel 3A 10.6.1), so do the higher reg first */
 	IMPS_LAPIC_WRITE(LAPIC_ICR+0x10, (dst << 24));
 	unsigned lower = v | (dest_shorthand << 18);
+	/* gotta have assert for all except init */
+	assert((v & LAPIC_ICR_DM_INIT) || (v & LAPIC_ICR_LEVELASSERT));
 	IMPS_LAPIC_WRITE(LAPIC_ICR, lower);
 	/* Wait for send to finish */
 	to = 0;

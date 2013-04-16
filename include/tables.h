@@ -74,7 +74,9 @@ extern void isr29();
 extern void isr30();
 extern void isr31();
 extern void isr80();
-extern void isr80s();
+
+extern void isr100();
+
 extern void irq0 ();
 extern void irq1 ();
 extern void irq2 ();

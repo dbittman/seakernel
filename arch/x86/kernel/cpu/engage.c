@@ -44,16 +44,14 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	parse_cpuid(cpu);
 	setup_fpu(cpu);
 	init_sse(cpu);
-	init_lapic(0);
-	printk(0, "setting flags\n");
-	/* okay, we're up! Set the flag, and reset the boot flag so
-	 * other processors can initialize too */
 	cpu->flags |= CPU_RUNNING;
-	sti();
 	set_boot_flag(0xFFFFFFFF);
-	printk(0, "pause\n");
+	while(!smp_enabled) asm("cli");
+	init_lapic(0);
+	set_lapic_timer(0x100000);
+	kprintf("proc %d: idle\n", apicid);
 	
-	
+	sti();
 	for(;;) asm("sti");
 	/* now we need to wait up the memory manager is all set up */
 	#warning "make this better..."

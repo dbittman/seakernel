@@ -74,7 +74,6 @@ void set_lapic_timer(unsigned tmp)
 {
 	if(!imps_enabled)
 		return;
-	kprintf("SET\n");
 	IMPS_LAPIC_WRITE(LAPIC_LVTT, 32 | 0x20000);
 	IMPS_LAPIC_WRITE(LAPIC_TDCR, 3);
 	IMPS_LAPIC_WRITE(LAPIC_TICR, tmp);
@@ -128,17 +127,18 @@ void calibrate_lapic_timer(unsigned freq)
     outb(port, value); 
 			outb(0xA1, 0xFF);
 	outb(0x21, 0xFF); */
-	sti();
-	printk(7, "no more pic...\n");
+	//sti();
+	//printk(7, "no more pic...\n");
 	//IMPS_LAPIC_WRITE(LAPIC_EOI, 0);
-	while(1) {
-		sti();asm("sti");
+	//while(1) {
+	//	sti();asm("sti");
 		//current = IMPS_LAPIC_READ(LAPIC_TCCR);
 		//unsigned q = IMPS_LAPIC_READ(LAPIC_LVTT);
 		//unsigned r = IMPS_LAPIC_READ(LAPIC_ISR + 0x10 );
 		//if(current) printk(0, "%x: %d: %x\n", q, current, r);
-	}
-	for(;;);
+	//}
+	//sti();
+	//for(;;);
 }
 
 void init_lapic(int extint)
@@ -147,9 +147,6 @@ void init_lapic(int extint)
 		return;
 	outb(0xA1, 0xFF);
 	outb(0x21, 0xFF);
-	unsigned long long lapic_msr = read_msr(0x1b);
-	write_msr(0x1b, (lapic_msr&0xFFFFF000) | 0x800, 0); //set global enable bit for lapic
-	kprintf(">> %x\n", lapic_msr);
 	IMPS_LAPIC_WRITE(LAPIC_TPR, 0);
 	int i;
 	for(i=0;i<=255;i++)

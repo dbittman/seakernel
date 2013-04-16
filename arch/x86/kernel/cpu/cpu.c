@@ -151,11 +151,11 @@ void init_main_cpu()
 	_add_kernel_symbol((unsigned)(cpu_t *)primary_cpu, "primary_cpu");
 	add_kernel_symbol(set_int);
 #endif
+	//for(;;);
 
 	asm("sti");
 	kprintf("SEND IPI\n");
-	send_ipi(0, 1, 14);
-	kprintf("done\n");
-
+	int x = send_ipi(0, 1, 100 | LAPIC_ICR_TM_LEVEL | LAPIC_ICR_LEVELASSERT);
+	kprintf("done: %d\n", x);
 	for(;;);
 }

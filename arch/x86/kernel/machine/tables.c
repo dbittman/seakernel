@@ -144,7 +144,7 @@ static void init_idt()
 	/* 0x80 is syscall */
 	idt_set_gate(0x80, (u32int)isr80, 0x08, 0x8E);
 	
-	idt_set_gate(0x60, (u32int)isr14, 0x08, 0x8E);
+	idt_set_gate(100, (u32int)isr100, 0x08, 0x8E);
 	
 	idt_flush((u32int)&idt_ptr);
 }

@@ -25,8 +25,7 @@ int send_ipi(unsigned char dest_shorthand, unsigned int dst, unsigned int v)
 	mutex_acquire(&ipi_mutex);
 	IMPS_LAPIC_WRITE(LAPIC_ICR+0x10, (dst << 24));
 	unsigned lower = v | (dest_shorthand << 18);
-	IMPS_LAPIC_WRITE(LAPIC_ICR, v);
-
+	IMPS_LAPIC_WRITE(LAPIC_ICR, lower);
 	/* Wait for send to finish */
 	to = 0;
 	do {

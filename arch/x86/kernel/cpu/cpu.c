@@ -12,11 +12,13 @@ unsigned cpu_array_num=0;
 cpu_t priamry_cpu_data;
 #endif
 extern mutex_t ipi_mutex;
+void init_lapic(int);
 void cpuid_get_features(cpuid_t *cpuid)
 {
 	int eax, ebx, ecx, edx;
 	eax = 0x01;
 	asm("cpuid" : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx) : "a"(eax));
+	if(!(edx & (1<<9))) kprintf("warning - no lapic present\n");
 	cpuid->features_edx = edx;
 	cpuid->features_ecx = ecx;
 	cpuid->stepping =    (eax & 0x0F);
@@ -127,13 +129,15 @@ void init_main_cpu()
 	probe_smp();
 	if(!smp_enabled)
 		primary_cpu = &cpu_array[0];
+	load_tables_ap(primary_cpu);
+	init_ioapic();
+	init_lapic(1);
+	calibrate_lapic_timer(1000);
 #else
 	primary_cpu = &priamry_cpu_data;
+	load_tables_ap(primary_cpu);
 #endif
 	assert(primary_cpu);
-	/* reload the tables with the structs inside the CPU structure
-	 * so that we can globaly use current_tss */
-	load_tables_ap(primary_cpu);
 	primary_cpu->flags = CPU_UP;
 	printk(KERN_MSG, "Initializing CPU...\n");
 	parse_cpuid(primary_cpu);

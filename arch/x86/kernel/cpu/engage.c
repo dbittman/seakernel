@@ -13,7 +13,7 @@ initialization */
 void load_tables_ap();
 void set_lapic_timer(unsigned tmp);
 extern unsigned lapic_timer_start;
-void init_lapic();
+void init_lapic(int);
 
 static void set_boot_flag(unsigned x)
 {
@@ -44,7 +44,7 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	parse_cpuid(cpu);
 	setup_fpu(cpu);
 	init_sse(cpu);
-	init_lapic();
+	init_lapic(0);
 	printk(0, "setting flags\n");
 	/* okay, we're up! Set the flag, and reset the boot flag so
 	 * other processors can initialize too */

@@ -71,6 +71,7 @@ extern char smp_enabled;
 #define		IOAPIC_VER			1
 #define		IOAPIC_REDIR			0x10
 
+#define LAPIC_DISABLE           0x10000
 #define LAPIC_ID				0x20
 #define LAPIC_VER				0x30
 #define LAPIC_TPR				0x80

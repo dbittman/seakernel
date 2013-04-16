@@ -8,6 +8,11 @@ static unsigned read_msr(unsigned msr)
 	return res;
 }
 
+static void write_msr(unsigned msr, unsigned lo, unsigned hi)
+{
+   asm ("wrmsr"::"a"(lo),"d"(hi),"c"(msr));
+}
+
 #define sti() __sync_synchronize();set_int(1);
 #define cli() __sync_synchronize();set_int(0);
 #define nop() __sync_synchronize();__asm__ __volatile__ ("nop")

@@ -113,9 +113,6 @@ void ack(int n)
 			outb(0xA0, 0x20);
 		outb(0x20, 0x20);
 	}
-#if CONFIG_SMP
-	lapic_eoi();
-#endif
 }
 
 void entry_syscall_handler(volatile registers_t regs)
@@ -144,6 +141,9 @@ void entry_syscall_handler(volatile registers_t regs)
 	syscall_handler(&regs);
 	current_task->sysregs=0;
 	current_task->regs=0;
+#if CONFIG_SMP
+	lapic_eoi();
+#endif
 }
 
 /* This gets called from our ASM interrupt handler stub. */
@@ -166,13 +166,16 @@ void isr_handler(volatile registers_t regs)
 	}
 	if(!called)
 		faulted(regs.int_no);
+#if CONFIG_SMP
+	lapic_eoi();
+#endif
 }
 
 void irq_handler(volatile registers_t regs)
 {
 	set_int(0);
 	char clear_regs=0;
-	if(!current_task->regs) {
+	if(current_task && !current_task->regs) {
 		clear_regs=1;
 		current_task->regs = &regs;
 	}
@@ -187,8 +190,11 @@ void irq_handler(volatile registers_t regs)
 			handler(regs);
 		f=f->next;
 	}
-	if(clear_regs)
+	if(current_task && clear_regs)
 		current_task->regs=0;
+#if CONFIG_SMP
+	lapic_eoi();
+#endif
 }
 
 void int_sys_init()

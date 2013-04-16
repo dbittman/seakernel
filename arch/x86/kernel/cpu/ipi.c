@@ -4,8 +4,9 @@
  *   1) kernel panic
  *   2) kernel debug interrupt
  *   3) update TLB
- *   4) kernel shutdown
- *   5) reshedule a new thread
+ *   4) ack update TLB
+ *   5) kernel shutdown
+ *   6) reshedule a new thread
  */
 #include <config.h>
 #if CONFIG_SMP

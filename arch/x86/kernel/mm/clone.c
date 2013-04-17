@@ -79,9 +79,27 @@ page_dir_t *vm_clone(page_dir_t *pd, char cow)
 	unsigned tmp_p = pm_alloc_page();
 	vm_map((unsigned)tmp, tmp_p, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_PDLOCKED);
 	flush_pd();
+	memset(tmp, 0, PAGE_SIZE);
 	tmp[1023] = new_p | PAGE_PRESENT | PAGE_WRITE;
 	new[1022] = tmp_p | PAGE_PRESENT | PAGE_WRITE;
 	vm_do_unmap_only((unsigned)tmp, 1);
+	
+#if CONFIG_SMP
+	/* gotta map in the page for the lapic start address.
+	 * first, map in a table to edit it... */
+	extern unsigned imps_lapic_addr;
+	tmp_p = pm_alloc_page();
+	vm_map((unsigned)tmp, tmp_p, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_PDLOCKED);
+	flush_pd();
+	memset(tmp, 0, PAGE_SIZE);
+	unsigned pdi = PAGE_DIR_IDX(imps_lapic_addr / PAGE_SIZE);
+	unsigned tbi = PAGE_TABLE_IDX(imps_lapic_addr / PAGE_SIZE);
+	assert(!new[pdi]);
+	tmp[tbi] = (imps_lapic_addr&PAGE_MASK) | PAGE_PRESENT | PAGE_WRITE | PAGE_NOCACHE;
+	new[pdi] = tmp_p | PAGE_PRESENT | PAGE_WRITE | PAGE_NOCACHE;
+	vm_do_unmap_only((unsigned)tmp, 1);
+#endif
+	
 	/* map in a page for accounting */
 	tmp_p = pm_alloc_page();
 	vm_map((unsigned)tmp, tmp_p, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_PDLOCKED);
@@ -132,7 +150,23 @@ page_dir_t *vm_copy(page_dir_t *pd)
 	tmp[1023] = new_p | PAGE_PRESENT | PAGE_WRITE;
 	new[1022] = tmp_p | PAGE_PRESENT | PAGE_WRITE;
 	vm_do_unmap_only((unsigned)tmp, 1);
-	
+
+#if CONFIG_SMP
+	/* gotta map in the page for the lapic start address.
+	 * first, map in a table to edit it... */
+	extern unsigned imps_lapic_addr;
+	tmp_p = pm_alloc_page();
+	vm_map((unsigned)tmp, tmp_p, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_PDLOCKED);
+	flush_pd();
+	memset(tmp, 0, PAGE_SIZE);
+	unsigned pdi = PAGE_DIR_IDX(imps_lapic_addr / PAGE_SIZE);
+	unsigned tbi = PAGE_TABLE_IDX(imps_lapic_addr / PAGE_SIZE);
+	assert(!new[pdi]);
+	tmp[tbi] = (imps_lapic_addr&PAGE_MASK) | PAGE_PRESENT | PAGE_WRITE | PAGE_NOCACHE;
+	new[pdi] = tmp_p | PAGE_PRESENT | PAGE_WRITE | PAGE_NOCACHE;
+	vm_do_unmap_only((unsigned)tmp, 1);
+#endif
+
 	/* map the current accounting page into the new directory */
 	int account = PAGE_DIR_IDX(PDIR_DATA/PAGE_SIZE);
 	new[account] = pd[account];

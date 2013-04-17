@@ -31,7 +31,6 @@ int probe_smp()
 	imps_enabled = 1;
 	printk(5, "[cpu]: CPU%s initialized (boot=%d, #APs=%d: ok)                    \n", num_cpus > 1 ? "s" : "", primary_cpu->apicid, num_booted_cpus);
 	
-	smp_enabled=1;
 	return 0;
 }
 #endif

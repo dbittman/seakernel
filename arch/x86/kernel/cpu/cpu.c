@@ -13,6 +13,7 @@ cpu_t priamry_cpu_data;
 #endif
 extern mutex_t ipi_mutex;
 void init_lapic(int);
+extern int imps_enabled;
 void cpuid_get_features(cpuid_t *cpuid)
 {
 	int eax, ebx, ecx, edx;
@@ -127,12 +128,13 @@ void init_main_cpu()
 	memset(cpu_array, 0, sizeof(cpu_t) * CONFIG_MAX_CPUS);
 	cpu_array_num = 0;
 	probe_smp();
-	if(!smp_enabled)
+	if(!imps_enabled)
 		primary_cpu = &cpu_array[0];
 	load_tables_ap(primary_cpu);
 	init_ioapic();
 	init_lapic(1);
 	calibrate_lapic_timer(1000);
+	smp_enabled=1;
 #else
 	primary_cpu = &priamry_cpu_data;
 	load_tables_ap(primary_cpu);
@@ -151,11 +153,4 @@ void init_main_cpu()
 	_add_kernel_symbol((unsigned)(cpu_t *)primary_cpu, "primary_cpu");
 	add_kernel_symbol(set_int);
 #endif
-	//for(;;);
-
-	asm("sti");
-	kprintf("SEND IPI\n");
-	int x = send_ipi(0, 1, 100 | LAPIC_ICR_TM_LEVEL | LAPIC_ICR_LEVELASSERT);
-	kprintf("done: %d\n", x);
-	for(;;);
 }

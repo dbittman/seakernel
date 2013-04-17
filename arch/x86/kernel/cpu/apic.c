@@ -74,82 +74,30 @@ void set_lapic_timer(unsigned tmp)
 {
 	if(!imps_enabled)
 		return;
+	/* mask the old timer interrupt */
+	mask_pic_int(0, 1);
+	/* THE ORDER OF THESE IS IMPORTANT!
+	 * If you write the initial count before you
+	 * tell it to set periodic mode and set the vector
+	 * it will not generate an interrupt! */
 	IMPS_LAPIC_WRITE(LAPIC_LVTT, 32 | 0x20000);
 	IMPS_LAPIC_WRITE(LAPIC_TDCR, 3);
 	IMPS_LAPIC_WRITE(LAPIC_TICR, tmp);
 }
-#define PIC1		0x20		/* IO base address for master PIC */
-#define PIC2		0xA0		/* IO base address for slave PIC */
-#define PIC1_COMMAND	PIC1
-#define PIC1_DATA	(PIC1+1)
-#define PIC2_COMMAND	PIC2
-#define PIC2_DATA	(PIC2+1)
+
 void calibrate_lapic_timer(unsigned freq)
 {
 	if(!imps_enabled)
 		return;
-	unsigned tmp=0;
-	IMPS_LAPIC_WRITE(LAPIC_TDCR, 3);
-	IMPS_LAPIC_WRITE(LAPIC_LVTT, 32);
-	//cli();
-	//outb(0x61, (inb(0x61) & 0xFD) | 1);
-	//outb(0x43,0xB2);
-	//1193180/100 Hz = 11931 = 2e9bh
-	//outb(0x42,0x9B);	//LSB
-	//inb(0x60);	//short delay
-	//outb(0x42,0x2E);	//MSB
- 
-	//reset PIT one-shot counter (start counting)
-	//tmp = inb(0x61)&0xFE;
-	//outb(0x61,(uint8)tmp);		//gate low
-	//outb(0x61,(uint8)tmp|1);		//gate high
-	IMPS_LAPIC_WRITE(LAPIC_TICR, 0xFFFFFFFF);
-	//delay_sleep(100);
-	//while(!(inb(0x61)&0x20));
-	unsigned current = IMPS_LAPIC_READ(LAPIC_TCCR);
-	IMPS_LAPIC_WRITE(LAPIC_LVTT, 0x10000);
-	tmp=(((0xFFFFFFFF-current)+1) * 100 * 16)/freq/16;
-	if(tmp < 16) tmp = 16;
-	tmp *= 512;
-	lapic_timer_start = tmp;
-	printk(5, "[apic]: set timer initial count to %d\n", tmp);
-	cli();
-	outb(0xA1, 0xFF);
-	outb(0x21, 0xFF);
-	set_lapic_timer(0x100000);
-	/*
-	uint16_t port;
-    uint8_t value;
-    unsigned char irq = 0;
-    port = PIC1_DATA;
-    //irq -= 8;
-    value = inb(port) | (1 << irq);
-    outb(port, value); 
-			outb(0xA1, 0xFF);
-	outb(0x21, 0xFF); */
-	//sti();
-	//printk(7, "no more pic...\n");
-	//IMPS_LAPIC_WRITE(LAPIC_EOI, 0);
-	//while(1) {
-	//	sti();asm("sti");
-		//current = IMPS_LAPIC_READ(LAPIC_TCCR);
-		//unsigned q = IMPS_LAPIC_READ(LAPIC_LVTT);
-		//unsigned r = IMPS_LAPIC_READ(LAPIC_ISR + 0x10 );
-		//if(current) printk(0, "%x: %d: %x\n", q, current, r);
-	//}
-	//sti();
-	//for(;;);
+	kprintf("warning - not calibrating\n");
+	lapic_timer_start = 0x10000;
+	set_lapic_timer(lapic_timer_start);
 }
 
 void init_lapic(int extint)
 {
 	if(!imps_enabled)
 		return;
-	/* TODO: Better place for this */
-	if(extint) {
-		outb(0xA1, 0xFF);
-		outb(0x21, 0xFF);
-	}
 	int i;
 	/* we may be in a state where there are interrupts left
 	 * in the registers that haven't been EOI'd. I'm pretending like
@@ -191,7 +139,8 @@ void id_map_apic(page_dir_t *pd)
 }
 
 void init_ioapic()
-{return;
+{
+	/* HOLY FUCK THIS NEEDS CLEANUP!!! */
 	if(!num_ioapic)
 		return;
 	unsigned i=0, num=0;

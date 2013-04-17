@@ -152,9 +152,9 @@ void isr_handler(volatile registers_t regs)
 	set_int(0);
 	add_atomic(&int_count[regs.int_no], 1);
 	ack(regs.int_no);
-		char x[12];
-	sprintf(x, "ISRhi: %d\n", regs.int_no);
-	serial_puts_nolock(0, x);
+	//char x[12];
+	//sprintf(x, "ISRhi: %d\n", regs.int_no);
+	//serial_puts_nolock(0, x);
 	if(regs.int_no == 100)
 	{
 #if CONFIG_SMP
@@ -192,9 +192,9 @@ void irq_handler(volatile registers_t regs)
 	add_atomic(&int_count[regs.int_no], 1);
 	ack(regs.int_no);
 	handlist_t *f = &interrupt_handlers[regs.int_no];
-	char x[8];
-	sprintf(x, "hi: %d\n", regs.int_no);
-	//serial_puts_nolock(0, x);
+//	char x[8];
+//	sprintf(x, "hi: %d\n", regs.int_no);
+//	serial_puts_nolock(0, x);
 	while(f)
 	{
 		isr_t handler = f->handler;

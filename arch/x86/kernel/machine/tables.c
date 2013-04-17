@@ -61,6 +61,33 @@ void io_wait( void )
                   "1:jmp 2f\n\t"
                   "2:" );
 }
+#define PIC1		0x20		/* IO base address for master PIC */
+#define PIC2		0xA0		/* IO base address for slave PIC */
+#define PIC1_COMMAND	PIC1
+#define PIC1_DATA	(PIC1+1)
+#define PIC2_COMMAND	PIC2
+#define PIC2_DATA	(PIC2+1)
+void disable_pic()
+{
+	outb(0xA1, 0xFF);
+	outb(0x21, 0xFF);
+}
+
+void mask_pic_int(unsigned char irq, int mask)
+{
+	uint16_t port;
+    uint8_t value;
+    if(irq >= 8) {
+		port = PIC2_DATA;
+		irq -= 8;
+	} else
+		port = PIC1_DATA;
+	if(mask)
+		value = inb(port) | (1 << irq);
+	else
+		value = inb(port) & ~(1 << irq);
+    outb(port, value);
+}
 
 void init_pic()
 {
@@ -143,9 +170,16 @@ static void init_idt()
 	idt_set_gate(47, (u32int)irq15, 0x08, 0x8E);
 	/* 0x80 is syscall */
 	idt_set_gate(0x80, (u32int)isr80, 0x08, 0x8E);
-	
-	idt_set_gate(100, (u32int)isr100, 0x08, 0x8E);
-	
+#if CONFIG_SMP
+	#warning "IMPLEMENT THESE"
+	//idt_set_gate(IPI_PANIC, (u32int)ipi_panic, 0x08, 0x8E);
+	//idt_set_gate(IPI_TLB, (u32int)ipi_tbl, 0x08, 0x8E);
+	//idt_set_gate(IPI_TLB_ACK, (u32int)ipi_tlb_ack, 0x08, 0x8E);
+	//idt_set_gate(IPI_SHUTDOWN, (u32int)ipi_shutdown, 0x08, 0x8E);
+	//idt_set_gate(IPI_DEBUG, (u32int)ipi_debug, 0x08, 0x8E);
+	//idt_set_gate(IPI_SCHED, (u32int)ipi_sched, 0x08, 0x8E);
+#endif
+
 	idt_flush((u32int)&idt_ptr);
 }
 

@@ -100,5 +100,7 @@ void load_doublefault_system(void);
 void write_tss(gdt_entry_t *, tss_entry_t *, s32int num, u16int ss0, u32int esp0);
 void gdt_set_gate(gdt_entry_t *, s32int,u32int,u32int,u8int,u8int);
 void idt_set_gate(u8int,u32int,u16int,u8int);
+void mask_pic_int(unsigned char irq, int mask);
+void disable_pic();
 
 #endif

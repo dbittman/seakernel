@@ -21,6 +21,16 @@
 #define IOINT_PIC  1
 #define IOINT_APIC 2
 
+/* lower 4 bits of IRQ is priority sub class
+ * and we want these to actually be in the correct order.
+ * So, skip the lower 4 bits. */
+#define IPI_SCHED    0x90
+#define IPI_SHUTDOWN 0xA0
+#define IPI_TLB_ACK  0xB0
+#define IPI_TLB      0xC0
+#define IPI_DEBUG    0xD0
+#define IPI_PANIC    0xE0
+
 #define EFLAGS_INT (1 << 9)
 
 typedef struct registers

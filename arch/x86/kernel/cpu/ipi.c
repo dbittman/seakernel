@@ -20,6 +20,7 @@
 mutex_t ipi_mutex;
 int send_ipi(unsigned char dest_shorthand, unsigned int dst, unsigned int v)
 {
+	assert((v & LAPIC_ICR_DM_INIT) || (v & LAPIC_ICR_LEVELASSERT));
 	int to, send_status;
 	int old = set_int(0);
 	mutex_acquire(&ipi_mutex);
@@ -28,7 +29,6 @@ int send_ipi(unsigned char dest_shorthand, unsigned int dst, unsigned int v)
 	IMPS_LAPIC_WRITE(LAPIC_ICR+0x10, (dst << 24));
 	unsigned lower = v | (dest_shorthand << 18);
 	/* gotta have assert for all except init */
-	assert((v & LAPIC_ICR_DM_INIT) || (v & LAPIC_ICR_LEVELASSERT));
 	IMPS_LAPIC_WRITE(LAPIC_ICR, lower);
 	/* Wait for send to finish */
 	to = 0;
@@ -40,4 +40,29 @@ int send_ipi(unsigned char dest_shorthand, unsigned int dst, unsigned int v)
 	set_int(old);
 	return (to < 1000);
 }
+
+void handle_ipi_cpu_halt(volatile registers_t regs)
+{
+	cpu_t *cpu = current_task ? current_task->cpu : 0;
+	if(cpu)
+		printk(0, "[cpu%d]: halting forever\n", cpu->apicid);
+	asm("cli");
+	while(1) asm("hlt");
+}
+
+void handle_ipi_reschedule(volatile registers_t regs)
+{
+	
+}
+
+void handle_ipi_tlb(volatile registers_t regs)
+{
+	
+}
+
+void handle_ipi_tlb_ack(volatile registers_t regs)
+{
+	
+}
+
 #endif

@@ -48,7 +48,9 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	set_boot_flag(0xFFFFFFFF);
 	while(!smp_enabled) asm("cli");
 	init_lapic(0);
+	//sti();
 	set_lapic_timer(lapic_timer_start);
+	//for(;;) sti();
 	/* now we need to wait up the memory manager is all set up */
 	#warning "make this better..."
 	while(!cpu->kd) asm("cli");

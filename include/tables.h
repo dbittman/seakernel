@@ -75,8 +75,6 @@ extern void isr30();
 extern void isr31();
 extern void isr80();
 
-extern void isr100();
-
 extern void irq0 ();
 extern void irq1 ();
 extern void irq2 ();
@@ -93,6 +91,13 @@ extern void irq12();
 extern void irq13();
 extern void irq14();
 extern void irq15();
+
+extern void ipi_panic();
+extern void ipi_debug();
+extern void ipi_shutdown();
+extern void ipi_sched();
+extern void ipi_tlb_ack();
+extern void ipi_tlb();
 
 void init_descriptor_tables(void);
 void set_kernel_stack(tss_entry_t *, u32int stack);

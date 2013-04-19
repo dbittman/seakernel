@@ -115,10 +115,40 @@ void ack(int n)
 	}
 }
 
+void ipi_handler(volatile registers_t regs)
+{
+	add_atomic(&int_count[0x80], 1);
+	set_int(0);
+	/* delegate to the proper handler, in ipi.c */
+	switch(regs.int_no) {
+		case IPI_DEBUG:
+		case IPI_SHUTDOWN:
+		case IPI_PANIC:
+			handle_ipi_cpu_halt(regs);
+			break;
+		case IPI_SCHED:
+			handle_ipi_reschedule(regs);
+			break;
+		case IPI_TLB:
+			handle_ipi_tlb(regs);
+			break;
+		case IPI_TLB_ACK:
+			handle_ipi_tlb_ack(regs);
+			break;
+		default:
+			panic(PANIC_NOSYNC, "invalid interprocessor interrupt number: %d", regs.int_no);
+	}
+	set_int(0);
+	set_cpu_interrupt_flag(1); /* assembly code will issue sti */
+#if CONFIG_SMP
+	lapic_eoi();
+#endif
+}
+
 void entry_syscall_handler(volatile registers_t regs)
 {
 	add_atomic(&int_count[0x80], 1);
-	ack(0x80);
+	set_int(0);
 	if(regs.eax == 128) {
 		/* the injection code at the end of the signal handler calls
 		 * a syscall with eax = 128. So here we handle returning from
@@ -129,18 +159,20 @@ void entry_syscall_handler(volatile registers_t regs)
 		current_task->cursig=0;
 		current_task->flags &= ~TF_INSIG;
 		current_task->flags &= ~TF_JUMPIN;
+		set_cpu_interrupt_flag(1);
+#if CONFIG_SMP
+		lapic_eoi();
+#endif
 		return;
 	}
-	/* we don't change the interrupt status flag in the CPU struct until
-	 * we get here because the above code will simply return before it
-	 * because it becomes a problem. */
-	set_int(0);
 	assert(!current_task->sysregs && !current_task->regs);
 	current_task->regs = &regs;
 	current_task->sysregs = &regs;
 	syscall_handler(&regs);
+	set_int(0);
 	current_task->sysregs=0;
 	current_task->regs=0;
+	set_cpu_interrupt_flag(1);
 #if CONFIG_SMP
 	lapic_eoi();
 #endif
@@ -151,17 +183,6 @@ void isr_handler(volatile registers_t regs)
 {
 	set_int(0);
 	add_atomic(&int_count[regs.int_no], 1);
-	ack(regs.int_no);
-	//char x[12];
-	//sprintf(x, "ISRhi: %d\n", regs.int_no);
-	//serial_puts_nolock(0, x);
-	if(regs.int_no == 100)
-	{
-#if CONFIG_SMP
-		lapic_eoi();
-#endif
-		return;
-	}
 	char called=0;
 	handlist_t *f = &interrupt_handlers[regs.int_no];
 	while(f)
@@ -176,6 +197,8 @@ void isr_handler(volatile registers_t regs)
 	}
 	if(!called)
 		faulted(regs.int_no);
+	set_int(0);
+	set_cpu_interrupt_flag(1);
 #if CONFIG_SMP
 	lapic_eoi();
 #endif
@@ -192,9 +215,11 @@ void irq_handler(volatile registers_t regs)
 	add_atomic(&int_count[regs.int_no], 1);
 	ack(regs.int_no);
 	handlist_t *f = &interrupt_handlers[regs.int_no];
-//	char x[8];
-//	sprintf(x, "hi: %d\n", regs.int_no);
-//	serial_puts_nolock(0, x);
+	//if(regs.int_no == 33) {
+	//char x[8];
+	//sprintf(x, "hi: %d\n", regs.int_no);
+	//serial_puts_nolock(0, x);
+//}
 	while(f)
 	{
 		isr_t handler = f->handler;
@@ -202,8 +227,10 @@ void irq_handler(volatile registers_t regs)
 			handler(regs);
 		f=f->next;
 	}
+	set_int(0);
 	if(current_task && clear_regs)
 		current_task->regs=0;
+	set_cpu_interrupt_flag(1);
 #if CONFIG_SMP
 	lapic_eoi();
 #endif

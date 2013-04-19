@@ -51,7 +51,7 @@ void setup_fpu(cpu_t *);
 #define CR0_MP          (1 << 1)
 #define CR4_OSFXSR      (1 << 9)
 #define CR4_OSXMMEXCPT  (1 << 10)
-
+void set_cpu_interrupt_flag(int flag);
 
 #if CONFIG_SMP
 /* The following definitions are taken from http://www.uruk.org/mps/ */

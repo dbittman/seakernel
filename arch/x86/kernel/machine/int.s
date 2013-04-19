@@ -1,40 +1,89 @@
-;
-; interrupt.s -- Contains interrupt service routine wrappers.
-;                Based on Bran's kernel development tutorials.
-;                Rewritten for JamesM's kernel development tutorials.
+; int.s : Defines assmebly entry routines for interrupt handling
+; at the processor level. The source of these interrupts is irrelevant,
+; at this point they are all handled the same way.
 
-; This macro creates a stub for an ISR which does NOT pass it's own
-; error code (adds a dummy errcode byte).
-align 4
+; THE C COUNTER PARTS OF THESE ARE DEFINED IN ISR.H
+; !! If you edit these, make sure you also update the ones in isr.h
+; !! or some interesting bugs may appear...
+%define IPI_SCHED    0x90
+%define IPI_SHUTDOWN 0xA0
+%define IPI_TLB_ACK  0xB0
+%define IPI_TLB      0xC0
+%define IPI_DEBUG    0xD0
+%define IPI_PANIC    0xE0
+
+; isr's that don't push an error code need to have a dummy code
+; pushed so that the structure aligns properly later...
 %macro ISR_NOERRCODE 1
   global isr%1
   isr%1:
     cli                         ; Disable interrupts firstly.
     push byte 0                 ; Push a dummy error code.
     push byte %1                ; Push the interrupt number.
-    jmp isr_common_stub         ; Go to our common handler code.
+    jmp isr_entry_code         ; Go to our common handler code.
 %endmacro
 
-; This macro creates a stub for an ISR which passes it's own
-; error code.
+; these isr's already push an error code.
 %macro ISR_ERRCODE 1
   global isr%1
   isr%1:
     cli                         ; Disable interrupts.
     push byte %1                ; Push the interrupt number
-    jmp isr_common_stub
+    jmp isr_entry_code
 %endmacro
 
-; This macro creates a stub for an IRQ - the first parameter is
+; This macro creates functions for an IRQ - the first parameter is
 ; the IRQ number, the second is the ISR number it is remapped to.
 %macro IRQ 2
   global irq%1
   irq%1:
     cli
-    push byte 0
+    push byte 0 ; dummy error code
     push byte %2
-    jmp irq_common_stub
+    jmp irq_entry_code
 %endmacro
+
+; interprocessor interrupts (no error code here either)
+%macro IPI 2
+  global ipi_%1
+  ipi_%1:
+    cli
+    push byte 0 ; dummy error code
+    push %2
+    jmp ipi_entry_code
+%endmacro
+
+; heres the actual common asm entry code for interrupts.
+%macro INT_ENTRY_CODE 2
+%1_entry_code:
+    pusha                    ; Pushes processor registers
+
+    mov ax, ds               ; Lower 16-bits of eax = ds.
+    push eax                 ; save the data segment descriptor
+
+    mov ax, 0x10  ; load the kernel data segment descriptor
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+
+    call %2 ; calls the C-code handler
+    pop ebx        ; reload the original data segment descriptor
+    mov ds, bx
+    mov es, bx
+    mov fs, bx
+
+    popa                     ; Pops edi,esi,ebp...
+    add esp, 8     ; Cleans up the pushed error code and pushed ISR number
+    iretd           ; pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP
+%endmacro
+
+
+align 4
+; In isr.c
+extern isr_handler
+extern irq_handler
+extern entry_syscall_handler
+extern ipi_handler
 
 ISR_NOERRCODE 0
 ISR_NOERRCODE 1
@@ -68,7 +117,7 @@ ISR_NOERRCODE 28
 ISR_NOERRCODE 29
 ISR_NOERRCODE 30
 ISR_NOERRCODE 31
-ISR_NOERRCODE 100
+
 IRQ   0,    32
 IRQ   1,    33
 IRQ   2,    34
@@ -85,86 +134,25 @@ IRQ  12,    44
 IRQ  13,    45
 IRQ  14,    46
 IRQ  15,    47
-	
+
+; interprocessor interrupts (only matter in SMP)
+IPI  panic, IPI_PANIC
+IPI  shutdown, IPI_SHUTDOWN
+IPI  sched, IPI_SCHED
+IPI  tlb, IPI_TLB
+IPI  tlb_ack, IPI_TLB_ACK
+IPI  debug, IPI_DEBUG
+
+; syscall
 global isr80
 isr80:
     cli                         ; Disable interrupts.
     push byte 0
     push byte 80                ; Push the interrupt number
-    jmp syscall_entry_asm
+    jmp syscall_entry_code
 
-; In isr.c
-extern isr_handler
-
-; This is our common ISR stub. It saves the processor state, sets
-; up for kernel mode segments, calls the C-level fault handler,
-; and finally restores the stack frame.
-isr_common_stub:
-    pusha                    ; Pushes edi,esi,ebp,esp,ebx,edx,ecx,eax
-
-    mov ax, ds               ; Lower 16-bits of eax = ds.
-    push eax                 ; save the data segment descriptor
-
-    mov ax, 0x10  ; load the kernel data segment descriptor
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-
-    call isr_handler
-    pop ebx        ; reload the original data segment descriptor
-    mov ds, bx
-    mov es, bx
-    mov fs, bx
-
-    popa                     ; Pops edi,esi,ebp...
-    add esp, 8     ; Cleans up the pushed error code and pushed ISR number
-    iretd           ; pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP
-
-; In isr.c
-extern irq_handler
-
-; This is our common IRQ stub. It saves the processor state, sets
-; up for kernel mode segments, calls the C-level fault handler,
-; and finally restores the stack frame.
-irq_common_stub:
-    pusha                    ; Pushes edi,esi,ebp,esp,ebx,edx,ecx,eax
-
-    mov ax, ds               ; Lower 16-bits of eax = ds.
-    push eax                 ; save the data segment descriptor
-
-    mov ax, 0x10  ; load the kernel data segment descriptor
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-
-    call irq_handler
-    pop ebx        ; reload the original data segment descriptor
-    mov ds, bx
-    mov es, bx
-    mov fs, bx
-
-    popa                     ; Pops edi,esi,ebp...
-    add esp, 8     ; Cleans up the pushed error code and pushed ISR number
-    iret           ; pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP
-
-extern entry_syscall_handler
-syscall_entry_asm:
-    pusha                    ; Pushes edi,esi,ebp,esp,ebx,edx,ecx,eax
-
-    mov ax, ds               ; Lower 16-bits of eax = ds.
-    push eax                 ; save the data segment descriptor
-
-    mov ax, 0x10  ; load the kernel data segment descriptor
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-
-    call entry_syscall_handler
-    pop ebx        ; reload the original data segment descriptor
-    mov ds, bx
-    mov es, bx
-    mov fs, bx
-
-    popa                     ; Pops edi,esi,ebp...
-    add esp, 8     ; Cleans up the pushed error code and pushed ISR number
-    iret           ; pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP
+; the asm entry handlers
+INT_ENTRY_CODE isr, isr_handler
+INT_ENTRY_CODE irq, irq_handler
+INT_ENTRY_CODE ipi, ipi_handler
+INT_ENTRY_CODE syscall, entry_syscall_handler

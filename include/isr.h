@@ -23,7 +23,11 @@
 
 /* lower 4 bits of IRQ is priority sub class
  * and we want these to actually be in the correct order.
- * So, skip the lower 4 bits. */
+ * So, skip the lower 4 bits.
+ * THE ASM COUNTER PARTS OF THESE ARE DEFINED IN INT.S
+ * !! If you edit these, make sure you also update the ones in int.s
+ * !! or some interesting bugs may appear...
+ */
 #define IPI_SCHED    0x90
 #define IPI_SHUTDOWN 0xA0
 #define IPI_TLB_ACK  0xB0
@@ -57,4 +61,10 @@ int irq_wait(int n);
 void wait_isr(int no);
 extern char interrupt_controller;
 handlist_t *get_interrupt_handler(u8int n);
+
+void handle_ipi_cpu_halt(volatile registers_t regs);
+void handle_ipi_reschedule(volatile registers_t regs);
+void handle_ipi_tlb(volatile registers_t regs);
+void handle_ipi_tlb_ack(volatile registers_t regs);
+
 #endif

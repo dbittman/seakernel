@@ -171,13 +171,12 @@ static void init_idt()
 	/* 0x80 is syscall */
 	idt_set_gate(0x80, (u32int)isr80, 0x08, 0x8E);
 #if CONFIG_SMP
-	#warning "IMPLEMENT THESE"
-	//idt_set_gate(IPI_PANIC, (u32int)ipi_panic, 0x08, 0x8E);
-	//idt_set_gate(IPI_TLB, (u32int)ipi_tbl, 0x08, 0x8E);
-	//idt_set_gate(IPI_TLB_ACK, (u32int)ipi_tlb_ack, 0x08, 0x8E);
-	//idt_set_gate(IPI_SHUTDOWN, (u32int)ipi_shutdown, 0x08, 0x8E);
-	//idt_set_gate(IPI_DEBUG, (u32int)ipi_debug, 0x08, 0x8E);
-	//idt_set_gate(IPI_SCHED, (u32int)ipi_sched, 0x08, 0x8E);
+	idt_set_gate(IPI_PANIC, (u32int)ipi_panic, 0x08, 0x8E);
+	idt_set_gate(IPI_TLB, (u32int)ipi_tlb, 0x08, 0x8E);
+	idt_set_gate(IPI_TLB_ACK, (u32int)ipi_tlb_ack, 0x08, 0x8E);
+	idt_set_gate(IPI_SHUTDOWN, (u32int)ipi_shutdown, 0x08, 0x8E);
+	idt_set_gate(IPI_DEBUG, (u32int)ipi_debug, 0x08, 0x8E);
+	idt_set_gate(IPI_SCHED, (u32int)ipi_sched, 0x08, 0x8E);
 #endif
 
 	idt_flush((u32int)&idt_ptr);

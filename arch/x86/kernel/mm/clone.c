@@ -59,7 +59,7 @@ int vm_copy_dir(page_dir_t *from, page_dir_t *new, char flags)
 	}
 	return 0;
 }
-
+extern unsigned imps_lapic_addr;
 /* Accepts virtual, returns virtual */
 page_dir_t *vm_clone(page_dir_t *pd, char cow)
 {
@@ -85,19 +85,10 @@ page_dir_t *vm_clone(page_dir_t *pd, char cow)
 	vm_do_unmap_only((unsigned)tmp, 1);
 	
 #if CONFIG_SMP
-	/* gotta map in the page for the lapic start address.
-	 * first, map in a table to edit it... */
-	extern unsigned imps_lapic_addr;
-	tmp_p = pm_alloc_page();
-	vm_map((unsigned)tmp, tmp_p, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_PDLOCKED);
-	flush_pd();
-	memset(tmp, 0, PAGE_SIZE);
+	/* we can link since all page directories have this table set up
+	 * already */
 	unsigned pdi = PAGE_DIR_IDX(imps_lapic_addr / PAGE_SIZE);
-	unsigned tbi = PAGE_TABLE_IDX(imps_lapic_addr / PAGE_SIZE);
-	assert(!new[pdi]);
-	tmp[tbi] = (imps_lapic_addr&PAGE_MASK) | PAGE_PRESENT | PAGE_WRITE | PAGE_NOCACHE;
-	new[pdi] = tmp_p | PAGE_PRESENT | PAGE_WRITE | PAGE_NOCACHE;
-	vm_do_unmap_only((unsigned)tmp, 1);
+	new[pdi] = pd[pdi];
 #endif
 	
 	/* map in a page for accounting */
@@ -152,19 +143,10 @@ page_dir_t *vm_copy(page_dir_t *pd)
 	vm_do_unmap_only((unsigned)tmp, 1);
 
 #if CONFIG_SMP
-	/* gotta map in the page for the lapic start address.
-	 * first, map in a table to edit it... */
-	extern unsigned imps_lapic_addr;
-	tmp_p = pm_alloc_page();
-	vm_map((unsigned)tmp, tmp_p, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_PDLOCKED);
-	flush_pd();
-	memset(tmp, 0, PAGE_SIZE);
+	/* we can link since all page directories have this table set up
+	 * already */
 	unsigned pdi = PAGE_DIR_IDX(imps_lapic_addr / PAGE_SIZE);
-	unsigned tbi = PAGE_TABLE_IDX(imps_lapic_addr / PAGE_SIZE);
-	assert(!new[pdi]);
-	tmp[tbi] = (imps_lapic_addr&PAGE_MASK) | PAGE_PRESENT | PAGE_WRITE | PAGE_NOCACHE;
-	new[pdi] = tmp_p | PAGE_PRESENT | PAGE_WRITE | PAGE_NOCACHE;
-	vm_do_unmap_only((unsigned)tmp, 1);
+	new[pdi] = pd[pdi];
 #endif
 
 	/* map the current accounting page into the new directory */

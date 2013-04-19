@@ -5,6 +5,8 @@
 #include <asm/system.h>
 #include <task.h>
 #include <elf.h>
+#include <cpu.h>
+
 extern int vsprintf(char *buf, const char *fmt, va_list args);
 extern unsigned end;
 
@@ -34,8 +36,13 @@ void print_trace(unsigned int MaxFrames)
 void panic(int flags, char *fmt, ...)
 {
 	cli();
-	if(kernel_state_flags & KSF_PANICING)
+#if CONFIG_SMP
+	/* tell the other processors to halt */
+	send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_PANIC);
+#endif
+	if(kernel_state_flags & KSF_PANICING) {
 		for(;;) asm("cli; hlt");
+	}
 	kernel_state_flags |= KSF_PANICING;
 	int pid=0;
 	task_t *t=current_task;

@@ -136,12 +136,12 @@ IRQ  14,    46
 IRQ  15,    47
 
 ; interprocessor interrupts (only matter in SMP)
-IPI  panic, IPI_PANIC
-IPI  shutdown, IPI_SHUTDOWN
-IPI  sched, IPI_SCHED
-IPI  tlb, IPI_TLB
-IPI  tlb_ack, IPI_TLB_ACK
-IPI  debug, IPI_DEBUG
+IPI  panic    , IPI_PANIC
+IPI  shutdown , IPI_SHUTDOWN
+IPI  sched    , IPI_SCHED
+IPI  tlb      , IPI_TLB
+IPI  tlb_ack  , IPI_TLB_ACK
+IPI  debug    , IPI_DEBUG
 
 ; syscall
 global isr80

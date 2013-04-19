@@ -74,6 +74,8 @@
 
 #define VIRT_TEMP (0xB0000000)
 
+#define IS_KERN_MEM(x) (x < TOP_LOWER_KERNEL || (x > MMF_SHARED_START && x < PDIR_DATA))
+
 #define BASE_SLAB_SIZE 8 /* In number of pages */
 #define MAX_OBJ_ID 1024
 //#define SWAP_DEBUG 1

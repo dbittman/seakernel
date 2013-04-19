@@ -17,6 +17,7 @@
 #define PAGE_COW       512
 #define PAGE_SIZE 	   0x1000
 
+#define MAP_NOIPI     0x8
 #define MAP_PDLOCKED  0x4
 #define MAP_NOCLEAR   0x2
 #define MAP_CRIT      0x1

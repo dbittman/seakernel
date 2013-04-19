@@ -91,7 +91,7 @@ void mask_pic_int(unsigned char irq, int mask)
 
 void init_pic()
 {
-	interrupt_controller = IOINT_PIC;
+	
 	outb(0x20, 0x11);
 	io_wait();
 	outb(0xA0, 0x11);
@@ -112,6 +112,7 @@ void init_pic()
 	io_wait();
 	outb(0xA1, 0x0);
 	io_wait();
+	interrupt_controller = IOINT_PIC;
 }
 
 static void init_idt()

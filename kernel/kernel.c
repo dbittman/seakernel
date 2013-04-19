@@ -4,6 +4,7 @@
 #include <asm/system.h>
 #include <mod.h>
 #include <task.h>
+#include <cpu.h>
 
 int sys_sync(int);
 void acpiPowerOff(void);
@@ -12,6 +13,9 @@ unsigned kernel_state_flags=0;
 
 void kernel_shutdown()
 {
+#if CONFIG_SMP
+	send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_SHUTDOWN);
+#endif
 	current_task->uid=0;
 	kernel_state_flags |= KSF_SHUTDOWN;
 	cli();

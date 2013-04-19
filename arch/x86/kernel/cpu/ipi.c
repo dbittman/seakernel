@@ -43,6 +43,9 @@ int send_ipi(unsigned char dest_shorthand, unsigned int dst, unsigned int v)
 
 void handle_ipi_cpu_halt(volatile registers_t regs)
 {
+	set_int(0);
+	/* No interrupts */
+	IMPS_LAPIC_WRITE(LAPIC_TPR, 0xFFFFFFFF);
 	cpu_t *cpu = current_task ? current_task->cpu : 0;
 	if(cpu)
 		printk(0, "[cpu%d]: halting forever\n", cpu->apicid);
@@ -52,12 +55,13 @@ void handle_ipi_cpu_halt(volatile registers_t regs)
 
 void handle_ipi_reschedule(volatile registers_t regs)
 {
-	
+	run_scheduler();
 }
 
 void handle_ipi_tlb(volatile registers_t regs)
 {
-	
+	/* flush the TLB */
+	flush_pd();
 }
 
 void handle_ipi_tlb_ack(volatile registers_t regs)

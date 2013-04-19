@@ -6,6 +6,7 @@
 #include <task.h>
 #include <mutex.h>
 #include <imps.h>
+
 #define MAX_IOAPIC 8
 #define write_ioapic(l,o,v) ioapic_rw(l, WRITE, o, v)
 #define read_ioapic(l,o) ioapic_rw(l, READ, o, 0)
@@ -14,6 +15,7 @@ volatile unsigned num_ioapic=0;
 struct imps_ioapic *ioapic_list[MAX_IOAPIC];
 extern char imcr_present;
 extern int imps_enabled;
+
 void add_ioapic(struct imps_ioapic *ioapic)
 {
 	assert(ioapic);
@@ -140,35 +142,30 @@ void id_map_apic(page_dir_t *pd)
 
 void init_ioapic()
 {
-	/* HOLY FUCK THIS NEEDS CLEANUP!!! */
 	if(!num_ioapic)
 		return;
-	unsigned i=0, num=0;
-	/* Disable the PIC...*/
-	cli();
-	outb(0xA1, 0xFF);
-	outb(0x21, 0xFF);
-	interrupt_controller = 0;
-	for(;i<num_ioapic;i++) {
+	unsigned i, num=0;
+	set_int(0);
+	/* enable all discovered ioapics */
+	for(i=0;i<num_ioapic;i++) {
 		struct imps_ioapic *l = ioapic_list[i];
 		assert(l->type == 2);
 		printk(1, "[apic]: found ioapic at %x: ID %d, version %x; flags=%x\n", l->addr, l->id, l->ver, l->flags);
-		if(l->flags)
-			num += program_ioapic(l);
+		if(l->flags) num += program_ioapic(l);
 	}
 	if(!num)
 	{
 		/* We can still try to use the PIC... */
 		kprintf("[apic]: WARNING: no IOAPIC controllers are enabled.\n[apic]: WARNING: this is a non-conforming system.\n");
 		kprintf("[apic]: WARNING: using PIC only, advanced interrupt features disabled.\n");
-		interrupt_controller = IOINT_PIC;
-		init_pic();
+		return;
 	}
 	else if(imcr_present) {
 		outb(0x22, 0x70);
 		outb(0x23, 0x01);
 	}
+	/* ok, disable the PIC */
+	disable_pic();
 	interrupt_controller = IOINT_APIC;
-	sti();
 }
 #endif

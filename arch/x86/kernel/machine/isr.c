@@ -106,8 +106,9 @@ void faulted(int fuckoff)
 	}
 }
 
-void ack(int n)
+void ack_pic(int n)
 {
+	assert(interrupt_controller == IOINT_PIC);
 	if(n >= IRQ0 && n < IRQ15) {
 		if (n >= 40)
 			outb(0xA0, 0x20);
@@ -119,6 +120,7 @@ void ipi_handler(volatile registers_t regs)
 {
 	add_atomic(&int_count[0x80], 1);
 	set_int(0);
+#if CONFIG_SMP
 	/* delegate to the proper handler, in ipi.c */
 	switch(regs.int_no) {
 		case IPI_DEBUG:
@@ -138,6 +140,7 @@ void ipi_handler(volatile registers_t regs)
 		default:
 			panic(PANIC_NOSYNC, "invalid interprocessor interrupt number: %d", regs.int_no);
 	}
+#endif
 	set_int(0);
 	set_cpu_interrupt_flag(1); /* assembly code will issue sti */
 #if CONFIG_SMP
@@ -195,10 +198,11 @@ void isr_handler(volatile registers_t regs)
 		}
 		f=f->next;
 	}
-	if(!called)
-		faulted(regs.int_no);
+#warning "this must be here, or GPF. Why?"
 	set_int(0);
 	set_cpu_interrupt_flag(1);
+	if(!called)
+		faulted(regs.int_no);	
 #if CONFIG_SMP
 	lapic_eoi();
 #endif
@@ -213,13 +217,8 @@ void irq_handler(volatile registers_t regs)
 		current_task->regs = &regs;
 	}
 	add_atomic(&int_count[regs.int_no], 1);
-	ack(regs.int_no);
+	if(interrupt_controller == IOINT_PIC) ack_pic(regs.int_no);
 	handlist_t *f = &interrupt_handlers[regs.int_no];
-	//if(regs.int_no == 33) {
-	//char x[8];
-	//sprintf(x, "hi: %d\n", regs.int_no);
-	//serial_puts_nolock(0, x);
-//}
 	while(f)
 	{
 		isr_t handler = f->handler;

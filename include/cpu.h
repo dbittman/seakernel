@@ -58,7 +58,7 @@ void set_cpu_interrupt_flag(int flag);
 extern unsigned num_cpus, num_booted_cpus, num_failed_cpus;
 int boot_cpu(unsigned id, unsigned apic_ver);
 void calibrate_lapic_timer(unsigned freq);
-extern char smp_enabled;
+
 #define APIC_BCAST_ID			       	0xFF
 #define	APIC_VERSION(x)				((x) & 0xFF)
 #define	APIC_MAXREDIR(x)			(((x) >> 16) & 0xFF)

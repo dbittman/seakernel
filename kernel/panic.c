@@ -6,6 +6,7 @@
 #include <task.h>
 #include <elf.h>
 #include <cpu.h>
+#include <atomic.h>
 
 extern int vsprintf(char *buf, const char *fmt, va_list args);
 extern unsigned end;
@@ -43,7 +44,7 @@ void panic(int flags, char *fmt, ...)
 	if(kernel_state_flags & KSF_PANICING) {
 		for(;;) asm("cli; hlt");
 	}
-	kernel_state_flags |= KSF_PANICING;
+	set_ksf(KSF_PANICING);
 	int pid=0;
 	task_t *t=current_task;
 	if(t) pid=t->pid;

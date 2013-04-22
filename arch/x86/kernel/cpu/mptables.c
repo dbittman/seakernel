@@ -8,7 +8,6 @@
 #include <atomic.h>
 #include <imps.h>
 volatile int imps_release_cpus = 0;
-int imps_enabled = 0;
 unsigned imps_lapic_addr = 0;
 char imcr_present=0;
 

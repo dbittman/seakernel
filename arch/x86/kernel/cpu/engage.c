@@ -47,14 +47,14 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	init_sse(cpu);
 	cpu->flags |= CPU_RUNNING;
 	set_boot_flag(0xFFFFFFFF);
-	while(!smp_enabled) asm("cli");
+	while(!(kernel_state_flags & KSF_SMP_ENABLE)) asm("cli");
 	init_lapic(0);
 	//sti();
 	set_lapic_timer(lapic_timer_start);
 	//for(;;) sti();
 	/* now we need to wait up the memory manager is all set up */
 	#warning "make this better..."
-	while(!cpu->kd) asm("cli");
+	while(!(kernel_state_flags & KSF_MMU)) asm("cli");
 	/* load in the directory provided and enable paging! */
 	__asm__ volatile ("mov %0, %%cr3" : : "r" (cpu->kd_phys));
 	unsigned cr0temp;

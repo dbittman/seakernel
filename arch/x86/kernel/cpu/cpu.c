@@ -4,6 +4,7 @@
 #include <task.h>
 #include <mutex.h>
 #include <elf.h>
+#include <atomic.h>
 cpu_t *primary_cpu=0;
 #if CONFIG_SMP
 cpu_t cpu_array[CONFIG_MAX_CPUS];
@@ -11,9 +12,10 @@ unsigned cpu_array_num=0;
 #else
 cpu_t priamry_cpu_data;
 #endif
+
 extern mutex_t ipi_mutex;
 void init_lapic(int);
-extern int imps_enabled;
+
 void cpuid_get_features(cpuid_t *cpuid)
 {
 	int eax, ebx, ecx, edx;
@@ -138,13 +140,13 @@ void init_main_cpu()
 	memset(cpu_array, 0, sizeof(cpu_t) * CONFIG_MAX_CPUS);
 	cpu_array_num = 0;
 	probe_smp();
-	if(!imps_enabled)
+	if(!(kernel_state_flags & KSF_CPUS_RUNNING))
 		primary_cpu = &cpu_array[0];
 	load_tables_ap(primary_cpu);
-	init_ioapic();
 	init_lapic(1);
 	calibrate_lapic_timer(1000);
-	smp_enabled=1;
+	init_ioapic();
+	set_ksf(KSF_SMP_ENABLE);
 #else
 	primary_cpu = &priamry_cpu_data;
 	load_tables_ap(primary_cpu);

@@ -3,11 +3,11 @@
 
 #ifndef KERNEL_H
 #define KERNEL_H
+#include <config.h>
 
 #include <asm/system.h>
 #include <types.h>
 #include <string.h>
-#include <config.h>
 #include <vsprintf.h>
 #include <console.h>
 #include <memory.h>
@@ -21,7 +21,19 @@
 #define KSF_SHUTDOWN 0x2
 #define KSF_PANICING 0x4
 
-extern unsigned kernel_state_flags;
+#if CONFIG_SMP
+
+  #define KSF_CPUS_RUNNING 0x8
+  #define KSF_SMP_ENABLE  0x10
+
+#else
+
+#endif
+
+extern volatile unsigned kernel_state_flags;
+
+#define set_ksf(flag) or_atomic(&kernel_state_flags, flag);
+
 
 extern volatile unsigned int __allow_idle;
 

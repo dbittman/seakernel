@@ -5,6 +5,7 @@
 #include <swap.h>
 #include <cpu.h>
 #include <elf.h>
+#include <atomic.h>
 extern unsigned int end;
 void slab_stat(struct mem_stat *s);
 void process_memorymap(struct multiboot *mboot)
@@ -67,7 +68,7 @@ void init_memory(struct multiboot *m)
 	install_kmalloc(KMALLOC_NAME, KMALLOC_INIT, KMALLOC_ALLOC, KMALLOC_FREE);
 	vm_init_2();
 	primary_cpu->flags |= CPU_PAGING;
-	kernel_state_flags |= KSF_MMU;
+	set_ksf(KSF_MMU);
 #if CONFIG_SWAP
 	init_swap();
 #endif

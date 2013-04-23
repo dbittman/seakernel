@@ -114,7 +114,6 @@ void calibrate_lapic_timer(unsigned freq);
 #define LAPIC_TCCR				0x390
 #define LAPIC_TDCR				0x3E0
 
-
 void init_pic();
 int send_ipi(unsigned char dest_shorthand, unsigned int dst, unsigned int v);
 

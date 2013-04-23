@@ -30,9 +30,11 @@ void cpu_k_task_entry(task_t *me)
 	/* final part: set the current_task pointer to 'me', and set the 
 	 * task flags that allow the cpu to start executing */
 	page_directory[PAGE_DIR_IDX(SMP_CUR_TASK / PAGE_SIZE)] = (unsigned)me;
-	//((cpu_t *)(me->cpu))->flags |= CPU_TASK;
-	sti();
-	for(;;) sti();
+	((cpu_t *)(me->cpu))->flags |= CPU_TASK;
+	for(;;) {
+		cli();
+		asm("hlt");
+	}
 }
 
 /* it's important that this doesn't get inlined... */

@@ -26,8 +26,6 @@ __attribute__((always_inline)) inline void update_task(task_t *t)
 __attribute__((always_inline)) inline task_t *get_next_task(task_t *prev)
 {
 	assert(prev && kernel_task);
-	#warning "better place for this?"
-	__engage_idle();
 	cpu_t *cpu = prev->cpu;
 	task_t *t = tqueue_next(cpu->active_queue);
 	while(t)
@@ -76,7 +74,7 @@ __attribute__((always_inline)) static inline void post_context_switch()
 		set_int(1);
 	}
 }
-//#error "the system freezes..."
+
 __attribute__((always_inline)) static inline void store_context()
 {
 	asm("mov %%esp, %0" : "=r"(current_task->esp));
@@ -111,14 +109,13 @@ void schedule()
 	task_t *old = current_task;
 	cpu_t *cpu = (cpu_t *)old->cpu;
 	assert(cpu->cur == old);
-	#warning "..."
-	//mutex_acquire(&cpu->lock);
+	mutex_acquire(&cpu->lock);
 	store_context();
 	volatile task_t *new = (volatile task_t *)get_next_task(old);
 	restore_context(new); 
 	/* we need to call this after restore_context because in restore_context
-	 * we access current_task->cpu */
-	//mutex_release(&cpu->lock);
+	 * we access new->cpu */
+	mutex_release(&cpu->lock);
 	asm("         \
 		mov %1, %%esp;       \
 		mov %2, %%ebp;       \

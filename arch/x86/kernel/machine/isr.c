@@ -198,11 +198,10 @@ void isr_handler(volatile registers_t regs)
 		}
 		f=f->next;
 	}
-#warning "this must be here, or GPF. Why?"
 	set_int(0);
-	set_cpu_interrupt_flag(1);
 	if(!called)
-		faulted(regs.int_no);	
+		faulted(regs.int_no);
+	set_cpu_interrupt_flag(1);
 #if CONFIG_SMP
 	lapic_eoi();
 #endif

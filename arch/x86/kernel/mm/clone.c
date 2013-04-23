@@ -4,6 +4,7 @@
 #include <memory.h>
 #include <task.h>
 #include <swap.h>
+#include <cpu.h>
 
 /* Accepts virtual, returns virtual */
 int vm_do_copy_table(int i, page_dir_t *new, page_dir_t *from, char cow)
@@ -130,6 +131,12 @@ page_dir_t *vm_copy(page_dir_t *pd)
 	if(kernel_task)
 		mutex_acquire(&pd_cur_data->lock);
 	pd_cur_data->count++;
+#if CONFIG_SMP
+	/* if pd_cur_data could be accessed by multiple CPUs, we need to
+	 * flush them */
+	if(kernel_task && pd_cur_data->count > 2)
+		send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
+#endif
 	/* link as much as we can (flag & 1) */
 	vm_copy_dir(pd, new, 1);
 	/* Now set the self refs (DIR_PHYS, TBL_PHYS) */

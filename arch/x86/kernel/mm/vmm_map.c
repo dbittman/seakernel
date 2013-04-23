@@ -23,11 +23,13 @@ int vm_map(unsigned virt, unsigned phys, unsigned attr, unsigned opt)
 	page_tables[vpage] = (phys & PAGE_MASK) | attr;
 	if(!(opt & MAP_NOCLEAR))
 		memset((void *)(virt&PAGE_MASK), 0, 0x1000);
-#warning "should this unlock the mutex first?"
 #if CONFIG_SMP
-#warning "doesn't take threading into account"
-	if(kernel_task && IS_KERN_MEM(virt) && !(opt & MAP_NOIPI))
-		send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
+	if(kernel_task) {
+		if(IS_KERN_MEM(virt))
+			send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
+		else if((IS_THREAD_SHARED_MEM(virt) && pd_cur_data->count > 1))
+			send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
+	}
 #endif
 	if(kernel_task && !(opt & MAP_PDLOCKED))
 		mutex_release(&pd_cur_data->lock);

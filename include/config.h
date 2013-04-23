@@ -31,7 +31,7 @@
 #define MAX_NODES 4096*4
 //#define SLAB_DEBUG
 #define RANGE_MUL 1.4
-#define STACK_LOCATION (0xB0000000 + ((CONFIG_STACK_PAGES+1) * 0x1000)*2)
+#define STACK_LOCATION (0xB0002000 + ((CONFIG_STACK_PAGES+1) * 0x1000)*2)
 #define STACK_SIZE (CONFIG_STACK_PAGES * 0x1000)
 
 //#define CONFIG_SMP 1
@@ -71,6 +71,9 @@
 #define MMF_SHARED_END     0xC0000000
 #define MMF_PRIV_START     0xA0000000
 #define MMF_PRIV_END       0xB0000000
+
+/* where the signal injector code goes */
+#define SIGNAL_INJECT      0xB0001000
 
 #define VIRT_TEMP (0xB0000000)
 

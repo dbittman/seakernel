@@ -32,6 +32,7 @@ typedef struct __cpu_t__ {
 	struct __cpu_t__ *next, *prev;
 } cpu_t;
 int initAcpi(void);
+void load_tables_ap(cpu_t *cpu);
 cpu_t *add_cpu(cpu_t *c);
 #define CPU_UP      0x1
 #define CPU_RUNNING 0x2
@@ -130,6 +131,6 @@ void writeCMOS(unsigned char addr, unsigned int value);
 #define CMOS_WRITE_BYTE(x,y) writeCMOS(x,y)
 #define CMOS_READ_BYTE(x) readCMOS(x)
 cpu_t *get_cpu(int id);
-
+void init_ioapic();
 #endif
 #endif

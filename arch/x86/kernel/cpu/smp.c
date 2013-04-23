@@ -9,6 +9,7 @@
 #include <imps.h>
 
 unsigned num_cpus=0, num_booted_cpus=0, num_failed_cpus=0;
+int imps_scan_mptables(unsigned addr, unsigned len);
 
 int probe_smp()
 {

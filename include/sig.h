@@ -24,6 +24,17 @@ typedef struct {
 } siginfo_t;
 typedef unsigned long sigset_t;
 
+#define SIGNAL_INJECT_SIZE 7
+static char signal_return_injector[7] = {
+	0xB8,
+	0x80,
+	0x00,
+	0x00,
+	0x00,
+	0xCD,
+	0x80
+};
+
 #define SA_NOCLDSTOP	0x00000001
 #define SA_NOCLDWAIT	0x00000002
 #define SA_SIGINFO		0x00000004

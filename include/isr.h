@@ -61,6 +61,7 @@ int irq_wait(int n);
 void wait_isr(int no);
 extern char interrupt_controller;
 handlist_t *get_interrupt_handler(u8int n);
+void lapic_eoi();
 
 void handle_ipi_cpu_halt(volatile registers_t regs);
 void handle_ipi_reschedule(volatile registers_t regs);

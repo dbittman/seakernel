@@ -2,6 +2,7 @@
 #define TABLES_H
 #include <types.h>
 #include <tss.h>
+
 struct gdt_entry_struct
 {
 	u16int limit_low;

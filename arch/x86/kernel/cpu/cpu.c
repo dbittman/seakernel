@@ -165,10 +165,4 @@ void init_main_cpu()
 	_add_kernel_symbol((unsigned)(cpu_t *)primary_cpu, "primary_cpu");
 	add_kernel_symbol(set_int);
 #endif
-	//delay_sleep(100);
-	//sti();
-	//kprintf("SEND\n");
-	//send_ipi(LAPIC_ICR_SHORT_ALL, 0, IPI_SCHED | LAPIC_ICR_TM_LEVEL | LAPIC_ICR_LEVELASSERT);
-	//sti();
-	//for(;;) sti();
 }

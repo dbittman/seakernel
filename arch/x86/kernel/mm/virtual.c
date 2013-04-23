@@ -49,6 +49,15 @@ void vm_init(unsigned id_map_to)
 #if CONFIG_SMP
 	id_map_apic(pd);
 #endif
+	/* map in the signal return inject code. we need to do this, because
+	 * user code may not run the the kernel area of the page directory */
+	unsigned sig_pdi = PAGE_DIR_IDX(SIGNAL_INJECT / PAGE_SIZE);
+	unsigned sig_tbi = PAGE_TABLE_IDX(SIGNAL_INJECT / PAGE_SIZE);
+	assert(!pd[sig_pdi]);
+	pd[sig_pdi] = ((unsigned)(pt=(unsigned *)pm_alloc_page()) | PAGE_PRESENT | PAGE_USER);
+	memset(pt, 0, 0x1000);
+	pt[sig_tbi] = (unsigned)pm_alloc_page() | PAGE_PRESENT | PAGE_USER;
+	memcpy((void *)(pt[sig_tbi] & PAGE_MASK), (void *)signal_return_injector, SIGNAL_INJECT_SIZE);
 	/* Pre-map the heap's tables */
 	unsigned heap_pd_idx = PAGE_DIR_IDX(KMALLOC_ADDR_START / 0x1000);
 	for(i=heap_pd_idx;i<(int)PAGE_DIR_IDX(KMALLOC_ADDR_END / 0x1000);i++)
@@ -65,6 +74,7 @@ void vm_init(unsigned id_map_to)
 		pt = (unsigned int *)(pd[i] & PAGE_MASK);
 		memset(pt, 0, 0x1000);
 	}
+	
 	/* CR3 requires the physical address, so we directly 
 	 * set it because we have the physical address */
 	__asm__ volatile ("mov %0, %%cr3" : : "r" (pd));
@@ -80,7 +90,7 @@ void vm_init_2()
 {
 	setup_kernelstack(id_tables);
 #if CONFIG_SMP
-	int i=0;
+	unsigned int i=0;
 	while(i < cpu_array_num)
 	{
 		printk(0, "[mm]: cloning directory for processor %d\n", cpu_array[i].apicid);
@@ -96,7 +106,7 @@ void vm_init_2()
 	primary_cpu->kd_phys = primary_cpu->kd[1023] & PAGE_MASK;
 #endif
 	kernel_dir = primary_cpu->kd;
-	vm_switch(primary_cpu->kd);
+	vm_switch((page_dir_t *)primary_cpu->kd);
 	printk(0, "[mm]: using cloned directory\n");
 }
 

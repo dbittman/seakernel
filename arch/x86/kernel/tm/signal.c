@@ -6,15 +6,7 @@
 #include <task.h>
 #include <init.h>
 extern int current_hz;
-char signal_return_injector[7] = {
-	0xB8,
-	0x80,
-	0x00,
-	0x00,
-	0x00,
-	0xCD,
-	0x80
-};
+
 #define SIGSTACK (STACK_LOCATION - (STACK_SIZE + PAGE_SIZE + 8))
 void handle_signal(task_t *t)
 {
@@ -47,8 +39,9 @@ void handle_signal(task_t *t)
 		/* push the argument (signal number) */
 		*(unsigned *)(iret->useresp) = t->sigd;
 		iret->useresp -= STACK_ELEMENT_SIZE;
-		/* push the return address */
-		*(unsigned *)(iret->useresp) = (unsigned)signal_return_injector;
+		/* push the return address. this function is mapped in when
+		 * paging is set up */
+		*(unsigned *)(iret->useresp) = (unsigned)SIGNAL_INJECT;
 		iret->eip = (unsigned)sa->_sa_func._sa_handler;
 		t->cursig = t->sigd;
 		t->sigd=0;

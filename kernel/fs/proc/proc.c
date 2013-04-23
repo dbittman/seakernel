@@ -122,18 +122,6 @@ void init_proc_fs()
 	pfs_cn("mem", S_IFREG, 0, 0);
 	struct inode *si = pfs_cn("sched", S_IFDIR, 1, 0);
 	pfs_cn_node(si, "pri_tty", S_IFREG, 1, 1);
-#if 0
-#warning "fix this"
-	si = pfs_cn("cpu", S_IFDIR, 1, 0);
-	cpu_t *cp = cpu_list;
-	while(cp)
-	{
-		char tmp[32];
-		sprintf(tmp, "cpu%d", cp->apicid);
-		pfs_cn_node(si, tmp, S_IFREG, 5, cp->apicid);
-		cp=cp->next;
-	}
-#endif
 	pfs_cn("vfs", S_IFREG, 2, 0);
 	pfs_cn("kernel", S_IFREG, 3, 0);
 	pfs_cn("klogfile", S_IFREG, 3, 1);

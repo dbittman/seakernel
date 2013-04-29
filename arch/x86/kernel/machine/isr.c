@@ -78,6 +78,27 @@ void kernel_fault(int fuckoff)
 	panic(0, exception_messages[fuckoff]);
 }
 
+const char *special_names(int i)
+{
+	if(i == 0x80)
+		return "(syscall)";
+	switch(i) {
+		case IPI_DEBUG:
+			return "(debug)";
+		case IPI_SHUTDOWN:
+			return "(shutdown)";
+		case IPI_PANIC:
+			return "(panic)";
+		case IPI_SCHED:
+			return "(schedule)";
+		case IPI_TLB:
+			return "(tlb rst)";
+		case IPI_TLB_ACK:
+			return "(tlb ack)";
+	}
+	return "\t";
+}
+
 void faulted(int fuckoff)
 {
 	if(current_task == kernel_task || !current_task || current_task->system)
@@ -120,6 +141,7 @@ void ipi_handler(volatile registers_t regs)
 {
 	add_atomic(&int_count[0x80], 1);
 	set_int(0);
+	add_atomic(&int_count[regs.int_no], 1);
 #if CONFIG_SMP
 	/* delegate to the proper handler, in ipi.c */
 	switch(regs.int_no) {
@@ -264,8 +286,8 @@ void print_stack_trace(unsigned int max)
 int proc_read_int(char *buf, int off, int len)
 {
 	int i, total_len=0;
-	total_len += proc_append_buffer(buf, "ISR | HANDLERS | BLOCKED HANDLERS |            COUNT\n", total_len, -1, off, len);
-	for(i=0;i<128;i++)
+	total_len += proc_append_buffer(buf, "ISR \t\t| HANDLERS | BLOCKED HANDLERS |            COUNT\n", total_len, -1, off, len);
+	for(i=0;i<256;i++)
 	{
 		handlist_t *f = &interrupt_handlers[i];
 		if(int_count[i] || f->handler)
@@ -281,7 +303,7 @@ int proc_read_int(char *buf, int off, int len)
 				f=f->next;
 			}
 			char t[128];
-			sprintf(t, "%3d | %8d | %16d | %16d\n", i, num_h, num_h-num_w, int_count[i]);
+			sprintf(t, "%3d %s\t| %8d | %16d | %16d\n", i, special_names(i), num_h, num_h-num_w, int_count[i]);
 			total_len += proc_append_buffer(buf, t, total_len, -1, off, len);
 		}
 	}

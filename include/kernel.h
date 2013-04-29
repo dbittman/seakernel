@@ -32,7 +32,7 @@
 
 extern volatile unsigned kernel_state_flags;
 
-#define set_ksf(flag) or_atomic(&kernel_state_flags, flag);
+#define set_ksf(flag) {or_atomic(&kernel_state_flags, flag);}
 
 
 extern volatile unsigned int __allow_idle;

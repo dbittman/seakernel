@@ -29,7 +29,6 @@ int probe_smp()
 		return 0;
 	set_ksf(KSF_CPUS_RUNNING);
 	printk(5, "[cpu]: CPU%s initialized (boot=%d, #APs=%d: ok)                    \n", num_cpus > 1 ? "s" : "", primary_cpu->apicid, num_booted_cpus);
-	
-	return 0;
+	return num_booted_cpus > 0;
 }
 #endif

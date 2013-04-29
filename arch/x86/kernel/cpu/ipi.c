@@ -21,6 +21,9 @@ mutex_t ipi_mutex;
 int send_ipi(unsigned char dest_shorthand, unsigned int dst, unsigned int v)
 {
 	assert((v & LAPIC_ICR_DM_INIT) || (v & LAPIC_ICR_LEVELASSERT));
+	/* if we've initialized SMP, but we've disabled it, don't send any IPIs */
+	if(!(kernel_state_flags & KSF_SMP_ENABLE) && (kernel_state_flags & KSF_CPUS_RUNNING))
+		return 1;
 	int to, send_status;
 	int old = set_int(0);
 	mutex_acquire(&ipi_mutex);

@@ -9,9 +9,8 @@ cpu_t *primary_cpu=0;
 #if CONFIG_SMP
 cpu_t cpu_array[CONFIG_MAX_CPUS];
 unsigned cpu_array_num=0;
-#else
-cpu_t priamry_cpu_data;
 #endif
+cpu_t priamry_cpu_data;
 
 extern mutex_t ipi_mutex;
 void init_lapic(int);
@@ -21,7 +20,7 @@ void cpuid_get_features(cpuid_t *cpuid)
 	int eax, ebx, ecx, edx;
 	eax = 0x01;
 	asm("cpuid" : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx) : "a"(eax));
-	if(!(edx & (1<<9))) kprintf("warning - no lapic present\n");
+	/* if no LAPIC is present, the INIT IPI will fail. */
 	cpuid->features_edx = edx;
 	cpuid->features_ecx = ecx;
 	cpuid->stepping =    (eax & 0x0F);
@@ -31,14 +30,6 @@ void cpuid_get_features(cpuid_t *cpuid)
 	cpuid->cache_line_size =     ((ebx >> 8) & 0xFF) * 8; /* cache_line_size * 8 = size in bytes */
 	cpuid->logical_processors =  ((ebx >> 16) & 0xFF);    /* # logical cpu's per physical cpu */
 	cpuid->lapic_id =            ((ebx >> 24) & 0xFF);    /* Local APIC ID */
-	printk(KERN_EVERY, "\tFamily: 0x%X | Model: 0x%X | Stepping: 0x%X | Type: 0x%X \n",  
-	       cpuid->family, 
-	cpuid->model, 
-	cpuid->stepping, 
-	cpuid->type);
-	printk(KERN_EVERY, "\tCache Line Size: %d bytes | Local APIC ID: 0x%X, num logical=%d \n", 
-	       cpuid->cache_line_size, 
-	cpuid->lapic_id, cpuid->logical_processors);
 } 
 
 void cpuid_get_cpu_brand(cpuid_t *cpuid)
@@ -139,14 +130,19 @@ void init_main_cpu()
 	mutex_create(&ipi_mutex, MT_NOSCHED);
 	memset(cpu_array, 0, sizeof(cpu_t) * CONFIG_MAX_CPUS);
 	cpu_array_num = 0;
-	probe_smp();
+	int res = probe_smp();
 	if(!(kernel_state_flags & KSF_CPUS_RUNNING))
 		primary_cpu = &cpu_array[0];
+	if(!primary_cpu)
+		primary_cpu = &priamry_cpu_data;
 	load_tables_ap(primary_cpu);
 	init_lapic(1);
 	calibrate_lapic_timer(1000);
 	init_ioapic();
-	set_ksf(KSF_SMP_ENABLE);
+	if(res) {
+		set_ksf(KSF_SMP_ENABLE);
+	} else
+		kprintf("[smp]: error in init code, disabling SMP support\n");
 #else
 	primary_cpu = &priamry_cpu_data;
 	load_tables_ap(primary_cpu);

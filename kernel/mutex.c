@@ -8,7 +8,7 @@
 #include <mutex.h>
 #include <kernel.h>
 #include <task.h>
-
+#include <cpu.h>
 /* a task may relock a mutex if it is inside an interrupt handler, 
  * and has previously locked the same mutex outside of the interrupt
  * handler. this allows for a task to handle an event that requires
@@ -21,14 +21,16 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 	if(current_task && m->lock && ((m->pid == (int)current_task->pid) && ((m->lock & MT_LCK_INT) || !(current_task->flags & TF_IN_INT))))
 		panic(0, "task %d tried to relock mutex %x (%s:%d)", m->pid, m->lock, file, line);
 	assert(m->magic == MUTEX_MAGIC);
-	if(current_task && (current_task->flags&TF_IN_INT)
+	/* check for a potential deadlock */
+	if(current_task
 #if CONFIG_SMP
 		&& !(kernel_state_flags & KSF_SMP_ENABLE)
 #endif
 		&& (m->flags & MT_NOSCHED) && (((cpu_t *)current_task->cpu)->flags&CPU_INTER))
 		panic(0, "mutex will deadlock: %s:%d\n", file, line);
-	
+#if DEBUG
 	int t = 1000000;
+#endif
 	if(current_task && (m->pid == (int)current_task->pid) && (current_task->flags & TF_IN_INT)) {
 		/* we don't need to be atomic, since we already own the lock */
 		m->lock |= MT_LCK_INT;
@@ -40,7 +42,9 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 			schedule();
 		else
 			asm("pause"); /* the intel manuals suggest this */
+#if DEBUG
 		if(!--t) panic(0, "mutex time out %s:%d\n", file, line);
+#endif
 	}
 	if(current_task) m->pid = current_task->pid;
 }

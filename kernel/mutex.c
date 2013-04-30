@@ -21,13 +21,20 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 	if(current_task && m->lock && ((m->pid == (int)current_task->pid) && ((m->lock & MT_LCK_INT) || !(current_task->flags & TF_IN_INT))))
 		panic(0, "task %d tried to relock mutex %x (%s:%d)", m->pid, m->lock, file, line);
 	assert(m->magic == MUTEX_MAGIC);
-	/* wait until we can set bit 0. once this is done, we have the lock */
+	if(current_task && (current_task->flags&TF_IN_INT)
+#if CONFIG_SMP
+		&& !(kernel_state_flags & KSF_SMP_ENABLE)
+#endif
+		&& (m->flags & MT_NOSCHED) && (((cpu_t *)current_task->cpu)->flags&CPU_INTER))
+		panic(0, "mutex will deadlock: %s:%d\n", file, line);
+	
 	int t = 1000000;
 	if(current_task && (m->pid == (int)current_task->pid) && (current_task->flags & TF_IN_INT)) {
 		/* we don't need to be atomic, since we already own the lock */
 		m->lock |= MT_LCK_INT;
 		return;
 	}
+	/* wait until we can set bit 0. once this is done, we have the lock */
 	while(bts_atomic(&m->lock, 0)) {
 		if(!(m->flags & MT_NOSCHED))
 			schedule();

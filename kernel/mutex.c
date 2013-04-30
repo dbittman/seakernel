@@ -16,11 +16,13 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 		panic(0, "task %d tried to relock mutex (%s:%d)", m->pid, file, line);
 	assert(m->magic == MUTEX_MAGIC);
 	/* wait until we can set bit 0. once this is done, we have the lock */
+	//int t = 1000000;
 	while(bts_atomic(&m->lock, 0)) {
 		if(!(m->flags & MT_NOSCHED))
 			schedule();
 		else
 			asm("pause"); /* the intel manuals suggest this */
+		//if(!--t) panic(0, "mutex timeout (%s:%d)", file, line);
 	}
 	if(current_task) m->pid = current_task->pid;
 }

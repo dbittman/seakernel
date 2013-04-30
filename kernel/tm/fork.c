@@ -48,6 +48,9 @@ void copy_task_struct(task_t *new, task_t *parent)
 	copy_file_handles(parent, new);
 	new->flags = TF_FORK;
 	new->phys_mem_usage = parent->phys_mem_usage;
+	new->listnode = (void *)kmalloc(sizeof(struct llistnode));
+	new->activenode = (void *)kmalloc(sizeof(struct llistnode));
+	new->blocknode = (void *)kmalloc(sizeof(struct llistnode));
 }
 
 __attribute__((always_inline)) 
@@ -103,8 +106,8 @@ int do_fork(unsigned flags)
 	/* Set the state as usleep temporarily, so that it doesn't accidentally run.
 	 * And then add it to the queue */
 	new->state = TASK_USLEEP;
-	new->listnode = tqueue_insert(primary_queue, (void *)new);
-	new->activenode = tqueue_insert(((cpu_t *)(parent->cpu))->active_queue, (void *)new);
+	tqueue_insert(primary_queue, (void *)new, new->listnode);
+	tqueue_insert(((cpu_t *)(parent->cpu))->active_queue, (void *)new,new->activenode);
 	new->cpu = parent->cpu;
 	/* Copy the stack */
 	cli();

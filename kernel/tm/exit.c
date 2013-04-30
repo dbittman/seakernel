@@ -18,6 +18,9 @@ void set_as_dead(task_t *t)
 	t->state = TASK_DEAD;
 	tqueue_remove(primary_queue, t->listnode);
 	tqueue_remove(((cpu_t *)t->cpu)->active_queue, t->activenode);
+	kfree(t->listnode);
+	kfree(t->activenode);
+	kfree(t->blocknode);
 	t->listnode = ll_insert(kill_queue, (void *)t);
 	/* Add to death */
 	__engage_idle();

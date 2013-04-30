@@ -33,17 +33,16 @@ void tqueue_destroy(tqueue_t *tq)
 		kfree(tq);
 }
 
-struct llistnode *tqueue_insert(tqueue_t *tq, void *item)
+struct llistnode *tqueue_insert(tqueue_t *tq, void *item, struct llistnode *node)
 {
-	struct llistnode *ret = (void *)kmalloc(sizeof(struct llistnode));
 	int old = set_int(0);
 	mutex_acquire(&tq->lock);
-	ll_do_insert(&tq->tql, ret, item);
+	ll_do_insert(&tq->tql, node, item);
 	if(!tq->current)
 		tq->current = tq->tql.head;
 	mutex_release(&tq->lock);
 	set_int(old);
-	return ret;
+	return node;
 }
 
 void tqueue_remove(tqueue_t *tq, struct llistnode *i)
@@ -54,7 +53,6 @@ void tqueue_remove(tqueue_t *tq, struct llistnode *i)
 	void *node = ll_do_remove(&tq->tql, i, 0);
 	mutex_release(&tq->lock);
 	set_int(old);
-	kfree(node);
 }
 
 void *tqueue_next(tqueue_t *tq)

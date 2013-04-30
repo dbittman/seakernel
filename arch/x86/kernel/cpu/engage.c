@@ -82,8 +82,11 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	task->priority = 1;
 	task->magic = TASK_MAGIC;
 	cpu->active_queue = tqueue_create(0, 0);
-	task->listnode = tqueue_insert(primary_queue, (void *)task);
-	task->activenode = tqueue_insert(cpu->active_queue, (void *)task);
+	task->listnode = (void *)kmalloc(sizeof(struct llistnode));
+	task->activenode = (void *)kmalloc(sizeof(struct llistnode));
+	task->blocknode = (void *)kmalloc(sizeof(struct llistnode));
+	tqueue_insert(primary_queue, (void *)task, task->listnode);
+	tqueue_insert(cpu->active_queue, (void *)task, task->activenode);
 	cpu->cur = cpu->ktask = task;
 	task->cpu = cpu;
 	mutex_create(&cpu->lock, MT_NOSCHED);

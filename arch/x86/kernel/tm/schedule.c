@@ -97,13 +97,13 @@ __attribute__((always_inline)) static inline void restore_context(task_t *new)
 	new->slice = ticks;
 	((cpu_t *)new->cpu)->cur = new;
 }
-/* This is the magic super awesome and important kernel function 'schedule()'. 
- * It is arguable the most important function. Here we store the current 
- * task's context, search for the next process to run, and load it's context.*/
+
 void schedule()
 {
 	if(unlikely(!current_task || !kernel_task))
 		return;
+	/* make sure to re-enable interrupts when we come back to this
+	 * task if we entered schedule with them enabled */
 	if(set_int(0))
 		current_task->flags |= TF_SETINT;
 	task_t *old = current_task;
@@ -112,7 +112,7 @@ void schedule()
 	mutex_acquire(&cpu->lock);
 	store_context();
 	volatile task_t *new = (volatile task_t *)get_next_task(old);
-	restore_context(new); 
+	restore_context(new);
 	/* we need to call this after restore_context because in restore_context
 	 * we access new->cpu */
 	mutex_release(&cpu->lock);
@@ -122,6 +122,8 @@ void schedule()
 		mov %3, %%cr3;"
 	: : "r"(0), "r"(new->esp), "r"(new->ebp), 
 			"r"(new->pd[1023]&PAGE_MASK) : "eax");
+	/* tasks that have come from fork() (aka, new tasks) have this
+	 * flag set, such that here we just to their entry point in fork() */
 	if(likely(!(new->flags & TF_FORK)))
 		return (void) post_context_switch();
 	new->flags &= ~TF_FORK;

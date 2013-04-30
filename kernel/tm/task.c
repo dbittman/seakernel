@@ -34,8 +34,11 @@ void init_multitasking()
 	kill_queue = ll_create(0);
 	primary_queue = tqueue_create(0, 0);
 	primary_cpu->active_queue = tqueue_create(0, 0);
-	task->listnode = tqueue_insert(primary_queue, (void *)task);
-	task->activenode = tqueue_insert(primary_cpu->active_queue, (void *)task);
+	task->listnode = (void *)kmalloc(sizeof(struct llistnode));
+	task->activenode = (void *)kmalloc(sizeof(struct llistnode));
+	task->blocknode = (void *)kmalloc(sizeof(struct llistnode));
+	tqueue_insert(primary_queue, (void *)task, task->listnode);
+	tqueue_insert(primary_cpu->active_queue, (void *)task, task->activenode);
 	set_current_task_dp(task, 0);
 	kernel_task = task;
 	primary_cpu->flags |= CPU_TASK;
@@ -101,19 +104,17 @@ void task_block(struct llist *list, task_t *task)
 {
 	__engage_idle();
 	task->blocklist = list;
-	task->blocknode = ll_insert(list, (void *)task);
+	ll_do_insert(list, task->blocknode, (void *)task);
 	tqueue_remove(((cpu_t *)task->cpu)->active_queue, task->activenode);
-	task->activenode = 0;
 	if(task == current_task) task_pause(task);
 }
 
 void task_unblock(struct llist *list, task_t *t)
 {
-	t->activenode = tqueue_insert(((cpu_t *)t->cpu)->active_queue, (void *)t);
+	tqueue_insert(((cpu_t *)t->cpu)->active_queue, (void *)t, t->activenode);
 	struct llistnode *bn = t->blocknode;
-	t->blocknode = 0;
 	t->blocklist = 0;
-	ll_remove(list, bn);
+	ll_do_remove(list, bn, 0);
 	task_resume(t);
 }
 
@@ -124,9 +125,9 @@ void task_unblock_all(struct llist *list)
 	task_t *entry;
 	ll_for_each_entry_safe(list, cur, next, task_t *, entry)
 	{
-		entry->activenode = tqueue_insert(((cpu_t *)entry->cpu)->active_queue, (void *)entry);
+		tqueue_insert(((cpu_t *)entry->cpu)->active_queue, (void *)entry, entry->activenode);
 		entry->blocklist = 0;
-		entry->blocknode = 0;
+		assert(entry->blocknode == cur);
 		ll_do_remove(list, cur, 1);
 		task_resume(entry);
 		ll_maybe_reset_loop(list, cur, next);
@@ -156,7 +157,7 @@ void move_task_cpu(task_t *t, cpu_t *cpu)
 	}
 	/* ok, we have the lock and the task */
 	tqueue_remove(oldcpu->active_queue, t->activenode);
-	t->activenode = tqueue_insert(cpu->active_queue, (void *)t);
+	tqueue_insert(cpu->active_queue, (void *)t, t->activenode);
 	t->cpu = cpu;
 	mutex_release(&oldcpu->lock);
 	t->flags &= TF_MOVECPU;

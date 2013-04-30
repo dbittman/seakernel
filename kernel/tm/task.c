@@ -98,6 +98,8 @@ void task_resume(task_t *t)
 	t->state = TASK_RUNNING;
 }
 
+/* we set interrupts to zero here so that we may use rwlocks in a
+ * (potentially) an interrupt handler */
 void task_block(struct llist *list, task_t *task)
 {
 	__engage_idle();

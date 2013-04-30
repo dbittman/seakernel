@@ -246,6 +246,10 @@ void _unlock_scheduler(char *f, int l)
 
 static inline int got_signal(task_t *t)
 {
+	if(!t->sigd) return 0;
+	/* if the SA_RESTART flag is set, then return false */
+	if(t->signal_act[t->sigd].sa_flags & SA_RESTART) return 0;
+	/* otherwise, return if we have a signal */
 	return (t->sigd);
 }
 

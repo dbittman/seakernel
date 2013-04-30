@@ -88,7 +88,7 @@ int read_pipe(struct inode *ino, char *buffer, size_t length)
 			&& pipe->wrcount>0)) {
 		mutex_release(pipe->lock);
 		task_block(pipe->read_blocked, (task_t *)current_task);
-		if(current_task->sigd)
+		if(got_signal(current_task))
 			return -EINTR;
 		mutex_acquire(pipe->lock);
 	}
@@ -131,7 +131,7 @@ int write_pipe(struct inode *ino, char *buffer, size_t length)
 	while((pipe->write_pos+length)>=PIPE_SIZE) {
 		mutex_release(pipe->lock);
 		task_block(pipe->write_blocked, (task_t *)current_task);
-		if(current_task->sigd)
+		if(got_signal(current_task))
 			return -EINTR;
 		mutex_acquire(pipe->lock);
 	}

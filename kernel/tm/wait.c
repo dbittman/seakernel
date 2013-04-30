@@ -66,7 +66,8 @@ int sys_waitpid(int pid, int *st, int opt)
 	top:
 	if(current_task->sigd && 
 	((struct sigaction *)&(current_task->signal_act
-	[current_task->sigd]))->_sa_func._sa_handler)
+	[current_task->sigd]))->_sa_func._sa_handler && !(current_task->signal_act
+	[current_task->sigd].sa_flags & SA_RESTART))
 		return -EINTR;
 	t = (pid == -1 ? 0 : get_task_pid(pid));
 	if(t) {

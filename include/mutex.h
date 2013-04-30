@@ -5,6 +5,9 @@
 #define MT_ALLOC 1
 #define MT_NOSCHED 2
 
+/* this bit in lock is set when a task that currently owns the mutex
+ * handles an interrupt, and inside that interrupt it locks the same
+ * mutex again. This is legal, but it's handled in a special way */
 #define MT_LCK_INT 2
 
 typedef struct {

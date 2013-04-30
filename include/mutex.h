@@ -5,6 +5,8 @@
 #define MT_ALLOC 1
 #define MT_NOSCHED 2
 
+#define MT_LCK_INT 2
+
 typedef struct {
 	unsigned magic;
 	unsigned lock;

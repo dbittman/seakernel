@@ -9,20 +9,31 @@
 #include <kernel.h>
 #include <task.h>
 
+/* a task may relock a mutex if it is inside an interrupt handler, 
+ * and has previously locked the same mutex outside of the interrupt
+ * handler. this allows for a task to handle an event that requires
+ * a mutex to be locked in the handler whilst having locked the mutex
+ * previously */
+
 void __mutex_acquire(mutex_t *m, char *file, int line)
 {
 	/* are we re-locking ourselves? */
-	if(current_task && m->lock && m->pid == (int)current_task->pid)
-		panic(0, "task %d tried to relock mutex (%s:%d)", m->pid, file, line);
+	if(current_task && m->lock && ((m->pid == (int)current_task->pid) && ((m->lock & MT_LCK_INT) || !(current_task->flags & TF_IN_INT))))
+		panic(0, "task %d tried to relock mutex %x (%s:%d)", m->pid, m->lock, file, line);
 	assert(m->magic == MUTEX_MAGIC);
 	/* wait until we can set bit 0. once this is done, we have the lock */
-	//int t = 1000000;
+	int t = 1000000;
+	if(current_task && (m->pid == (int)current_task->pid) && (current_task->flags & TF_IN_INT)) {
+		/* we don't need to be atomic, since we already own the lock */
+		m->lock |= MT_LCK_INT;
+		return;
+	}
 	while(bts_atomic(&m->lock, 0)) {
 		if(!(m->flags & MT_NOSCHED))
 			schedule();
 		else
 			asm("pause"); /* the intel manuals suggest this */
-		//if(!--t) panic(0, "mutex timeout (%s:%d)", file, line);
+		if(!--t) panic(0, "mutex time out %s:%d\n", file, line);
 	}
 	if(current_task) m->pid = current_task->pid;
 }
@@ -33,6 +44,11 @@ void __mutex_release(mutex_t *m, char *file, int line)
 	if(current_task && m->pid != (int)current_task->pid)
 		panic(0, "task %d tried to release mutex it didn't own (%s:%d)", m->pid, file, line);
 	assert(m->magic == MUTEX_MAGIC);
+	if(m->lock & MT_LCK_INT)
+	{
+		m->lock &= ~MT_LCK_INT;
+		return;
+	}
 	m->pid = -1;
 	btr_atomic(&m->lock, 0);
 }

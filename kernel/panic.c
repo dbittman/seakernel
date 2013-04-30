@@ -39,7 +39,7 @@ void panic(int flags, char *fmt, ...)
 	cli();
 #if CONFIG_SMP
 	/* tell the other processors to halt */
-	send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_PANIC);
+	//send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_PANIC);
 #endif
 	if(kernel_state_flags & KSF_PANICING) {
 		for(;;) asm("cli; hlt");
@@ -49,6 +49,7 @@ void panic(int flags, char *fmt, ...)
 	task_t *t=current_task;
 	if(t) pid=t->pid;
 	set_current_task_dp(0, 0);
+	
 	kprintf("\n\n*** kernel panic - ");
 	
 	char buf[512];

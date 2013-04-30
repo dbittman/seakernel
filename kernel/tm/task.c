@@ -89,9 +89,7 @@ int times(struct tms *buf)
 void task_pause(task_t *t)
 {
 	/* don't care what other processors do */
-	cli();
 	t->state = TASK_ISLEEP;
-	sti();
 	schedule();
 }
 
@@ -103,23 +101,28 @@ void task_resume(task_t *t)
 void task_block(struct llist *list, task_t *task)
 {
 	__engage_idle();
+	int old = set_int(0);
 	task->blocklist = list;
 	ll_do_insert(list, task->blocknode, (void *)task);
 	tqueue_remove(((cpu_t *)task->cpu)->active_queue, task->activenode);
 	if(task == current_task) task_pause(task);
+	set_int(old);
 }
 
 void task_unblock(struct llist *list, task_t *t)
 {
+	int old = set_int(0);
 	tqueue_insert(((cpu_t *)t->cpu)->active_queue, (void *)t, t->activenode);
 	struct llistnode *bn = t->blocknode;
 	t->blocklist = 0;
 	ll_do_remove(list, bn, 0);
 	task_resume(t);
+	set_int(old);
 }
 
 void task_unblock_all(struct llist *list)
 {
+	int old = set_int(0);
 	rwlock_acquire(&list->rwl, RWL_WRITER);
 	struct llistnode *cur, *next;
 	task_t *entry;
@@ -133,6 +136,7 @@ void task_unblock_all(struct llist *list)
 		ll_maybe_reset_loop(list, cur, next);
 	}
 	rwlock_release(&list->rwl, RWL_WRITER);
+	set_int(old);
 }
 
 void move_task_cpu(task_t *t, cpu_t *cpu)

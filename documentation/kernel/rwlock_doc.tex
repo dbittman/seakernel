@@ -16,6 +16,10 @@ incremented by two (skips over the 0th bit), and each time a reader lock is rele
 by two. This allows compact storage of the lock state information, and allows reducing the accesses of
 the state integer to atomic operations.
 
+An rwlock may not be acquired within an interrupt, unless section of code that is locked by that
+lock in any way is surrounded by clearing interrupts and resetting them, where set\_int() is called
+BEFORE the call to rwlock\_acquire, and the interrupts are restored AFTER the call to rwlock\_release.
+
 \subsection{Definitions}
 \begin{itemize}
 \item \texttt{\textit{rwlock\_t}} 

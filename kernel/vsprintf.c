@@ -257,7 +257,10 @@ void kprintf(const char *fmt, ...)
 	va_start(args, fmt);
 	vsprintf(printbuf, fmt, args);
 	puts(printbuf);
-	serial_puts(0, printbuf);
+	if(kernel_state_flags & KSF_PANICING)
+		serial_puts_nolock(0, printbuf);
+	else
+		serial_puts(0, printbuf);
 	va_end(args);
 }
 

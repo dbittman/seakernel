@@ -237,8 +237,8 @@ void irq_handler(volatile registers_t regs)
 		clear_regs=1;
 		current_task->regs = &regs;
 	}
+	current_task->flags |= TF_IN_INT;
 	add_atomic(&int_count[regs.int_no], 1);
-	if(interrupt_controller == IOINT_PIC) ack_pic(regs.int_no);
 	handlist_t *f = &interrupt_handlers[regs.int_no];
 	while(f)
 	{
@@ -251,6 +251,8 @@ void irq_handler(volatile registers_t regs)
 	if(current_task && clear_regs)
 		current_task->regs=0;
 	set_cpu_interrupt_flag(1);
+	current_task->flags &= ~TF_IN_INT;
+	if(interrupt_controller == IOINT_PIC) ack_pic(regs.int_no);
 #if CONFIG_SMP
 	lapic_eoi();
 #endif

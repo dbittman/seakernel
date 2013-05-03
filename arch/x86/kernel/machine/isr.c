@@ -14,15 +14,22 @@ volatile long int_count[256];
 mutex_t isr_lock, s2_lock;
 char interrupt_controller=0;
 volatile char maybe_handle_stage_2=0;
-/* Interrupt handlers are stored in linked lists 
- * (allows 'infinite' number of them). But we 
- * need kmalloc to do this. If we have kmalloc 
- * (aka, we have MM), we do the linked list thing. 
- * Otherwise we just set 1 interrupt handler.
- * 
- * We make interrupt_handlers a local array so 
- * that we can use it without kmalloc.
+
+/* interrupt handlers come in two types:
+ * stage1: executed immediately when the interrupt is handled.
+ *         this is less safe than a stage2 handler, and must be used
+ *         carefully. No locks or interrupt state changes may be made
+ *         inside this handler, because it can interrupt critical sections
+ *         of kernel code. These should return ASAP.
+ * stage2: executed whenever a task is at a safe point in execution to
+ *         handle it. These may be written like normal kernel code,
+ *         utilizing normal kernel features and functions. However, this
+ *         code will not always run right away. There may be a small
+ *         delay until a task is able to run this handler. If a userspace
+ *         task handles the interrupt, it will probably run the second
+ *         stage handler right away.
  */
+
 int register_interrupt_handler(u8int num, isr_t stage1_handler, isr_t stage2_handler)
 {
 	mutex_acquire(&isr_lock);
@@ -371,28 +378,17 @@ void print_stack_trace(unsigned int max)
 
 int proc_read_int(char *buf, int off, int len)
 {
-	int i, total_len=0;/*
-	total_len += proc_append_buffer(buf, "ISR \t\t| HANDLERS | BLOCKED HANDLERS |            COUNT\n", total_len, -1, off, len);
+	int i, total_len=0;
+	total_len += proc_append_buffer(buf, "ISR \t\t|            COUNT\n", total_len, -1, off, len);
 	for(i=0;i<256;i++)
 	{
-		handlist_t *f = &interrupt_handlers[i];
-		if(int_count[i] || f->handler)
+		if(int_count[i])
 		{
-			int num_h=0, num_w=0;
-			while(f)
-			{
-				if(f->handler) {
-					num_h++;
-					if(!f->block)
-						num_w++;
-				}
-				f=f->next;
-			}
 			char t[128];
-			sprintf(t, "%3d %s\t| %8d | %16d | %16d\n", i, special_names(i), num_h, num_h-num_w, int_count[i]);
+			sprintf(t, "%3d %s\t| %16d\n", i, special_names(i), int_count[i]);
 			total_len += proc_append_buffer(buf, t, total_len, -1, off, len);
 		}
-	}*/
+	}
 	return total_len;
 }
 

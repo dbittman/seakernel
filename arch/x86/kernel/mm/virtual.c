@@ -15,7 +15,7 @@ extern void id_map_apic(page_dir_t *);
 void vm_init(unsigned id_map_to)
 {
 	/* Register some stuff... */
-	register_interrupt_handler (14, (isr_t)&page_fault);
+	register_interrupt_handler (14, (isr_t)&page_fault, 0);
 
 	/* Create kernel directory. 
 	 * This includes looping upon itself for self-reference */

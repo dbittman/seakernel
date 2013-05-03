@@ -122,7 +122,6 @@ void *syscall_table[129] = {
 
 void init_syscalls()
 {
-	register_interrupt_handler (0x80, (isr_t)&syscall_handler);
 	num_syscalls = sizeof(syscall_table)/sizeof(void *);
 }
 

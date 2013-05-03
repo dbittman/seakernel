@@ -8,7 +8,7 @@ struct ata_controller *primary, *secondary;
 struct pci_device *ata_pci;
 int api=0;
 struct dev_rec *nodes;
-
+int irq1=0, irq2=0;
 int ata_rw_multiple(int rw, int dev, u64 blk, char *buf, int count)
 {
 	int part;
@@ -94,8 +94,8 @@ int module_install()
 		kfree(nodes);
 		return EEXIST;
 	}
-	register_interrupt_handler(32 + ATA_PRIMARY_IRQ, &ata_irq_handler);
-	register_interrupt_handler(32 + ATA_SECONDARY_IRQ, &ata_irq_handler);
+	irq1 = register_interrupt_handler(32 + ATA_PRIMARY_IRQ, &ata_irq_handler, 0);
+	irq2 = register_interrupt_handler(32 + ATA_SECONDARY_IRQ, &ata_irq_handler, 0);
 	api = set_availablebd(atapi_rw_main, 2048, ioctl_atapi, 0, 0);
 	set_blockdevice(3, ata_rw_main, 512, ioctl_ata, ata_rw_multiple, 0);
 	primary->wait = mutex_create(0, 0);
@@ -127,8 +127,8 @@ int module_exit()
 		ata_pci->flags = 0;
 		mutex_destroy(primary->wait);
 		mutex_destroy(secondary->wait);
-		register_interrupt_handler(32 + ATA_PRIMARY_IRQ, 0);
-		register_interrupt_handler(32 + ATA_SECONDARY_IRQ, 0);
+		unregister_interrupt_handler(32 + ATA_PRIMARY_IRQ, irq1);
+		unregister_interrupt_handler(32 + ATA_SECONDARY_IRQ, irq2);
 	}
 	kfree(primary);
 	kfree(secondary);

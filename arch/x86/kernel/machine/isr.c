@@ -6,9 +6,10 @@
 #include <cpu.h>
 #include <elf.h>
 #include <atomic.h>
-#warning "This is not safe! For SMP or otherwise!"
+
 extern char *exception_messages[];
-handlist_t interrupt_handlers[256];
+isr_t interrupt_handlers[256][256][2];
+unsigned int stage2_count[256];
 volatile long int_count[256];
 mutex_t isr_lock;
 char interrupt_controller=0;
@@ -21,52 +22,31 @@ char interrupt_controller=0;
  * We make interrupt_handlers a local array so 
  * that we can use it without kmalloc.
  */
-void register_interrupt_handler(u8int num, isr_t handler)
+int register_interrupt_handler(u8int num, isr_t stage1_handler, isr_t stage2_handler)
 {
-	handlist_t *n;
-	cli();
-	if((kernel_state_flags&KSF_MMU) && interrupt_handlers[num].handler)
+	mutex_acquire(&isr_lock);
+	int i;
+	for(i=0;i<256;i++)
 	{
-		handlist_t *f = &interrupt_handlers[num];
-		handlist_t *h = f->next;
-		n = (handlist_t *)kmalloc(sizeof(*f));
-		f->next = n;
-		n->next = h;
-		if(h)
-			h->prev = n;
-		n->prev = f;
-	}
-	else
-		n = &interrupt_handlers[num];
-	n->handler = handler;
-	n->n = num;
-	sti();
-}
-
-void unregister_interrupt_handler(u8int n, isr_t handler)
-{
-	cli();
-	handlist_t *f = &interrupt_handlers[n];
-	while(f)
-	{
-		if(f->handler == handler)
+		if(!interrupt_handlers[num][i][0] && !interrupt_handlers[num][i][1])
 		{
-			if(f->prev)
-				f->prev->next=f->next;
-			if(f->next)
-				f->next->prev=f->prev;
-			f->handler=0;
-			if(f->prev)
-				kfree(f);
+			interrupt_handlers[num][i][0] = stage1_handler;
+			interrupt_handlers[num][i][1] = stage2_handler;
+			break;
 		}
-		f=f->next;
 	}
-	sti();
+	mutex_release(&isr_lock);
+	if(i == 256) panic(0, "ran out of interrupt handlers");
+	return i;
 }
 
-handlist_t *get_interrupt_handler(u8int n)
+void unregister_interrupt_handler(u8int n, int id)
 {
-	return &interrupt_handlers[n];
+	mutex_acquire(&isr_lock);
+	if(!interrupt_handlers[n][id][0] && !interrupt_handlers[n][id][1])
+		panic(0, "tried to unregister an empty interrupt handler");
+	interrupt_handlers[n][id][0] = interrupt_handlers[n][id][1] = 0;
+	mutex_release(&isr_lock);
 }
 
 void kernel_fault(int fuckoff)
@@ -139,7 +119,6 @@ void ack_pic(int n)
 
 void ipi_handler(volatile registers_t regs)
 {
-	add_atomic(&int_count[0x80], 1);
 	set_int(0);
 	add_atomic(&int_count[regs.int_no], 1);
 #if CONFIG_SMP
@@ -209,17 +188,17 @@ void isr_handler(volatile registers_t regs)
 	set_int(0);
 	add_atomic(&int_count[regs.int_no], 1);
 	char called=0;
-	handlist_t *f = &interrupt_handlers[regs.int_no];
-	while(f)
+	int i;
+	for(i=0;i<256;i++)
 	{
-		isr_t handler = f->handler;
-		if(handler) {
-			if(!f->block)
-				handler(regs);
-			called=1;
+		if(interrupt_handlers[regs.int_no][i][0] || interrupt_handlers[regs.int_no][i][1])
+		{
+			called = 1;
+			if(interrupt_handlers[regs.int_no][i][0])
+				(interrupt_handlers[regs.int_no][i][0])(regs);
 		}
-		f=f->next;
 	}
+	
 	set_int(0);
 	if(!called)
 		faulted(regs.int_no);
@@ -239,14 +218,15 @@ void irq_handler(volatile registers_t regs)
 	}
 	current_task->flags |= TF_IN_INT;
 	add_atomic(&int_count[regs.int_no], 1);
-	handlist_t *f = &interrupt_handlers[regs.int_no];
-	while(f)
+	int i;
+	for(i=0;i<256;i++)
 	{
-		isr_t handler = f->handler;
-		if(handler && !f->block)
-			handler(regs);
-		f=f->next;
+		if(interrupt_handlers[regs.int_no][i][0])
+			(interrupt_handlers[regs.int_no][i][0])(regs);
 	}
+	
+	
+	
 	set_int(0);
 	if(current_task && clear_regs)
 		current_task->regs=0;
@@ -260,11 +240,19 @@ void irq_handler(volatile registers_t regs)
 
 void int_sys_init()
 {
-	memset(&interrupt_handlers, 0, sizeof(isr_t)*256);
+	for(int i=0;i<256;i++)
+	{
+		stage2_count[i] = 0;
+		for(int j=0;j<256;j++)
+		{
+			interrupt_handlers[i][j][0] = interrupt_handlers[i][j][1] = 0;
+		}
+	}
+	mutex_create(&isr_lock, 0);
 #if CONFIG_MODULES
 	add_kernel_symbol(register_interrupt_handler);
 	add_kernel_symbol(unregister_interrupt_handler);
-	add_kernel_symbol(get_interrupt_handler);
+	_add_kernel_symbol((unsigned)interrupt_handlers, "interrupt_handlers");
 #endif
 }
 
@@ -287,7 +275,7 @@ void print_stack_trace(unsigned int max)
 
 int proc_read_int(char *buf, int off, int len)
 {
-	int i, total_len=0;
+	int i, total_len=0;/*
 	total_len += proc_append_buffer(buf, "ISR \t\t| HANDLERS | BLOCKED HANDLERS |            COUNT\n", total_len, -1, off, len);
 	for(i=0;i<256;i++)
 	{
@@ -308,7 +296,7 @@ int proc_read_int(char *buf, int off, int len)
 			sprintf(t, "%3d %s\t| %8d | %16d | %16d\n", i, special_names(i), num_h, num_h-num_w, int_count[i]);
 			total_len += proc_append_buffer(buf, t, total_len, -1, off, len);
 		}
-	}
+	}*/
 	return total_len;
 }
 

@@ -6,7 +6,7 @@
 #include <sig.h>
 #include <mod.h>
 #include <task.h>
-handlist_t *old_handler=0;
+
 int is_ctrl=0, is_alt=0, is_shift=0, is_altgr=0;
 int capslock, slock;
 unsigned short *(*_keymap_callback)(int, int, int, int) = 0;
@@ -326,7 +326,7 @@ unsigned get_keymap_callback()
 {
 	return (unsigned)_keymap_callback;
 }
-
+int irqk=0;
 int module_install()
 {
 	printk(1, "[keyboard]: Driver loading\n");
@@ -338,15 +338,15 @@ int module_install()
 	_keymap_callback=0;
 	add_kernel_symbol(set_keymap_callback);
 	add_kernel_symbol(get_keymap_callback);
-	old_handler = get_interrupt_handler(IRQ1);
-	handlist_t *f = old_handler;
-	while(f)
-	{
-		if(f->handler)
-			f->block=1;
-		f=f->next;
-	}
-	register_interrupt_handler(IRQ1, (isr_t)&do_keyboard_int);
+	//old_handler = get_interrupt_handler(IRQ1);
+	//handlist_t *f = old_handler;
+	//while(f)
+	//{
+	//	if(f->handler)
+	//		f->block=1;
+	//	f=f->next;
+	//}
+	irqk = register_interrupt_handler(IRQ1, (isr_t)&do_keyboard_int, 0);
 	flush_port();
 	printk(1, "[keyboard]: initialized keyboard\n");
 	return 0;
@@ -356,13 +356,13 @@ int module_exit()
 {
 	flush_port();
 	printk(1, "[keyboard]: Restoring old handler\n");
-	unregister_interrupt_handler(IRQ1, (isr_t)&do_keyboard_int);
-	handlist_t *f = old_handler;
-	while(f)
-	{
-		f->block=0;
-		f=f->next;
-	}
+	unregister_interrupt_handler(IRQ1, irqk);
+	//handlist_t *f = old_handler;
+	//while(f)
+	//{
+	//	f->block=0;
+	//	f=f->next;
+	//}
 	return 0;
 }
 

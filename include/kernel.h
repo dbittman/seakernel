@@ -131,7 +131,6 @@ void kernel_poweroff();
 int sys_uname(struct utsname *name);
 int get_timer_th(int *t);
 extern int april_fools;
-void unregister_interrupt_handler(unsigned char n, isr_t);
 int sys_isstate(int pid, int state);
 void do_reset();
 int sys_gethostname(char *buf, size_t len);

@@ -47,20 +47,12 @@ typedef struct registers
 
 typedef void (*isr_t)(registers_t);
 
-typedef struct handlist_s
-{
-	isr_t handler;
-	unsigned n;
-	char block;
-	struct handlist_s *next, *prev;
-} handlist_t;
+int register_interrupt_handler(u8int n, isr_t stage1_handler, isr_t stage2_handler);
+void unregister_interrupt_handler(u8int n, int id);
 
-void register_interrupt_handler(u8int n, isr_t handler);
-void unregister_interrupt_handler(u8int n, isr_t handler);
 int irq_wait(int n);
 void wait_isr(int no);
 extern char interrupt_controller;
-handlist_t *get_interrupt_handler(u8int n);
 void lapic_eoi();
 
 void handle_ipi_cpu_halt(volatile registers_t regs);

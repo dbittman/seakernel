@@ -23,7 +23,7 @@ extern char *stuff_to_pass[128];
 extern int argc_STP;
 extern char tmp_cmd_line[2048];
 extern int init_pid;
-
+void __KT_try_handle_stage2_interrupts();
 struct inode *kproclist;
 extern struct inode *procfs_kprocdir;
 static inline int __KT_clear_args()
@@ -119,6 +119,8 @@ int kernel_idle_task()
 			 * back here. We also ignore signals */
 			__disengage_idle();
 		}
-		sti();
+		set_int(0);
+		__KT_try_handle_stage2_interrupts();
+		set_int(1);
 	}
 }

@@ -8,16 +8,7 @@
 int current_hz=1000;
 volatile long ticks=0;
 void do_tick();
-
-static void timer_handler(registers_t r)
-{
-	add_atomic(&ticks, 1);
-	/* engage the idle task occasionally */
-	if((ticks % current_hz*10) == 0)
-		__engage_idle();
-	do_tick();
-}
-
+void timer_handler(registers_t r);
 void install_timer(int hz)
 {
 	current_hz=hz;

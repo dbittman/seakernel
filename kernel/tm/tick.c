@@ -2,6 +2,7 @@
 #include <isr.h>
 #include <task.h>
 #include <cpu.h>
+#include <atomic.h>
 extern void ack(int);
 extern unsigned read_epi();
 extern void check_alarms();
@@ -66,6 +67,15 @@ void do_tick()
 			current_task->cur_ts = GET_MAX_TS(current_task);
 	}
 	do_run_scheduler();
+}
+
+void timer_handler(registers_t r)
+{
+	add_atomic(&ticks, 1);
+	/* engage the idle task occasionally */
+	if((ticks % current_hz*10) == 0)
+		__engage_idle();
+	do_tick();
 }
 
 void delay(int t)

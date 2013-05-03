@@ -31,6 +31,9 @@ int sys_sbrk(int inc)
 		send_signal(current_task->pid, SIGSEGV);
 	current_task->heap_end += inc;
 	current_task->he_red = end + inc;
+	unsigned page = end & PAGE_MASK;
+	for(;page <=(current_task->heap_end&PAGE_MASK);page += PAGE_SIZE)
+		map_if_not_mapped(page);
 	return end;
 }
 

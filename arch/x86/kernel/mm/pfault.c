@@ -23,6 +23,10 @@ void print_pfe(int x, registers_t *regs, unsigned cr2)
 	printk(x, "\nIn function");
 	const char *g = elf_lookup_symbol (regs->eip, &kernel_elf);
 	printk(x, " [0x%x] %s\n", regs->eip, g ? g : "(unknown)");
+	printk(x, "Occured in task %d.\n\tstate=%d, flags=%d, F=%d, magic=%x.\n\tlast syscall=%d", current_task->pid, current_task->state, current_task->flags, current_task->flag, current_task->magic, current_task->last);
+	if(current_task->system) 
+		printk(x, ", in syscall %d", current_task->system);
+	printk(x, "\n");
 }
 #define USER_TASK (err_code & 0x4)
 
@@ -46,75 +50,41 @@ int map_in_page(unsigned int cr2, unsigned err_code)
 	return 0;
 }
 
-void print_pf(int x, registers_t *regs, unsigned cr2)
-{
-	printk(x, "Occured in task %d.\n\tstate=%d, flags=%d, F=%d, magic=%x.\n\tlast syscall=%d", current_task->pid, current_task->state, current_task->flags, current_task->flag, current_task->magic, current_task->last);
-	if(current_task->system) 
-		printk(x, ", in syscall %d", current_task->system);
-	printk(x, "\n");
-}
-
 void page_fault(registers_t regs)
 {
 	current_task->regs=0;
 	uint32_t cr2, err_code = regs.err_code;
 	__asm__ volatile ("mov %%cr2, %0" : "=r" (cr2));
-	if((cr2 >= KMALLOC_ADDR_START && cr2 < KMALLOC_ADDR_END)) {
-		kprintf("-- KMALLOC ERROR --\n");
-		print_pfe(5, &regs, cr2);
-		printk(5, "\n");
-		print_pf(5, &regs, cr2);
-		panic(PANIC_NOSYNC, "BUG: pagefault in kmalloc region");
-	}
+	if(USER_TASK) {
+		
 #if CONFIG_SWAP
-	/* Has the page been swapped out? NOTE: We must always check this first */
-	if(current_task && num_swapdev && current_task->num_swapped && 
-			swap_in_page((task_t *)current_task, cr2 & PAGE_MASK) == 0) {
-		printk(1, "[swap]: Swapped back in page %x for task %d\n", 
-			cr2 & PAGE_MASK, current_task->pid);
-		return;
-	}
+		/* Has the page been swapped out? NOTE: We must always check this first */
+		if(current_task && num_swapdev && current_task->num_swapped && 
+				swap_in_page((task_t *)current_task, cr2 & PAGE_MASK) == 0) {
+			printk(1, "[swap]: Swapped back in page %x for task %d\n", 
+				cr2 & PAGE_MASK, current_task->pid);
+			return;
+		}
 #endif
-	if(pfault_mmf_check(err_code, cr2))
-		return;
-	if(kernel_task)
+
+		if(pfault_mmf_check(err_code, cr2))
+			return;
+		
 		mutex_acquire(&pd_cur_data->lock);
-	unsigned at = vm_do_getattrib(cr2, 0, 1);
-	if(at & PAGE_COW)
-	{
-		//printk(0, "mapping COW page: %x\n", cr2);
-		char tmp[PAGE_SIZE];
-		memcpy(tmp, (void *)(cr2 & PAGE_MASK), PAGE_SIZE);
-		vm_map(cr2 & PAGE_MASK, pm_alloc_page(), (at & ~PAGE_COW) | PAGE_WRITE, MAP_NOCLEAR);
-		flush_pd();
-		memcpy((void *)(cr2 & PAGE_MASK), tmp, PAGE_SIZE);
-		//printk(0, "done mapping\n");
-		if(kernel_task)
+		if(map_in_page(cr2, err_code)) {
 			mutex_release(&pd_cur_data->lock);
-		return;
-	}
-	
-	if(map_in_page(cr2, err_code)) {
-		if(kernel_task)
-			mutex_release(&pd_cur_data->lock);
-		return;
-	}
-	if(kernel_task)
+			return;
+		}
 		mutex_release(&pd_cur_data->lock);
-	if(USER_TASK)
-	{
+		
 		printk(0, "[pf]: Invalid Memory Access in task %d: eip=%x addr=%x flags=%x\n", 
 			current_task->pid, regs.eip, cr2, err_code);
-		print_pf(0, &regs, cr2);
 		kprintf("[pf]: Segmentation Fault\n");
 		kill_task(current_task->pid);
 		return;
 	}
 	print_pfe(5, &regs, cr2);
-	printk(5, "\n");
-	print_pf(5, &regs, cr2);
 	if(!current_task) {
-		kprintf("\n");
 		if(kernel_task)
 		{
 			/* Page fault while panicing */

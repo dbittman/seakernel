@@ -311,6 +311,31 @@ void irq_handler(volatile registers_t regs)
 #endif
 }
 
+/* make sure it eventually gets handled */
+void __KT_try_handle_stage2_interrupts()
+{
+	if(maybe_handle_stage_2)
+	{
+		maybe_handle_stage_2 = 0;
+		/* handle the stage2 handlers. NOTE: this may change to only 
+		 * handling one interrupt, one function. For now, this works. */
+		mutex_acquire(&s2_lock);
+		for(int i=0;i<256;i++)
+		{
+			if(stage2_count[i])
+			{
+				sub_atomic(&stage2_count[i], 1);
+				for(int j=0;j<256;j++) {
+					if(interrupt_handlers[i][j][1]) {
+						(interrupt_handlers[i][j][1])(*current_task->regs);
+					}
+				}
+			}
+		}
+		mutex_release(&s2_lock);
+	}
+}
+
 void int_sys_init()
 {
 	for(int i=0;i<256;i++)

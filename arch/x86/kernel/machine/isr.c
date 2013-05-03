@@ -168,32 +168,28 @@ void entry_syscall_handler(volatile registers_t regs)
 		current_task->cursig=0;
 		current_task->flags &= ~TF_INSIG;
 		current_task->flags &= ~TF_JUMPIN;
-		set_cpu_interrupt_flag(1);
-#if CONFIG_SMP
-		lapic_eoi();
-#endif
-		return;
-	}
-	assert(!current_task->sysregs && !current_task->regs);
-	current_task->regs = &regs;
-	current_task->sysregs = &regs;
-	syscall_handler(&regs);
-	/* handle stage2's here...*/
-	if(maybe_handle_stage_2) {
-		mutex_acquire(&s2_lock);
-		for(int i=0;i<256;i++)
-		{
-			if(stage2_count[i])
+	} else {
+		assert(!current_task->sysregs && !current_task->regs);
+		current_task->regs = &regs;
+		current_task->sysregs = &regs;
+		syscall_handler(&regs);
+		/* handle stage2's here...*/
+		if(maybe_handle_stage_2) {
+			mutex_acquire(&s2_lock);
+			for(int i=0;i<256;i++)
 			{
-				sub_atomic(&stage2_count[i], 1);
-				for(int j=0;j<256;j++) {
-					if(interrupt_handlers[i][j][1]) {
-						(interrupt_handlers[i][j][1])(regs);
+				if(stage2_count[i])
+				{
+					sub_atomic(&stage2_count[i], 1);
+					for(int j=0;j<256;j++) {
+						if(interrupt_handlers[i][j][1]) {
+							(interrupt_handlers[i][j][1])(regs);
+						}
 					}
 				}
 			}
-		}
-		mutex_release(&s2_lock);
+			mutex_release(&s2_lock);
+		} 
 	}
 	set_int(0);
 	current_task->sysregs=0;

@@ -13,6 +13,7 @@ unsigned int stage2_count[256];
 volatile long int_count[256];
 mutex_t isr_lock, s2_lock;
 char interrupt_controller=0;
+volatile char maybe_handle_stage_2=0;
 /* Interrupt handlers are stored in linked lists 
  * (allows 'infinite' number of them). But we 
  * need kmalloc to do this. If we have kmalloc 
@@ -117,11 +118,6 @@ void ack_pic(int n)
 	}
 }
 
-char can_handle_stage_2()
-{
-	return 1;
-}
-
 void ipi_handler(volatile registers_t regs)
 {
 	set_int(0);
@@ -156,8 +152,12 @@ void ipi_handler(volatile registers_t regs)
 
 void entry_syscall_handler(volatile registers_t regs)
 {
-	add_atomic(&int_count[0x80], 1);
 	set_int(0);
+	add_atomic(&int_count[0x80], 1);
+	if(current_task->flags & TF_IN_INT)
+		panic(0, "attempted to enter syscall while handling an interrupt");
+	/* set the interrupt handling flag... */
+	current_task->flags |= TF_IN_INT;
 	if(regs.eax == 128) {
 		/* the injection code at the end of the signal handler calls
 		 * a syscall with eax = 128. So here we handle returning from
@@ -178,83 +178,10 @@ void entry_syscall_handler(volatile registers_t regs)
 	current_task->regs = &regs;
 	current_task->sysregs = &regs;
 	syscall_handler(&regs);
-	
-	/* ok, now are allowed to handle stage2's right here? */
-	if(can_handle_stage_2())
-	{
+	/* handle stage2's here...*/
+	if(maybe_handle_stage_2) {
 		mutex_acquire(&s2_lock);
 		for(int i=0;i<256;i++)
-		{
-			if(stage2_count[i])
-			{
-				sub_atomic(&stage2_count[i], 1);
-				(interrupt_handlers[regs.int_no][i][1])(regs);
-			}
-		}
-		mutex_release(&s2_lock);
-	}
-	
-	set_int(0);
-	current_task->sysregs=0;
-	current_task->regs=0;
-	set_cpu_interrupt_flag(1);
-#if CONFIG_SMP
-	lapic_eoi();
-#endif
-}
-
-/* This gets called from our ASM interrupt handler stub. */
-void isr_handler(volatile registers_t regs)
-{
-	set_int(0);
-	add_atomic(&int_count[regs.int_no], 1);
-	char called=0;
-	int i;
-	for(i=0;i<256;i++)
-	{
-		if(interrupt_handlers[regs.int_no][i][0] || interrupt_handlers[regs.int_no][i][1])
-		{
-			called = 1;
-			if(interrupt_handlers[regs.int_no][i][0])
-				(interrupt_handlers[regs.int_no][i][0])(regs);
-		}
-	}
-	
-	set_int(0);
-	if(!called)
-		faulted(regs.int_no);
-	set_cpu_interrupt_flag(1);
-#if CONFIG_SMP
-	lapic_eoi();
-#endif
-}
-
-void irq_handler(volatile registers_t regs)
-{
-	set_int(0);
-	char clear_regs=0;
-	if(current_task && !current_task->regs) {
-		clear_regs=1;
-		current_task->regs = &regs;
-	}
-	current_task->flags |= TF_IN_INT;
-	add_atomic(&int_count[regs.int_no], 1);
-	int i;
-	char need_second_stage = 0;
-	for(i=0;i<256;i++)
-	{
-		if(interrupt_handlers[regs.int_no][i][0])
-			(interrupt_handlers[regs.int_no][i][0])(regs);
-		if(interrupt_handlers[regs.int_no][i][1]) need_second_stage = 1;
-	}
-	if(need_second_stage) add_atomic(&stage2_count[regs.int_no], 1);
-	
-	/* ok, now are allowed to handle stage2's right here? */
-	if(can_handle_stage_2())
-	{
-		mutex_acquire(&s2_lock);
-		
-		for(i=0;i<256;i++)
 		{
 			if(stage2_count[i])
 			{
@@ -268,12 +195,116 @@ void irq_handler(volatile registers_t regs)
 		}
 		mutex_release(&s2_lock);
 	}
+	set_int(0);
+	current_task->sysregs=0;
+	current_task->regs=0;
+	set_cpu_interrupt_flag(1);
+	current_task->flags &= ~TF_IN_INT;
+#if CONFIG_SMP
+	lapic_eoi();
+#endif
+}
+
+/* This gets called from our ASM interrupt handler stub. */
+void isr_handler(volatile registers_t regs)
+{
+	set_int(0);
+	add_atomic(&int_count[regs.int_no], 1);
+	/* check if we're interrupting kernel code, and set the interrupt
+	 * handling flag */
+	char already_in_interrupt = 0;
+	if(current_task->flags & TF_IN_INT)
+		already_in_interrupt = 1;
+	current_task->flags |= TF_IN_INT;
+	/* run the stage1 handlers, and see if we need any stage2s */
+	char called=0;
+	char need_second_stage = 0;
+	for(int i=0;i<256;i++)
+	{
+		if(interrupt_handlers[regs.int_no][i][0] || interrupt_handlers[regs.int_no][i][1])
+		{
+			called = 1;
+			if(interrupt_handlers[regs.int_no][i][0])
+				(interrupt_handlers[regs.int_no][i][0])(regs);
+			if(interrupt_handlers[regs.int_no][i][1])
+				need_second_stage = 1;
+		}
+	}
+	if(need_second_stage) {
+		add_atomic(&stage2_count[regs.int_no], 1);
+		maybe_handle_stage_2 = 1;
+	}
+	/* clean up... */
+	set_int(0);
+	if(!called)
+		faulted(regs.int_no);
+	set_cpu_interrupt_flag(1);
+	current_task->flags &= ~TF_IN_INT;
+	/* send out the EOI... */
+#if CONFIG_SMP
+	lapic_eoi();
+#endif
+}
+
+void irq_handler(volatile registers_t regs)
+{
+	set_int(0);
+	add_atomic(&int_count[regs.int_no], 1);
+	/* save the registers so we can screw with iret later if we need to */
+	char clear_regs=0;
+	if(current_task && !current_task->regs) {
+		clear_regs=1;
+		current_task->regs = &regs;
+	}
+	/* check if we're interrupting kernel code */
+	char already_in_interrupt = 0;
+	if(current_task->flags & TF_IN_INT)
+		already_in_interrupt = 1;
+	/* ...and set the flag so we know we're in an interrupt */
+	current_task->flags |= TF_IN_INT;
 	
+	/* now, run through the stage1 handlers, and see if we need any
+	 * stage2 handlers to run later */
+	char need_second_stage = 0;
+	for(int i=0;i<256;i++)
+	{
+		if(interrupt_handlers[regs.int_no][i][0])
+			(interrupt_handlers[regs.int_no][i][0])(regs);
+		if(interrupt_handlers[regs.int_no][i][1]) need_second_stage = 1;
+	}
+	if(need_second_stage) {
+		add_atomic(&stage2_count[regs.int_no], 1);
+		maybe_handle_stage_2 = 1;
+	}
+	
+	/* ok, now are we allowed to handle stage2's right here? */
+	if(!already_in_interrupt && maybe_handle_stage_2)
+	{
+		maybe_handle_stage_2 = 0;
+		/* handle the stage2 handlers. NOTE: this may change to only 
+		 * handling one interrupt, one function. For now, this works. */
+		mutex_acquire(&s2_lock);
+		for(int i=0;i<256;i++)
+		{
+			if(stage2_count[i])
+			{
+				sub_atomic(&stage2_count[i], 1);
+				for(int j=0;j<256;j++) {
+					if(interrupt_handlers[i][j][1]) {
+						(interrupt_handlers[i][j][1])(regs);
+					}
+				}
+			}
+		}
+		mutex_release(&s2_lock);
+	}
+	/* ok, now lets clean up */
 	set_int(0);
 	if(current_task && clear_regs)
 		current_task->regs=0;
 	set_cpu_interrupt_flag(1);
 	current_task->flags &= ~TF_IN_INT;
+	/* and send out the EOIs */
 	if(interrupt_controller == IOINT_PIC) ack_pic(regs.int_no);
 #if CONFIG_SMP
 	lapic_eoi();
@@ -290,6 +321,7 @@ void int_sys_init()
 			interrupt_handlers[i][j][0] = interrupt_handlers[i][j][1] = 0;
 		}
 	}
+	maybe_handle_stage_2 = 0;
 	mutex_create(&isr_lock, 0);
 	mutex_create(&s2_lock, 0);
 #if CONFIG_MODULES

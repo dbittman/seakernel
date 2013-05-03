@@ -346,7 +346,7 @@ int module_install()
 	//		f->block=1;
 	//	f=f->next;
 	//}
-	irqk = register_interrupt_handler(IRQ1, (isr_t)&do_keyboard_int, 0);
+	irqk = register_interrupt_handler(IRQ1, 0, (isr_t)&do_keyboard_int);
 	flush_port();
 	printk(1, "[keyboard]: initialized keyboard\n");
 	return 0;

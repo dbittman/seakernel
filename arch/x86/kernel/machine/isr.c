@@ -117,6 +117,11 @@ void ack_pic(int n)
 	}
 }
 
+char can_handle_stage_2()
+{
+	return 1;
+}
+
 void ipi_handler(volatile registers_t regs)
 {
 	set_int(0);
@@ -173,6 +178,22 @@ void entry_syscall_handler(volatile registers_t regs)
 	current_task->regs = &regs;
 	current_task->sysregs = &regs;
 	syscall_handler(&regs);
+	
+	/* ok, now are allowed to handle stage2's right here? */
+	if(can_handle_stage_2())
+	{
+		mutex_acquire(&s2_lock);
+		for(int i=0;i<256;i++)
+		{
+			if(stage2_count[i])
+			{
+				sub_atomic(&stage2_count[i], 1);
+				(interrupt_handlers[regs.int_no][i][1])(regs);
+			}
+		}
+		mutex_release(&s2_lock);
+	}
+	
 	set_int(0);
 	current_task->sysregs=0;
 	current_task->regs=0;
@@ -208,11 +229,6 @@ void isr_handler(volatile registers_t regs)
 #endif
 }
 
-char can_handle_stage_2()
-{
-	
-}
-
 void irq_handler(volatile registers_t regs)
 {
 	set_int(0);
@@ -237,12 +253,17 @@ void irq_handler(volatile registers_t regs)
 	if(can_handle_stage_2())
 	{
 		mutex_acquire(&s2_lock);
+		
 		for(i=0;i<256;i++)
 		{
 			if(stage2_count[i])
 			{
 				sub_atomic(&stage2_count[i], 1);
-				(interrupt_handlers[regs.int_no][i][1])(0);
+				for(int j=0;j<256;j++) {
+					if(interrupt_handlers[i][j][1]) {
+						(interrupt_handlers[i][j][1])(regs);
+					}
+				}
 			}
 		}
 		mutex_release(&s2_lock);

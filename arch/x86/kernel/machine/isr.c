@@ -11,7 +11,7 @@ extern char *exception_messages[];
 isr_t interrupt_handlers[256][256][2];
 unsigned int stage2_count[256];
 volatile long int_count[256];
-mutex_t isr_lock;
+mutex_t isr_lock, s2_lock;
 char interrupt_controller=0;
 /* Interrupt handlers are stored in linked lists 
  * (allows 'infinite' number of them). But we 
@@ -208,6 +208,11 @@ void isr_handler(volatile registers_t regs)
 #endif
 }
 
+char can_handle_stage_2()
+{
+	
+}
+
 void irq_handler(volatile registers_t regs)
 {
 	set_int(0);
@@ -219,13 +224,29 @@ void irq_handler(volatile registers_t regs)
 	current_task->flags |= TF_IN_INT;
 	add_atomic(&int_count[regs.int_no], 1);
 	int i;
+	char need_second_stage = 0;
 	for(i=0;i<256;i++)
 	{
 		if(interrupt_handlers[regs.int_no][i][0])
 			(interrupt_handlers[regs.int_no][i][0])(regs);
+		if(interrupt_handlers[regs.int_no][i][1]) need_second_stage = 1;
 	}
+	if(need_second_stage) add_atomic(&stage2_count[regs.int_no], 1);
 	
-	
+	/* ok, now are allowed to handle stage2's right here? */
+	if(can_handle_stage_2())
+	{
+		mutex_acquire(&s2_lock);
+		for(i=0;i<256;i++)
+		{
+			if(stage2_count[i])
+			{
+				sub_atomic(&stage2_count[i], 1);
+				(interrupt_handlers[regs.int_no][i][1])(0);
+			}
+		}
+		mutex_release(&s2_lock);
+	}
 	
 	set_int(0);
 	if(current_task && clear_regs)
@@ -249,6 +270,7 @@ void int_sys_init()
 		}
 	}
 	mutex_create(&isr_lock, 0);
+	mutex_create(&s2_lock, 0);
 #if CONFIG_MODULES
 	add_kernel_symbol(register_interrupt_handler);
 	add_kernel_symbol(unregister_interrupt_handler);

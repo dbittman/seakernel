@@ -185,7 +185,7 @@ int syscall_handler(volatile registers_t *regs)
 	enter_system(regs->eax);
 	if(got_signal(current_task))
 		schedule();
-	sti();
+	set_int(1);
 	current_task->freed = current_task->allocated=0;
 #ifdef SC_DEBUG
 	//if(current_task->tty == curcons->tty) 
@@ -200,7 +200,7 @@ int syscall_handler(volatile registers_t *regs)
 		printk(SC_DEBUG, "syscall %d: %d ret %d, took %d ticks\n", 
 				current_task->pid, current_task->system, ret, ticks - or_t);
 #endif
-	cli();
+	set_int(0);
 	exit_system();
 	__engage_idle();
 	/* if we need to reschedule, or we have overused our timeslice

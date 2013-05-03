@@ -56,7 +56,8 @@ void page_fault(registers_t regs)
 	uint32_t cr2, err_code = regs.err_code;
 	__asm__ volatile ("mov %%cr2, %0" : "=r" (cr2));
 	if(USER_TASK) {
-		
+		/* if we were in a user-space task, we can actually just
+		 * pretend to be a second-stage interrupt handler. */
 #if CONFIG_SWAP
 		/* Has the page been swapped out? NOTE: We must always check this first */
 		if(current_task && num_swapdev && current_task->num_swapped && 
@@ -88,8 +89,8 @@ void page_fault(registers_t regs)
 		if(kernel_task)
 		{
 			/* Page fault while panicing */
-			cli();
-			for(;;) asm("nop");
+			
+			for(;;) asm("cli;hlt");
 		}
 		panic(PANIC_MEM | PANIC_NOSYNC, "Early Page Fault");
 	}

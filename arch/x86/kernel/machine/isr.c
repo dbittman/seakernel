@@ -319,6 +319,7 @@ void __KT_try_handle_stage2_interrupts()
 {
 	if(maybe_handle_stage_2)
 	{
+		int old = set_int(0);
 		maybe_handle_stage_2 = 0;
 		/* handle the stage2 handlers. NOTE: this may change to only 
 		 * handling one interrupt, one function. For now, this works. */
@@ -336,6 +337,7 @@ void __KT_try_handle_stage2_interrupts()
 			}
 		}
 		mutex_release(&s2_lock);
+		set_int(old);
 	}
 }
 
@@ -351,6 +353,7 @@ void int_sys_init()
 	}
 	maybe_handle_stage_2 = 0;
 	mutex_create(&isr_lock, 0);
+#warning "MT_NOSCHED?"
 	mutex_create(&s2_lock, 0);
 #if CONFIG_MODULES
 	add_kernel_symbol(register_interrupt_handler);

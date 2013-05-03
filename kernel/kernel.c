@@ -20,7 +20,7 @@ void kernel_shutdown()
 #endif
 	current_task->uid=0;
 	set_ksf(KSF_SHUTDOWN);
-	cli();
+	set_int(0);
 	lock_scheduler();
 	sys_sync(PRINT_LEVEL);
 	unmount_all();
@@ -44,7 +44,7 @@ void kernel_poweroff()
 	if(current_task->uid)
 		return;
 	kernel_shutdown();
-	cli();
+	set_int(0);
 	acpiPowerOff();
 	kprintf("\nYou can now turn off your computer.\n");
 	for(;;) 

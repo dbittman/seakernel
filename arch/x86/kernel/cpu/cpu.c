@@ -148,6 +148,7 @@ void init_main_cpu()
 	load_tables_ap(primary_cpu);
 #endif
 	assert(primary_cpu);
+	set_int(0);
 	primary_cpu->flags = CPU_UP;
 	printk(KERN_MSG, "Initializing CPU...\n");
 	parse_cpuid(primary_cpu);

@@ -110,7 +110,7 @@ int do_fork(unsigned flags)
 	tqueue_insert(((cpu_t *)(parent->cpu))->active_queue, (void *)new,new->activenode);
 	new->cpu = parent->cpu;
 	/* Copy the stack */
-	cli();
+	set_int(0);
 	engage_new_stack(new, parent);
 	/* Here we read the EIP of this exact location. The parent then sets the
 	 * eip of the child to this. On the reschedule for the child, it will 

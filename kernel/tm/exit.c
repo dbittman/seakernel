@@ -127,6 +127,7 @@ void exit(int code)
 	iput(t->root);
 	iput(t->pwd);
 	/* Send out some signals */
+#warning "this is ugly...fix this"
 	set_int(0);
 	mutex_acquire(&primary_queue->lock);
 	struct llistnode *cur;

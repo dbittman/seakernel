@@ -14,7 +14,7 @@
  */
 task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned value, void (*action)(task_t *, int), int arg)
 {
-	set_int(0);
+	int old = set_int(0);
 	mutex_acquire(&tq->lock);
 	struct llistnode *cur;
 	task_t *tmp, *t=0;
@@ -50,7 +50,7 @@ task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned value, void (*actio
 			break;
 	}
 	mutex_release(&tq->lock);
-	set_int(1);
+	set_int(old);
 	return t;
 }
 

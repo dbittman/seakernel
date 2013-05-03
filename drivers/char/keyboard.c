@@ -338,14 +338,6 @@ int module_install()
 	_keymap_callback=0;
 	add_kernel_symbol(set_keymap_callback);
 	add_kernel_symbol(get_keymap_callback);
-	//old_handler = get_interrupt_handler(IRQ1);
-	//handlist_t *f = old_handler;
-	//while(f)
-	//{
-	//	if(f->handler)
-	//		f->block=1;
-	//	f=f->next;
-	//}
 	irqk = register_interrupt_handler(IRQ1, 0, (isr_t)&do_keyboard_int);
 	flush_port();
 	printk(1, "[keyboard]: initialized keyboard\n");
@@ -357,12 +349,6 @@ int module_exit()
 	flush_port();
 	printk(1, "[keyboard]: Restoring old handler\n");
 	unregister_interrupt_handler(IRQ1, irqk);
-	//handlist_t *f = old_handler;
-	//while(f)
-	//{
-	//	f->block=0;
-	//	f=f->next;
-	//}
 	return 0;
 }
 

@@ -31,11 +31,11 @@ void cpu_k_task_entry(task_t *me)
 	 * task flags that allow the cpu to start executing */
 	page_directory[PAGE_DIR_IDX(SMP_CUR_TASK / PAGE_SIZE)] = (unsigned)me;
 	((cpu_t *)(me->cpu))->flags |= CPU_TASK;
-	sti();
+	//sti();
 	for(;;) {
-		//cli();
-		//asm("hlt");
-		sti();
+		set_int(0);
+		asm("hlt");
+		//sti();
 	}
 }
 
@@ -53,9 +53,7 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	set_boot_flag(0xFFFFFFFF);
 	while(!(kernel_state_flags & KSF_SMP_ENABLE)) asm("cli");
 	init_lapic(0);
-	//sti();
 	set_lapic_timer(lapic_timer_start);
-	//for(;;) sti();
 	/* now we need to wait up the memory manager is all set up */
 	#warning "make this better..."
 	while(!(kernel_state_flags & KSF_MMU)) asm("cli");
@@ -121,7 +119,7 @@ int boot_cpu(unsigned id, unsigned apic_ver)
 	int apicid = id, success = 1, to;
 	unsigned bootaddr, accept_status;
 	unsigned bios_reset_vector = BIOS_RESET_VECTOR;
-	cli();
+	set_int(0);
 	/* choose this as the bios reset vector */
 	bootaddr = 0x7000;
 	unsigned sz = (unsigned)trampoline_end - (unsigned)trampoline_start;
@@ -163,7 +161,7 @@ int boot_cpu(unsigned id, unsigned apic_ver)
 	/* cpu didn't boot up...:( */
 	if (to >= 100)
 		success = 0;
-	cli();
+	set_int(0);
 	/* clear the APIC error register */
 	IMPS_LAPIC_WRITE(LAPIC_ESR, 0);
 	accept_status = IMPS_LAPIC_READ(LAPIC_ESR);

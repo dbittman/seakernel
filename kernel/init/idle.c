@@ -79,12 +79,12 @@ int kernel_idle_task()
 		/* This task likes to...fuck about with it's page directory.
 		 * So we set it's stack at a global location so it doesn't 
 		 * screw up some other task's stack. */
-		cli();
+		set_int(0);
 		set_kernel_stack(current_tss, current_task->kernel_stack+(KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
 		asm("	mov %0, %%esp; \
 			mov %0, %%ebp; \
 			"::"r"(current_task->kernel_stack+(KERN_STACK_SIZE-STACK_ELEMENT_SIZE)));
-		sti();
+		set_int(1);
 		__KT_pager();
 	}
 #endif
@@ -94,9 +94,9 @@ int kernel_idle_task()
 	while(!__KT_clear_args())
 	{
 		schedule();
-		sti();
+		set_int(1);
 	}
-	cli();
+	set_int(0);
 	printk(1, "[kernel]: remapping lower memory with protection flags...\n");
 	unsigned addr = 0;
 	while(addr != TOP_LOWER_KERNEL)
@@ -107,7 +107,7 @@ int kernel_idle_task()
 		vm_setattrib(addr, PAGE_PRESENT | PAGE_WRITE);
 		addr += PAGE_SIZE;
 	}
-	sti();
+	set_int(1);
 	/* Now enter the main idle loop, waiting to do periodic cleanup */
 	printk(0, "[idle]: entering background loop\n");
 	for(;;) {
@@ -119,7 +119,6 @@ int kernel_idle_task()
 			 * back here. We also ignore signals */
 			__disengage_idle();
 		}
-		set_int(0);
 		__KT_try_handle_stage2_interrupts();
 		set_int(1);
 	}

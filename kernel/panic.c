@@ -36,7 +36,7 @@ void print_trace(unsigned int MaxFrames)
 
 void panic(int flags, char *fmt, ...)
 {
-	cli();
+	set_int(0);
 #if CONFIG_SMP
 	/* tell the other processors to halt */
 	send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_PANIC);
@@ -72,7 +72,6 @@ void panic(int flags, char *fmt, ...)
 		kprintf("\n[panic]: Done\n");
 	} else
 		kprintf("[panic]: not syncing\n");
-	cli();
 	for(;;)
 	{
 		asm("cli; hlt;");

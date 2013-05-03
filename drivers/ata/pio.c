@@ -37,7 +37,7 @@ int ata_pio_rw(struct ata_controller *cont, struct ata_device *dev,
 	if(!lba48)
 		outb(cont->port_cmd_base+REG_DEVICE, 0xE0 | (dev->id << 4) 
 			| ((addr >> 24) & 0x0F));
-	cli();
+	set_int(0);
 	
 	outb(cont->port_cmd_base+REG_COMMAND, cmd);
 	int x = 10000;

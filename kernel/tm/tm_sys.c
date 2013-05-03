@@ -71,7 +71,8 @@ int sys_nice(int which, int who, int val, int flags)
 	task_t *t = (task_t *)kernel_task;
 	int c=0;
 	if(which == PRIO_USER) {
-		set_int(0);
+#warning "this is ugly...fix this"
+		int old = set_int(0);
 		mutex_acquire(&primary_queue->lock);
 		struct llistnode *cur;
 		task_t *tmp;
@@ -85,7 +86,7 @@ int sys_nice(int which, int who, int val, int flags)
 			}
 		}
 		mutex_release(&primary_queue->lock);
-		set_int(1);
+		set_int(old);
 	}
 	return c ? 0 : -ESRCH;
 }

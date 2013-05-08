@@ -127,17 +127,17 @@ void kmain(struct multiboot *mboot_header, u32int initial_stack)
 	
 	/* Now get the management stuff going */
 	printk(1, "[kernel]: Starting system management\n");
-	init_memory(mtboot);
-	console_init_stage2();
-	parse_kernel_cmd((char *)mboot_header->cmdline);
-	init_multitasking();
-	init_cache();
-	init_dm();
-	init_vfs();
+	init_memory(mtboot);printk(5, "1\n");
+	console_init_stage2();printk(5, "2\n");
+	parse_kernel_cmd((char *)mboot_header->cmdline);printk(5, "3\n");
+	init_multitasking();printk(5, "4\n");
+	init_cache();printk(5, "5\n");
+	init_dm();printk(5, "6\n");
+	init_vfs();printk(5, "7\n");
 	/* Load the rest... */
 	process_initrd();
 	init_kern_task();
-	
+
 	get_timed(&kernel_start_time);
 	printk(KERN_MILE, "[kernel]: Kernel is setup (%2.2d:%2.2d:%2.2d, %s, kv=%d, ts=%d bytes: ok)\n", 
 	       kernel_start_time.tm_hour, kernel_start_time.tm_min, 

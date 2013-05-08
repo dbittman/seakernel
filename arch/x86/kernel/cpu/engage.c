@@ -137,11 +137,9 @@ int boot_cpu(unsigned id, unsigned apic_ver)
 	/* set BIOS reset vector */
 	CMOS_WRITE_BYTE(CMOS_RESET_CODE, CMOS_RESET_JUMP);
 	*((volatile unsigned *) bios_reset_vector) = ((bootaddr & 0xFF000) << 12);
-
 	/* clear the APIC error register */
 	IMPS_LAPIC_WRITE(LAPIC_ESR, 0);
 	accept_status = IMPS_LAPIC_READ(LAPIC_ESR);
-	printk(0, "[smp]: booting cpu %d\n", id);
 	/* assert INIT IPI */
 	send_ipi(LAPIC_ICR_SHORT_DEST, apicid, LAPIC_ICR_TM_LEVEL | LAPIC_ICR_LEVELASSERT | LAPIC_ICR_DM_INIT);
 	delay_sleep(10);
@@ -156,8 +154,9 @@ int boot_cpu(unsigned id, unsigned apic_ver)
 		}
 	}
 	to = 0;
-	while ((get_boot_flag(bootaddr) != 0xFFFFFFFF) && to++ < 100)
+	while ((get_boot_flag(bootaddr) != 0xFFFFFFFF) && to++ < 100) {
 		delay_sleep(10);
+	}
 	/* cpu didn't boot up...:( */
 	if (to >= 100)
 		success = 0;

@@ -26,8 +26,9 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 #if CONFIG_SMP
 		&& !(kernel_state_flags & KSF_SMP_ENABLE)
 #endif
-		&& (m->flags & MT_NOSCHED) && (((cpu_t *)current_task->cpu)->flags&CPU_INTER))
-		panic(0, "mutex will deadlock: %s:%d\n", file, line);
+		&& (m->flags & MT_NOSCHED) && !(((cpu_t *)current_task->cpu)->flags&CPU_INTER)
+		&& (int)current_task->pid != m->pid && m->pid != -1)
+			panic(0, "mutex will deadlock: %s:%d\n", file, line);
 #if DEBUG
 	int t = 1000000;
 #endif

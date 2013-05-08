@@ -107,7 +107,7 @@ int set_int(unsigned new)
 	if(!new) {
 		if(cpu) cpu->flags &= ~CPU_INTER;
 		asm("cli");
-	} else if(cpu->flags&CPU_RUNNING) {
+	} else if(!cpu || cpu->flags&CPU_RUNNING) {
 		if(cpu) cpu->flags |= CPU_INTER;
 		asm("sti");
 	}

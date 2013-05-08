@@ -8,7 +8,7 @@
 #include <atomic.h>
 
 extern char *exception_messages[];
-isr_t interrupt_handlers[256][256][2];
+isr_t interrupt_handlers[MAX_INTERRUPTS][MAX_HANDLERS][2];
 unsigned int stage2_count[256];
 volatile long int_count[256];
 mutex_t isr_lock, s2_lock;
@@ -34,7 +34,7 @@ int register_interrupt_handler(u8int num, isr_t stage1_handler, isr_t stage2_han
 {
 	mutex_acquire(&isr_lock);
 	int i;
-	for(i=0;i<256;i++)
+	for(i=0;i<MAX_HANDLERS;i++)
 	{
 		if(!interrupt_handlers[num][i][0] && !interrupt_handlers[num][i][1])
 		{
@@ -44,7 +44,7 @@ int register_interrupt_handler(u8int num, isr_t stage1_handler, isr_t stage2_han
 		}
 	}
 	mutex_release(&isr_lock);
-	if(i == 256) panic(0, "ran out of interrupt handlers");
+	if(i == MAX_HANDLERS) panic(0, "ran out of interrupt handlers");
 	return i;
 }
 
@@ -183,12 +183,12 @@ void entry_syscall_handler(volatile registers_t regs)
 		/* handle stage2's here...*/
 		if(maybe_handle_stage_2) {
 			mutex_acquire(&s2_lock);
-			for(int i=0;i<256;i++)
+			for(int i=0;i<MAX_INTERRUPTS;i++)
 			{
 				if(stage2_count[i])
 				{
 					sub_atomic(&stage2_count[i], 1);
-					for(int j=0;j<256;j++) {
+					for(int j=0;j<MAX_HANDLERS;j++) {
 						if(interrupt_handlers[i][j][1]) {
 							(interrupt_handlers[i][j][1])(regs);
 						}
@@ -222,7 +222,7 @@ void isr_handler(volatile registers_t regs)
 	/* run the stage1 handlers, and see if we need any stage2s */
 	char called=0;
 	char need_second_stage = 0;
-	for(int i=0;i<256;i++)
+	for(int i=0;i<MAX_HANDLERS;i++)
 	{
 		if(interrupt_handlers[regs.int_no][i][0] || interrupt_handlers[regs.int_no][i][1])
 		{
@@ -269,7 +269,7 @@ void irq_handler(volatile registers_t regs)
 	/* now, run through the stage1 handlers, and see if we need any
 	 * stage2 handlers to run later */
 	char need_second_stage = 0;
-	for(int i=0;i<256;i++)
+	for(int i=0;i<MAX_HANDLERS;i++)
 	{
 		if(interrupt_handlers[regs.int_no][i][0])
 			(interrupt_handlers[regs.int_no][i][0])(regs);
@@ -287,12 +287,12 @@ void irq_handler(volatile registers_t regs)
 		/* handle the stage2 handlers. NOTE: this may change to only 
 		 * handling one interrupt, one function. For now, this works. */
 		mutex_acquire(&s2_lock);
-		for(int i=0;i<256;i++)
+		for(int i=0;i<MAX_INTERRUPTS;i++)
 		{
 			if(stage2_count[i])
 			{
 				sub_atomic(&stage2_count[i], 1);
-				for(int j=0;j<256;j++) {
+				for(int j=0;j<MAX_HANDLERS;j++) {
 					if(interrupt_handlers[i][j][1]) {
 						(interrupt_handlers[i][j][1])(regs);
 					}
@@ -324,12 +324,12 @@ void __KT_try_handle_stage2_interrupts()
 		/* handle the stage2 handlers. NOTE: this may change to only 
 		 * handling one interrupt, one function. For now, this works. */
 		mutex_acquire(&s2_lock);
-		for(int i=0;i<256;i++)
+		for(int i=0;i<MAX_INTERRUPTS;i++)
 		{
 			if(stage2_count[i])
 			{
 				sub_atomic(&stage2_count[i], 1);
-				for(int j=0;j<256;j++) {
+				for(int j=0;j<MAX_HANDLERS;j++) {
 					if(interrupt_handlers[i][j][1]) {
 						(interrupt_handlers[i][j][1])(*current_task->regs);
 					}
@@ -343,10 +343,10 @@ void __KT_try_handle_stage2_interrupts()
 
 void int_sys_init()
 {
-	for(int i=0;i<256;i++)
+	for(int i=0;i<MAX_INTERRUPTS;i++)
 	{
 		stage2_count[i] = 0;
-		for(int j=0;j<256;j++)
+		for(int j=0;j<MAX_HANDLERS;j++)
 		{
 			interrupt_handlers[i][j][0] = interrupt_handlers[i][j][1] = 0;
 		}
@@ -383,7 +383,7 @@ int proc_read_int(char *buf, int off, int len)
 {
 	int i, total_len=0;
 	total_len += proc_append_buffer(buf, "ISR \t\t|            COUNT\n", total_len, -1, off, len);
-	for(i=0;i<256;i++)
+	for(i=0;i<MAX_INTERRUPTS;i++)
 	{
 		if(int_count[i])
 		{

@@ -1,0 +1,51 @@
+								SeaKernel
+	A simple unix-like kernel designed for simplicity and speed, with
+a nod towards research concepts. In it's current iteration, it is a
+monolithic kernel with loadable module support.
+
+Features Overview
+-----------------
+Some primary features include:
+ * Kernel-level threading support (incomplete)
+ * SMP support (incomplete)
+ * Multiprocess scheduling (preemptive)
+ * Unix-like syscalls and a standard C library support
+ * Loadable and unloadable modules
+ * ATA hard drives
+ * ext4 file systems
+ * access to devices via /dev filesystem
+ * ELF binaries
+ * user-mode protections
+ * ix86 processors
+ * unix style IPC
+
+History
+-------
+SeaKernel was started in 2008 as a hobby, and went through several
+different iterations and re-writes until its current iteration, which
+was started in late 2011. Since then, it has seen an increase in 
+complexity and features.
+
+Usage Instructions
+------------------
+You need to have a cross compiler installed (typically i586-pc-seaos-gcc)
+to build the kernel. This is built automatically by the SeaOS userspace
+system, available on github (dbittman/sea). The kernel will try to run
+a script in a ramdisk (sh /preinit.sh). The ramdisk should provide a
+minimum of a shell and the init script.
+
+Build Instructions
+------------------
+Building is handled via gmake (make). The available targets are:
+ - deps: generate Dependency information for the build system
+ - os: build the kernel (requires deps to have been built)
+ - config: run the configuration system (interactive)
+ - defconfig: generate the default configuration
+ - clean: clean compiled files
+ - distclean: clean everything
+ - doc: generate documentation into human-readable format(s)
+ - all: deps and os
+ - install: install the kernel on a SeaOS system
+
+Generally, a good order for this would be: make config all
+

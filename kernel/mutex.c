@@ -29,7 +29,7 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 		&& (m->flags & MT_NOSCHED) && (((cpu_t *)current_task->cpu)->flags&CPU_INTER))
 		panic(0, "mutex will deadlock: %s:%d\n", file, line);
 #if DEBUG
-	int t = 1000000;
+	int t = 100000000;
 #endif
 	if(current_task && (m->pid == (int)current_task->pid) && (current_task->flags & TF_IN_INT)) {
 		/* we don't need to be atomic, since we already own the lock */

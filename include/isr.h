@@ -37,6 +37,9 @@
 
 #define EFLAGS_INT (1 << 9)
 
+#define MAX_HANDLERS 256
+#define MAX_INTERRUPTS 256
+
 typedef struct registers
 {
   volatile   u32int ds;

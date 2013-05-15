@@ -18,7 +18,7 @@ int main(int argc, char **argv)
 	int nheaders = (argc-1)/2;
 	struct initrd_header headers[nheaders];
 	unsigned int off = sizeof(struct initrd_header) * nheaders + sizeof(int);
-
+	printf("num headers: %d\n", nheaders);
 	int i;
 	for(i = 0; i < nheaders; i++)
 	{

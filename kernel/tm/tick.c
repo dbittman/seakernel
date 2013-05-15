@@ -98,7 +98,10 @@ void delay(int t)
 void delay_sleep(int t)
 {
 	long end = ticks+t+1;
-	set_int(1);
-	while(ticks < end)
+	int old = set_int(1);
+	while(ticks < end) {
+		asm("pause");
 		set_int(1);
+	}
+	set_int(old);
 }

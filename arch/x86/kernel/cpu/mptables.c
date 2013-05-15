@@ -21,6 +21,7 @@ static int imps_get_checksum(unsigned start, int length)
 
 static void imps_add_processor(struct imps_processor *proc)
 {
+	printk(0, "add proc\n");
 	num_cpus++;
 	int apicid = proc->apic_id;
 	cpu_t new_cpu;

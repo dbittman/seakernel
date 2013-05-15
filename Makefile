@@ -1,9 +1,7 @@
 # seakernel makefile 
 ifneq ($(MAKECMDGOALS),config)
 ifneq ($(MAKECMDGOALS),defconfig)
-
 include sea_defines.inc
-
 endif
 endif
 

@@ -70,7 +70,7 @@ void page_fault(registers_t regs)
 
 		if(pfault_mmf_check(err_code, cr2))
 			return;
-		
+		print_pfe(0, &regs, cr2);
 		mutex_acquire(&pd_cur_data->lock);
 		if(map_in_page(cr2, err_code)) {
 			mutex_release(&pd_cur_data->lock);
@@ -80,6 +80,7 @@ void page_fault(registers_t regs)
 		
 		printk(0, "[pf]: Invalid Memory Access in task %d: eip=%x addr=%x flags=%x\n", 
 			current_task->pid, regs.eip, cr2, err_code);
+		printk(0, "[pf]: task heap: %x -> %x\n", current_task->heap_start, current_task->heap_end);
 		kprintf("[pf]: Segmentation Fault\n");
 		kill_task(current_task->pid);
 		return;

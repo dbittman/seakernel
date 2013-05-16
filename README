@@ -1,4 +1,4 @@
-								SeaKernel
+				SeaKernel
 	A simple unix-like kernel designed for simplicity and speed, with
 a nod towards research concepts. In it's current iteration, it is a
 monolithic kernel with loadable module support.
@@ -48,4 +48,3 @@ Building is handled via gmake (make). The available targets are:
  - install: install the kernel on a SeaOS system
 
 Generally, a good order for this would be: make config all
-

@@ -14,13 +14,13 @@
 void __rwlock_acquire(rwlock_t *lock, unsigned flags, char *file, int line)
 {
 #ifdef RWL_DEBUG
-	printk(0, "TRACE: %d: acquire rwl %x (%d) (%d): %s:%d\n", current_task->pid, lock, lock->locks, flags, file, line);
+	  printk(0, "TRACE: %d: acquire rwl %x (%d) (%d): %s:%d\n", current_task->pid, lock, lock->locks, flags, file, line);
 #endif
 	assert(lock->magic == RWLOCK_MAGIC);
 	while(1) 
 	{
 		/* if we're trying to get a writer lock, we need to wait until the
-		 * lock is completely cleared */
+		* lock is completely cleared */
 #if DEBUG
 		int timeout = 10000;
 		while((flags & RWL_WRITER) && lock->locks && --timeout) schedule();

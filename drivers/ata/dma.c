@@ -83,7 +83,6 @@ int ata_start_command(struct ata_controller *cont, struct ata_device *dev,
 int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw, 
 	u64 blk, unsigned char *buf, unsigned count)
 {
-	//pci_write_dword(ata_pci->bus, ata_pci->dev, ata_pci->func, 4, ata_pci->pcs->command);
 	unsigned size=512;
 	mutex_acquire(cont->wait);
 	
@@ -181,7 +180,7 @@ int ata_dma_rw(struct ata_controller *cont, struct ata_device *dev, int rw,
 	if(count >= 128) {
 		int i=0;
 		int ret=0;
-		for(i=0;i<count / 128;i++)
+		for(i=0;i<(count-1) / 128;i++)
 		{
 			ret += ata_dma_rw_do(cont, dev, rw, blk + i*128, buf + i*128*512, 128);
 		}

@@ -87,9 +87,9 @@ const char *special_names(int i)
 	return "\t";
 }
 
-void faulted(int fuckoff)
+void faulted(int fuckoff, int userspace)
 {
-	if(current_task == kernel_task || !current_task || current_task->system)
+	if(current_task == kernel_task || !current_task || current_task->system || !userspace)
 	{
 		kernel_fault(fuckoff);
 	} else
@@ -99,18 +99,20 @@ void faulted(int fuckoff)
 		switch(fuckoff)
 		{
 			case 0: case 5: case 6: case 13:
-				send_signal(current_task->pid, SIGILL);
+				current_task->sigd = SIGILL;
 				break;
 			case 1: case 3: case 4:
-				send_signal(current_task->pid, SIGTRAP);
+				current_task->sigd = SIGTRAP;
 				break;
 			case 8: case 18:
-				send_signal(current_task->pid, SIGABRT);
+				current_task->sigd = SIGABRT;
 				break;
 			default:
 				kill_task(current_task->pid);
 				break;
 		}
+		/* the above signals WILL be handled, since at the end of schedule(), it checks
+		 * for signals. Since we are returning to user-space here, the handler will always run */
 		schedule();
 	}
 }
@@ -157,6 +159,9 @@ void ipi_handler(volatile registers_t regs)
 #endif
 }
 
+/* this should NEVER enter from an interrupt handler, 
+ * and only from kernel code in the one case of calling
+ * sys_setup() */
 void entry_syscall_handler(volatile registers_t regs)
 {
 	set_int(0);
@@ -202,6 +207,8 @@ void entry_syscall_handler(volatile registers_t regs)
 	current_task->sysregs=0;
 	current_task->regs=0;
 	set_cpu_interrupt_flag(1);
+	/* we're never returning to an interrupt, so we can
+	 * safely reset this flag */
 	current_task->flags &= ~TF_IN_INT;
 #if CONFIG_SMP
 	lapic_eoi();
@@ -240,9 +247,10 @@ void isr_handler(volatile registers_t regs)
 	/* clean up... */
 	set_int(0);
 	if(!called)
-		faulted(regs.int_no);
+		faulted(regs.int_no, !already_in_interrupt);
 	set_cpu_interrupt_flag(1);
-	current_task->flags &= ~TF_IN_INT;
+	if(!already_in_interrupt)
+		current_task->flags &= ~TF_IN_INT;
 	/* send out the EOI... */
 #if CONFIG_SMP
 	lapic_eoi();
@@ -306,7 +314,8 @@ void irq_handler(volatile registers_t regs)
 	if(current_task && clear_regs)
 		current_task->regs=0;
 	set_cpu_interrupt_flag(1);
-	current_task->flags &= ~TF_IN_INT;
+	if(!already_in_interrupt)
+		current_task->flags &= ~TF_IN_INT;
 	/* and send out the EOIs */
 	if(interrupt_controller == IOINT_PIC) ack_pic(regs.int_no);
 #if CONFIG_SMP

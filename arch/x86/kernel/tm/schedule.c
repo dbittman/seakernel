@@ -58,7 +58,9 @@ __attribute__((always_inline)) static inline void post_context_switch()
 	 * important syscall while doing something important the results
 	 * could be very bad. Any syscall that waits will need to include
 	 * a method of detecting signals and returning safely. */
-	if(current_task->sigd && !(current_task->flags & TF_INSIG) 
+	if(current_task->sigd 
+		&& (!(current_task->flags & TF_INSIG) 
+			|| signal_will_be_fatal(current_task, current_task->sigd))
 		&& !(current_task->flags & TF_KTASK) && current_task->pid)
 	{
 		current_task->flags |= TF_INSIG;
@@ -132,23 +134,16 @@ void schedule()
 
 void check_alarms()
 {
-	task_t *t = alarm_list_start;
-	while(t) {
-		if(unlikely(!(--t->alrm_count)))
-		{
-			task_t *r = alarm_list_start;
-			while(r && r->alarm_next != t) r = r->alarm_next;
-			if(!r) {
-				assert(t == alarm_list_start);
-				alarm_list_start = t->alarm_next;
-			} else {
-				assert(r->alarm_next == t);
-				r->alarm_next = t->alarm_next;
-				t->alarm_next=0;
-			}
-			t->flags &= ~TF_ALARM;
-			t->sigd = SIGALRM;
-		}
-		t=t->alarm_next;
+	if(!alarm_list_start) return;
+	/* interrupts will be disabled here. Thus, we can aquire 
+	 * a mutex safely */
+	mutex_acquire(alarm_mutex);
+	if(ticks > alarm_list_start->alarm_end)
+	{
+			alarm_list_start->flags &= ~TF_ALARM;
+			alarm_list_start->sigd = SIGALRM;
+			alarm_list_start = alarm_list_start->alarm_next;
+			alarm_list_start->alarm_prev = 0;
 	}
+	mutex_release(alarm_mutex);
 }

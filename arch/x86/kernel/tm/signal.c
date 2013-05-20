@@ -17,7 +17,7 @@ void handle_signal(task_t *t)
 	if(!(sa->sa_flags & SA_NODEFER))
 		t->sig_mask |= (1 << t->sigd);
 	volatile registers_t *iret = t->regs;
-	if(sa->_sa_func._sa_handler && iret)
+	if(sa->_sa_func._sa_handler && iret && t->sigd != SIGKILL)
 	{
 		/* user-space signal handing design:
 		 * 
@@ -156,40 +156,44 @@ void set_signal(int sig, unsigned hand)
 
 int sys_alarm(int a)
 {
-	lock_scheduler();
 	if(a)
 	{
-		current_task->alrm_count = a * current_hz;
+		int old_value = current_task->alarm_end - ticks;
+		current_task->alarm_end = a * current_hz + ticks;
 		if(!(current_task->flags & TF_ALARM)) {
-			task_t *t = alarm_list_start;
+			/* need to clear interrupts here, because
+			 * we access this inside the scheduler... */
+			int old = set_int(0);
+			mutex_acquire(alarm_mutex);
+			task_t *t = alarm_list_start, *p = 0;
+			while(t && t->alarm_end < current_task->alarm_end) p = t, t = t->alarm_next;
 			if(!t) {
 				alarm_list_start = current_task;
-				current_task->alarm_next=0;
+				current_task->alarm_next = current_task->alarm_prev = 0;
+			} else {
+				if(p) p->alarm_next = current_task;
+				current_task->alarm_prev = p;
+				current_task->alarm_next = t;
+				if(t) t->alarm_prev = current_task;
 			}
-			else {
-				task_t *n = t->alarm_next;
-				t->alarm_next = current_task;
-				current_task->alarm_next = n;
-			}
-		}
-		current_task->flags |= TF_ALARM;
+			current_task->flags |= TF_ALARM;
+			mutex_release(alarm_mutex);
+			set_int(old);
+		} else
+			return old_value < 0 ? 0 : old_value;
 	} else {
 		task_t *t = current_task;
 		if((t->flags & TF_ALARM)) {
-			task_t *r = alarm_list_start;
-			while(r && r->alarm_next != t) r = r->alarm_next;
-			if(!r) {
-				assert(t == alarm_list_start);
-				alarm_list_start = t->alarm_next;
-			} else {
-				assert(r->alarm_next == t);
-				r->alarm_next = t->alarm_next;
-				t->alarm_next=0;
-			}
 			current_task->flags &= ~TF_ALARM;
+			int old = set_int(0);
+			mutex_acquire(alarm_mutex);
+			if(current_task->alarm_prev) current_task->alarm_prev->alarm_next = current_task->alarm_next;
+			if(current_task->alarm_next) current_task->alarm_next->alarm_prev = current_task->alarm_prev;
+			current_task->alarm_next = current_task->alarm_prev = 0;
+			mutex_release(alarm_mutex);
+			set_int(old);
 		}
 	}
-	unlock_scheduler();
 	return 0;
 }
 

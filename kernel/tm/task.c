@@ -8,6 +8,7 @@ volatile task_t *kernel_task=0, *alarm_list_start=0;
 //#if !(CONFIG_SMP)
 //volatile task_t *current_task=0;
 //#endif
+mutex_t *alarm_mutex=0;
 extern volatile page_dir_t *kernel_dir;
 volatile unsigned next_pid=0;
 volatile task_t *tokill=0, *end_tokill=0;
@@ -23,6 +24,8 @@ void init_multitasking()
 		panic(PANIC_NOSYNC, "Unable to allocate memory for tasking?");
 	page_directory[PAGE_DIR_IDX(SMP_CUR_TASK / PAGE_SIZE)] = (unsigned)task;
 	mutex_create((mutex_t *)&task->cpu_lock, 0);
+	/* alarm_mutex is aquired inside a kernel tick, so we may not schedule. */
+	alarm_mutex = mutex_create(0, MT_NOSCHED);
 	task->pid = next_pid++;
 	task->pd = (page_dir_t *)kernel_dir;
 	task->stack_end=STACK_LOCATION;

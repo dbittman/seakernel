@@ -12,6 +12,7 @@
 #include <mod.h>
 #include <sys/sysconf.h>
 #include <swap.h>
+#include <cpu.h>
 unsigned int num_syscalls=0;
 //#define SC_DEBUG 1
 int sys_null()
@@ -50,14 +51,14 @@ int sys_syslog(int level, char *buf, int len, int ctl)
 void *syscall_table[129] = {
 	SC sys_setup,
 	
-	SC exit, SC do_fork, SC wait_task, SC sys_readpos, 
-	SC sys_writepos, SC sys_open_posix, SC sys_close, SC sys_fstat,
-	SC sys_stat, SC sys_isatty, SC sys_seek, SC send_signal, 
-	SC sys_sbrk, SC times, SC sys_dup, SC sys_dup2,
+	SC exit,           SC do_fork,        SC wait_task,     SC sys_readpos, 
+	SC sys_writepos,   SC sys_open_posix, SC sys_close,     SC sys_fstat,
+	SC sys_stat,       SC sys_isatty,     SC sys_seek,      SC send_signal, 
+	SC sys_sbrk,       SC times,          SC sys_dup,       SC sys_dup2,
 	
-	SC sys_ioctl, SC sys_null, SC sys_null, SC sys_null, 
-	SC sys_null, SC sys_null, SC sys_null, SC sys_null,
-	SC sys_null, SC execve, 
+	SC sys_ioctl,      SC sys_null,       SC sys_null,      SC sys_null, 
+	SC sys_null,       SC sys_null,       SC sys_null,      SC sys_null,
+	SC sys_null,       SC execve, 
 
 #if CONFIG_MODULES
 	SC sys_load_module, 
@@ -71,16 +72,16 @@ void *syscall_table[129] = {
 	SC sys_null,
 #endif
 
-	SC get_pid, SC /**32*/sys_getppid,
+	SC get_pid,      SC /**32*/sys_getppid,
 	
-	SC sys_link, SC unlink, SC get_ref_count, SC get_pwd, 
-	SC sys_getpath, SC sys_null, SC chroot, SC chdir,
-	SC sys_mount, SC unmount, SC read_dir, SC sys_create, 
-	SC create_console, SC switch_console, SC sys_null, SC sys_null,
+	SC sys_link,       SC unlink,         SC get_ref_count, SC get_pwd, 
+	SC sys_getpath,    SC sys_null,       SC chroot,        SC chdir,
+	SC sys_mount,      SC unmount,        SC read_dir,      SC sys_create, 
+	SC create_console, SC switch_console, SC sys_null,      SC sys_null,
 	
-	SC sys_null, SC sys_mmap, SC sys_munmap, SC sys_sync, 
-	SC rmdir, SC sys_fsync, SC sys_alarm, SC sys_select,
-	SC sys_null, SC sys_null, SC sys_sysconf, SC sys_setsid, 
+	SC sys_null,       SC sys_mmap,       SC sys_munmap,    SC sys_sync, 
+	SC rmdir,          SC sys_fsync,      SC sys_alarm,     SC sys_select,
+	SC sys_null,       SC sys_null,       SC sys_sysconf,   SC sys_setsid, 
 	SC sys_setpgid, 
 
 #if CONFIG_SWAP
@@ -93,15 +94,15 @@ void *syscall_table[129] = {
 	
 	SC /**64*/sys_nice,
 	
-	SC sys_null, SC sys_null, SC sys_null, SC task_stat, 
-	SC sys_null, SC sys_null, SC delay, SC kernel_reset,
-	SC kernel_poweroff, SC get_uid, SC get_gid, SC set_uid, 
-	SC set_gid, SC pm_stat_mem, SC task_pstat, SC sys_mount2,
+	SC sys_null,       SC sys_null,       SC sys_null,      SC task_stat, 
+	SC sys_null,       SC sys_null,       SC delay,         SC kernel_reset,
+	SC kernel_poweroff,SC get_uid,        SC get_gid,       SC set_uid, 
+	SC set_gid,        SC pm_stat_mem,    SC task_pstat,    SC sys_mount2,
 	
-	SC sys_null, SC sys_null, SC sys_pipe, SC set_signal, 
-	SC sys_null, SC sys_null, SC sys_null, SC sys_null,
-	SC get_time, SC get_timer_th, SC sys_isstate, SC sys_wait3, 
-	SC sys_null, SC sys_null, SC sys_getcwdlen, 
+	SC sys_null,       SC sys_null,       SC sys_pipe,      SC set_signal, 
+	SC sys_null,       SC sys_null,       SC sys_null,      SC sys_null,
+	SC get_time,       SC get_timer_th,   SC sys_isstate,   SC sys_wait3, 
+	SC sys_null,       SC sys_null,       SC sys_getcwdlen, 
 
 #if CONFIG_SWAP
 	SC /**96*/sys_swaptask,
@@ -109,15 +110,15 @@ void *syscall_table[129] = {
 	SC /**96*/sys_null,
 #endif
 
-	SC sys_dirstat, SC sys_sigact, SC sys_access, SC sys_chmod, 
-	SC sys_fcntl, SC sys_dirstat_fd, SC sys_getdepth, SC sys_waitpid,
-	SC sys_mknod, SC sys_symlink, SC sys_readlink, SC sys_umask, 
-	SC sys_sigprocmask, SC sys_ftruncate, SC sys_getnodestr, SC sys_chown,
+	SC sys_dirstat,    SC sys_sigact,     SC sys_access,    SC sys_chmod, 
+	SC sys_fcntl,      SC sys_dirstat_fd, SC sys_getdepth,  SC sys_waitpid,
+	SC sys_mknod,      SC sys_symlink,    SC sys_readlink,  SC sys_umask, 
+	SC sys_sigprocmask,SC sys_ftruncate,  SC sys_getnodestr,SC sys_chown,
 	
-	SC sys_utime, SC sys_gethostname, SC sys_gsetpriority, SC sys_uname, 
-	SC sys_gethost, SC sys_getserv, SC sys_setserv, SC sys_syslog,
-	SC sys_posix_fsstat, SC sys_null, SC sys_null, SC sys_null, 
-	SC sys_null, SC sys_null, SC sys_waitagain, SC /**128*/sys_null /* RESERVED*/,
+	SC sys_utime,      SC sys_gethostname,SC sys_gsetpriority,SC sys_uname, 
+	SC sys_gethost,    SC sys_getserv,    SC sys_setserv,     SC sys_syslog,
+	SC sys_posix_fsstat,SC sys_null,      SC sys_null,        SC sys_null, 
+	SC sys_null,       SC sys_null,       SC sys_waitagain,   SC /**128*/sys_null /* RESERVED*/,
 };
 
 void init_syscalls()
@@ -130,6 +131,10 @@ void init_syscalls()
 #define _C_ regs->edx
 #define _B_ regs->ecx
 #define _A_ regs->ebx
+/* here we test to make sure that the task passed in valid pointers
+ * to syscalls that have pointers are arguments, so that we make sure
+ * we only ever modify user-space data when we think we're modifying
+ * user-space data. */
 int check_pointers(volatile registers_t *regs)
 {
 	switch(regs->eax) {
@@ -183,9 +188,10 @@ int syscall_handler(volatile registers_t *regs)
 	if(!check_pointers(regs))
 		return -EINVAL;
 	enter_system(regs->eax);
-	if(got_signal(current_task))
-		schedule();
+	/* most syscalls are re-entrant, so we enable interrrupts and expect
+	 * expect handlers to disable them if needed */
 	set_int(1);
+	/* tracking! */
 	current_task->freed = current_task->allocated=0;
 #ifdef SC_DEBUG
 	//if(current_task->tty == curcons->tty) 
@@ -204,10 +210,12 @@ int syscall_handler(volatile registers_t *regs)
 	exit_system();
 	__engage_idle();
 	/* if we need to reschedule, or we have overused our timeslice
-	 * then we need to reschedule */
+	 * then we need to reschedule. this prevents tasks that do a continuous call
+	 * to write() from starving the resources of other tasks */
 	if(current_task->flags & TF_SCHED 
 		|| (unsigned)(ticks-current_task->slice) > (unsigned)current_task->cur_ts)
 	{
+		/* clear out the flag. Either way in the if statement, we've rescheduled. */
 		current_task->flags &= ~TF_SCHED;
 		schedule();
 	}

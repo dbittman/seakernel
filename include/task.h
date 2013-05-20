@@ -131,12 +131,12 @@ typedef volatile struct task_struct
 	volatile sigset_t sig_mask, global_sig_mask;
 	volatile unsigned sigd, cursig;
 	sigset_t old_mask;
-	unsigned alrm_count;
+	unsigned alarm_end;
 	struct llistnode *listnode, *blocknode, *activenode;
 	struct llist *blocklist;
 	mutex_t cpu_lock;
 	void *cpu;
-	volatile struct task_struct *parent, *waiting, *alarm_next;
+	volatile struct task_struct *parent, *waiting, *alarm_next, *alarm_prev;
 } task_t;
 
 extern volatile task_t *kernel_task, *tokill, *alarm_list_start;
@@ -147,6 +147,8 @@ void set_current_task_dp(task_t *t, int cpu)
 	
 	return;
 }
+
+extern mutex_t *alarm_mutex;
 
 #define raise_flag(f) current_task->flags |= f
 #define lower_flag(f) current_task->flags &= ~f
@@ -242,6 +244,15 @@ void _unlock_scheduler(char *f, int l)
 {
 	if(current_task)
 		current_task->flags &= ~TF_LOCK;
+}
+
+static inline int signal_will_be_fatal(task_t *t, int sig)
+{
+	if(sig == SIGKILL) return 1;
+	if(t->signal_act[t->sigd]._sa_func._sa_handler) return 0;
+	if(sig == SIGUSLEEP || sig == SIGISLEEP || sig == SIGSTOP || sig == SIGCHILD)
+		return 0;
+	return 1;
 }
 
 static inline int got_signal(task_t *t)

@@ -71,9 +71,13 @@ __attribute__((always_inline)) static inline void post_context_switch()
 		 * wake up when signaled */
 		current_task->state = TASK_RUNNING;
 	}
+	assert(!get_cpu_interrupt_flag());
 	if(current_task->flags & TF_SETINT) {
+		/* should never enable interrupts inside an interrupt, except for
+		 * syscalls */
+		assert(!(current_task->flags & TF_IN_INT) || current_task->sysregs);
 		current_task->flags &= ~TF_SETINT;
-		set_int(1);
+		assert(!set_int(1));
 	}
 }
 
@@ -104,6 +108,7 @@ void schedule()
 {
 	if(unlikely(!current_task || !kernel_task))
 		return;
+	assert(!(current_task->flags & TF_SETINT));
 	/* make sure to re-enable interrupts when we come back to this
 	 * task if we entered schedule with them enabled */
 	if(set_int(0))
@@ -140,10 +145,10 @@ void check_alarms()
 	mutex_acquire(alarm_mutex);
 	if(ticks > alarm_list_start->alarm_end)
 	{
-			alarm_list_start->flags &= ~TF_ALARM;
-			alarm_list_start->sigd = SIGALRM;
-			alarm_list_start = alarm_list_start->alarm_next;
-			alarm_list_start->alarm_prev = 0;
+		alarm_list_start->flags &= ~TF_ALARM;
+		alarm_list_start->sigd = SIGALRM;
+		alarm_list_start = alarm_list_start->alarm_next;
+		alarm_list_start->alarm_prev = 0;
 	}
 	mutex_release(alarm_mutex);
 }

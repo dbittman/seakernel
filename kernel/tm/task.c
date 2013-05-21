@@ -4,6 +4,7 @@
 #include <elf.h>
 #include <tqueue.h>
 #include <cpu.h>
+#include <ll.h>
 volatile task_t *kernel_task=0, *alarm_list_start=0;
 //#if !(CONFIG_SMP)
 //volatile task_t *current_task=0;
@@ -169,5 +170,5 @@ void move_task_cpu(task_t *t, cpu_t *cpu)
 	tqueue_insert(cpu->active_queue, (void *)t, t->activenode);
 	t->cpu = cpu;
 	mutex_release(&oldcpu->lock);
-	t->flags &= TF_MOVECPU;
+	t->flags &= ~TF_MOVECPU;
 }

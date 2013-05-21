@@ -54,6 +54,7 @@ void setup_fpu(cpu_t *);
 #define CR4_OSXMMEXCPT  (1 << 10)
 void set_cpu_interrupt_flag(int flag);
 int set_int(unsigned);
+int get_cpu_interrupt_flag();
 #if CONFIG_SMP
 /* The following definitions are taken from http://www.uruk.org/mps/ */
 extern unsigned num_cpus, num_booted_cpus, num_failed_cpus;

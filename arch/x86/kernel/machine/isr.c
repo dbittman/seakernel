@@ -8,11 +8,18 @@
 #include <atomic.h>
 
 extern char *exception_messages[];
+/* 3D array. So, the first "dimension" is all 255 of the possible
+ * x86 processor interrupts. The second is all 255 of the allowed
+ * handlers per interrupt. The third is the two stages of handlers
+ * per interrupt handler. See below */
 isr_t interrupt_handlers[MAX_INTERRUPTS][MAX_HANDLERS][2];
 unsigned int stage2_count[256];
 volatile long int_count[256];
 mutex_t isr_lock, s2_lock;
 char interrupt_controller=0;
+/* if this is set to true, there may be a stage2 handler waiting to
+ * be run. This is not always true though, if for instance another
+ * tasks handles the stage2s first. */
 volatile char maybe_handle_stage_2=0;
 
 /* interrupt handlers come in two types:
@@ -96,6 +103,7 @@ void faulted(int fuckoff, int userspace)
 	{
 		printk(5, "%s occured in task %d (F=%d): He's dead, Jim.\n", 
 				exception_messages[fuckoff], current_task->pid, current_task->flag);
+		/* we die for different reasons on different interrupts */
 		switch(fuckoff)
 		{
 			case 0: case 5: case 6: case 13:
@@ -182,9 +190,12 @@ void entry_syscall_handler(volatile registers_t regs)
 		current_task->flags &= ~TF_JUMPIN;
 	} else {
 		assert(!current_task->sysregs && !current_task->regs);
+		/* otherwise, this is a normal system call. Save the regs for modification
+		 * for signals and exec */
 		current_task->regs = &regs;
 		current_task->sysregs = &regs;
 		syscall_handler(&regs);
+		assert(!get_cpu_interrupt_flag());
 		/* handle stage2's here...*/
 		if(maybe_handle_stage_2) {
 			mutex_acquire(&s2_lock);
@@ -201,9 +212,10 @@ void entry_syscall_handler(volatile registers_t regs)
 				}
 			}
 			mutex_release(&s2_lock);
-		} 
+		}
+		assert(!get_cpu_interrupt_flag());
 	}
-	set_int(0);
+	assert(!set_int(0));
 	current_task->sysregs=0;
 	current_task->regs=0;
 	set_cpu_interrupt_flag(1);
@@ -241,11 +253,13 @@ void isr_handler(volatile registers_t regs)
 		}
 	}
 	if(need_second_stage) {
+		/* we need to run a second stage handler. Indicate that here... */
 		add_atomic(&stage2_count[regs.int_no], 1);
 		maybe_handle_stage_2 = 1;
 	}
-	/* clean up... */
-	set_int(0);
+	/* clean up... Also, we don't handle stage 2 in ISR handling, since this
+	 can occur from within a stage2 handler */
+	assert(!set_int(0));
 	if(!called)
 		faulted(regs.int_no, !already_in_interrupt);
 	set_cpu_interrupt_flag(1);
@@ -287,13 +301,13 @@ void irq_handler(volatile registers_t regs)
 		add_atomic(&stage2_count[regs.int_no], 1);
 		maybe_handle_stage_2 = 1;
 	}
-	
+	assert(!get_cpu_interrupt_flag());
 	/* ok, now are we allowed to handle stage2's right here? */
 	if(!already_in_interrupt && maybe_handle_stage_2)
 	{
 		maybe_handle_stage_2 = 0;
 		/* handle the stage2 handlers. NOTE: this may change to only 
-		 * handling one interrupt, one function. For now, this works. */
+		 * handling one interrupt, and/or one function. For now, this works. */
 		mutex_acquire(&s2_lock);
 		for(int i=0;i<MAX_INTERRUPTS;i++)
 		{
@@ -308,9 +322,10 @@ void irq_handler(volatile registers_t regs)
 			}
 		}
 		mutex_release(&s2_lock);
+		assert(!get_cpu_interrupt_flag());
 	}
 	/* ok, now lets clean up */
-	set_int(0);
+	assert(!set_int(0));
 	if(current_task && clear_regs)
 		current_task->regs=0;
 	set_cpu_interrupt_flag(1);

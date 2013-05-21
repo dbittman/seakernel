@@ -102,14 +102,16 @@ int probe_smp();
 
 int set_int(unsigned new)
 {
+	/* need to make sure we don't get interrupted... */
+	asm("cli");
 	cpu_t *cpu = current_task ? current_task->cpu : 0;
 	unsigned old = cpu ? cpu->flags&CPU_INTER : 0;
 	if(!new) {
-		if(cpu) cpu->flags &= ~CPU_INTER;
 		asm("cli");
+		if(cpu) cpu->flags &= ~CPU_INTER;
 	} else if(!cpu || cpu->flags&CPU_RUNNING) {
-		if(cpu) cpu->flags |= CPU_INTER;
 		asm("sti");
+		if(cpu) cpu->flags |= CPU_INTER;
 	}
 	return old;
 }
@@ -121,7 +123,13 @@ void set_cpu_interrupt_flag(int flag)
 	if(flag)
 		cpu->flags |= CPU_INTER;
 	else
-		cpu->flags &= CPU_INTER;
+		cpu->flags &= ~CPU_INTER;
+}
+
+int get_cpu_interrupt_flag()
+{
+	cpu_t *cpu = current_task ? current_task->cpu : 0;
+	return (cpu ? (cpu->flags&CPU_INTER) : 0);
 }
 
 void init_main_cpu()

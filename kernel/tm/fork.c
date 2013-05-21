@@ -116,8 +116,6 @@ int do_fork(unsigned flags)
 		__counter=0;
 	printk(0, "adding task %d to %d\n", new->pid, cpu->apicid);
 #endif
-	tqueue_insert(cpu->active_queue, (void *)new, new->activenode);
-	new->cpu = cpu;
 	/* Copy the stack */
 	set_int(0);
 	engage_new_stack(new, parent);
@@ -127,9 +125,13 @@ int do_fork(unsigned flags)
 	eip = read_eip();
 	if((task_t *)current_task == parent)
 	{
-		/* These last two fields allow full execution of the task */
+		/* These last things allow full execution of the task */
 		new->eip=eip;
 		new->state = TASK_RUNNING;
+		mutex_acquire(&cpu->lock);
+		new->cpu = cpu;
+		tqueue_insert(cpu->active_queue, (void *)new, new->activenode);
+		mutex_release(&cpu->lock);
 		/* And unlock everything and reschedule */
 		__engage_idle();
 		return new->pid;

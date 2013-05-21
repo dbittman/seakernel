@@ -27,6 +27,7 @@ __attribute__((always_inline)) inline task_t *get_next_task(task_t *prev)
 {
 	assert(prev && kernel_task);
 	cpu_t *cpu = prev->cpu;
+	assert(cpu);
 	task_t *t = tqueue_next(cpu->active_queue);
 	while(t)
 	{
@@ -115,10 +116,11 @@ void schedule()
 		current_task->flags |= TF_SETINT;
 	task_t *old = current_task;
 	cpu_t *cpu = (cpu_t *)old->cpu;
-	assert(cpu->cur == old);
+	assert(cpu && cpu->cur == old);
 	mutex_acquire(&cpu->lock);
 	store_context();
 	volatile task_t *new = (volatile task_t *)get_next_task(old);
+	assert(cpu == new->cpu);
 	restore_context(new);
 	/* we need to call this after restore_context because in restore_context
 	 * we access new->cpu */

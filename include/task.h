@@ -77,7 +77,7 @@ typedef struct exit_status {
 	struct exit_status *next, *prev;
 } ex_stat;
 
-typedef volatile struct task_struct
+struct task_struct
 {
 	volatile unsigned magic;
 	/* used for storing context */
@@ -137,7 +137,9 @@ typedef volatile struct task_struct
 	mutex_t cpu_lock;
 	void *cpu;
 	volatile struct task_struct *parent, *waiting, *alarm_next, *alarm_prev;
-} task_t;
+};
+
+typedef volatile struct task_struct task_t;
 
 extern volatile task_t *kernel_task, *tokill, *alarm_list_start;
 

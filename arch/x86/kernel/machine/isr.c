@@ -137,7 +137,7 @@ void ack_pic(int n)
 
 void ipi_handler(volatile registers_t regs)
 {
-	set_int(0);
+	int previous_interrupt_flag = set_int(0);
 	add_atomic(&int_count[regs.int_no], 1);
 #if CONFIG_SMP
 	/* delegate to the proper handler, in ipi.c */
@@ -161,7 +161,7 @@ void ipi_handler(volatile registers_t regs)
 	}
 #endif
 	set_int(0);
-	set_cpu_interrupt_flag(1); /* assembly code will issue sti */
+	set_cpu_interrupt_flag(previous_interrupt_flag); /* assembly code will issue sti */
 #if CONFIG_SMP
 	lapic_eoi();
 #endif
@@ -218,6 +218,8 @@ void entry_syscall_handler(volatile registers_t regs)
 	assert(!set_int(0));
 	current_task->sysregs=0;
 	current_task->regs=0;
+	/* we don't need worry about this being wrong, since we'll always be returning to
+	 * user-space code */
 	set_cpu_interrupt_flag(1);
 	/* we're never returning to an interrupt, so we can
 	 * safely reset this flag */
@@ -230,7 +232,7 @@ void entry_syscall_handler(volatile registers_t regs)
 /* This gets called from our ASM interrupt handler stub. */
 void isr_handler(volatile registers_t regs)
 {
-	set_int(0);
+	int previous_interrupt_flag = set_int(0);
 	add_atomic(&int_count[regs.int_no], 1);
 	/* check if we're interrupting kernel code, and set the interrupt
 	 * handling flag */
@@ -262,7 +264,7 @@ void isr_handler(volatile registers_t regs)
 	assert(!set_int(0));
 	if(!called)
 		faulted(regs.int_no, !already_in_interrupt);
-	set_cpu_interrupt_flag(1);
+	set_cpu_interrupt_flag(previous_interrupt_flag);
 	if(!already_in_interrupt)
 		current_task->flags &= ~TF_IN_INT;
 	/* send out the EOI... */
@@ -273,11 +275,20 @@ void isr_handler(volatile registers_t regs)
 
 void irq_handler(volatile registers_t regs)
 {
-	set_int(0);
+	/* ok, so the assembly entry function clears interrupts in the cpu, 
+	 * but the kernel doesn't know that yet. So we clear the interrupt
+	 * flag in the cpu structure as part of the normal set_int call, but
+	 * it returns the interrupts-enabled flag from BEFORE the interrupt
+	 * was recieved! Fuckin' brilliant! Back up that flag, so we can
+	 * properly restore the flag later. */
+	int previous_interrupt_flag = set_int(0);
 	add_atomic(&int_count[regs.int_no], 1);
 	/* save the registers so we can screw with iret later if we need to */
 	char clear_regs=0;
 	if(current_task && !current_task->regs) {
+		/* of course, if we are already inside an interrupt, we shouldn't
+		 * overwrite those. Also, we remember if we've saved this set of registers
+		 * for later use */
 		clear_regs=1;
 		current_task->regs = &regs;
 	}
@@ -295,8 +306,12 @@ void irq_handler(volatile registers_t regs)
 	{
 		if(interrupt_handlers[regs.int_no][i][0])
 			(interrupt_handlers[regs.int_no][i][0])(regs);
-		if(interrupt_handlers[regs.int_no][i][1]) need_second_stage = 1;
+		if(interrupt_handlers[regs.int_no][i][1]) 
+			need_second_stage = 1;
 	}
+	/* if we need a second stage handler, increment the count for this 
+	 * interrupt number, and indicate that handlers should check for
+	 * second stage handlers. */
 	if(need_second_stage) {
 		add_atomic(&stage2_count[regs.int_no], 1);
 		maybe_handle_stage_2 = 1;
@@ -313,6 +328,8 @@ void irq_handler(volatile registers_t regs)
 		{
 			if(stage2_count[i])
 			{
+				/* decrease the count for this interrupt number, and loop through
+				 * all the second stage handlers and run them */
 				sub_atomic(&stage2_count[i], 1);
 				for(int j=0;j<MAX_HANDLERS;j++) {
 					if(interrupt_handlers[i][j][1]) {
@@ -326,9 +343,13 @@ void irq_handler(volatile registers_t regs)
 	}
 	/* ok, now lets clean up */
 	assert(!set_int(0));
+	/* clear the registers if we saved the ones from this interrupt */
 	if(current_task && clear_regs)
 		current_task->regs=0;
-	set_cpu_interrupt_flag(1);
+	/* restore the flag in the cpu struct. The assembly routine will
+	 * call iret, which will also restore the interrupt state to what
+	 * it was before, including the interrupts-enabled bit in eflags */
+	set_cpu_interrupt_flag(previous_interrupt_flag);
 	if(!already_in_interrupt)
 		current_task->flags &= ~TF_IN_INT;
 	/* and send out the EOIs */

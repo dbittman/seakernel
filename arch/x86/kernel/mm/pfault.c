@@ -50,10 +50,10 @@ int map_in_page(unsigned int cr2, unsigned err_code)
 	return 0;
 }
 
-void page_fault(registers_t regs)
+void page_fault(registers_t *regs)
 {
 	current_task->regs=0;
-	uint32_t cr2, err_code = regs.err_code;
+	uint32_t cr2, err_code = regs->err_code;
 	__asm__ volatile ("mov %%cr2, %0" : "=r" (cr2));
 	if(USER_TASK) {
 		/* if we were in a user-space task, we can actually just
@@ -70,7 +70,7 @@ void page_fault(registers_t regs)
 
 		if(pfault_mmf_check(err_code, cr2))
 			return;
-		print_pfe(0, &regs, cr2);
+		print_pfe(0, regs, cr2);
 		mutex_acquire(&pd_cur_data->lock);
 		if(map_in_page(cr2, err_code)) {
 			mutex_release(&pd_cur_data->lock);
@@ -79,13 +79,13 @@ void page_fault(registers_t regs)
 		mutex_release(&pd_cur_data->lock);
 		
 		printk(0, "[pf]: Invalid Memory Access in task %d: eip=%x addr=%x flags=%x\n", 
-			current_task->pid, regs.eip, cr2, err_code);
+			   current_task->pid, regs->eip, cr2, err_code);
 		printk(0, "[pf]: task heap: %x -> %x\n", current_task->heap_start, current_task->heap_end);
 		kprintf("[pf]: Segmentation Fault\n");
 		kill_task(current_task->pid);
 		return;
 	}
-	print_pfe(5, &regs, cr2);
+	print_pfe(5, regs, cr2);
 	if(!current_task) {
 		if(kernel_task)
 		{

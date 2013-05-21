@@ -67,9 +67,9 @@ struct ata_device *get_ata_device(int min, int *part)
 	return &primary->devices[dev];
 }
 
-void ata_irq_handler(registers_t regs)
+void ata_irq_handler(registers_t *regs)
 {
-	struct ata_controller *cont = (regs.int_no == (32+ATA_PRIMARY_IRQ) ? primary : secondary);
+	struct ata_controller *cont = (regs->int_no == (32+ATA_PRIMARY_IRQ) ? primary : secondary);
 	char st = inb(cont->port_bmr_base + BMR_STATUS);
 	if(st & 0x4) {
 		add_atomic(&cont->irqwait, 1);

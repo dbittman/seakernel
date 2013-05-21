@@ -8,7 +8,7 @@
 int current_hz=1000;
 volatile long ticks=0;
 void do_tick();
-void timer_handler(registers_t r);
+void timer_handler(registers_t *);
 void install_timer(int hz)
 {
 	current_hz=hz;

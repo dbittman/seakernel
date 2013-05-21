@@ -48,7 +48,7 @@ typedef struct registers
   volatile   u32int eip, cs, eflags, useresp, ss;
 } volatile registers_t;
 
-typedef void (*isr_t)(registers_t);
+typedef void (*isr_t)(registers_t *);
 
 int register_interrupt_handler(u8int n, isr_t stage1_handler, isr_t stage2_handler);
 void unregister_interrupt_handler(u8int n, int id);

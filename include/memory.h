@@ -72,7 +72,7 @@ extern int id_tables;
 #define vm_getattrib(a, b) vm_do_getattrib(a, b, 0)
 #define vm_getmap(a, b) vm_do_getmap(a, b, 0)
 
-void page_fault(registers_t r);
+void page_fault(registers_t *r);
 int vm_map_all(addr_t virt, addr_t phys, unsigned attr);
 void vm_init(unsigned id_map_to);
 void vm_switch(page_dir_t *n/*VIRTUAL ADDRESS*/);

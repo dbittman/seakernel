@@ -209,7 +209,7 @@ void entry_syscall_handler(volatile registers_t regs)
 					sub_atomic(&stage2_count[i], 1);
 					for(int j=0;j<MAX_HANDLERS;j++) {
 						if(interrupt_handlers[i][j][1]) {
-							(interrupt_handlers[i][j][1])(regs);
+							(interrupt_handlers[i][j][1])(&regs);
 						}
 					}
 				}
@@ -256,7 +256,7 @@ void isr_handler(volatile registers_t regs)
 			/* we're able to handle the error! */
 			called = 1;
 			if(interrupt_handlers[regs.int_no][i][0])
-				(interrupt_handlers[regs.int_no][i][0])(regs);
+				(interrupt_handlers[regs.int_no][i][0])(&regs);
 			if(interrupt_handlers[regs.int_no][i][1])
 				need_second_stage = 1;
 		}
@@ -314,7 +314,7 @@ void irq_handler(volatile registers_t regs)
 	for(int i=0;i<MAX_HANDLERS;i++)
 	{
 		if(interrupt_handlers[regs.int_no][i][0])
-			(interrupt_handlers[regs.int_no][i][0])(regs);
+			(interrupt_handlers[regs.int_no][i][0])(&regs);
 		if(interrupt_handlers[regs.int_no][i][1]) 
 			need_second_stage = 1;
 	}
@@ -342,7 +342,7 @@ void irq_handler(volatile registers_t regs)
 				sub_atomic(&stage2_count[i], 1);
 				for(int j=0;j<MAX_HANDLERS;j++) {
 					if(interrupt_handlers[i][j][1]) {
-						(interrupt_handlers[i][j][1])(regs);
+						(interrupt_handlers[i][j][1])(&regs);
 					}
 				}
 			}
@@ -386,7 +386,7 @@ void __KT_try_handle_stage2_interrupts()
 				sub_atomic(&stage2_count[i], 1);
 				for(int j=0;j<MAX_HANDLERS;j++) {
 					if(interrupt_handlers[i][j][1]) {
-						(interrupt_handlers[i][j][1])(*current_task->regs);
+						(interrupt_handlers[i][j][1])(current_task->regs);
 					}
 				}
 			}

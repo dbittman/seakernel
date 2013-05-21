@@ -143,7 +143,7 @@ void check_alarms()
 	/* interrupts will be disabled here. Thus, we can aquire 
 	 * a mutex safely */
 	mutex_acquire(alarm_mutex);
-	if(ticks > alarm_list_start->alarm_end)
+	if((unsigned)ticks > alarm_list_start->alarm_end)
 	{
 		alarm_list_start->flags &= ~TF_ALARM;
 		alarm_list_start->sigd = SIGALRM;

@@ -43,7 +43,7 @@ __attribute__((always_inline)) inline task_t *get_next_task(task_t *prev)
 		 * causing a lockup. Basically, if the kernel is the only
 		 * runnable task, it gets forced to run */
 		if(t && t == prev && !task_is_runable(t))
-			return (task_t *)kernel_task;
+			return (task_t *)cpu->ktask;
 	}
 	panic(PANIC_NOSYNC, "get_next_task(): Task became null pointer!", t);
 	return (task_t *)0;

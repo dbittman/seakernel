@@ -74,7 +74,7 @@ inline static int engage_new_stack(task_t *new, task_t *parent)
 		return 0;
 	}
 }
-
+int __counter = 0;
 int do_fork(unsigned flags)
 {
 	if(!current_task || !kernel_task)
@@ -107,8 +107,17 @@ int do_fork(unsigned flags)
 	 * And then add it to the queue */
 	new->state = TASK_USLEEP;
 	tqueue_insert(primary_queue, (void *)new, new->listnode);
-	tqueue_insert(((cpu_t *)(parent->cpu))->active_queue, (void *)new,new->activenode);
-	new->cpu = parent->cpu;
+	cpu_t *cpu = (cpu_t *)parent->cpu;
+#if 0
+	
+	cpu = &cpu_array[__counter];
+	__counter++;
+	if(__counter >= num_cpus)
+		__counter=0;
+	printk(0, "adding task %d to %d\n", new->pid, cpu->apicid);
+#endif
+	tqueue_insert(cpu->active_queue, (void *)new, new->activenode);
+	new->cpu = cpu;
 	/* Copy the stack */
 	set_int(0);
 	engage_new_stack(new, parent);

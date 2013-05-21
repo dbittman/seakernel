@@ -49,9 +49,6 @@ void handle_ipi_cpu_halt(volatile registers_t regs)
 	set_int(0);
 	/* No interrupts */
 	IMPS_LAPIC_WRITE(LAPIC_TPR, 0xFFFFFFFF);
-	cpu_t *cpu = current_task ? current_task->cpu : 0;
-	if(cpu)
-		printk(0, "[cpu%d]: halting forever\n", cpu->apicid);
 	asm("cli");
 	while(1) asm("hlt");
 }

@@ -72,7 +72,7 @@ void *syscall_table[129] = {
 	SC sys_null,
 #endif
 
-	SC get_pid,      SC /**32*/sys_getppid,
+	SC get_pid,        SC /**32*/sys_getppid,
 	
 	SC sys_link,       SC unlink,         SC get_ref_count, SC get_pwd, 
 	SC sys_getpath,    SC sys_null,       SC chroot,        SC chdir,
@@ -188,24 +188,28 @@ int syscall_handler(volatile registers_t *regs)
 	if(!check_pointers(regs))
 		return -EINVAL;
 	enter_system(regs->eax);
-	/* most syscalls are re-entrant, so we enable interrrupts and expect
+	/* most syscalls are re-entrant, so we enable interrupts and
 	 * expect handlers to disable them if needed */
 	set_int(1);
-	/* tracking! */
+	/* start accounting information! */
 	current_task->freed = current_task->allocated=0;
+	
 #ifdef SC_DEBUG
 	//if(current_task->tty == curcons->tty) 
 	//	printk(SC_DEBUG, "syscall %d: enter %d\n", current_task->pid, regs->eax);
 	int or_t = ticks;
 #endif
+	
 	__do_syscall_jump(ret, syscall_table[regs->eax], regs->edi, regs->esi, 
 			regs->edx, regs->ecx, regs->ebx);
+
 #ifdef SC_DEBUG
 	if(current_task->tty == curcons->tty && (ticks - or_t >= 10 || 1) 
 			&& (ret < 0) && ret == -EINTR)
 		printk(SC_DEBUG, "syscall %d: %d ret %d, took %d ticks\n", 
 				current_task->pid, current_task->system, ret, ticks - or_t);
 #endif
+	
 	set_int(0);
 	exit_system();
 	__engage_idle();

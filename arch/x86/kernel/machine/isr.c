@@ -125,6 +125,8 @@ void faulted(int fuckoff, int userspace)
 	}
 }
 
+/* don't need to worry about other processors getting in the way here, since
+ * this is only used if SMP is disabled or unavailable */
 void ack_pic(int n)
 {
 	assert(interrupt_controller == IOINT_PIC);
@@ -160,7 +162,7 @@ void ipi_handler(volatile registers_t regs)
 			panic(PANIC_NOSYNC, "invalid interprocessor interrupt number: %d", regs.int_no);
 	}
 #endif
-	set_int(0);
+	assert(!set_int(0));
 	set_cpu_interrupt_flag(previous_interrupt_flag); /* assembly code will issue sti */
 #if CONFIG_SMP
 	lapic_eoi();
@@ -172,6 +174,7 @@ void ipi_handler(volatile registers_t regs)
  * sys_setup() */
 void entry_syscall_handler(volatile registers_t regs)
 {
+	/* don't need to save the flag here, since it will always be true */
 	set_int(0);
 	add_atomic(&int_count[0x80], 1);
 	if(current_task->flags & TF_IN_INT)
@@ -232,6 +235,7 @@ void entry_syscall_handler(volatile registers_t regs)
 /* This gets called from our ASM interrupt handler stub. */
 void isr_handler(volatile registers_t regs)
 {
+	/* this is explained in the IRQ handler */
 	int previous_interrupt_flag = set_int(0);
 	add_atomic(&int_count[regs.int_no], 1);
 	/* check if we're interrupting kernel code, and set the interrupt
@@ -240,13 +244,16 @@ void isr_handler(volatile registers_t regs)
 	if(current_task->flags & TF_IN_INT)
 		already_in_interrupt = 1;
 	current_task->flags |= TF_IN_INT;
-	/* run the stage1 handlers, and see if we need any stage2s */
+	/* run the stage1 handlers, and see if we need any stage2s. And if we
+	 * don't handle it at all, we need to actually fault to handle the error
+	 * and kill the process or kernel panic */
 	char called=0;
 	char need_second_stage = 0;
 	for(int i=0;i<MAX_HANDLERS;i++)
 	{
 		if(interrupt_handlers[regs.int_no][i][0] || interrupt_handlers[regs.int_no][i][1])
 		{
+			/* we're able to handle the error! */
 			called = 1;
 			if(interrupt_handlers[regs.int_no][i][0])
 				(interrupt_handlers[regs.int_no][i][0])(regs);
@@ -262,8 +269,10 @@ void isr_handler(volatile registers_t regs)
 	/* clean up... Also, we don't handle stage 2 in ISR handling, since this
 	 can occur from within a stage2 handler */
 	assert(!set_int(0));
+	/* if it went unhandled, kill the process or panic */
 	if(!called)
 		faulted(regs.int_no, !already_in_interrupt);
+	/* restore previous interrupt state */
 	set_cpu_interrupt_flag(previous_interrupt_flag);
 	if(!already_in_interrupt)
 		current_task->flags &= ~TF_IN_INT;
@@ -350,6 +359,7 @@ void irq_handler(volatile registers_t regs)
 	 * call iret, which will also restore the interrupt state to what
 	 * it was before, including the interrupts-enabled bit in eflags */
 	set_cpu_interrupt_flag(previous_interrupt_flag);
+	/* and clear the state flag if this is going to return to user-space code */
 	if(!already_in_interrupt)
 		current_task->flags &= ~TF_IN_INT;
 	/* and send out the EOIs */
@@ -398,30 +408,12 @@ void int_sys_init()
 	}
 	maybe_handle_stage_2 = 0;
 	mutex_create(&isr_lock, 0);
-#warning "MT_NOSCHED?"
 	mutex_create(&s2_lock, 0);
 #if CONFIG_MODULES
 	add_kernel_symbol(register_interrupt_handler);
 	add_kernel_symbol(unregister_interrupt_handler);
 	_add_kernel_symbol((unsigned)interrupt_handlers, "interrupt_handlers");
 #endif
-}
-
-void print_stack_trace(unsigned int max)
-{
-	volatile unsigned int *ebp = (volatile unsigned *)&(max);
-	ebp -= 2;
-	kprintf("Stack Trace:\n");
-	unsigned int frame;
-	for(frame = 0; frame < max && ebp; ++frame)
-	{
-		unsigned int eip = ebp[1];
-		if(eip == 0)
-			break;
-		const char *g = elf_lookup_symbol (eip, &kernel_elf);
-		printk (5, "   [0x%x] %s\n", eip, g ? g : "(unknown)");
-		ebp = (volatile unsigned int *)(ebp[0]);
-	}
 }
 
 int proc_read_int(char *buf, int off, int len)

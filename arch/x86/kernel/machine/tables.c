@@ -205,6 +205,8 @@ void load_tables_ap(cpu_t *cpu)
 
 void load_tables()
 {
+	/* load up some temporary tables so we can use interrupts until the CPU stuff
+	 * is loaded */
 	init_gdt(gdt_entries, &gdt_ptr);
 	init_idt();
 	init_pic();

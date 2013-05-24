@@ -31,7 +31,6 @@ __attribute__((always_inline)) inline task_t *get_next_task(task_t *prev)
 	task_t *t = tqueue_next(cpu->active_queue);
 	while(t)
 	{
-		assert(t);
 		if(unlikely(t->magic != TASK_MAGIC))
 			panic(0, "Invalid task (%d:%d): %x", t->pid, t->state, t->magic);
 		/* this handles everything in the "active queue". This includes
@@ -46,6 +45,7 @@ __attribute__((always_inline)) inline task_t *get_next_task(task_t *prev)
 		if(t && t == prev && !task_is_runable(t))
 			return (task_t *)cpu->ktask;
 	}
+	return cpu->ktask;
 	panic(PANIC_NOSYNC, "get_next_task(): Task became null pointer!", t);
 	return (task_t *)0;
 }
@@ -62,7 +62,8 @@ __attribute__((always_inline)) static inline void post_context_switch()
 	if(current_task->sigd 
 		&& (!(current_task->flags & TF_INSIG) 
 			|| signal_will_be_fatal(current_task, current_task->sigd))
-		&& !(current_task->flags & TF_KTASK) && current_task->pid)
+		&& !(current_task->flags & TF_KTASK) && current_task->pid
+		&& current_task->system != 26)
 	{
 		current_task->flags |= TF_INSIG;
 		/* Jump to the signal handler */

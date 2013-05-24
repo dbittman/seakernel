@@ -14,7 +14,6 @@
  * handler. this allows for a task to handle an event that requires
  * a mutex to be locked in the handler whilst having locked the mutex
  * previously */
-
 void __mutex_acquire(mutex_t *m, char *file, int line)
 {
 	/* are we re-locking ourselves? */

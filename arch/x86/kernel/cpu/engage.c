@@ -32,7 +32,7 @@ void cpu_k_task_entry(task_t *me)
 	page_directory[PAGE_DIR_IDX(SMP_CUR_TASK / PAGE_SIZE)] = (unsigned)me;
 	((cpu_t *)(me->cpu))->flags |= CPU_TASK;
 	set_int(1);
-	for(;;);
+	for(;;) schedule();
 }
 
 /* it's important that this doesn't get inlined... */

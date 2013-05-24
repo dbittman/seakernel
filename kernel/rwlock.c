@@ -22,12 +22,12 @@ void __rwlock_acquire(rwlock_t *lock, unsigned flags, char *file, int line)
 		/* if we're trying to get a writer lock, we need to wait until the
 		* lock is completely cleared */
 #if DEBUG
-		int timeout = 10000;
+		int timeout = 100000;
 		while((flags & RWL_WRITER) && lock->locks && --timeout) schedule();
 		if(timeout == 0)
 			panic(0, "(1) waited too long to acquire the lock:%s:%d\n", file, line);
 		/* now, spinlock-acquire the write_lock bit */
-		timeout = 10000;
+		timeout = 100000;
 #else
 		while((flags & RWL_WRITER) && lock->locks) schedule();
 #endif
@@ -80,11 +80,11 @@ void __rwlock_escalate(rwlock_t *lock, unsigned flags, char *file, int line)
 		 * then attempt a switch */
 		while(1) {
 #if DEBUG
-			int timeout = 10000;
+			int timeout = 100000;
 			while(lock->locks != 2 && --timeout) schedule();
 			if(timeout == 0)
 				panic(0, "(1) waited too long to acquire the lock:%s:%d\n", file, line);
-			timeout=10000;
+			timeout=100000;
 #else
 			while(lock->locks != 2) schedule();
 #endif

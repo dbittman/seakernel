@@ -109,7 +109,7 @@ struct ata_controller {
     uint16_t                    port_bmr_base;
     uint16_t                    irq;
     int                         dma_use;
-    volatile unsigned long long irqwait;
+    volatile unsigned           irqwait;
     unsigned                    prdt_phys;
     uint64_t*                   prdt_virt;
     unsigned                    dma_buf_phys[512];

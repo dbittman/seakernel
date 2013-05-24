@@ -195,8 +195,8 @@ int syscall_handler(volatile registers_t *regs)
 	current_task->freed = current_task->allocated=0;
 	
 #ifdef SC_DEBUG
-	//if(current_task->tty == curcons->tty) 
-	//	printk(SC_DEBUG, "syscall %d: enter %d\n", current_task->pid, regs->eax);
+	if(current_task->tty == curcons->tty) 
+		printk(SC_DEBUG, "syscall %d: enter %d\n", current_task->pid, regs->eax);
 	int or_t = ticks;
 #endif
 	
@@ -205,7 +205,7 @@ int syscall_handler(volatile registers_t *regs)
 
 #ifdef SC_DEBUG
 	if(current_task->tty == curcons->tty && (ticks - or_t >= 10 || 1) 
-			&& (ret < 0) && ret == -EINTR)
+			&& (ret < 0 || 1) && (ret == -EINTR || 1))
 		printk(SC_DEBUG, "syscall %d: %d ret %d, took %d ticks\n", 
 				current_task->pid, current_task->system, ret, ticks - or_t);
 #endif

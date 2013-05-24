@@ -187,6 +187,8 @@ int syscall_handler(volatile registers_t *regs)
 	volatile int ret;
 	if(!check_pointers(regs))
 		return -EINVAL;
+	//if(got_signal(current_task) || (unsigned)(ticks-current_task->slice) > (unsigned)current_task->cur_ts)
+	//	schedule();
 	enter_system(regs->eax);
 	/* most syscalls are re-entrant, so we enable interrupts and
 	 * expect handlers to disable them if needed */
@@ -216,6 +218,7 @@ int syscall_handler(volatile registers_t *regs)
 	/* if we need to reschedule, or we have overused our timeslice
 	 * then we need to reschedule. this prevents tasks that do a continuous call
 	 * to write() from starving the resources of other tasks */
+#warning "Not sure if this is working in non-SMP sh explode..."
 	if(current_task->flags & TF_SCHED 
 		|| (unsigned)(ticks-current_task->slice) > (unsigned)current_task->cur_ts)
 	{

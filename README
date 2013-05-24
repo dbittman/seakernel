@@ -7,7 +7,7 @@ Features Overview
 -----------------
 Some primary features include:
  * Kernel-level threading support (incomplete)
- * SMP support (incomplete)
+ * SMP support
  * Multiprocess scheduling (preemptive)
  * Unix-like syscalls and a standard C library support
  * Loadable and unloadable modules

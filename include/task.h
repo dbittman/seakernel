@@ -129,7 +129,7 @@ struct task_struct
 	/* signal handling */
 	struct sigaction signal_act[128];
 	volatile sigset_t sig_mask, global_sig_mask;
-	volatile unsigned sigd, cursig;
+	volatile unsigned sigd, cursig, syscall_count;
 	sigset_t old_mask;
 	unsigned alarm_end;
 	struct llistnode *listnode, *blocknode, *activenode;

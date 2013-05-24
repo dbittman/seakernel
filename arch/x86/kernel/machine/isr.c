@@ -200,7 +200,7 @@ void entry_syscall_handler(volatile registers_t regs)
 		syscall_handler(&regs);
 		assert(!get_cpu_interrupt_flag());
 		/* handle stage2's here...*/
-		if(maybe_handle_stage_2) {
+		if(maybe_handle_stage_2 || !current_task->syscall_count) {
 			mutex_acquire(&s2_lock);
 			for(int i=0;i<MAX_INTERRUPTS;i++)
 			{
@@ -327,7 +327,7 @@ void irq_handler(volatile registers_t regs)
 	}
 	assert(!get_cpu_interrupt_flag());
 	/* ok, now are we allowed to handle stage2's right here? */
-	if(!already_in_interrupt && maybe_handle_stage_2)
+	if(!already_in_interrupt && (maybe_handle_stage_2||need_second_stage))
 	{
 		maybe_handle_stage_2 = 0;
 		/* handle the stage2 handlers. NOTE: this may change to only 

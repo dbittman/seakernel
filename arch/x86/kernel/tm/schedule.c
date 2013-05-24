@@ -94,6 +94,7 @@ __attribute__((always_inline)) static inline void store_context()
 		_overflow("heap");
 	if(current_task->flags & TF_DYING)
 		current_task->flags |= TF_BURIED;
+	current_task->syscall_count = 0;
 }
 
 __attribute__((always_inline)) static inline void restore_context(task_t *new)

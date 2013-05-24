@@ -8,7 +8,7 @@
 #include <mod.h>
 #include <init.h>
 #include <sys/fcntl.h>
-
+#include <cpu.h>
 /* Prepares a process to recieve a new executable. Desc is the descriptor of 
  * the executable. We keep it open through here so that we dont have to 
  * re-open it. */
@@ -114,7 +114,7 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	 * file descs, free up the page directory and clear up the resources 
 	 * of the task */
 	if(EXEC_LOG)
-		printk(0, "Executing (task %d, tty %d, cwd=%s): %s\n", t->pid, t->tty, current_task->pwd->name, path);
+		printk(0, "Executing (task %d, cpu %d, tty %d, cwd=%s): %s\n", t->pid, ((cpu_t *)t->cpu)->apicid, t->tty, current_task->pwd->name, path);
 	preexec(t, desc);
 	strncpy((char *)t->command, path, 128);
 	if(!process_elf(mem, desc, &eip, &end))

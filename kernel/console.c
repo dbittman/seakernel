@@ -56,6 +56,8 @@ void init_console(vterm_t *con, console_driver_t *driver)
 void switch_console(vterm_t *new)
 {
 	/* Copy screen to old console */
+	vterm_t *old = curcons;
+	mutex_acquire(&old->wlock);
 	memcpy(curcons->vmem, (char *)curcons->video, 
 				curcons->h*curcons->w*curcons->bd);
 	curcons->cur_mem = curcons->vmem;
@@ -66,6 +68,7 @@ void switch_console(vterm_t *new)
 	memcpy(curcons->cur_mem, curcons->vmem, curcons->w*curcons->h*curcons->bd);
 	if(curcons->rend.update_cursor)
 		curcons->rend.update_cursor(curcons);
+	mutex_release(&old->wlock);
 }
 
 void console_init_stage1()

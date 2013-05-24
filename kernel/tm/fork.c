@@ -115,7 +115,6 @@ int do_fork(unsigned flags)
 		__counter=0;
 	if(!(cpu->flags & CPU_TASK))
 		cpu = parent->cpu;
-	//printk(0, "forking task %d onto %d\n", new->pid, cpu->apicid);
 #endif
 	/* Copy the stack */
 	set_int(0);

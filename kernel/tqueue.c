@@ -66,5 +66,6 @@ void *tqueue_next(tqueue_t *tq)
 	void *ret = tq->current->entry;
 	mutex_release(&tq->lock);
 	set_int(old);
+	assert(ret);
 	return ret;
 }

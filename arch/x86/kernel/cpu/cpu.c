@@ -147,7 +147,7 @@ void init_main_cpu()
 	init_lapic(1);
 	calibrate_lapic_timer(1000);
 	init_ioapic();
-	if(res) {
+ 	if(res) {
 		set_ksf(KSF_SMP_ENABLE);
 	} else
 		kprintf("[smp]: error in init code, disabling SMP support\n");

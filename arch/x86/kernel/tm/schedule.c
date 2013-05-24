@@ -45,7 +45,7 @@ __attribute__((always_inline)) inline task_t *get_next_task(task_t *prev)
 		if(t && t == prev && !task_is_runable(t))
 			return (task_t *)cpu->ktask;
 	}
-	return cpu->ktask;
+	///return cpu->ktask;
 	panic(PANIC_NOSYNC, "get_next_task(): Task became null pointer!", t);
 	return (task_t *)0;
 }

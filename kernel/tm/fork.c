@@ -109,12 +109,12 @@ int do_fork(unsigned flags)
 	tqueue_insert(primary_queue, (void *)new, new->listnode);
 	cpu_t *cpu = (cpu_t *)parent->cpu;
 #if CONFIG_SMP
-	
 	cpu = &cpu_array[__counter];
 	__counter++;
 	if(__counter >= num_cpus)
 		__counter=0;
-	//printk(0, "adding task %d to %d\n", new->pid, cpu->apicid);
+	if(!(cpu->flags & CPU_TASK))
+		cpu = parent->cpu;
 #endif
 	/* Copy the stack */
 	set_int(0);

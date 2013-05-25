@@ -34,7 +34,7 @@ addr_t __pm_alloc_page(char *file, int line)
 		current_task->allocated++;
 		current_task->phys_mem_usage++;
 	}
-	if(paging_enabled)
+	if(kernel_state_flags & KSF_PAGING)
 	{
 		mutex_acquire(&pm_mutex);
 		/* out of physical memory!! */
@@ -78,7 +78,7 @@ addr_t __pm_alloc_page(char *file, int line)
 
 void pm_free_page(addr_t addr)
 {
-	if(!paging_enabled)
+	if(!(kernel_state_flags & KSF_PAGING))
 		panic(PANIC_MEM | PANIC_NOSYNC, "Called free page without paging environment");
 	if(addr < pm_location || (((addr > highest_page) || addr < lowest_page) 
 			&& memory_has_been_mapped)) {

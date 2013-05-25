@@ -4,6 +4,7 @@
 #include <kernel.h>
 #include <asm/system.h>
 #include <mutex.h>
+#include <console.h>
 extern void update_cursor(int);
 vterm_t *curcons=0;
 vterm_t *kernel_console, *log_console=0;

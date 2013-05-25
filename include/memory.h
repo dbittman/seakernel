@@ -47,7 +47,6 @@ extern volatile addr_t lowest_page;
 extern int memory_has_been_mapped;
 extern volatile addr_t placement;
 extern mutex_t pm_mutex;
-extern char paging_enabled;
 extern volatile page_dir_t *kernel_dir, *current_dir;
 extern int id_tables;
 

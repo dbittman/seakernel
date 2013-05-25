@@ -4,7 +4,7 @@
 #include <isr.h>
 #include <task.h>
 #include <cpu.h>
-char paging_enabled=0;
+#include <atomic.h>
 volatile page_dir_t *kernel_dir=0;
 unsigned int cr0temp;
 int id_tables=0;
@@ -80,7 +80,7 @@ void vm_init(unsigned id_map_to)
 	__asm__ volatile ("mov %0, %%cr3" : : "r" (pd));
 	/* Enable */
 	enable_paging();
-	paging_enabled=1;
+	set_ksf(KSF_PAGING);
 	memset(0, 0, 0x1000);
 }
 

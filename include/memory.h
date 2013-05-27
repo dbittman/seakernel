@@ -116,6 +116,7 @@ void setup_kernelstack(int);
 extern void zero_page_physical(addr_t);
 #define kmalloc(a) __kmalloc(a, __FILE__, __LINE__)
 void __KT_swapper();
+/* TODO: This needs to not be USER mapped */
 static inline void map_if_not_mapped(addr_t loc)
 {
 	if(!vm_getmap(loc & 0xFFFFF000, 0))

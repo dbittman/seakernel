@@ -32,6 +32,7 @@ void process_memorymap(struct multiboot *mboot)
 				if(j >= pm_location)
 					pm_free_page(j);
 				num_pages++;
+				/* TODO: Qemu likes to screw up the map and add entries twice */
 			}
 		}
 		i += me->size + sizeof (uint32_t);
@@ -65,7 +66,7 @@ void init_memory(struct multiboot *m)
 	mutex_create(&pm_mutex, 0);
 	vm_init(pm_location);
 	process_memorymap(m);
-	install_kmalloc(KMALLOC_NAME, KMALLOC_INIT, KMALLOC_ALLOC, KMALLOC_FREE);
+ 	install_kmalloc(KMALLOC_NAME, KMALLOC_INIT, KMALLOC_ALLOC, KMALLOC_FREE);
 	vm_init_2();
 	primary_cpu->flags |= CPU_PAGING;
 	set_ksf(KSF_MMU);

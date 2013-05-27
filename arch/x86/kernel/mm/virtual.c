@@ -30,8 +30,7 @@ void vm_init(unsigned id_map_to)
 	/* we don't create an accounting page for this one, since this page directory is only
 	 * temporary */
 	/* Identity map the kernel */
-	unsigned mapper=0;
-	int i;
+	unsigned mapper=0, i;
 	while(mapper <= PAGE_DIR_IDX(((id_map_to&PAGE_MASK)+0x1000)/0x1000)) {
 		pd[mapper] = pm_alloc_page() | PAGE_PRESENT | PAGE_USER;
 		pt = (unsigned int *)(pd[mapper] & PAGE_MASK);

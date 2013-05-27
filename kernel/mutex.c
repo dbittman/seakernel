@@ -46,6 +46,7 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 		if(!--t) panic(0, "mutex time out %s:%d\n", file, line);
 #endif
 	}
+	assert(m->lock);
 	if(current_task) m->pid = current_task->pid;
 }
 

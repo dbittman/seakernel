@@ -34,7 +34,7 @@ addr_t __pm_alloc_page(char *file, int line)
 		current_task->allocated++;
 		current_task->phys_mem_usage++;
 	}
-	if(kernel_state_flags & KSF_PAGING)
+	if(memory_has_been_mapped)
 	{
 		mutex_acquire(&pm_mutex);
 		/* out of physical memory!! */
@@ -60,6 +60,7 @@ addr_t __pm_alloc_page(char *file, int line)
 		}
 		pm_stack -= sizeof(unsigned int);
 		ret = *(unsigned int *)pm_stack;
+		*(unsigned int *)pm_stack = 0;
 		++pm_used_pages;
 		mutex_release(&pm_mutex);
 	} else {
@@ -69,7 +70,7 @@ addr_t __pm_alloc_page(char *file, int line)
 	if(current_task)
 		current_task->num_pages++;
 	if(!ret)
-		panic(PANIC_MEM | PANIC_NOSYNC, "found zero address in page stack\n");
+		panic(PANIC_MEM | PANIC_NOSYNC, "found zero address in page stack (%x %x)\n", pm_stack, pm_stack_max);
 	if(((ret > (unsigned)highest_page) || ret < (unsigned)lowest_page) 
 			&& memory_has_been_mapped)
 		panic(PANIC_MEM | PANIC_NOSYNC, "found invalid address in page stack: %x\n", ret);
@@ -80,11 +81,12 @@ void pm_free_page(addr_t addr)
 {
 	if(!(kernel_state_flags & KSF_PAGING))
 		panic(PANIC_MEM | PANIC_NOSYNC, "Called free page without paging environment");
-	if(addr < pm_location || (((addr > highest_page) || addr < lowest_page) 
+	if(addr < pm_location || (((addr > highest_page) || addr < lowest_page)
 			&& memory_has_been_mapped)) {
 		panic(PANIC_MEM | PANIC_NOSYNC, "tried to free invalic physical address");
 		return;
 	}
+	assert(addr);
 	if(current_task) {
 		current_task->freed++;
 		current_task->phys_mem_usage--;
@@ -96,9 +98,10 @@ void pm_free_page(addr_t addr)
 		memset((void *)pm_stack_max, 0, PAGE_SIZE);
 		pm_stack_max += PAGE_SIZE;
 	} else {
-		*(unsigned int *)(pm_stack) = addr;
+		assert(*(unsigned int *)(pm_stack) = addr);
 		pm_stack += sizeof(unsigned int);
 		--pm_used_pages;
+		assert(*(unsigned int *)(pm_stack - sizeof(unsigned int)) == addr);
 	}
 	mutex_release(&pm_mutex);
 	if(current_task && current_task->num_pages)

@@ -10,7 +10,7 @@ cpu_t *primary_cpu=0;
 cpu_t cpu_array[CONFIG_MAX_CPUS];
 unsigned cpu_array_num=0;
 #endif
-cpu_t priamry_cpu_data;
+cpu_t primary_cpu_data;
 
 extern mutex_t ipi_mutex;
 void init_lapic(int);
@@ -139,10 +139,11 @@ void init_main_cpu()
 	memset(cpu_array, 0, sizeof(cpu_t) * CONFIG_MAX_CPUS);
 	cpu_array_num = 0;
 	int res = probe_smp();
+	/* TODO: when boot proc is not apicid 0 */
 	if(!(kernel_state_flags & KSF_CPUS_RUNNING))
 		primary_cpu = &cpu_array[0];
 	if(!primary_cpu)
-		primary_cpu = &priamry_cpu_data;
+		primary_cpu = &primary_cpu_data;
 	load_tables_ap(primary_cpu);
 	init_lapic(1);
 	calibrate_lapic_timer(1000);
@@ -152,7 +153,7 @@ void init_main_cpu()
 	} else
 		kprintf("[smp]: error in init code, disabling SMP support\n");
 #else
-	primary_cpu = &priamry_cpu_data;
+	primary_cpu = &primary_cpu_data;
 	load_tables_ap(primary_cpu);
 #endif
 	assert(primary_cpu);

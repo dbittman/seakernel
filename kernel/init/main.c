@@ -142,10 +142,9 @@ void kmain(struct multiboot *mboot_header, u32int initial_stack)
 	printk(KERN_MILE, "[kernel]: Kernel is setup (%2.2d:%2.2d:%2.2d, %s, kv=%d, ts=%d bytes: ok)\n", 
 	       kernel_start_time.tm_hour, kernel_start_time.tm_min, 
 	       kernel_start_time.tm_sec, kernel_name, KVERSION, sizeof(task_t));
-	set_int(1);
+	assert(!set_int(1));
 	if(!fork())
 		init();
-	/* The kernel task has all rights, and it always in the 'system' */
 	sys_setsid();
 	enter_system(255);
 	kernel_idle_task();
@@ -165,8 +164,7 @@ void printf(const char *fmt, ...)
 
 void init()
 {
-	/* Call sys_setup. This sets up the root nodes, and filedesc's 0, 1 and 2. 
-	 * Essentially, a basic unix type process. */
+	/* Call sys_setup. This sets up the root nodes, and filedesc's 0, 1 and 2. */
 	sys_setup();
 	kprintf("Something stirs and something tries, and starts to climb towards the light.\n");
 	/* Set some basic environment variables. These allow simple root execution, 
@@ -179,7 +177,6 @@ void init()
 	int pid;
 	init_pid = current_task->pid+1;
 	
-	/* Our last moments in kernel mode... */
 	switch_to_user_mode();
 	/* We have to be careful now. If we try to call any kernel functions
 	 * without doing a system call, the processor will generate a GPF (or 
@@ -188,7 +185,7 @@ void init()
 	 * we will need */
 	ret = u_execve("/sh", (char **)stuff_to_pass, (char **)init_env);
 	ret = u_execve("/bin/sh", (char **)stuff_to_pass, (char **)init_env);
-	ret = u_execve("/bin/bash", (char **)stuff_to_pass, (char **)init_env);
-	printf("Failed to start the preinit process. System will halt.\n");
+	ret = u_execve("/usr/bin/sh", (char **)stuff_to_pass, (char **)init_env);
+	printf("Failed to start the init process. Halting.\n");
 	u_exit(0);
 }

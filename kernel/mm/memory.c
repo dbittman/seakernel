@@ -26,9 +26,6 @@ void process_memorymap(struct multiboot *mboot)
 					lowest_page=j;
 				if(j > highest_page)
 					highest_page=j;
-				if(!(num_pages % 1000))
-					printk(4, "Stacking memory: %d MB        \r", 
-							(num_pages * 4) / 1024);
 				if(j >= pm_location)
 					pm_free_page(j);
 				num_pages++;
@@ -52,8 +49,8 @@ void process_memorymap(struct multiboot *mboot)
 		printk(KERN_MILE, "%d GB and ", gbs);
 		mbs = mbs % 1024;
 	}
-	printk(KERN_MILE, "[mm]: %d MB available memory (page size=0x1000, kmalloc=%s: ok)       \n"
-			, mbs, KMALLOC_NAME);
+	printk(KERN_MILE, "[mm]: %d MB available memory (page size=0x1000, kmalloc=%s: ok)\n"
+ 			, mbs, KMALLOC_NAME);
 	printk(1, "[mm]: num pages = %d\n", num_pages);
 	pm_num_pages=num_pages;
 	memory_has_been_mapped=1;

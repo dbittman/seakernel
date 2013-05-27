@@ -114,7 +114,7 @@
 #define DEBUG 1 
 #endif
 
-#ifdef DEBUG
+#if CONFIG_DEBUG
 #define EXEC_LOG 1
 #else
 #define EXEC_LOG 0

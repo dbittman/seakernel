@@ -14,13 +14,14 @@ void load_tables_ap();
 void set_lapic_timer(unsigned tmp);
 extern unsigned lapic_timer_start;
 void init_lapic(int);
+extern unsigned running_processes;
 
-static void set_boot_flag(unsigned x)
+static inline void set_boot_flag(unsigned x)
 {
 	*(unsigned *)(BOOTFLAG_ADDR) = x;
 }
 
-static unsigned get_boot_flag()
+static inline  unsigned get_boot_flag()
 {
 	return *(unsigned *)(BOOTFLAG_ADDR);
 }
@@ -85,6 +86,7 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	task->cpu = cpu;
 	mutex_create(&cpu->lock, MT_NOSCHED);
 	set_kernel_stack(&cpu->tss, task->kernel_stack + (KERN_STACK_SIZE - STACK_ELEMENT_SIZE));
+	add_atomic(&running_processes, 1);
 	/* set up the real stack, and call cpu_k_task_entry with a pointer to this cpu's ktask as 
 	 * the argument */
 	asm(" \
@@ -150,9 +152,8 @@ int boot_cpu(unsigned id, unsigned apic_ver)
 		}
 	}
 	to = 0;
-	while ((get_boot_flag(bootaddr) != 0xFFFFFFFF) && to++ < 100) {
+	while ((get_boot_flag(bootaddr) != 0xFFFFFFFF) && to++ < 100)
 		delay_sleep(10);
-	}
 	/* cpu didn't boot up...:( */
 	if (to >= 100)
 		success = 0;

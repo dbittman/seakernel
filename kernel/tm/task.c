@@ -5,6 +5,8 @@
 #include <tqueue.h>
 #include <cpu.h>
 #include <ll.h>
+#include <atomic.h>
+extern unsigned running_processes;
 volatile task_t *kernel_task=0, *alarm_list_start=0;
 //#if !(CONFIG_SMP)
 //volatile task_t *current_task=0;
@@ -46,6 +48,7 @@ void init_multitasking()
 	set_current_task_dp(task, 0);
 	kernel_task = task;
 	primary_cpu->flags |= CPU_TASK;
+	add_atomic(&running_processes, 1);
 #if CONFIG_MODULES
 	add_kernel_symbol(delay);
 	add_kernel_symbol(delay_sleep);

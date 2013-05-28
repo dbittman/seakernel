@@ -6,6 +6,7 @@
 #include <cpu.h>
 
 extern void copy_update_stack(unsigned old, unsigned new, unsigned length);
+unsigned running_processes = 0;
 
 void copy_task_struct(task_t *new, task_t *parent)
 {
@@ -61,7 +62,7 @@ inline static int engage_new_stack(task_t *new, task_t *parent)
 	u32int esp;
 	asm("mov %%esp, %0" : "=r"(esp));
 	asm("mov %%ebp, %0" : "=r"(ebp));
-	if(new->pid > 0 && esp > TOP_TASK_MEM) {
+	if(esp > TOP_TASK_MEM) {
 		new->esp=(esp-parent->kernel_stack) + new->kernel_stack;
 		new->ebp=(ebp-parent->kernel_stack) + new->kernel_stack;
 		new->sysregs = (parent->sysregs - parent->kernel_stack) + new->kernel_stack;
@@ -77,10 +78,8 @@ inline static int engage_new_stack(task_t *new, task_t *parent)
 int __counter = 0;
 int do_fork(unsigned flags)
 {
-	if(!current_task || !kernel_task)
-		panic(PANIC_NOSYNC, "fork() called before tasking can work!");
-	/* TODO */
-	//assert(count_tasks() < MAX_TASKS || MAX_TASKS == -1);
+	assert(current_task && kernel_task);
+	assert(running_processes < MAX_TASKS || MAX_TASKS == -1);
 	unsigned eip;
 	flush_pd();
 	task_t *new = (task_t *)kmalloc(sizeof(task_t));
@@ -103,6 +102,7 @@ int do_fork(unsigned flags)
 	task_t *parent = (task_t *)current_task;
 	new->pd = newspace;
 	copy_task_struct(new, parent);
+	add_atomic(&running_processes, 1);
 	/* Set the state as usleep temporarily, so that it doesn't accidentally run.
 	 * And then add it to the queue */
 	new->state = TASK_USLEEP;

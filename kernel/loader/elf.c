@@ -36,7 +36,7 @@ int process_elf_phdr(char *mem, int fp, unsigned *start, unsigned *end)
 			if(stop > max) max = stop;
 			while(tmp <= stop + PAGE_SIZE)
 			{
-				map_if_not_mapped(tmp);
+				user_map_if_not_mapped(tmp);
 				tmp += PAGE_SIZE;
 			}
 			if((unsigned)do_sys_read_flags(file, offset, (char *)vaddr, length) != length)

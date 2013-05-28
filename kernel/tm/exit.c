@@ -5,8 +5,9 @@
 #include <memory.h>
 #include <task.h>
 #include <cpu.h>
+#include <atomic.h>
 extern struct llist *kill_queue;
-
+extern unsigned running_processes;
 void clear_resources(task_t *t)
 {
 	clear_mmfiles(t, (t->flags&TF_EXITING) ? 1 : 0);
@@ -15,6 +16,7 @@ void clear_resources(task_t *t)
 void set_as_dead(task_t *t)
 {
 	assert(t);
+	sub_atomic(&running_processes, 1);
 	t->state = TASK_DEAD;
 	tqueue_remove(primary_queue, t->listnode);
 	tqueue_remove(((cpu_t *)t->cpu)->active_queue, t->activenode);

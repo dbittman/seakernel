@@ -139,7 +139,6 @@ void init_main_cpu()
 	memset(cpu_array, 0, sizeof(cpu_t) * CONFIG_MAX_CPUS);
 	cpu_array_num = 0;
 	int res = probe_smp();
-	/* TODO: when boot proc is not apicid 0 */
 	if(!(kernel_state_flags & KSF_CPUS_RUNNING))
 		primary_cpu = &cpu_array[0];
 	if(!primary_cpu)
@@ -148,7 +147,7 @@ void init_main_cpu()
 	init_lapic(1);
 	calibrate_lapic_timer(1000);
 	init_ioapic();
- 	if(res) {
+ 	if(res >= 0) {
 		set_ksf(KSF_SMP_ENABLE);
 	} else
 		kprintf("[smp]: error in init code, disabling SMP support\n");

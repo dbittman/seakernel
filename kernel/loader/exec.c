@@ -135,14 +135,14 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	/* Setup the task with the proper values (libc malloc stack) */
 	unsigned end_l = end;
 	end = (end&PAGE_MASK);
-	map_if_not_mapped_noclear(end);
+	user_map_if_not_mapped_noclear(end);
 	/* now we need to copy back the args and env into userspace
 	 * writeable memory...yippie. */
 	unsigned args_start = end + PAGE_SIZE;
 	unsigned env_start = args_start;
 	unsigned alen = 0;
 	if(backup_argv) {
-		map_if_not_mapped_noclear(args_start);
+		user_map_if_not_mapped_noclear(args_start);
 		memcpy((void *)args_start, backup_argv, sizeof(addr_t) * argc);
 		alen += sizeof(addr_t) * argc;
 		*(addr_t *)(args_start + alen) = 0; /* set last argument value to zero */
@@ -152,9 +152,9 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 		{
 			char *old = argv[i];
 			char *new = (char *)(args_start+alen);
-			map_if_not_mapped_noclear((unsigned)new);
+			user_map_if_not_mapped_noclear((unsigned)new);
 			unsigned len = strlen(old) + 4;
-			map_if_not_mapped_noclear((unsigned)new + len + 1);
+			user_map_if_not_mapped_noclear((unsigned)new + len + 1);
 			argv[i] = new;
 			_strcpy(new, old);
 			kfree(old);
@@ -165,7 +165,7 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	env_start = args_start + alen;
 	alen = 0;
 	if(backup_env) {
-		map_if_not_mapped_noclear(env_start);
+		user_map_if_not_mapped_noclear(env_start);
 		memcpy((void *)env_start, backup_env, sizeof(addr_t) * envc);
 		alen += sizeof(addr_t) * envc;
 		*(addr_t *)(env_start + alen) = 0; /* set last argument value to zero */
@@ -175,9 +175,9 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 		{
 			char *old = env[i];
 			char *new = (char *)(env_start+alen);
-			map_if_not_mapped_noclear((unsigned)new);
+			user_map_if_not_mapped_noclear((unsigned)new);
 			unsigned len = strlen(old) + 1;
-			map_if_not_mapped_noclear((unsigned)new + len + 1);
+			user_map_if_not_mapped_noclear((unsigned)new + len + 1);
 			env[i] = new;
 			_strcpy(new, old);
 			kfree(old);
@@ -191,7 +191,7 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	kfree(path);
 	
 	t->heap_start = t->heap_end = end + PAGE_SIZE;
-	map_if_not_mapped_noclear(t->heap_start);
+	user_map_if_not_mapped_noclear(t->heap_start);
 	/* Zero the heap and stack */
 	memset((void *)end_l, 0, PAGE_SIZE-(end_l%PAGE_SIZE));
 	memset((void *)(end+PAGE_SIZE), 0, PAGE_SIZE);

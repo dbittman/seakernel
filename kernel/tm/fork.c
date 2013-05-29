@@ -78,12 +78,15 @@ int __counter = 0;
 
 cpu_t *fork_choose_cpu(task_t *parent)
 {
+	cpu_t *pc = parent->cpu;
 	cpu_t *cpu = &cpu_array[__counter];
 	__counter++;
 	if(__counter >= num_cpus)
 		__counter=0;
 	if(!(cpu->flags & CPU_TASK))
 		cpu = parent->cpu;
+	if(pc->numtasks < cpu->numtasks)
+		return pc;
 	return cpu;
 }
 

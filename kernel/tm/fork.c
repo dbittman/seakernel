@@ -75,6 +75,18 @@ inline static int engage_new_stack(task_t *new, task_t *parent)
 	}
 }
 int __counter = 0;
+
+cpu_t *fork_choose_cpu(task_t *parent)
+{
+	cpu_t *cpu = &cpu_array[__counter];
+	__counter++;
+	if(__counter >= num_cpus)
+		__counter=0;
+	if(!(cpu->flags & CPU_TASK))
+		cpu = parent->cpu;
+	return cpu;
+}
+
 int do_fork(unsigned flags)
 {
 	if(!current_task || !kernel_task)
@@ -109,12 +121,7 @@ int do_fork(unsigned flags)
 	tqueue_insert(primary_queue, (void *)new, new->listnode);
 	cpu_t *cpu = (cpu_t *)parent->cpu;
 #if CONFIG_SMP
-	cpu = &cpu_array[__counter];
-	__counter++;
-	if(__counter >= num_cpus)
-		__counter=0;
-	if(!(cpu->flags & CPU_TASK))
-		cpu = parent->cpu;
+	cpu = fork_choose_cpu(parent);
 #endif
 	/* Copy the stack */
 	set_int(0);
@@ -130,6 +137,7 @@ int do_fork(unsigned flags)
 		new->state = TASK_RUNNING;
 		mutex_acquire(&cpu->lock);
 		new->cpu = cpu;
+		add_atomic(&cpu->numtasks, 1);
 		tqueue_insert(cpu->active_queue, (void *)new, new->activenode);
 		mutex_release(&cpu->lock);
 		/* And unlock everything and reschedule */

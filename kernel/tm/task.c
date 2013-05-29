@@ -5,10 +5,8 @@
 #include <tqueue.h>
 #include <cpu.h>
 #include <ll.h>
+
 volatile task_t *kernel_task=0, *alarm_list_start=0;
-//#if !(CONFIG_SMP)
-//volatile task_t *current_task=0;
-//#endif
 mutex_t *alarm_mutex=0;
 extern volatile page_dir_t *kernel_dir;
 volatile unsigned next_pid=0;
@@ -45,6 +43,7 @@ void init_multitasking()
 	tqueue_insert(primary_cpu->active_queue, (void *)task, task->activenode);
 	set_current_task_dp(task, 0);
 	kernel_task = task;
+	primary_cpu->numtasks=1;
 	primary_cpu->flags |= CPU_TASK;
 #if CONFIG_MODULES
 	add_kernel_symbol(delay);
@@ -58,11 +57,9 @@ void init_multitasking()
 	add_kernel_symbol(kill_task);
 	add_kernel_symbol(do_send_signal);
 	add_kernel_symbol(dosyscall);
-#if CONFIG_SMP
+ #if CONFIG_SMP
 	add_kernel_symbol(get_cpu);
-#else
-	//_add_kernel_symbol((unsigned)(task_t **)&current_task, "current_task");
-#endif
+ #endif
 	_add_kernel_symbol((unsigned)(task_t **)&kernel_task, "kernel_task");
 #endif
 }
@@ -94,7 +91,7 @@ void task_pause(task_t *t)
 {
 	/* don't care what other processors do */
 	t->state = TASK_ISLEEP;
-	schedule();
+	if(t == current_task) schedule();
 }
 
 void task_resume(task_t *t)

@@ -28,6 +28,7 @@ typedef struct __cpu_t__ {
 	gdt_entry_t gdt[6];
 	gdt_ptr_t gdt_ptr;
 	tss_entry_t tss;
+	unsigned numtasks;
 	unsigned stack[CPU_STACK_TEMP_SIZE];
 	struct __cpu_t__ *next, *prev;
 } cpu_t;

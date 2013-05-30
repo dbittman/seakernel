@@ -49,7 +49,6 @@ void panic(int flags, char *fmt, ...)
 	int pid=0;
 	task_t *t=current_task;
 	if(t) pid=t->pid;
-	set_current_task_dp(0, 0);
 	
 	kprintf("\n\n*** kernel panic - ");
 	

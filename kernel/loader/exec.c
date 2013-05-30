@@ -28,9 +28,7 @@ void free_dp(char **mem, int num)
 	/* an error occured and free need to kfree some things */
 	int i;
 	for(i=0;i<num;i++)
-	{
 		kfree(mem[i]);
-	}
 	kfree(mem);
 }
 

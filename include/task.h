@@ -134,22 +134,12 @@ struct task_struct
 	unsigned alarm_end;
 	struct llistnode *listnode, *blocknode, *activenode;
 	struct llist *blocklist;
-	mutex_t cpu_lock;
 	void *cpu;
 	volatile struct task_struct *parent, *waiting, *alarm_next, *alarm_prev;
 };
 
 typedef volatile struct task_struct task_t;
-
 extern volatile task_t *kernel_task, *tokill, *alarm_list_start;
-
-static inline __attribute__((always_inline)) 
-void set_current_task_dp(task_t *t, int cpu)
-{
-	
-	return;
-}
-
 extern mutex_t *alarm_mutex;
 
 #define raise_flag(f) current_task->flags |= f

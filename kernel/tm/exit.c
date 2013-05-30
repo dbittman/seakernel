@@ -54,7 +54,6 @@ void release_task(task_t *p)
 	pm_free_page(p->pd[1022] & PAGE_MASK);
 	kfree(p->pd);
 	kfree((void *)p->kernel_stack);
-	mutex_destroy((mutex_t *)&p->cpu_lock);
 	kfree((void *)p);
 }
 

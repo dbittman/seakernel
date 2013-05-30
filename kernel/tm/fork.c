@@ -10,7 +10,6 @@ unsigned running_processes = 0;
 
 void copy_task_struct(task_t *new, task_t *parent)
 {
-	mutex_create((mutex_t *)&new->cpu_lock, 0);
 	new->parent = parent;
 	new->pid = add_atomic(&next_pid, 1)-1;
 	if(parent->root) {

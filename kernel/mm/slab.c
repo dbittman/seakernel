@@ -124,11 +124,14 @@ int add_slab_to_list(slab_t *slab, char to)
 	switch(to)
 	{
 		case TO_EMPTY:
-			list=&sc->empty; break;
+			list=&sc->empty; 
+			break;
 		case TO_PARTIAL:
-			list=&sc->partial; break;
+			list=&sc->partial; 
+			break;
 		case TO_FULL:
-			list=&sc->full; break;
+			list=&sc->full; 
+			break;
 		default:
 			panic(PANIC_MEM | PANIC_NOSYNC, 
 					"Invalid tranfer code sent to add_slab_to_list!");

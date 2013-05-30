@@ -20,11 +20,11 @@ tqueue_t *primary_queue=0;
 void init_multitasking()
 {
 	printk(KERN_DEBUG, "[sched]: Starting multitasking system...\n");
+	/* make the kernel task */
 	task_t *task = (task_t *)kmalloc(sizeof(task_t));
-	if(!task)
-		panic(PANIC_NOSYNC, "Unable to allocate memory for tasking?");
+	/* make this the "current_task" by assigning a specific location
+	 * in the page directory as the pointer to the task. */
 	page_directory[PAGE_DIR_IDX(SMP_CUR_TASK / PAGE_SIZE)] = (unsigned)task;
-	mutex_create((mutex_t *)&task->cpu_lock, 0);
 	/* alarm_mutex is aquired inside a kernel tick, so we may not schedule. */
 	alarm_mutex = mutex_create(0, MT_NOSCHED);
 	task->pid = next_pid++;
@@ -38,12 +38,12 @@ void init_multitasking()
 	kill_queue = ll_create(0);
 	primary_queue = tqueue_create(0, 0);
 	primary_cpu->active_queue = tqueue_create(0, 0);
-	task->listnode = (void *)kmalloc(sizeof(struct llistnode));
+	/* allocate all of the list nodes... */
+	task->listnode   = (void *)kmalloc(sizeof(struct llistnode));
 	task->activenode = (void *)kmalloc(sizeof(struct llistnode));
-	task->blocknode = (void *)kmalloc(sizeof(struct llistnode));
+	task->blocknode  = (void *)kmalloc(sizeof(struct llistnode));
 	tqueue_insert(primary_queue, (void *)task, task->listnode);
 	tqueue_insert(primary_cpu->active_queue, (void *)task, task->activenode);
-	set_current_task_dp(task, 0);
 	kernel_task = task;
 	primary_cpu->numtasks=1;
 	primary_cpu->flags |= CPU_TASK;

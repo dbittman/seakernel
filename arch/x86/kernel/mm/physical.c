@@ -17,7 +17,7 @@ int memory_has_been_mapped=0;
 volatile addr_t placement;
 mutex_t pm_mutex;
 extern unsigned int end;
-void pm_init(int start, struct multiboot *mboot)
+void pm_init(addr_t start, struct multiboot *mboot)
 {
 	pm_location = (start + PAGE_SIZE) & PAGE_MASK;
 }

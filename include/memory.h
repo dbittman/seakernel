@@ -73,7 +73,7 @@ extern int id_tables;
 
 void page_fault(registers_t *r);
 int vm_map_all(addr_t virt, addr_t phys, unsigned attr);
-void vm_init(unsigned id_map_to);
+void vm_init(addr_t id_map_to);
 void vm_switch(page_dir_t *n/*VIRTUAL ADDRESS*/);
 int vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned);
 int vm_do_unmap(addr_t virt, unsigned);
@@ -82,11 +82,11 @@ unsigned int vm_do_getmap(addr_t v, addr_t *p, unsigned);
 page_dir_t *vm_clone(page_dir_t *pd, char);
 page_dir_t *vm_copy(page_dir_t *pd);
 void process_memorymap(struct multiboot *mboot);
-void pm_init(int start, struct multiboot *);
+void pm_init(addr_t start, struct multiboot *);
 int free_stack();
 addr_t __pm_alloc_page(char *, int);
 #define pm_alloc_page() __pm_alloc_page(__FILE__, __LINE__)
-void install_kmalloc(char *name, unsigned (*init)(unsigned, unsigned), 
+void install_kmalloc(char *name, unsigned (*init)(addr_t, addr_t), 
 	addr_t (*alloc)(size_t, char), void (*free)(void *));
 addr_t do_kmalloc_slab(size_t sz, char align);
 void do_kfree_slab(void *ptr);
@@ -111,12 +111,12 @@ int self_free_table(int t);
 void pm_free_page(addr_t addr);
 void vm_init_2();
 void vm_init_tracking();
-unsigned int vm_setattrib(unsigned v, short attr);
-void setup_kernelstack(int);
+unsigned int vm_setattrib(addr_t v, short attr);
+void setup_kernelstack();
 extern void zero_page_physical(addr_t);
 #define kmalloc(a) __kmalloc(a, __FILE__, __LINE__)
 void __KT_swapper();
-extern void copy_update_stack(unsigned old, unsigned new, unsigned length);
+void copy_update_stack(addr_t old, addr_t new, unsigned length);
 static inline void map_if_not_mapped(addr_t loc)
 {
 	if(!vm_getmap(loc & 0xFFFFF000, 0))

@@ -37,18 +37,18 @@ void move_stack(void *start, unsigned int sz)
 	asm("mov %0, %%ebp" : : "r" (new_base_pointer));
 }
 
-void setup_kernelstack(int c)
+void setup_kernelstack()
 {
 	printk(1, "[stack]: Relocating stack\n");
 	move_stack((void*)STACK_LOCATION, STACK_SIZE);
 }
 
-void copy_update_stack(unsigned new, unsigned old, unsigned length)
+void copy_update_stack(addr_t new, addr_t old, unsigned length)
 {
 	memcpy((void *)new, (void *)old, length);
 	int offset=0;
 	offset = new-old;
-	unsigned i;
+	addr_t i;
 	for(i = (u32int)new+(length-4); i >= (u32int)new; i -= 4)
 	{
 		u32int tmp = * (u32int*)i;

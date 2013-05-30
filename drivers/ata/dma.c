@@ -134,11 +134,8 @@ int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw,
 		st = inb(cont->port_cmd_base+REG_STATUS);
 		if(st & STATUS_ERR || st & STATUS_DF)
 			ret=0;
-#if CONFIG_SMP
 		if(!(wst & 1)) break;
-#else
 		if(cont->irqwait) break;
-#endif
 	}
 	if(timeout <= 0) {
 		mutex_release(cont->wait);

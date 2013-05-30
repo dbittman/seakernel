@@ -104,8 +104,7 @@ void release_scache(slab_cache_t *sc)
 {
 	assert(sc);
 	if(sc->full || sc->partial || sc->empty)
-		return;
-#warning "panic here"
+		panic(0, "A");
 	mutex_acquire(&scache_lock);
 	sc->id=-1;
 	sub_atomic(&num_scache, 1);

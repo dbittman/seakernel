@@ -12,8 +12,6 @@ Roadmap:
 	* vfs proper locking
 	* global "create inode" api
 	* fix kernel symbol system
-	* add kernel symbols during initialization of subsystems, in their
-	  own init code
 0.2 B3
 	* new random driver
 	* add chaining to file descriptors (and modify the return value for the sysconf entry)

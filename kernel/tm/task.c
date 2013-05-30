@@ -145,7 +145,7 @@ void task_unblock_all(struct llist *list)
 	rwlock_release(&list->rwl, RWL_WRITER);
 	set_int(old);
 }
-
+#if 0
 void move_task_cpu(task_t *t, cpu_t *cpu)
 {
 	if(t->cpu == cpu) panic(0, "trying to move task to it's own cpu");
@@ -173,3 +173,4 @@ void move_task_cpu(task_t *t, cpu_t *cpu)
 	mutex_release(&oldcpu->lock);
 	t->flags &= ~TF_MOVECPU;
 }
+#endif

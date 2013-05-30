@@ -103,8 +103,7 @@ slab_cache_t *get_empty_scache(int size, unsigned short flags)
 void release_scache(slab_cache_t *sc)
 {
 	assert(sc);
-	if(sc->full || sc->partial || sc->empty)
-		panic(0, "A");
+	assert(!sc->full && !sc->partial && !sc->empty);
 	mutex_acquire(&scache_lock);
 	sc->id=-1;
 	sub_atomic(&num_scache, 1);

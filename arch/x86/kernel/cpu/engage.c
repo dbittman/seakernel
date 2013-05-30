@@ -33,7 +33,9 @@ void cpu_k_task_entry(task_t *me)
 	page_directory[PAGE_DIR_IDX(SMP_CUR_TASK / PAGE_SIZE)] = (unsigned)me;
 	((cpu_t *)(me->cpu))->flags |= CPU_TASK;
 	set_int(1);
-	for(;;) schedule();
+	/* wait until we have tasks to run */
+	for(;;) 
+		schedule();
 }
 
 /* it's important that this doesn't get inlined... */
@@ -52,11 +54,11 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	init_lapic(0);
 	set_lapic_timer(lapic_timer_start);
 	/* now we need to wait up the memory manager is all set up */
-	#warning "make this better..."
 	while(!(kernel_state_flags & KSF_MMU)) asm("cli");
 	/* load in the directory provided and enable paging! */
 	__asm__ volatile ("mov %0, %%cr3" : : "r" (cpu->kd_phys));
 	unsigned cr0temp;
+	
 	enable_paging();
 	/* map in the real stack */
 	unsigned i;
@@ -85,6 +87,7 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	cpu->cur = cpu->ktask = task;
 	task->cpu = cpu;
 	mutex_create(&cpu->lock, MT_NOSCHED);
+	cpu->numtasks=1;
 	set_kernel_stack(&cpu->tss, task->kernel_stack + (KERN_STACK_SIZE - STACK_ELEMENT_SIZE));
 	add_atomic(&running_processes, 1);
 	/* set up the real stack, and call cpu_k_task_entry with a pointer to this cpu's ktask as 

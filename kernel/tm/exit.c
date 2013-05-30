@@ -23,6 +23,7 @@ void set_as_dead(task_t *t)
 	kfree(t->listnode);
 	kfree(t->activenode);
 	kfree(t->blocknode);
+	sub_atomic(&(((cpu_t *)t->cpu)->numtasks), 1);
 	t->listnode = ll_insert(kill_queue, (void *)t);
 	/* Add to death */
 	__engage_idle();

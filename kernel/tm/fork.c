@@ -74,8 +74,9 @@ inline static int engage_new_stack(task_t *new, task_t *parent)
 		return 0;
 	}
 }
-unsigned int __counter = 0;
 
+#if CONFIG_SMP
+unsigned int __counter = 0;
 cpu_t *fork_choose_cpu(task_t *parent)
 {
 	cpu_t *pc = parent->cpu;
@@ -89,6 +90,7 @@ cpu_t *fork_choose_cpu(task_t *parent)
 		return pc;
 	return cpu;
 }
+#endif
 
 int do_fork(unsigned flags)
 {

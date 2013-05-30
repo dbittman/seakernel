@@ -27,7 +27,7 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 #endif
 		&& (m->flags & MT_NOSCHED) && !(((cpu_t *)current_task->cpu)->flags&CPU_INTER)
 		&& (int)current_task->pid != m->pid && m->pid != -1)
-			panic(0, "mutex will deadlock: %s:%d\n", file, line);
+			panic(0, "mutex will deadlock (%d %d): %s:%d\n", file, line);
 #if DEBUG
 	int t = 100000000;
 #endif
@@ -61,7 +61,7 @@ void __mutex_release(mutex_t *m, char *file, int line)
 		m->lock &= ~MT_LCK_INT;
 		return;
 	}
-	m->pid = -1;
+	//m->pid = -1;
 	btr_atomic(&m->lock, 0);
 }
 
@@ -74,6 +74,7 @@ mutex_t *mutex_create(mutex_t *m, unsigned flags)
 		m->flags=flags;
 	m->lock=0;
 	m->magic = MUTEX_MAGIC;
+	m->pid = -1;
 	return m;
 }
 

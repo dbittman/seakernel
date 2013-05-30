@@ -4,12 +4,11 @@
 #include <isr.h>
 #include <task.h>
 #include <cpu.h>
-int vm_map(unsigned virt, unsigned phys, unsigned attr, unsigned opt)
+int vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned opt)
 {
 	unsigned vpage = (virt&PAGE_MASK)/0x1000;
 	unsigned vdir = PAGE_DIR_IDX(vpage);
-	unsigned p;
-	unsigned tmp;
+	addr_t p;
 	unsigned *pd = page_directory;
 	if(kernel_task && !(opt & MAP_PDLOCKED))
 		mutex_acquire(&pd_cur_data->lock);

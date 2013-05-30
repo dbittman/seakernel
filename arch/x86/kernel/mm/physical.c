@@ -26,7 +26,7 @@ addr_t __pm_alloc_page(char *file, int line)
 {
 	if(!pm_location)
 		panic(PANIC_MEM | PANIC_NOSYNC, "Physical memory allocation before initilization");
-	unsigned ret;
+	addr_t ret;
 	unsigned flag=0;
 	try_again:
 	ret=0;
@@ -38,7 +38,7 @@ addr_t __pm_alloc_page(char *file, int line)
 	{
 		mutex_acquire(&pm_mutex);
 		/* out of physical memory!! */
-		if(pm_stack <= (PM_STACK_ADDR+sizeof(unsigned)*2)) {
+		if(pm_stack <= (PM_STACK_ADDR+sizeof(addr_t)*2)) {
 			if(current_task == kernel_task || !current_task)
 				panic(PANIC_MEM | PANIC_NOSYNC, "Ran out of physical memory");
 			mutex_release(&pm_mutex);
@@ -58,9 +58,9 @@ addr_t __pm_alloc_page(char *file, int line)
 			else
 				panic(PANIC_MEM | PANIC_NOSYNC, "Ran out of physical memory");
 		}
-		pm_stack -= sizeof(unsigned int);
-		ret = *(unsigned int *)pm_stack;
-		*(unsigned int *)pm_stack = 0;
+		pm_stack -= sizeof(addr_t);
+		ret = *(addr_t *)pm_stack;
+		*(addr_t *)pm_stack = 0;
 		++pm_used_pages;
 		mutex_release(&pm_mutex);
 	} else {
@@ -98,10 +98,10 @@ void pm_free_page(addr_t addr)
 		memset((void *)pm_stack_max, 0, PAGE_SIZE);
 		pm_stack_max += PAGE_SIZE;
 	} else {
-		assert(*(unsigned int *)(pm_stack) = addr);
-		pm_stack += sizeof(unsigned int);
+		assert(*(addr_t *)(pm_stack) = addr);
+		pm_stack += sizeof(addr_t);
 		--pm_used_pages;
-		assert(*(unsigned int *)(pm_stack - sizeof(unsigned int)) == addr);
+		assert(*(addr_t *)(pm_stack - sizeof(addr_t)) == addr);
 	}
 	mutex_release(&pm_mutex);
 	if(current_task && current_task->num_pages)

@@ -14,7 +14,7 @@
  *  - BUT NOT if we are unmapping the pd_cur_data page
  */
 
-int vm_do_unmap_only(unsigned virt, unsigned locked)
+int vm_do_unmap_only(addr_t virt, unsigned locked)
 {
 #if CONFIG_SWAP
 	if(current_task && num_swapdev && current_task->num_swapped)
@@ -37,7 +37,7 @@ int vm_do_unmap_only(unsigned virt, unsigned locked)
 	return 0;
 }
 
-int vm_do_unmap(unsigned virt, unsigned locked)
+int vm_do_unmap(addr_t virt, unsigned locked)
 {
 	/* This gives the virtual address of the table needed, and sets
 	 * the correct place as zero */
@@ -47,7 +47,7 @@ int vm_do_unmap(unsigned virt, unsigned locked)
 #endif
 	if(kernel_task && (virt&PAGE_MASK) != PDIR_DATA && !locked)
 		mutex_acquire(&pd_cur_data->lock);
-	unsigned p = page_tables[(virt&PAGE_MASK)/0x1000];
+	addr_t p = page_tables[(virt&PAGE_MASK)/0x1000];
 	page_tables[(virt&PAGE_MASK)/0x1000] = 0;
 	__asm__ volatile ("invlpg (%0)" : : "a" (virt));
 #if CONFIG_SMP

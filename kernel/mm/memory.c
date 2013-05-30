@@ -6,13 +6,13 @@
 #include <cpu.h>
 #include <elf.h>
 #include <atomic.h>
-extern unsigned int end;
+extern addr_t end;
 void slab_stat(struct mem_stat *s);
 void process_memorymap(struct multiboot *mboot)
 {
-	uint32_t i = mboot->mmap_addr;
+	addr_t i = mboot->mmap_addr;
 	int num_pages=0;
-	unsigned int j=0;
+	addr_t j=0;
 	while(i < (mboot->mmap_addr + mboot->mmap_length)){
 		mmap_entry_t *me = (mmap_entry_t *)(i);
 		printk(1, "[mm]: Map %d: %x -> %x\n", me->type, me->base_addr_low, 

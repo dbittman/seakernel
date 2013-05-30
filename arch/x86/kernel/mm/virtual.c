@@ -12,7 +12,7 @@ struct pd_data *pd_cur_data = (struct pd_data *)PDIR_DATA;
 extern void id_map_apic(page_dir_t *);
 /* This function will setup a paging environment with a basic page dir, 
  * enough to process the memory map passed by grub */
-void vm_init(unsigned id_map_to)
+void vm_init(addr_t id_map_to)
 {
 	/* Register some stuff... */
 	register_interrupt_handler (14, (isr_t)&page_fault, 0);
@@ -112,7 +112,7 @@ void vm_switch(page_dir_t *n/*VIRTUAL ADDRESS*/)
 	__asm__ volatile ("mov %0, %%cr3" : : "r" (n[1023]&PAGE_MASK));
 }
 
-unsigned int vm_do_getmap(unsigned v, unsigned *p, unsigned locked)
+addr_t vm_do_getmap(addr_t v, addr_t *p, unsigned locked)
 {
 	unsigned *pd = page_directory;
 	unsigned int vp = (v&PAGE_MASK) / 0x1000;
@@ -129,7 +129,7 @@ unsigned int vm_do_getmap(unsigned v, unsigned *p, unsigned locked)
 	return ret;
 }
 
-unsigned int vm_setattrib(unsigned v, short attr)
+unsigned int vm_setattrib(addr_t v, short attr)
 {
 	unsigned *pd = page_directory;
 	unsigned int vp = (v&PAGE_MASK) / 0x1000;
@@ -145,7 +145,7 @@ unsigned int vm_setattrib(unsigned v, short attr)
 	return 0;
 }
 
-unsigned int vm_do_getattrib(unsigned v, unsigned *p, unsigned locked)
+unsigned int vm_do_getattrib(addr_t v, unsigned *p, unsigned locked)
 {
 	unsigned *pd = page_directory;
 	unsigned int vp = (v&PAGE_MASK) / 0x1000;

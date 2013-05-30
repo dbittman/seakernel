@@ -5,7 +5,7 @@
 #include <task.h>
 int self_free_table(int t)
 {
-	unsigned virt = t*1024*PAGE_SIZE;
+	addr_t virt = t*1024*PAGE_SIZE;
 	int i;
 	for(i=0;i<1024;++i)
 	{

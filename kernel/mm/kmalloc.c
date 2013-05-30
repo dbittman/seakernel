@@ -8,8 +8,8 @@ unsigned (*do_kmalloc_wrap)(unsigned, char)=0;
 void (*do_kfree_wrap)(void *)=0;
 char kmalloc_name[128];
 mutex_t km_m;
-void install_kmalloc(char *name, unsigned (*init)(unsigned, unsigned), 
-	unsigned (*alloc)(unsigned, char), void (*free)(void *))
+void install_kmalloc(char *name, unsigned (*init)(addr_t, addr_t), 
+	addr_t (*alloc)(unsigned, char), void (*free)(void *))
 {
 	do_kmalloc_wrap = alloc;
 	do_kfree_wrap = free;
@@ -19,12 +19,12 @@ void install_kmalloc(char *name, unsigned (*init)(unsigned, unsigned),
 		init(KMALLOC_ADDR_START, KMALLOC_ADDR_END);
 }
 
-inline unsigned do_kmalloc(unsigned sz, char align)
+inline addr_t do_kmalloc(unsigned sz, char align)
 {
 	if(!do_kmalloc_wrap)
 		panic(PANIC_MEM | PANIC_NOSYNC, "No kernel-level allocator installed!");
 	mutex_acquire(&km_m);
-	unsigned ret = do_kmalloc_wrap(sz, align);
+	addr_t ret = do_kmalloc_wrap(sz, align);
 	mutex_release(&km_m);
 	if(!ret || ret >= KMALLOC_ADDR_END || ret < KMALLOC_ADDR_START)
 		panic(PANIC_MEM | PANIC_NOSYNC, "kmalloc returned impossible address");
@@ -32,27 +32,27 @@ inline unsigned do_kmalloc(unsigned sz, char align)
 	return ret;
 }
 
-unsigned __kmalloc(unsigned s, char *file, int line)
+addr_t __kmalloc(unsigned s, char *file, int line)
 {
 	return do_kmalloc(s, 0);
 }
 
-unsigned kmalloc_a(unsigned s)
+addr_t kmalloc_a(unsigned s)
 {
 	return do_kmalloc(s, 1);
 }
 
-unsigned kmalloc_p(unsigned s, unsigned *p)
+addr_t kmalloc_p(unsigned s, addr_t *p)
 {
-	unsigned ret = do_kmalloc(s, 0);
+	addr_t ret = do_kmalloc(s, 0);
 	vm_getmap(ret, p);
 	*p += ret%PAGE_SIZE;
 	return ret;
 }
 
-unsigned kmalloc_ap(unsigned s, unsigned *p)
+addr_t kmalloc_ap(unsigned s, addr_t *p)
 {
-	unsigned ret = do_kmalloc(s, 1);
+	addr_t ret = do_kmalloc(s, 1);
 	vm_getmap(ret, p);
 	*p += ret%PAGE_SIZE;
 	return ret;

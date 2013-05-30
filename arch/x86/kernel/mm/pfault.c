@@ -30,7 +30,7 @@ void print_pfe(int x, registers_t *regs, unsigned cr2)
 }
 #define USER_TASK (err_code & 0x4)
 
-int do_map_page(unsigned addr, unsigned attr)
+int do_map_page(addr_t addr, unsigned attr)
 {
 	addr &= PAGE_MASK;
 	if(!vm_do_getmap(addr, 0, 1))

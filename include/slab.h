@@ -1,6 +1,7 @@
 #ifndef SLAB_H
 #define SLAB_H
 #include <area.h>
+#include <config.h>
 #define SLAB_MAGIC 0x11235813
 #define S_ALIGN 1
 
@@ -22,7 +23,7 @@ typedef struct slab_header_s {
 	unsigned short obj_num;
 	/* For usage in the slab lists */
 	struct slab_header_s *next, *prev;
-	unsigned parent; /* Pointer to the slab cache that this slab is part of */
+	addr_t parent; /* Pointer to the slab cache that this slab is part of */
 	unsigned short *stack;
 	unsigned short stack_arr[MAX_OBJ_ID];
 	vnode_t *vnode;

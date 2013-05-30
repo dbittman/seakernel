@@ -19,7 +19,7 @@
 #include <atomic.h>
 
 slab_cache_t *scache_list[NUM_SCACHES];
-unsigned slab_start=0, slab_end=0;
+addr_t slab_start=0, slab_end=0;
 vma_t slab_area_alloc;
 unsigned pages_used=0;
 #define SLAB_NUM_INDEX 120
@@ -64,7 +64,8 @@ void free_slab(slab_t *slab)
 	assert(slab);
 	pages_used -= slab->num_pages;
 	vnode_t *t = slab->vnode;
-	unsigned j, addr = (unsigned)slab;
+	addr_t j;
+	addr_t addr = (unsigned)slab;
 	for(j=addr;j<(addr + num_pages*PAGE_SIZE);j+=PAGE_SIZE) {
 		if(vm_getmap(j, 0))
 			vm_unmap(j);
@@ -104,6 +105,7 @@ void release_scache(slab_cache_t *sc)
 	assert(sc);
 	if(sc->full || sc->partial || sc->empty)
 		return;
+#warning "panic here"
 	mutex_acquire(&scache_lock);
 	sc->id=-1;
 	sub_atomic(&num_scache, 1);
@@ -179,7 +181,7 @@ slab_t *create_slab(slab_cache_t *sc, int num_pages, unsigned short flags)
 	assert(sc && num_pages);
 	assert(!((flags & S_ALIGN) && num_pages == 1));
 	vnode_t *vnode=0;
-	unsigned addr=0;
+	addr_t addr=0;
 	vnode = alloc_slab(num_pages);
 	if(!vnode)
 		panic(PANIC_MEM | PANIC_NOSYNC, "Unable to allocate slab");
@@ -197,7 +199,7 @@ slab_t *create_slab(slab_cache_t *sc, int num_pages, unsigned short flags)
 	memset(slab, 0, sizeof(slab_t));
 	slab->magic = SLAB_MAGIC;
 	slab->flags = flags;
-	slab->parent = (unsigned)sc;
+	slab->parent = (addr_t)sc;
 	slab->num_pages = num_pages;
 	slab->vnode = vnode;
 	/* If we are aligning, we need to make number of objects 
@@ -219,29 +221,27 @@ slab_t *create_slab(slab_cache_t *sc, int num_pages, unsigned short flags)
 	return slab;
 }
 
-unsigned do_alloc_object(slab_t *slab)
+addr_t do_alloc_object(slab_t *slab)
 {
 	assert(slab && slab->magic == SLAB_MAGIC);
 	slab_cache_t *sc = (slab_cache_t *)(slab->parent);
 	assert(sc);
-	int ret=0;
 	if(slab->obj_used >= slab->obj_num)
 		panic(PANIC_MEM | PANIC_NOSYNC, 
 				"Slab object count is greater than possible number of objects");
 	assert(slab->stack > slab->stack_arr && slab->stack_arr);
 	/* Pop the object off the top of the stack */
 	unsigned short obj = *(--slab->stack);
-	unsigned obj_addr = FIRST_OBJ(slab) + OBJ_SIZE(slab)*obj;
-	assert((obj_addr > (unsigned)slab) 
-		&& (((obj_addr+sc->obj_size)-(unsigned)slab) <= slab->num_pages*0x1000));
+	addr_t obj_addr = FIRST_OBJ(slab) + OBJ_SIZE(slab)*obj;
+	assert((obj_addr > (addr_t)slab) 
+	&& (((obj_addr+sc->obj_size)-(addr_t)slab) <= slab->num_pages*0x1000));
 	slab->obj_used++;
-	ret = obj_addr;
-	return ret;
+	return obj_addr;
 }
 
-unsigned alloc_object(slab_t *slab)
+addr_t alloc_object(slab_t *slab)
 {
-	unsigned ret = do_alloc_object(slab);
+	addr_t ret = do_alloc_object(slab);
 	assert(slab->obj_used <= slab->obj_num);
 	if(ret && slab->obj_used == slab->obj_num)
 	{
@@ -307,7 +307,7 @@ void release_slab(slab_t *slab)
 		release_scache(sc);
 }
 
-unsigned slab_init(unsigned start, unsigned end)
+unsigned slab_init(addr_t start, addr_t end)
 {
 	printk(1, "[slab]: Initiating slab allocator...");
 	map_if_not_mapped(start);
@@ -427,7 +427,6 @@ slab_t *find_usable_slab(unsigned size, int align, int allow_range)
 				: slab_size(size)/PAGE_SIZE, fl);
 		if(!slab)
 		{
-			//delay(100);
 			__engage_idle();
 			delay(100);
 			return 0;
@@ -452,7 +451,7 @@ slab_t *find_usable_slab(unsigned size, int align, int allow_range)
 	return find_usable_slab(size, align, 0);
 }
 
-unsigned do_kmalloc_slab(unsigned sz, char align)
+addr_t do_kmalloc_slab(unsigned sz, char align)
 {
 	if(sz < 32) sz=32;
 	if(!align)
@@ -470,14 +469,14 @@ unsigned do_kmalloc_slab(unsigned sz, char align)
 #ifdef SLAB_DEBUG
 	total += ((slab_cache_t *)(slab->parent))->obj_size;
 #endif
-	unsigned addr = alloc_object(slab);
+	addr_t addr = alloc_object(slab);
 	if(align && !((addr&PAGE_MASK) == addr))
 		panic(PANIC_MEM | PANIC_NOSYNC, 
 			"slab allocation of aligned data failed! (returned %x)", addr);
 	if(!align)
 	{
-		*(unsigned *)(addr) = (unsigned)slab;
-		addr += sizeof(unsigned *);
+		*(addr_t *)(addr) = (addr_t)slab;
+		addr += sizeof(addr_t *);
 	}
 	return addr;
 }
@@ -493,13 +492,13 @@ void do_kfree_slab(void *ptr)
 	}
 	vnode_t *n = 0;
 	slab_t *slab=0;
-	if(((unsigned)ptr&PAGE_MASK) == (unsigned)ptr) {
+	if(((addr_t)ptr&PAGE_MASK) == (addr_t)ptr) {
 		try_alt:
-		n = find_vmem_area(&slab_area_alloc, (unsigned)ptr);
+		n = find_vmem_area(&slab_area_alloc, (addr_t)ptr);
 		if(n) slab = (slab_t *)n->addr;
 	}
 	else {
-		slab = (slab_t *)*(unsigned *)((unsigned)ptr - sizeof(unsigned *));
+		slab = (slab_t *)*(addr_t *)((addr_t)ptr - sizeof(addr_t *));
 		n = slab->vnode;
 		if(!n) goto try_alt;
 	}
@@ -510,7 +509,7 @@ void do_kfree_slab(void *ptr)
 	total -= sc->obj_size;
 #endif
 	int obj;
-	obj = ((unsigned)ptr-FIRST_OBJ(slab)) / sc->obj_size;
+	obj = ((addr_t)ptr-FIRST_OBJ(slab)) / sc->obj_size;
 	assert(obj < slab->obj_num);
 	release_object(slab, obj);
 }

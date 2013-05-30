@@ -6,6 +6,7 @@
 #include <task.h>
 #include <cpu.h>
 #include <atomic.h>
+
 extern struct llist *kill_queue;
 extern unsigned running_processes;
 void clear_resources(task_t *t)
@@ -23,6 +24,7 @@ void set_as_dead(task_t *t)
 	kfree(t->listnode);
 	kfree(t->activenode);
 	kfree(t->blocknode);
+	mutex_destroy((mutex_t *)&t->exlock);
 	sub_atomic(&(((cpu_t *)t->cpu)->numtasks), 1);
 	t->listnode = ll_insert(kill_queue, (void *)t);
 	/* Add to death */
@@ -82,11 +84,14 @@ int get_exit_status(int pid, int *status, int *retval, int *signum, int *__pid)
 		return -1;
 	ex_stat *es;
 	lock_scheduler();
+	int old = set_int(0);
+	mutex_acquire((mutex_t *)&current_task->exlock);
 	ex_stat *ex = current_task->exlist;
 	if(pid != -1) 
 		while(ex && ex->pid != (unsigned)pid) ex=ex->next;
 	es=ex;
-	unlock_scheduler();
+	mutex_release((mutex_t *)&current_task->exlock);
+	set_int(old);
 	if(es)
 	{
 		if(__pid) *__pid = es->pid;
@@ -104,12 +109,14 @@ void add_exit_stat(task_t *t, ex_stat *e)
 	ex_stat *n = (ex_stat *)kmalloc(sizeof(*e));
 	memcpy(n, e, sizeof(*e));
 	n->prev=0;
-	lock_scheduler();
+	int old_int = set_int(0);
+	mutex_acquire((mutex_t *)&t->exlock);
 	ex_stat *old = t->exlist;
 	if(old) old->prev = n;
 	t->exlist = n;
 	n->next=old;
-	unlock_scheduler();
+	mutex_release((mutex_t *)&t->exlock);
+	set_int(old_int);
 }
 
 void exit(int code)
@@ -121,48 +128,31 @@ void exit(int code)
 	raise_flag(TF_EXITING);
 	if(code != -9) t->exit_reason.cause = 0;
 	t->exit_reason.ret = code;
-	add_exit_stat((task_t *)t->parent, (ex_stat *)&t->exit_reason);
+	if(t->parent)
+		add_exit_stat((task_t *)t->parent, (ex_stat *)&t->exit_reason);
 	/* Clear out system resources */
 	free_stack(); /* free up memory that is thread-specific */
 	clear_resources(t);
 	close_all_files(t);
 	iput(t->root);
 	iput(t->pwd);
-	/* Send out some signals */
-#warning "this is ugly...fix this"
-	set_int(0);
-	mutex_acquire(&primary_queue->lock);
-	struct llistnode *cur;
-	task_t *tmp;
-	ll_for_each_entry(&primary_queue->tql, cur, task_t *, tmp)
-	{
-		if(tmp->parent == t)
-			tmp->parent=0;
-		if(tmp->waiting == t)
-		{
-			tmp->sigd = SIGWAIT;
-			tmp->waiting=0;
-			tmp->waiting_ret = 0;
-			memcpy((void *)&tmp->we_res, (void *)&t->exit_reason, 
-				sizeof(t->exit_reason));
-			tmp->we_res.pid = t->pid;
-			task_resume(tmp);
-		}
-	}
-	mutex_release(&primary_queue->lock);
-	if(t->parent) {
+	/* this fixes all tasks that are children of current_task, or are waiting
+	 * on current_task. For those waiting, it signals the task */
+	search_tqueue(primary_queue, TSEARCH_EXIT_PARENT | TSEARCH_EXIT_WAITING, 0, 0, 0);
+	/* tell our parent that we're dead */
+	if(t->parent)
 		do_send_signal(t->parent->pid, SIGCHILD, 1);
-		t->parent = t->parent->parent;
-	}
 	/* Lock out everything and modify the linked-lists */
-	lock_scheduler();
+	int old = set_int(0);
+	mutex_acquire((mutex_t *)&t->exlock);
 	ex_stat *ex = t->exlist;
 	while(ex) {
 		ex_stat *n = ex->next;
 		kfree(ex);
 		ex=n;
 	}
-	unlock_scheduler();
+	mutex_release((mutex_t *)&t->exlock);
+	set_int(old);
 	raise_flag(TF_DYING);
 	set_as_dead(t);
 	char flag_last_page_dir_task=0;

@@ -45,6 +45,21 @@ task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned value, void (*actio
 			t = tmp;
 			break;
 		}
+		/* special actions required by exit */
+		if(flags & TSEARCH_EXIT_WAITING && tmp->waiting == current_task)
+		{
+			tmp->sigd = SIGWAIT;
+			tmp->waiting=0;
+			tmp->waiting_ret = 0;
+			memcpy((void *)&tmp->we_res, (void *)&current_task->exit_reason, 
+				   sizeof(current_task->exit_reason));
+			tmp->we_res.pid = current_task->pid;
+			task_resume(tmp);	
+		}
+		if(flags & TSEARCH_EXIT_PARENT && tmp->parent == current_task)
+		{
+			tmp->parent = 0;
+		}
 		/* have we found something and are only looking for one thing? */
 		if(t && !(flags & TSEARCH_FINDALL))
 			break;

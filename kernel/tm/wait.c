@@ -1,6 +1,7 @@
 #include <kernel.h>
 #include <memory.h>
 #include <task.h>
+#include <cpu.h>
 
 int wait_task(unsigned pid, int state)
 {
@@ -95,11 +96,16 @@ int sys_waitpid(int pid, int *st, int opt)
 		return 0;
 	} else if(pid == -1){
 		ex_stat *es;
+		int old = set_int(0);
+		mutex_acquire(&current_task->exlock);
 		if((es=current_task->exlist)) {
-			lock_scheduler();
 			current_task->exlist = current_task->exlist->next;
-			unlock_scheduler();
+			mutex_release(&current_task->exlock);
+			set_int(old);
 			kfree(es);
+		} else {
+			mutex_release(&current_task->exlock);
+			set_int(old);
 		}
 	}
 	if(st) 

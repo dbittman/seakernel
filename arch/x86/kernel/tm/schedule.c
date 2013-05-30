@@ -65,7 +65,7 @@ __attribute__((always_inline)) static inline void post_context_switch()
 		&& (!(current_task->flags & TF_INSIG) 
 			|| signal_will_be_fatal(current_task, current_task->sigd))
 		&& !(current_task->flags & TF_KTASK) && current_task->pid
-		)
+		&& !(current_task->flags & TF_EXITING))
 	{
 		current_task->flags |= TF_INSIG;
 		/* Jump to the signal handler */

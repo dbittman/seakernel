@@ -50,14 +50,15 @@ extern tqueue_t *primary_queue, *active_queue;
 #define PRIO_PGRP    2
 #define PRIO_USER    3
 
-#define TSEARCH_FINDALL  0x1
-#define TSEARCH_PID      0x2
-#define TSEARCH_UID      0x4
-#define TSEARCH_EUID     0x8
-#define TSEARCH_TTY     0x10
-#define TSEARCH_PARENT  0x20
-#define TSEARCH_ENUM    0x40
-
+#define TSEARCH_FINDALL        0x1
+#define TSEARCH_PID            0x2
+#define TSEARCH_UID            0x4
+#define TSEARCH_EUID           0x8
+#define TSEARCH_TTY           0x10
+#define TSEARCH_PARENT        0x20
+#define TSEARCH_ENUM          0x40
+#define TSEARCH_EXIT_WAITING  0x80
+#define TSEARCH_EXIT_PARENT  0x100
 #define current_task ((kernel_state_flags&KSF_MMU) ? ((task_t *)page_directory[PAGE_DIR_IDX(SMP_CUR_TASK/PAGE_SIZE)]) : 0)
 
 #define current_tss (&((cpu_t *)current_task->cpu)->tss)
@@ -103,6 +104,7 @@ struct task_struct
 	volatile addr_t stack_end;
 	volatile unsigned num_pages;
 	unsigned last; /* the previous systemcall */
+	mutex_t exlock;
 	ex_stat exit_reason, we_res, *exlist;
 	/* pushed registers by the interrupt handlers */
 	registers_t reg_b; /* backup */

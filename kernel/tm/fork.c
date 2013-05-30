@@ -5,7 +5,6 @@
 #include <atomic.h>
 #include <cpu.h>
 
-extern void copy_update_stack(unsigned old, unsigned new, unsigned length);
 unsigned running_processes = 0;
 
 void copy_task_struct(task_t *new, task_t *parent)
@@ -47,6 +46,7 @@ void copy_task_struct(task_t *new, task_t *parent)
 	/* This actually duplicates the handles... */
 	copy_file_handles(parent, new);
 	new->flags = TF_FORK;
+	mutex_create(&new->exlock, MT_NOSCHED);
 	new->phys_mem_usage = parent->phys_mem_usage;
 	new->listnode = (void *)kmalloc(sizeof(struct llistnode));
 	new->activenode = (void *)kmalloc(sizeof(struct llistnode));

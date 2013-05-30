@@ -83,7 +83,6 @@ int get_exit_status(int pid, int *status, int *retval, int *signum, int *__pid)
 	if(!pid) 
 		return -1;
 	ex_stat *es;
-	lock_scheduler();
 	int old = set_int(0);
 	mutex_acquire((mutex_t *)&current_task->exlock);
 	ex_stat *ex = current_task->exlist;

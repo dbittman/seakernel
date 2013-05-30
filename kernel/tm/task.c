@@ -47,7 +47,7 @@ void init_multitasking()
 	kernel_task = task;
 	primary_cpu->numtasks=1;
 	primary_cpu->flags |= CPU_TASK;
-	mutex_create(&task->exlock, MT_NOSCHED);
+	mutex_create((mutex_t *)&task->exlock, MT_NOSCHED);
 	add_atomic(&running_processes, 1);
 #if CONFIG_MODULES
 	add_kernel_symbol(delay);

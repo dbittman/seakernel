@@ -21,7 +21,6 @@ void kernel_shutdown()
 	current_task->uid=0;
 	set_ksf(KSF_SHUTDOWN);
 	set_int(0);
-	lock_scheduler();
 	sys_sync(PRINT_LEVEL);
 	unmount_all();
 #if CONFIG_MODULES

@@ -3,6 +3,10 @@
 #include <task.h>
 #include <fs.h>
 
+/* these are deprecated, so don't use them. This whole file needs re-writing... */
+#define lock_scheduler() 
+#define unlock_scheduler() 
+
 void add_mmf(task_t *t, mmf_t *mf)
 {
 	mmf_t *o = t->mm_files;

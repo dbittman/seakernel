@@ -97,14 +97,14 @@ int sys_waitpid(int pid, int *st, int opt)
 	} else if(pid == -1){
 		ex_stat *es;
 		int old = set_int(0);
-		mutex_acquire(&current_task->exlock);
+		mutex_acquire((mutex_t *)&current_task->exlock);
 		if((es=current_task->exlist)) {
 			current_task->exlist = current_task->exlist->next;
-			mutex_release(&current_task->exlock);
+			mutex_release((mutex_t *)&current_task->exlock);
 			set_int(old);
 			kfree(es);
 		} else {
-			mutex_release(&current_task->exlock);
+			mutex_release((mutex_t *)&current_task->exlock);
 			set_int(old);
 		}
 	}

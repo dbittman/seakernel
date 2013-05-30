@@ -46,7 +46,7 @@ void copy_task_struct(task_t *new, task_t *parent)
 	/* This actually duplicates the handles... */
 	copy_file_handles(parent, new);
 	new->flags = TF_FORK;
-	mutex_create(&new->exlock, MT_NOSCHED);
+	mutex_create((mutex_t *)&new->exlock, MT_NOSCHED);
 	new->phys_mem_usage = parent->phys_mem_usage;
 	new->listnode = (void *)kmalloc(sizeof(struct llistnode));
 	new->activenode = (void *)kmalloc(sizeof(struct llistnode));
@@ -74,7 +74,7 @@ inline static int engage_new_stack(task_t *new, task_t *parent)
 		return 0;
 	}
 }
-int __counter = 0;
+unsigned int __counter = 0;
 
 cpu_t *fork_choose_cpu(task_t *parent)
 {
@@ -93,7 +93,7 @@ cpu_t *fork_choose_cpu(task_t *parent)
 int do_fork(unsigned flags)
 {
 	assert(current_task && kernel_task);
-	assert(running_processes < MAX_TASKS || MAX_TASKS == -1);
+	assert(running_processes < (unsigned)MAX_TASKS || MAX_TASKS == -1);
 	unsigned eip;
 	flush_pd();
 	task_t *new = (task_t *)kmalloc(sizeof(task_t));

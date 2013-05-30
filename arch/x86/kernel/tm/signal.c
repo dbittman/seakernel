@@ -134,10 +134,8 @@ int do_send_signal(int pid, int __sig, int p)
 		task->state = TASK_RUNNING;
 		kill_task(pid);
 	}
-	if(task == current_task) {
-		unlock_scheduler();
+	if(task == current_task)
 		task->flags |= TF_SCHED;
-	}
 	return 0;
 }
 

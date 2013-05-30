@@ -223,22 +223,6 @@ void task_pause(task_t *t);
 void task_unblock_all(struct llist *list);
 void task_unblock(struct llist *list, task_t *t);
 void task_resume(task_t *t);
-#define lock_scheduler() _lock_scheduler(__FILE__, __LINE__);
-#define unlock_scheduler() _unlock_scheduler(__FILE__, __LINE__);
-
-static inline  __attribute__((always_inline))  
-void _lock_scheduler(char *f, int l)
-{
-	if(current_task)
-		current_task->flags |= TF_LOCK;
-}
-
-static inline  __attribute__((always_inline))  
-void _unlock_scheduler(char *f, int l)
-{
-	if(current_task)
-		current_task->flags &= ~TF_LOCK;
-}
 
 static inline int signal_will_be_fatal(task_t *t, int sig)
 {

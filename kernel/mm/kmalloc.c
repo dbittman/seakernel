@@ -4,7 +4,7 @@
 #include <kernel.h>
 #include <memory.h>
 #include <task.h>
-unsigned (*do_kmalloc_wrap)(unsigned, char)=0;
+addr_t (*do_kmalloc_wrap)(unsigned, char)=0;
 void (*do_kfree_wrap)(void *)=0;
 char kmalloc_name[128];
 mutex_t km_m;

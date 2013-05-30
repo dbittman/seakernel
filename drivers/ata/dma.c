@@ -20,7 +20,7 @@ int ata_dma_init(struct ata_controller *cont, struct ata_device *dev,
 	if(num_entries >= 512) return -1;
 	for(i=0;i<num_entries;i++) {
 		if(!(t->addr = cont->dma_buf_phys[i])) {
-			unsigned phys, virt;
+			addr_t phys, virt;
 			if(allocate_dma_buffer(64*1024, &virt, &phys) == -1)
 				return -1;
 			t->addr = cont->dma_buf_phys[i] = phys;

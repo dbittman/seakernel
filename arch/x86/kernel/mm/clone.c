@@ -76,7 +76,7 @@ page_dir_t *vm_clone(page_dir_t *pd, char cow)
 	vm_copy_dir(pd, new, cow ? 2 : 0);
 	/* Now set the self refs (DIR_PHYS, TBL_PHYS) */
 	new[1023] = new_p | PAGE_PRESENT | PAGE_WRITE;
-	addr_t *tmp = (unsigned *)VIRT_TEMP;
+	addr_t *tmp = (addr_t *)VIRT_TEMP;
 	addr_t tmp_p = pm_alloc_page();
 	vm_map((unsigned)tmp, tmp_p, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_PDLOCKED);
 	flush_pd();
@@ -141,7 +141,7 @@ page_dir_t *vm_copy(page_dir_t *pd)
 	vm_copy_dir(pd, new, 1);
 	/* Now set the self refs (DIR_PHYS, TBL_PHYS) */
 	new[1023] = new_p | PAGE_PRESENT | PAGE_WRITE;
-	addr_t *tmp = (unsigned *)VIRT_TEMP;
+	addr_t *tmp = (addr_t *)VIRT_TEMP;
 	addr_t tmp_p = pm_alloc_page();
 	vm_map((addr_t)tmp, tmp_p, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_PDLOCKED);
 	flush_pd();

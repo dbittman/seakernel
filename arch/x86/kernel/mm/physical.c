@@ -4,7 +4,7 @@
 #include <multiboot.h>
 #include <task.h>
 #include <swap.h>
-#warning "set addr_t size to long?"
+
 volatile addr_t pm_location=0;
 volatile addr_t pm_stack = PM_STACK_ADDR;
 volatile addr_t pm_stack_max = PM_STACK_ADDR;

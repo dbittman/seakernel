@@ -126,10 +126,10 @@ int read_partitions(struct ata_controller *cont, struct ata_device *dev, char *n
 
 void allocate_dma(struct ata_controller *cont)
 {
-	unsigned buf;
-	unsigned p;
+	addr_t buf;
+	addr_t p;
 	if(!cont->prdt_virt) {
-		buf = (unsigned)kmalloc_ap(0x1000, &p);
+		buf = kmalloc_ap(0x1000, &p);
 		cont->prdt_virt = (uint64_t *)buf;
 		cont->prdt_phys = p;
 	}

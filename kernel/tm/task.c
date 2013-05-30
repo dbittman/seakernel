@@ -77,7 +77,7 @@ void switch_to_user_mode()
 
 task_t *get_task_pid(int pid)
 {
-	return search_tqueue(primary_queue, TSEARCH_PID, pid, 0, 0);
+	return search_tqueue(primary_queue, TSEARCH_PID, pid, 0, 0, 0);
 }
 
 int times(struct tms *buf)

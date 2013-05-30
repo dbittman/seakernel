@@ -51,6 +51,11 @@ int sys_gsetpriority(int set, int which, int id, int val)
 	return current_task->priority;
 }
 
+void sys_nice_search_action(task_t *t, int val)
+{
+	t->priority = val;
+}
+
 int sys_nice(int which, int who, int val, int flags)
 {
 	if(!flags || which == PRIO_PROCESS)
@@ -70,24 +75,8 @@ int sys_nice(int which, int who, int val, int flags)
 	val++; /* our default is 1, POSIX default is 0 */
 	task_t *t = (task_t *)kernel_task;
 	int c=0;
-	if(which == PRIO_USER) {
-#warning "this is ugly...fix this"
-		int old = set_int(0);
-		mutex_acquire(&primary_queue->lock);
-		struct llistnode *cur;
-		task_t *tmp;
-		ll_for_each_entry(&primary_queue->tql, cur, task_t *, tmp)
-		{
-			if(tmp->uid == who || tmp->_uid == who)
-			{
-				t->priority = val;
-				c++;
-				break;
-			}
-		}
-		mutex_release(&primary_queue->lock);
-		set_int(old);
-	}
+	if(which == PRIO_USER)
+		search_tqueue(primary_queue, TSEARCH_UID | TSEARCH_EUID | TSEARCH_FINDALL | TSEARCH_EXCLUSIVE, who, sys_nice_search_action, val, &c);
 	return c ? 0 : -ESRCH;
 }
 
@@ -169,7 +158,7 @@ int task_pstat(unsigned int pid, struct task_stat *s)
 int task_stat(unsigned int num, struct task_stat *s)
 {
 	if(!s) return -EINVAL;
-	task_t *t = search_tqueue(primary_queue, TSEARCH_ENUM, num, 0, 0);
+	task_t *t = search_tqueue(primary_queue, TSEARCH_ENUM, num, 0, 0, 0);
 	if(!t) 
 		return -ESRCH;
 	do_task_stat(s, t);

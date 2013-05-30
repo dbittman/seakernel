@@ -62,7 +62,7 @@ int tty_raise_action(int min, int sig)
 		return 0;
 	if((kernel_state_flags & KSF_SHUTDOWN))
 		return 0;
-	if(search_tqueue(primary_queue, TSEARCH_FINDALL | TSEARCH_TTY, min, __tty_found_task_raise_action, sig))
+	if(search_tqueue(primary_queue, TSEARCH_FINDALL | TSEARCH_TTY, min, __tty_found_task_raise_action, sig, 0))
 		consoles[min].inpos=0;
 	return 0;
 }

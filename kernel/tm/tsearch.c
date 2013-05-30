@@ -7,12 +7,14 @@
 #define FOUND_ACTION \
 	if(action) \
 		action(t, arg); \
-	t = tmp;
+	t = tmp; \
+	if(count) *count++; \
+	if(flags & TSEARCH_EXCLUSIVE) goto next;
 
 /* assumes that the passed task queue contains
  * elements of task_t.
  */
-task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned value, void (*action)(task_t *, int), int arg)
+task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned value, void (*action)(task_t *, int), int arg, int *count)
 {
 	int old = set_int(0);
 	mutex_acquire(&tq->lock);
@@ -25,6 +27,10 @@ task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned value, void (*actio
 			FOUND_ACTION
 		}
 		if(flags & TSEARCH_UID && (unsigned)tmp->uid == value)
+		{
+			FOUND_ACTION
+		}
+		if(flags & TSEARCH_EUID && (unsigned)tmp->_uid == value)
 		{
 			FOUND_ACTION
 		}
@@ -60,6 +66,7 @@ task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned value, void (*actio
 		{
 			tmp->parent = 0;
 		}
+		next:
 		/* have we found something and are only looking for one thing? */
 		if(t && !(flags & TSEARCH_FINDALL))
 			break;

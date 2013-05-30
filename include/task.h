@@ -59,6 +59,7 @@ extern tqueue_t *primary_queue, *active_queue;
 #define TSEARCH_ENUM          0x40
 #define TSEARCH_EXIT_WAITING  0x80
 #define TSEARCH_EXIT_PARENT  0x100
+#define TSEARCH_EXCLUSIVE    0x200
 #define current_task ((kernel_state_flags&KSF_MMU) ? ((task_t *)page_directory[PAGE_DIR_IDX(SMP_CUR_TASK/PAGE_SIZE)]) : 0)
 
 #define current_tss (&((cpu_t *)current_task->cpu)->tss)
@@ -150,7 +151,7 @@ extern mutex_t *alarm_mutex;
 #define FORK_SHAREDIR 0x1
 
 #define fork() do_fork(0)
-task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned value, void (*action)(task_t *, int), int arg);
+task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned value, void (*action)(task_t *, int), int arg, int *);
 void delay_sleep(int t);
 void take_issue_with_current_task();
 void clear_resources(task_t *);

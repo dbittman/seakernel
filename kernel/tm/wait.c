@@ -60,7 +60,7 @@ int sys_waitpid(int pid, int *st, int opt)
 	task_t *t=kernel_task;
 	if(pid == -1) {
 		/* find first child */
-		t = search_tqueue(primary_queue, TSEARCH_PARENT, (unsigned)current_task, (void (*)(task_t *, int))0, 0);
+		t = search_tqueue(primary_queue, TSEARCH_PARENT, (unsigned)current_task, (void (*)(task_t *, int))0, 0, 0);
 		if(!t && !current_task->exlist)
 			return -ECHILD;
 	}

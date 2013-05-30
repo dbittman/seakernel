@@ -137,7 +137,7 @@ void exit(int code)
 	iput(t->pwd);
 	/* this fixes all tasks that are children of current_task, or are waiting
 	 * on current_task. For those waiting, it signals the task */
-	search_tqueue(primary_queue, TSEARCH_EXIT_PARENT | TSEARCH_EXIT_WAITING, 0, 0, 0);
+	search_tqueue(primary_queue, TSEARCH_EXIT_PARENT | TSEARCH_EXIT_WAITING, 0, 0, 0, 0);
 	/* tell our parent that we're dead */
 	if(t->parent)
 		do_send_signal(t->parent->pid, SIGCHILD, 1);

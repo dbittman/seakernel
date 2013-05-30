@@ -61,7 +61,7 @@ void __mutex_release(mutex_t *m, char *file, int line)
 		m->lock &= ~MT_LCK_INT;
 		return;
 	}
-	//m->pid = -1;
+	m->pid = -1;
 	btr_atomic(&m->lock, 0);
 }
 

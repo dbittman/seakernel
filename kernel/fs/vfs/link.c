@@ -60,8 +60,7 @@ int unlink(char *f)
 {
 	if(!f) return -EINVAL;
 	struct inode *i;
-	/* TODO: wtf? */
-	if(strchr(f, '*'))
+	if(strchr(f, '*')) 
 		return -ENOENT;
 	i = lget_idir(f, 0);
 	if(!i)

@@ -86,7 +86,6 @@
 //#define SWAP_DEBUG 1
 
 /* dev, fs */
-/* TODO: CONFIGURATION */
 #define NUM_CACHES 128
 #define NUM_TREES 1024
 #define CACHE_CAP 20000

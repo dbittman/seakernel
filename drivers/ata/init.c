@@ -212,7 +212,8 @@ int init_ata_controller(struct ata_controller *cont)
 		}
 		
 		dev.flags |= F_EXIST;
-		int dma_ok = 1; //TODO
+		/* we need to check if DMA really works... */
+		int dma_ok = 1;
 		if((dev.flags & F_ATAPI))
 			dma_ok=0;
 		else

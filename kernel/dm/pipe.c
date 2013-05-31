@@ -2,6 +2,7 @@
 #include <dev.h>
 #include <fs.h>
 #include <pipe.h>
+#include <task.h>
 
 pipe_t *create_pipe()
 {
@@ -96,7 +97,7 @@ int read_pipe(struct inode *ino, char *buffer, size_t length)
 	/* note: this is a quick implementation of line-buffering that should
 	 * work for most cases. There is currently no way to disable line
 	 * buffering in pipes, but I don't care, because there shouldn't be a
-	 * reason to. TODO maybe? */
+	 * reason to. */
 	char *nl = strchr((char *)pipe->buffer+pipe->read_pos, '\n');
 	if(nl && (nl-(pipe->buffer+pipe->read_pos)) < ret)
 		ret = (nl-(pipe->buffer+pipe->read_pos))+1;

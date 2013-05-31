@@ -29,7 +29,6 @@ void process_memorymap(struct multiboot *mboot)
 				if(j >= pm_location)
 					pm_free_page(j);
 				num_pages++;
-				/* TODO: Qemu likes to screw up the map and add entries twice */
 			}
 		}
 		i += me->size + sizeof (uint32_t);

@@ -133,10 +133,13 @@ int block_rw(int rw, dev_t dev, u64 blk, char *buf, blockdevice_t *bd)
 	return ret;
 }
 
+/* reads many blocks and caches them */
 unsigned do_block_read_multiple(blockdevice_t *bd, dev_t dev, u64 start, 
 	unsigned num, char *buf)
 {
 	unsigned count=0;
+	/* if we don't support reading multiple blocks, then just loop through
+	 * and read them individually. block_rw will cache them */
 	if(!bd->rw_multiple) {
 		while(num--) {
 			if(block_rw(READ, dev, start+count, buf+count*bd->blksz, bd) != bd->blksz)
@@ -167,6 +170,14 @@ unsigned block_read_multiple(blockdevice_t *bd, int dev, u64 start,
 	int ret;
 #if USE_CACHE
 	if(bd->cache & BCACHE_READ)  {
+		/* if we're gonna cache them, then we need to do some work. We try
+		 * to read any block that is in the cache from the cache, and only
+		 * ask the block device to read if we have to. So we loop though
+		 * to find where we need to start reading from the block device, and
+		 * then also loop through to figure out how many block we need to read
+		 * before we can read from the cache again. This is a simple implementation, 
+		 * and it could be more complicated. This gives the minimum reads from
+		 * the block device and reads in the largest chunks possible */
 		while(count<num) {
 			ret = get_block_cache(dev, start+count, buf + count*bd->blksz);
 			if(!ret) {

@@ -15,9 +15,6 @@
 #define KERN_DEBUG 1
 #define KERN_EVERY 0
 
-/* TODO: PROPER DRIVER FOR THIS */
-#define VIDEO_MEMORY 0xb8000
-
 typedef struct vterm_s {
 	char flag;
 	volatile int x, ox, y, oy, f, b, w, h, bd, fw, fh, mode, es, scrollt, scrollb;

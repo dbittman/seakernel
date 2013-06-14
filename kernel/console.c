@@ -9,6 +9,8 @@ extern void update_cursor(int);
 vterm_t *curcons=0;
 vterm_t *kernel_console, *log_console=0;
 extern console_driver_t crtc_drv;
+#define VIDEO_MEMORY 0xb8000
+
 /* Simple way to display messages before tty and vsprintf get working */
 void console_puts(vterm_t *c, char *s)
 {

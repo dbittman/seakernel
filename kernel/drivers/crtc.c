@@ -3,6 +3,8 @@
 #include <console.h>
 #include <asm/system.h>
 #include <task.h>
+#define VIDEO_MEMORY 0xb8000
+
 static char crtc_first_init=0;
 void crtc_init_console(vterm_t *con);
 void crtc_putchar(char *mem, char c, char attr, int x, int y, int w);

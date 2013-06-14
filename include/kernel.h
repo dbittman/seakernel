@@ -4,7 +4,7 @@
 #ifndef KERNEL_H
 #define KERNEL_H
 #include <config.h>
-
+/* TODO: Separate into arch-dependant things */
 #include <asm/system.h>
 #include <types.h>
 #include <string.h>

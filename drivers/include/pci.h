@@ -2,6 +2,7 @@
 #define PCI_H
 #include <types.h>
 #include <fs.h>
+
 struct pci_config_space
 {
     /* 0x00 */

@@ -1,6 +1,6 @@
 #ifndef ISR_H
 #define ISR_H
-
+/* TODO: Separate into arch-dependant things */
 #define IRQ0 32
 #define IRQ1 33
 #define IRQ2 34

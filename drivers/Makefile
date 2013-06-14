@@ -19,6 +19,8 @@ MCFLAGS=-std=c99 -g -O3 -fno-rename-registers \
 		-I../../arch/${ARCH}/include \
 		-I include -I../include -I./include -I../../include \
 		-I../../../include \
+		-I../arch/$(ARCH)/include \
+		-I../../arch/$(ARCH)/include \
 		-Wall -Wextra -Wformat-security -Wformat-nonliteral -Wshadow \
 		-Wpointer-arith -Wcast-align -Wno-unused -Wnested-externs \
 		-Winline -Wno-long-long -Wno-unused-parameter -Wno-unused-but-set-parameter $(CFLAGS_ARCH)
@@ -92,7 +94,7 @@ install: $(MODULES)
 clean:
 	@-find -name "*.m" | xargs rm -f
 	@-find -name "*.o" | xargs rm -f
-	@-rm -rf built/*
+	@-rm -rf built/* make.deps
 	@-for i in "$(ALLSUBDIRS)"; do \
 		$(MAKE) -s -C $$i clean 2>/dev/null ;\
 	done

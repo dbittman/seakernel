@@ -1,6 +1,7 @@
 #include <types.h>
 #include <kernel.h>
 #include <cpu.h>
+#include <cpu-x86.h>
 #include <task.h>
 #include <mutex.h>
 #include <elf.h>

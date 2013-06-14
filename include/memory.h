@@ -1,6 +1,6 @@
 #ifndef MEMORY_H
 #define MEMORY_H
-
+/* TODO: Separate into arch-dependant things */
 #include <kernel.h>
 #include <multiboot.h>
 #include <isr.h>

@@ -2,7 +2,7 @@
 #define TABLES_H
 #include <types.h>
 #include <tss.h>
-
+/* TODO: Separate into arch-dependant things */
 struct gdt_entry_struct
 {
 	u16int limit_low;

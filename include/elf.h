@@ -4,7 +4,7 @@
 #include <block.h>
 #define MAX_SYMS 512
 extern void * kernel_start;
-
+/* TODO: Separate into arch-dependant things */
 typedef struct { 
 	const char *name; 
 	intptr_t ptr; 

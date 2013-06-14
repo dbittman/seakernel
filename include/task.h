@@ -8,7 +8,7 @@
 #include <mmfile.h>
 #include <dev.h>
 #include <tqueue.h>
-
+/* TODO: Separate into arch-dependant things */
 extern tqueue_t *primary_queue, *active_queue;
 
 #define KERN_STACK_SIZE 0x16000
@@ -60,8 +60,9 @@ extern tqueue_t *primary_queue, *active_queue;
 #define TSEARCH_EXIT_WAITING  0x80
 #define TSEARCH_EXIT_PARENT  0x100
 #define TSEARCH_EXCLUSIVE    0x200
-#define current_task ((kernel_state_flags&KSF_MMU) ? ((task_t *)page_directory[PAGE_DIR_IDX(SMP_CUR_TASK/PAGE_SIZE)]) : 0)
 
+
+#define current_task ((kernel_state_flags&KSF_MMU) ? ((task_t *)page_directory[PAGE_DIR_IDX(SMP_CUR_TASK/PAGE_SIZE)]) : 0)
 #define current_tss (&((cpu_t *)current_task->cpu)->tss)
 
 #if SCHED_TTY
@@ -140,8 +141,8 @@ struct task_struct
 	void *cpu;
 	volatile struct task_struct *parent, *waiting, *alarm_next, *alarm_prev;
 };
-
 typedef volatile struct task_struct task_t;
+
 extern volatile task_t *kernel_task, *tokill, *alarm_list_start;
 extern mutex_t *alarm_mutex;
 
@@ -149,8 +150,8 @@ extern mutex_t *alarm_mutex;
 #define lower_flag(f) current_task->flags &= ~f
 
 #define FORK_SHAREDIR 0x1
-
 #define fork() do_fork(0)
+
 task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned value, void (*action)(task_t *, int), int arg, int *);
 void delay_sleep(int t);
 void take_issue_with_current_task();
@@ -224,6 +225,7 @@ void task_pause(task_t *t);
 void task_unblock_all(struct llist *list);
 void task_unblock(struct llist *list, task_t *t);
 void task_resume(task_t *t);
+struct inode *set_as_kernel_task(char *name);
 
 static inline int signal_will_be_fatal(task_t *t, int sig)
 {
@@ -296,7 +298,6 @@ static inline void __disengage_idle()
 	task_pause((task_t *)kernel_task);
 }
 
-struct inode *set_as_kernel_task(char *name);
 __attribute__((always_inline)) inline static int task_is_runable(task_t *task)
 {
 	assert(task);

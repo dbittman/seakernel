@@ -5,16 +5,10 @@
 #include <task.h>
 #include <mutex.h>
 #include <tables.h>
-typedef struct {
-    char manufacturer_string[13];
-    int max_basic_input_val;
-    int max_ext_input_val;
-    int features_ecx, features_edx;
-    char stepping, model, family, type; 
-    char cache_line_size, logical_processors, lapic_id;
-    char cpu_brand[49];
-} cpuid_t;
+#include <cpu-x86.h>
+/* TODO: Separate into arch-dependant things */
 #define CPU_STACK_TEMP_SIZE 1024
+
 typedef struct __cpu_t__ {
 	unsigned num;
 	unsigned flags;

@@ -2,7 +2,7 @@
 #define SYSCALL_H
 #include <kernel.h>
 #include <isr.h>
-
+/* TODO: Separate into arch-dependant things */
 #define SC (int (*)(int, int, int, int, int))
 int syscall_handler(registers_t *regs);
 extern void *syscall_table[];

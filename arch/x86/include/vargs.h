@@ -1,6 +1,5 @@
 #ifndef _VARGS_H
 #define _VARGS_H
-//typedef char * va_list;
 #define va_list char *
 
 /* Amount of space required in an argument list for an arg of type TYPE.

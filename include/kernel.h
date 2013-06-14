@@ -4,7 +4,6 @@
 #ifndef KERNEL_H
 #define KERNEL_H
 #include <config.h>
-/* TODO: Separate into arch-dependant things */
 #include <asm/system.h>
 #include <types.h>
 #include <string.h>
@@ -16,6 +15,7 @@
 #include <sys/fcntl.h>
 #include <errno.h>
 #include <mutex.h>
+#include <cpu-io.h>
 
 #define KSF_MMU      0x1
 #define KSF_SHUTDOWN 0x2
@@ -61,42 +61,6 @@ struct utsname {
 		w();\
 		printk(5, "Assertion failed: %s", #c); \
 		}
-
-static inline void outb(short port, char value)
-{
-	__asm__ volatile ("outb %1, %0" : : "dN" (port), "a" ((unsigned char)value));
-}
-
-static inline char inb(short port)
-{
-	char ret;
-	__asm__ volatile("inb %1, %0" : "=a" (ret) : "dN" (port));
-	return ret;
-}
-
-static inline short inw(short port)
-{
-	short ret;
-	__asm__ volatile ("inw %1, %0" : "=a" (ret) : "dN" (port));
-	return ret;
-}
-
-static inline void outw(short port, short val)
-{
-	__asm__ volatile ("outw %1, %0" : : "dN" (port), "a" (val));
-}
-
-static inline void outl(short port, int val)
-{
-	__asm__ volatile ("outl %1, %0" : : "dN" (port), "a" (val));
-}
-
-static inline int inl(short port)
-{
-	int ret;
-	__asm__ volatile ("inl %1, %0" : "=a" (ret) : "dN" (port));
-	return ret;
-}
 
 static inline void get_kernel_version(char *b)
 {

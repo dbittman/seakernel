@@ -8,7 +8,7 @@
 #include <mmfile.h>
 #include <dev.h>
 #include <tqueue.h>
-/* TODO: Separate into arch-dependant things */
+
 extern tqueue_t *primary_queue, *active_queue;
 
 #define KERN_STACK_SIZE 0x16000

@@ -6,26 +6,9 @@
 #include <isr.h>
 #include <sys/stat.h>
 #include <slab.h>
-
-#define PAGE_MASK      0xFFFFF000
-#define ATTRIB_MASK    0x00000FFF
-#define PAGE_PRESENT   0x1
-#define PAGE_WRITE     0x2
-#define PAGE_USER      0x4
-#define PAGE_WRITECACHE 0x8
-#define PAGE_NOCACHE   0x10
-#define PAGE_COW       512
-#define PAGE_SIZE 	   0x1000
-
-#define MAP_NOIPI     0x8
-#define MAP_PDLOCKED  0x4
-#define MAP_NOCLEAR   0x2
-#define MAP_CRIT      0x1
-#define MAP_NORM      0x0
-
-#define PAGE_DIR_IDX(x) ((uint32_t)x/1024)
-#define PAGE_TABLE_IDX(x) ((uint32_t)x%1024)
-#define PAGE_DIR_PHYS(x) (x[1023]&PAGE_MASK)
+#if CONFIG_ARCH == TYPE_ARCH_X86
+  #include <memory-x86.h>
+#endif
 
 #define page_directory ((unsigned *)DIR_PHYS)
 #define page_tables ((unsigned *)TBL_PHYS)
@@ -49,21 +32,6 @@ extern volatile addr_t placement;
 extern mutex_t pm_mutex;
 extern volatile page_dir_t *kernel_dir, *current_dir;
 extern int id_tables;
-
-#define disable_paging() \
-	__asm__ volatile ("mov %%cr0, %0" : "=r" (cr0temp)); \
-	cr0temp &= ~0x80000000; \
-	__asm__ volatile ("mov %0, %%cr0" : : "r" (cr0temp));
-
-#define enable_paging() \
-	__asm__ volatile ("mov %%cr0, %0" : "=r" (cr0temp)); \
-	cr0temp |= 0x80000000; \
-	__asm__ volatile ("mov %0, %%cr0" : : "r" (cr0temp));
-
-#define GET_PDIR_INFO(x) (page_dir_info *)(t_page + x*sizeof(page_dir_info))
-
-#define flush_pd() \
- __asm__ __volatile__("movl %%cr3,%%eax\n\tmovl %%eax,%%cr3": : :"ax", "eax")
 
 #define vm_unmap(x) vm_do_unmap(x, 0)
 #define vm_unmap_only(x) vm_do_unmap_only(x, 0)

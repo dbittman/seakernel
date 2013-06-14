@@ -2,14 +2,16 @@
 #define SYSCALL_H
 #include <kernel.h>
 #include <isr.h>
-/* TODO: Separate into arch-dependant things */
-#define SC (int (*)(int, int, int, int, int))
+
+#if CONFIG_ARCH == TYPE_ARCH_X86
+  #include <syscall-x86.h>
+#endif
+
 int syscall_handler(registers_t *regs);
 extern void *syscall_table[];
 
 int sys_null();
 int sys_setup();
-int dosyscall(int num, int a, int b, int c, int d, int e);
 
 #define SYS_SETUP 		  0
 #define SYS_EXIT  		  1
@@ -140,21 +142,5 @@ int dosyscall(int num, int a, int b, int c, int d, int e);
 
 /* These are special */
 #define SYS_RET_FROM_SIG 128
-
-#define __do_syscall_jump(ret, location, a, b, c, d, e) __asm__ __volatile__(" \
-	push %1; \
-	push %2; \
-	push %3; \
-	push %4; \
-	push %5; \
-	call *%6; \
-	pop %%ebx; \
-	pop %%ebx; \
-	pop %%ebx; \
-	pop %%ebx; \
-	pop %%ebx; \
-	" \
-	: "=a" (ret) \
-	: "r" (a), "r" (b), "r" (c), "r" (d), "r" (e), "r" (location))
 
 #endif

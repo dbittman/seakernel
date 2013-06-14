@@ -2,7 +2,8 @@
 #define TABLES_H
 #include <types.h>
 #include <tss.h>
-/* TODO: Separate into arch-dependant things */
+#include <config.h>
+
 struct gdt_entry_struct
 {
 	u16int limit_low;
@@ -86,12 +87,14 @@ extern void irq6 ();
 extern void irq7 ();
 extern void irq8 ();
 extern void irq9 ();
-extern void irq10 ();
-extern void irq11 ();
+extern void irq10();
+extern void irq11();
 extern void irq12();
 extern void irq13();
 extern void irq14();
 extern void irq15();
+
+#if CONFIG_SMP
 
 extern void ipi_panic();
 extern void ipi_debug();
@@ -99,6 +102,8 @@ extern void ipi_shutdown();
 extern void ipi_sched();
 extern void ipi_tlb_ack();
 extern void ipi_tlb();
+
+#endif
 
 void init_descriptor_tables(void);
 void set_kernel_stack(tss_entry_t *, u32int stack);

@@ -17,7 +17,7 @@ int sys_sbrk(int inc)
 		while(free_start <= free_end) {
 			if(vm_getmap(free_start, 0))
 				vm_unmap(free_start);
-			free_start += 0x1000;
+			free_start += PAGE_SIZE;
 		}
 		current_task->heap_end = new_end;
 		assert(new_end + dec == old_end);
@@ -51,7 +51,7 @@ int sys_gsetpriority(int set, int which, int id, int val)
 	return current_task->priority;
 }
 
-void sys_nice_search_action(task_t *t, int val)
+void __sys_nice_search_action(task_t *t, int val)
 {
 	t->priority = val;
 }
@@ -76,7 +76,7 @@ int sys_nice(int which, int who, int val, int flags)
 	task_t *t = (task_t *)kernel_task;
 	int c=0;
 	if(which == PRIO_USER)
-		search_tqueue(primary_queue, TSEARCH_UID | TSEARCH_EUID | TSEARCH_FINDALL | TSEARCH_EXCLUSIVE, who, sys_nice_search_action, val, &c);
+		search_tqueue(primary_queue, TSEARCH_UID | TSEARCH_EUID | TSEARCH_FINDALL | TSEARCH_EXCLUSIVE, who, __sys_nice_search_action, val, &c);
 	return c ? 0 : -ESRCH;
 }
 
@@ -164,4 +164,3 @@ int task_stat(unsigned int num, struct task_stat *s)
 	do_task_stat(s, t);
 	return 0;
 }
-

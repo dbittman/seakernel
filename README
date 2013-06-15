@@ -30,9 +30,9 @@ Usage Instructions
 ------------------
 You need to have a cross compiler installed (typically i586-pc-seaos-gcc)
 to build the kernel. This is built automatically by the SeaOS userspace
-system, available on github (dbittman/sea). The kernel will try to run
-a script in a ramdisk (sh /preinit.sh). The ramdisk should provide a
-minimum of a shell and the init script.
+system, available on github (dbittman/sea). After initializing, The kernel 
+will try to run a script in a ramdisk (sh /preinit.sh). The ramdisk should 
+provide a minimum of a shell and the init script.
 
 Build Instructions
 ------------------

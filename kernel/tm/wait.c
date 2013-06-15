@@ -26,7 +26,7 @@ int wait_task(unsigned pid, int state)
 			schedule();
 		}
 	}
-	if(current_task->sigd != SIGWAIT)
+	if(current_task->sigd != SIGWAIT && current_task->sigd)
 		return -EINTR;
 	return current_task->waiting_ret;
 }
@@ -115,9 +115,9 @@ int sys_waitpid(int pid, int *st, int opt)
 
 int sys_waitagain()
 {
-	if(current_task->wait_again)
-		return sys_waitpid(current_task->wait_again, 0, 0);
-	return 0;
+	return (current_task->wait_again ? 
+		sys_waitpid(current_task->wait_again, 0, 0)
+		: 0);
 }
 
 int sys_wait3(int *a, int b, int *c)

@@ -17,7 +17,7 @@ int get_timer_th(int *t)
 	return current_hz;
 }
 
-/* Recurse through the parents of tasks and update their times */
+/* Iterate through the parents of tasks and update their times */
 void inc_parent_times(task_t *t, int u, int s)
 {
 	while(t && t != kernel_task) {
@@ -50,11 +50,9 @@ void do_tick()
 	if(!(((cpu_t *)current_task->cpu)->flags & CPU_TASK))
 		return;
 	if(current_task) {
-		unsigned *t;
-		++(*(current_task->system ? (t=(unsigned *)&current_task->stime) 
-			: (t=(unsigned *)&current_task->utime)));
-		/* This is a pretty damn awesome statement. Basically means 
-		 * that we increment the parents t_c[u,s]time */
+		current_task->system 
+			? (++current_task->stime) 
+			: (++current_task->utime);
 		inc_parent_times(current_task->parent, 
 			current_task->system ? __SYS : __USR);
 	}

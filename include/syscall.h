@@ -30,13 +30,14 @@ int sys_setup();
 #define SYS_TIMES 		 14
 #define SYS_DUP   		 15
 #define SYS_DUP2  		 16
-
 #define SYS_IOCTL 		 17
+
 #define SYS_UNUSED0		 18
 #define SYS_UNUSED23	 19
 #define SYS_UNUSED24 	 20
 
 #define SYS_UNUSED2 	 25
+
 #define SYS_EXECVE		 26
 #define SYS_LMOD  		 27
 #define SYS_ULMOD 		 28
@@ -50,7 +51,9 @@ int sys_setup();
 #define SYS_GETREFCOUNT	 35
 #define SYS_GETPWD		 36
 #define SYS_GETPATH		 37
+
 #define SYS_UNUSED22	 38
+
 #define SYS_CHROOT		 39
 #define SYS_CHDIR		 40
 #define SYS_MOUNT		 41
@@ -59,10 +62,11 @@ int sys_setup();
 #define SYS_CREATE		 44
 #define SYS_CREATE_CONSOLE	 45
 #define SYS_SWITCH_CONSOLE	 46
+
 #define SYS_UNUSED19    	 47
 #define SYS_UNUSED20	 48
-
 #define SYS_UNUSED10		 49
+
 #define SYS_MMAP		 50
 #define SYS_MUNMAP		 51
 #define SYS_SYNC		 52
@@ -71,7 +75,9 @@ int sys_setup();
 #define SYS_ALARM		 55
 #define SYS_SELECT		 56
 #define SYS_GETDENTS		 57
+
 #define SYS_UNUSED3		 58
+
 #define SYS_SYSCONF		 59
 #define SYS_SETSID		 60
 #define SYS_SETPGID		 61
@@ -82,9 +88,12 @@ int sys_setup();
 #define SYS_UNUSED4		 65
 #define SYS_UNUSED5		 66
 #define SYS_UNUSED6		 67
+
 #define SYS_TSTAT   		 68
+
 #define SYS_UNUSED7 		 69
 #define SYS_UNUSED8 		 70
+
 #define SYS_DELAY   		 71
 #define SYS_KRESET  		 72
 #define SYS_KPOWOFF 		 73
@@ -98,18 +107,23 @@ int sys_setup();
 
 #define SYS_UNUSED9		 81
 #define SYS_UNUSED21		 82
+
 #define SYS_PIPE  		 83
 #define SYS_SETSIG		 84
+
 #define SYS_UNUSED11 		 85
 #define SYS_UNUSED12		 86
 #define SYS_UNUSED13  		 87
 #define SYS_UNUSED14  		 88
+
 #define SYS_GETTIME 		 89
 #define SYS_TIMERTH 		 90
 #define SYS_ISSTATE 		 91
 #define SYS_WAIT3 		 92
+
 #define SYS_UNUSED15 		 93
 #define SYS_UNUSED16 		 94
+
 #define SYS_GETCWDLEN    		 95
 #define SYS_SWAPTASK 		 96
 
@@ -137,7 +151,8 @@ int sys_setup();
 #define SYS_GETSERV     118
 #define SYS_SETSERV		119
 #define SYS_SYSLOG		120
-#define SYS_POSFSSTAT   121 
+#define SYS_POSFSSTAT   121
+
 #define SYS_WAITAGAIN   	127
 
 /* These are special */

@@ -3,7 +3,8 @@
 #include <mmfile.h>
 #include <task.h>
 #include <swap.h>
-#include <elf.h>
+#include <mod.h>
+#include <elf32.h>
 void print_pfe(int x, registers_t *regs, unsigned cr2)
 {
 	assert(regs);
@@ -21,7 +22,7 @@ void print_pfe(int x, registers_t *regs, unsigned cr2)
 		printk(x, "Supervisor");
 	printk(x, " mode");
 	printk(x, "\nIn function");
-	const char *g = elf_lookup_symbol (regs->eip, &kernel_elf);
+	const char *g = elf32_lookup_symbol (regs->eip, &kernel_elf);
 	printk(x, " [0x%x] %s\n", regs->eip, g ? g : "(unknown)");
 	printk(x, "Occured in task %d.\n\tstate=%d, flags=%d, F=%d, magic=%x.\n\tlast syscall=%d", current_task->pid, current_task->state, current_task->flags, current_task->flag, current_task->magic, current_task->last);
 	if(current_task->system) 

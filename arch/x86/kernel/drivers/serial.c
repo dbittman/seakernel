@@ -5,7 +5,7 @@
 #include <asm/system.h>
 #include <char.h>
 #include <mutex.h>
-#include <elf.h>
+#include <mod.h>
 mutex_t serial_m;
 char serial_initialized=0;
 

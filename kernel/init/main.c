@@ -11,8 +11,10 @@
 #include <init.h>
 #include <mod.h>
 #include <cache.h>
-#include <elf.h>
-
+#include <mod.h>
+#if CONFIG_ARCH == TYPE_ARCH_X86
+  #include <elf32.h>
+#endif
 struct multiboot *mtboot;
 u32int i_stack=0;
 
@@ -102,7 +104,9 @@ void kmain(struct multiboot *mboot_header, u32int initial_stack)
 	kernel_state_flags=0;
 	mtboot = mboot_header;
 	i_stack = initial_stack;
-	parse_kernel_elf(mboot_header, &kernel_elf);
+#if CONFIG_ARCH == TYPE_ARCH_X86
+	parse_kernel_elf32(mboot_header, &kernel_elf);
+#endif
 #if CONFIG_MODULES
 	init_kernel_symbols();
 #endif

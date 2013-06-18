@@ -5,7 +5,7 @@
 #include <dev.h>
 #include <memory.h>
 #include <fs.h>
-#include <elf.h>
+#include <elf32.h>
 #include <block.h>
 #include <char.h>
 #include <multiboot.h>
@@ -16,7 +16,7 @@
 #include <rwlock.h>
 mutex_t sym_mutex;
 kernel_symbol_t export_syms[MAX_SYMS];
-const char *elf_lookup_symbol (uint32_t addr, elf32_t *elf)
+const char *elf32_lookup_symbol (uint32_t addr, elf32_t *elf)
 {
 	unsigned int i;
 	if(elf->lookable != 3) {

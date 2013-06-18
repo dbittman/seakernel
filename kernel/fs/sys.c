@@ -9,7 +9,7 @@
 #include <char.h>
 #include <atomic.h>
 #include <rwlock.h>
-#include <elf.h>
+#include <mod.h>
 extern volatile long ticks;
 int system_setup=0;
 /* This function is called once at the start of the init process initialization.
@@ -20,6 +20,8 @@ int system_setup=0;
  * Beyond that, it can be called by any task at anytime after the first call as
  * a yield call.
  */
+int proc_set_callback(int major, int( *callback)(char rw, struct inode *inode, 
+	int m, char *buf, int, int));
 int sys_setup(int a)
 {
 	if(system_setup)

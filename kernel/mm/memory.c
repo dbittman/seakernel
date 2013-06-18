@@ -4,7 +4,7 @@
 #include <task.h>
 #include <swap.h>
 #include <cpu.h>
-#include <elf.h>
+#include <mod.h>
 #include <atomic.h>
 extern addr_t end;
 void slab_stat(struct mem_stat *s);

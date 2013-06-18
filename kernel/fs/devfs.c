@@ -5,7 +5,7 @@
 #include <char.h>
 #include <block.h>
 #include <fs.h>
-#include <elf.h>
+#include <mod.h>
 #include <atomic.h>
 
 struct inode *devfs_root;

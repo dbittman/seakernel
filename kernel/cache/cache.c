@@ -8,8 +8,10 @@
 #include <task.h>
 #include <ll.h>
 #include <atomic.h>
-#include <elf.h>
+#include <mod.h>
 struct llist *cache_list;
+int disconnect_block_cache(int dev);
+int write_block_cache(int dev, u64 blk);
 void accessed_cache(cache_t *c)
 {
 	c->slow=100;

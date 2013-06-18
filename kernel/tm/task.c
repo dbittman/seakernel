@@ -1,7 +1,7 @@
 #include <kernel.h>
 #include <memory.h>
 #include <task.h>
-#include <elf.h>
+#include <mod.h>
 #include <tqueue.h>
 #include <cpu.h>
 #include <ll.h>

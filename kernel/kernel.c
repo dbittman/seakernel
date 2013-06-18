@@ -18,7 +18,7 @@ void kernel_shutdown()
 	printk(0, "[smp]: shutting down application processors\n");
 	send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_SHUTDOWN);
 #endif
-	current_task->uid=0;
+	current_task->thread->uid=0;
 	set_ksf(KSF_SHUTDOWN);
 	set_int(0);
 	sys_sync(PRINT_LEVEL);
@@ -31,7 +31,7 @@ void kernel_shutdown()
 
 void kernel_reset()
 {
-	if(current_task->uid)
+	if(current_task->thread->uid)
 		return;
 	kernel_shutdown();
 	kprintf("Rebooting system...\n");
@@ -40,7 +40,7 @@ void kernel_reset()
 
 void kernel_poweroff()
 {
-	if(current_task->uid)
+	if(current_task->thread->uid)
 		return;
 	kernel_shutdown();
 	set_int(0);

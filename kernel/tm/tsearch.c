@@ -26,11 +26,11 @@ task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned value, void (*actio
 		{
 			FOUND_ACTION
 		}
-		if(flags & TSEARCH_UID && (unsigned)tmp->uid == value)
+		if(flags & TSEARCH_UID && (unsigned)tmp->thread->uid == value)
 		{
 			FOUND_ACTION
 		}
-		if(flags & TSEARCH_EUID && (unsigned)tmp->_uid == value)
+		if(flags & TSEARCH_EUID && (unsigned)tmp->thread->_uid == value)
 		{
 			FOUND_ACTION
 		}
@@ -38,7 +38,7 @@ task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned value, void (*actio
 		{
 			FOUND_ACTION
 		}
-		if(flags & TSEARCH_EUID && (unsigned)tmp->_uid == value)
+		if(flags & TSEARCH_EUID && (unsigned)tmp->thread->_uid == value)
 		{
 			FOUND_ACTION
 		}

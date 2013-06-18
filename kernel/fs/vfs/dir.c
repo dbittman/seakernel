@@ -66,7 +66,7 @@ int chroot(char *n)
 	if(!n) 
 		return -EINVAL;
 	struct inode *i, *old = current_task->thread->root;
-	if(current_task->uid != 0)
+	if(current_task->thread->uid != 0)
 		return -EPERM;
 	i = get_idir(n, 0);
 	if(!i)

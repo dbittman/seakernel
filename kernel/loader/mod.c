@@ -215,14 +215,14 @@ void init_module_system()
 
 int sys_load_module(char *path, char *args, int flags)
 {
-	if(current_task->uid)
+	if(current_task->thread->uid)
 		return -EPERM;
 	return load_module(path, args, flags);
 }
 
 int sys_unload_module(char *path, int flags)
 {
-	if(current_task->uid)
+	if(current_task->thread->uid)
 		return -EPERM;
 	return do_unload_module(path, flags);
 }

@@ -187,7 +187,7 @@ int sys_chmod(char *path, int fd, mode_t mode)
 		fput((task_t *)current_task, fd, 0);
 	}
 	if(!i) return -ENOENT;
-	if(i->uid != current_task->uid && current_task->uid)
+	if(i->uid != current_task->thread->uid && current_task->thread->uid)
 	{
 		if(path)
 			iput(i);
@@ -216,7 +216,7 @@ int sys_chown(char *path, int fd, uid_t uid, gid_t gid)
 	}
 	if(!i)
 		return -ENOENT;
-	if(current_task->uid && current_task->uid != i->uid) {
+	if(current_task->thread->uid && current_task->thread->uid != i->uid) {
 		if(path)
 			iput(i);
 		return -EPERM;
@@ -236,7 +236,7 @@ int sys_utime(char *path, unsigned a, unsigned m)
 	struct inode *i = get_idir(path, 0);
 	if(!i)
 		return -ENOENT;
-	if(current_task->uid && current_task->uid != i->uid) {
+	if(current_task->thread->uid && current_task->thread->uid != i->uid) {
 		iput(i);
 		return -EPERM;
 	}
@@ -347,7 +347,7 @@ int sys_access(char *path, mode_t mode)
 	struct inode *i = get_idir(path, 0);
 	if(!i)
 		return -ENOENT;
-	if(current_task->uid == 0) {
+	if(current_task->thread->uid == 0) {
 		iput(i);
 		return 0;
 	}

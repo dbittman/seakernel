@@ -105,8 +105,8 @@ struct inode *rfs_create(struct inode *__p, char *name, mode_t mode)
 	struct inode *node;
 	node = (struct inode *)kmalloc(sizeof(struct inode));
 	strncpy(node->name, name, INAME_LEN);
-	node->uid = current_task->uid;
-	node->gid = current_task->gid;
+	node->uid = current_task->thread->uid;
+	node->gid = current_task->thread->gid;
 	node->len = 0;
 	node->i_ops = &rfs_inode_ops;
 	node->mode = mode | 0x1FF;

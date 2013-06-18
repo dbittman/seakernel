@@ -63,7 +63,7 @@ void handle_signal(task_t *t)
 				kill_task(t->pid);
 				break;
 			case SIGUSLEEP:
-				if(t->uid >= t->uid) {
+				if(t->thread->uid >= t->thread->uid) {
 					t->state = TASK_USLEEP;
 					t->tick=0;
 				}
@@ -74,7 +74,7 @@ void handle_signal(task_t *t)
 				t->exit_reason.cause=__STOPSIG;
 				t->exit_reason.sig=t->sigd; /* Fall through */
 			case SIGISLEEP:
-				if(t->uid >= t->uid) {
+				if(t->thread->uid >= t->thread->uid) {
 					t->state = TASK_ISLEEP; 
 					t->tick=0;
 				}
@@ -102,7 +102,7 @@ int do_send_signal(int pid, int __sig, int p)
 		return -ESRCH;
 	}
 	
-	if(!pid && !p && current_task->uid && current_task->pid)
+	if(!pid && !p && current_task->thread->uid && current_task->pid)
 		return -EPERM;
 	task_t *task = get_task_pid(pid);
 	if(!task) return -ESRCH;
@@ -113,10 +113,10 @@ int do_send_signal(int pid, int __sig, int p)
 	if(__sig > 32) return -EINVAL;
 	/* We may always signal ourselves */
 	if(task != current_task) {
-		if(!p && pid != 0 && (current_task->uid) && !current_task->system)
+		if(!p && pid != 0 && (current_task->thread->uid) && !current_task->system)
 			panic(PANIC_NOSYNC, "Priority signal sent by an illegal task!");
 		/* Check for permissions */
-		if(!__sig || (__sig < 32 && current_task->uid > task->uid && !p))
+		if(!__sig || (__sig < 32 && current_task->thread->uid > task->thread->uid && !p))
 			return -EACCES;
 		if(task->state == TASK_DEAD || task->state == TASK_SUICIDAL)
 			return -EINVAL;

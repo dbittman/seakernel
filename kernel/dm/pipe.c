@@ -21,8 +21,8 @@ static struct inode *create_anon_pipe()
 	/* create a 'fake' inode */
 	node = (struct inode *)kmalloc(sizeof(struct inode));
 	_strcpy(node->name, "~pipe~");
-	node->uid = current_task->uid;
-	node->gid = current_task->gid;
+	node->uid = current_task->thread->uid;
+	node->gid = current_task->thread->gid;
 	node->mode = S_IFIFO | 0x1FF;
 	node->count=2;
 	node->f_count=2;

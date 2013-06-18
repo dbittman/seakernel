@@ -62,7 +62,7 @@ int sys_nice(int which, int who, int val, int flags)
 	{
 		if(who && (unsigned)who != current_task->pid)
 			return -ENOTSUP;
-		if(!flags && val < 0 && current_task->uid != 0)
+		if(!flags && val < 0 && current_task->thread->uid != 0)
 			return -EPERM;
 		/* Yes, this is correct */
 		if(!flags)
@@ -106,26 +106,26 @@ int sys_getppid()
 
 int set_gid(int new)
 {
-	current_task->_gid = current_task->gid;
-	current_task->gid = new;
+	current_task->thread->_gid = current_task->thread->gid;
+	current_task->thread->gid = new;
 	return 0;
 }
 
 int set_uid(int new)
 {
-	current_task->_uid = current_task->uid;
-	current_task->uid = new;
+	current_task->thread->_uid = current_task->thread->uid;
+	current_task->thread->uid = new;
 	return 0;
 }
 
 int get_gid()
 {
-	return current_task->gid;
+	return current_task->thread->gid;
 }
 
 int get_uid()
 {
-	return current_task->uid;
+	return current_task->thread->uid;
 }
 
 void do_task_stat(struct task_stat *s, task_t *t)
@@ -134,8 +134,8 @@ void do_task_stat(struct task_stat *s, task_t *t)
 	s->stime = t->stime;
 	s->utime = t->utime;
 	s->state = t->state;
-	s->uid = t->uid;
-	s->gid = t->gid;
+	s->uid = t->thread->uid;
+	s->gid = t->thread->gid;
 	s->system = t->system;
 	s->ppid = t->parent->pid;
 	s->tty = t->tty;

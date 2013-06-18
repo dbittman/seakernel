@@ -84,6 +84,8 @@ struct thread_shared_data {
 	unsigned count;
 	mutex_t files_lock;
 	struct inode *root, *pwd;
+	uid_t uid, _uid;
+	gid_t gid, _gid;
 	struct file_ptr *filp[FILP_HASH_LEN];
 };
 
@@ -130,8 +132,6 @@ struct task_struct
 	int cmask;
 	int tty;
 	unsigned long slice;
-	uid_t uid, _uid;
-	gid_t gid, _gid;
 	mmf_t *mm_files;
 	vma_t *mmf_priv_space, *mmf_share_space;
 	

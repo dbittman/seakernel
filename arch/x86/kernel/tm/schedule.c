@@ -109,10 +109,12 @@ __attribute__((always_inline)) static inline void restore_context(task_t *new)
 	((cpu_t *)new->cpu)->cur = new;
 }
 
-void schedule()
+int schedule()
 {
 	if(unlikely(!current_task || !kernel_task))
-		return;
+		return 0;
+	if((((cpu_t *)current_task->cpu)->flags & CPU_LOCK))
+		return 0;
 	assert(!(current_task->flags & TF_SETINT));
 	/* make sure to re-enable interrupts when we come back to this
 	 * task if we entered schedule with them enabled */
@@ -138,9 +140,14 @@ void schedule()
 	/* tasks that have come from fork() (aka, new tasks) have this
 	 * flag set, such that here we just to their entry point in fork() */
 	if(likely(!(new->flags & TF_FORK)))
-		return (void) post_context_switch();
+	{
+		post_context_switch();
+		return 1;
+	}
 	new->flags &= ~TF_FORK;
 	asm("jmp *%0"::"r"(current_task->eip));
+	/* we never get here, but lets keep gcc happy */
+	return 1;
 }
 
 void check_alarms()

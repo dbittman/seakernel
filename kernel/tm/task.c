@@ -53,7 +53,6 @@ void init_multitasking()
 	add_kernel_symbol(delay);
 	add_kernel_symbol(delay_sleep);
 	add_kernel_symbol(schedule);
-	add_kernel_symbol(schedule);
 	add_kernel_symbol(run_scheduler);
 	add_kernel_symbol(exit);
 	add_kernel_symbol(sys_setsid);
@@ -95,7 +94,9 @@ void task_pause(task_t *t)
 {
 	/* don't care what other processors do */
 	t->state = TASK_ISLEEP;
-	if(t == current_task) schedule();
+	if(t == current_task) {
+		while(!schedule());
+	}
 }
 
 void task_resume(task_t *t)

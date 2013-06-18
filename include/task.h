@@ -171,7 +171,7 @@ int sys_waitpid(int pid, int *st, int opt);
 int sys_wait3(int *, int, int *);
 int task_stat(unsigned int pid, struct task_stat *s);
 int task_pstat(unsigned int, struct task_stat *s);
-void schedule();
+int schedule();
 int get_pid();
 void init_multitasking();
 void exit(int);

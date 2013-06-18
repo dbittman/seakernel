@@ -39,6 +39,7 @@ cpu_t *add_cpu(cpu_t *c);
 #define CPU_PAGING 0x20
 #define CPU_INTER  0x40
 #define CPU_TASK   0x80
+#define CPU_LOCK  0x100
 extern cpu_t *primary_cpu;
 extern cpu_t cpu_array[CONFIG_MAX_CPUS];
 extern unsigned cpu_array_num;

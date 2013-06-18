@@ -75,7 +75,9 @@ void kill_task(unsigned int pid)
 	task->state = TASK_SUICIDAL;
 	task->sigd = 0; /* fuck your signals */
 	if(task == current_task)
-		schedule();
+	{
+		for(;;) schedule();
+	}
 }
 
 int get_exit_status(int pid, int *status, int *retval, int *signum, int *__pid)
@@ -164,6 +166,5 @@ void exit(int code)
 		vm_unmap(PDIR_DATA);
 		raise_flag(TF_LAST_PDIR);
 	}
-	schedule();
-	panic(PANIC_NOSYNC, "and you may ask yourself...how did I get here?");
+	for(;;) schedule();
 }

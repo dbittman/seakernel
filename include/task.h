@@ -157,6 +157,7 @@ extern mutex_t *alarm_mutex;
 #define lower_flag(f) current_task->flags &= ~f
 
 #define FORK_SHAREDIR 0x1
+#define FORK_SHAREDAT 0x2
 #define fork() do_fork(0)
 
 task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned value, void (*action)(task_t *, int), int arg, int *);

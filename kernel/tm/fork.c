@@ -11,26 +11,29 @@ void copy_task_struct(task_t *task, task_t *parent, char share_thread_data)
 {
 	task->parent = parent;
 	task->pid = add_atomic(&next_pid, 1)-1;
-	
-	task->thread = (void *)kmalloc(sizeof(struct thread_shared_data));
-	task->thread->count = 1;
-	if(parent->thread->root) {
-		task->thread->root = parent->thread->root;
-		add_atomic(&task->thread->root->count, 1);
+	if(!share_thread_data) {
+		task->thread = (void *)kmalloc(sizeof(struct thread_shared_data));
+		task->thread->count = 1;
+		if(parent->thread->root) {
+			task->thread->root = parent->thread->root;
+			add_atomic(&task->thread->root->count, 1);
+		}
+		if(parent->thread->pwd) {
+			task->thread->pwd = parent->thread->pwd;
+			add_atomic(&task->thread->pwd->count, 1);
+		}
+		memcpy((void *)task->thread->signal_act, (void *)parent->thread->signal_act, 128 * 
+			sizeof(struct sigaction));
+		task->thread->gid = parent->thread->gid;
+		task->thread->uid = parent->thread->uid;
+		task->thread->_uid = parent->thread->_uid;
+		task->thread->_gid = parent->thread->_gid;
+		mutex_create(&(task->thread->files_lock), 0);
+		task->thread->global_sig_mask = parent->thread->global_sig_mask;
+	} else {
+		add_atomic(&parent->thread->count, 1);
+		task->thread = parent->thread;
 	}
-	if(parent->thread->pwd) {
-		task->thread->pwd = parent->thread->pwd;
-		add_atomic(&task->thread->pwd->count, 1);
-	}
-	memcpy((void *)task->thread->signal_act, (void *)parent->thread->signal_act, 128 * 
-		sizeof(struct sigaction));
-	task->thread->gid = parent->thread->gid;
-	task->thread->uid = parent->thread->uid;
-	task->thread->_uid = parent->thread->_uid;
-	task->thread->_gid = parent->thread->_gid;
-	mutex_create(&(task->thread->files_lock), 0);
-	task->thread->global_sig_mask = parent->thread->global_sig_mask;
-
 	task->magic = TASK_MAGIC;
 	task->tty = parent->tty;
 	task->sig_mask = parent->sig_mask;
@@ -124,7 +127,7 @@ int do_fork(unsigned flags)
 	/* Create the new task structure */
 	task_t *parent = (task_t *)current_task;
 	task->pd = newspace;
-	copy_task_struct(task, parent, 0);
+	copy_task_struct(task, parent, flags & FORK_SHAREDAT);
 	add_atomic(&running_processes, 1);
 	/* Set the state as usleep temporarily, so that it doesn't accidentally run.
 	 * And then add it to the queue */

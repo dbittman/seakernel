@@ -11,16 +11,16 @@ void copy_task_struct(task_t *new, task_t *parent)
 {
 	new->parent = parent;
 	new->pid = add_atomic(&next_pid, 1)-1;
-	if(parent->root) {
-		new->root = parent->root;
-		add_atomic(&new->root->count, 1);
-	}
-	if(parent->pwd) {
-		new->pwd = parent->pwd;
-		add_atomic(&new->pwd->count, 1);
-	}
 	new->thread = (void *)kmalloc(sizeof(struct thread_shared_data));
 	new->thread->count = 1;
+	if(parent->thread->root) {
+		new->thread->root = parent->thread->root;
+		add_atomic(&new->thread->root->count, 1);
+	}
+	if(parent->thread->pwd) {
+		new->thread->pwd = parent->thread->pwd;
+		add_atomic(&new->thread->pwd->count, 1);
+	}
 	mutex_create(&(new->thread->files_lock), 0);
 	new->uid = parent->uid;
 	new->magic = TASK_MAGIC;

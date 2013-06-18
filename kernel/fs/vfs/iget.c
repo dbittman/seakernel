@@ -15,7 +15,7 @@ struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, int *req)
 	if(aut) {
 		if(!strcmp(path, ".."))
 		{
-			if(i == current_task->root) {
+			if(i == current_task->thread->root) {
 				rwlock_acquire(&i->rwl, RWL_READER);
 				add_atomic(&i->count, 1);
 				rwlock_release(&i->rwl, RWL_READER);
@@ -116,7 +116,7 @@ struct inode *do_add_dirent(struct inode *p, char *name, int mode)
 	if(p->mount) p = p->mount->root;
 	if(!permissions(p, MAY_WRITE))
 		return 0;
-	if(p->parent == current_task->root && !strcmp(p->name, "tmp"))
+	if(p->parent == current_task->thread->root && !strcmp(p->name, "tmp"))
 		mode |= 0x1FF;
 	rwlock_acquire(&p->rwl, RWL_WRITER);
 	struct inode *ret = vfs_callback_create(p, name, mode);
@@ -148,10 +148,10 @@ struct inode *do_get_idir(char *p_path, struct inode *b, int use_link,
 	strncpy(path, p_path, nplen);
 	struct inode *from=b;
 	if(!from)
-		from = current_task->pwd;
+		from = current_task->thread->pwd;
 	/* Okay, path formatting. First check starting point */
 	if(*path == '/') {
-		from = current_task->root;
+		from = current_task->thread->root;
 		++path;
 	}
 	if(!*path) {

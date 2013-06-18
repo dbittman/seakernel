@@ -45,7 +45,7 @@ void process_initrd()
 	struct inode *q;
 	/* Temporarily set the FS indicators to the ramfs root so we can use the 
 	 * VFS. This makes parsing directories much easier. */
-	current_task->pwd=current_task->root=node;
+	current_task->thread->pwd=current_task->thread->root=node;
 	printk(1, "\n");
 	int count=0, size=0;
 	for (i = 0; i < initrd_header->nfiles; i++)
@@ -67,5 +67,5 @@ void process_initrd()
 	rfs_create(0, "proc", S_IFDIR);
 	printk(5, "\r[vfs]: Initrd loaded (%d files, %d KB: ok)\n", count, size);
 	/* Reset the indicators to FS-less system */
-	current_task->root = current_task->pwd=0;
+	current_task->thread->root = current_task->thread->pwd=0;
 }

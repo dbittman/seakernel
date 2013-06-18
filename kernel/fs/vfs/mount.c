@@ -13,7 +13,7 @@ int do_mount(struct inode *i, struct inode *p)
 {
 	if(current_task->uid)
 		return -EACCES;
-	if(i == current_task->root)
+	if(i == current_task->thread->root)
 		return -EINVAL;
 	if(!is_directory(i))
 		return -ENOTDIR;

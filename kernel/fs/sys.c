@@ -30,7 +30,7 @@ int sys_setup(int a)
 		return 1;
 	}
 	printk(KERN_MILE, "[kernel]: Setting up environment...");
-	current_task->pwd = current_task->root = ramfs_root;
+	current_task->thread->pwd = current_task->thread->root = ramfs_root;
 	init_dev_fs();
 	init_proc_fs();
 	add_inode(procfs_root, kproclist);
@@ -141,7 +141,7 @@ int sys_getdepth(int fd)
 		return -EBADF;
 	struct inode *i = file->inode;
 	int x=1;
-	while(i != current_task->root && i) {
+	while(i != current_task->thread->root && i) {
 		x++;
 		if(i->mount_parent)
 			i = i->mount_parent;
@@ -154,7 +154,7 @@ int sys_getdepth(int fd)
 
 int sys_getcwdlen()
 {
-	struct inode *i = current_task->pwd;
+	struct inode *i = current_task->thread->pwd;
 	if(!i) return 0;
 	int x=64;
 	while(i && i->parent)
@@ -163,11 +163,11 @@ int sys_getcwdlen()
 			i = i->mount_parent;
 		x += strlen(i->name)+1;
 		i = i->parent;
-		if(i == current_task->root)
+		if(i == current_task->thread->root)
 			break;
 		if(i->mount_parent)
 			i = i->mount_parent;
-		if(i == current_task->root)
+		if(i == current_task->thread->root)
 			break;
 	}
 	return x;

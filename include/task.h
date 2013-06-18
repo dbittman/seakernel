@@ -81,6 +81,7 @@ typedef struct exit_status {
 } ex_stat;
 
 struct thread_shared_data {
+	unsigned count;
 	mutex_t files_lock;
 };
 

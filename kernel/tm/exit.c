@@ -134,9 +134,6 @@ void exit(int code)
 	/* Clear out system resources */
 	free_stack(); /* free up memory that is thread-specific */
 	clear_resources(t);
-	close_all_files(t);
-	iput(t->root);
-	iput(t->pwd);
 	/* this fixes all tasks that are children of current_task, or are waiting
 	 * on current_task. For those waiting, it signals the task */
 	search_tqueue(primary_queue, TSEARCH_EXIT_PARENT | TSEARCH_EXIT_WAITING, 0, 0, 0, 0);
@@ -154,6 +151,15 @@ void exit(int code)
 	}
 	mutex_release((mutex_t *)&t->exlock);
 	set_int(old);
+	if(!sub_atomic(&t->thread->count, 1))
+	{
+		/* we're the last thread to share this data. Clean it up */
+		close_all_files(t);
+		iput(t->root);
+		iput(t->pwd);
+		mutex_destroy(&t->thread->files_lock);
+		kfree(t->thread);
+	}
 	raise_flag(TF_DYING);
 	set_as_dead(t);
 	char flag_last_page_dir_task=0;

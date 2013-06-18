@@ -89,6 +89,7 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	mutex_create(&cpu->lock, MT_NOSCHED);
 	cpu->numtasks=1;
 	task->thread = (void *)kmalloc(sizeof(struct thread_shared_data));
+	task->thread->count = 1;
 	mutex_create((mutex_t *)&task->exlock, MT_NOSCHED);
 	mutex_create(&task->thread->files_lock, 0);
 	set_kernel_stack(&cpu->tss, task->kernel_stack + (KERN_STACK_SIZE - STACK_ELEMENT_SIZE));

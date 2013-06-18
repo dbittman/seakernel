@@ -86,6 +86,8 @@ struct thread_shared_data {
 	struct inode *root, *pwd;
 	uid_t uid, _uid;
 	gid_t gid, _gid;
+	struct sigaction signal_act[128];
+	volatile sigset_t global_sig_mask;
 	struct file_ptr *filp[FILP_HASH_LEN];
 };
 
@@ -136,8 +138,7 @@ struct task_struct
 	vma_t *mmf_priv_space, *mmf_share_space;
 	
 	/* signal handling */
-	struct sigaction signal_act[128];
-	volatile sigset_t sig_mask, global_sig_mask;
+	volatile sigset_t sig_mask;
 	volatile unsigned sigd, cursig, syscall_count;
 	sigset_t old_mask;
 	unsigned alarm_end;
@@ -236,7 +237,7 @@ void fput(task_t *, int, char);
 static inline int signal_will_be_fatal(task_t *t, int sig)
 {
 	if(sig == SIGKILL) return 1;
-	if(t->signal_act[t->sigd]._sa_func._sa_handler) return 0;
+	if(t->thread->signal_act[t->sigd]._sa_func._sa_handler) return 0;
 	if(sig == SIGUSLEEP || sig == SIGISLEEP || sig == SIGSTOP || sig == SIGCHILD)
 		return 0;
 	return 1;
@@ -246,7 +247,7 @@ static inline int got_signal(task_t *t)
 {
 	if(!t->sigd) return 0;
 	/* if the SA_RESTART flag is set, then return false */
-	if(t->signal_act[t->sigd].sa_flags & SA_RESTART) return 0;
+	if(t->thread->signal_act[t->sigd].sa_flags & SA_RESTART) return 0;
 	/* otherwise, return if we have a signal */
 	return (t->sigd);
 }

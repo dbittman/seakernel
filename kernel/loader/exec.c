@@ -21,7 +21,7 @@ task_t *preexec(task_t *t, int desc)
 	clear_resources(t);
 	self_free(0);
 	t->sigd=0;
-	memset((void *)t->signal_act, 0, sizeof(struct sigaction) * 128);
+	memset((void *)t->thread->signal_act, 0, sizeof(struct sigaction) * 128);
 	return 0;
 }
 

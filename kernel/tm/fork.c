@@ -22,16 +22,19 @@ void copy_task_struct(task_t *new, task_t *parent)
 		new->thread->pwd = parent->thread->pwd;
 		add_atomic(&new->thread->pwd->count, 1);
 	}
+	memcpy((void *)new->thread->signal_act, (void *)parent->thread->signal_act, 128 * 
+		sizeof(struct sigaction));
 	new->thread->gid = parent->thread->gid;
 	new->thread->uid = parent->thread->uid;
 	new->thread->_uid = parent->thread->_uid;
 	new->thread->_gid = parent->thread->_gid;
 	mutex_create(&(new->thread->files_lock), 0);
+	new->thread->global_sig_mask = parent->thread->global_sig_mask;
 
 	new->magic = TASK_MAGIC;
 	new->tty = parent->tty;
 	new->sig_mask = parent->sig_mask;
-	new->global_sig_mask = parent->global_sig_mask;
+	
 	new->priority = parent->priority;
 	new->stack_end = parent->stack_end;
 	new->heap_end = parent->heap_end;
@@ -46,8 +49,7 @@ void copy_task_struct(task_t *new, task_t *parent)
 	}
 	new->mmf_share_space = parent->mmf_share_space;
 	copy_mmf(parent, new);
-	memcpy((void *)new->signal_act, (void *)parent->signal_act, 128 * 
-		sizeof(struct sigaction));
+	
 	/* This actually duplicates the handles... */
 	copy_file_handles(parent, new);
 	new->flags = TF_FORK;

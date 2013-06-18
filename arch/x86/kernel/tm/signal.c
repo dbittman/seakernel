@@ -11,7 +11,7 @@ extern int current_hz;
 void handle_signal(task_t *t)
 {
 	t->exit_reason.sig=0;
-	struct sigaction *sa = (struct sigaction *)&(t->signal_act[t->sigd]);
+	struct sigaction *sa = (struct sigaction *)&(t->thread->signal_act[t->sigd]);
 	t->old_mask = t->sig_mask;
 	t->sig_mask |= sa->sa_mask;
 	if(!(sa->sa_flags & SA_NODEFER))
@@ -149,7 +149,7 @@ void set_signal(int sig, unsigned hand)
 	assert(current_task);
 	if(sig > 128)
 		return;
-	current_task->signal_act[sig]._sa_func._sa_handler = (void (*)(int))hand;
+	current_task->thread->signal_act[sig]._sa_func._sa_handler = (void (*)(int))hand;
 }
 
 int sys_alarm(int a)
@@ -198,7 +198,7 @@ int sys_alarm(int a)
 int sys_sigact(int sig, const struct sigaction *act, struct sigaction *oact)
 {
 	if(oact)
-		memcpy(oact, (void *)&current_task->signal_act[sig], sizeof(struct sigaction));
+		memcpy(oact, (void *)&current_task->thread->signal_act[sig], sizeof(struct sigaction));
 	if(!act)
 		return 0;
 	/* Set actions */
@@ -208,10 +208,10 @@ int sys_sigact(int sig, const struct sigaction *act, struct sigaction *oact)
 			current_task->pid, sig, act->sa_flags);
 	if(act->sa_flags & SA_SIGINFO)
 		return -ENOTSUP;
-	memcpy((void *)&current_task->signal_act[sig], act, sizeof(struct sigaction));
+	memcpy((void *)&current_task->thread->signal_act[sig], act, sizeof(struct sigaction));
 	if(act->sa_flags & SA_RESETHAND) {
-		current_task->signal_act[sig]._sa_func._sa_handler=0;
-		current_task->signal_act[sig].sa_flags |= SA_NODEFER;
+		current_task->thread->signal_act[sig]._sa_func._sa_handler=0;
+		current_task->thread->signal_act[sig].sa_flags |= SA_NODEFER;
 	}
 	return 0;
 }
@@ -237,6 +237,6 @@ int sys_sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict os
 		default:
 			return -EINVAL;
 	}
-	current_task->global_sig_mask = current_task->sig_mask = nm;
+	current_task->thread->global_sig_mask = current_task->sig_mask = nm;
 	return 0;
 }

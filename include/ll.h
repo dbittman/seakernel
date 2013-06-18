@@ -5,6 +5,7 @@
 struct llistnode {
 	struct llistnode *next, *prev;
 	void *entry;
+	struct llist *memberof;
 };
 
 struct llist {

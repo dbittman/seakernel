@@ -29,6 +29,7 @@ struct llistnode *ll_do_insert(struct llist *list, struct llistnode *new, void *
 	 * return statement, we don't want to return an incorrect pointer.
 	 * Thus, we backup the new pointer and return it. */
 	old = list->head;
+	new->memberof = list;
 	if(!(list->flags & LL_LOCKLESS))
 		rwlock_release(&list->rwl, RWL_WRITER);
 	return old;
@@ -46,19 +47,22 @@ void *ll_do_remove(struct llist *list, struct llistnode *node, char locked)
 	assert(list && node && ll_is_active(list));
 	if(!(list->flags & LL_LOCKLESS) && !locked)
 		rwlock_acquire(&list->rwl, RWL_WRITER);
-	if(list->head == node) {
-		/* Lets put the head at the next node, in case theres a search. */
-		list->head = node->next;
-		/* Now, is this the only node in the list? */
+	if(node->memberof == list) {
 		if(list->head == node) {
-			list->head = 0;
-			if(!(list->flags & LL_LOCKLESS) && !locked)
-				rwlock_release(&list->rwl, RWL_WRITER);
-			return node;
+			/* Lets put the head at the next node, in case theres a search. */
+			list->head = node->next;
+			/* Now, is this the only node in the list? */
+			if(list->head == node) {
+				list->head = 0;
+				if(!(list->flags & LL_LOCKLESS) && !locked)
+					rwlock_release(&list->rwl, RWL_WRITER);
+				return node;
+			}
 		}
+		node->prev->next = node->next;
+		node->next->prev = node->prev;
+		node->memberof=0;
 	}
-	node->prev->next = node->next;
-	node->next->prev = node->prev;
 	if(!(list->flags & LL_LOCKLESS) && !locked)
 		rwlock_release(&list->rwl, RWL_WRITER);
 	return node;

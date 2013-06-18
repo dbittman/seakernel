@@ -119,7 +119,7 @@ void rwlock_release(rwlock_t *lock, unsigned flags)
 	printk(0, "TRACE: release rwl (%d) (%d)\n", lock->locks, flags);
 #endif
 	if(flags & RWL_READER) {
-		assert(lock->locks >= 2 && !(lock->locks & 1));
+		assert(lock->locks >= 2);
 		sub_atomic(&lock->locks, 2);
 	}
 	else if(flags & RWL_WRITER) {

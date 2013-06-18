@@ -56,6 +56,8 @@ int sys_pipe(int *files)
 	int write = add_file_pointer((task_t *)current_task, f);
 	files[0]=read;
 	files[1]=write;
+	fput((task_t *)current_task, read, 0);
+	fput((task_t *)current_task, write, 0);
 	return 0;
 }
 

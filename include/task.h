@@ -80,6 +80,10 @@ typedef struct exit_status {
 	struct exit_status *next, *prev;
 } ex_stat;
 
+struct thread_shared_data {
+	mutex_t files_lock;
+};
+
 struct task_struct
 {
 	volatile unsigned magic;
@@ -139,6 +143,7 @@ struct task_struct
 	struct llistnode *listnode, *blocknode, *activenode;
 	struct llist *blocklist;
 	void *cpu;
+	struct thread_shared_data *thread;
 	volatile struct task_struct *parent, *waiting, *alarm_next, *alarm_prev;
 };
 typedef volatile struct task_struct task_t;
@@ -226,7 +231,7 @@ void task_unblock_all(struct llist *list);
 void task_unblock(struct llist *list, task_t *t);
 void task_resume(task_t *t);
 struct inode *set_as_kernel_task(char *name);
-
+void fput(task_t *, int, char);
 static inline int signal_will_be_fatal(task_t *t, int sig)
 {
 	if(sig == SIGKILL) return 1;

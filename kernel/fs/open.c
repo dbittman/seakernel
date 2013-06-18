@@ -67,6 +67,7 @@ struct file *d_sys_open(char *name, int flags, mode_t _mode, int *error, int *nu
 		add_atomic(&inode->pipe->count, 1);
 		mutex_release(inode->pipe->lock);
 	}
+	fput((task_t *)current_task, ret, 0);
 	return f;
 }
 
@@ -110,6 +111,8 @@ int duplicate(task_t *t, int fp, int n)
 		ret = add_file_pointer_after(t, new, n);
 	else
 		ret = add_file_pointer(t, new);
+	fput((task_t *)t, fp, 0);
+	fput((task_t *)t, ret, 0);
 	return ret;
 }
 

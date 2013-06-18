@@ -88,7 +88,9 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	task->cpu = cpu;
 	mutex_create(&cpu->lock, MT_NOSCHED);
 	cpu->numtasks=1;
+	task->thread = (void *)kmalloc(sizeof(struct thread_shared_data));
 	mutex_create((mutex_t *)&task->exlock, MT_NOSCHED);
+	mutex_create(&task->thread->files_lock, 0);
 	set_kernel_stack(&cpu->tss, task->kernel_stack + (KERN_STACK_SIZE - STACK_ELEMENT_SIZE));
 	add_atomic(&running_processes, 1);
 	/* set up the real stack, and call cpu_k_task_entry with a pointer to this cpu's ktask as 

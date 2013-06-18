@@ -39,10 +39,13 @@ int process_elf32_phdr(char *mem, int fp, unsigned *start, unsigned *end)
 				user_map_if_not_mapped(tmp);
 				tmp += PAGE_SIZE;
 			}
-			if((unsigned)do_sys_read_flags(file, offset, (char *)vaddr, length) != length)
+			if((unsigned)do_sys_read_flags(file, offset, (char *)vaddr, length) != length) {
+				fput((task_t *)current_task, fp, 0);
 				return 0;
+			}
 		}
 	}
+	fput((task_t *)current_task, fp, 0);
 	if(!max)
 		return 0;
 	*start = eh->entry;

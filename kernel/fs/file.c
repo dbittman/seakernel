@@ -13,10 +13,17 @@ struct file_ptr *get_file_handle(task_t *t, int n)
 
 struct file *get_file_pointer(task_t *t, int n)
 {
+	mutex_acquire(&t->thread->files_lock);
 	struct file_ptr *fp = get_file_handle(t, n);
 	if(fp && !fp->fi)
 		panic(PANIC_NOSYNC, "found empty file handle in task %d pointer list", t->pid);
-	return fp ? fp->fi : 0;
+	struct file *ret=0;
+	if(fp) {
+		add_atomic(&fp->count, 1);
+		assert(ret = fp->fi);
+	}
+	mutex_release(&t->thread->files_lock);
+	return ret;
 }
 
 void remove_file_pointer(task_t *t, int n)
@@ -33,6 +40,18 @@ void remove_file_pointer(task_t *t, int n)
 		kfree(f->fi);
 	kfree(f);
 }
+
+void fput(task_t *t, int fd, char flags)
+{
+	mutex_acquire(&t->thread->files_lock);
+	struct file_ptr *fp = get_file_handle(t, fd);
+	assert(fp);
+	int r = sub_atomic(&fp->count, (flags & FPUT_CLOSE) ? 2 : 1);
+	if(!r)
+		remove_file_pointer(t, fd);
+	mutex_release(&t->thread->files_lock);
+}
+
 /* Here we find an unused filedes, and add it to the list. We rely on the 
  * list being sorted, and since this is the only function that adds to it, 
  * we can assume it is. This allows for relatively efficient determining of 
@@ -55,18 +74,24 @@ int add_file_pointer_do(task_t *t, struct file_ptr *f, int after)
 int add_file_pointer(task_t *t, struct file *f)
 {
 	struct file_ptr *fp = (struct file_ptr *)kmalloc(sizeof(struct file_ptr));
+	mutex_acquire(&t->thread->files_lock);
 	fp->fi = f;
 	int r = add_file_pointer_do(t, fp, 0);
 	fp->num = r;
+	fp->count = 2; /* once for being open, once for being used by the function that calls this */
+	mutex_release(&t->thread->files_lock);
 	return r;
 }
 
 int add_file_pointer_after(task_t *t, struct file *f, int x)
 {
 	struct file_ptr *fp = (struct file_ptr *)kmalloc(sizeof(struct file_ptr));
+	mutex_acquire(&t->thread->files_lock);
 	fp->fi = f;
 	int r = add_file_pointer_do(t, fp, x);
 	fp->num = r;
+	fp->count = 2; /* once for being open, once for being used by the function that calls this */
+	mutex_release(&t->thread->files_lock);
 	return r;
 }
 
@@ -80,6 +105,7 @@ void copy_file_handles(task_t *p, task_t *n)
 			struct file_ptr *fp = (void *)kmalloc(sizeof(struct file_ptr));
 			fp->num = c;
 			fp->fi = p->filp[c]->fi;
+			fp->count = p->filp[c]->count;
 			add_atomic(&fp->fi->count, 1);
 			struct inode *i = fp->fi->inode;
 			assert(i && i->count && i->f_count);

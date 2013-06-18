@@ -19,6 +19,8 @@ void copy_task_struct(task_t *new, task_t *parent)
 		new->pwd = parent->pwd;
 		add_atomic(&new->pwd->count, 1);
 	}
+	new->thread = (void *)kmalloc(sizeof(struct thread_shared_data));
+	mutex_create(&(new->thread->files_lock), 0);
 	new->uid = parent->uid;
 	new->magic = TASK_MAGIC;
 	new->gid = parent->gid;

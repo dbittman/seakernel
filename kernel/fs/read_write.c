@@ -40,7 +40,10 @@ int do_sys_read(struct file *f, off_t off, char *buf, size_t count)
 
 int sys_read(int fp, off_t off, char *buf, size_t count)
 {
-	return do_sys_read(get_file_pointer((task_t *)current_task, fp), off, buf, count);
+	struct file *f = get_file_pointer((task_t *)current_task, fp);
+	int ret = do_sys_read(f, off, buf, count);
+	if(f) fput((task_t *)current_task, fp, 0);
+	return ret;
 }
 
 int sys_readpos(int fp, char *buf, size_t count)
@@ -50,9 +53,13 @@ int sys_readpos(int fp, char *buf, size_t count)
 	struct file *f = get_file_pointer((task_t *)current_task, fp);
 	if(!f)
 		return -EBADF;
-	if(!(f->flags & _FREAD))
+	if(!(f->flags & _FREAD)) {
+		fput((task_t *)current_task, fp, 0);
 		return -EACCES;
-	return do_sys_read(f, f->pos, buf, count);
+	}
+	int ret = do_sys_read(f, f->pos, buf, count);
+	fput((task_t *)current_task, fp, 0);
+	return ret;
 }
 
 int do_sys_write_flags(struct file *f, off_t off, char *buf, size_t count)
@@ -83,14 +90,19 @@ int sys_writepos(int fp, char *buf, size_t count)
 	struct file *f = get_file_pointer((task_t *)current_task, fp);
 	if(!f)
 		return -EBADF;
-	if(!count || !buf)
+	if(!count || !buf) {
+		fput((task_t *)current_task, fp, 0);
 		return -EINVAL;
-	if(!(f->flags & _FWRITE))
+	}
+	if(!(f->flags & _FWRITE)) {
+		fput((task_t *)current_task, fp, 0);
 		return -EACCES;
+	}
 	assert(f->inode);
 	int ret=do_sys_write(f, f->flags & _FAPPEND ? f->inode->len : f->pos, buf, count);
 	if(ret > 0)
 		f->pos += ret;
+	fput((task_t *)current_task, fp, 0);
 	return ret;
 }
 
@@ -99,5 +111,16 @@ int sys_write(int fp, off_t off, char *buf, size_t count)
 	struct file *f = get_file_pointer((task_t *)current_task, fp);
 	if(!f)
 		return -EBADF;
-	return do_sys_write(f, off, buf, count);
+	int ret = do_sys_write(f, off, buf, count);
+	fput((task_t *)current_task, fp, 0);
+	return ret;
+}
+
+int read_data(int fp, char *buf, unsigned off, int length)
+{
+	struct file *f = get_file_pointer((task_t *)current_task, fp);
+	if(!f) return -EBADF;
+	int ret = do_sys_read_flags(f, off, buf, length);
+	fput(current_task, fp, 0);
+	return ret;
 }

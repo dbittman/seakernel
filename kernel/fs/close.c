@@ -44,6 +44,6 @@ int sys_close(int fp)
 		do_unlink(f->inode);
 	else
 		iput(f->inode);
-	remove_file_pointer((task_t *)current_task, fp);
+	fput((task_t *)current_task, fp, FPUT_CLOSE);
 	return 0;
 }

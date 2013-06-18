@@ -13,27 +13,30 @@ int sys_ioctl(int fp, int cmd, int arg)
 	struct file *f = get_file_pointer((task_t *)current_task, fp);
 	if(!f) return -EBADF;
 	assert(f->inode);
-	return dm_ioctl(f->inode->mode, f->inode->dev, cmd, arg);
+	int ret = dm_ioctl(f->inode->mode, f->inode->dev, cmd, arg);
+	fput((task_t *)current_task, fp, 0);
+	return ret;
 }
 
 int sys_fcntl(int filedes, int cmd, int attr1, int attr2, int attr3)
 {
+	int ret = 0;
 	struct file *f = get_file_pointer((task_t *)current_task, filedes);
 	if(!f)
 		return -EBADF;
 	switch(cmd)
 	{
 		case F_DUPFD:
-			return sys_dup2(filedes, attr1);
+			ret = sys_dup2(filedes, attr1);
 			break;
 		case F_GETFD:
-			return f->fd_flags;
+			ret = f->fd_flags;
 			break;
 		case F_SETFD:
 			f->fd_flags = attr1;
 			break;
 		case F_GETFL:
-			return f->flags;
+			ret = f->flags;
 			break;
 		case F_SETFL:
 			f->flags = attr1;
@@ -43,18 +46,19 @@ int sys_fcntl(int filedes, int cmd, int attr1, int attr2, int attr3)
 			kill_task(current_task->pid);
 			break;
 		case F_SETLK: 
-			return fcntl_setlk(f, attr1);
+			ret = fcntl_setlk(f, attr1);
 			break;
 		case F_GETLK: 
-			return fcntl_getlk(f, attr1);
+			ret = fcntl_getlk(f, attr1);
 			break;
 		case F_SETLKW:
-			return fcntl_setlkw(f, attr1);
+			ret = fcntl_setlkw(f, attr1);
 			break;
 		default:
 			printk(5, "Task tried calling fcntl with invalid commands!\n");
-			return -EINVAL;
+			ret = -EINVAL;
 			break;
 	}
-	return 0;
+	fput((task_t *)current_task, filedes, 0);
+	return ret;
 }

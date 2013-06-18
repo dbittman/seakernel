@@ -147,11 +147,6 @@ typedef struct
   unsigned lookable;
 } elf32_t;
 
-static inline int read_data(int fp, char *buf, unsigned off, int length)
-{
-	return do_sys_read_flags(get_file_pointer((task_t *)current_task, fp), off, buf, length);
-}
-
 #define GET_RELOC_SYM(i)  ((i)>>8)
 #define GET_RELOC_TYPE(i) ((unsigned char)(i))
 

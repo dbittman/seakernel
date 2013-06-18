@@ -44,10 +44,14 @@ unsigned sys_mmap(void *addr, void *str, int prot, int flags, int fildes)
 	struct file *fil = get_file_pointer((task_t *)current_task, fildes);
 	if(!fil)
 		return EBADF;
-	if(!(fil->flags & _FREAD))
+	if(!(fil->flags & _FREAD)) {
+		fput((task_t *)current_task, fildes, 0);
 		return EACCES;
-	if(flags&PROT_WRITE && !(fil->flags&_FWRITE))
+	}
+	if(flags&PROT_WRITE && !(fil->flags&_FWRITE)) {
+		fput((task_t *)current_task, fildes, 0);
 		return EACCES;
+	}
 	/* Ok, we can attempt to allocate the area */
 	vma_t **v = (vma_t **)((flags&MAP_SHARED) ? 
 			&((task_t *)current_task)->mmf_share_space 
@@ -66,8 +70,10 @@ unsigned sys_mmap(void *addr, void *str, int prot, int flags, int fildes)
 	}
 	int np = blk->len/PAGE_SIZE + 1;
 	vnode_t *node = insert_vmem_area(*v, np);
-	if(!node)
+	if(!node) {
+		fput((task_t *)current_task, fildes, 0);
 		return ENOMEM;
+	}
 	int i=0;
 	/* Make sure that nothing is mapped there */
 	while(i < np) {
@@ -86,6 +92,7 @@ unsigned sys_mmap(void *addr, void *str, int prot, int flags, int fildes)
 	*mf->count=1;
 	mf->fd = fildes;
 	add_mmf((task_t *)current_task, mf);
+	fput((task_t *)current_task, fildes, 0);
 	return node->addr;
 }
 
@@ -118,6 +125,7 @@ void flush_mmf(mmf_t *m, int un_map, unsigned off, unsigned addr, unsigned end)
 		i += PAGE_SIZE;
 		addr += PAGE_SIZE;
 	}
+	fput((task_t *)current_task, m->fd, 0);
 }
 
 int change_count(mmf_t *mf, int ch)

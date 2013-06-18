@@ -47,6 +47,8 @@ void init_multitasking()
 	kernel_task = task;
 	primary_cpu->numtasks=1;
 	primary_cpu->flags |= CPU_TASK;
+	task->thread = (void *)kmalloc(sizeof(struct thread_shared_data));
+	mutex_create(&task->thread->files_lock, 0);
 	mutex_create((mutex_t *)&task->exlock, MT_NOSCHED);
 	add_atomic(&running_processes, 1);
 #if CONFIG_MODULES

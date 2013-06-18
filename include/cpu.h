@@ -130,5 +130,6 @@ void writeCMOS(unsigned char addr, unsigned int value);
 #define CMOS_READ_BYTE(x) readCMOS(x)
 cpu_t *get_cpu(int id);
 void init_ioapic();
+void move_task_cpu(task_t *t, cpu_t *cpu);
 #endif
 #endif

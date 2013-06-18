@@ -149,13 +149,16 @@ void task_unblock_all(struct llist *list)
 
 void move_task_cpu(task_t *t, cpu_t *cpu)
 {
+	assert(t && cpu);
 	if(t->cpu == cpu) panic(0, "trying to move task to it's own cpu");
+	assert(t != current_task);
 	/* have to try to get the lock on the CPU when the task t isn't 
 	 * running on it... */
 	if(t->flags & TF_MOVECPU)
 		panic(0, "trying to move task twice");
 	if(t == cpu->ktask)
 		panic(0, "trying to move idle task");
+	printk(0, "moving task %d to cpu %d\n", t->pid, cpu->apicid);
 	t->flags |= TF_MOVECPU;
 	cpu_t *oldcpu = t->cpu;
 	while(1)

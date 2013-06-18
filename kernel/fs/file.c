@@ -7,7 +7,7 @@
 struct file_ptr *get_file_handle(task_t *t, int n)
 {
 	if(n >= FILP_HASH_LEN) return 0;
-	struct file_ptr *f = t->filp[n];
+	struct file_ptr *f = t->thread->filp[n];
 	return f;
 }
 
@@ -29,12 +29,12 @@ struct file *get_file_pointer(task_t *t, int n)
 void remove_file_pointer(task_t *t, int n)
 {
 	if(n > FILP_HASH_LEN) return;
-	if(!t || !t->filp)
+	if(!t || !t->thread->filp)
 		return;
 	struct file_ptr *f = get_file_handle(t, n);
 	if(!f)
 		return;
-	t->filp[n] = 0;
+	t->thread->filp[n] = 0;
 	sub_atomic(&f->fi->count, 1);
 	if(!f->fi->count)
 		kfree(f->fi);
@@ -59,14 +59,14 @@ void fput(task_t *t, int fd, char flags)
 int add_file_pointer_do(task_t *t, struct file_ptr *f, int after)
 {
 	assert(t && f);
-	while(after < FILP_HASH_LEN && t->filp[after])
+	while(after < FILP_HASH_LEN && t->thread->filp[after])
 		after++;
 	if(after >= FILP_HASH_LEN) {
 		printk(1, "[vfs]: task %d ran out of files (syscall=%d). killed.\n", 
 				t->pid, t == current_task ? (int)t->system : -1);
 		kill_task(t->pid);
 	}
-	t->filp[after] = f;
+	t->thread->filp[after] = f;
 	f->num = after;
 	return after;
 }
@@ -101,11 +101,11 @@ void copy_file_handles(task_t *p, task_t *n)
 		return;
 	int c=0;
 	while(c < FILP_HASH_LEN) {
-		if(p->filp[c]) {
+		if(p->thread->filp[c]) {
 			struct file_ptr *fp = (void *)kmalloc(sizeof(struct file_ptr));
 			fp->num = c;
-			fp->fi = p->filp[c]->fi;
-			fp->count = p->filp[c]->count;
+			fp->fi = p->thread->filp[c]->fi;
+			fp->count = p->thread->filp[c]->count;
 			add_atomic(&fp->fi->count, 1);
 			struct inode *i = fp->fi->inode;
 			assert(i && i->count && i->f_count);
@@ -118,7 +118,7 @@ void copy_file_handles(task_t *p, task_t *n)
 				task_unblock_all(i->pipe->read_blocked);
 				task_unblock_all(i->pipe->write_blocked);
 			}
-			n->filp[c] = fp;
+			n->thread->filp[c] = fp;
 		}
 		c++;
 	}
@@ -129,7 +129,7 @@ void close_all_files(task_t *t)
 	int q=0;
 	for(;q<FILP_HASH_LEN;q++)
 	{
-		if(t->filp[q])
+		if(t->thread->filp[q])
 			sys_close(q);
 	}
 }

@@ -83,6 +83,7 @@ typedef struct exit_status {
 struct thread_shared_data {
 	unsigned count;
 	mutex_t files_lock;
+	struct file_ptr *filp[FILP_HASH_LEN];
 };
 
 struct task_struct
@@ -129,7 +130,6 @@ struct task_struct
 	int tty;
 	unsigned long slice;
 	struct inode *root, *pwd;
-	struct file_ptr *filp[FILP_HASH_LEN];
 	uid_t uid, _uid;
 	gid_t gid, _gid;
 	mmf_t *mm_files;

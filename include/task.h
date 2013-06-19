@@ -9,7 +9,7 @@
 #include <dev.h>
 #include <tqueue.h>
 
-extern tqueue_t *primary_queue, *active_queue;
+extern tqueue_t *primary_queue;
 
 #define KERN_STACK_SIZE 0x16000
 

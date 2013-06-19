@@ -11,6 +11,8 @@ void copy_task_struct(task_t *task, task_t *parent, char share_thread_data)
 {
 	task->parent = parent;
 	task->pid = add_atomic(&next_pid, 1)-1;
+	/* copy over the data if we're a new process. If this is going to be a thread, 
+	 * then add to the count and set the pointer */
 	if(!share_thread_data) {
 		task->thread = (void *)kmalloc(sizeof(struct thread_shared_data));
 		task->thread->count = 1;
@@ -91,13 +93,17 @@ cpu_t *fork_choose_cpu(task_t *parent)
 {
 	cpu_t *pc = parent->cpu;
 	cpu_t *cpu = &cpu_array[__counter];
-	__counter++;
+	add_atomic(&__counter, 1);
 	if(__counter >= num_cpus)
 		__counter=0;
 	if(!(cpu->flags & CPU_TASK))
-		cpu = parent->cpu;
-	if(pc->numtasks < cpu->numtasks)
 		return pc;
+	if(cpu->active_queue->num < 2) return cpu;
+	for(unsigned int i=0;i<num_cpus;i++) {
+		cpu_t *tmp = &cpu_array[i];
+		if(tmp->active_queue->num < cpu->active_queue->num)
+			cpu = tmp;
+	}
 	return cpu;
 }
 #endif

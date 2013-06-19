@@ -8,6 +8,7 @@
 typedef struct {
 	unsigned flags;
 	mutex_t lock;
+	unsigned num;
 	struct llistnode *current;
 	struct llist tql;
 } tqueue_t;

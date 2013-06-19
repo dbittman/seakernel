@@ -18,6 +18,13 @@ void accessed_cache(cache_t *c)
 	c->acc=1000;
 }
 
+int should_element_be_added(cache_t *c)
+{
+	if(c->count > 100000)
+		return 0;
+	return 1;
+}
+
 int init_cache()
 {
 #if CONFIG_MODULES
@@ -139,6 +146,17 @@ int do_cache_object(cache_t *c, u64 id, u64 key, int sz, char *buf, int dirty)
 		set_dirty(c, obj, dirty);
 		rwlock_release(c->rwl, RWL_WRITER);
 		return 0;
+	}
+	if(!should_element_be_added(c))
+	{
+		u64 a, b;
+		struct ce_t *q;
+		if((q = chash_get_any_object(c->hash, &a, &b)))
+		{
+			if(q->dirty)
+				do_sync_element(c, q, 1);
+			remove_element(c, q, 1);
+		}
 	}
 	obj = (struct ce_t *)kmalloc(sizeof(struct ce_t));
 	obj->data = (char *)kmalloc(sz);

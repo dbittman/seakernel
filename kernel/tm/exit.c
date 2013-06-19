@@ -155,8 +155,8 @@ void exit(int code)
 	{
 		/* we're the last thread to share this data. Clean it up */
 		close_all_files(t);
-		iput(t->thread->root);
-		iput(t->thread->pwd);
+		if(t->thread->root)iput(t->thread->root);
+		if(t->thread->pwd) iput(t->thread->pwd);
 		mutex_destroy(&t->thread->files_lock);
 		kfree(t->thread);
 	}

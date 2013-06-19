@@ -33,6 +33,21 @@ chash_chain_t *do_chash_search(chash_t *h, u64 id, u64 key)
 	return 0;
 }
 
+void *chash_get_any_object(chash_t *h, u64 *id, u64 *key)
+{
+	for(unsigned i=0;i<h->length;i++)
+	{
+		chash_chain_t *chain = h->hash[i];
+		if(chain)
+		{
+			*id = chain->id;
+			*key = chain->key;
+			return chain->ptr;
+		}
+	}
+	return 0;
+}
+
 void *chash_search(chash_t *h, u64 id, u64 key)
 {
 	chash_chain_t *chain = do_chash_search(h, id, key);

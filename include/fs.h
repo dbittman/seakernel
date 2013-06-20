@@ -15,6 +15,8 @@
 #define MAY_WRITE     0200
 #define MAY_READ      0400
 
+#define FPUT_CLOSE 1
+
 extern struct sblktbl *sb_table;
 #define INAME_LEN 128
 
@@ -77,7 +79,7 @@ struct file {
 };
 
 struct file_ptr {
-	unsigned int num;
+	unsigned int num, count;
 	struct file *fi;
 };
 
@@ -247,4 +249,5 @@ struct inode *read_idir(struct inode *i, int num);
 int sys_dirstat_fd(int fd, unsigned num, char *namebuf, struct stat *statbuf);
 int do_sys_write_flags(struct file *f, off_t off, char *buf, size_t count);
 int do_sys_read_flags(struct file *f, off_t off, char *buf, size_t count);
+int read_data(int fp, char *buf, unsigned off, int length);
 #endif

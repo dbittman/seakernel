@@ -9,7 +9,7 @@
 #include <char.h>
 #include <atomic.h>
 #include <rwlock.h>
-#include <elf.h>
+#include <mod.h>
 extern volatile long ticks;
 int system_setup=0;
 /* This function is called once at the start of the init process initialization.
@@ -20,6 +20,8 @@ int system_setup=0;
  * Beyond that, it can be called by any task at anytime after the first call as
  * a yield call.
  */
+int proc_set_callback(int major, int( *callback)(char rw, struct inode *inode, 
+	int m, char *buf, int, int));
 int sys_setup(int a)
 {
 	if(system_setup)
@@ -28,7 +30,7 @@ int sys_setup(int a)
 		return 1;
 	}
 	printk(KERN_MILE, "[kernel]: Setting up environment...");
-	current_task->pwd = current_task->root = ramfs_root;
+	current_task->thread->pwd = current_task->thread->root = ramfs_root;
 	init_dev_fs();
 	init_proc_fs();
 	add_inode(procfs_root, kproclist);
@@ -74,12 +76,15 @@ int sys_seek(int fp, off_t pos, unsigned whence)
 {
 	struct file *f = get_file_pointer((task_t *)current_task, fp);
 	if(!f) return -EBADF;
-	if(S_ISCHR(f->inode->mode) || S_ISFIFO(f->inode->mode))
+	if(S_ISCHR(f->inode->mode) || S_ISFIFO(f->inode->mode)) {
+		fput((task_t *)current_task, fp, 0);
 		return 0;
+	}
 	if(whence)
 		f->pos = ((whence == SEEK_END) ? f->inode->len+pos : f->pos+pos);
 	else
 		f->pos=pos;
+	fput((task_t *)current_task, fp, 0);
 	return f->pos;
 }
 
@@ -92,11 +97,13 @@ int sys_fsync(int f)
 	 * but we can write out the inode data in case it has changed */
 	if(file->inode)
 		sync_inode_tofs(file->inode);
+	fput((task_t *)current_task, f, 0);
 	return 0;
 }
 
 int sys_chdir(char *n, int fd)
 {
+	int ret;
 	if(!n)
 	{
 		/* ok, we're comin' from a fchdir. This should be easy... */
@@ -106,9 +113,11 @@ int sys_chdir(char *n, int fd)
 		/* we don't need to lock this because we own the inode - we know
 		 * it wont get freed. An atomic operation will do. */
 		add_atomic(&file->inode->count, 1);
-		return ichdir(file->inode);
+		ret = ichdir(file->inode);
+		fput((task_t *)current_task, fd, 0);
 	} else
-		return chdir(n);
+		ret = chdir(n);
+	return ret;
 }
 
 int sys_link(char *s, char *d)
@@ -128,23 +137,24 @@ int sys_umask(mode_t mode)
 int sys_getdepth(int fd)
 {
 	struct file *file = get_file_pointer((task_t *)current_task, fd);
-	if(!file || !file->inode)
+	if(!file)
 		return -EBADF;
 	struct inode *i = file->inode;
 	int x=1;
-	while(i != current_task->root && i) {
+	while(i != current_task->thread->root && i) {
 		x++;
 		if(i->mount_parent)
 			i = i->mount_parent;
 		else
 			i = i->parent;
 	}
+	fput((task_t *)current_task, fd, 0);
 	return x;
 }
 
 int sys_getcwdlen()
 {
-	struct inode *i = current_task->pwd;
+	struct inode *i = current_task->thread->pwd;
 	if(!i) return 0;
 	int x=64;
 	while(i && i->parent)
@@ -153,11 +163,11 @@ int sys_getcwdlen()
 			i = i->mount_parent;
 		x += strlen(i->name)+1;
 		i = i->parent;
-		if(i == current_task->root)
+		if(i == current_task->thread->root)
 			break;
 		if(i->mount_parent)
 			i = i->mount_parent;
-		if(i == current_task->root)
+		if(i == current_task->thread->root)
 			break;
 	}
 	return x;
@@ -171,12 +181,13 @@ int sys_chmod(char *path, int fd, mode_t mode)
 		i = get_idir(path, 0);
 	else {
 		struct file *file = get_file_pointer((task_t *)current_task, fd);
-		if(!file || !file->inode)
+		if(!file)
 			return -EBADF;
 		i = file->inode;
+		fput((task_t *)current_task, fd, 0);
 	}
 	if(!i) return -ENOENT;
-	if(i->uid != current_task->uid && current_task->uid)
+	if(i->uid != current_task->thread->uid && current_task->thread->uid)
 	{
 		if(path)
 			iput(i);
@@ -198,13 +209,14 @@ int sys_chown(char *path, int fd, uid_t uid, gid_t gid)
 		i = get_idir(path, 0);
 	else {
 		struct file *file = get_file_pointer((task_t *)current_task, fd);
-		if(!file || !file->inode)
+		if(!file)
 			return -EBADF;
 		i = file->inode;
+		fput((task_t *)current_task, fd, 0);
 	}
 	if(!i)
 		return -ENOENT;
-	if(current_task->uid && current_task->uid != i->uid) {
+	if(current_task->thread->uid && current_task->thread->uid != i->uid) {
 		if(path)
 			iput(i);
 		return -EPERM;
@@ -224,7 +236,7 @@ int sys_utime(char *path, unsigned a, unsigned m)
 	struct inode *i = get_idir(path, 0);
 	if(!i)
 		return -ENOENT;
-	if(current_task->uid && current_task->uid != i->uid) {
+	if(current_task->thread->uid && current_task->thread->uid != i->uid) {
 		iput(i);
 		return -EPERM;
 	}
@@ -250,12 +262,15 @@ int sys_getnodestr(char *path, char *node)
 int sys_ftruncate(int f, off_t length)
 {
 	struct file *file = get_file_pointer((task_t *)current_task, f);
-	if(!file || !file->inode)
+	if(!file)
 		return -EBADF;
-	if(!permissions(file->inode, MAY_WRITE))
+	if(!permissions(file->inode, MAY_WRITE)) {
+		fput((task_t *)current_task, f, 0);
 		return -EACCES;
+	}
 	file->inode->len = length;
 	sync_inode_tofs(file->inode);
+	fput((task_t *)current_task, f, 0);
 	return 0;
 }
 
@@ -332,7 +347,7 @@ int sys_access(char *path, mode_t mode)
 	struct inode *i = get_idir(path, 0);
 	if(!i)
 		return -ENOENT;
-	if(current_task->uid == 0) {
+	if(current_task->thread->uid == 0) {
 		iput(i);
 		return 0;
 	}
@@ -351,7 +366,7 @@ int select_filedes(int i, int rw)
 {
 	int ready = 1;
 	struct file *file = get_file_pointer((task_t *)current_task, i);
-	if(!file || !file->inode)
+	if(!file)
 		return -EBADF;
 	struct inode *in = file->inode;
 	if(S_ISREG(in->mode) || S_ISDIR(in->mode) || S_ISLNK(in->mode))
@@ -362,6 +377,7 @@ int select_filedes(int i, int rw)
 		ready = blockdev_select(in, rw);
 	else if(S_ISFIFO(in->mode))
 		ready = pipedev_select(in, rw);
+	fput((task_t *)current_task, i, 0);
 	return ready;
 }
 

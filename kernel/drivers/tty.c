@@ -9,7 +9,7 @@
 #include <console.h>
 #include <asm/system.h>
 #include <termios.h>
-#include <elf.h>
+#include <mod.h>
 extern unsigned init_pid;
 extern void update_cursor(int);
 vterm_t consoles[MAX_CONSOLES];

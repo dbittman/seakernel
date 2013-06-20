@@ -4,7 +4,7 @@
 #include <vargs.h>
 #include <asm/system.h>
 #include <task.h>
-#include <elf.h>
+#include <mod.h>
 #include <cpu.h>
 #include <atomic.h>
 
@@ -17,21 +17,6 @@ static inline void _set_lowercase(char *b)
 		if(*b >= 'A' && *b <= 'Z')
 			*b += 32;
 		b++;
-	}
-}
-
-void print_trace(unsigned int MaxFrames)
-{
-	unsigned int * ebp = &MaxFrames - 2;
-	for(unsigned int frame = 0; frame < MaxFrames; ++frame)
-	{
-		if((kernel_state_flags&KSF_MMU) && !vm_do_getmap((addr_t)ebp, 0, 1)) break;
-		unsigned int eip = ebp[1];
-		if(eip == 0)
-			break;
-		ebp = (unsigned int *)(ebp[0]);
-		const char *name = elf_lookup_symbol(eip, &kernel_elf);
-		if(name) kprintf("  <%x>  %s\n", eip, name);
 	}
 }
 

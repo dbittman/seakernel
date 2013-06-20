@@ -21,8 +21,8 @@ static struct inode *create_anon_pipe()
 	/* create a 'fake' inode */
 	node = (struct inode *)kmalloc(sizeof(struct inode));
 	_strcpy(node->name, "~pipe~");
-	node->uid = current_task->uid;
-	node->gid = current_task->gid;
+	node->uid = current_task->thread->uid;
+	node->gid = current_task->thread->gid;
 	node->mode = S_IFIFO | 0x1FF;
 	node->count=2;
 	node->f_count=2;
@@ -56,6 +56,8 @@ int sys_pipe(int *files)
 	int write = add_file_pointer((task_t *)current_task, f);
 	files[0]=read;
 	files[1]=write;
+	fput((task_t *)current_task, read, 0);
+	fput((task_t *)current_task, write, 0);
 	return 0;
 }
 

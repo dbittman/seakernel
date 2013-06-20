@@ -4,11 +4,13 @@
 #include <memory.h>
 #include <fs.h>
 #include <dev.h>
-#include <elf.h>
 #include <mod.h>
 #include <init.h>
 #include <sys/fcntl.h>
 #include <cpu.h>
+#if CONFIG_ARCH == TYPE_ARCH_X86
+#include <elf32.h>
+#endif
 /* Prepares a process to recieve a new executable. Desc is the descriptor of 
  * the executable. We keep it open through here so that we dont have to 
  * re-open it. */
@@ -19,7 +21,7 @@ task_t *preexec(task_t *t, int desc)
 	clear_resources(t);
 	self_free(0);
 	t->sigd=0;
-	memset((void *)t->signal_act, 0, sizeof(struct sigaction) * 128);
+	memset((void *)t->thread->signal_act, 0, sizeof(struct sigaction) * 128);
 	return 0;
 }
 
@@ -34,7 +36,7 @@ void free_dp(char **mem, int num)
 
 int do_exec(task_t *t, char *path, char **argv, char **env)
 {
-	unsigned int end, i=0, eip;
+	unsigned int end, i=0, eip=0;
 	unsigned int argc=0, envc=0;
 	int desc;
 	int err = 0;
@@ -112,11 +114,13 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	 * file descs, free up the page directory and clear up the resources 
 	 * of the task */
 	if(EXEC_LOG)
-		printk(0, "Executing (task %d, cpu %d, tty %d, cwd=%s): %s\n", t->pid, ((cpu_t *)t->cpu)->apicid, t->tty, current_task->pwd->name, path);
+		printk(0, "Executing (task %d, cpu %d, tty %d, cwd=%s): %s\n", t->pid, ((cpu_t *)t->cpu)->apicid, t->tty, current_task->thread->pwd->name, path);
 	preexec(t, desc);
 	strncpy((char *)t->command, path, 128);
-	if(!process_elf(mem, desc, &eip, &end))
+#if CONFIG_ARCH == TYPE_ARCH_X86
+	if(!process_elf32(mem, desc, &eip, &end))
 		eip=0;
+#endif
 	sys_close(desc);
 	if(!eip) {
 		printk(5, "[exec]: Tried to execute an invalid ELF file!\n");

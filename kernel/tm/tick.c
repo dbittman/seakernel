@@ -90,7 +90,7 @@ void delay(int t)
 	}
 	current_task->tick=end;
 	current_task->state=TASK_ISLEEP;
-	schedule();
+	while(!schedule());
 }
 
 void delay_sleep(int t)

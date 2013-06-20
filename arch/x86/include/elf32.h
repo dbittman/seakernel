@@ -147,11 +147,6 @@ typedef struct
   unsigned lookable;
 } elf32_t;
 
-static inline int read_data(int fp, char *buf, unsigned off, int length)
-{
-	return do_sys_read_flags(get_file_pointer((task_t *)current_task, fp), off, buf, length);
-}
-
 #define GET_RELOC_SYM(i)  ((i)>>8)
 #define GET_RELOC_TYPE(i) ((unsigned char)(i))
 
@@ -159,23 +154,15 @@ static inline int read_data(int fp, char *buf, unsigned off, int length)
 #define GET_SYMTAB_TYPE(i)   ((i)&0xf)
 
 #define SHN_UNDEF   0
-void _add_kernel_sym_user(const intptr_t func, const char * funcstr);
-void _add_kernel_symbol(const intptr_t func, const char * funcstr);
-intptr_t find_kernel_function_user(char * unres);
-intptr_t find_kernel_function(char * unres);
-void init_kernel_symbols(void);
-int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int);
-const char *elf_lookup_symbol (uint32_t addr, elf32_t *elf);
-elf32_t parse_kernel_elf(struct multiboot *mb, elf32_t *);
+
+int parse_elf32_module(module_t *mod, uint8_t * buf, char *name, int);
+const char *elf32_lookup_symbol (uint32_t addr, elf32_t *elf);
+elf32_t parse_kernel_elf32(struct multiboot *mb, elf32_t *);
 extern elf32_t kernel_elf;
-const char *elf_lookup_symbol (uint32_t addr, elf32_t *elf);
-char *get_symbol_string(uint8_t *buf, uint32_t index);
-void _add_kernel_symbol(const intptr_t func, const char * funcstr);
-intptr_t find_kernel_function(char * unres);
-int remove_kernel_symbol(char * unres);
+const char *elf32_lookup_symbol (uint32_t addr, elf32_t *elf);
 elf32_symtab_entry_t * fill_symbol_struct(uint8_t * buf, uint32_t symbol);
 intptr_t get_section_offset(uint8_t * buf, uint32_t info);
-int process_elf(char *mem, int fp, unsigned *start, unsigned *end);
+int process_elf32(char *mem, int fp, unsigned *start, unsigned *end);
 unsigned long long get_epoch_time();
 void remove_dfs_node(char *name);
 int kernel_cache_sync_slow(int all);

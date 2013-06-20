@@ -22,12 +22,12 @@ int permissions(struct inode *i, mode_t flag)
 {
 	if(!i)
 		return 0;
-	if(current_task->uid == 0)
+	if(current_task->thread->uid == 0)
 		return 1;
-	if(current_task->uid == i->uid && (flag & i->mode))
+	if(current_task->thread->uid == i->uid && (flag & i->mode))
 		return 1;
 	flag = flag >> 3;
-	if(current_task->gid == i->gid && (flag & i->mode))
+	if(current_task->thread->gid == i->gid && (flag & i->mode))
 		return 1;
 	flag = flag >> 3;
 	return flag & i->mode;

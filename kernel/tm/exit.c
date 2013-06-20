@@ -74,7 +74,9 @@ void kill_task(unsigned int pid)
 	task->state = TASK_SUICIDAL;
 	task->sigd = 0; /* fuck your signals */
 	if(task == current_task)
-		schedule();
+	{
+		for(;;) schedule();
+	}
 }
 
 int get_exit_status(int pid, int *status, int *retval, int *signum, int *__pid)
@@ -131,9 +133,6 @@ void exit(int code)
 	/* Clear out system resources */
 	free_stack(); /* free up memory that is thread-specific */
 	clear_resources(t);
-	close_all_files(t);
-	iput(t->root);
-	iput(t->pwd);
 	/* this fixes all tasks that are children of current_task, or are waiting
 	 * on current_task. For those waiting, it signals the task. For those that
 	 * are children, it fixes the 'parent' pointer. */
@@ -152,6 +151,15 @@ void exit(int code)
 	}
 	mutex_release((mutex_t *)&t->exlock);
 	set_int(old);
+	if(!sub_atomic(&t->thread->count, 1))
+	{
+		/* we're the last thread to share this data. Clean it up */
+		close_all_files(t);
+		if(t->thread->root)iput(t->thread->root);
+		if(t->thread->pwd) iput(t->thread->pwd);
+		mutex_destroy(&t->thread->files_lock);
+		kfree(t->thread);
+	}
 	raise_flag(TF_DYING);
 	set_as_dead(t);
 	char flag_last_page_dir_task=0;
@@ -164,6 +172,5 @@ void exit(int code)
 		vm_unmap(PDIR_DATA);
 		raise_flag(TF_LAST_PDIR);
 	}
-	schedule();
-	panic(PANIC_NOSYNC, "and you may ask yourself...how did I get here?");
+	for(;;) schedule();
 }

@@ -11,9 +11,9 @@ struct inode *init_tmpfs();
 
 int do_mount(struct inode *i, struct inode *p)
 {
-	if(current_task->uid)
+	if(current_task->thread->uid)
 		return -EACCES;
-	if(i == current_task->root)
+	if(i == current_task->thread->root)
 		return -EINVAL;
 	if(!is_directory(i))
 		return -ENOTDIR;
@@ -101,13 +101,13 @@ int do_unmount(struct inode *i, int flags)
 {
 	if(!i || !i->mount)
 		return -EINVAL;
-	if(current_task->uid)
+	if(current_task->thread->uid)
 		return -EACCES;
 	if(!is_directory(i))
 		return -ENOTDIR;
 	struct inode *m = i->mount->root;
 	rwlock_acquire(&m->rwl, RWL_WRITER);
-	if(m->count>1 && (!(flags&1) && !current_task->uid)) {
+	if(m->count>1 && (!(flags&1) && !current_task->thread->uid)) {
 		rwlock_release(&m->rwl, RWL_WRITER);
 		return -EBUSY;
 	}

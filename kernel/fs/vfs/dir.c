@@ -22,7 +22,7 @@ int do_get_path_string(struct inode *p, char *path, int max)
 		sprintf(path, "%s", p->name);
 		return 0;
 	}
-	if(i != current_task->root && i->mount_parent)
+	if(i != current_task->thread->root && i->mount_parent)
 		i = i->mount_parent;
 	char tmp[max * sizeof(char) +1];
 	memset(tmp, 0, max * sizeof(char) +1);
@@ -34,11 +34,11 @@ int do_get_path_string(struct inode *p, char *path, int max)
 		strncpy(tmp, path, max * sizeof(char) +1);
 		sprintf(path, "%s/%s", i->name, tmp);
 		i = i->parent;
-		if(i == current_task->root)
+		if(i == current_task->thread->root)
 			break;
 		if(i->mount_parent)
 			i = i->mount_parent;
-		if(i == current_task->root)
+		if(i == current_task->thread->root)
 			break;
 	}
 	strncpy(tmp, path, max * sizeof(char) +1);
@@ -58,15 +58,15 @@ int get_pwd(char *buf, int sz)
 {
 	if(!buf) 
 		return -EINVAL;
-	return do_get_path_string(current_task->pwd, buf, sz == 0 ? -1 : sz);
+	return do_get_path_string(current_task->thread->pwd, buf, sz == 0 ? -1 : sz);
 }
 
 int chroot(char *n)
 {
 	if(!n) 
 		return -EINVAL;
-	struct inode *i, *old = current_task->root;
-	if(current_task->uid != 0)
+	struct inode *i, *old = current_task->thread->root;
+	if(current_task->thread->uid != 0)
 		return -EPERM;
 	i = get_idir(n, 0);
 	if(!i)
@@ -75,7 +75,7 @@ int chroot(char *n)
 		iput(i);
 		return -ENOTDIR;
 	}
-	current_task->root = i;
+	current_task->thread->root = i;
 	add_atomic(&i->count, 1);
 	ichdir(i);
 	iput(old);
@@ -86,7 +86,7 @@ int ichdir(struct inode *i)
 {
 	if(!i)
 		return -EINVAL;
-	struct inode *old=current_task->pwd;
+	struct inode *old=current_task->thread->pwd;
 	if(!is_directory(i)) {
 		iput(i);
 		return -ENOTDIR;
@@ -95,7 +95,7 @@ int ichdir(struct inode *i)
 		iput(i);
 		return -EACCES;
 	}
-	current_task->pwd = i;
+	current_task->thread->pwd = i;
 	iput(old);
 	return 0;
 }

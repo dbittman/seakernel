@@ -4,7 +4,7 @@
 #include <asm/system.h>
 #include <task.h>
 #include <cpu.h>
-#include <elf.h>
+#include <mod.h>
 #include <atomic.h>
 
 extern char *exception_messages[];
@@ -121,7 +121,7 @@ void faulted(int fuckoff, int userspace)
 		}
 		/* the above signals WILL be handled, since at the end of schedule(), it checks
 		 * for signals. Since we are returning to user-space here, the handler will always run */
-		schedule();
+		while(!schedule());
 	}
 }
 

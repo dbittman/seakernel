@@ -5,7 +5,7 @@
 #include <char.h>
 #include <block.h>
 #include <fs.h>
-#include <elf.h>
+#include <mod.h>
 #include <atomic.h>
 
 struct inode *devfs_root;
@@ -16,7 +16,7 @@ void init_dev_fs()
 	devfs_root = (struct inode*)kmalloc(sizeof(struct inode));
 	_strcpy(devfs_root->name, "dev");
 	devfs_root->i_ops = &devfs_inode_ops;
-	devfs_root->parent = current_task->root;
+	devfs_root->parent = current_task->thread->root;
 	devfs_root->mode = S_IFDIR | 0x1FF;
 	devfs_root->num = -1;
 	rwlock_create(&devfs_root->rwl);
@@ -32,7 +32,7 @@ void init_dev_fs()
 	devfs_add(devfs_root, "zero", S_IFCHR, 1, 0);
 	devfs_add(devfs_root, "com0", S_IFCHR, 5, 0);
 	/* Mount the filesystem */
-	add_inode(current_task->root, devfs_root);
+	add_inode(current_task->thread->root, devfs_root);
 #if CONFIG_MODULES
 	add_kernel_symbol(devfs_add);
 	add_kernel_symbol(devfs_remove);

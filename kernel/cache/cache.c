@@ -8,12 +8,21 @@
 #include <task.h>
 #include <ll.h>
 #include <atomic.h>
-#include <elf.h>
+#include <mod.h>
 struct llist *cache_list;
+int disconnect_block_cache(int dev);
+int write_block_cache(int dev, u64 blk);
 void accessed_cache(cache_t *c)
 {
 	c->slow=100;
 	c->acc=1000;
+}
+
+int should_element_be_added(cache_t *c)
+{
+	if(c->count > 100000)
+		return 0;
+	return 1;
 }
 
 int init_cache()
@@ -137,6 +146,17 @@ int do_cache_object(cache_t *c, u64 id, u64 key, int sz, char *buf, int dirty)
 		set_dirty(c, obj, dirty);
 		rwlock_release(c->rwl, RWL_WRITER);
 		return 0;
+	}
+	if(!should_element_be_added(c))
+	{
+		u64 a, b;
+		struct ce_t *q;
+		if((q = chash_get_any_object(c->hash, &a, &b)))
+		{
+			if(q->dirty)
+				do_sync_element(c, q, 1);
+			remove_element(c, q, 1);
+		}
 	}
 	obj = (struct ce_t *)kmalloc(sizeof(struct ce_t));
 	obj->data = (char *)kmalloc(sz);

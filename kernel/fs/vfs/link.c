@@ -26,8 +26,8 @@ int link(char *old, char *new)
 int do_unlink(struct inode *i)
 {
 	int err = 0;
-	if(current_task->uid && (i->parent->mode & S_ISVTX) 
-			&& (i->uid != current_task->uid))
+	if(current_task->thread->uid && (i->parent->mode & S_ISVTX) 
+		&& (i->uid != current_task->thread->uid))
 		err = -EACCES;
 	if(S_ISDIR(i->mode))
 		err = -EISDIR;

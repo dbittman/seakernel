@@ -3,7 +3,7 @@
 #include <dev.h>
 #include <memory.h>
 #include <fs.h>
-#include <elf.h>
+#include <elf32.h>
 #include <block.h>
 #include <char.h>
 #include <multiboot.h>
@@ -12,7 +12,7 @@
 #include <cpu.h>
 #include <multiboot.h>
 
-int process_elf_phdr(char *mem, int fp, unsigned *start, unsigned *end)
+int process_elf32_phdr(char *mem, int fp, unsigned *start, unsigned *end)
 {
 	uint32_t i, x;
 	uint32_t entry;
@@ -39,10 +39,13 @@ int process_elf_phdr(char *mem, int fp, unsigned *start, unsigned *end)
 				user_map_if_not_mapped(tmp);
 				tmp += PAGE_SIZE;
 			}
-			if((unsigned)do_sys_read_flags(file, offset, (char *)vaddr, length) != length)
+			if((unsigned)do_sys_read_flags(file, offset, (char *)vaddr, length) != length) {
+				fput((task_t *)current_task, fp, 0);
 				return 0;
+			}
 		}
 	}
+	fput((task_t *)current_task, fp, 0);
 	if(!max)
 		return 0;
 	*start = eh->entry;
@@ -50,12 +53,12 @@ int process_elf_phdr(char *mem, int fp, unsigned *start, unsigned *end)
 	return 1;
 }
 
-int process_elf(char *mem, int fp, unsigned *start, unsigned *end)
+int process_elf32(char *mem, int fp, unsigned *start, unsigned *end)
 {
-	return process_elf_phdr(mem, fp, start, end);
+	return process_elf32_phdr(mem, fp, start, end);
 }
 
-elf32_t parse_kernel_elf(struct multiboot *mb, elf32_t *elf)
+elf32_t parse_kernel_elf32(struct multiboot *mb, elf32_t *elf)
 {
 	unsigned int i;
 	elf32_section_header_t *sh = (elf32_section_header_t*)mb->addr;
@@ -80,7 +83,7 @@ elf32_t parse_kernel_elf(struct multiboot *mb, elf32_t *elf)
 	return *elf;
 }
 #if (CONFIG_MODULES)
-int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int force)
+int parse_elf32_module(module_t *mod, uint8_t * buf, char *name, int force)
 {
 	uint32_t i, x;
 	uint32_t module_entry=0, reloc_addr, mem_addr, module_exiter=0, module_deps=0;

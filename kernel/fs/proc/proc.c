@@ -114,7 +114,7 @@ void init_proc_fs()
 	procfs_root = (struct inode*)kmalloc(sizeof(struct inode));
 	_strcpy(procfs_root->name, "proc");
 	procfs_root->i_ops = &procfs_inode_ops;
-	procfs_root->parent = current_task->root;
+	procfs_root->parent = current_task->thread->root;
 	procfs_root->mode = S_IFDIR | 0x1FF;
 	procfs_root->num = -1;
 	rwlock_create(&procfs_root->rwl);
@@ -133,7 +133,7 @@ void init_proc_fs()
 	pfs_cn("mounts", S_IFREG, 2, 1);
 	pfs_cn("seaos", S_IFREG, 3, 2);
 	/* Mount the filesystem */
-	add_inode(current_task->root, procfs_root);
+	add_inode(current_task->thread->root, procfs_root);
 }
 
 int pfs_read(struct inode *i, off_t off, size_t len, char *buffer)

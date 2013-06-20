@@ -47,6 +47,7 @@ chash_t *chash_create(unsigned length);
 int chash_destroy(chash_t *h);
 void *chash_search(chash_t *h, u64 id, u64 key);
 int chash_delete(chash_t *h, u64 id, u64 key);
+void *chash_get_any_object(chash_t *h, u64 *id, u64 *key);
 int chash_add(chash_t *h, u64 id, u64 key, void *ptr);
 int destroy_all_id(cache_t *c, u64);
 int do_cache_object(cache_t *, u64 id, u64 key, int sz, char *buf, int dirty);
@@ -58,5 +59,6 @@ int sync_element(cache_t *, struct ce_t *e);
 void remove_element(cache_t *, struct ce_t *o, int);
 void do_sync_of_mounted();
 int kernel_cache_sync();
+int do_sync_element(cache_t *c, struct ce_t *e, int locked);
 void sync_dm();
 #endif

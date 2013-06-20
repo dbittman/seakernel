@@ -4,8 +4,8 @@
 #include <cpu-x86.h>
 #include <task.h>
 #include <mutex.h>
-#include <elf.h>
 #include <atomic.h>
+#include <mod.h>
 cpu_t *primary_cpu=0;
 #if CONFIG_SMP
 cpu_t cpu_array[CONFIG_MAX_CPUS];

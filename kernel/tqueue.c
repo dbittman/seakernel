@@ -3,7 +3,7 @@
 #include <tqueue.h>
 #include <mutex.h>
 #include <ll.h>
-
+#include <cpu.h>
 /* the rules for tqueue's are simple:
  * 1) you MUST disable interrupts when accessing them. This makes
  *    it safe for single-cpu machines to use these.
@@ -22,6 +22,7 @@ tqueue_t *tqueue_create(tqueue_t *tq, unsigned flags)
 		tq->flags=flags;
 	mutex_create(&tq->lock, MT_NOSCHED);
 	ll_create_lockless(&tq->tql);
+	tq->num=0;
 	return tq;
 }
 
@@ -40,6 +41,7 @@ struct llistnode *tqueue_insert(tqueue_t *tq, void *item, struct llistnode *node
 	ll_do_insert(&tq->tql, node, item);
 	if(!tq->current)
 		tq->current = tq->tql.head;
+	tq->num++;
 	mutex_release(&tq->lock);
 	set_int(old);
 	return node;
@@ -50,7 +52,8 @@ void tqueue_remove(tqueue_t *tq, struct llistnode *i)
 	int old = set_int(0);
 	mutex_acquire(&tq->lock);
 	if(tq->current == i) tq->current=0;
-	void *node = ll_do_remove(&tq->tql, i, 0);
+	ll_do_remove(&tq->tql, i, 0);
+	tq->num--;
 	mutex_release(&tq->lock);
 	set_int(old);
 }

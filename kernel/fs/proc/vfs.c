@@ -55,7 +55,7 @@ int proc_vfs(char rw, struct inode *n, int m, char *buf, int off, int len)
 			} else
 				mt.mt_dev = strrchr(i->node_str, '/')+1;
 			if(i->mount_parent) {
-				if(i->mount_parent == current_task->root || i == current_task->root)
+				if(i->mount_parent == current_task->thread->root || i == current_task->thread->root)
 					mt.mt_filsys=mt.mt_mountp = "/";
 				else {
 					if(!strcmp(i->mount_parent->name, "dev"))

@@ -1,7 +1,7 @@
 #include <kernel.h>
 #include <memory.h>
 #include <task.h>
-#include <elf.h>
+#include <mod.h>
 #include <tqueue.h>
 #include <cpu.h>
 #include <ll.h>
@@ -47,12 +47,14 @@ void init_multitasking()
 	kernel_task = task;
 	primary_cpu->numtasks=1;
 	primary_cpu->flags |= CPU_TASK;
+	task->thread = (void *)kmalloc(sizeof(struct thread_shared_data));
+	task->thread->count = 1;
+	mutex_create(&task->thread->files_lock, 0);
 	mutex_create((mutex_t *)&task->exlock, MT_NOSCHED);
 	add_atomic(&running_processes, 1);
 #if CONFIG_MODULES
 	add_kernel_symbol(delay);
 	add_kernel_symbol(delay_sleep);
-	add_kernel_symbol(schedule);
 	add_kernel_symbol(schedule);
 	add_kernel_symbol(run_scheduler);
 	add_kernel_symbol(exit);
@@ -95,7 +97,9 @@ void task_pause(task_t *t)
 {
 	/* don't care what other processors do */
 	t->state = TASK_ISLEEP;
-	if(t == current_task) schedule();
+	if(t == current_task) {
+		while(!schedule());
+	}
 }
 
 void task_resume(task_t *t)
@@ -145,17 +149,19 @@ void task_unblock_all(struct llist *list)
 	rwlock_release(&list->rwl, RWL_WRITER);
 	set_int(old);
 }
-#if 0
+
 void move_task_cpu(task_t *t, cpu_t *cpu)
 {
+	assert(t && cpu);
 	if(t->cpu == cpu) panic(0, "trying to move task to it's own cpu");
+	assert(t != current_task);
 	/* have to try to get the lock on the CPU when the task t isn't 
 	 * running on it... */
-	#warning "make this atomic"
 	if(t->flags & TF_MOVECPU)
 		panic(0, "trying to move task twice");
 	if(t == cpu->ktask)
 		panic(0, "trying to move idle task");
+	printk(0, "moving task %d to cpu %d\n", t->pid, cpu->apicid);
 	t->flags |= TF_MOVECPU;
 	cpu_t *oldcpu = t->cpu;
 	while(1)
@@ -167,10 +173,11 @@ void move_task_cpu(task_t *t, cpu_t *cpu)
 		asm("pause");
 	}
 	/* ok, we have the lock and the task */
-	tqueue_remove(oldcpu->active_queue, t->activenode);
-	tqueue_insert(cpu->active_queue, (void *)t, t->activenode);
 	t->cpu = cpu;
+	tqueue_remove(oldcpu->active_queue, t->activenode);
+	if(!t->blocklist)
+		tqueue_insert(cpu->active_queue, (void *)t, t->activenode);
+	
 	mutex_release(&oldcpu->lock);
 	t->flags &= ~TF_MOVECPU;
 }
-#endif

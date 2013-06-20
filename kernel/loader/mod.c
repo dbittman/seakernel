@@ -1,11 +1,13 @@
 
 #include <kernel.h>
 #if (CONFIG_MODULES)
-#include <elf.h>
 #include <fs.h>
 #include <task.h>
 #include <memory.h>
 #include <mod.h>
+#if CONFIG_ARCH == TYPE_ARCH_X86
+#include <elf32.h>
+#endif
 module_t *modules=0;
 int load_deps(char *);
 mutex_t mod_mutex;
@@ -73,7 +75,9 @@ int load_module(char *path, char *args, int flags)
 		return -EINVAL;
 	}
 	/* Call the elf parser */
-	int res = parse_elf_module(tmp, (unsigned char *)mem+4, path, flags & 1);
+#if CONFIG_ARCH == TYPE_ARCH_X86
+	int res = parse_elf32_module(tmp, (unsigned char *)mem+4, path, flags & 1);
+#endif
 	if(res == _MOD_FAIL || res == _MOD_AGAIN)
 	{
 		kfree(mem);
@@ -211,14 +215,14 @@ void init_module_system()
 
 int sys_load_module(char *path, char *args, int flags)
 {
-	if(current_task->uid)
+	if(current_task->thread->uid)
 		return -EPERM;
 	return load_module(path, args, flags);
 }
 
 int sys_unload_module(char *path, int flags)
 {
-	if(current_task->uid)
+	if(current_task->thread->uid)
 		return -EPERM;
 	return do_unload_module(path, flags);
 }

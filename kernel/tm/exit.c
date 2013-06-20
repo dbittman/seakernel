@@ -42,7 +42,6 @@ void release_task(task_t *p)
 {
 	/* This is everything that the task itself cannot release. 
 	 * The kernel cleans up what little is left nicely */
-	assert(current_task == kernel_task);
 	assert(p && p != (task_t *)current_task);
 	/* don't release the task while it's still exiting... */
 	if(!(p->flags & TF_BURIED))
@@ -136,7 +135,8 @@ void exit(int code)
 	iput(t->root);
 	iput(t->pwd);
 	/* this fixes all tasks that are children of current_task, or are waiting
-	 * on current_task. For those waiting, it signals the task */
+	 * on current_task. For those waiting, it signals the task. For those that
+	 * are children, it fixes the 'parent' pointer. */
 	search_tqueue(primary_queue, TSEARCH_EXIT_PARENT | TSEARCH_EXIT_WAITING, 0, 0, 0, 0);
 	/* tell our parent that we're dead */
 	if(t->parent)
@@ -156,7 +156,7 @@ void exit(int code)
 	set_as_dead(t);
 	char flag_last_page_dir_task=0;
 	mutex_acquire(&pd_cur_data->lock);
-	flag_last_page_dir_task = --pd_cur_data->count == 0 ? 1 : 0;
+	flag_last_page_dir_task = (--pd_cur_data->count == 0) ? 1 : 0;
 	mutex_release(&pd_cur_data->lock);
 	if(flag_last_page_dir_task) {
 		/* no one else is referencing this directory. Clean it up... */

@@ -1,7 +1,7 @@
 [GLOBAL read_eip]
 read_eip:
-  pop eax
-  jmp eax 
+  pop eax ; this is so cheating.
+  jmp eax ; this really shouldn't work. But damn, it's cool.
 
 [GLOBAL do_switch_to_user_mode]
 do_switch_to_user_mode:

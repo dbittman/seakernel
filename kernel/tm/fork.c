@@ -9,8 +9,17 @@ unsigned running_processes = 0;
 
 void copy_task_struct(task_t *new, task_t *parent)
 {
+	new->magic = TASK_MAGIC;
+	new->flags = TF_FORK;
 	new->parent = parent;
 	new->pid = add_atomic(&next_pid, 1)-1;
+	mutex_create((mutex_t *)&new->exlock, MT_NOSCHED);
+	new->phys_mem_usage = parent->phys_mem_usage;
+	new->listnode = (void *)kmalloc(sizeof(struct llistnode));
+	new->activenode = (void *)kmalloc(sizeof(struct llistnode));
+	new->blocknode = (void *)kmalloc(sizeof(struct llistnode));
+	new->kernel_stack = kmalloc(KERN_STACK_SIZE+8);
+	
 	if(parent->root) {
 		new->root = parent->root;
 		add_atomic(&new->root->count, 1);
@@ -19,8 +28,12 @@ void copy_task_struct(task_t *new, task_t *parent)
 		new->pwd = parent->pwd;
 		add_atomic(&new->pwd->count, 1);
 	}
+	if(parent->mmf_priv_space) {
+		new->mmf_priv_space = (vma_t *)kmalloc(sizeof(vma_t));
+		memcpy(new->mmf_priv_space, parent->mmf_priv_space, sizeof(vma_t));
+	}
+	new->mmf_share_space = parent->mmf_share_space;
 	new->uid = parent->uid;
-	new->magic = TASK_MAGIC;
 	new->gid = parent->gid;
 	new->_uid = parent->_uid;
 	new->_gid = parent->_gid;
@@ -34,23 +47,11 @@ void copy_task_struct(task_t *new, task_t *parent)
 	new->system = parent->system;
 	new->cmask = parent->cmask;
 	new->path_loc_start = parent->path_loc_start;
-	new->kernel_stack = kmalloc(KERN_STACK_SIZE+8);
-	if(parent->mmf_priv_space) {
-		new->mmf_priv_space = (vma_t *)kmalloc(sizeof(vma_t));
-		memcpy(new->mmf_priv_space, parent->mmf_priv_space, sizeof(vma_t));
-	}
-	new->mmf_share_space = parent->mmf_share_space;
-	copy_mmf(parent, new);
 	memcpy((void *)new->signal_act, (void *)parent->signal_act, 128 * 
 		sizeof(struct sigaction));
-	/* This actually duplicates the handles... */
+	
+	copy_mmf(parent, new);
 	copy_file_handles(parent, new);
-	new->flags = TF_FORK;
-	mutex_create((mutex_t *)&new->exlock, MT_NOSCHED);
-	new->phys_mem_usage = parent->phys_mem_usage;
-	new->listnode = (void *)kmalloc(sizeof(struct llistnode));
-	new->activenode = (void *)kmalloc(sizeof(struct llistnode));
-	new->blocknode = (void *)kmalloc(sizeof(struct llistnode));
 }
 
 __attribute__((always_inline)) 
@@ -144,7 +145,6 @@ int do_fork(unsigned flags)
 		add_atomic(&cpu->numtasks, 1);
 		tqueue_insert(cpu->active_queue, (void *)new, new->activenode);
 		mutex_release(&cpu->lock);
-		/* And unlock everything and reschedule */
 		__engage_idle();
 		return new->pid;
 	}

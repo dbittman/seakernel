@@ -95,6 +95,9 @@ __attribute__((always_inline)) static inline void store_context()
 		_overflow("stack");
 	if(current_task->heap_end && current_task->heap_end >= TOP_USER_HEAP)
 		_overflow("heap");
+	/* the exiting task has fully 'exited' and has now scheduled out of
+	 * itself. It will never be scheduled again, and the page directory
+	 * will never be accessed again */
 	if(current_task->flags & TF_DYING)
 		current_task->flags |= TF_BURIED;
 	current_task->syscall_count = 0;

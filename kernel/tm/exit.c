@@ -118,7 +118,7 @@ void add_exit_stat(task_t *t, ex_stat *e)
 	mutex_release((mutex_t *)&t->exlock);
 	set_int(old_int);
 }
-
+extern int init_pid;
 void exit(int code)
 {
 	if(!current_task || current_task->pid == 0) 
@@ -128,7 +128,7 @@ void exit(int code)
 	raise_flag(TF_EXITING);
 	if(code != -9) t->exit_reason.cause = 0;
 	t->exit_reason.ret = code;
-	if(t->parent)
+	if(t->parent && t->parent->pid != init_pid)
 		add_exit_stat((task_t *)t->parent, (ex_stat *)&t->exit_reason);
 	/* Clear out system resources */
 	free_stack(); /* free up memory that is thread-specific */

@@ -135,6 +135,9 @@ int do_fork(unsigned flags)
 	task->pd = newspace;
 	copy_task_struct(task, parent, flags & FORK_SHAREDAT);
 	add_atomic(&running_processes, 1);
+	__engage_idle();
+	schedule();
+	printk(0, "%d: %d / %d\n", running_processes, pm_used_pages, pm_num_pages);
 	/* Set the state as usleep temporarily, so that it doesn't accidentally run.
 	 * And then add it to the queue */
 	task->state = TASK_USLEEP;

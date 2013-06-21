@@ -129,7 +129,9 @@ void close_all_files(task_t *t)
 	int q=0;
 	for(;q<FILP_HASH_LEN;q++)
 	{
-		if(t->thread->filp[q])
+		if(t->thread->filp[q]) {
 			sys_close(q);
+			assert(!t->thread->filp[q]);
+		}
 	}
 }

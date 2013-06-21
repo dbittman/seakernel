@@ -22,6 +22,8 @@ int should_element_be_added(cache_t *c)
 {
 	if(c->count > 100000)
 		return 0;
+	if((pm_used_pages * 100) / pm_num_pages >= 80)
+		return 0;
 	return 1;
 }
 

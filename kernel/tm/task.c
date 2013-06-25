@@ -142,9 +142,9 @@ void task_unblock_all(struct llist *list)
 		tqueue_insert(((cpu_t *)entry->cpu)->active_queue, (void *)entry, entry->activenode);
 		entry->blocklist = 0;
 		assert(entry->blocknode == cur);
+		ll_maybe_reset_loop(list, cur, next);
 		ll_do_remove(list, cur, 1);
 		task_resume(entry);
-		ll_maybe_reset_loop(list, cur, next);
 	}
 	rwlock_release(&list->rwl, RWL_WRITER);
 	set_int(old);

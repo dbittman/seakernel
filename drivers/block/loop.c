@@ -183,9 +183,10 @@ int module_exit()
 		struct loop_device *ld;
 		ll_for_each_entry_safe(loops, cur, next, struct loop_device *, ld)
 		{
+			ll_maybe_reset_loop(loops, cur, next);
 			ll_remove(loops, cur);
 			//kfree(ld);
-			ll_maybe_reset_loop(loops, cur, next);
+			
 		}
 	}
 	ll_destroy(loops);

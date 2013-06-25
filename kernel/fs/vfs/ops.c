@@ -79,8 +79,8 @@ int free_inode(struct inode *i, int recur)
 		struct llistnode *cur, *nxt;
 		ll_for_each_entry_safe((&i->children), cur, nxt, struct inode *, c)
 		{
-			ll_remove(&i->children, cur);
 			ll_maybe_reset_loop((&i->children), cur, nxt);
+			ll_remove(&i->children, cur);
 			c->node=0;
 			free_inode(c, 1);
 		}

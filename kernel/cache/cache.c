@@ -245,8 +245,8 @@ int destroy_all_id(cache_t *c, u64 id)
 		{
 			if(obj->dirty)
 				do_sync_element(c, obj, 1);
-			remove_element(c, obj, 1);
 			ll_maybe_reset_loop(&c->primary_ll, curnode, next);
+			remove_element(c, obj, 1);
 		}
 		
 	}

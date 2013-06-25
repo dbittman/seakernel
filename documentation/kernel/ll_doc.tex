@@ -83,7 +83,7 @@ current entry of the list as well.
 
 \item \macro{ll\_maybe\_reset\_loop}{list,curnode,next} \\
 Looks to see if something happened in the loop that would require the loop to restart. This should be
-called if the list is modified from inside the loop.
+called if the list is modified from inside the loop, but BEFORE the modification is made.
 \end{itemize}
 
 It is important to note three things about the loop macros:

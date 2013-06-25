@@ -249,10 +249,11 @@ int module_exit()
 		ll_for_each_entry_safe(rtl_cards, cur, next, rtl8139dev_t *, ent)
 		{
 			//rtl8139_unload_device_pci(ent);
+			ll_maybe_reset_loop(rtl_cards, cur, next);
 			ll_remove(rtl_cards, cur);
 			//kfree(ent->rec_buf);
 			//kfree(ent);
-			ll_maybe_reset_loop(rtl_cards, cur, next);
+			
 		}
 	}
 	ll_destroy(rtl_cards);

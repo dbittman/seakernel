@@ -69,7 +69,9 @@ void do_tick()
 
 void timer_handler(registers_t r)
 {
-	add_atomic(&ticks, 1);
+	/* prevent multiple cpus from adding to ticks */
+	if(!current_task || !current_task->cpu || ((cpu_t *)current_task->cpu) == primary_cpu)
+		add_atomic(&ticks, 1);
 	/* engage the idle task occasionally */
 	if((ticks % current_hz*10) == 0)
 		__engage_idle();

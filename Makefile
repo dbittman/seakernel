@@ -1,8 +1,14 @@
 # seakernel makefile 
 ifneq ($(MAKECMDGOALS),config)
+
 ifneq ($(MAKECMDGOALS),defconfig)
-include sea_defines.inc
+	include sea_defines.inc
+else
+	ARCH=x86
 endif
+
+else
+	ARCH=x86
 endif
 
 ifeq ($(CONFIG_ARCH), 2)

@@ -14,8 +14,8 @@
 #include <cpu.h>
 #include <multiboot.h>
 #include <rwlock.h>
-mutex_t sym_mutex;
-kernel_symbol_t export_syms[MAX_SYMS];
+extern mutex_t sym_mutex;
+extern kernel_symbol_t export_syms[MAX_SYMS];
 const char *elf32_lookup_symbol (uint32_t addr, elf32_t *elf)
 {
 	unsigned int i;
@@ -39,47 +39,6 @@ const char *elf32_lookup_symbol (uint32_t addr, elf32_t *elf)
 }
 
 #if CONFIG_MODULES
-
-void init_kernel_symbols(void)
-{
-	uint32_t i;
-	for(i = 0; i < MAX_SYMS; i++)
-		export_syms[i].ptr = 0;
-	mutex_create(&sym_mutex, 0);
-	/* symbol functions */
-	add_kernel_symbol(find_kernel_function);
-	add_kernel_symbol(remove_kernel_symbol);
-	add_kernel_symbol(_add_kernel_symbol);
-	/* basic kernel functions */
-	add_kernel_symbol(panic_assert);
-	add_kernel_symbol(panic);
-	_add_kernel_symbol((unsigned)&kernel_state_flags, "kernel_state_flags");
-	add_kernel_symbol(printk);
-	add_kernel_symbol(kprintf);
-	add_kernel_symbol(sprintf);
-	add_kernel_symbol(memset);
-	add_kernel_symbol(memcpy);
-	add_kernel_symbol(_strcpy);
-	add_kernel_symbol(inb);
-	add_kernel_symbol(outb);
-	add_kernel_symbol(inw);
-	add_kernel_symbol(outw);
-	add_kernel_symbol(inl);
-	add_kernel_symbol(outl);
-	add_kernel_symbol(mutex_create);
-	add_kernel_symbol(mutex_destroy);
-	add_kernel_symbol(__mutex_release);
-	add_kernel_symbol(__mutex_acquire);
-	add_kernel_symbol(__rwlock_acquire);
-	add_kernel_symbol(rwlock_release);
-	add_kernel_symbol(__rwlock_escalate);
-	add_kernel_symbol(rwlock_create);
-	add_kernel_symbol(rwlock_destroy);
-	
-	/* these systems export these, but have no initialization function */
-	add_kernel_symbol(get_epoch_time);
-	add_kernel_symbol(allocate_dma_buffer);
-}
 
 char *get_symbol_string(uint8_t *buf, uint32_t index)
 {  

@@ -14,7 +14,6 @@
 	#define STACK_ELEMENT_SIZE 8
 	#define BITS_PER_LONG 64
 	#define LOCK_PREFIX "lock "
-	#warning "This is not implemented. Kernel will compile for x86 32 bit"
 #else
 	#error "unsupported architecture"
 #endif

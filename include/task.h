@@ -259,27 +259,6 @@ static __attribute__((always_inline)) inline void enter_system(int sys)
 	current_task->cur_ts/=2;
 }
 
-static inline int __is_valid_user_ptr(void *p, char flags)
-{
-	unsigned addr = (unsigned)p;
-	if(!addr && !flags) return 0;
-	if(addr < TOP_LOWER_KERNEL && addr) {
-#if DEBUG
-		printk(5, "[kernel]: warning - task %d passed ptr %x to syscall (invalid)\n", 
-			current_task->pid, addr);
-#endif
-		return 0;
-	}
-	if(addr >= KMALLOC_ADDR_START) {
-#if DEBUG
-		printk(5, "[kernel]: warning - task %d passed ptr %x to syscall (invalid)\n", 
-			current_task->pid, addr);
-#endif
-		return 0;
-	}
-	return 1;
-}
-
 static __attribute__((always_inline)) inline void exit_system()
 {
 	current_task->last = current_task->system;

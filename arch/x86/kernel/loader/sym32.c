@@ -5,7 +5,7 @@
 #include <dev.h>
 #include <memory.h>
 #include <fs.h>
-#include <elf32.h>
+#include <elf-x86.h>
 #include <block.h>
 #include <char.h>
 #include <multiboot.h>

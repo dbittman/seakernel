@@ -1,5 +1,5 @@
-#ifndef ISR_H
-#define ISR_H
+#ifndef ISR_x86_H
+#define ISR_x86_H
 
 #define IRQ0 32
 #define IRQ1 33

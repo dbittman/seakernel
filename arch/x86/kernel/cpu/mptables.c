@@ -6,7 +6,7 @@
 #include <cpu.h>
 #include <memory.h>
 #include <atomic.h>
-#include <imps.h>
+#include <imps-x86.h>
 volatile int imps_release_cpus = 0;
 unsigned imps_lapic_addr = 0;
 char imcr_present=0;

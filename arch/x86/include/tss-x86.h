@@ -1,6 +1,5 @@
-#ifndef TSS_H
-#define TSS_H
-
+#ifndef TSS_x86_H
+#define TSS_x86_H
 typedef struct tss_entry_struct
 {
 	u32int prev_tss;

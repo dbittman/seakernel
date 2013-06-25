@@ -2,7 +2,7 @@
  * output to the first serial port. For better access, you'll need a
  * module of some sort */
 #include <kernel.h>
-#include <asm/system.h>
+#include <asm/system-x86.h>
 #include <char.h>
 #include <mutex.h>
 #include <mod.h>

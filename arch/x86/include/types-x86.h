@@ -1,5 +1,5 @@
-#ifndef TYPES_H
-#define TYPES_H
+#ifndef TYPES_x86_H
+#define TYPES_x86_H
 
 typedef unsigned int   u32int;
 typedef          int   s32int;

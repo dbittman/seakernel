@@ -16,7 +16,7 @@
 #include <cpu.h>
 #include <memory.h>
 #include <atomic.h>
-#include <imps.h>
+#include <imps-x86.h>
 mutex_t ipi_mutex;
 int send_ipi(unsigned char dest_shorthand, unsigned int dst, unsigned int v)
 {

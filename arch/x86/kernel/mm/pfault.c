@@ -4,7 +4,7 @@
 #include <task.h>
 #include <swap.h>
 #include <mod.h>
-#include <elf32.h>
+#include <elf-x86.h>
 void print_pfe(int x, registers_t *regs, unsigned cr2)
 {
 	assert(regs);

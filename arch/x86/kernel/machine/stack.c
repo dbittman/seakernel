@@ -1,6 +1,6 @@
 #include <kernel.h>
 #include <memory.h>
-#include <elf32.h>
+#include <elf-x86.h>
 extern unsigned int i_stack;
 /* This function's design is based off of JamesM's tutorials. 
  * Yes, I know its bad. But it works okay. */

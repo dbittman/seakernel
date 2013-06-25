@@ -4,8 +4,7 @@
 #ifndef KERNEL_H
 #define KERNEL_H
 #include <config.h>
-#include <asm/system.h>
-#include <types.h>
+#include <cpu-io.h>
 #include <string.h>
 #include <vsprintf.h>
 #include <console.h>
@@ -15,7 +14,6 @@
 #include <sys/fcntl.h>
 #include <errno.h>
 #include <mutex.h>
-#include <cpu-io.h>
 
 #define KSF_MMU      0x1
 #define KSF_SHUTDOWN 0x2

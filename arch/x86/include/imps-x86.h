@@ -1,5 +1,5 @@
-#ifndef __ARCH_IMPS_H
-#define __ARCH_IMPS_H
+#ifndef __ARCH_IMPS_x86_H
+#define __ARCH_IMPS_x86_H
 
 #define IMPS_READ(x)	(*((volatile unsigned *) (x)))
 #define IMPS_WRITE(x,y)	(*((volatile unsigned *) (x)) = (y))

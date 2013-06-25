@@ -8,7 +8,7 @@ initialization */
 #include <cpu.h>
 #include <memory.h>
 #include <atomic.h>
-#include <imps.h>
+#include <imps-x86.h>
 
 void load_tables_ap();
 void set_lapic_timer(unsigned tmp);

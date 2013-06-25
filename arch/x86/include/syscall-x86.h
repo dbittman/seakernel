@@ -1,6 +1,7 @@
 #ifndef _SYSCALL_X86_H
 #define _SYSCALL_X86_H
 #define SC (int (*)(int, int, int, int, int))
+#include <asm/system.h>
 static int dosyscall(int num, int a, int b, int c, int d, int e)
 {
 	int x;
@@ -22,8 +23,6 @@ static int dosyscall(int num, int a, int b, int c, int d, int e)
 	" \
 	: "=a" (ret) \
 	: "r" (a), "r" (b), "r" (c), "r" (d), "r" (e), "r" (location))
-
-
 
 #define _E_ regs->edi
 #define _D_ regs->esi

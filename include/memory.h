@@ -2,8 +2,8 @@
 #define MEMORY_H
 /* TODO: Separate into arch-dependant things */
 #include <kernel.h>
-#include <multiboot.h>
 #include <isr.h>
+#include <multiboot.h>
 #include <sys/stat.h>
 #include <slab.h>
 #if CONFIG_ARCH == TYPE_ARCH_X86

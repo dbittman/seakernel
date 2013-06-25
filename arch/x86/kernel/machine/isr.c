@@ -1,7 +1,7 @@
 /* Privides functions for interrupt handling. */
 #include <kernel.h>
 #include <isr.h>
-#include <asm/system.h>
+#include <asm/system-x86.h>
 #include <task.h>
 #include <cpu.h>
 #include <mod.h>

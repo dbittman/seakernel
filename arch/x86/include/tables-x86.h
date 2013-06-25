@@ -1,7 +1,7 @@
-#ifndef TABLES_H
-#define TABLES_H
+#ifndef TABLES_x86_H
+#define TABLES_x86_H
 #include <types.h>
-#include <tss.h>
+#include <tss-x86.h>
 #include <config.h>
 
 struct gdt_entry_struct

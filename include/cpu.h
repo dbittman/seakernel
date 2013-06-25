@@ -4,11 +4,14 @@
 #include <tqueue.h>
 #include <task.h>
 #include <mutex.h>
-#include <tables.h>
 #if CONFIG_ARCH == TYPE_ARCH_X86
   #include <cpu-x86.h>
+  #include <tables-x86.h>
+#elif CONFIG_ARCH == TYPE_ARCH_X86_64
+#include <cpu-x86_64.h>
+#include <tables-x86_64.h>
 #endif
-/* TODO: Separate into arch-dependant things */
+
 #define CPU_STACK_TEMP_SIZE 1024
 
 typedef struct __cpu_t__ {

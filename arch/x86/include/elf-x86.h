@@ -1,5 +1,5 @@
-#ifndef ELF_H
-#define ELF_H
+#ifndef ELF_x86_H
+#define ELF_x86_H
 #include <mod.h>
 #include <block.h>
 #define MAX_SYMS 512

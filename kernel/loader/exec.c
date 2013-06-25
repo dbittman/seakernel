@@ -8,9 +8,7 @@
 #include <init.h>
 #include <sys/fcntl.h>
 #include <cpu.h>
-#if CONFIG_ARCH == TYPE_ARCH_X86
-#include <elf32.h>
-#endif
+#include <elf.h>
 /* Prepares a process to recieve a new executable. Desc is the descriptor of 
  * the executable. We keep it open through here so that we dont have to 
  * re-open it. */

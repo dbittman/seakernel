@@ -5,9 +5,7 @@
 #include <task.h>
 #include <memory.h>
 #include <mod.h>
-#if CONFIG_ARCH == TYPE_ARCH_X86
-#include <elf32.h>
-#endif
+#include <elf.h>
 module_t *modules=0;
 int load_deps(char *);
 mutex_t mod_mutex;

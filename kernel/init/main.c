@@ -12,9 +12,8 @@
 #include <mod.h>
 #include <cache.h>
 #include <mod.h>
-#if CONFIG_ARCH == TYPE_ARCH_X86
-  #include <elf32.h>
-#endif
+#include <elf.h>
+
 struct multiboot *mtboot;
 u32int i_stack=0;
 

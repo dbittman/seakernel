@@ -1,5 +1,5 @@
-#ifndef _CPU_IO_H
-#define _CPU_IO_H
+#ifndef _CPU_IO_x86_H
+#define _CPU_IO_x86_H
 
 static inline void outb(short port, char value)
 {

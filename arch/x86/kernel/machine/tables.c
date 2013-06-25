@@ -1,7 +1,7 @@
 #include <kernel.h>
-#include <tables.h>
+#include <tables-x86.h>
 #include <isr.h>
-#include <tss.h>
+#include <tss-x86.h>
 #include <cpu.h>
 extern void gdt_flush(u32int);
 extern void idt_flush(u32int);

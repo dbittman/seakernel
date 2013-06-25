@@ -32,8 +32,8 @@ cr0temp |= 0x80000000; \
 __asm__ volatile ("mov %0, %%cr0" : : "r" (cr0temp));
 
 #define GET_PDIR_INFO(x) (page_dir_info *)(t_page + x*sizeof(page_dir_info))
-
+/*
 #define flush_pd() \
-__asm__ __volatile__("movl %%cr3,%%eax\n\tmovl %%eax,%%cr3": : :"ax", "eax")
-
+__asm__ __volatile__("mov %%cr3,%%rax\n\tmov %%rax,%%cr3": : :"ax", "eax", "rax")
+*/
 #endif

@@ -9,7 +9,7 @@
 #include <sys/sysconf.h>
 #include <swap.h>
 #include <cpu.h>
-
+#include <syscall.h>
 unsigned int num_syscalls=0;
 //#define SC_DEBUG 1
 int sys_null()

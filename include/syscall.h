@@ -4,7 +4,9 @@
 #include <isr.h>
 
 #if CONFIG_ARCH == TYPE_ARCH_X86
-  #include <syscall-x86.h>
+#include <syscall-x86.h>
+#elif CONFIG_ARCH == TYPE_ARCH_X86_64
+#include <syscall-x86_64.h>
 #endif
 
 int syscall_handler(registers_t *regs);

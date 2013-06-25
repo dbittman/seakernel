@@ -1,13 +1,14 @@
 #ifndef MEMORY_H
 #define MEMORY_H
-/* TODO: Separate into arch-dependant things */
 #include <kernel.h>
 #include <isr.h>
 #include <multiboot.h>
 #include <sys/stat.h>
 #include <slab.h>
 #if CONFIG_ARCH == TYPE_ARCH_X86
-  #include <memory-x86.h>
+#include <memory-x86.h>
+#elif CONFIG_ARCH == TYPE_ARCH_X86_64
+#include <memory-x86_64.h>
 #endif
 
 #define page_directory ((unsigned *)DIR_PHYS)

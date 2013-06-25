@@ -3,7 +3,7 @@
 #include <memory.h>
 #include <task.h>
 #include <cpu.h>
-#include <context-x86.h>
+#include <context.h>
 
 __attribute__((always_inline)) inline void update_task(task_t *t)
 {

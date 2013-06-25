@@ -1,5 +1,5 @@
-#ifndef __ASM_SYSTEM_X86_H
-#define __ASM_SYSTEM_X86_H
+#ifndef __ASM_SYSTEM_X86_64_H
+#define __ASM_SYSTEM_X86_64_H
 #define asm __sync_synchronize(); __asm__ __volatile__
 static unsigned read_msr(unsigned msr)
 {

@@ -5,11 +5,24 @@ include sea_defines.inc
 endif
 endif
 
-include make.inc
+ifeq ($(CONFIG_ARCH), 2)
+	ARCH=x86_64
+	ARCH_TC=x86_64
+endif
 
+ifeq ($(CONFIG_ARCH), 1)
+	ARCH=x86
+	ARCH_TC=i586
+endif
+
+export ARCH_TC
+export ARCH
 export CC
 export LD
 export AR
+
+include make.inc
+
 CFLAGS_NOARCH = -Ofast -g -std=c99 -nostdlib -nostdinc \
 		 -fno-builtin -ffreestanding \
 		 -Iarch/${ARCH}/include \

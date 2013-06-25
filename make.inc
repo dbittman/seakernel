@@ -1,7 +1,5 @@
 KERNEL_VERSION=0.2-b1
 SYSNAME=linux
-CC=i586-pc-seaos-gcc
-LD=i586-pc-seaos-ld
-AR=i586-pc-seaos-ar
-ARCH=x86
-export ARCH
+CC=${ARCH_TC}-pc-seaos-gcc
+LD=${ARCH_TC}-pc-seaos-ld
+AR=${ARCH_TC}-pc-seaos-ar

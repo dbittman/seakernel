@@ -38,13 +38,10 @@ if [ "$SYSNAME" == "seaos" ]; then
 	echo "AR=ar" >> make.inc
 else
 	echo "SYSNAME=linux" >> make.inc
-	echo "CC=i586-pc-seaos-gcc" >> make.inc
-	echo "LD=i586-pc-seaos-ld" >> make.inc
-	echo "AR=i586-pc-seaos-ar" >> make.inc
+	echo "CC=\${ARCH_TC}-pc-seaos-gcc" >> make.inc
+	echo "LD=\${ARCH_TC}-pc-seaos-ld" >> make.inc
+	echo "AR=\${ARCH_TC}-pc-seaos-ar" >> make.inc
 fi
-
-echo "ARCH=x86" >> make.inc
-echo "export ARCH" >> make.inc
 
 echo "Allgood" > tools/confed
 

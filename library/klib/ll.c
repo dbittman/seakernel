@@ -54,6 +54,7 @@ void *ll_do_remove(struct llist *list, struct llistnode *node, char locked)
 			/* Now, is this the only node in the list? */
 			if(list->head == node) {
 				list->head = 0;
+				node->memberof=0;
 				if(!(list->flags & LL_LOCKLESS) && !locked)
 					rwlock_release(&list->rwl, RWL_WRITER);
 				return node;

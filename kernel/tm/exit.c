@@ -118,7 +118,7 @@ void add_exit_stat(task_t *t, ex_stat *e)
 	mutex_release((mutex_t *)&t->exlock);
 	set_int(old_int);
 }
-extern int init_pid;
+extern unsigned int init_pid;
 void exit(int code)
 {
 	if(!current_task || current_task->pid == 0) 

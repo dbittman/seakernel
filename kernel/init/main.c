@@ -25,7 +25,7 @@ int argc_STP=3;
 int count_ie=0;
 char *init_env[12];
 char cleared_args=0;
-int init_pid=0;
+unsigned init_pid=0;
 char kernel_name[128];
 elf32_t kernel_elf;
 int april_fools=0;

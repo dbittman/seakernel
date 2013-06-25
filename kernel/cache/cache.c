@@ -49,26 +49,12 @@ int init_cache()
 /* Add and remove items from the list of dirty items */
 void add_dlist(cache_t *c, struct ce_t *e)
 {
-	struct ce_t *tmp = c->dlist;
-	c->dlist = e;
-	e->next_dirty = tmp;
-	e->prev_dirty=0;
-	if(tmp)
-		tmp->prev_dirty=e;
+	e->dirty_node = ll_insert(&c->dirty_ll, e);
 }
 
 void remove_dlist(cache_t *c, struct ce_t *e)
 {
-	if(e->prev_dirty)
-		e->prev_dirty->next_dirty = e->next_dirty;
-	if(e->next_dirty)
-		e->next_dirty->prev_dirty = e->prev_dirty;
-	if(c->dlist == e)
-	{
-		assert(!e->prev_dirty);
-		c->dlist = e->next_dirty;
-	}
-	e->prev_dirty=e->next_dirty=0;
+	ll_remove(&c->dirty_ll, e->dirty_node);
 }
 
 int set_dirty(cache_t *c, struct ce_t *e, int dirty)
@@ -103,7 +89,8 @@ cache_t *get_empty_cache(int (*sync)(struct ce_t *), char *name)
 	c->slow=1000;
 	c->hash = chash_create(100000);
 	strncpy(c->name, name, 32);
-	
+	ll_create(&c->dirty_ll);
+	ll_create(&c->primary_ll);
 	ll_insert(cache_list, c);
 	
 	printk(0, "[cache]: Allocated new cache '%s'\n", name);
@@ -116,12 +103,7 @@ int cache_add_element(cache_t *c, struct ce_t *obj, int locked)
 	if(!locked) rwlock_acquire(c->rwl, RWL_WRITER);
 	
 	chash_add(c->hash, obj->id, obj->key, obj);
-	
-	struct ce_t *old = c->list;
-	obj->next = old;
-	if(old) old->prev = obj;
-	else    c->list = c->tail = obj;
-	obj->prev = 0;
+	obj->list_node = ll_insert(&c->primary_ll, obj);
 	c->count++;
 	obj->acount=1;
 	if(!locked) rwlock_release(c->rwl, RWL_WRITER);
@@ -185,15 +167,7 @@ void remove_element(cache_t *c, struct ce_t *o, int locked)
 		set_dirty(c, o, 0);
 	assert(c->count);
 	sub_atomic(&c->count, 1);
-	
-	if(o->prev)
-		o->prev->next = o->next;
-	else
-		c->list = o->next;
-	if(o->next)
-		o->next->prev = o->prev;
-	else
-		c->tail = o->prev;
+	ll_remove(&c->primary_ll, o->list_node);
 	if(c->hash) chash_delete(c->hash, o->id, o->key);
 	if(o->data)
 		kfree(o->data);
@@ -229,16 +203,16 @@ void sync_cache(cache_t *c)
 	volatile unsigned int i=1;
 	struct ce_t *obj;
 	c->syncing=1;
-	while(1)
+	while(c->dirty > 0)
 	{
-		if(!c->dlist) break;
 		rwlock_acquire(c->rwl, RWL_WRITER);
-		obj = c->dlist;
-		if(!obj) {
+		if(c->dirty == 0) {
+			c->syncing = 0;
 			rwlock_release(c->rwl, RWL_WRITER);
-			c->syncing=0;
 			break;
 		}
+		assert(c->dirty_ll.head);
+		obj = c->dirty_ll.head->entry;
 		if(num < (c->dirty+i))
 			num=(c->dirty+i);
 		
@@ -263,14 +237,18 @@ void sync_cache(cache_t *c)
 int destroy_all_id(cache_t *c, u64 id)
 {
 	rwlock_acquire(c->rwl, RWL_WRITER);
-	struct ce_t *o = c->list;
-	while(o) {
-		if(o->id == id) {
-			if(o->dirty)
-				do_sync_element(c, o, 1);
-			remove_element(c, o, 1);
+	struct llistnode *curnode, *next;
+	struct ce_t *obj;
+	ll_for_each_entry_safe(&c->primary_ll, curnode, next, struct ce_t *, obj)
+	{
+		if(obj->id == id)
+		{
+			if(obj->dirty)
+				do_sync_element(c, obj, 1);
+			remove_element(c, obj, 1);
+			ll_maybe_reset_loop(&c->primary_ll, curnode, next);
 		}
-		o=o->next;
+		
 	}
 	rwlock_release(c->rwl, RWL_WRITER);
 	return 0;
@@ -278,15 +256,26 @@ int destroy_all_id(cache_t *c, u64 id)
 
 int destroy_cache(cache_t *c)
 {
-	/* Sync with forced removal */
 	printk(1, "[cache]: Destroying cache '%s'...\n", c->name);
+	rwlock_acquire(c->rwl, RWL_WRITER);
 	chash_t *h = c->hash;
 	c->hash = 0;
 	sync_cache(c);
 	/* Destroy the tree */
 	chash_destroy(h);
-	rwlock_destroy(c->rwl);
+	
+	struct llistnode *curnode, *next;
+	struct ce_t *obj;
+	ll_for_each_entry_safe(&c->primary_ll, curnode, next, struct ce_t *, obj)
+	{
+		ll_maybe_reset_loop(&c->primary_ll, curnode, next);
+		remove_element(c, obj, 1);
+	}
+	ll_destroy(&c->dirty_ll);
+	ll_destroy(&c->primary_ll);
 	ll_remove_entry(cache_list, c);
+	rwlock_release(c->rwl, RWL_WRITER);
+	rwlock_destroy(c->rwl);
 	printk(1, "[cache]: Cache '%s' destroyed\n", c->name);
 	return 1;
 }

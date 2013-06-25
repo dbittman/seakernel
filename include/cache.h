@@ -2,6 +2,7 @@
 #define CACHE_H
 
 #include <rwlock.h>
+#include <ll.h>
 
 typedef struct chash_chain_s {
 	void *ptr;
@@ -23,8 +24,7 @@ struct ce_t {
 	unsigned acount;
 	dev_t dev;
 	rwlock_t *rwl;
-	struct ce_t *next_dirty, *next;
-	struct ce_t *prev_dirty, *prev;
+	struct llistnode *dirty_node, *list_node;
 };
 
 typedef struct cache_t_s {
@@ -34,7 +34,7 @@ typedef struct cache_t_s {
 	int (*sync)(struct ce_t *);
 	rwlock_t *rwl;
 	char name[32];
-	struct ce_t *dlist, *list, *tail;
+	struct llist dirty_ll, primary_ll;
 	struct cache_t_s *next, *prev;
 } cache_t;
 

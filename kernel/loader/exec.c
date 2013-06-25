@@ -12,6 +12,7 @@
 /* Prepares a process to recieve a new executable. Desc is the descriptor of 
  * the executable. We keep it open through here so that we dont have to 
  * re-open it. */
+void arch_specific_exec_initializer(task_t *t, unsigned argc, addr_t eip);
 task_t *preexec(task_t *t, int desc)
 {
 	if(t->magic != TASK_MAGIC)
@@ -115,10 +116,8 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 		printk(0, "Executing (task %d, cpu %d, tty %d, cwd=%s): %s\n", t->pid, ((cpu_t *)t->cpu)->apicid, t->tty, current_task->thread->pwd->name, path);
 	preexec(t, desc);
 	strncpy((char *)t->command, path, 128);
-#if CONFIG_ARCH == TYPE_ARCH_X86
-	if(!process_elf32(mem, desc, &eip, &end))
+	if(!process_elf(mem, desc, &eip, &end))
 		eip=0;
-#endif
 	sys_close(desc);
 	if(!eip) {
 		printk(5, "[exec]: Tried to execute an invalid ELF file!\n");
@@ -203,18 +202,7 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	/* we clear this out, so we don't accidentally handle a signal...*/
 	set_int(0);
 	current_task->flags &= ~TF_SCHED;
-#if CONFIG_ARCH == TYPE_ARCH_X86
-	/* don't ya just love iret? */
-	t->sysregs->useresp = t->sysregs->ebp = STACK_LOCATION - STACK_ELEMENT_SIZE;
-	*(unsigned *)t->sysregs->useresp = (unsigned)t->env;
-	t->sysregs->useresp -= STACK_ELEMENT_SIZE;
-	*(unsigned *)t->sysregs->useresp = (unsigned)t->argv;
-	t->sysregs->useresp -= STACK_ELEMENT_SIZE;
-	*(unsigned *)t->sysregs->useresp = (unsigned)argc;
-	t->sysregs->useresp -= STACK_ELEMENT_SIZE;
-
-	t->sysregs->eip = eip;
-#endif
+	arch_specific_exec_initializer(t, argc, eip);
 	error:
 	return err;
 }

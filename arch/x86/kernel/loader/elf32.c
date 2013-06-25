@@ -53,12 +53,12 @@ int process_elf32_phdr(char *mem, int fp, unsigned *start, unsigned *end)
 	return 1;
 }
 
-int process_elf32(char *mem, int fp, unsigned *start, unsigned *end)
+int process_elf(char *mem, int fp, unsigned *start, unsigned *end)
 {
 	return process_elf32_phdr(mem, fp, start, end);
 }
 
-elf32_t parse_kernel_elf32(struct multiboot *mb, elf32_t *elf)
+elf32_t parse_kernel_elf(struct multiboot *mb, elf32_t *elf)
 {
 	unsigned int i;
 	elf32_section_header_t *sh = (elf32_section_header_t*)mb->addr;
@@ -83,7 +83,7 @@ elf32_t parse_kernel_elf32(struct multiboot *mb, elf32_t *elf)
 	return *elf;
 }
 #if (CONFIG_MODULES)
-int parse_elf32_module(module_t *mod, uint8_t * buf, char *name, int force)
+int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int force)
 {
 	uint32_t i, x;
 	uint32_t module_entry=0, reloc_addr, mem_addr, module_exiter=0, module_deps=0;

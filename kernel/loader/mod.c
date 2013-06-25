@@ -116,7 +116,7 @@ int load_module(char *path, char *args, int flags)
 	}
 	/* Call the elf parser */
 #if CONFIG_ARCH == TYPE_ARCH_X86
-	int res = parse_elf32_module(tmp, (unsigned char *)mem+4, path, flags & 1);
+	int res = parse_elf_module(tmp, (unsigned char *)mem+4, path, flags & 1);
 #endif
 	if(res == _MOD_FAIL || res == _MOD_AGAIN)
 	{

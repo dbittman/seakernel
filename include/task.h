@@ -61,8 +61,6 @@ extern tqueue_t *primary_queue;
 #define TSEARCH_EXIT_PARENT  0x100
 #define TSEARCH_EXCLUSIVE    0x200
 
-
-#define current_task ((kernel_state_flags&KSF_MMU) ? ((task_t *)page_directory[PAGE_DIR_IDX(SMP_CUR_TASK/PAGE_SIZE)]) : 0)
 #define current_tss (&((cpu_t *)current_task->cpu)->tss)
 
 #if SCHED_TTY

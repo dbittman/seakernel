@@ -260,7 +260,7 @@ void clear_mmfiles(task_t *t, int exiting)
 	for(i=S;i<E;i++) {
 		if(!q && pd[i])
 		{
-			self_free_table(i);
+			//self_free_table(i);
 			pm_free_page(pd[i]&PAGE_MASK);
 		}
 		pd[i]=0;

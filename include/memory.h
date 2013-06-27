@@ -39,7 +39,8 @@ extern int id_tables;
 
 #define vm_getattrib(a, b) vm_do_getattrib(a, b, 0)
 #define vm_getmap(a, b) vm_do_getmap(a, b, 0)
-
+void free_thread_shared_directory();
+void free_thread_specific_directory();
 void page_fault(registers_t *r);
 int vm_map_all(addr_t virt, addr_t phys, unsigned attr);
 void vm_init(addr_t id_map_to);
@@ -52,7 +53,6 @@ page_dir_t *vm_clone(page_dir_t *pd, char);
 page_dir_t *vm_copy(page_dir_t *pd);
 void process_memorymap(struct multiboot *mboot);
 void pm_init(addr_t start, struct multiboot *);
-int free_stack();
 addr_t __pm_alloc_page(char *, int);
 #define pm_alloc_page() __pm_alloc_page(__FILE__, __LINE__)
 void install_kmalloc(char *name, unsigned (*init)(addr_t, addr_t), 
@@ -74,9 +74,7 @@ addr_t __kmalloc(size_t s, char *, int);
 addr_t kmalloc_a(size_t s);
 addr_t kmalloc_ap(size_t s, addr_t *);
 addr_t kmalloc_p(size_t s, addr_t *);
-int self_free(int);
 int vm_do_unmap_only(addr_t v, unsigned);
-int self_free_table(int t);
 void pm_free_page(addr_t addr);
 void vm_init_2();
 void vm_init_tracking();

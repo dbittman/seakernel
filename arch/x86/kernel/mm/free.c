@@ -3,7 +3,7 @@
 #include <kernel.h>
 #include <memory.h>
 #include <task.h>
-int self_free_table(int t)
+static void self_free_table(int t)
 {
 	addr_t virt = t*1024*PAGE_SIZE;
 	int i;
@@ -13,10 +13,9 @@ int self_free_table(int t)
 			vm_unmap(virt);
 		virt += PAGE_SIZE;
 	}
-	return 0;
 }
 
-int self_free(int all)
+void free_thread_shared_directory()
 {
 	unsigned int *pd = (unsigned *)current_task->pd;
 	int D = PAGE_DIR_IDX(TOP_TASK_MEM_EXEC/PAGE_SIZE);
@@ -34,10 +33,20 @@ int self_free(int all)
 		pm_free_page(pd[i]&PAGE_MASK);
 		pd[i]=0;
 	}
-	return 0;
 }
 
-int free_stack()
+void destroy_task_page_directory(task_t *p)
+{
+	if(p->flags & TF_LAST_PDIR) {
+		/* Free the accounting page table */
+		pm_free_page(p->pd[PAGE_DIR_IDX(PDIR_DATA/PAGE_SIZE)] & PAGE_MASK);
+	}
+	/* Free the self-ref'ing page table */
+	pm_free_page(p->pd[1022] & PAGE_MASK);
+	kfree(p->pd);
+}
+
+void free_thread_specific_directory()
 {
 	unsigned int *pd = (unsigned *)current_task->pd;
 	int T = PAGE_DIR_IDX(TOP_TASK_MEM/PAGE_SIZE);
@@ -51,5 +60,4 @@ int free_stack()
 		pm_free_page(pd[i]&PAGE_MASK);
 		pd[i]=0;
 	}
-	return 0;
 }

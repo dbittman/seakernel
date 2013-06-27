@@ -67,62 +67,6 @@ char *get_symbol_string(uint8_t *buf, uint32_t index)
 	return (char *)0;
 }
 
-void _add_kernel_symbol(const intptr_t func, const char * funcstr)
-{
-	uint32_t i;
-	if(func < (uint32_t)&kernel_start)
-		panic(0, "tried to add invalid symbol %x:%s\n", func, funcstr);
-	mutex_acquire(&sym_mutex);
-	for(i = 0; i < MAX_SYMS; i++)
-	{
-		if(!export_syms[i].ptr)
-			break;
-	}
-	if(i >= MAX_SYMS)
-		panic(0, "ran out of space on symbol table");
-	export_syms[i].name = funcstr;
-	export_syms[i].ptr = func;
-	mutex_release(&sym_mutex);
-}
-
-intptr_t find_kernel_function(char * unres)
-{
-	uint32_t i;
-	mutex_acquire(&sym_mutex);
-	for(i = 0; i < MAX_SYMS; i++)
-	{
-		if(export_syms[i].ptr && 
-			strlen(export_syms[i].name) == strlen(unres) &&
-			!memcmp((uint8_t*)export_syms[i].name, (uint8_t*)unres, 
-				(int)strlen(unres))) {
-			mutex_release(&sym_mutex);
-			return export_syms[i].ptr;
-		}
-	}
-	mutex_release(&sym_mutex);
-	return 0;
-}
-
-int remove_kernel_symbol(char * unres)
-{
-	uint32_t i;
-	mutex_acquire(&sym_mutex);
-	for(i = 0; i < MAX_SYMS; i++)
-	{
-		if(export_syms[i].ptr && 
-			strlen(export_syms[i].name) == strlen(unres) &&
-			!memcmp((uint8_t*)export_syms[i].name, (uint8_t*)unres, 
-				(int)strlen(unres)))
-		{
-			export_syms[i].ptr=0;
-			mutex_release(&sym_mutex);
-			return 1;
-		}
-	}
-	mutex_release(&sym_mutex);
-	return 0;
-}
-
 elf32_symtab_entry_t * fill_symbol_struct(uint8_t * buf, uint32_t symbol)
 {
 	uint32_t i;

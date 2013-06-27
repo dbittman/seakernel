@@ -47,13 +47,7 @@ void release_task(task_t *p)
 	if(!(p->flags & TF_BURIED))
 		return;
 	/* Is this page table marked as unreferenced? */
-	if(p->flags & TF_LAST_PDIR) {
-		/* Free the accounting page table */
-		pm_free_page(p->pd[PAGE_DIR_IDX(PDIR_DATA/PAGE_SIZE)] & PAGE_MASK);
-	}
-	/* Free the self-ref'ing page table */
-	pm_free_page(p->pd[1022] & PAGE_MASK);
-	kfree(p->pd);
+	destroy_task_page_directory(p);
 	kfree((void *)p->kernel_stack);
 	kfree((void *)p);
 }
@@ -131,7 +125,7 @@ void exit(int code)
 	if(t->parent && t->parent->pid != init_pid)
 		add_exit_stat((task_t *)t->parent, (ex_stat *)&t->exit_reason);
 	/* Clear out system resources */
-	free_stack(); /* free up memory that is thread-specific */
+	free_thread_specific_directory();
 	clear_resources(t);
 	/* this fixes all tasks that are children of current_task, or are waiting
 	 * on current_task. For those waiting, it signals the task. For those that
@@ -168,7 +162,7 @@ void exit(int code)
 	mutex_release(&pd_cur_data->lock);
 	if(flag_last_page_dir_task) {
 		/* no one else is referencing this directory. Clean it up... */
-		self_free(0);
+		free_thread_shared_directory();
 		vm_unmap(PDIR_DATA);
 		raise_flag(TF_LAST_PDIR);
 	}

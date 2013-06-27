@@ -158,6 +158,8 @@ extern mutex_t *alarm_mutex;
 #define FORK_SHAREDAT 0x2
 #define fork() do_fork(0)
 
+void destroy_task_page_directory(task_t *p);
+
 task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned value, void (*action)(task_t *, int), int arg, int *);
 void delay_sleep(int t);
 void take_issue_with_current_task();

@@ -5,9 +5,8 @@
 #include <isr.h>
 #include <task.h>
 #include <atomic.h>
-int current_hz=1000;
-volatile long ticks=0;
 void do_tick();
+extern int current_hz;
 void timer_handler(registers_t *);
 void install_timer(int hz)
 {

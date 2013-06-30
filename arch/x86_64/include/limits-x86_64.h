@@ -1,0 +1,6 @@
+#ifndef __LIMITS_X86_64_H
+#define __LIMITS_X86_64_H
+
+#define LONG_MAX 9223372036854775807L
+
+#endif

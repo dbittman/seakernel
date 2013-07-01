@@ -82,7 +82,7 @@ os_s: $(KOBJS) $(AOBJS)
 	$(MAKE) -C drivers
 	echo "Building initrd..."
 	-./tools/ird.rb initrd.conf > /dev/null
-	-mv skernel.1 skernel
+	-cp skernel.1 skernel
 	if [ "${ARCH}" = "x86_64" ]; then \
 		objcopy -I elf64-x86-64 -O elf32-i386 skernel ;\
 		objcopy --adjust-vma 0x1000 skernel ;\

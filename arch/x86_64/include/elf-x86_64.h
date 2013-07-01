@@ -156,10 +156,10 @@ typedef struct
 #define SHN_UNDEF   0
 
 int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int);
-const char *elf32_lookup_symbol (uint32_t addr, elf32_t *elf);
+const char *elf64_lookup_symbol (uint32_t addr, elf32_t *elf);
 elf32_t parse_kernel_elf(struct multiboot *mb, elf32_t *);
 extern elf32_t kernel_elf;
-const char *elf32_lookup_symbol (uint32_t addr, elf32_t *elf);
+const char *elf64_lookup_symbol (uint32_t addr, elf32_t *elf);
 elf32_symtab_entry_t * fill_symbol_struct(uint8_t * buf, uint32_t symbol);
 intptr_t get_section_offset(uint8_t * buf, uint32_t info);
 int process_elf(char *mem, int fp, unsigned *start, unsigned *end);

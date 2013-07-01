@@ -113,7 +113,6 @@ int do_fork(unsigned flags)
 	assert(current_task && kernel_task);
 	assert(running_processes < (unsigned)MAX_TASKS || MAX_TASKS == -1);
 	unsigned eip;
-	flush_pd();
 	task_t *task = (task_t *)kmalloc(sizeof(task_t));
 	page_dir_t *newspace;
 	if(flags & FORK_SHAREDIR)

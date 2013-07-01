@@ -29,3 +29,24 @@ int set_int(unsigned new)
 	}
 	return old;
 }
+
+void set_cpu_interrupt_flag(int flag)
+{
+	cpu_t *cpu = current_task ? current_task->cpu : 0;
+	if(!cpu) return;
+	if(flag)
+		cpu->flags |= CPU_INTER;
+	else
+		cpu->flags &= ~CPU_INTER;
+}
+
+int get_cpu_interrupt_flag()
+{
+	cpu_t *cpu = current_task ? current_task->cpu : 0;
+	return (cpu ? (cpu->flags&CPU_INTER) : 0);
+}
+
+void init_main_cpu()
+{
+	
+}

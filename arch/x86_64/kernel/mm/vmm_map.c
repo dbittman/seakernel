@@ -12,14 +12,7 @@ int vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned opt)
 	unsigned *pd = page_directory;
 	if(kernel_task && !(opt & MAP_PDLOCKED))
 		mutex_acquire(&pd_cur_data->lock);
-	if(!pd[vdir])
-	{
-		p = pm_alloc_page();
-		zero_page_physical(p);
-		pd[vdir] = p | PAGE_WRITE | PAGE_PRESENT | (attr & PAGE_USER);
-		flush_pd();
-	}
-	page_tables[vpage] = (phys & PAGE_MASK) | attr;
+
 	if(!(opt & MAP_NOCLEAR))
 		memset((void *)(virt&PAGE_MASK), 0, 0x1000);
 	#if CONFIG_SMP

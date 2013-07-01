@@ -13,7 +13,7 @@ $(OUTPUT): $(OFILES)
 	cat ../head $(OUTPUT).stage1 > $(OUTPUT)
 
 clean:
-	@-rm *.o $(OUTPUT).stage1 $(OUTPUT) make.deps
+	@-rm -f *.o $(OUTPUT).stage1 $(OUTPUT) make.deps
 
 deps:
 	@$(CC) $(MCFLAGS) -MM -MP ${OFILES:.o=.c} | sed -e "s@^\(.*\)\.o:@\1.o:@" > make.deps

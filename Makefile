@@ -89,7 +89,7 @@ install:
 	@make -C drivers install VERSION=${KERNEL_VERSION}
 
 clean:
-	@-rm  $(AOBJS) $(KOBJS) $(CLEAN) initrd.img skernel make.deps 2> /dev/null
+	@-rm -f $(AOBJS) $(KOBJS) $(CLEAN) initrd.img skernel make.deps
 	@-$(MAKE) -s -C library clean &> /dev/null
 	@-$(MAKE) -s -C drivers clean &> /dev/null
 
@@ -100,12 +100,12 @@ distclean:
 	@-rm -f tools/{confed,mkird}
 	@-rm -f make.deps drivers/make.deps
 
-config:
+config: clean
 	@tools/conf.rb config.cfg
 	@echo post-processing configuration...
 	@tools/config.rb .config.cfg
 	
-defconfig:
+defconfig: clean
 	@tools/conf.rb -d config.cfg
 	@echo post-processing configuration...
 	@tools/config.rb .config.cfg

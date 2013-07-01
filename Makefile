@@ -54,10 +54,16 @@ os: can_build make.deps
 	@echo Building kernel...
 	@$(MAKE) -s os_s
 
+ifneq ($(MAKECMDGOALS),config)
+ifneq ($(MAKECMDGOALS),defconfig)
+ifneq ($(MAKECMDGOALS),clean)
 DOBJS=$(KOBJS)
 DCFLAGS=$(CFLAGS)
 export OBJ_EXT=o
 include tools/make/deps.inc
+endif
+endif
+endif
 
 deps:
 	@touch make.deps
@@ -76,8 +82,12 @@ os_s: $(KOBJS) $(AOBJS)
 	$(MAKE) -C drivers
 	echo "Building initrd..."
 	-./tools/ird.rb initrd.conf > /dev/null
-	mv skernel.1 skernel
-
+	-mv skernel.1 skernel
+	if [ "${ARCH}" = "x86_64" ]; then \
+		objcopy -I elf64-x86-64 -O elf32-i386 skernel ;\
+		objcopy --adjust-vma 0x1000 skernel ;\
+	fi
+	
 all: make.deps
 	@$(MAKE) -s os
 

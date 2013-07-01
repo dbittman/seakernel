@@ -34,7 +34,9 @@ STACKSIZE equ 0x4000            ; that's 16k.
 start:
    mov esp, stack+STACKSIZE     ; set up the stack
    cli
-   
+   hanga:
+   hlt                          ; halt machine should kernel return
+   jmp   hanga                   ; course, this wont happen
    ; here we need to bump the cpu into 64bit mode. This will come soon...
    
    push esp                     ; kernel expects and esp value in the arguments

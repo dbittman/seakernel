@@ -2,7 +2,7 @@ ENTRY(start)
 OUTPUT_FORMAT("elf64-x86-64", "elf64-x86-64", "elf64-x86-64")
 SECTIONS
 {
-    .text 0x100000 :
+    .text 0x101000 :
     {
 	*(.boot)
 	code = .; _code = .; __code = .;

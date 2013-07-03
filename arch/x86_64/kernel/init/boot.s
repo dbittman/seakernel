@@ -75,15 +75,9 @@ db	0, 0x92, 0xAF, 0
 
 
 start:
-   mov esp, stack+STACKSIZE-4     ; set up the stack
-   cli
-   
-
-   
-   
-   
-   
-   
+    mov esp, stack+STACKSIZE-4     ; set up the stack
+    cli
+    mov [ebx_backup], ebx
     mov edi, 0x70000    ; Set the destination index to 0x1000.
     mov cr3, edi       ; Set control register 3 to the destination index.
     xor eax, eax       ; Nullify the A-register.
@@ -134,27 +128,34 @@ start:
 
     jmp 0x28:(start64)
   
-hang:
-   hlt                          ; halt machine should kernel return
-   jmp   hang                   ; course, this wont happen
-
- 
-   ; Use 64-bit.
 [BITS 64]
- 
+
 start64:
-    mov ax, 0x18            ; Set the A-register to the data descriptor.
+	mov ax, 0x30            ; Set the A-register to the data descriptor.
     mov ds, ax                    ; Set the data segment to the A-register.
     mov es, ax                    ; Set the extra segment to the A-register.
     mov fs, ax                    ; Set the F-segment to the A-register.
     mov gs, ax                    ; Set the G-segment to the A-register.
-    mov edi, 0xB8000              ; Set the destination index to 0xB8000.
-    mov rax, 0x1F201F201F201F20   ; Set the A-register to 0x1F201F201F201F20.
-    mov ecx, 500                  ; Set the C-register to 500.
-    rep movsq                     ; Clear the screen.
-    hlt                           ; Halt the processor.
+	mov rsp, stack+STACKSIZE-8
+	cli
+	mov ebx, [ebx_backup]
+	push rsp
+	push rbx
+	call  kmain                  ; call kernel proper
+	
+    cli
+    lgdt [0]
+    lidt [0]
+    sti
+    int 3
+hang:
+   hlt                          ; halt machine should kernel return
+   jmp   hang                   ; course, this wont happen
 
 section .bss
 align 32
 stack:
    resb STACKSIZE               ; reserve 16k stack on a quadword boundary
+
+ebx_backup:
+	resd 1

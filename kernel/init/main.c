@@ -15,7 +15,7 @@
 #include <elf.h>
 
 struct multiboot *mtboot;
-u32int i_stack=0;
+addr_t i_stack=0;
 
 char init_path[128] = "*";
 char root_device[64] = "/";
@@ -96,13 +96,18 @@ void parse_kernel_cmd(char *buf)
 }
 
 /* This is the C kernel entry point */
-void kmain(struct multiboot *mboot_header, u32int initial_stack)
+void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 {
+#if CONFIG_ARCH == TYPE_ARCH_X86_64
+	asm("cli; hlt");
+	for(;;);
+#endif
 	/* Store passed values, and initiate some early things
 	 * We want serial log output as early as possible */
 	kernel_state_flags=0;
 	mtboot = mboot_header;
 	i_stack = initial_stack;
+
 #if CONFIG_ARCH == TYPE_ARCH_X86
 	parse_kernel_elf(mboot_header, &kernel_elf);
 #endif

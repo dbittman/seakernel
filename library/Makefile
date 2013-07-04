@@ -14,8 +14,7 @@ KLIBO = klib/ll.o \
 
 all: make.deps klib.a
 
-klib.a: $(KLIBO) $(STRINGOBJS)
-	$(MAKE) -s string
+klib.a: $(KLIBO) strings
 	$(AR) rcs klib.a $(KLIBO) $(STRINGOBJS)
 
 string: $(STRINGOBJS)

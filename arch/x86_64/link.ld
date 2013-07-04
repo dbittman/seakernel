@@ -4,12 +4,12 @@ SECTIONS
 {
     .text 0x101000 :
     {
-	*(.boot)
-	code = .; _code = .; __code = .;
-	kernel_start = .;
-	*(.trampoline)
-    *(.text)
-	. = ALIGN(4096);
+		*(.boot)
+		code = .; _code = .; __code = .;
+		kernel_start = .;
+		*(.trampoline)
+		*(.text)
+		. = ALIGN(4096);
     }
 
     .data :

@@ -96,18 +96,22 @@ void parse_kernel_cmd(char *buf)
 }
 
 /* This is the C kernel entry point */
-void kmain(struct multiboot *mboot_header, addr_t initial_stack)
+void kmain(uint64_t mboot_header, addr_t initial_stack)
 {
-#if CONFIG_ARCH == TYPE_ARCH_X86_64
-	asm("cli; hlt");
-	for(;;);
-#endif
+
 	/* Store passed values, and initiate some early things
 	 * We want serial log output as early as possible */
 	kernel_state_flags=0;
 	mtboot = mboot_header;
 	i_stack = initial_stack;
-
+	#if CONFIG_ARCH == TYPE_ARCH_X86_64
+	load_tables();
+	init_serial();
+	//console_init_stage1();
+		
+		asm("cli; hlt");
+		for(;;);
+	#endif
 #if CONFIG_ARCH == TYPE_ARCH_X86
 	parse_kernel_elf(mboot_header, &kernel_elf);
 #endif
@@ -119,7 +123,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	
 	console_init_stage1();
 	
-	puts("~ SeaOS Version ");
+	puts("~ SeaOS Version ");	
 	char ver[32];
 	get_kernel_version(ver);
 	puts(ver);
@@ -137,7 +141,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	printk(1, "[kernel]: Starting system management\n");
 	init_memory(mtboot);
 	console_init_stage2();
-	parse_kernel_cmd((char *)mboot_header->cmdline);
+	parse_kernel_cmd((char *)mtboot->cmdline);
 	init_multitasking();
 	init_cache();
 	init_dm();

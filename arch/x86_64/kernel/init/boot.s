@@ -51,6 +51,12 @@ gdtable:
 ; 64-bit long mode, since that's what the C code kernel is compiled
 ; for. This isn't too tricky, just need to set up paging and enable
 ; some things.
+;
+; ---NOTE---
+; We only identity map the first 8MB! Hopefully this will be enough for the kernel
+; to properly map the rest of the system later on, but it may need to be increased!!
+; ----------
+;
 ; Here is where the 32-bit entry code is.
 start:
 	mov esp, stack+STACKSIZE-4  ; set up the stack
@@ -58,23 +64,25 @@ start:
 	mov [ebx_backup], ebx       ; the kernel expects this as an argument later, so save it
 
 	; now, set up a basic PML4 paging setup, since 64-bit requires paging
-	mov edi, 0x70000            ; Set the destination index to 0x1000.
+	mov edi, 0x70000            ; Set the destination index to 0x7000.
 	mov cr3, edi                ; Set control register 3 to the destination index.
 	xor eax, eax                ; Nullify the A-register.
 	mov ecx, 4096               ; Set the C-register to 4096.
 	rep stosd                   ; Clear the memory.
 	mov edi, cr3                ; Set the destination index to control register 3.
 
-	mov DWORD [edi], (0x71003)  ; Set the double word at the destination index to 0x2003.
+	mov DWORD [edi], (0x71003)  ; Set the double word at the destination index to 0x71003.
 	add edi, 0x1000             ; Add 0x1000 to the destination index.
-	mov DWORD [edi], (0x72003)  ; Set the double word at the destination index to 0x3003.
+	mov DWORD [edi], (0x72003)  ; Set the double word at the destination index to 0x72003.
 	add edi, 0x1000             ; Add 0x1000 to the destination index.
-	mov DWORD [edi], (0x73003)  ; Set the double word at the destination index to 0x4003.
-	add edi, 0x1000   
+	mov DWORD [edi], (0x73003)  ; Set the double word at the destination index to 0x73003.
+	mov DWORD [edi+8], (0x74003)  ; Set the double word at the destination index to 0x73003.
+	mov DWORD [edi+16], (0x75003)  ; Set the double word at the destination index to 0x73003.
+	mov DWORD [edi+24], (0x76003)  ; Set the double word at the destination index to 0x73003.
 
-
+    add edi, 0x1000
 	mov ebx, 0x00000003         ; Set the B-register to 0x00000003.
-	mov ecx, 512                ; Set the C-register to 512.
+	mov ecx, 1024                ; Set the C-register to 512.
 .SetEntry:
 	mov DWORD [edi], ebx        ; Set the double word at the destination index to the B-register.
 	add ebx, 0x1000             ; Add 0x1000 to the B-register.

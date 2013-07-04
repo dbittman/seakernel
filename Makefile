@@ -1,12 +1,10 @@
 # seakernel makefile 
 ifneq ($(MAKECMDGOALS),config)
-
-ifneq ($(MAKECMDGOALS),defconfig)
-	include sea_defines.inc
-else
-	ARCH=x86
-endif
-
+	ifneq ($(MAKECMDGOALS),defconfig)
+		include sea_defines.inc
+	else
+		ARCH=x86
+	endif
 else
 	ARCH=x86
 endif
@@ -30,15 +28,15 @@ export AR
 include make.inc
 
 CFLAGS_NOARCH = -Ofast -g -std=c99 -nostdlib -nostdinc \
-		 -fno-builtin -ffreestanding \
-		 -Iarch/${ARCH}/include \
-         -I../include -Iinclude -I ../../include -I ../../../include \
-         -D__KERNEL__ -D__DEBUG__ \
-         -Wall -Wextra -Wformat-security -Wformat-nonliteral \
-	     -Wno-strict-aliasing -Wshadow -Wpointer-arith -Wcast-align \
-	     -Wno-unused -Wnested-externs -Waddress -Winline \
-	     -Wno-long-long -mno-red-zone -fno-omit-frame-pointer \
-	     -Wno-unused-parameter -Wno-unused-but-set-parameter -nodefaultlibs
+                -fno-builtin -ffreestanding \
+                -Iarch/${ARCH}/include \
+                -I../include -Iinclude -I ../../include -I ../../../include \
+                -D__KERNEL__ -D__DEBUG__ \
+                -Wall -Wextra -Wformat-security -Wformat-nonliteral \
+	        -Wno-strict-aliasing -Wshadow -Wpointer-arith -Wcast-align \
+	        -Wno-unused -Wnested-externs -Waddress -Winline \
+	        -Wno-long-long -mno-red-zone -fno-omit-frame-pointer \
+	        -Wno-unused-parameter -Wno-unused-but-set-parameter -nodefaultlibs
 
 include arch/${ARCH}/make.inc
 
@@ -50,9 +48,8 @@ export GASFLAGS= ${GASFLAGS_ARCH}
 include kernel/make.inc
 include drivers/make.inc
 
-os: can_build make.deps
-	@echo Building kernel...
-	@$(MAKE) -s os_s
+all: can_build make.deps
+	@$(MAKE) -s kernel
 
 ifneq ($(MAKECMDGOALS),config)
 ifneq ($(MAKECMDGOALS),defconfig)
@@ -71,26 +68,31 @@ deps:
 	@${MAKE} -s -C library deps
 	@${MAKE} -s -C drivers deps
 
-link: $(AOBJS) $(KOBJS) library/klib.a
+library/klib.a:
+	$(MAKE) -s -C library
+
+skernel.1: $(AOBJS) $(KOBJS) library/klib.a
 	echo "[LD]	skernel"
 	$(CC) $(CFLAGS) $(LDFLAGS) -o skernel.1 $(AOBJS) $(KOBJS) library/klib.a -lgcc -static-libgcc -static
 
-os_s: $(KOBJS) $(AOBJS) 
-	$(MAKE) -s -C library
-	$(MAKE) -s link
-	echo Building modules, pass 1...
-	$(MAKE) -C drivers
-	echo "Building initrd..."
-	-./tools/ird.rb initrd.conf > /dev/null
-	-cp skernel.1 skernel
+skernel: skernel.1
+	cp skernel.1 skernel
 	if [ "${ARCH}" = "x86_64" ]; then \
 		objcopy -I elf64-x86-64 -O elf32-i386 skernel ;\
 	fi
-	
-all: make.deps
-	@$(MAKE) -s os
 
-install:
+initrd.img: modules
+	echo "Building initrd..."
+	./tools/ird.rb initrd.conf > /dev/null
+
+modules: library/klib.a
+	echo Building modules, pass 1...
+	$(MAKE) -C drivers
+
+kernel: skernel initrd.img
+
+
+install: kernel
 	@echo "installing kernel..."
 	@cp -f skernel /sys/kernel
 	@echo "installing initrd..."
@@ -98,7 +100,7 @@ install:
 	@make -C drivers install VERSION=${KERNEL_VERSION}
 
 clean:
-	@-rm -f $(AOBJS) $(KOBJS) $(CLEAN) initrd.img skernel make.deps
+	@-rm -f $(AOBJS) $(KOBJS) $(CLEAN) initrd.img skernel make.deps skernel.1
 	@-$(MAKE) -s -C library clean &> /dev/null
 	@-$(MAKE) -s -C drivers clean &> /dev/null
 
@@ -109,12 +111,12 @@ distclean:
 	@-rm -f tools/{confed,mkird}
 	@-rm -f make.deps drivers/make.deps
 
-config: clean
+config: 
 	@tools/conf.rb config.cfg
 	@echo post-processing configuration...
 	@tools/config.rb .config.cfg
 	
-defconfig: clean
+defconfig:
 	@tools/conf.rb -d config.cfg
 	@echo post-processing configuration...
 	@tools/config.rb .config.cfg

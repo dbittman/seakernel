@@ -62,7 +62,10 @@ start:
 	mov esp, stack+STACKSIZE-4  ; set up the stack
 	cli
 	mov [ebx_backup], ebx       ; the kernel expects this as an argument later, so save it
-
+	; enable PAE
+	mov eax, cr4
+	bts eax, 5
+	mov cr4, eax
 	; now, set up a basic PML4 paging setup, since 64-bit requires paging
 	mov edi, 0x70000            ; Set the destination index to 0x7000.
 	mov cr3, edi                ; Set control register 3 to the destination index.
@@ -89,23 +92,18 @@ start:
 	add edi, 8                  ; Add eight to the destination index.
 	loop .SetEntry 
 	
-	; enable PAE
-	mov eax, cr4
-	bts eax, 5
-	mov cr4, eax
-	
 	; enable long mode
 	mov ecx, 0xC0000080
 	rdmsr
 	bts eax, 8
-	bts eax, 0
 	wrmsr
 
 	; enable paging
 	mov eax, cr0
 	bts eax, 31
 	mov cr0, eax
-
+	mov edi, 0x70000            ; Set the destination index to 0x7000.
+	mov cr3, edi                ; Set control register 3 to the destination index.
 	; lead the GDT with 64-bit segments
 	lgdt [gdtdesc]
 	; long jump into 64-bit mode

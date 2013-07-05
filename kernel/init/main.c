@@ -96,15 +96,13 @@ void parse_kernel_cmd(char *buf)
 }
 
 /* This is the C kernel entry point */
-void kmain(uint64_t mboot_header, addr_t initial_stack)
+void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 {
-
 	/* Store passed values, and initiate some early things
 	 * We want serial log output as early as possible */
 	kernel_state_flags=0;
 	mtboot = mboot_header;
 	i_stack = initial_stack;
-
 #if CONFIG_ARCH == TYPE_ARCH_X86
 	parse_kernel_elf(mboot_header, &kernel_elf);
 #endif
@@ -114,9 +112,9 @@ void kmain(uint64_t mboot_header, addr_t initial_stack)
 	
 	#if CONFIG_ARCH == TYPE_ARCH_X86_64
 	//load_tables();
-	//init_serial();
+	init_serial();
 	//console_init_stage1();
-	
+	//puts("~ SeaOS Version ");
 	asm("cli; hlt");
 	for(;;);
 	#endif

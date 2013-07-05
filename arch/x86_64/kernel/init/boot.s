@@ -82,7 +82,7 @@ start:
 
     add edi, 0x1000
 	mov ebx, 0x00000003         ; Set the B-register to 0x00000003.
-	mov ecx, 1024                ; Set the C-register to 512.
+	mov ecx, 2048                ; Set the C-register to 512.
 .SetEntry:
 	mov DWORD [edi], ebx        ; Set the double word at the destination index to the B-register.
 	add ebx, 0x1000             ; Add 0x1000 to the B-register.
@@ -123,6 +123,7 @@ start64:
 	mov rsp, stack+STACKSIZE-8
 	cli
 	; restore ebx
+	xor rbx, rbx
 	mov ebx, [ebx_backup]
 	; function call!
 	push rsp

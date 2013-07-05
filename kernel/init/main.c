@@ -104,22 +104,28 @@ void kmain(uint64_t mboot_header, addr_t initial_stack)
 	kernel_state_flags=0;
 	mtboot = mboot_header;
 	i_stack = initial_stack;
-	#if CONFIG_ARCH == TYPE_ARCH_X86_64
-	load_tables();
-	init_serial();
-	//console_init_stage1();
-		
-		asm("cli; hlt");
-		for(;;);
-	#endif
+
 #if CONFIG_ARCH == TYPE_ARCH_X86
 	parse_kernel_elf(mboot_header, &kernel_elf);
 #endif
 #if CONFIG_MODULES
 	init_kernel_symbols();
 #endif
+	
+	#if CONFIG_ARCH == TYPE_ARCH_X86_64
+	//load_tables();
+	//init_serial();
+	//console_init_stage1();
+	
+	asm("cli; hlt");
+	for(;;);
+	#endif
+	
 	load_tables();
 	init_serial();
+	
+	
+
 	
 	console_init_stage1();
 	

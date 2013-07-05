@@ -48,7 +48,8 @@ export GASFLAGS= ${GASFLAGS_ARCH}
 include kernel/make.inc
 include drivers/make.inc
 
-all: can_build make.deps kernel
+all: can_build make.deps
+	$(MAKE) -s kernel
 
 ifneq ($(MAKECMDGOALS),config)
 ifneq ($(MAKECMDGOALS),defconfig)
@@ -88,7 +89,7 @@ modules: library/klib.a
 	echo Building modules, pass 1...
 	$(MAKE) -C drivers
 
-kernel: can_build make.deps skernel initrd.img
+kernel: make.deps skernel initrd.img
 
 
 install: kernel

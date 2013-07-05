@@ -113,7 +113,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	#if CONFIG_ARCH == TYPE_ARCH_X86_64
 	//load_tables();
 	init_serial();
-	//console_init_stage1();
+	console_init_stage1();
 	//puts("~ SeaOS Version ");
 	asm("cli; hlt");
 	for(;;);

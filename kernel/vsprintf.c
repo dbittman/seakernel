@@ -35,7 +35,7 @@ static int skip_atoi(const char **s)
 #define SPECIAL	32		/* 0x */
 #define SMALL	64		/* use 'abcdef' instead of 'ABCDEF' */
 
-int do_div(int *n, int base)
+int __do_div(int *n, int base)
 {
 	int num = *n;
 	int __res;
@@ -44,7 +44,16 @@ int do_div(int *n, int base)
 	return __res;
 }
 
-static char * number(char * str, int num, int base, int size, int precision ,int type)
+int do_div(long *n, int base)
+{
+	long num = *n;
+	int __res;
+	__res = num % base;
+	*n = num / base;
+	return __res;
+}
+
+static char * number(char * str, long num, int base, int size, int precision ,int type)
 {
 	char c,sign,tmp[36];
 	const char *digits="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";

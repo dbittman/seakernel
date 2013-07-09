@@ -18,8 +18,8 @@
   global isr%1
   isr%1:
     cli                         ; Disable interrupts firstly.
-    push byte 0                 ; Push a dummy error code.
-    push byte %1                ; Push the interrupt number.
+    push qword 0                 ; Push a dummy error code.
+    push qword %1                ; Push the interrupt number.
     jmp isr_entry_code         ; Go to our common handler code.
 %endmacro
 
@@ -28,7 +28,7 @@
   global isr%1
   isr%1:
     cli                         ; Disable interrupts.
-    push byte %1                ; Push the interrupt number
+    push qword %1                ; Push the interrupt number
     jmp isr_entry_code
 %endmacro
 
@@ -38,8 +38,8 @@
   global irq%1
   irq%1:
     cli
-    push byte 0 ; dummy error code
-    push byte %2
+    push qword 0 ; dummy error code
+    push qword %2
     jmp irq_entry_code
 %endmacro
 
@@ -48,7 +48,7 @@
   global ipi_%1
   ipi_%1:
     cli
-    push byte 0 ; dummy error code
+    push qword 0 ; dummy error code
     push %2
     jmp ipi_entry_code
 %endmacro
@@ -56,8 +56,56 @@
 ; heres the actual common asm entry code for interrupts.
 %macro INT_ENTRY_CODE 2
 %1_entry_code:
-   ;pusha                    ; Pushes processor registers
+	push rdi
+	push rsi
+	push rdx
+	push rcx
+	push rax
+	push r8
+	push r9
+	push r10
+	push r11
+	push rbx
+	push rbp
+	push r12
+	push r13
+	push r14
+	push r15
+	
+	xor rax, rax
+	mov ax, ds
+	push rax
+	mov ax, 0x10
+	mov ds, ax
+	mov es, ax
+	mov fs, ax
+	
+	call %2
+	
+	pop rax
+	mov ds, ax
+	mov es, ax
+	mov fs, ax
 
+	pop rdi
+	pop rsi
+	pop rdx
+	pop rcx
+	pop rax
+	pop r8
+	pop r9
+	pop r10
+	pop r11
+	pop rbx
+	pop rbp
+	pop r12
+	pop r13
+	pop r14
+	pop r15
+	
+	add rsp, 16
+	iretq
+	
    ; mov ax, ds               ; Lower 16-bits of eax = ds.
   ;  push eax                 ; save the data segment descriptor
 ;
@@ -147,8 +195,8 @@ IPI  debug    , IPI_DEBUG
 global isr80
 isr80:
     cli                         ; Disable interrupts.
-    push byte 0
-    push byte 80                ; Push the interrupt number
+    push qword 0
+    push qword 80                ; Push the interrupt number
     jmp syscall_entry_code
 
 ; the asm entry handlers

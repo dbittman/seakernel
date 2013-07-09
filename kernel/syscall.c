@@ -149,7 +149,7 @@ static inline int __is_valid_user_ptr(void *p, char flags)
  * user-space data. */
 int check_pointers(volatile registers_t *regs)
 {
-	switch(regs->eax) {
+	switch(SYSCALL_NUM_AND_RET) {
 		case SYS_READ: case SYS_FSTAT: case SYS_STAT: case SYS_GETPATH:
 		case SYS_READLINK: case SYS_GETNODESTR: 
 		case SYS_POSFSSTAT:
@@ -192,16 +192,16 @@ int check_pointers(volatile registers_t *regs)
 
 int syscall_handler(volatile registers_t *regs)
 {
-	if(unlikely(regs->eax >= num_syscalls))
+	if(unlikely(SYSCALL_NUM_AND_RET >= num_syscalls))
 		return -ENOSYS;
-	if(unlikely(!syscall_table[regs->eax]))
+	if(unlikely(!syscall_table[SYSCALL_NUM_AND_RET]))
 		return -ENOSYS;
 	volatile int ret;
 	if(!check_pointers(regs))
 		return -EINVAL;
 	//if(got_signal(current_task) || (unsigned)(ticks-current_task->slice) > (unsigned)current_task->cur_ts)
 	//	schedule();
-	enter_system(regs->eax);
+	enter_system(SYSCALL_NUM_AND_RET);
 	/* most syscalls are re-entrant, so we enable interrupts and
 	 * expect handlers to disable them if needed */
 	set_int(1);
@@ -210,12 +210,12 @@ int syscall_handler(volatile registers_t *regs)
 	
 	#ifdef SC_DEBUG
 	if(current_task->tty == curcons->tty) 
-		printk(SC_DEBUG, "syscall %d: enter %d\n", current_task->pid, regs->eax);
+		printk(SC_DEBUG, "syscall %d: enter %d\n", current_task->pid, SYSCALL_NUM_AND_RET);
 	int or_t = ticks;
 	#endif
 	
-	__do_syscall_jump(ret, syscall_table[regs->eax], regs->edi, regs->esi, 
-					  regs->edx, regs->ecx, regs->ebx);
+	__do_syscall_jump(ret, syscall_table[SYSCALL_NUM_AND_RET], _E_, _D_, 
+					  _C_, _B_, _A_);
 	
 	#ifdef SC_DEBUG
 	if(current_task->tty == curcons->tty && (ticks - or_t >= 10 || 1) 
@@ -240,13 +240,17 @@ int syscall_handler(volatile registers_t *regs)
 		schedule();
 	}
 	/* store the return value in the regs */
-	regs->eax = ret;
+	SYSCALL_NUM_AND_RET = ret;
 	/* if we're going to jump to a signal here, we need to back up our 
 	 * return value so that when we return to the system we have the
 	 * original systemcall returning the proper value.
 	 */
 	if((current_task->flags & TF_INSIG) && (current_task->flags & TF_JUMPIN)) {
+#if CONFIG_ARCH == TYPE_ARCH_X86
 		current_task->reg_b.eax=ret;
+#elif CONFIG_ARCH == TYPE_ARCH_X86_64
+		current_task->reg_b.rax=ret;
+#endif
 		current_task->flags &= ~TF_JUMPIN;
 	}
 	return ret;

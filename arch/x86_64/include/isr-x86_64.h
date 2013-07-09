@@ -42,9 +42,9 @@
 
 typedef struct registers
 {
-	volatile   u32int ds;
-	volatile   u32int edi, esi, ebp, esp, ebx, edx, ecx, eax;
-	volatile   u32int int_no, err_code;
+	volatile   u64int ds;
+	volatile   u64int r15, r14, r13, r12, rbp, rbx, r11, r10, r9, r8, rax, rcx, rdx, rsi, rdi;
+	volatile   u64int int_no, err_code;
 	volatile   u32int eip, cs, eflags, useresp, ss;
 } volatile registers_t;
 

@@ -24,6 +24,7 @@ static int dosyscall(int num, int a, int b, int c, int d, int e)
 	: "=a" (ret) \
 	: "r" (a), "r" (b), "r" (c), "r" (d), "r" (e), "r" (location))
 
+#define SYSCALL_NUM_AND_RET regs->eax
 #define _E_ regs->edi
 #define _D_ regs->esi
 #define _C_ regs->edx

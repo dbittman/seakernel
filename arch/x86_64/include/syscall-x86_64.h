@@ -28,10 +28,11 @@ pop %%ebx; \
 : "=a" (ret) \
 : "r" (a), "r" (b), "r" (c), "r" (d), "r" (e), "r" (location))
 */
-#define _E_ regs->edi
-#define _D_ regs->esi
-#define _C_ regs->edx
-#define _B_ regs->ecx
-#define _A_ regs->ebx
+#define SYSCALL_NUM_AND_RET regs->rax
+#define _E_ regs->rdi
+#define _D_ regs->rsi
+#define _C_ regs->rdx
+#define _B_ regs->rcx
+#define _A_ regs->rbx
 
 #endif

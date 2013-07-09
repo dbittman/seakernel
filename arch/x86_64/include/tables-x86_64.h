@@ -19,7 +19,7 @@ typedef struct gdt_entry_struct gdt_entry_t;
 struct gdt_ptr_struct
 {
 	u16int limit;
-	u32int base;
+	u64int base;
 } __attribute__((packed));
 
 typedef struct gdt_ptr_struct gdt_ptr_t;
@@ -30,7 +30,9 @@ struct idt_entry_struct
 	u16int sel;
 	u8int  always0;
 	u8int  flags;
-	u16int base_hi; 
+	u16int base_mid;
+	u32int base_high;
+	u32int _always0;
 } __attribute__((packed));
 
 typedef struct idt_entry_struct idt_entry_t;
@@ -38,7 +40,7 @@ typedef struct idt_entry_struct idt_entry_t;
 struct idt_ptr_struct
 {
 	u16int limit;
-	u32int base;
+	u64int base;
 } __attribute__((packed));
 
 typedef struct idt_ptr_struct idt_ptr_t;
@@ -110,7 +112,7 @@ void set_kernel_stack(tss_entry_t *, u32int stack);
 void load_doublefault_system(void);
 void write_tss(gdt_entry_t *, tss_entry_t *, s32int num, u16int ss0, u32int esp0);
 void gdt_set_gate(gdt_entry_t *, s32int,u32int,u32int,u8int,u8int);
-void idt_set_gate(u8int,u32int,u16int,u8int);
+void idt_set_gate(u8int,u64int,u16int,u8int);
 void mask_pic_int(unsigned char irq, int mask);
 void disable_pic();
 

@@ -37,7 +37,7 @@ CFLAGS_NOARCH = -Ofast -g -std=c99 -nostdlib -nostdinc \
 	        -Wno-unused -Wnested-externs -Waddress -Winline \
 	        -Wno-long-long -mno-red-zone -fno-omit-frame-pointer \
 	        -Wno-unused-parameter -Wno-unused-but-set-parameter -nodefaultlibs \
-	        -mpush-args -mno-accumulate-outgoing-args
+	        -mpush-args -mno-accumulate-outgoing-args -ffast-math -msse -msse2 -msse3
 
 include arch/${ARCH}/make.inc
 
@@ -68,7 +68,7 @@ deps:
 	@${MAKE} -s do_deps
 	@${MAKE} -s -C library deps
 	@${MAKE} -s -C drivers deps
-
+.PHONY: library/klib.a
 library/klib.a:
 	$(MAKE) -s -C library
 

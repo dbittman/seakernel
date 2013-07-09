@@ -114,7 +114,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	//load_tables();
 	init_serial();
 	console_init_stage1();
-	//puts("~ SeaOS Version ");
+	puts("~ SeaOS Version ");
 	asm("cli; hlt");
 	for(;;);
 	#endif

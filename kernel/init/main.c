@@ -114,7 +114,16 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	//load_tables();
 	init_serial();
 	console_init_stage1();
-	puts("~ SeaOS Version ");
+	puts("~ SeaOS Version ");	
+	char vera[32];
+	get_kernel_version(vera);
+	puts(vera);
+	puts(" Booting Up ~\n\r");
+	#if CONFIG_MODULES
+	init_module_system();
+	#endif
+	init_syscalls();
+	kprintf("\nBOOTUP HALTED\n");
 	asm("cli; hlt");
 	for(;;);
 	#endif

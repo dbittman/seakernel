@@ -36,7 +36,8 @@ CFLAGS_NOARCH = -Ofast -g -std=c99 -nostdlib -nostdinc \
 	        -Wno-strict-aliasing -Wshadow -Wpointer-arith -Wcast-align \
 	        -Wno-unused -Wnested-externs -Waddress -Winline \
 	        -Wno-long-long -mno-red-zone -fno-omit-frame-pointer \
-	        -Wno-unused-parameter -Wno-unused-but-set-parameter -nodefaultlibs
+	        -Wno-unused-parameter -Wno-unused-but-set-parameter -nodefaultlibs \
+	        -mpush-args -mno-accumulate-outgoing-args
 
 include arch/${ARCH}/make.inc
 

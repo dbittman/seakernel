@@ -123,7 +123,6 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	init_serial();
 	
 	
-
 	
 	console_init_stage1();
 	

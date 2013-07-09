@@ -402,11 +402,9 @@ void tty_init(vterm_t **k)
 	assert(MAX_CONSOLES > 9);
 	for(i=0;i<MAX_CONSOLES;i++)
 	{
-		printk(0, "%d\n", 7);
-		//memset(&consoles[i], 0, sizeof(vterm_t));
+		memset(&consoles[i], 0, sizeof(vterm_t));
 		consoles[i].tty=i;
 	}
-	for(;;);
 	*k = &consoles[0];
 }
 

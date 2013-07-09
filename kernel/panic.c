@@ -1,7 +1,7 @@
 /* panic.c: Copyright (c) 2010 Daniel Bittman
  * Functions for kernel crashes and exceptions */
 #include <kernel.h>
-#include <vargs.h>
+#include <stdarg.h>
 #include <asm/system.h>
 #include <task.h>
 #include <mod.h>

@@ -6,7 +6,7 @@
 /* Adapted from linux 0.01 - */
 #include <types.h>
 #include <config.h>
-#include <vargs.h>
+#include <stdarg.h>
 #include <kernel.h>
 #include <string.h>
 #include <console.h>

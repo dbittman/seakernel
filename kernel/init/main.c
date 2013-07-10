@@ -109,31 +109,9 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 #if CONFIG_MODULES
 	init_kernel_symbols();
 #endif
-	
-	#if CONFIG_ARCH == TYPE_ARCH_X86_64
-		init_serial();
-		console_init_stage1();
-		load_tables();
-		puts("~ SeaOS Version ");	
-		char vera[32];
-		get_kernel_version(vera);
-		puts(vera);
-		puts(" Booting Up ~\n\r");
-		#if CONFIG_MODULES
-		init_module_system();
-		#endif
-		init_syscalls();
-		install_timer(1000);
-		kprintf("ok...\n");
-		asm("sti");
-		for(;;);
-		kprintf("\nBOOTUP HALTED\n");
-		asm("cli; hlt");
-		for(;;);
-	#endif
-	load_tables();
 	init_serial();
 	console_init_stage1();
+	load_tables();
 	puts("~ SeaOS Version ");	
 	char ver[32];
 	get_kernel_version(ver);
@@ -145,6 +123,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	init_syscalls();
 	load_initrd(mtboot);
 	install_timer(1000);
+	
 	pm_init(placement, mtboot);
 	init_main_cpu();
 	

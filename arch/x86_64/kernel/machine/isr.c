@@ -284,9 +284,6 @@ void isr_handler(volatile registers_t regs)
 
 void irq_handler(volatile registers_t regs)
 {
-	kprintf("INT");
-	ack_pic(regs.int_no);
-	return;
 	/* ok, so the assembly entry function clears interrupts in the cpu, 
 	 * but the kernel doesn't know that yet. So we clear the interrupt
 	 * flag in the cpu structure as part of the normal set_int call, but
@@ -406,8 +403,7 @@ void int_sys_init()
 		stage2_count[i] = 0;
 		for(int j=0;j<MAX_HANDLERS;j++)
 		{
-#warning "ASDADA"
-			//interrupt_handlers[i][j][0] = interrupt_handlers[i][j][1] = 0;
+			interrupt_handlers[i][j][0] = interrupt_handlers[i][j][1] = 0;
 		}
 	}
 	

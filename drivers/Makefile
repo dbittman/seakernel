@@ -23,6 +23,7 @@ MCFLAGS=-std=c99 -g -O3 -fno-rename-registers \
 		-I../../arch/$(ARCH)/include \
 		-Wall -Wextra -Wformat-security -Wformat-nonliteral -Wshadow \
 		-Wpointer-arith -Wcast-align -Wno-unused -Wnested-externs \
+		-fno-tree-loop-distribute-patterns -fno-tree-vectorize \
 		-Winline -Wno-long-long -Wno-unused-parameter -Wno-unused-but-set-parameter $(CFLAGS_ARCH)
 
 export MCFLAGS

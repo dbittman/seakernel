@@ -124,8 +124,8 @@ start64:
 	xor rbx, rbx
 	mov ebx, [ebx_backup]
 	; function call!
-	push rsp
-	push rbx
+	mov rsi, rsp
+	mov rdi, rbx
 	call  kmain                  ; call kernel proper
 	
     cli

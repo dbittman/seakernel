@@ -356,7 +356,7 @@ void irq_handler(volatile registers_t regs)
 	if(current_task && clear_regs)
 		current_task->regs=0;
 	/* restore the flag in the cpu struct. The assembly routine will
-	 * call iret, which will also restore the interrupt state to what
+	 * call iret, which will also restore the EFLAG state to what
 	 * it was before, including the interrupts-enabled bit in eflags */
 	set_cpu_interrupt_flag(previous_interrupt_flag);
 	/* and clear the state flag if this is going to return to user-space code */

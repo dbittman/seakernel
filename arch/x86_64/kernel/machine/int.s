@@ -49,13 +49,14 @@
   ipi_%1:
     cli
     push qword 0 ; dummy error code
-    push %2
+    push qword %2
     jmp ipi_entry_code
 %endmacro
 
 ; heres the actual common asm entry code for interrupts.
 %macro INT_ENTRY_CODE 2
 %1_entry_code:
+	; save the frame
 	push rdi
 	push rsi
 	push rdx
@@ -72,6 +73,7 @@
 	push r14
 	push r15
 	
+	; get ds and save it as well
 	xor rax, rax
 	mov ax, ds
 	push rax
@@ -80,13 +82,15 @@
 	mov es, ax
 	mov fs, ax
 	
-	call %2
+	call %2 ; call the handler
 	
+	; restore ds
 	pop rax
 	mov ds, ax
 	mov es, ax
 	mov fs, ax
-
+	
+	; restore the frame
 	pop rdi
 	pop rsi
 	pop rdx
@@ -103,26 +107,10 @@
 	pop r14
 	pop r15
 	
+	; clean up interrupt number and error code
 	add rsp, 16
+	; return from the interrupt
 	iretq
-	
-   ; mov ax, ds               ; Lower 16-bits of eax = ds.
-  ;  push eax                 ; save the data segment descriptor
-;
-  ;  mov ax, 0x10  ; load the kernel data segment descriptor
-  ;  mov ds, ax
- ;   mov es, ax
-  ;  mov fs, ax
-
-  ;  call %2 ; calls the C-code handler
-  ;  pop ebx        ; reload the original data segment descriptor
-  ;  mov ds, bx
-  ;  mov es, bx
-  ;  mov fs, bx
-
-  ;  popa                     ; Pops edi,esi,ebp...
- ;   add esp, 8     ; Cleans up the pushed error code and pushed ISR number
- ;   iretd           ; pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP
 %endmacro
 
 

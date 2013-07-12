@@ -7,7 +7,6 @@
 
 int arch_userspace_signal_initializer(task_t *t, struct sigaction *sa)
 {
-#if 0
 	volatile registers_t *iret = t->regs;
 	if(!iret) return 0;
 	/* user-space signal handing design:
@@ -28,16 +27,17 @@ int arch_userspace_signal_initializer(task_t *t, struct sigaction *sa)
 	iret->useresp = SIGSTACK;
 	iret->useresp -= STACK_ELEMENT_SIZE;
 	/* push the argument (signal number) */
-	*(unsigned *)(iret->useresp) = t->sigd;
-	*	iret->useresp -= STACK_ELEMENT_SIZE;
-	*	/* push the return address. this function is mapped in when
-	* paging is set up */
-	*(unsigned *)(iret->useresp) = (unsigned)SIGNAL_INJECT;
-	*	iret->eip = (unsigned)sa->_sa_func._sa_handler;
-	*	t->cursig = t->sigd;
-	*	t->sigd=0;
-	*	/* sysregs is only set when we are in a syscall */
+#warning "This may not work...need to figure out how to pass arguments..."
+	iret->rdi = t->sigd;
+	*(addr_t *)(iret->useresp) = t->sigd;
+	iret->useresp -= STACK_ELEMENT_SIZE;
+	/* push the return address. this function is mapped in when
+	 * paging is set up */
+	*(addr_t *)(iret->useresp) = (unsigned)SIGNAL_INJECT;
+	iret->eip = (addr_t)sa->_sa_func._sa_handler;
+	t->cursig = t->sigd;
+	t->sigd=0;
+	/* sysregs is only set when we are in a syscall */
 	if(t->sysregs) t->flags |= TF_JUMPIN;
-#endif
 	return 1;
 }

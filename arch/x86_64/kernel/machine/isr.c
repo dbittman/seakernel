@@ -139,6 +139,7 @@ void ack_pic(int n)
 
 void ipi_handler(volatile registers_t regs)
 {
+	assert(regs.int_no == 0x80 && ((regs.ds&(~0x7)) == 0x10 || (regs.ds&(~0x7)) == 0x20) && ((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));
 	int previous_interrupt_flag = set_int(0);
 	add_atomic(&int_count[regs.int_no], 1);
 #if CONFIG_SMP
@@ -175,6 +176,7 @@ void ipi_handler(volatile registers_t regs)
 void entry_syscall_handler(volatile registers_t regs)
 {
 	/* don't need to save the flag here, since it will always be true */
+	assert(regs.int_no == 0x80 && ((regs.ds&(~0x7)) == 0x10 || (regs.ds&(~0x7)) == 0x20) && ((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));
 	set_int(0);
 	add_atomic(&int_count[0x80], 1);
 	if(current_task->flags & TF_IN_INT)
@@ -235,6 +237,7 @@ void entry_syscall_handler(volatile registers_t regs)
 /* This gets called from our ASM interrupt handler stub. */
 void isr_handler(volatile registers_t regs)
 {
+	assert(((regs.ds&(~0x7)) == 0x10 || (regs.ds&(~0x7)) == 0x20) && ((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));
 	/* this is explained in the IRQ handler */
 	int previous_interrupt_flag = set_int(0);
 	add_atomic(&int_count[regs.int_no], 1);
@@ -284,6 +287,7 @@ void isr_handler(volatile registers_t regs)
 
 void irq_handler(volatile registers_t regs)
 {
+	assert(((regs.ds&(~0x7)) == 0x10 || (regs.ds&(~0x7)) == 0x20) && ((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));
 	/* ok, so the assembly entry function clears interrupts in the cpu, 
 	 * but the kernel doesn't know that yet. So we clear the interrupt
 	 * flag in the cpu structure as part of the normal set_int call, but

@@ -14,14 +14,15 @@ void int_sys_init();
 tss_entry_t tss_entry;
 extern char tables;
 
-inline void set_kernel_stack(tss_entry_t *tss, u32int stack)
+inline void set_kernel_stack(tss_entry_t *tss, u64int stack)
 {
 	tss->esp0 = stack;
 }
 
-void write_tss(gdt_entry_t *gdt, tss_entry_t *tss, s32int num, u16int ss0, u32int esp0)
+void write_tss(gdt_entry_t *gdt, tss_entry_t *tss, s32int num, u16int ss0, u64int esp0)
 {
-	u32int base = (u32int)tss;
+	/* TSS must reside in lower 4GB... */
+	u32int base = (u32int)((u64int)tss & 0xFFFFFFFF);
 	u32int limit = base + sizeof(tss_entry_t);
 	gdt_set_gate(gdt, num, base, limit, 0xE9, 0x00);
 	memset(tss, 0, sizeof(tss_entry_t));

@@ -413,7 +413,7 @@ void int_sys_init()
 #if CONFIG_MODULES
 	add_kernel_symbol(register_interrupt_handler);
 	add_kernel_symbol(unregister_interrupt_handler);
-	_add_kernel_symbol((unsigned)interrupt_handlers, "interrupt_handlers");
+	_add_kernel_symbol((addr_t)interrupt_handlers, "interrupt_handlers");
 #endif
 }
 

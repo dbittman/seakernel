@@ -25,7 +25,7 @@ const char *elf32_lookup_symbol (uint32_t addr, elf32_t *elf)
 	}
 	for (i = 0; i < (elf->symtabsz/sizeof (elf32_symtab_entry_t)); i++)
 	{
-		if (ELF32_ST_TYPE(elf->symtab[i].info) != 0x2)
+		if (ELF_ST_TYPE(elf->symtab[i].info) != 0x2)
 			continue;
 		if ( (addr >= elf->symtab[i].address) 
 				&& (addr < (elf->symtab[i].address + elf->symtab[i].size)) )

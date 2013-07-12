@@ -3,23 +3,23 @@
 typedef struct tss_entry_struct
 {
 	u32int prev_tss;
-	u32int esp0;       // The stack pointer to load when we change to kernel mode.
+	u64int esp0;       // The stack pointer to load when we change to kernel mode.
 	u32int ss0;        // The stack segment to load when we change to kernel mode.
-	u32int esp1;       // Unused...
+	u64int esp1;       // Unused...
 	u32int ss1;
-	u32int esp2;
+	u64int esp2;
 	u32int ss2;
-	u32int cr3;
-	u32int eip;
-	u32int eflags;
-	u32int eax;
-	u32int ecx;
-	u32int edx;
-	u32int ebx;
-	u32int esp;
-	u32int ebp;
-	u32int esi;
-	u32int edi;
+	u64int cr3;
+	u64int rip;
+	u64int rflags;
+	u64int rax;
+	u64int rcx;
+	u64int rdx;
+	u64int rbx;
+	u64int rsp;
+	u64int rbp;
+	u64int rsi;
+	u64int rdi;
 	u32int es;         // The value to load into ES when we change to kernel mode.
 	u32int cs;         // The value to load into CS when we change to kernel mode.
 	u32int ss;         // The value to load into SS when we change to kernel mode.

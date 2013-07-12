@@ -30,7 +30,29 @@ typedef struct __attribute__((packed))
 	uint16_t strndx;
 	char *shbuf;
 	unsigned strtab_addr, symtab_addr, strtabsz, syment_len;
-} elf_header_t;
+} elf32_header_t;
+
+typedef struct __attribute__((packed))
+{
+	uint8_t  id[16];
+	uint16_t type;
+	uint16_t machine;
+	uint32_t version;
+	uint32_t entry;
+	uint32_t phoff;
+	uint32_t shoff;
+	uint32_t flags;
+	uint16_t size;
+	uint16_t phsize;
+	uint16_t phnum;
+	uint16_t shsize;
+	uint16_t shnum;
+	uint16_t strndx;
+	char *shbuf;
+	unsigned strtab_addr, symtab_addr, strtabsz, syment_len;
+} elf64_header_t;
+
+typedef elf64_header_t elf_header_t;
 
 typedef struct __attribute__((packed))
 {
@@ -81,8 +103,8 @@ typedef struct __attribute__((packed))
 
 static inline int is_valid_elf32(char *buf, short type)
 {
-	elf_header_t * eh;
-	eh = (elf_header_t*)buf;
+	elf32_header_t * eh;
+	eh = (elf32_header_t*)buf;
 	if(memcmp(eh->id + 1, (uint8_t*)"ELF", 3)
 		|| eh->machine != 0x03
 		|| eh->type != type)
@@ -111,25 +133,7 @@ static inline int is_valid_elf32(char *buf, short type)
 #define EDT_TEXTREL 22
 #define EDT_JMPREL  23
 
-#define SHN_COMMON 0xFF02
-#define SHN_ABS    0xFF01
-
-
-#define ELF_R_NONE     0
-#define ELF_R_32       1
-#define ELF_R_PC32     2
-#define ELF_R_GOT32    3
-#define ELF_R_PLT32    4
-#define ELF_R_COPY     5
-#define ELF_R_GLOBDAT  6
-#define ELF_R_JMPSLOT  7
-#define ELF_R_RELATIVE 8
-#define ELF_R_GOTOFF   9
-#define ELF_R_GOTPC   10
-
-#define ELF_R_SYM(i)  ((i)>>8)
-#define ELF_R_TYPE(i) ((unsigned char)(i))
-#define ELF32_ST_TYPE(i) ((i)&0xf)
+#define ELF_ST_TYPE(i) ((i)&0xf)
 typedef struct {
 	uint16_t d_tag;
 	union {

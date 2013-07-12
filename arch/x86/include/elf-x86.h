@@ -111,25 +111,7 @@ static inline int is_valid_elf32(char *buf, short type)
 #define EDT_TEXTREL 22
 #define EDT_JMPREL  23
 
-#define SHN_COMMON 0xFF02
-#define SHN_ABS    0xFF01
-
-
-#define ELF_R_NONE     0
-#define ELF_R_32       1
-#define ELF_R_PC32     2
-#define ELF_R_GOT32    3
-#define ELF_R_PLT32    4
-#define ELF_R_COPY     5
-#define ELF_R_GLOBDAT  6
-#define ELF_R_JMPSLOT  7
-#define ELF_R_RELATIVE 8
-#define ELF_R_GOTOFF   9
-#define ELF_R_GOTPC   10
-
-#define ELF_R_SYM(i)  ((i)>>8)
-#define ELF_R_TYPE(i) ((unsigned char)(i))
-#define ELF32_ST_TYPE(i) ((i)&0xf)
+#define ELF_ST_TYPE(i) ((i)&0xf)
 typedef struct {
 	uint16_t d_tag;
 	union {

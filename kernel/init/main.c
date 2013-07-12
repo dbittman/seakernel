@@ -123,7 +123,10 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	init_syscalls();
 	load_initrd(mtboot);
 	install_timer(1000);
-	
+#if CONFIG_ARCH == TYPE_ARCH_X86_64
+	asm("sti");
+	for(;;);
+#endif
 	pm_init(placement, mtboot);
 	init_main_cpu();
 	

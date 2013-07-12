@@ -108,9 +108,9 @@ extern void ipi_tlb();
 #endif
 
 void init_descriptor_tables(void);
-void set_kernel_stack(tss_entry_t *, u32int stack);
+void set_kernel_stack(tss_entry_t *, u64int stack);
 void load_doublefault_system(void);
-void write_tss(gdt_entry_t *, tss_entry_t *, s32int num, u16int ss0, u32int esp0);
+void write_tss(gdt_entry_t *, tss_entry_t *, s32int num, u16int ss0, u64int esp0);
 void gdt_set_gate(gdt_entry_t *, s32int,u32int,u32int,u8int,u8int);
 void idt_set_gate(u8int,u64int,u16int,u8int);
 void mask_pic_int(unsigned char irq, int mask);

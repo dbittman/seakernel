@@ -6,7 +6,6 @@
 #include <cpu.h>
 #include <atomic.h>
 volatile page_dir_t *kernel_dir=0;
-unsigned int cr0temp;
 int id_tables=0;
 struct pd_data *pd_cur_data = (struct pd_data *)PDIR_DATA;
 extern void id_map_apic(page_dir_t *);
@@ -19,66 +18,27 @@ void vm_init(addr_t id_map_to)
 
 	/* Create kernel directory. 
 	 * This includes looping upon itself for self-reference */
-	page_dir_t *pd;
-	pd = (page_dir_t *)pm_alloc_page();
-	memset(pd, 0, 0x1000);
-	pd[1022] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
-	unsigned int *pt = (unsigned int *)(pd[1022] & PAGE_MASK);
-	memset(pt, 0, 0x1000);
-	pt[1023] = (unsigned int) pd | PAGE_PRESENT | PAGE_WRITE;
-	pd[1023] = (unsigned int) pd | PAGE_PRESENT | PAGE_WRITE;
+	
 	/* we don't create an accounting page for this one, since this page directory is only
 	 * temporary */
+	
 	/* Identity map the kernel */
-	unsigned mapper=0, i;
-	while(mapper <= PAGE_DIR_IDX(((id_map_to&PAGE_MASK)+0x1000)/0x1000)) {
-		pd[mapper] = pm_alloc_page() | PAGE_PRESENT | PAGE_USER;
-		pt = (unsigned int *)(pd[mapper] & PAGE_MASK);
-		memset(pt, 0, 0x1000);
-		/* we map as user for now, since the init() function runs in
-		 * ring0 for a short amount of time and needs read access to the
-		 * kernel code. This is later re-mapped by the kernel idle 
-		 * process with proper protection flags */
-		for(i=0;i<1024;i++)
-			pt[i] = (mapper*1024*0x1000 + 0x1000*i) | PAGE_PRESENT 
-						| PAGE_USER;
-		mapper++;
-	}
-	id_tables=mapper;
+	
 #if CONFIG_SMP
 	id_map_apic(pd);
 #endif
 	/* map in the signal return inject code. we need to do this, because
 	 * user code may not run the the kernel area of the page directory */
-	unsigned sig_pdi = PAGE_DIR_IDX(SIGNAL_INJECT / PAGE_SIZE);
-	unsigned sig_tbi = PAGE_TABLE_IDX(SIGNAL_INJECT / PAGE_SIZE);
-	assert(!pd[sig_pdi]);
-	pd[sig_pdi] = ((unsigned)(pt=(unsigned *)pm_alloc_page()) | PAGE_PRESENT | PAGE_USER);
-	memset(pt, 0, 0x1000);
-	pt[sig_tbi] = (unsigned)pm_alloc_page() | PAGE_PRESENT | PAGE_USER;
-	memcpy((void *)(pt[sig_tbi] & PAGE_MASK), (void *)signal_return_injector, SIGNAL_INJECT_SIZE);
+	
 	/* Pre-map the heap's tables */
-	unsigned heap_pd_idx = PAGE_DIR_IDX(KMALLOC_ADDR_START / 0x1000);
-	for(i=heap_pd_idx;i<(int)PAGE_DIR_IDX(KMALLOC_ADDR_END / 0x1000);i++)
-	{
-		pd[i] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
-		pt = (unsigned int *)(pd[i] & PAGE_MASK);
-		memset(pt, 0, 0x1000);
-	}
+	
 	/* Now map in the physical page stack so we have memory to use */
-	for(i=PAGE_DIR_IDX((PM_STACK_ADDR/0x1000));
-		i<(int)PAGE_DIR_IDX(PM_STACK_ADDR_TOP/0x1000);i++)
-	{
-		pd[i] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
-		pt = (unsigned int *)(pd[i] & PAGE_MASK);
-		memset(pt, 0, 0x1000);
-	}
 	
 	/* CR3 requires the physical address, so we directly 
 	 * set it because we have the physical address */
-	//__asm__ volatile ("mov %0, %%cr3" : : "r" (pd));
-	/* Enable */
-	//enable_paging();
+	
+	/* Enable paging */
+	
 	set_ksf(KSF_PAGING);
 	memset(0, 0, 0x1000);
 }

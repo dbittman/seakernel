@@ -64,7 +64,7 @@ int scroll_display(vterm_t *con, int count)
  * 2: whole */
 int tty_Kclear(vterm_t *con, int d)
 {
-	unsigned a = (unsigned)con->rend.scroll;
+	addr_t a = (addr_t)con->rend.scroll;
 	con->rend.scroll=0;
 	int t=0;
 	con->no_wrap=1;
@@ -108,7 +108,7 @@ int tty_Kclear(vterm_t *con, int d)
  */
 int tty_Jclear(vterm_t *con, int d)
 {
-	unsigned a = (unsigned)con->rend.scroll;
+	addr_t a = (addr_t)con->rend.scroll;
 	int x = con->x;
 	int y = con->y;
 	if(d == 2 || (d == 0 && con->y==0))

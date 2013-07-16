@@ -43,8 +43,8 @@ void parse_kernel_cmd(char *buf)
 	{
 		tmp = strchr(current, ' ');
 		memset(a, 0, 128);
-		unsigned len = (unsigned)tmp ? (unsigned)(tmp-current) 
-				: (unsigned)strlen(current);
+		addr_t len = (addr_t)tmp ? (addr_t)(tmp-current) 
+			: (addr_t)strlen(current);
 		strncpy(a, current, len >= 128 ? 127 : len);
 		if(!argc)
 		{
@@ -134,7 +134,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	printk(1, "[kernel]: Starting system management\n");
 	init_memory(mtboot);
 	console_init_stage2();
-	parse_kernel_cmd((char *)mtboot->cmdline);
+	parse_kernel_cmd((char *)(addr_t)mtboot->cmdline);
 	init_multitasking();
 	init_cache();
 	init_dm();

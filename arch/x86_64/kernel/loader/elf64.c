@@ -12,7 +12,7 @@ elf32_t parse_kernel_elf(struct multiboot *mb, elf32_t *a)
 	
 }
 
-int process_elf(char *mem, int fp, unsigned *start, unsigned *end)
+int process_elf(char *mem, int fp, addr_t *start, addr_t *end)
 {
 	
 }

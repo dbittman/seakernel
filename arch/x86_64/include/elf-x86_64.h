@@ -166,7 +166,7 @@ extern elf32_t kernel_elf;
 const char *elf64_lookup_symbol (uint32_t addr, elf32_t *elf);
 elf32_symtab_entry_t * fill_symbol_struct(uint8_t * buf, uint32_t symbol);
 intptr_t get_section_offset(uint8_t * buf, uint32_t info);
-int process_elf(char *mem, int fp, unsigned *start, unsigned *end);
+int process_elf(char *mem, int fp, addr_t *start, addr_t *end);
 unsigned long long get_epoch_time();
 void remove_dfs_node(char *name);
 int kernel_cache_sync_slow(int all);

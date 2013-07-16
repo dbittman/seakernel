@@ -35,7 +35,8 @@ void free_dp(char **mem, int num)
 
 int do_exec(task_t *t, char *path, char **argv, char **env)
 {
-	unsigned int end, i=0, eip=0;
+	unsigned int i=0;
+	addr_t end, eip;
 	unsigned int argc=0, envc=0;
 	int desc;
 	int err = 0;
@@ -132,14 +133,14 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	if(EXEC_LOG == 2) 
 		printk(0, "[%d]: Updating task values\n", t->pid);
 	/* Setup the task with the proper values (libc malloc stack) */
-	unsigned end_l = end;
+	addr_t end_l = end;
 	end = (end&PAGE_MASK);
 	user_map_if_not_mapped_noclear(end);
 	/* now we need to copy back the args and env into userspace
 	 * writeable memory...yippie. */
-	unsigned args_start = end + PAGE_SIZE;
-	unsigned env_start = args_start;
-	unsigned alen = 0;
+	addr_t args_start = end + PAGE_SIZE;
+	addr_t env_start = args_start;
+	addr_t alen = 0;
 	if(backup_argv) {
 		user_map_if_not_mapped_noclear(args_start);
 		memcpy((void *)args_start, backup_argv, sizeof(addr_t) * argc);
@@ -151,9 +152,9 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 		{
 			char *old = argv[i];
 			char *new = (char *)(args_start+alen);
-			user_map_if_not_mapped_noclear((unsigned)new);
+			user_map_if_not_mapped_noclear((addr_t)new);
 			unsigned len = strlen(old) + 4;
-			user_map_if_not_mapped_noclear((unsigned)new + len + 1);
+			user_map_if_not_mapped_noclear((addr_t)new + len + 1);
 			argv[i] = new;
 			_strcpy(new, old);
 			kfree(old);
@@ -174,9 +175,9 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 		{
 			char *old = env[i];
 			char *new = (char *)(env_start+alen);
-			user_map_if_not_mapped_noclear((unsigned)new);
+			user_map_if_not_mapped_noclear((addr_t)new);
 			unsigned len = strlen(old) + 1;
-			user_map_if_not_mapped_noclear((unsigned)new + len + 1);
+			user_map_if_not_mapped_noclear((addr_t)new + len + 1);
 			env[i] = new;
 			_strcpy(new, old);
 			kfree(old);

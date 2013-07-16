@@ -12,7 +12,7 @@
 #include <cpu.h>
 #include <multiboot.h>
 
-int process_elf32_phdr(char *mem, int fp, unsigned *start, unsigned *end)
+int process_elf32_phdr(char *mem, int fp, addr_t *start, addr_t *end)
 {
 	uint32_t i, x;
 	uint32_t entry;

@@ -3,36 +3,9 @@
 #include <task.h>
 #include <fs.h>
 
-/* these are deprecated, so don't use them. This whole file needs re-writing... */
-#define lock_scheduler() 
-#define unlock_scheduler() 
-
-void add_mmf(task_t *t, mmf_t *mf)
-{
-	mmf_t *o = t->mm_files;
-	t->mm_files = mf;
-	mf->prev=0;
-	mf->next = o;
-	if(o)
-		o->prev=mf;
-}
-
-void remove_mmf(mmf_t *mf)
-{
-	task_t *t = (task_t *)current_task;
-	if(mf->prev)
-		mf->prev->next = mf->next;
-	else
-		t->mm_files=mf->next;
-	if(mf->next)
-		mf->next->prev = mf->prev;
-	if(!(mf->flags & MAP_SHARED) || !mf->count)
-		kfree(mf->count);
-	kfree(mf);
-}
-
 unsigned sys_mmap(void *addr, void *str, int prot, int flags, int fildes)
 {
+#if 0
 	if(!str)
 		return EINVAL;
 	struct mmapblock {
@@ -94,6 +67,8 @@ unsigned sys_mmap(void *addr, void *str, int prot, int flags, int fildes)
 	add_mmf((task_t *)current_task, mf);
 	fput((task_t *)current_task, fildes, 0);
 	return node->addr;
+#endif
+	return 0;
 }
 
 mmf_t *find_mmf(task_t *t, vnode_t *n)
@@ -106,6 +81,7 @@ mmf_t *find_mmf(task_t *t, vnode_t *n)
 
 void flush_mmf(mmf_t *m, int un_map, unsigned off, unsigned addr, unsigned end)
 {
+#if 0
 	struct file *fil = get_file_pointer((task_t *)current_task, m->fd);
 	if(!fil)
 		return;
@@ -126,19 +102,21 @@ void flush_mmf(mmf_t *m, int un_map, unsigned off, unsigned addr, unsigned end)
 		addr += PAGE_SIZE;
 	}
 	fput((task_t *)current_task, m->fd, 0);
+#endif
 }
 
 int change_count(mmf_t *mf, int ch)
 {
-	lock_scheduler();
+	
 	*mf->count += ch;
 	int r = *mf->count;
-	unlock_scheduler();
+	
 	return r;
 }
 
 int sys_munmap(void *ptr, unsigned sz)
 {
+	#if 0
 	if(!ptr)
 		return -EINVAL;
 	ptr = (void *)((unsigned)ptr & PAGE_MASK);
@@ -162,6 +140,8 @@ int sys_munmap(void *ptr, unsigned sz)
 		remove_mmf(mf);
 		remove_vmem_area(v, vn);
 	}
+	return 0;
+#endif
 	return 0;
 }
 
@@ -189,6 +169,7 @@ void check_mmf_and_flush(task_t *t, int fd)
 
 void copy_mmf(task_t *old, task_t *new)
 {
+	#if 0
 	/* This will increase the count of all shared MMFs */
 	mmf_t *mf = old->mm_files;
 	while(mf)
@@ -204,10 +185,12 @@ void copy_mmf(task_t *old, task_t *new)
 		add_mmf(new, n);
 		mf = mf->next;
 	}
+#endif
 }
 
 int pfault_mmf_check(unsigned err, unsigned addr)
 {
+	#if 0
 	mmf_t *mf = current_task->mm_files;
 	vma_t *v   = current_task->mmf_priv_space;
 	vnode_t *n = find_vmem_area(v, addr);
@@ -235,10 +218,13 @@ int pfault_mmf_check(unsigned err, unsigned addr)
 	int off = (addr&PAGE_MASK) - n->addr;
 	do_sys_read_flags(fil, mf->off + off, (char *)(addr&PAGE_MASK), PAGE_SIZE);
 	return 1;
+#endif
+	return 0;
 }
 
 void clear_mmfiles(task_t *t, int exiting)
 {
+	#if 0
 	/* If we are exiting, we decrease the count of shared MMFs
 	 * and we always remove private MMFs */
 	/* Then free the mmf_*_space */
@@ -275,6 +261,7 @@ void clear_mmfiles(task_t *t, int exiting)
 		mf=n;
 	}
 	kfree(t->mmf_priv_space);
+	#endif
 }
 
 void mmf_sync()

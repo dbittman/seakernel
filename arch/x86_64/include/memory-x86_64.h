@@ -37,6 +37,6 @@ __asm__ volatile ("mov %0, %%cr0" : : "r" (cr0temp));
 __asm__ __volatile__("mov %%cr3,%%rax\n\tmov %%rax,%%cr3": : :"ax", "eax", "rax")
 */
 
-#define current_task ((kernel_state_flags&KSF_MMU) ? ((task_t *)(addr_t)page_directory[PAGE_DIR_IDX(SMP_CUR_TASK/PAGE_SIZE)]) : 0)
+#define current_task ((kernel_state_flags&KSF_MMU) ? ((task_t *)(addr_t)0) : 0)
 
 #endif

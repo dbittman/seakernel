@@ -7,6 +7,36 @@
 #include <memory.h>
 #include <task.h>
 
+static vnode_t *get_node_insert_location(vma_t *v, unsigned num_p)
+{
+	vnode_t *n = (vnode_t *)v->first;
+	while(n && (addr_t)n < (v->addr + v->num_ipages*PAGE_SIZE))
+	{
+		if((n->addr + n->num_pages*PAGE_SIZE) + num_p*PAGE_SIZE >= v->max)
+			return 0;
+		if(n->next)
+		{
+			if(n->next->addr <= n->addr)
+				panic(PANIC_MEM | PANIC_NOSYNC, "vmem alloc index not sorted "
+												"(virtual memory corrupted)!");
+			if(((n->next->addr - 
+					(n->addr + n->num_pages*PAGE_SIZE)) / PAGE_SIZE) >= num_p)
+				break;
+		} else
+		{
+			/* Do we have room for one more? */
+			if((((addr_t)n + sizeof(vnode_t)) > 
+					(v->addr+v->num_ipages*PAGE_SIZE)))
+				return 0;
+			break;
+		}
+		n=n->next;
+	}
+	if((addr_t)n >= (v->addr + v->num_ipages*PAGE_SIZE))
+		return 0;
+	return n;
+}
+
 vnode_t *insert_vmem_area(vma_t *v, unsigned num_p)
 {
 	assert(v && num_p);
@@ -14,7 +44,7 @@ vnode_t *insert_vmem_area(vma_t *v, unsigned num_p)
 		return 0;
 	mutex_acquire(&v->lock);
 	vnode_t *n = (vnode_t *)v->first;
-	vnode_t *new=0;
+	vnode_t *newn=0;
 	if(!n)
 	{
 		assert(!v->nodes[0]);
@@ -24,57 +54,32 @@ vnode_t *insert_vmem_area(vma_t *v, unsigned num_p)
 		n->num_pages = num_p;
 		n->next=0;
 		v->nodes[0]=1;
-		new=n;
+		newn=n;
 		v->first = n;
 	} else
 	{
-		while(n && (addr_t)n < (v->addr + v->num_ipages*PAGE_SIZE))
-		{
-			if((n->addr + n->num_pages*PAGE_SIZE) + num_p*PAGE_SIZE >= v->max) {
-				mutex_release(&v->lock);
-				return 0;
-			}
-			if(n->next)
-			{
-				if(n->next->addr <= n->addr)
-					panic(PANIC_MEM | PANIC_NOSYNC, "vmem alloc index not sorted (virtual memory corrupted)!");
-				if(((n->next->addr - 
-						(n->addr + n->num_pages*PAGE_SIZE)) / PAGE_SIZE) >= num_p)
-					break;
-			} else
-			{
-				/* Do we have room for one more? */
-				if((((addr_t)n + sizeof(vnode_t)) > 
-						(v->addr+v->num_ipages*PAGE_SIZE))) {
-					mutex_release(&v->lock);
-					return 0;
-				}
-				break;
-			}
-			n=n->next;
-		}
-		if((addr_t)n >= (v->addr + v->num_ipages*PAGE_SIZE)) {
-			mutex_release(&v->lock);
-			return 0;
-		}
+		n = get_node_insert_location(v, num_p);
+		if(!n) 
+			goto out;
 		/* n is the node to insert after. */
 		unsigned i=0;
 		while(i < NUM_NODES(v) && v->nodes[i]) ++i;
 		assert(i<NUM_NODES(v));
 		v->nodes[i]=1;
-		new = (vnode_t *)(v->addr + i*sizeof(vnode_t));
-		memset(new, 0, sizeof(vnode_t));
-		new->next = n->next;
-		n->next = new;
-		new->num_pages = num_p;
-		new->addr = n->addr + n->num_pages * PAGE_SIZE;
-		if(new->next)
-			assert(new->num_pages * PAGE_SIZE + new->addr <= new->next->addr);
+		newn = (vnode_t *)(v->addr + i*sizeof(vnode_t));
+		memset(newn, 0, sizeof(vnode_t));
+		newn->next = n->next;
+		n->next = newn;
+		newn->num_pages = num_p;
+		newn->addr = n->addr + n->num_pages * PAGE_SIZE;
+		if(newn->next)
+			assert(newn->num_pages * PAGE_SIZE + newn->addr <= newn->next->addr);
 		assert(n->num_pages * PAGE_SIZE + n->addr <= n->next->addr);
 	}
 	v->used_nodes++;
+	out:
 	mutex_release(&v->lock);
-	return new;
+	return newn;
 }
 
 int remove_vmem_area(vma_t *v, vnode_t *n)

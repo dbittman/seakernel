@@ -21,11 +21,12 @@ inline void set_kernel_stack(tss_entry_t *tss, u64int stack)
 
 void write_tss(gdt_entry_t *gdt, tss_entry_t *tss, s32int num, u16int ss0, u64int esp0)
 {
-	/* TSS must reside in lower 4GB... */
-	u32int base = (u32int)((u64int)tss & 0xFFFFFFFF);
-	u32int limit = base + sizeof(tss_entry_t);
-#warning "Not sure if this should be 0 or A"
-	gdt_set_gate(gdt, num, base, limit, 0xE9, 0xA);
+	u64int base = (u64int)tss;
+	u32int limit = sizeof(tss_entry_t);
+	gdt_set_gate(gdt, num, base, limit, 0xE9, 0);
+	/* TSS in x86_64 takes up two descriptors, with the lower 4 bytes of the next
+	 * one being the remaining 32 bits of the base address */
+	gdt_set_gate(gdt, num+1, (base >> 48) & 0xFFFF, (base >> 32) & 0xFFFF, 0, 0);
 	memset(tss, 0, sizeof(tss_entry_t));
 	tss->ss0  = ss0;  // Set the kernel stack segment.
 	tss->esp0 = esp0; // Set the kernel stack pointer.

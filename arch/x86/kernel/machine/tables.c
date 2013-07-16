@@ -22,7 +22,7 @@ inline void set_kernel_stack(tss_entry_t *tss, u32int stack)
 void write_tss(gdt_entry_t *gdt, tss_entry_t *tss, s32int num, u16int ss0, u32int esp0)
 {
 	u32int base = (u32int)tss;
-	u32int limit = base + sizeof(tss_entry_t);
+	u32int limit = sizeof(tss_entry_t);
 	gdt_set_gate(gdt, num, base, limit, 0xE9, 0);
 	memset(tss, 0, sizeof(tss_entry_t));
 	tss->ss0  = ss0;  // Set the kernel stack segment.

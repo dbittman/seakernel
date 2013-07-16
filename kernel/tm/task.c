@@ -24,7 +24,7 @@ void init_multitasking()
 	task_t *task = (task_t *)kmalloc(sizeof(task_t));
 	/* make this the "current_task" by assigning a specific location
 	 * in the page directory as the pointer to the task. */
-	page_directory[PAGE_DIR_IDX(SMP_CUR_TASK / PAGE_SIZE)] = (unsigned)task;
+	arch_specific_set_current_task(page_directory, (addr_t)task);
 	/* alarm_mutex is aquired inside a kernel tick, so we may not schedule. */
 	alarm_mutex = mutex_create(0, MT_NOSCHED);
 	task->pid = next_pid++;
@@ -66,7 +66,7 @@ void init_multitasking()
  #if CONFIG_SMP
 	add_kernel_symbol(get_cpu);
  #endif
-	_add_kernel_symbol((unsigned)(task_t **)&kernel_task, "kernel_task");
+	_add_kernel_symbol((addr_t)(task_t **)&kernel_task, "kernel_task");
 #endif
 }
 

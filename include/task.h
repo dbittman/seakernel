@@ -160,15 +160,16 @@ extern mutex_t *alarm_mutex;
 
 void destroy_task_page_directory(task_t *p);
 
-task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned value, void (*action)(task_t *, int), int arg, int *);
+task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned long value, void (*action)(task_t *, int), int arg, int *);
 void delay_sleep(int t);
 void take_issue_with_current_task();
 void clear_resources(task_t *);
 int times(struct tms *buf);
 void run_scheduler();
+void arch_specific_set_current_task(page_dir_t *, addr_t);
 extern volatile long ticks;
-int set_gid(int new);
-int set_uid(int new);
+int set_gid(int);
+int set_uid(int);
 void release_mutexes(task_t *t);
 int get_gid();
 int get_uid();
@@ -224,7 +225,7 @@ int sys_setpgid(int a, int b);
 void task_suicide();
 extern unsigned ret_values_size;
 extern unsigned *ret_values;
-void set_signal(int sig, unsigned hand);
+void set_signal(int sig, addr_t hand);
 int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds, 
 	struct timeval *timeout);
 int swap_in_page(task_t *, unsigned);

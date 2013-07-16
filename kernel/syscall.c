@@ -124,7 +124,7 @@ void init_syscalls()
 }
 static inline int __is_valid_user_ptr(void *p, char flags)
 {
-	unsigned addr = (unsigned)p;
+	addr_t addr = (addr_t)p;
 	if(!addr && !flags) return 0;
 	if(addr < TOP_LOWER_KERNEL && addr) {
 		#if DEBUG

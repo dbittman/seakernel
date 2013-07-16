@@ -113,7 +113,7 @@ int send_signal(int p, int s)
 	return do_send_signal(p, s, 0);
 }
 
-void set_signal(int sig, unsigned hand)
+void set_signal(int sig, addr_t hand)
 {
 	assert(current_task);
 	if(sig > 128)

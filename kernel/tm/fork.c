@@ -128,7 +128,7 @@ int do_fork(unsigned flags)
 	 * this is a fast and easy way to store the "what task am I" data
 	 * that gets automatically updated when the scheduler switches
 	 * into a new address space */
-	newspace[PAGE_DIR_IDX(SMP_CUR_TASK/PAGE_SIZE)] = (unsigned)task;
+	arch_specific_set_current_task(newspace, (addr_t)task);
 	/* Create the new task structure */
 	task_t *parent = (task_t *)current_task;
 	task->pd = newspace;

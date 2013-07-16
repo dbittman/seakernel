@@ -39,7 +39,7 @@ int do_map_page(addr_t addr, unsigned attr)
 	return 1;
 }
 
-int map_in_page(unsigned int cr2, unsigned err_code)
+int map_in_page(unsigned long cr2, unsigned err_code)
 {
 	if(cr2 >= current_task->heap_start && cr2 <= current_task->heap_end) {
 		do_map_page(cr2, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
@@ -54,8 +54,8 @@ int map_in_page(unsigned int cr2, unsigned err_code)
 void page_fault(registers_t *regs)
 {
 	current_task->regs=0;
-	uint32_t cr2, err_code = regs->err_code;
-	//__asm__ volatile ("mov %%cr2, %0" : "=r" (cr2));
+	uint64_t cr2, err_code = regs->err_code;
+	__asm__ volatile ("mov %%cr2, %0" : "=r" (cr2));
 	if(USER_TASK) {
 		/* if we were in a user-space task, we can actually just
 		 * pretend to be a second-stage interrupt handler. */

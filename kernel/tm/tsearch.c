@@ -14,7 +14,7 @@
 /* assumes that the passed task queue contains
  * elements of task_t.
  */
-task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned value, void (*action)(task_t *, int), int arg, int *count)
+task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned long value, void (*action)(task_t *, int), int arg, int *count)
 {
 	int old = set_int(0);
 	mutex_acquire(&tq->lock);
@@ -26,23 +26,23 @@ task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned value, void (*actio
 		{
 			FOUND_ACTION
 		}
-		if(flags & TSEARCH_UID && (unsigned)tmp->thread->uid == value)
+		if(flags & TSEARCH_UID && (unsigned long)tmp->thread->uid == value)
 		{
 			FOUND_ACTION
 		}
-		if(flags & TSEARCH_EUID && (unsigned)tmp->thread->_uid == value)
+		if(flags & TSEARCH_EUID && (unsigned long)tmp->thread->_uid == value)
 		{
 			FOUND_ACTION
 		}
-		if(flags & TSEARCH_TTY && (unsigned)tmp->tty == value)
+		if(flags & TSEARCH_TTY && (unsigned long)tmp->tty == value)
 		{
 			FOUND_ACTION
 		}
-		if(flags & TSEARCH_EUID && (unsigned)tmp->thread->_uid == value)
+		if(flags & TSEARCH_EUID && (unsigned long)tmp->thread->_uid == value)
 		{
 			FOUND_ACTION
 		}
-		if(flags & TSEARCH_PARENT && (unsigned)tmp->parent == value)
+		if(flags & TSEARCH_PARENT && (unsigned long)tmp->parent == value)
 		{
 			FOUND_ACTION
 		}

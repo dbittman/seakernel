@@ -65,7 +65,7 @@ void free_slab(slab_t *slab)
 	pages_used -= slab->num_pages;
 	vnode_t *t = slab->vnode;
 	addr_t j;
-	addr_t addr = (unsigned)slab;
+	addr_t addr = (addr_t)slab;
 	for(j=addr;j<(addr + num_pages*PAGE_SIZE);j+=PAGE_SIZE) {
 		if(vm_getmap(j, 0))
 			vm_unmap(j);
@@ -481,7 +481,7 @@ addr_t do_kmalloc_slab(unsigned sz, char align)
 
 void do_kfree_slab(void *ptr)
 {
-	if(!((unsigned)ptr >= slab_start && (unsigned)ptr < slab_end))
+	if(!((addr_t)ptr >= slab_start && (addr_t)ptr < slab_end))
 	{
 		panic(PANIC_NOSYNC, "kfree got invalid address %x, pid=%d, sys=%d\n", 
 			ptr, current_task ? current_task->pid : 0, 

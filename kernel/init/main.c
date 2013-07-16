@@ -123,15 +123,15 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	init_syscalls();
 	load_initrd(mtboot);
 	install_timer(1000);
-#if CONFIG_ARCH == TYPE_ARCH_X86_64
-	asm("sti");
-	for(;;);
-#endif
 	pm_init(placement, mtboot);
 	init_main_cpu();
-	
+
 	/* Now get the management stuff going */
 	printk(1, "[kernel]: Starting system management\n");
+	#if CONFIG_ARCH == TYPE_ARCH_X86_64
+	asm("sti");
+	for(;;);
+	#endif	
 	init_memory(mtboot);
 	console_init_stage2();
 	parse_kernel_cmd((char *)(addr_t)mtboot->cmdline);

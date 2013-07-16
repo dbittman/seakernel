@@ -4,6 +4,9 @@
 #include <tss-x86_64.h>
 #include <config.h>
 
+/* in 64 bit mode, the TSS takes up 16 bytes (so we need an extra descriptor) */
+#define NUM_GDT_ENTRIES 7
+
 struct gdt_entry_struct
 {
 	u16int limit_low;

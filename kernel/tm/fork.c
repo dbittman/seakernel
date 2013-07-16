@@ -47,7 +47,7 @@ void copy_task_struct(task_t *task, task_t *parent, char share_thread_data)
 	task->system = parent->system;
 	task->cmask = parent->cmask;
 	task->path_loc_start = parent->path_loc_start;
-	task->kernel_stack = kmalloc(KERN_STACK_SIZE+8);
+	task->kernel_stack = (addr_t)kmalloc(KERN_STACK_SIZE+8);
 	if(parent->mmf_priv_space) {
 		task->mmf_priv_space = (vma_t *)kmalloc(sizeof(vma_t));
 		memcpy(task->mmf_priv_space, parent->mmf_priv_space, sizeof(vma_t));

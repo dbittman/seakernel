@@ -75,7 +75,7 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	task->pid = add_atomic(&next_pid, 1)-1;
 	task->pd = (page_dir_t *)cpu->kd;
 	task->stack_end=STACK_LOCATION;
-	task->kernel_stack = kmalloc(KERN_STACK_SIZE);
+	task->kernel_stack = (addr_t)kmalloc(KERN_STACK_SIZE);
 	task->priority = 1;
 	task->magic = TASK_MAGIC;
 	cpu->active_queue = tqueue_create(0, 0);

@@ -19,7 +19,7 @@ void install_kmalloc(char *name, unsigned (*init)(addr_t, addr_t),
 		init(KMALLOC_ADDR_START, KMALLOC_ADDR_END);
 }
 
-inline addr_t do_kmalloc(unsigned sz, char align)
+addr_t do_kmalloc(unsigned sz, char align)
 {
 	if(!do_kmalloc_wrap)
 		panic(PANIC_MEM | PANIC_NOSYNC, "No kernel-level allocator installed!");
@@ -32,30 +32,30 @@ inline addr_t do_kmalloc(unsigned sz, char align)
 	return ret;
 }
 
-addr_t __kmalloc(unsigned s, char *file, int line)
+void *__kmalloc(unsigned s, char *file, int line)
 {
-	return do_kmalloc(s, 0);
+	return (void *)do_kmalloc(s, 0);
 }
 
-addr_t kmalloc_a(unsigned s)
+void *kmalloc_a(unsigned s)
 {
-	return do_kmalloc(s, 1);
+	return (void *)do_kmalloc(s, 1);
 }
 
-addr_t kmalloc_p(unsigned s, addr_t *p)
+void *kmalloc_p(unsigned s, addr_t *p)
 {
 	addr_t ret = do_kmalloc(s, 0);
 	vm_getmap(ret, p);
 	*p += ret%PAGE_SIZE;
-	return ret;
+	return (void *)ret;
 }
 
-addr_t kmalloc_ap(unsigned s, addr_t *p)
+void *kmalloc_ap(unsigned s, addr_t *p)
 {
 	addr_t ret = do_kmalloc(s, 1);
 	vm_getmap(ret, p);
 	*p += ret%PAGE_SIZE;
-	return ret;
+	return (void *)ret;
 }
 
 void kfree(void *pt)

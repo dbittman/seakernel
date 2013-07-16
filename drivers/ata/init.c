@@ -129,7 +129,7 @@ void allocate_dma(struct ata_controller *cont)
 	addr_t buf;
 	addr_t p;
 	if(!cont->prdt_virt) {
-		buf = kmalloc_ap(0x1000, &p);
+		buf = (addr_t)kmalloc_ap(0x1000, &p);
 		cont->prdt_virt = (uint64_t *)buf;
 		cont->prdt_phys = p;
 	}

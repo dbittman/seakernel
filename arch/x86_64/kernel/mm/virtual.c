@@ -16,13 +16,30 @@ void vm_init(addr_t id_map_to)
 	/* Register some stuff... */
 	register_interrupt_handler (14, (isr_t)&page_fault, 0);
 
-	/* Create kernel directory. 
-	 * This includes looping upon itself for self-reference */
-	
-	/* we don't create an accounting page for this one, since this page directory is only
-	 * temporary */
-	
+	/* Create kernel directory */
+	pml4_t *pml4 = (addr_t *)pm_alloc_page();
+	memset(pml4, 0, 0x1000);
 	/* Identity map the kernel */
+	pml4[0] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+	pdpt_t *pdpt = (addr_t *)(pml4[0] & PAGE_MASK);
+	pdpt[0] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+	page_dir_t *pd = (addr_t *)(pdpt[0] & PAGE_MASK);
+	pd[0] = (addr_t)(pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE);
+	pd[1] = (addr_t)(pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE);
+	pd[2] = (addr_t)(pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE);
+	pd[3] = (addr_t)(pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE);
+	
+	page_dir_t *pt;
+	addr_t address = 0;
+	for(int pdi = 0; pdi < 4; pdi++)
+	{
+		pt = (addr_t *)(pd[pdi] & PAGE_MASK);
+		for(int t = 0; t < 512; t++)
+		{
+			pt[t] = address | PAGE_PRESENT | PAGE_WRITE;
+			address += 0x1000;
+		}
+	}
 	
 #if CONFIG_SMP
 	id_map_apic(pd);
@@ -36,9 +53,11 @@ void vm_init(addr_t id_map_to)
 	
 	/* CR3 requires the physical address, so we directly 
 	 * set it because we have the physical address */
-	
+	printk(0, "Setting new CR3...\n");
+	asm("mov %0, %%cr3"::"r"(pml4));
 	/* Enable paging */
-	
+	printk(0, "Paging enabled!\n");
+	for(;;);
 	set_ksf(KSF_PAGING);
 	memset(0, 0, 0x1000);
 }

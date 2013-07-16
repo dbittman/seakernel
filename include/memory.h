@@ -13,7 +13,7 @@
 
 #define page_directory ((unsigned *)DIR_PHYS)
 #define page_tables ((unsigned *)TBL_PHYS)
-typedef unsigned int page_dir_t;
+typedef addr_t page_dir_t, page_table_t, pml4_t, pdpt_t;
 
 struct pd_data {
 	unsigned count;

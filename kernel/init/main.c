@@ -128,11 +128,12 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 
 	/* Now get the management stuff going */
 	printk(1, "[kernel]: Starting system management\n");
+
+	init_memory(mtboot);
 	#if CONFIG_ARCH == TYPE_ARCH_X86_64
 	asm("sti");
 	for(;;);
 	#endif	
-	init_memory(mtboot);
 	console_init_stage2();
 	parse_kernel_cmd((char *)(addr_t)mtboot->cmdline);
 	init_multitasking();

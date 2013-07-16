@@ -80,7 +80,7 @@ int atapi_rw_main(int rw, int dev, u64 blk_, char *buf)
 	return ret;
 }
 
-int ioctl_atapi(int min, int cmd, int arg)
+int ioctl_atapi(int min, int cmd, long arg)
 {
 	
 	return 0;

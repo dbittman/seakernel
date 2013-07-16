@@ -163,10 +163,10 @@ struct pci_config_space *get_pci_config(int bus, int dev, int func)
 		int i;
 		for(i=0;i<64;i+=16)
 		{
-			*(uint32_t*)((size_t)pcs + i) = pci_read_dword(bus, dev, func, i);
-			*(uint32_t*)((size_t)pcs + i + 4) = pci_read_dword(bus, dev, func, i + 4);
-			*(uint32_t*)((size_t)pcs + i + 8) = pci_read_dword(bus, dev, func, i + 8);
-			*(uint32_t*)((size_t)pcs + i + 12) = pci_read_dword(bus, dev, func, i + 12);
+			*(uint32_t*)((addr_t)pcs + i) = pci_read_dword(bus, dev, func, i);
+			*(uint32_t*)((addr_t)pcs + i + 4) = pci_read_dword(bus, dev, func, i + 4);
+			*(uint32_t*)((addr_t)pcs + i + 8) = pci_read_dword(bus, dev, func, i + 8);
+			*(uint32_t*)((addr_t)pcs + i + 12) = pci_read_dword(bus, dev, func, i + 12);
 		}
 		if(pcs->class_code < 13 && pcs->subclass != 0x80) {
 			printk(PCI_LOGLEVEL, "[pci]: [%3.3d:%2.2d:%d] Vendor %4.4x, Device %4.4x: %s %s\n", 

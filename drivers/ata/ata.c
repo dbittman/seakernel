@@ -39,7 +39,7 @@ int ata_rw_main(int rw, int dev, u64 blk, char *buf)
 	return ata_rw_multiple(rw, dev, blk, buf, 1);
 }
 
-int ioctl_ata(int min, int cmd, int arg)
+int ioctl_ata(int min, int cmd, long arg)
 {
 	int part;
 	struct ata_device *device = get_ata_device(min, &part);

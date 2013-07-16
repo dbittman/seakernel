@@ -104,7 +104,7 @@ int loop_down(int num)
  * 7: create new loop device (arg = number)
 */
 
-int ioctl_main(int min, int cmd, int arg)
+int ioctl_main(int min, int cmd, long arg)
 {
 	struct loop_device *loop;
 	switch(cmd) {

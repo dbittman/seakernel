@@ -88,7 +88,7 @@ int create_device(struct ata_controller *cont, struct ata_device *dev, char *nod
 
 int read_partitions(struct ata_controller *cont, struct ata_device *dev, char *node)
 {
-	unsigned p = find_kernel_function("enumerate_partitions");
+	addr_t p = find_kernel_function("enumerate_partitions");
 	if(!p)
 		return 0;
 	int d = 3*256 + cont->id * 2 + dev->id;

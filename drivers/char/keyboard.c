@@ -317,14 +317,14 @@ void do_keyboard_int()
 	flush_port();
 }
 
-void set_keymap_callback(unsigned ptr)
+void set_keymap_callback(addr_t ptr)
 {
 	_keymap_callback = (unsigned short *(*)(int, int, int, int))ptr;
 }
 
-unsigned get_keymap_callback()
+addr_t get_keymap_callback()
 {
-	return (unsigned)_keymap_callback;
+	return (addr_t)_keymap_callback;
 }
 int irqk=0;
 int module_install()

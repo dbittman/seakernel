@@ -112,8 +112,8 @@ struct ata_controller {
     volatile unsigned           irqwait;
     unsigned                    prdt_phys;
     uint64_t*                   prdt_virt;
-    unsigned                    dma_buf_phys[512];
-    unsigned                    dma_buf_virt[512];
+    addr_t                      dma_buf_phys[512];
+    addr_t                      dma_buf_virt[512];
     struct ata_device           devices[2];
     mutex_t*                    wait;
     struct ata_device *         selected;
@@ -225,7 +225,7 @@ static inline void insw(unsigned long addr, void *buffer, int count)
 	}
 }
 int atapi_rw_main(int rw, int dev, u64 blk_, char *buf);
-int ioctl_atapi(int min, int cmd, int arg);
+int ioctl_atapi(int min, int cmd, long arg);
 struct ata_device *get_ata_device(int min, int *part);
 int ata_dma_rw(struct ata_controller *cont, struct ata_device *dev, int rw, 
 	u64 blk, unsigned char *buf, int count);

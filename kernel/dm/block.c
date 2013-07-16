@@ -7,13 +7,13 @@
 #include <cache.h>
 #undef DT_CHAR
 mutex_t bd_search_lock;
-int ioctl_stub(int a, int b, int c)
+int ioctl_stub(int a, int b, long c)
 {
 	return -1;
 }
 
 blockdevice_t *set_blockdevice(int maj, int (*f)(int, int, u64, char*), int bs, 
-	int (*c)(int, int, int), int (*m)(int, int, u64, char *, int), int (*s)(int, int))
+	int (*c)(int, int, long), int (*m)(int, int, u64, char *, int), int (*s)(int, int))
 {
 	printk(1, "[dev]: Setting block device %d, bs=%d (%x, %x)\n", maj, bs, f, c);
 	blockdevice_t *dev = (blockdevice_t *)kmalloc(sizeof(blockdevice_t));
@@ -31,7 +31,7 @@ blockdevice_t *set_blockdevice(int maj, int (*f)(int, int, u64, char*), int bs,
 }
 
 int set_availablebd(int (*f)(int, int, u64, char*), int bs, 
-	int (*c)(int, int, int), int (*m)(int, int, u64, char *, int), int (*s)(int, int))
+	int (*c)(int, int, long), int (*m)(int, int, u64, char *, int), int (*s)(int, int))
 {
 	int i=10; /* first 10 devices are reserved by the system */
 	mutex_acquire(&bd_search_lock);

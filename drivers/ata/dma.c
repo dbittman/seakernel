@@ -16,7 +16,7 @@ int ata_dma_init(struct ata_controller *cont, struct ata_device *dev,
 	int num_entries = ((size-1) / (64*1024))+1;
 	int i;
 	prdtable_t *t = (prdtable_t *)cont->prdt_virt;
-	unsigned offset=0;
+	addr_t offset=0;
 	if(num_entries >= 512) return -1;
 	for(i=0;i<num_entries;i++) {
 		if(!(t->addr = cont->dma_buf_phys[i])) {
@@ -26,7 +26,7 @@ int ata_dma_init(struct ata_controller *cont, struct ata_device *dev,
 			t->addr = cont->dma_buf_phys[i] = phys;
 			cont->dma_buf_virt[i] = virt;
 		}
-		unsigned this_size = (size-offset);
+		addr_t this_size = (size-offset);
 		if(this_size >= (64*1024)) this_size=0;
 		t->size = (unsigned short)this_size;
 		t->last = 0;

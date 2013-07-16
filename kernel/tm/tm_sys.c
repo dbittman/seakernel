@@ -104,17 +104,17 @@ int sys_getppid()
 	return current_task->parent->pid;
 }
 
-int set_gid(int new)
+int set_gid(int n)
 {
 	current_task->thread->_gid = current_task->thread->gid;
-	current_task->thread->gid = new;
+	current_task->thread->gid = n;
 	return 0;
 }
 
-int set_uid(int new)
+int set_uid(int n)
 {
 	current_task->thread->_uid = current_task->thread->uid;
-	current_task->thread->uid = new;
+	current_task->thread->uid = n;
 	return 0;
 }
 

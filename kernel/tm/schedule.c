@@ -91,23 +91,23 @@ int schedule()
 	assert(cpu && cpu->cur == old);
 	mutex_acquire(&cpu->lock);
 	store_context();
-	volatile task_t *new = (volatile task_t *)get_next_task(old);
-	assert(cpu == new->cpu);
-	restore_context(new);
-	new->slice = ticks;
-	((cpu_t *)new->cpu)->cur = new;
+	volatile task_t *next_task = (volatile task_t *)get_next_task(old);
+	assert(cpu == next_task->cpu);
+	restore_context(next_task);
+	next_task->slice = ticks;
+	((cpu_t *)next_task->cpu)->cur = next_task;
 	/* we need to call this after restore_context because in restore_context
 	 * we access new->cpu */
 	mutex_release(&cpu->lock);
-	context_switch(new);
+	context_switch(next_task);
 	/* tasks that have come from fork() (aka, new tasks) have this
 	 * flag set, such that here we just to their entry point in fork() */
-	if(likely(!(new->flags & TF_FORK)))
+	if(likely(!(next_task->flags & TF_FORK)))
 	{
 		post_context_switch();
 		return 1;
 	}
-	new->flags &= ~TF_FORK;
+	next_task->flags &= ~TF_FORK;
 	asm("jmp *%0"::"r"(current_task->eip));
 	/* we never get here, but lets keep gcc happy */
 	return 1;

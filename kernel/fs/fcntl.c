@@ -18,7 +18,7 @@ int sys_ioctl(int fp, int cmd, int arg)
 	return ret;
 }
 
-int sys_fcntl(int filedes, int cmd, int attr1, int attr2, int attr3)
+int sys_fcntl(int filedes, long cmd, long attr1, long attr2, long attr3)
 {
 	int ret = 0;
 	struct file *f = get_file_pointer((task_t *)current_task, filedes);

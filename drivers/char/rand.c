@@ -24,7 +24,7 @@ int rand_rw(int rw, int min, char *buf, size_t count)
 	return count;
 }
 
-int rand_ioctl(int min, int cmd, int arg)
+int rand_ioctl(int min, int cmd, long arg)
 {
 	return 0;
 }

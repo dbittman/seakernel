@@ -140,7 +140,7 @@ struct flock *find_flock(struct inode *f, struct flock *l)
 	return 0;
 }
 
-int fcntl_setlk(struct file *file, int arg)
+int fcntl_setlk(struct file *file, long arg)
 {
 	assert(file);
 	printk(1, "[untested]: Flock - setlk\n");
@@ -169,7 +169,7 @@ int fcntl_setlk(struct file *file, int arg)
 	return ret;
 }
 
-int fcntl_getlk(struct file *file, int arg)
+int fcntl_getlk(struct file *file, long arg)
 {
 	assert(file);
 	printk(1, "[untested]: Flock - getlk\n");
@@ -186,7 +186,7 @@ int fcntl_getlk(struct file *file, int arg)
 	return 0;
 }
 
-int fcntl_setlkw(struct file *file, int arg)
+int fcntl_setlkw(struct file *file, long arg)
 {
 	assert(file);
 	init_flocks(file->inode);

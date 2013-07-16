@@ -35,7 +35,7 @@ static inline int __KT_clear_args()
 		int w=0;
 		for(;w<128;w++)
 		{
-			if(stuff_to_pass[w] && (unsigned)stuff_to_pass[w] > KMALLOC_ADDR_START)
+			if(stuff_to_pass[w] && (addr_t)stuff_to_pass[w] > KMALLOC_ADDR_START)
 				kfree(stuff_to_pass[w]);
 		}
 		return 1;
@@ -64,7 +64,7 @@ int init_kern_task()
 	kproclist->dev = 256*3;
 	rwlock_create(&kproclist->rwl);
 #if CONFIG_MODULES
-	_add_kernel_symbol((unsigned)(struct inode **)&kproclist, "kproclist");
+	_add_kernel_symbol((addr_t)(struct inode **)&kproclist, "kproclist");
 #endif
 	return 0;
 }

@@ -148,7 +148,6 @@ int process_elf(char *mem, int fp, addr_t *start, addr_t *end);
 unsigned long long get_epoch_time();
 void remove_dfs_node(char *name);
 int kernel_cache_sync_slow(int all);
-int ttyx_ioctl(int min, int cmd, int arg);
 int sys_setsid();
 int proc_set_callback(int major, int( *callback)(char rw, struct inode *inode, 
 	int m, char *buf));

@@ -65,7 +65,7 @@ void init_vfs()
 	add_kernel_symbol(register_sbt);
 	add_kernel_symbol(unregister_sbt);
 	add_kernel_symbol(iput);
-	_add_kernel_symbol((unsigned)(struct inode **)&devfs_root, "devfs_root");
+	_add_kernel_symbol((addr_t)(struct inode **)&devfs_root, "devfs_root");
 	add_kernel_symbol(do_get_idir);
 	add_kernel_symbol(proc_set_callback);
 	add_kernel_symbol(proc_get_major);

@@ -110,7 +110,7 @@ struct inode *rfs_create(struct inode *__p, char *name, mode_t mode)
 	node->len = 0;
 	node->i_ops = &rfs_inode_ops;
 	node->mode = mode | 0x1FF;
-	node->start = (int)kmalloc(1);
+	node->start = (addr_t)kmalloc(1);
 	node->num = add_atomic(&ramfs_node_num, 1);
 	rwlock_create(&node->rwl);
 	if(!__p) add_inode(p, node);

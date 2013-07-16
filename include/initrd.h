@@ -17,6 +17,6 @@ typedef struct
 struct inode *initialise_initrd(u32int location);
 
 extern int initrd_exist;
-extern u32int initrd_location;
+extern addr_t initrd_location;
 
 #endif

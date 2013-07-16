@@ -5,17 +5,17 @@
 #include <multiboot.h>
 int initrd_version=0;
 int initrd_exist=0;
-u32int initrd_location=0;
+addr_t initrd_location=0;
 initrd_header_t *initrd_header;
 initrd_file_header_t *file_headers;
 void load_initrd(struct multiboot *mb)
 {
-	int initrd_end;
+	addr_t initrd_end;
 	if(mb->mods_count > 0)
 	{
-		initrd_location = *((u32int*)mb->mods_addr);
-		initrd_end = *(u32int*)(mb->mods_addr+4);
-		int q = initrd_location;
+		initrd_location = *((u32int*)(addr_t)mb->mods_addr);
+		initrd_end = *(u32int*)((addr_t)mb->mods_addr+4);
+		addr_t q = initrd_location;
 		if(!(*(unsigned char *)(q) == 'I' 
 				&& *(unsigned char *)(q+1) == 'R' 
 				&& *(unsigned char *)(q+2) == 'D'))
@@ -39,7 +39,7 @@ void process_initrd()
 	unsigned int i;
 	printk(5, "[vfs]: Processing initrd...");
 	struct inode *node = init_ramfs();
-	u32int location = initrd_location;
+	addr_t location = initrd_location;
 	initrd_header = (initrd_header_t *)location;
 	file_headers = (initrd_file_header_t *) (location+sizeof(initrd_header_t));
 	struct inode *q;
@@ -56,7 +56,7 @@ void process_initrd()
 		char name[128];
 		sprintf(name, "/%s", (char *)&file_headers[i].name);
 		q = cget_idir(name, 0, 0x1FF);
-		rfs_write(q, 0, file_headers[i].length, (char *)(file_headers[i].offset));
+		rfs_write(q, 0, file_headers[i].length, (char *)((addr_t)file_headers[i].offset));
 		count++;
 		size += file_headers[i].length / 1024;
 	}

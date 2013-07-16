@@ -237,7 +237,7 @@ int rfs_read(struct inode *i, off_t off, size_t len, char *b);
 int rfs_write(struct inode *i, off_t off, size_t len, char *b);
 int recur_total_refs(struct inode *i);
 extern struct inode *devfs_root, *procfs_root;
-int sys_fcntl(int filedes, int cmd, int attr1, int attr2, int attr3);
+int sys_fcntl(int filedes, long cmd, long attr1, long attr2, long attr3);
 int permissions(struct inode *, mode_t);
 struct inode *create_m(char *, mode_t);
 int sys_symlink(char *p1, char *p2);

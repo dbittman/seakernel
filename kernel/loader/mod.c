@@ -24,7 +24,7 @@ void init_kernel_symbols(void)
 	/* basic kernel functions */
 	add_kernel_symbol(panic_assert);
 	add_kernel_symbol(panic);
-	_add_kernel_symbol((unsigned)&kernel_state_flags, "kernel_state_flags");
+	_add_kernel_symbol((addr_t)&kernel_state_flags, "kernel_state_flags");
 	add_kernel_symbol(printk);
 	add_kernel_symbol(kprintf);
 	add_kernel_symbol(sprintf);
@@ -55,7 +55,7 @@ void init_kernel_symbols(void)
 void _add_kernel_symbol(const intptr_t func, const char * funcstr)
 {
 	uint32_t i;
-	if(func < (uint32_t)&kernel_start)
+	if(func < (addr_t)&kernel_start)
 		panic(0, "tried to add invalid symbol %x:%s\n", func, funcstr);
 	mutex_acquire(&sym_mutex);
 	for(i = 0; i < MAX_SYMS; i++)

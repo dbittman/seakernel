@@ -169,7 +169,7 @@ int tty_write(int min, char *buf, size_t len)
 	return len;
 }
 
-int ttyx_ioctl(int min, int cmd, int arg)
+int ttyx_ioctl(int min, int cmd, long arg)
 {
 	if((unsigned)min >= MAX_CONSOLES)
 		return -ENOENT;
@@ -318,11 +318,11 @@ int ttyx_ioctl(int min, int cmd, int arg)
 			return 0;
 		case 0x5402: case 0x5403: case 0x5404:
 			if(arg) 
-				memcpy(&(con->term), (void *)(unsigned)arg, sizeof(struct termios));
+				memcpy(&(con->term), (void *)(addr_t)arg, sizeof(struct termios));
 			return 0;
 		case 0x5401:
 			if(arg) 
-				memcpy((void *)(unsigned)arg, &(con->term), sizeof(struct termios));
+				memcpy((void *)(addr_t)arg, &(con->term), sizeof(struct termios));
 			return 0;
 		case 0x540F:
 			return 0;
@@ -335,7 +335,7 @@ int ttyx_ioctl(int min, int cmd, int arg)
 			if(cmd >= 128 && cmd < 256 && ((current_task->system == SYS_LMOD)
 					|| (current_task->pid < init_pid)))
 			{
-				unsigned q = tty_calltable ? tty_calltable[cmd-128] : 0;
+				addr_t q = tty_calltable ? tty_calltable[cmd-128] : 0;
 				if(q)
 				{
 					int (*call)(int,int,int) = (int (*)(int,int,int))q;
@@ -352,7 +352,7 @@ int ttyx_ioctl(int min, int cmd, int arg)
 	return 0;
 }
 
-int tty_ioctl(int min, int cmd, int arg)
+int tty_ioctl(int min, int cmd, long arg)
 {
 	return ttyx_ioctl(current_task->tty, cmd, arg);
 }
@@ -425,6 +425,6 @@ void console_init_stage2()
 	add_kernel_symbol(create_console);
 	add_kernel_symbol(destroy_console);
 	add_kernel_symbol(switch_console);
-	_add_kernel_symbol((unsigned)(unsigned *)&curcons, "curcons");
+	_add_kernel_symbol((addr_t)(unsigned *)&curcons, "curcons");
 #endif
 }

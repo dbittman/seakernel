@@ -19,9 +19,8 @@ static void _overflow(char *type)
 
 __attribute__((always_inline)) inline static void store_context()
 {
-	#if 0
-	asm("mov %%esp, %0" : "=r"(current_task->esp));
-	asm("mov %%ebp, %0" : "=r"(current_task->ebp));
+	asm("mov %%rsp, %0" : "=r"(current_task->esp));
+	asm("mov %%rbp, %0" : "=r"(current_task->ebp));
 	/* Check for stack and heap overflow */
 	if(!current_task->esp || (!(current_task->esp >= TOP_TASK_MEM_EXEC && current_task->esp < TOP_TASK_MEM) 
 		&& !(current_task->esp >= KMALLOC_ADDR_START && current_task->esp < KMALLOC_ADDR_END)))
@@ -34,7 +33,6 @@ __attribute__((always_inline)) inline static void store_context()
 	if(current_task->flags & TF_DYING)
 		current_task->flags |= TF_BURIED;
 	current_task->syscall_count = 0;
-#endif
 }
 
 __attribute__((always_inline)) inline static void restore_context(task_t *n)
@@ -46,13 +44,12 @@ __attribute__((always_inline)) inline static void restore_context(task_t *n)
 
 __attribute__((always_inline)) inline static void context_switch(task_t *n)
 {
-	/*
 	asm("         \
-	mov %1, %%esp;       \
-	mov %2, %%ebp;       \
+	mov %1, %%rsp;       \
+	mov %2, %%rbp;       \
 	mov %3, %%cr3;"
-	: : "r"(0), "r"(new->esp), "r"(n->ebp), 
-		"r"(n->pd[1023]&PAGE_MASK) : "eax");*/	
+	: : "r"(0), "r"(n->esp), "r"(n->ebp), 
+		"r"(n->pd[1023]&PAGE_MASK) : "rax");
 }
 
 #endif

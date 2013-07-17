@@ -1,33 +1,17 @@
 #ifndef _SYSCALL_X86_64_H
 #define _SYSCALL_X86_64_H
-#define SC (int (*)(int, int, int, int, int))
+#define SC (long (*)(long, long, long, long, long))
 #include <asm/system.h>
-static int dosyscall(int num, int a, int b, int c, int d, int e)
+static long dosyscall(int num, long a, long b, long c, long d, long e)
 {
-	int x;
-	asm("int $0x80":"=a"(x):"0" (num), "b" ((int)a), "c" ((int)b), "d" ((int)c), "S" ((int)d), "D" ((int)e));
+	long x;
+	asm("int $0x80":"=a"(x):"0" (num), "b" (a), "c" (b), "d" (c), "S" (d), "D" (e));
 	return x;
 }
 
-#define __do_syscall_jump(ret, location, a, b, c, d, e) __asm__ __volatile__("")
+#define __do_syscall_jump(ret, location, a, b, c, d, e) \
+	ret = ((long (*)(long, long, long, long, long))location)(a, b, c, d, e)
 
-/*
-#define __do_syscall_jump(ret, location, a, b, c, d, e) __asm__ __volatile__(" \
-push %1; \
-push %2; \
-push %3; \
-push %4; \
-push %5; \
-call *%6; \
-pop %%ebx; \
-pop %%ebx; \
-pop %%ebx; \
-pop %%ebx; \
-pop %%ebx; \
-" \
-: "=a" (ret) \
-: "r" (a), "r" (b), "r" (c), "r" (d), "r" (e), "r" (location))
-*/
 #define SYSCALL_NUM_AND_RET regs->rax
 #define _E_ regs->rdi
 #define _D_ regs->rsi

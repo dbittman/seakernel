@@ -44,7 +44,9 @@ void vm_init(addr_t id_map_to)
 		}
 	}
 
-	/* map in all possible physical memory, up to 512 GB */
+	/* map in all possible physical memory, up to 512 GB. This way we can
+	 * access any physical page by simple accessing virtual memory (phys + PHYS_PAGE_MAP).
+	 * This should make mapping memory a LOT easier */
 	pml4[PML4_IDX(PHYS_PAGE_MAP/0x1000)] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
 	pdpt = (addr_t *)(pml4[PML4_IDX(PHYS_PAGE_MAP/0x1000)] & PAGE_MASK);
 	if(primary_cpu->cpuid.ext_features_edx & CPU_EXT_FEATURES_GBPAGE) {

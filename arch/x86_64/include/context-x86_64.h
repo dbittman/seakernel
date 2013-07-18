@@ -52,4 +52,26 @@ __attribute__((always_inline)) inline static void context_switch(task_t *n)
 		"r"(n->pd[1023]&PAGE_MASK) : "rax");
 }
 
+__attribute__((always_inline)) 
+inline static int engage_new_stack(task_t *task, task_t *parent)
+{
+	assert(parent == current_task);
+	u64int ebp;
+	u64int esp;
+	asm("mov %%rsp, %0" : "=r"(esp));
+	asm("mov %%rbp, %0" : "=r"(ebp));
+	if(esp > TOP_TASK_MEM) {
+		task->esp=(esp-parent->kernel_stack) + task->kernel_stack;
+		task->ebp=(ebp-parent->kernel_stack) + task->kernel_stack;
+		task->sysregs = (parent->sysregs - parent->kernel_stack) + task->kernel_stack;
+		copy_update_stack(task->kernel_stack, parent->kernel_stack, KERN_STACK_SIZE);
+		return 1;
+	} else {
+		task->sysregs = parent->sysregs;
+		task->esp=esp;
+		task->ebp=ebp;
+		return 0;
+	}
+}
+
 #endif

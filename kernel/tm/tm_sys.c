@@ -25,7 +25,7 @@ int sys_sbrk(int inc)
 	}
 	if(!inc)
 		return current_task->heap_end;
-	unsigned end = current_task->heap_end;
+	addr_t end = current_task->heap_end;
 	assert(end);
 	if(end + inc >= TOP_TASK_MEM)
 		send_signal(current_task->pid, SIGSEGV);

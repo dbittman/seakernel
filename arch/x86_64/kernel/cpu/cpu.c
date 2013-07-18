@@ -30,6 +30,11 @@ void cpuid_get_features(cpuid_t *cpuid)
 	cpuid->cache_line_size =     ((ebx >> 8) & 0xFF) * 8; /* cache_line_size * 8 = size in bytes */
 	cpuid->logical_processors =  ((ebx >> 16) & 0xFF);    /* # logical cpu's per physical cpu */
 	cpuid->lapic_id =            ((ebx >> 24) & 0xFF);    /* Local APIC ID */
+	eax = 0x80000001;
+	asm("cpuid" : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx) : "a"(eax));
+	cpuid->ext_features_edx = edx;
+	cpuid->ext_features_ecx = ecx;
+	printk(0, "--- %x %x ---\n", edx, ecx);
 } 
 
 void cpuid_get_cpu_brand(cpuid_t *cpuid)

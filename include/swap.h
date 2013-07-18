@@ -43,9 +43,9 @@ int swap_in_all_the_pages(task_t *t);
 void __KT_pager();
 int sys_swaptask(unsigned pid);
 
-static inline char valid_swappable(unsigned x)
+static inline char valid_swappable(addr_t x)
 {
-	if(x >= (unsigned)(1024*0x1000*id_tables) && x < TOP_TASK_MEM)
+	if(x >= (addr_t)(1024*0x1000*id_tables) && x < TOP_TASK_MEM)
 		return 1;
 	else
 		return 0;

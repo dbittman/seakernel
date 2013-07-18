@@ -4,6 +4,7 @@
 #include <task.h>
 #include <atomic.h>
 #include <cpu.h>
+#include <context.h>
 
 unsigned running_processes = 0;
 
@@ -63,28 +64,6 @@ void copy_task_struct(task_t *task, task_t *parent, char share_thread_data)
 	task->listnode = (void *)kmalloc(sizeof(struct llistnode));
 	task->activenode = (void *)kmalloc(sizeof(struct llistnode));
 	task->blocknode = (void *)kmalloc(sizeof(struct llistnode));
-}
-
-__attribute__((always_inline)) 
-inline static int engage_new_stack(task_t *task, task_t *parent)
-{
-	assert(parent == current_task);
-	u32int ebp;
-	u32int esp;
-	asm("mov %%esp, %0" : "=r"(esp));
-	asm("mov %%ebp, %0" : "=r"(ebp));
-	if(esp > TOP_TASK_MEM) {
-		task->esp=(esp-parent->kernel_stack) + task->kernel_stack;
-		task->ebp=(ebp-parent->kernel_stack) + task->kernel_stack;
-		task->sysregs = (parent->sysregs - parent->kernel_stack) + task->kernel_stack;
-		copy_update_stack(task->kernel_stack, parent->kernel_stack, KERN_STACK_SIZE);
-		return 1;
-	} else {
-		task->sysregs = parent->sysregs;
-		task->esp=esp;
-		task->ebp=ebp;
-		return 0;
-	}
 }
 
 #if CONFIG_SMP

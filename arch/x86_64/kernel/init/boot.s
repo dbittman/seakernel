@@ -53,7 +53,7 @@ gdtable:
 ; some things.
 ;
 ; ---NOTE---
-; We only identity map the first 8MB! Hopefully this will be enough for the kernel
+; We only identity map the first 12MB! Hopefully this will be enough for the kernel
 ; to properly map the rest of the system later on, but it may need to be increased!!
 ; ----------
 ;
@@ -79,13 +79,15 @@ start:
 	mov DWORD [edi], (0x72003)  ; Set the double word at the destination index to 0x72003.
 	add edi, 0x1000             ; Add 0x1000 to the destination index.
 	mov DWORD [edi], (0x73003)  ; Set the double word at the destination index to 0x73003.
-	mov DWORD [edi+8], (0x74003)  ; Set the double word at the destination index to 0x73003.
-	mov DWORD [edi+16], (0x75003)  ; Set the double word at the destination index to 0x73003.
-	mov DWORD [edi+24], (0x76003)  ; Set the double word at the destination index to 0x73003.
+	mov DWORD [edi+8], (0x74003)  ; Set the double word at the destination index to 0x74003.
+	mov DWORD [edi+16], (0x75003)  ; Set the double word at the destination index to 0x75003.
+	mov DWORD [edi+24], (0x76003)  ; Set the double word at the destination index to 0x76003.
+	mov DWORD [edi+32], (0x77003)  ; Set the double word at the destination index to 0x77003.
+	mov DWORD [edi+40], (0x78003)  ; Set the double word at the destination index to 0x78003.
 
     add edi, 0x1000
 	mov ebx, 0x00000003         ; Set the B-register to 0x00000003.
-	mov ecx, 2048                ; Set the C-register to 512.
+	mov ecx, 3072                ; Set the C-register to 3072.
 .SetEntry:
 	mov DWORD [edi], ebx        ; Set the double word at the destination index to the B-register.
 	add ebx, 0x1000             ; Add 0x1000 to the B-register.

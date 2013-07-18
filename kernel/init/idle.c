@@ -98,7 +98,7 @@ int kernel_idle_task()
 	}
 	set_int(0);
 	printk(1, "[kernel]: remapping lower memory with protection flags...\n");
-	unsigned addr = 0;
+	addr_t addr = 0;
 	while(addr != TOP_LOWER_KERNEL)
 	{
 //#warning "FIX THIS AGAIN"

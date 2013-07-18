@@ -64,12 +64,13 @@ void unregister_interrupt_handler(u8int n, int id)
 	mutex_release(&isr_lock);
 }
 
-void kernel_fault(int fuckoff)
+void kernel_fault(int fuckoff, addr_t ip)
 {
 	kprintf("Kernel Exception #%d: ", fuckoff);
-	printk(5, "Occured in task %d during systemcall %d (F=%d).\n",
+	if(kernel_task)
+		printk(5, "Occured in task %d during systemcall %d (F=%d).\n",
 			current_task->pid, current_task->system, current_task->flag);
-	
+	kprintf("return IP = %x\n", ip);
 	panic(0, exception_messages[fuckoff]);
 }
 
@@ -94,11 +95,11 @@ const char *special_names(int i)
 	return "\t";
 }
 
-void faulted(int fuckoff, int userspace)
+void faulted(int fuckoff, int userspace, addr_t ip)
 {
 	if(current_task == kernel_task || !current_task || current_task->system || !userspace)
 	{
-		kernel_fault(fuckoff);
+		kernel_fault(fuckoff, ip);
 	} else
 	{
 		printk(5, "%s occured in task %d (F=%d): He's dead, Jim.\n", 
@@ -274,7 +275,7 @@ void isr_handler(volatile registers_t regs)
 	assert(!set_int(0));
 	/* if it went unhandled, kill the process or panic */
 	if(!called)
-		faulted(regs.int_no, !already_in_interrupt);
+		faulted(regs.int_no, !already_in_interrupt, regs.eip);
 	/* restore previous interrupt state */
 	set_cpu_interrupt_flag(previous_interrupt_flag);
 	if(!already_in_interrupt)

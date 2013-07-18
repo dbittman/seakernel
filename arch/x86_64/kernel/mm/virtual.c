@@ -11,6 +11,7 @@ struct pd_data *pd_cur_data = (struct pd_data *)PDIR_DATA;
 extern void id_map_apic(page_dir_t *);
 /* This function will setup a paging environment with a basic page dir, 
  * enough to process the memory map passed by grub */
+unsigned x = 777;
 void vm_init(addr_t id_map_to)
 {
 	/* Register some stuff... */
@@ -28,10 +29,12 @@ void vm_init(addr_t id_map_to)
 	pd[1] = (addr_t)(pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE);
 	pd[2] = (addr_t)(pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE);
 	pd[3] = (addr_t)(pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE);
+	pd[4] = (addr_t)(pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE);
+	pd[5] = (addr_t)(pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE);
 	
 	page_dir_t *pt;
 	addr_t address = 0;
-	for(int pdi = 0; pdi < 4; pdi++)
+	for(int pdi = 0; pdi < 6; pdi++)
 	{
 		pt = (addr_t *)(pd[pdi] & PAGE_MASK);
 		for(int t = 0; t < 512; t++)
@@ -40,7 +43,26 @@ void vm_init(addr_t id_map_to)
 			address += 0x1000;
 		}
 	}
-	
+
+	/* map in all possible physical memory, up to 512 GB */
+	pml4[PML4_IDX(PHYS_PAGE_MAP/0x1000)] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+	pdpt = (addr_t *)(pml4[PML4_IDX(PHYS_PAGE_MAP/0x1000)] & PAGE_MASK);
+	if(primary_cpu->cpuid.ext_features_edx & CPU_EXT_FEATURES_GBPAGE) {
+		printk(0, "!!! CPU supports 1GB pages. This is untested code !!!\n");
+		for(int i = 0; i < 512; i++)
+			pdpt[i] = ((addr_t)0x40000000)*i | PAGE_PRESENT | PAGE_WRITE | (1 << 7);
+	} else {
+		address = 0;
+		for(int i = 0; i < 512; i++)
+		{
+			pdpt[i] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+			pd = (addr_t *)(pdpt[i] & PAGE_MASK);
+			for(int j = 0; j < 512; j++) {
+				pd[j] = address | PAGE_PRESENT | PAGE_WRITE | (1 << 7);
+				address += 0x200000;
+			}
+		}
+	}
 #if CONFIG_SMP
 	id_map_apic(pd);
 #endif
@@ -57,6 +79,14 @@ void vm_init(addr_t id_map_to)
 	asm("mov %0, %%cr3"::"r"(pml4));
 	/* Enable paging */
 	printk(0, "Paging enabled!\n");
+	
+	
+	addr_t a = (addr_t)&x;
+	kprintf("--> %x, %x: %x %x\n", &x, a, (unsigned)((PHYS_PAGE_MAP + a) >> 32), (unsigned)((PHYS_PAGE_MAP + a) & 0xFFFFFFFF));
+	
+	unsigned y = *(unsigned *)(PHYS_PAGE_MAP + a);
+	
+	if(y == x) kprintf("YAY\n");
 	for(;;);
 	set_ksf(KSF_PAGING);
 	memset(0, 0, 0x1000);

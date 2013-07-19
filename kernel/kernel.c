@@ -44,7 +44,6 @@ void kernel_poweroff()
 		return;
 	kernel_shutdown();
 	set_int(0);
-	///acpiPowerOff();
 	kprintf("\nYou can now turn off your computer.\n");
 	for(;;) 
 		asm("nop");

@@ -1,5 +1,4 @@
-KOBJS += arch/x86/kernel/cpu/acpi.o \
-		 arch/x86/kernel/cpu/apic.o \
+KOBJS += arch/x86/kernel/cpu/apic.o \
 		 arch/x86/kernel/cpu/cpu.o \
 		 arch/x86/kernel/cpu/engage.o \
 		 arch/x86/kernel/cpu/features.o \

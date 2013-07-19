@@ -38,7 +38,7 @@ CFLAGS_NOARCH = -Ofast -g -std=c99 -nostdlib -nostdinc \
 	        -Wno-long-long -mno-red-zone -fno-omit-frame-pointer \
 	        -Wno-unused-parameter -Wno-unused-but-set-parameter -nodefaultlibs \
 	        -mpush-args -mno-accumulate-outgoing-args \
-	        -fno-tree-loop-distribute-patterns -fno-tree-vectorize -mcmodel=large
+	        -fno-tree-loop-distribute-patterns -fno-tree-vectorize 
 
 include arch/${ARCH}/make.inc
 

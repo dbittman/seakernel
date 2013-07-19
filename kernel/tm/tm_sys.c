@@ -8,12 +8,12 @@ int sys_sbrk(int inc)
 	assert(current_task);
 	if(inc < 0 && current_task->heap_start < current_task->heap_end) {
 		int dec = -inc;
-		unsigned new_end = current_task->heap_end - dec;
+		addr_t new_end = current_task->heap_end - dec;
 		if(new_end < current_task->heap_start)
 			new_end = current_task->heap_start;
-		unsigned old_end = current_task->heap_end;
-		unsigned free_start = (new_end&PAGE_MASK) + PAGE_SIZE;
-		unsigned free_end = old_end&PAGE_MASK;
+		addr_t old_end = current_task->heap_end;
+		addr_t free_start = (new_end&PAGE_MASK) + PAGE_SIZE;
+		addr_t free_end = old_end&PAGE_MASK;
 		while(free_start <= free_end) {
 			if(vm_getmap(free_start, 0))
 				vm_unmap(free_start);
@@ -31,7 +31,7 @@ int sys_sbrk(int inc)
 		send_signal(current_task->pid, SIGSEGV);
 	current_task->heap_end += inc;
 	current_task->he_red = end + inc;
-	unsigned page = end & PAGE_MASK;
+	addr_t page = end & PAGE_MASK;
 	for(;page <=(current_task->heap_end&PAGE_MASK);page += PAGE_SIZE)
 		user_map_if_not_mapped(page);
 	return end;

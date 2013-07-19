@@ -114,7 +114,7 @@ int remove_device(int type, int major)
 	return 0;
 }
 
-int dm_ioctl(int type, dev_t dev, int cmd, int arg)
+int dm_ioctl(int type, dev_t dev, int cmd, long arg)
 {
 	if(S_ISCHR(type))
 		return char_ioctl(dev, cmd, arg);

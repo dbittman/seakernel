@@ -104,7 +104,7 @@ void unregister_char_device(int n)
 	kfree(fr);
 }
 
-int char_ioctl(dev_t dev, int cmd, int arg)
+int char_ioctl(dev_t dev, int cmd, long arg)
 {
 	device_t *dt = get_device(DT_CHAR, MAJOR(dev));
 	if(!dt)

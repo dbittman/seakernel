@@ -53,7 +53,7 @@ __attribute__((always_inline)) static inline void post_context_switch()
 	 * a method of detecting signals and returning safely. */
 	if(current_task->sigd 
 		&& (!(current_task->flags & TF_INSIG) 
-		|| signal_will_be_fatal(current_task, current_task->sigd))
+		   || signal_will_be_fatal(current_task, current_task->sigd))
 		&& !(current_task->flags & TF_KTASK) && current_task->pid
 		&& !(current_task->flags & TF_EXITING))
 	{

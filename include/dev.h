@@ -48,6 +48,6 @@ device_t *get_device(int type, int major);
 int blockdev_select(struct inode *in, int rw);
 int chardev_select(struct inode *in, int rw);
 int pipedev_select(struct inode *in, int rw);
-int dm_ioctl(int type, dev_t dev, int cmd, int arg);
+int dm_ioctl(int type, dev_t dev, int cmd, long arg);
 
 #endif

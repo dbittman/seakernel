@@ -311,7 +311,7 @@ int block_device_rw(int mode, dev_t dev, off_t off, char *buf, size_t len)
 /* Reserved commands:
  * -1: Sync any data in device buffer
  */
-int block_ioctl(dev_t dev, int cmd, int arg)
+int block_ioctl(dev_t dev, int cmd, long arg)
 {
 	device_t *dt = get_device(DT_BLOCK, MAJOR(dev));
 	if(!dt)

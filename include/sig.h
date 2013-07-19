@@ -7,34 +7,6 @@
 #define TASK_SUICIDAL 4
 #define TASK_DEAD (-1)
 
-#define sigaddset(what,sig) (*(what) |= (1<<(sig)), 0)
-#define sigdelset(what,sig) (*(what) &= ~(1<<(sig)), 0)
-#define sigemptyset(what)   (*(what) = 0, 0)
-#define sigfillset(what)    (*(what) = ~(0), 0)
-#define sigismember(what,sig) (((*(what)) & (1<<(sig))) != 0)
-
-union sigval {
-	int    sival_int;    /* Integer signal value */
-	void  *sival_ptr;    /* Pointer signal value */
-};
-typedef struct {
-	int          si_signo;    /* Signal number */
-	int          si_code;     /* Cause of the signal */
-	union sigval si_value;    /* Signal value */
-} siginfo_t;
-typedef unsigned long sigset_t;
-
-#define SIGNAL_INJECT_SIZE 7
-static char signal_return_injector[7] = {
-	0xB8,
-	0x80,
-	0x00,
-	0x00,
-	0x00,
-	0xCD,
-	0x80
-};
-
 #define SA_NOCLDSTOP	0x00000001
 #define SA_NOCLDWAIT	0x00000002
 #define SA_SIGINFO		0x00000004
@@ -44,23 +16,6 @@ static char signal_return_injector[7] = {
 #define SA_RESETHAND	0x80000000
 #define SA_NOMASK		SA_NODEFER
 #define SA_ONESHOT		SA_RESETHAND
-
-typedef void (*_sig_func_ptr)(int);
-struct sigaction
-{
-	union
-	{
-		void (*_sa_handler) (int);
-		/* Present to allow compilation, but unsupported by gnulib.  POSIX
-		 * s ays that implementations may, but not* must, make sa_sigaction
-		 * overlap with sa_handler, but we know of no implementation where
-		 * they do not overlap.  */
-		void (*_sa_sigaction) (int, siginfo_t *, void *);
-	} _sa_func;
-	sigset_t sa_mask;
-	/* Not all POSIX flags are supported.  */
-	int sa_flags;
-};
 
 #define SIG_SETMASK 0	/* set mask with sigprocmask() */
 #define SIG_BLOCK 1	/* set of signals to block */
@@ -98,16 +53,50 @@ struct sigaction
 #define SIGFPE 27
 #define SIGBUS 28
 
-#define MSGGET_PEEK 0
-#define MSGGET_GET  1
+#define sigaddset(what,sig) (*(what) |= (1<<(sig)), 0)
+#define sigdelset(what,sig) (*(what) &= ~(1<<(sig)), 0)
+#define sigemptyset(what)   (*(what) = 0, 0)
+#define sigfillset(what)    (*(what) = ~(0), 0)
+#define sigismember(what,sig) (((*(what)) & (1<<(sig))) != 0)
 
-typedef struct message_s{
-	char *message;
-	unsigned length;
-	unsigned from, to;
-	
-	struct message_s *next, *prev;
-} msg_t;
+union sigval {
+	int    sival_int;    /* Integer signal value */
+	void  *sival_ptr;    /* Pointer signal value */
+};
+typedef struct {
+	int          si_signo;    /* Signal number */
+	int          si_code;     /* Cause of the signal */
+	union sigval si_value;    /* Signal value */
+} siginfo_t;
+typedef unsigned long sigset_t;
+
+#define SIGNAL_INJECT_SIZE 7
+static char signal_return_injector[SIGNAL_INJECT_SIZE] = {
+	0xB8,
+	0x80,
+	0x00,
+	0x00,
+	0x00,
+	0xCD,
+	0x80
+};
+
+typedef void (*_sig_func_ptr)(int);
+struct sigaction
+{
+	union
+	{
+		void (*_sa_handler) (int);
+		/* Present to allow compilation, but unsupported by gnulib.  POSIX
+		 * s ays that implementations may, but not* must, make sa_sigaction
+		 * overlap with sa_handler, but we know of no implementation where
+		 * they do not overlap.  */
+		void (*_sa_sigaction) (int, siginfo_t *, void *);
+	} _sa_func;
+	sigset_t sa_mask;
+	/* Not all POSIX flags are supported.  */
+	int sa_flags;
+};
 
 int sys_sigact(int sig, const struct sigaction *act, struct sigaction *oact);
 int sys_sigprocmask(int how, const sigset_t *set, sigset_t *oset);

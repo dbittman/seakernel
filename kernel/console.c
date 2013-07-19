@@ -6,13 +6,13 @@
 #include <mutex.h>
 #include <console.h>
 extern void update_cursor(int);
-vterm_t *curcons=0;
-vterm_t *kernel_console, *log_console=0;
+struct vterm *curcons=0;
+struct vterm *kernel_console, *log_console=0;
 extern console_driver_t crtc_drv;
 #define VIDEO_MEMORY 0xb8000
 
 /* Simple way to display messages before tty and vsprintf get working */
-void console_puts(vterm_t *c, char *s)
+void console_puts(struct vterm *c, char *s)
 {
 	while(s && *s && c) {
 		c->rend.putch(c, *s);
@@ -26,7 +26,7 @@ void puts(char *s)
 	console_puts(kernel_console, s);
 }
 
-void destroy_console(vterm_t *con)
+void destroy_console(struct vterm *con)
 {
 	if(con == curcons)
 		curcons = kernel_console;
@@ -36,7 +36,7 @@ void destroy_console(vterm_t *con)
 	con->flag=0;
 }
 
-void create_console(vterm_t *con)
+void create_console(struct vterm *con)
 {
 	if(con->flag) return;
 	con->term.c_lflag=ECHO | ISIG | ECHONL | ICANON;
@@ -48,7 +48,7 @@ void create_console(vterm_t *con)
 	con->flag=1;
 }
 
-void init_console(vterm_t *con, console_driver_t *driver)
+void init_console(struct vterm *con, console_driver_t *driver)
 {
 	driver->init(con);
 	con->driver = driver;
@@ -56,10 +56,10 @@ void init_console(vterm_t *con, console_driver_t *driver)
 				con, driver->init, driver->name);
 }
 
-void switch_console(vterm_t *new)
+void switch_console(struct vterm *new)
 {
 	/* Copy screen to old console */
-	vterm_t *old = curcons;
+	struct vterm *old = curcons;
 	mutex_acquire(&old->wlock);
 	memcpy(curcons->vmem, (char *)curcons->video, 
 				curcons->h*curcons->w*curcons->bd);

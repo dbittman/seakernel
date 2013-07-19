@@ -165,7 +165,6 @@ void init_main_cpu()
 	init_sse(primary_cpu);
 	primary_cpu->flags |= CPU_RUNNING;
 	printk(KERN_EVERY, "done\n");
-	initAcpi();
 	mutex_create((mutex_t *)&primary_cpu->lock, MT_NOSCHED);
 #if CONFIG_MODULES
 	_add_kernel_symbol((unsigned)(cpu_t *)primary_cpu, "primary_cpu");

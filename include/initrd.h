@@ -14,9 +14,6 @@ typedef struct
 	u32int length; 
 } initrd_file_header_t;
 
-struct inode *initialise_initrd(u32int location);
-
-extern int initrd_exist;
 extern addr_t initrd_location;
 
 #endif

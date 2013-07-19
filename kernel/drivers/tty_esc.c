@@ -2,17 +2,17 @@
 #include <console.h>
 int DEF_FG=15;
 int DEF_BG=0;
-int reset_terconal(vterm_t *con)
+int reset_terconal(struct vterm *con)
 {
 	return 0;
 }
 
-int un_save_c_and_a(vterm_t *con, int restore, int attr)
+int un_save_c_and_a(struct vterm *con, int restore, int attr)
 {
 	return 0;
 }
 
-int tty_gotoxy(vterm_t *con, int x, int y)
+int tty_gotoxy(struct vterm *con, int x, int y)
 {
 	if(x >= 0) con->x = x * (con->fw + con->es);
 	if(y >= 0) con->y = y * (con->fh + con->es);
@@ -31,7 +31,7 @@ int tty_gotoxy(vterm_t *con, int x, int y)
 	return 0;
 }
 
-int tty_movexy(vterm_t *con, int x, int y)
+int tty_movexy(struct vterm *con, int x, int y)
 {
 	con->x += x * (con->fw + con->es);
 	con->y += y * (con->fh + con->es);
@@ -50,7 +50,7 @@ int tty_movexy(vterm_t *con, int x, int y)
 	return 0;
 }
 
-int scroll_display(vterm_t *con, int count)
+int scroll_display(struct vterm *con, int count)
 {
 	if(count < 0)
 		while(con->rend.scroll_up && count++) con->rend.scroll_up(con);
@@ -62,7 +62,7 @@ int scroll_display(vterm_t *con, int count)
 /* 0: cur to EOL
  * 1: SOL to cur
  * 2: whole */
-int tty_Kclear(vterm_t *con, int d)
+int tty_Kclear(struct vterm *con, int d)
 {
 	addr_t a = (addr_t)con->rend.scroll;
 	con->rend.scroll=0;
@@ -98,7 +98,7 @@ int tty_Kclear(vterm_t *con, int d)
 		con->y=y;
 	}
 	con->no_wrap=0;
-	con->rend.scroll = (void (*)(vterm_t *))a;
+	con->rend.scroll = (void (*)(struct vterm *))a;
 	return 0;
 }
 
@@ -106,7 +106,7 @@ int tty_Kclear(vterm_t *con, int d)
  * 1: start to cur
  * 2: All
  */
-int tty_Jclear(vterm_t *con, int d)
+int tty_Jclear(struct vterm *con, int d)
 {
 	addr_t a = (addr_t)con->rend.scroll;
 	int x = con->x;
@@ -134,7 +134,7 @@ int tty_Jclear(vterm_t *con, int d)
 	return 0;
 }
 
-void csi_m(vterm_t *con, int a)
+void csi_m(struct vterm *con, int a)
 {
 	if(a == 0) {
 		con->f = 15;
@@ -161,7 +161,7 @@ void csi_m(vterm_t *con, int a)
 	}
 }
 
-int read_brak_esc(vterm_t *con, char *seq)
+int read_brak_esc(struct vterm *con, char *seq)
 {
 	char *info = seq + 2;
 	if(*info == '?')
@@ -277,13 +277,13 @@ int read_brak_esc(vterm_t *con, char *seq)
 	return 3 + i;
 }
 
-int read_par_esc(vterm_t *con, char *seq)
+int read_par_esc(struct vterm *con, char *seq)
 {
 	printk(0, "[esc]: UNHANDLED: parethetical sequence\n");
 	return 0;
 }
 
-int read_pure_esc(vterm_t *con, char *seq)
+int read_pure_esc(struct vterm *con, char *seq)
 {
 	//printk(0, "## %c\n", *(seq+1));
 	switch(*(seq+1))
@@ -325,7 +325,7 @@ int read_pure_esc(vterm_t *con, char *seq)
 	return 2;
 }
 
-int read_escape_seq(vterm_t *con, char *seq)
+int read_escape_seq(struct vterm *con, char *seq)
 {
 	if(!seq || *seq != 27)
 		return -1;

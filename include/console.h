@@ -15,7 +15,7 @@
 #define KERN_DEBUG 1
 #define KERN_EVERY 0
 
-typedef struct vterm_s {
+struct vterm {
 	char flag;
 	volatile int x, ox, y, oy, f, b, w, h, bd, fw, fh, mode, es, scrollt, scrollb;
 	char *vmem, *cur_mem, *video;
@@ -24,29 +24,29 @@ typedef struct vterm_s {
 	volatile int reading;
 	unsigned char *font;
 	int tty;
-	char nocur, no_wrap;
+	char no_wrap;
 	mutex_t wlock, inlock;
 	struct llist input_block;
 	struct termios term;
 	struct renderer {
-		void (*scroll)(struct vterm_s *);
-		void (*scroll_up)(struct vterm_s *);
-		void (*update_cursor)(struct vterm_s *);
-		void (*clear)(struct vterm_s *);
-		void (*putch)(struct vterm_s *, char);
-		void (*switch_in)(struct vterm_s *);
-		void (*clear_cursor)(struct vterm_s *);
+		void (*scroll)(struct vterm *);
+		void (*scroll_up)(struct vterm *);
+		void (*update_cursor)(struct vterm *);
+		void (*clear)(struct vterm *);
+		void (*putch)(struct vterm *, char);
+		void (*switch_in)(struct vterm *);
+		void (*clear_cursor)(struct vterm *);
 	} rend;
 	struct console_driver_s {
-		void (*init)(struct vterm_s *);
+		void (*init)(struct vterm *);
 		char *name;
 	} *driver;
-} vterm_t;
+};
 typedef struct console_driver_s console_driver_t;
-extern vterm_t consoles[];
+extern struct vterm consoles[];
 
-extern vterm_t *curcons, *kernel_console, *log_console;
-void console_puts(vterm_t *c, char *s);
+extern struct vterm *curcons, *kernel_console, *log_console;
+void console_puts(struct vterm *c, char *s);
 void set_text_mode();
 int tty_write(int min, char *buf, size_t len);
 int tty_read(int min, char *buf, size_t len);
@@ -54,7 +54,7 @@ int tty_close(int min);
 int tty_open(int min);
 void console_init_stage1();
 void console_init_stage2();
-void switch_console(vterm_t *new);
+void switch_console(struct vterm *new);
 void clear_console(int);
 int set_console_font(int c, int fw, int fh, int es, unsigned char *fnt);
 int ttyx_rw(int rw, int min, char *buf, size_t count);
@@ -63,9 +63,9 @@ int serial_rw(int, int, char *, size_t);
 int tty_ioctl(int min, int cmd, long arg);
 int ttyx_ioctl(int min, int cmd, long arg);
 void puts(char *s);
-void tty_init(vterm_t **);
-void create_console(vterm_t *con);
-void destroy_console(vterm_t *con);
-void init_console(vterm_t *con, console_driver_t *driver);
-int read_escape_seq(vterm_t *, char *seq);
+void tty_init(struct vterm **);
+void create_console(struct vterm *con);
+void destroy_console(struct vterm *con);
+void init_console(struct vterm *con, console_driver_t *driver);
+int read_escape_seq(struct vterm *, char *seq);
 #endif

@@ -6,7 +6,7 @@
 #define VIDEO_MEMORY 0xb8000
 
 static char crtc_first_init=0;
-void crtc_init_console(vterm_t *con);
+void crtc_init_console(struct vterm *con);
 void crtc_putchar(char *mem, char c, char attr, int x, int y, int w);
 console_driver_t crtc_drv = {
 	crtc_init_console,
@@ -14,7 +14,7 @@ console_driver_t crtc_drv = {
 };
 #define WHITE_ON_BLACK ((0 << 4) | (15 & 0x0F))
 
-void crtc_scrolldown(vterm_t *con)
+void crtc_scrolldown(struct vterm *con)
 {
 	if(!con || con == kernel_console)
 		con=curcons;
@@ -29,13 +29,11 @@ void crtc_scrolldown(vterm_t *con)
 	con->y = con->scrollb-1;
 }
 
-void crtc_update_cursor(vterm_t *con)
+void crtc_update_cursor(struct vterm *con)
 {
 	if(!con || con == kernel_console)
 		con = curcons;
 	if(con != curcons)
-		return;
-	if(con->nocur)
 		return;
 	volatile unsigned short position = (con->y * con->w + con->x);
 	outb(0x3D4, 0x0F);
@@ -44,7 +42,7 @@ void crtc_update_cursor(vterm_t *con)
 	outb(0x3D5, (unsigned char )((position>>8)&0xFF));
 }
 
-void crtc_console_put(vterm_t *con, char c)
+void crtc_console_put(struct vterm *con, char c)
 {
 	if(!con || con == kernel_console)
 		con=curcons;
@@ -86,7 +84,7 @@ void crtc_putchar(char *mem, char c, char attr, int x, int y, int w)
 	}
 }
 
-void crtc_clear(vterm_t *con)
+void crtc_clear(struct vterm *con)
 {
 	memset(con->cur_mem, 0, con->w*con->h*2);
 	con->x=0;
@@ -98,7 +96,7 @@ void crtc_clear(vterm_t *con)
 	}
 }
 
-void crtc_clear_cursor(vterm_t *c)
+void crtc_clear_cursor(struct vterm *c)
 {
 	if(!c || c == kernel_console)
 		c=curcons;
@@ -121,7 +119,7 @@ struct renderer crtc_renderer = {
 	crtc_clear_cursor,
 };
 
-void crtc_init_console(vterm_t *con)
+void crtc_init_console(struct vterm *con)
 {
 	if(!crtc_first_init) {
 		crtc_first_init=1;

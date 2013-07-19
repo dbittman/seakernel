@@ -83,6 +83,6 @@
 #endif
 
 extern int PRINT_LEVEL;
-
 long sys_sysconf(int cmd);
+
 #endif

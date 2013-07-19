@@ -12,7 +12,7 @@
 #include <mod.h>
 extern unsigned init_pid;
 extern void update_cursor(int);
-vterm_t consoles[MAX_CONSOLES];
+struct vterm consoles[MAX_CONSOLES];
 unsigned *tty_calltable = 0;
 extern console_driver_t crtc_drv;
 /* Create a terminal if needed, and set as current */
@@ -33,7 +33,7 @@ int tty_close(int min)
 	return 0;
 }
 
-void tty_putch(vterm_t *con, int ch)
+void tty_putch(struct vterm *con, int ch)
 {
 	if(!con->rend.putch)
 		return;
@@ -72,7 +72,7 @@ int tty_read(int min, char *buf, size_t len)
 	if((unsigned)min > MAX_CONSOLES)
 		return -ENOENT;
 	if(!buf) return -EINVAL;
-	vterm_t *con=0;
+	struct vterm *con=0;
 	again:
 	con = &consoles[min];
 	if(!con->flag)
@@ -130,7 +130,7 @@ int tty_write(int min, char *buf, size_t len)
 		return -ENOENT;
 	if(!buf)
 		return -EINVAL;
-	vterm_t *con = &consoles[min];
+	struct vterm *con = &consoles[min];
 	if(!con->flag)
 		return -ENOENT;
 	size_t i=0;
@@ -173,7 +173,7 @@ int ttyx_ioctl(int min, int cmd, long arg)
 {
 	if((unsigned)min >= MAX_CONSOLES)
 		return -ENOENT;
-	vterm_t *con = &consoles[min];
+	struct vterm *con = &consoles[min];
 	if(!con->flag)
 		return -ENOENT;
 	task_t *t=0;
@@ -233,17 +233,8 @@ int ttyx_ioctl(int min, int cmd, long arg)
 			if(arg)
 				*(int *)arg = con->w/(con->fw+con->es);
 			return con->h/(con->fh+con->es);
-		case 12:
-			break;
-		case 13:
-			break;
 		case 14:
 			con->inpos=0;
-			break;
-		case 15:
-			return con->mode;
-			break;
-		case 16:
 			break;
 		case 17:
 			if(con->term.c_iflag & ICRNL && arg == '\r')
@@ -292,19 +283,6 @@ int ttyx_ioctl(int min, int cmd, long arg)
 				con->term.c_oflag &= ~OCRNL;
 			else
 				con->term.c_oflag |= OCRNL;
-			break;
-		case 24:
-			//if(!arg)
-			//	con->term.c_oflag &= ~CBREAK;
-			//else
-			//	con->term.c_oflag |= CBREAK;
-			break;
-		case 25:
-			break;
-		case 26:
-			if(con->rend.clear_cursor && arg)
-				con->rend.clear_cursor(con);
-			con->nocur=arg;
 			break;
 		case 27:
 			switch_console(con);
@@ -396,13 +374,13 @@ int tty_select(int min, int rw)
 	return ttyx_select(min=current_task->tty, rw);
 }
 
-void tty_init(vterm_t **k)
+void tty_init(struct vterm **k)
 {
 	int i;
 	assert(MAX_CONSOLES > 9);
 	for(i=0;i<MAX_CONSOLES;i++)
 	{
-		memset(&consoles[i], 0, sizeof(vterm_t));
+		memset(&consoles[i], 0, sizeof(struct vterm));
 		consoles[i].tty=i;
 	}
 	*k = &consoles[0];

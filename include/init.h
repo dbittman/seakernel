@@ -28,8 +28,6 @@ void init_vfs();
 int init_cache();
 void init_serial();
 int init_kern_task();
-extern int initrd_exist;
-extern char shutting_down;
 /* Adds an env var to the init_env array */
 #define add_init_env(x) init_env[count_ie++] = x;init_env[count_ie]=0
 

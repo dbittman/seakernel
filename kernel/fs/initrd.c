@@ -4,7 +4,6 @@
 #include <fs.h>
 #include <multiboot.h>
 int initrd_version=0;
-int initrd_exist=0;
 addr_t initrd_location=0;
 initrd_header_t *initrd_header;
 initrd_file_header_t *file_headers;
@@ -26,7 +25,6 @@ void load_initrd(struct multiboot *mb)
 		initrd_location += 4;
 		/* Place the start of temporary usable memory to the end of the initrd */
 		placement = initrd_end;
-		initrd_exist=1;
 		return;
 	}
 	not_found:

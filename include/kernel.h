@@ -15,19 +15,16 @@
 #include <errno.h>
 #include <mutex.h>
 
-#define KSF_MMU      0x1
-#define KSF_SHUTDOWN 0x2
-#define KSF_PANICING 0x4
+#define KSF_MMU            0x1
+#define KSF_SHUTDOWN       0x2
+#define KSF_PANICING       0x4
 #if CONFIG_SMP
   #define KSF_CPUS_RUNNING 0x8
-  #define KSF_SMP_ENABLE  0x10
+  #define KSF_SMP_ENABLE   0x10
 #endif
-#define KSF_PAGING   0x20
-
+#define KSF_PAGING         0x20
 extern volatile unsigned kernel_state_flags;
-
 #define set_ksf(flag) {or_atomic(&kernel_state_flags, flag);}
-
 
 extern volatile unsigned int __allow_idle;
 
@@ -44,21 +41,7 @@ struct utsname {
     char domainname[__UTSNAMELEN];
 };
 
-#define assert(c) if(!(c)) panic_assert(__FILE__, __LINE__, #c)
-
-#define assert_act(c, q) if(!(c)) { \
-	kprintf("-----Assertion Failure Information-----\n"); \
-		void (*w)()= (void (*)())q; \
-		w();\
-		panic("Assertion failed: %s", #c); \
-		}
-
-#define assert_act2(c, q) if(!(c)) { \
-	kprintf("-----Assertion Failure Information-----\n"); \
-		void (*w)()= (void (*)())q; \
-		w();\
-		printk(5, "Assertion failed: %s", #c); \
-		}
+#define assert(c) if(__builtin_expect((!(c)),0)) panic_assert(__FILE__, __LINE__, #c)
 
 static inline void get_kernel_version(char *b)
 {

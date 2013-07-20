@@ -17,40 +17,60 @@ extern void do_switch_to_user_mode();
 struct llist *kill_queue=0;
 tqueue_t *primary_queue=0;
 
-void init_multitasking()
+/* create the bare task structure. This needs to be then populated with all the data
+ * required for an actual process */
+task_t *task_create()
 {
-	printk(KERN_DEBUG, "[sched]: Starting multitasking system...\n");
-	/* make the kernel task */
 	task_t *task = (task_t *)kmalloc(sizeof(task_t));
-	/* make this the "current_task" by assigning a specific location
-	 * in the page directory as the pointer to the task. */
-	arch_specific_set_current_task(page_directory, (addr_t)task);
-	/* alarm_mutex is aquired inside a kernel tick, so we may not schedule. */
-	alarm_mutex = mutex_create(0, MT_NOSCHED);
-	task->pid = next_pid++;
-	task->pd = (page_dir_t *)kernel_dir;
-	task->stack_end=STACK_LOCATION;
 	task->kernel_stack = (addr_t)kmalloc(KERN_STACK_SIZE);
-	task->priority = 1;
 	task->magic = TASK_MAGIC;
-	task->cpu = primary_cpu;
-	primary_cpu->cur = task;
-	kill_queue = ll_create(0);
-	primary_queue = tqueue_create(0, 0);
-	primary_cpu->active_queue = tqueue_create(0, 0);
 	/* allocate all of the list nodes... */
 	task->listnode   = (void *)kmalloc(sizeof(struct llistnode));
 	task->activenode = (void *)kmalloc(sizeof(struct llistnode));
 	task->blocknode  = (void *)kmalloc(sizeof(struct llistnode));
+	mutex_create((mutex_t *)&task->exlock, MT_NOSCHED);
+	return task;
+}
+
+struct thread_shared_data *thread_data_create()
+{
+	struct thread_shared_data *thread = (void *)kmalloc(sizeof(struct thread_shared_data));
+	thread->count = 1;
+	mutex_create(&thread->files_lock, 0);
+	return thread;
+}
+
+void init_multitasking()
+{
+	printk(KERN_DEBUG, "[sched]: Starting multitasking system...\n");
+	/* make the kernel task */
+	task_t *task = task_create();
+	task->pid = next_pid++;
+	task->pd = (page_dir_t *)kernel_dir;
+	task->stack_end=STACK_LOCATION;
+	task->priority = 1;
+	task->cpu = primary_cpu;
+	task->thread = thread_data_create();
+	/* alarm_mutex is aquired inside a kernel tick, so we may not schedule. */
+	alarm_mutex = mutex_create(0, MT_NOSCHED);
+	
+	kill_queue = ll_create(0);
+	primary_queue = tqueue_create(0, 0);
+	primary_cpu->active_queue = tqueue_create(0, 0);
+
 	tqueue_insert(primary_queue, (void *)task, task->listnode);
 	tqueue_insert(primary_cpu->active_queue, (void *)task, task->activenode);
-	kernel_task = task;
+	
+	primary_cpu->cur = task;
 	primary_cpu->numtasks=1;
+	/* make this the "current_task" by assigning a specific location
+	 * in the page directory as the pointer to the task. */
+	arch_specific_set_current_task(page_directory, (addr_t)task);
+	kernel_task = task;
+	/* this is the final thing to allow the system to begin scheduling
+	 * once interrupts are enabled */
 	primary_cpu->flags |= CPU_TASK;
-	task->thread = (void *)kmalloc(sizeof(struct thread_shared_data));
-	task->thread->count = 1;
-	mutex_create(&task->thread->files_lock, 0);
-	mutex_create((mutex_t *)&task->exlock, MT_NOSCHED);
+	
 	add_atomic(&running_processes, 1);
 #if CONFIG_MODULES
 	add_kernel_symbol(delay);

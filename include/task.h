@@ -92,8 +92,9 @@ struct thread_shared_data {
 struct task_struct
 {
 	volatile unsigned magic;
+	volatile unsigned pid;
 	/* used for storing context */
-	volatile addr_t pid, eip, ebp, esp;
+	volatile addr_t eip, ebp, esp;
 	page_dir_t *pd;
 	/* current state of the task (see sig.h) */
 	volatile int state;
@@ -159,7 +160,8 @@ extern mutex_t *alarm_mutex;
 #define fork() do_fork(0)
 
 void destroy_task_page_directory(task_t *p);
-
+struct thread_shared_data *thread_data_create();
+task_t *task_create();
 task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned long value, void (*action)(task_t *, int), int arg, int *);
 void delay_sleep(int t);
 void take_issue_with_current_task();

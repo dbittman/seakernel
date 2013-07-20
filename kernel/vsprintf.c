@@ -34,7 +34,7 @@ static int skip_atoi(const char **s)
 #define LEFT	16		/* left justified */
 #define SPECIAL	32		/* 0x */
 #define SMALL	64		/* use 'abcdef' instead of 'ABCDEF' */
-
+/*
 int __do_div(int *n, int base)
 {
 	int num = *n;
@@ -43,7 +43,7 @@ int __do_div(int *n, int base)
 	*n = num;
 	return __res;
 }
-
+*/
 int do_div(long *n, int base)
 {
 	long num = *n;

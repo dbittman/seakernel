@@ -122,6 +122,7 @@ void init_syscalls()
 {
 	num_syscalls = sizeof(syscall_table)/sizeof(void *);
 }
+
 static inline int __is_valid_user_ptr(void *p, char flags)
 {
 	addr_t addr = (addr_t)p;
@@ -192,6 +193,7 @@ int check_pointers(volatile registers_t *regs)
 
 int syscall_handler(volatile registers_t *regs)
 {
+	/* SYSCALL_NUM_AND_RET is defined to be the correct register in the syscall regs struct. */
 	if(unlikely(SYSCALL_NUM_AND_RET >= num_syscalls))
 		return -ENOSYS;
 	if(unlikely(!syscall_table[SYSCALL_NUM_AND_RET]))

@@ -71,27 +71,20 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	while(!kernel_task) asm("cli");
 	printk(0, "[cpu%d]: enable tasks...\n", apicid);
 	/* initialize tasking for this CPU */
-	task_t *task = (task_t *)kmalloc(sizeof(task_t));
+	task_t *task = task_create();
 	task->pid = add_atomic(&next_pid, 1)-1;
 	task->pd = (page_dir_t *)cpu->kd;
 	task->stack_end=STACK_LOCATION;
-	task->kernel_stack = (addr_t)kmalloc(KERN_STACK_SIZE);
 	task->priority = 1;
-	task->magic = TASK_MAGIC;
+	
 	cpu->active_queue = tqueue_create(0, 0);
-	task->listnode = (void *)kmalloc(sizeof(struct llistnode));
-	task->activenode = (void *)kmalloc(sizeof(struct llistnode));
-	task->blocknode = (void *)kmalloc(sizeof(struct llistnode));
 	tqueue_insert(primary_queue, (void *)task, task->listnode);
 	tqueue_insert(cpu->active_queue, (void *)task, task->activenode);
 	cpu->cur = cpu->ktask = task;
 	task->cpu = cpu;
 	mutex_create(&cpu->lock, MT_NOSCHED);
 	cpu->numtasks=1;
-	task->thread = (void *)kmalloc(sizeof(struct thread_shared_data));
-	task->thread->count = 1;
-	mutex_create((mutex_t *)&task->exlock, MT_NOSCHED);
-	mutex_create(&task->thread->files_lock, 0);
+	task->thread = thread_data_create();
 	set_kernel_stack(&cpu->tss, task->kernel_stack + (KERN_STACK_SIZE - STACK_ELEMENT_SIZE));
 	add_atomic(&running_processes, 1);
 	/* set up the real stack, and call cpu_k_task_entry with a pointer to this cpu's ktask as 

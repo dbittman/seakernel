@@ -8,6 +8,25 @@
 
 unsigned running_processes = 0;
 
+void copy_thread_data(task_t *task, task_t *parent)
+{
+	if(parent->thread->root) {
+		task->thread->root = parent->thread->root;
+		add_atomic(&task->thread->root->count, 1);
+	}
+	if(parent->thread->pwd) {
+		task->thread->pwd = parent->thread->pwd;
+		add_atomic(&task->thread->pwd->count, 1);
+	}
+	memcpy((void *)task->thread->signal_act, (void *)parent->thread->signal_act, 128 * 
+		sizeof(struct sigaction));
+	task->thread->gid = parent->thread->gid;
+	task->thread->uid = parent->thread->uid;
+	task->thread->_uid = parent->thread->_uid;
+	task->thread->_gid = parent->thread->_gid;
+	task->thread->global_sig_mask = parent->thread->global_sig_mask;
+}
+
 void copy_task_struct(task_t *task, task_t *parent, char share_thread_data)
 {
 	task->parent = parent;
@@ -15,32 +34,15 @@ void copy_task_struct(task_t *task, task_t *parent, char share_thread_data)
 	/* copy over the data if we're a new process. If this is going to be a thread, 
 	 * then add to the count and set the pointer */
 	if(!share_thread_data) {
-		task->thread = (void *)kmalloc(sizeof(struct thread_shared_data));
-		task->thread->count = 1;
-		if(parent->thread->root) {
-			task->thread->root = parent->thread->root;
-			add_atomic(&task->thread->root->count, 1);
-		}
-		if(parent->thread->pwd) {
-			task->thread->pwd = parent->thread->pwd;
-			add_atomic(&task->thread->pwd->count, 1);
-		}
-		memcpy((void *)task->thread->signal_act, (void *)parent->thread->signal_act, 128 * 
-			sizeof(struct sigaction));
-		task->thread->gid = parent->thread->gid;
-		task->thread->uid = parent->thread->uid;
-		task->thread->_uid = parent->thread->_uid;
-		task->thread->_gid = parent->thread->_gid;
-		mutex_create(&(task->thread->files_lock), 0);
-		task->thread->global_sig_mask = parent->thread->global_sig_mask;
+		task->thread = thread_data_create();
+		copy_thread_data(task, parent);
 	} else {
 		add_atomic(&parent->thread->count, 1);
 		task->thread = parent->thread;
 	}
-	task->magic = TASK_MAGIC;
+	
 	task->tty = parent->tty;
 	task->sig_mask = parent->sig_mask;
-
 	task->priority = parent->priority;
 	task->stack_end = parent->stack_end;
 	task->heap_end = parent->heap_end;
@@ -48,22 +50,17 @@ void copy_task_struct(task_t *task, task_t *parent, char share_thread_data)
 	task->system = parent->system;
 	task->cmask = parent->cmask;
 	task->path_loc_start = parent->path_loc_start;
-	task->kernel_stack = (addr_t)kmalloc(KERN_STACK_SIZE+8);
+	
 	if(parent->mmf_priv_space) {
 		task->mmf_priv_space = (vma_t *)kmalloc(sizeof(vma_t));
 		memcpy(task->mmf_priv_space, parent->mmf_priv_space, sizeof(vma_t));
 	}
 	task->mmf_share_space = parent->mmf_share_space;
 	copy_mmf(parent, task);
-
-	/* This actually duplicates the handles... */
 	copy_file_handles(parent, task);
+	/* this flag gets cleared on the first scheduling of this task */
 	task->flags = TF_FORK;
-	mutex_create((mutex_t *)&task->exlock, MT_NOSCHED);
 	task->phys_mem_usage = parent->phys_mem_usage;
-	task->listnode = (void *)kmalloc(sizeof(struct llistnode));
-	task->activenode = (void *)kmalloc(sizeof(struct llistnode));
-	task->blocknode = (void *)kmalloc(sizeof(struct llistnode));
 }
 
 #if CONFIG_SMP
@@ -91,8 +88,8 @@ int do_fork(unsigned flags)
 {
 	assert(current_task && kernel_task);
 	assert(running_processes < (unsigned)MAX_TASKS || MAX_TASKS == -1);
-	unsigned eip;
-	task_t *task = (task_t *)kmalloc(sizeof(task_t));
+	addr_t eip;
+	task_t *task = task_create();
 	page_dir_t *newspace;
 	if(flags & FORK_SHAREDIR)
 		newspace = vm_copy(current_task->pd);

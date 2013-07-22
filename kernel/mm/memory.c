@@ -62,7 +62,9 @@ void init_memory(struct multiboot *m)
 	mutex_create(&pm_mutex, 0);
 	vm_init(pm_location);
 	process_memorymap(m);
+	
  	install_kmalloc(KMALLOC_NAME, KMALLOC_INIT, KMALLOC_ALLOC, KMALLOC_FREE);
+	for(;;);
 	vm_init_2();
 	primary_cpu->flags |= CPU_PAGING;
 	set_ksf(KSF_MMU);

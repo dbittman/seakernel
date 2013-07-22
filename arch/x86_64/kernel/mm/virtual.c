@@ -5,7 +5,7 @@
 #include <task.h>
 #include <cpu.h>
 #include <atomic.h>
-volatile page_dir_t *kernel_dir=0;
+volatile addr_t *kernel_dir=0;
 int id_tables=0;
 struct pd_data *pd_cur_data = (struct pd_data *)PDIR_DATA;
 extern void id_map_apic(page_dir_t *);
@@ -19,13 +19,13 @@ void early_vm_map(pml4_t *pml4, addr_t addr, addr_t map)
 	page_table_t *pt;
 	
 	if(!pml4[PML4_IDX(addr/0x1000)])
-		printk(0, "PML4\n"), pml4[PML4_IDX(addr/0x1000)] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+		pml4[PML4_IDX(addr/0x1000)] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
 	pdpt = (addr_t *)(pml4[PML4_IDX(addr/0x1000)] & PAGE_MASK);
 	if(!pdpt[PDPT_IDX(addr/0x1000)])
-		printk(0, "PDPT\n"), pdpt[PDPT_IDX(addr/0x1000)] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+		pdpt[PDPT_IDX(addr/0x1000)] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
 	pd = (addr_t *)(pdpt[PDPT_IDX(addr/0x1000)] & PAGE_MASK);
 	if(!pd[PAGE_DIR_IDX(addr/0x1000)])
-		printk(0, "PD\n"), pd[PAGE_DIR_IDX(addr/0x1000)] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+		pd[PAGE_DIR_IDX(addr/0x1000)] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
 	/* passing map as zero allows us to map in all the tables, but leave the
 	 * true mapping null. This is handy for the page stack and heap */
 	pt = (addr_t *)(pd[PAGE_DIR_IDX(addr/0x1000)] & PAGE_MASK);
@@ -107,16 +107,13 @@ void vm_init(addr_t id_map_to)
 	/* map in the signal return inject code. we need to do this, because
 	 * user code may not run the the kernel area of the page directory */
 	early_vm_map(pml4, SIGNAL_INJECT, pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE);
-	/* Pre-map the heap's tables */
-
-	/* Now map in the physical page stack so we have memory to use */
 	/* CR3 requires the physical address, so we directly 
 	 * set it because we have the physical address */
 	printk(0, "Setting new CR3...\n");
 	asm("mov %0, %%cr3"::"r"(pml4));
+ 	kernel_dir = pml4;
 	/* Enable paging */
 	printk(0, "Paging enabled!\n");
-	for(;;);
 	set_ksf(KSF_PAGING);
 	memset(0, 0, 0x1000);
 }
@@ -152,14 +149,30 @@ void vm_switch(page_dir_t *n/*VIRTUAL ADDRESS*/)
 
 addr_t vm_do_getmap(addr_t v, addr_t *p, unsigned locked)
 {
-	unsigned *pd = page_directory;
-	unsigned int vp = (v&PAGE_MASK) / 0x1000;
-	unsigned int pt_idx = PAGE_DIR_IDX(vp);
-	if(!pd[pt_idx])
-		return 0;
+	addr_t vpage = (v&PAGE_MASK)/0x1000;
+	unsigned vp4 = PML4_IDX(vpage);
+	unsigned vpdpt = PDPT_IDX(vpage);
+	unsigned vdir = PAGE_DIR_IDX(vpage);
+	unsigned vtbl = PAGE_TABLE_IDX(vpage);
 	if(kernel_task && !locked)
 		mutex_acquire(&pd_cur_data->lock);
-	unsigned ret = page_tables[vp] & PAGE_MASK;
+	page_dir_t *pd;
+	page_table_t *pt;
+	pdpt_t *pdpt;
+	pml4_t *pml4;
+	
+	pml4 = (pml4_t *)((kernel_task && current_task) ? current_task->pd : kernel_dir);
+	if(!pml4[vp4])
+		pml4[vp4] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+	pdpt = (addr_t *)((pml4[vp4]&PAGE_MASK) + PHYS_PAGE_MAP);
+	if(!pdpt[vpdpt])
+		pdpt[vpdpt] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+	pd = (addr_t *)((pdpt[vpdpt]&PAGE_MASK) + PHYS_PAGE_MAP);
+	if(!pd[vdir])
+		pd[vdir] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+	pt = (addr_t *)((pd[vdir]&PAGE_MASK) + PHYS_PAGE_MAP);
+	
+	addr_t ret = pt[vtbl] & PAGE_MASK;
 	if(kernel_task && !locked)
 		mutex_release(&pd_cur_data->lock);
 	if(p)
@@ -169,15 +182,31 @@ addr_t vm_do_getmap(addr_t v, addr_t *p, unsigned locked)
 
 unsigned int vm_setattrib(addr_t v, short attr)
 {
-	unsigned *pd = page_directory;
-	unsigned int vp = (v&PAGE_MASK) / 0x1000;
-	unsigned int pt_idx = PAGE_DIR_IDX(vp);
-	if(!pd[pt_idx])
-		return 0;
+	addr_t vpage = (v&PAGE_MASK)/0x1000;
+	unsigned vp4 = PML4_IDX(vpage);
+	unsigned vpdpt = PDPT_IDX(vpage);
+	unsigned vdir = PAGE_DIR_IDX(vpage);
+	unsigned vtbl = PAGE_TABLE_IDX(vpage);
 	if(kernel_task)
 		mutex_acquire(&pd_cur_data->lock);
-	(page_tables[vp] &= PAGE_MASK);
-	(page_tables[vp] |= attr);
+	page_dir_t *pd;
+	page_table_t *pt;
+	pdpt_t *pdpt;
+	pml4_t *pml4;
+	
+	pml4 = (pml4_t *)((kernel_task && current_task) ? current_task->pd : kernel_dir);
+	if(!pml4[vp4])
+		pml4[vp4] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+	pdpt = (addr_t *)((pml4[vp4]&PAGE_MASK) + PHYS_PAGE_MAP);
+	if(!pdpt[vpdpt])
+		pdpt[vpdpt] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+	pd = (addr_t *)((pdpt[vpdpt]&PAGE_MASK) + PHYS_PAGE_MAP);
+	if(!pd[vdir])
+		pd[vdir] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+	pt = (addr_t *)((pd[vdir]&PAGE_MASK) + PHYS_PAGE_MAP);
+	
+	pt[vtbl] &= PAGE_MASK;
+	pt[vtbl] |= attr;
 	if(kernel_task)
 		mutex_release(&pd_cur_data->lock);
 	return 0;
@@ -185,14 +214,30 @@ unsigned int vm_setattrib(addr_t v, short attr)
 
 unsigned int vm_do_getattrib(addr_t v, unsigned *p, unsigned locked)
 {
-	unsigned *pd = page_directory;
-	unsigned int vp = (v&PAGE_MASK) / 0x1000;
-	unsigned int pt_idx = PAGE_DIR_IDX(vp);
-	if(!pd[pt_idx])
-		return 0;
+	addr_t vpage = (v&PAGE_MASK)/0x1000;
+	unsigned vp4 = PML4_IDX(vpage);
+	unsigned vpdpt = PDPT_IDX(vpage);
+	unsigned vdir = PAGE_DIR_IDX(vpage);
+	unsigned vtbl = PAGE_TABLE_IDX(vpage);
 	if(kernel_task && !locked)
 		mutex_acquire(&pd_cur_data->lock);
-	unsigned ret = page_tables[vp] & ATTRIB_MASK;
+	page_dir_t *pd;
+	page_table_t *pt;
+	pdpt_t *pdpt;
+	pml4_t *pml4;
+	
+	pml4 = (pml4_t *)((kernel_task && current_task) ? current_task->pd : kernel_dir);
+	if(!pml4[vp4])
+		pml4[vp4] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+	pdpt = (addr_t *)((pml4[vp4]&PAGE_MASK) + PHYS_PAGE_MAP);
+	if(!pdpt[vpdpt])
+		pdpt[vpdpt] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+	pd = (addr_t *)((pdpt[vpdpt]&PAGE_MASK) + PHYS_PAGE_MAP);
+	if(!pd[vdir])
+		pd[vdir] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+	pt = (addr_t *)((pd[vdir]&PAGE_MASK) + PHYS_PAGE_MAP);
+	
+	unsigned ret = pt[vtbl] & ATTRIB_MASK;
 	if(kernel_task && !locked)
 		mutex_release(&pd_cur_data->lock);
 	if(p)

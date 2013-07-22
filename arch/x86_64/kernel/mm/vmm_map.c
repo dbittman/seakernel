@@ -6,15 +6,33 @@
 #include <cpu.h>
 int vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned opt)
 {
-	//unsigned vpage = (virt&PAGE_MASK)/0x1000;
-	//unsigned vdir = PAGE_DIR_IDX(vpage);
-	addr_t p;
-	//unsigned *pd = page_directory;
-	//if(kernel_task && !(opt & MAP_PDLOCKED))
-	//	mutex_acquire(&pd_cur_data->lock);
-
-	//if(!(opt & MAP_NOCLEAR))
-	//	memset((void *)(virt&PAGE_MASK), 0, 0x1000);
+	addr_t vpage = (virt&PAGE_MASK)/0x1000;
+	unsigned vp4 = PML4_IDX(vpage);
+	unsigned vpdpt = PDPT_IDX(vpage);
+	unsigned vdir = PAGE_DIR_IDX(vpage);
+	unsigned vtbl = PAGE_TABLE_IDX(vpage);
+	if(kernel_task && !(opt & MAP_PDLOCKED))
+		mutex_acquire(&pd_cur_data->lock);
+	page_dir_t *pd;
+	page_table_t *pt;
+	pdpt_t *pdpt;
+	pml4_t *pml4;
+	
+	pml4 = (pml4_t *)((kernel_task && current_task) ? current_task->pd : kernel_dir);
+	if(!pml4[vp4])
+		pml4[vp4] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+	pdpt = (addr_t *)((pml4[vp4]&PAGE_MASK) + PHYS_PAGE_MAP);
+	if(!pdpt[vpdpt])
+		pdpt[vpdpt] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+	pd = (addr_t *)((pdpt[vpdpt]&PAGE_MASK) + PHYS_PAGE_MAP);
+	if(!pd[vdir])
+		pd[vdir] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+	pt = (addr_t *)((pd[vdir]&PAGE_MASK) + PHYS_PAGE_MAP);
+	
+	pt[vtbl] = (phys & PAGE_MASK) | attr;
+	if(!(opt & MAP_NOCLEAR))
+		memset((void *)(virt&PAGE_MASK), 0, 0x1000);
+	
 	#if CONFIG_SMP
 	if(kernel_task) {
 		if(IS_KERN_MEM(virt))
@@ -23,7 +41,7 @@ int vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned opt)
 			send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
 	}
 	#endif
-	//if(kernel_task && !(opt & MAP_PDLOCKED))
-	//	mutex_release(&pd_cur_data->lock);
+	if(kernel_task && !(opt & MAP_PDLOCKED))
+		mutex_release(&pd_cur_data->lock);
 	return 0;
 }

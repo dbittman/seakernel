@@ -38,7 +38,8 @@ addr_t __pm_alloc_page(char *file, int line)
 	{
 		mutex_acquire(&pm_mutex);
 		/* out of physical memory!! */
-		/*if(pm_stack <= (PM_STACK_ADDR+sizeof(addr_t)*2)) {
+		if(pm_stack <= (PM_STACK_ADDR+sizeof(addr_t)*2)) {
+			oom:
 			if(current_task == kernel_task || !current_task)
 				panic(PANIC_MEM | PANIC_NOSYNC, "Ran out of physical memory");
 			mutex_release(&pm_mutex);
@@ -61,9 +62,12 @@ addr_t __pm_alloc_page(char *file, int line)
 		pm_stack -= sizeof(addr_t);
 		ret = *(addr_t *)pm_stack;
 		*(addr_t *)pm_stack = 0;
-		++pm_used_pages;*/
+		if(ret <= pm_location)
+			goto oom;
+		++pm_used_pages;
 		mutex_release(&pm_mutex);
 	} else {
+		/* this isn't locked, because it is used before multitasking happens */
 		ret = pm_location;
 		pm_location+=PAGE_SIZE;
 	}
@@ -74,7 +78,6 @@ addr_t __pm_alloc_page(char *file, int line)
 	if(((ret > (unsigned)highest_page) || ret < (unsigned)lowest_page) 
 		&& memory_has_been_mapped)
 		panic(PANIC_MEM | PANIC_NOSYNC, "found invalid address in page stack: %x\n", ret);
-	printk(0, "-> %x\n", (unsigned)ret);
 	return ret;
 }
 
@@ -85,26 +88,31 @@ void pm_free_page(addr_t addr)
 	if(addr < pm_location || (((addr > highest_page) || addr < lowest_page)
 		&& memory_has_been_mapped)) {
 		panic(PANIC_MEM | PANIC_NOSYNC, "tried to free invalic physical address");
-	return;
-		}
-		assert(addr);
-		if(current_task) {
-			current_task->freed++;
-			current_task->phys_mem_usage--;
-		}
-		mutex_acquire(&pm_mutex);
-		/*if(pm_stack_max <= pm_stack)
-		{
-			vm_map(pm_stack_max, addr, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT);
-			memset((void *)pm_stack_max, 0, PAGE_SIZE);
-			pm_stack_max += PAGE_SIZE;
-		} else {
-			assert(*(addr_t *)(pm_stack) = addr);
-			pm_stack += sizeof(addr_t);
-			--pm_used_pages;
-			assert(*(addr_t *)(pm_stack - sizeof(addr_t)) == addr);
-		}*/
-		mutex_release(&pm_mutex);
-		if(current_task && current_task->num_pages)
-			current_task->num_pages--;
+		return;
+	}
+	assert(addr);
+	if(current_task) {
+		current_task->freed++;
+		current_task->phys_mem_usage--;
+	}
+	mutex_acquire(&pm_mutex);
+	if(pm_stack_max <= pm_stack)
+	{
+		if(!memory_has_been_mapped)
+			vm_map(pm_stack_max, pm_alloc_page(), PAGE_PRESENT | PAGE_WRITE, 0);
+		else
+			vm_map(pm_stack_max, addr, PAGE_PRESENT | PAGE_WRITE, 0);
+		memset((void *)pm_stack_max, 0, PAGE_SIZE);
+		pm_stack_max += PAGE_SIZE;
+		if(!memory_has_been_mapped) goto add;
+	} else {
+		add:
+		assert(*(addr_t *)(pm_stack) = addr);
+		pm_stack += sizeof(addr_t);
+		--pm_used_pages;
+		assert(*(addr_t *)(pm_stack - sizeof(addr_t)) == addr);
+	}
+	mutex_release(&pm_mutex);
+	if(current_task && current_task->num_pages)
+		current_task->num_pages--;
 }

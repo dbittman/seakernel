@@ -5,10 +5,10 @@
 #include <swap.h>
 #include <mod.h>
 #include <elf-x86_64.h>
-void print_pfe(int x, registers_t *regs, unsigned cr2)
+void print_pfe(int x, registers_t *regs, addr_t cr2)
 {
 	assert(regs);
-	printk (x, "Woah! Page Fault at 0x%x, faulting address 0x%x\n", regs->eip, cr2);
+	printk (x, "Woah! Page Fault at 0x%x, faulting address 0x%x %x\n", regs->eip, (unsigned)(cr2>>32), (unsigned)cr2);
 	if(!(regs->err_code & 1))
 		printk (x, "Present, ");
 	else

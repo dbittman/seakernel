@@ -74,6 +74,7 @@ addr_t __pm_alloc_page(char *file, int line)
 	if(((ret > (unsigned)highest_page) || ret < (unsigned)lowest_page) 
 		&& memory_has_been_mapped)
 		panic(PANIC_MEM | PANIC_NOSYNC, "found invalid address in page stack: %x\n", ret);
+	printk(0, "-> %x\n", (unsigned)ret);
 	return ret;
 }
 

@@ -39,6 +39,7 @@ addr_t __pm_alloc_page(char *file, int line)
 		mutex_acquire(&pm_mutex);
 		/* out of physical memory!! */
 		if(pm_stack <= (PM_STACK_ADDR+sizeof(addr_t)*2)) {
+			oom:
 			if(current_task == kernel_task || !current_task)
 				panic(PANIC_MEM | PANIC_NOSYNC, "Ran out of physical memory");
 			mutex_release(&pm_mutex);
@@ -61,6 +62,8 @@ addr_t __pm_alloc_page(char *file, int line)
 		pm_stack -= sizeof(addr_t);
 		ret = *(addr_t *)pm_stack;
 		*(addr_t *)pm_stack = 0;
+		if(ret <= pm_location)
+			goto oom;
 		++pm_used_pages;
 		mutex_release(&pm_mutex);
 	} else {

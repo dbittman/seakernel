@@ -84,10 +84,12 @@ start:
 	mov DWORD [edi+24], (0x76003)  ; Set the double word at the destination index to 0x76003.
 	mov DWORD [edi+32], (0x77003)  ; Set the double word at the destination index to 0x77003.
 	mov DWORD [edi+40], (0x78003)  ; Set the double word at the destination index to 0x78003.
+	mov DWORD [edi+48], (0x79003)  ; Set the double word at the destination index to 0x79003.
+	mov DWORD [edi+56], (0x80003)  ; Set the double word at the destination index to 0x79003.
 
     add edi, 0x1000
 	mov ebx, 0x00000003         ; Set the B-register to 0x00000003.
-	mov ecx, 3072                ; Set the C-register to 3072.
+	mov ecx, 4096                ; Set the C-register to 3072.
 .SetEntry:
 	mov DWORD [edi], ebx        ; Set the double word at the destination index to the B-register.
 	add ebx, 0x1000             ; Add 0x1000 to the B-register.

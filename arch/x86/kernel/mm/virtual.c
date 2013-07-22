@@ -65,14 +65,6 @@ void vm_init(addr_t id_map_to)
 		pt = (unsigned int *)(pd[i] & PAGE_MASK);
 		memset(pt, 0, 0x1000);
 	}
-	/* Now map in the physical page stack so we have memory to use */
-	for(i=PAGE_DIR_IDX((PM_STACK_ADDR/0x1000));
-		i<(int)PAGE_DIR_IDX(PM_STACK_ADDR_TOP/0x1000);i++)
-	{
-		pd[i] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
-		pt = (unsigned int *)(pd[i] & PAGE_MASK);
-		memset(pt, 0, 0x1000);
-	}
 	
 	/* CR3 requires the physical address, so we directly 
 	 * set it because we have the physical address */

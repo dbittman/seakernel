@@ -11,7 +11,42 @@ struct pd_data *pd_cur_data = (struct pd_data *)PDIR_DATA;
 extern void id_map_apic(page_dir_t *);
 /* This function will setup a paging environment with a basic page dir, 
  * enough to process the memory map passed by grub */
-unsigned x = 777;
+
+void early_vm_map(pml4_t *pml4, addr_t addr, addr_t map)
+{
+	pdpt_t *pdpt;
+	page_dir_t *pd;
+	page_table_t *pt;
+	
+	if(!pml4[PML4_IDX(addr/0x1000)])
+		printk(0, "PML4\n"), pml4[PML4_IDX(addr/0x1000)] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+	pdpt = (addr_t *)(pml4[PML4_IDX(addr/0x1000)] & PAGE_MASK);
+	if(!pdpt[PDPT_IDX(addr/0x1000)])
+		printk(0, "PDPT\n"), pdpt[PDPT_IDX(addr/0x1000)] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+	pd = (addr_t *)(pdpt[PDPT_IDX(addr/0x1000)] & PAGE_MASK);
+	if(!pd[PAGE_DIR_IDX(addr/0x1000)])
+		printk(0, "PD\n"), pd[PAGE_DIR_IDX(addr/0x1000)] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+	/* passing map as zero allows us to map in all the tables, but leave the
+	 * true mapping null. This is handy for the page stack and heap */
+	pt = (addr_t *)(pd[PAGE_DIR_IDX(addr/0x1000)] & PAGE_MASK);
+	pt[PAGE_TABLE_IDX(addr/0x1000)] = map;
+}
+
+void early_vm_map_2m(pml4_t *pml4, addr_t addr, addr_t map)
+{
+	pdpt_t *pdpt;
+	page_dir_t *pd;
+	page_table_t *pt;
+	
+	if(!pml4[PML4_IDX(addr/0x1000)])
+		printk(0, "PML4\n"), pml4[PML4_IDX(addr/0x1000)] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+	pdpt = (addr_t *)(pml4[PML4_IDX(addr/0x1000)] & PAGE_MASK);
+	if(!pdpt[PDPT_IDX(addr/0x1000)])
+		printk(0, "PDPT\n"), pdpt[PDPT_IDX(addr/0x1000)] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+	pd = (addr_t *)(pdpt[PDPT_IDX(addr/0x1000)] & PAGE_MASK);
+	pd[PAGE_DIR_IDX(addr/0x1000)] = map | (1 << 7);
+}
+
 void vm_init(addr_t id_map_to)
 {
 	/* Register some stuff... */
@@ -31,10 +66,11 @@ void vm_init(addr_t id_map_to)
 	pd[3] = (addr_t)(pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE);
 	pd[4] = (addr_t)(pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE);
 	pd[5] = (addr_t)(pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE);
+	pd[6] = (addr_t)(pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE);
 	
-	page_dir_t *pt;
+	page_table_t *pt;
 	addr_t address = 0;
-	for(int pdi = 0; pdi < 6; pdi++)
+	for(int pdi = 0; pdi < 7; pdi++)
 	{
 		pt = (addr_t *)(pd[pdi] & PAGE_MASK);
 		for(int t = 0; t < 512; t++)
@@ -70,25 +106,16 @@ void vm_init(addr_t id_map_to)
 #endif
 	/* map in the signal return inject code. we need to do this, because
 	 * user code may not run the the kernel area of the page directory */
-	
+	early_vm_map(pml4, SIGNAL_INJECT, pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE);
 	/* Pre-map the heap's tables */
-	
+
 	/* Now map in the physical page stack so we have memory to use */
-	
 	/* CR3 requires the physical address, so we directly 
 	 * set it because we have the physical address */
 	printk(0, "Setting new CR3...\n");
 	asm("mov %0, %%cr3"::"r"(pml4));
 	/* Enable paging */
 	printk(0, "Paging enabled!\n");
-	
-	
-	addr_t a = (addr_t)&x;
-	kprintf("--> %x, %x: %x %x\n", &x, a, (unsigned)((PHYS_PAGE_MAP + a) >> 32), (unsigned)((PHYS_PAGE_MAP + a) & 0xFFFFFFFF));
-	
-	unsigned y = *(unsigned *)(PHYS_PAGE_MAP + a);
-	
-	if(y == x) kprintf("YAY\n");
 	for(;;);
 	set_ksf(KSF_PAGING);
 	memset(0, 0, 0x1000);

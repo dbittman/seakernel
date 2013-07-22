@@ -309,6 +309,7 @@ unsigned slab_init(addr_t start, addr_t end)
 {
 	printk(1, "[slab]: Initiating slab allocator...");
 	map_if_not_mapped(start);
+	map_if_not_mapped(start + 0x1000);
 	slab_start = start;
 	slab_end = end;
 	assert(start < end && start);
@@ -499,7 +500,7 @@ void do_kfree_slab(void *ptr)
 		slab = (slab_t *)*(addr_t *)((addr_t)ptr - sizeof(addr_t *));
 		n = slab->vnode;
 		if(!n) goto try_alt;
-	}
+ 	}
 	if(!n)
 		panic(PANIC_MEM | PANIC_NOSYNC, "Kfree got invalid address in task %d, system=%d (%x)", current_task->pid, current_task->system, ptr);
 	slab_cache_t *sc = (slab_cache_t *)slab->parent;

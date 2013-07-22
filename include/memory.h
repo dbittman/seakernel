@@ -84,29 +84,29 @@ void __KT_swapper();
 void copy_update_stack(addr_t old, addr_t new, unsigned length);
 static inline void map_if_not_mapped(addr_t loc)
 {
-	if(!vm_getmap(loc & 0xFFFFF000, 0))
-		vm_map(loc & 0xFFFFF000, __pm_alloc_page("map_if_not_mapped", 0), 
+	if(!vm_getmap(loc & PAGE_MASK, 0))
+		vm_map(loc & PAGE_MASK, __pm_alloc_page("map_if_not_mapped", 0), 
 		       PAGE_PRESENT | PAGE_WRITE, MAP_CRIT);
 }
 
 static inline void map_if_not_mapped_noclear(addr_t loc)
 {
-	if(!vm_getmap(loc & 0xFFFFF000, 0))
-		vm_map(loc & 0xFFFFF000, __pm_alloc_page("map_if_not_mapped", 0), 
+	if(!vm_getmap(loc & PAGE_MASK, 0))
+		vm_map(loc & PAGE_MASK, __pm_alloc_page("map_if_not_mapped", 0), 
 		       PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_NOCLEAR);
 }
 
 static inline void user_map_if_not_mapped(addr_t loc)
 {
-	if(!vm_getmap(loc & 0xFFFFF000, 0))
-		vm_map(loc & 0xFFFFF000, __pm_alloc_page("map_if_not_mapped", 0), 
+	if(!vm_getmap(loc & PAGE_MASK, 0))
+		vm_map(loc & PAGE_MASK, __pm_alloc_page("map_if_not_mapped", 0), 
 		       PAGE_PRESENT | PAGE_WRITE | PAGE_USER, MAP_CRIT);
 }
 
 static inline void user_map_if_not_mapped_noclear(addr_t loc)
 {
-	if(!vm_getmap(loc & 0xFFFFF000, 0))
-		vm_map(loc & 0xFFFFF000, __pm_alloc_page("map_if_not_mapped", 0), 
+	if(!vm_getmap(loc & PAGE_MASK, 0))
+		vm_map(loc & PAGE_MASK, __pm_alloc_page("map_if_not_mapped", 0), 
 		       PAGE_PRESENT | PAGE_WRITE | PAGE_USER, MAP_CRIT | MAP_NOCLEAR);
 }
 

@@ -16,7 +16,7 @@ typedef struct vmem_area {
 	addr_t addr;
 	u16 num_ipages;
 	mutex_t lock;
-	unsigned max;
+	addr_t max;
 	/* This is the last PHYSICAL node */
 	vnode_t *first;
 	unsigned char nodes[MAX_NODES];
@@ -25,7 +25,7 @@ typedef struct vmem_area {
 
 vnode_t *insert_vmem_area(vma_t *v, unsigned num_p);
 int remove_vmem_area(vma_t *v, vnode_t *n);
-int init_vmem_area(vma_t *v, addr_t addr, unsigned max, int num_ipages);
+int init_vmem_area(vma_t *v, addr_t addr, addr_t max, int num_ipages);
 vnode_t *find_vmem_area(vma_t *v, addr_t addr);
 
 #endif

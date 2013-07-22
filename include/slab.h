@@ -40,7 +40,7 @@ typedef struct slab_cache_s {
 
 #define NUM_SCACHES (PAGE_SIZE / sizeof(slab_cache_t))
 #define OBJ_SIZE(s) (((slab_cache_t *)(s->parent))->obj_size)
-#define FIRST_OBJ(s) ((unsigned)((s->flags & S_ALIGN) ? ((addr_t)s+PAGE_SIZE) \
+#define FIRST_OBJ(s) ((addr_t)((s->flags & S_ALIGN) ? ((addr_t)s+PAGE_SIZE) \
 	: ((addr_t)s+sizeof(slab_t))))
 
 #endif

@@ -182,13 +182,14 @@ slab_t *create_slab(slab_cache_t *sc, int num_pages, unsigned short flags)
 	addr_t addr=0;
 	vnode = alloc_slab(num_pages);
 	if(!vnode)
-		panic(PANIC_MEM | PANIC_NOSYNC, "Unable to allocate slab");
+		panic(PANIC_MEM | PANIC_NOSYNC, "alloc_slab: Unable to allocate slab");
 	if(vnode)
 		addr = vnode->addr;
 	if(!addr)
-		panic(PANIC_MEM | PANIC_NOSYNC, "Unable to allocate slab");
+		panic(PANIC_MEM | PANIC_NOSYNC, "create_slab: Unable to allocate slab");
 	sc->slab_count++;
-	unsigned int j=0, i=0;
+	unsigned i;
+	addr_t j;
 	for(j=addr;j<(addr + num_pages*PAGE_SIZE);j+=PAGE_SIZE) {
 		if(!vm_getmap(j, 0))
 			vm_map(j, pm_alloc_page(), PAGE_PRESENT | PAGE_USER, MAP_CRIT);
@@ -231,8 +232,7 @@ addr_t do_alloc_object(slab_t *slab)
 	/* Pop the object off the top of the stack */
 	unsigned short obj = *(--slab->stack);
 	addr_t obj_addr = FIRST_OBJ(slab) + OBJ_SIZE(slab)*obj;
-	assert((obj_addr > (addr_t)slab) 
-	&& (((obj_addr+sc->obj_size)-(addr_t)slab) <= slab->num_pages*0x1000));
+	assert((obj_addr > (addr_t)slab) && (((obj_addr+sc->obj_size)-(addr_t)slab) <= slab->num_pages*0x1000));
 	slab->obj_used++;
 	return obj_addr;
 }
@@ -429,8 +429,8 @@ slab_t *find_usable_slab(unsigned size, int align, int allow_range)
 			__engage_idle();
 			delay(100);
 			return 0;
-		}
-		add_slab_to_list(slab, TO_EMPTY);
+		} else 
+			add_slab_to_list(slab, TO_EMPTY);
 		return slab;
 	}
 	slab_cache_t *new_sc;
@@ -454,7 +454,7 @@ addr_t do_kmalloc_slab(unsigned sz, char align)
 {
 	if(sz < 32) sz=32;
 	if(!align)
-		sz += sizeof(unsigned *);
+		sz += sizeof(addr_t *);
 	slab_t *slab=0, *old_slab=0;
 	try_again:
 	slab = find_usable_slab(sz, align, 1);

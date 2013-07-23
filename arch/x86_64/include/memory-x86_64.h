@@ -4,40 +4,42 @@
  * 
  * You can't use all 64 bits of an address, only the least significant 48.
  * In addition, all higher bits must be sign extended from bit 47. This gives
- * us two ranges of memory:
+ * us two ranges of virtual memory:
  * 0x0000000000000000 - 0x00007FFFFFFFFFFF
  * 0xFFFF800000000000 - 0xFFFFFFFFFFFFFFFF
  */
-#define TOP_TASK_MEM       0x00007FFFFFFFFFFF
-#define TOP_TASK_MEM_EXEC  0x0000700000000000
-#define TOP_USER_HEAP      0x0000700000000000
-#define TOP_LOWER_KERNEL   0x100000000
+#define TOP_TASK_MEM        0x00007FFFFFFFFFFF
+#define TOP_TASK_MEM_EXEC   0x0000700000000000
+#define TOP_USER_HEAP       0x0000700000000000
+#define TOP_LOWER_KERNEL          0x8000000000
 
-#define EXEC_MINIMUM	   0x300000000
+#define BOTTOM_HIGHER_KERNEL 0xFFFF800000000000
 
-#define SOLIB_RELOC_START  0x200000000
-#define SOLIB_RELOC_END    0x300000000
+#define EXEC_MINIMUM	         0x18000000000
 
-#define KMALLOC_ADDR_START 0x100000000
-#define KMALLOC_ADDR_END   0x200000000
+#define KMALLOC_ADDR_START        0x1000000000
+#define KMALLOC_ADDR_END          0x2000000000
 
-#define PM_STACK_ADDR      0xFFFFFF7FC0000000
-#define PM_STACK_ADDR_TOP  0xFFFFFF8000000000
+#define PM_STACK_ADDR       0xFFFFFF7FC0000000
+#define PM_STACK_ADDR_TOP   0xFFFFFF8000000000
 
-#define PHYS_PAGE_MAP      0xFFFFFF8000000000
+#define PHYS_PAGE_MAP       0xFFFFFF8000000000
 
-#define PDIR_INFO_START    0xF0000000
+#define PDIR_INFO_START          0x10000000000
 
-#define PDIR_DATA		   0xF0000000
+#define PDIR_DATA		         0x10000000000
 
-/* this entry in the page directory actually just points to the current
- * task */
-#define SMP_CUR_TASK       0xF0400000
+#define PHYSICAL_PML4_INDEX 0xFFFFFE8000000000
 
-#define MMF_SHARED_START   0xB8000000
-#define MMF_SHARED_END     0xC0000000
-#define MMF_PRIV_START     0xA0000000
-#define MMF_PRIV_END       0xB0000000
+#define RESERVED1           0xFFFFFE8000000000
+#define RESERVED1_END       0xFFFFFF0000000000
+
+#define SMP_CUR_TASK             0x11000000000
+
+#define MMF_SHARED_START            0xB8000000
+#define MMF_SHARED_END              0xC0000000
+#define MMF_PRIV_START              0xA0000000
+#define MMF_PRIV_END                0xB0000000
 
 /* where the signal injector code goes */
 #define SIGNAL_INJECT      0xB0001000
@@ -73,6 +75,6 @@
 #define flush_pd() \
 __asm__ __volatile__("mov %%cr3,%%rax\n\tmov %%rax,%%cr3": : :"ax", "eax", "rax")
 
-#define current_task ((kernel_state_flags&KSF_MMU) ? ((task_t *)(addr_t)0) : 0)
+#define current_task (kernel_task ? ((task_t *)(addr_t)SMP_CUR_TASK) : 0)
 
 #endif

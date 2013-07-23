@@ -130,11 +130,12 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	printk(1, "[kernel]: Starting system management\n");
 
 	init_memory(mtboot);
+	console_init_stage2();
 	#if CONFIG_ARCH == TYPE_ARCH_X86_64
+	kprintf("x86_64: halt\n");
 	asm("sti");
 	for(;;);
 	#endif	
-	console_init_stage2();
 	parse_kernel_cmd((char *)(addr_t)mtboot->cmdline);
 	init_multitasking();
 	init_cache();

@@ -70,7 +70,7 @@ void init_memory(struct multiboot *m)
 	init_swap();
 #endif
 #if CONFIG_MODULES
-	add_kernel_symbol(page_directory);
+	add_kernel_symbol(kernel_dir);
 	add_kernel_symbol(__kmalloc);
 	add_kernel_symbol(kmalloc_ap);
 	add_kernel_symbol(kmalloc_a);

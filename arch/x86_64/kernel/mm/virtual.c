@@ -32,21 +32,6 @@ void early_vm_map(pml4_t *pml4, addr_t addr, addr_t map)
 	pt[PAGE_TABLE_IDX(addr/0x1000)] = map;
 }
 
-void early_vm_map_2m(pml4_t *pml4, addr_t addr, addr_t map)
-{
-	pdpt_t *pdpt;
-	page_dir_t *pd;
-	page_table_t *pt;
-	
-	if(!pml4[PML4_IDX(addr/0x1000)])
-		printk(0, "PML4\n"), pml4[PML4_IDX(addr/0x1000)] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
-	pdpt = (addr_t *)(pml4[PML4_IDX(addr/0x1000)] & PAGE_MASK);
-	if(!pdpt[PDPT_IDX(addr/0x1000)])
-		printk(0, "PDPT\n"), pdpt[PDPT_IDX(addr/0x1000)] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
-	pd = (addr_t *)(pdpt[PDPT_IDX(addr/0x1000)] & PAGE_MASK);
-	pd[PAGE_DIR_IDX(addr/0x1000)] = map | (1 << 7);
-}
-
 void vm_init(addr_t id_map_to)
 {
 	/* Register some stuff... */
@@ -134,17 +119,16 @@ void vm_init_2()
 		i++;
 	}
 #else
-	primary_cpu->kd = vm_clone(page_directory, 0);
-	primary_cpu->kd_phys = primary_cpu->kd[1023] & PAGE_MASK;
+	primary_cpu->kd = vm_clone((addr_t *)kernel_dir, 0);
+	primary_cpu->kd_phys = kernel_dir[PML4_IDX(PHYSICAL_PML4_INDEX/0x1000)] & PAGE_MASK;
 #endif
 	kernel_dir = primary_cpu->kd;
-	vm_switch((page_dir_t *)primary_cpu->kd);
+	vm_switch((addr_t *)primary_cpu->kd);
 }
 
-void vm_switch(page_dir_t *n/*VIRTUAL ADDRESS*/)
+void vm_switch(addr_t *n/*VIRTUAL ADDRESS*/)
 {
-	/* n[1023] is the mapped bit that loops to itself */
-	//__asm__ volatile ("mov %0, %%cr3" : : "r" (n[1023]&PAGE_MASK));
+	__asm__ volatile ("mov %0, %%cr3" : : "r" (n[PML4_IDX((PHYSICAL_PML4_INDEX/0x1000))]));
 }
 
 addr_t vm_do_getmap(addr_t v, addr_t *p, unsigned locked)

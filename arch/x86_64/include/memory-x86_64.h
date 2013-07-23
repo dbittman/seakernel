@@ -41,7 +41,7 @@
 #define RESERVED2                 0x8000000000
 #define RESERVED2_END            0x10000000000
 
-#define CURRENT_TASK_POINTER      0x8000000008
+#define CURRENT_TASK_POINTER      0x8000000000
 
 #define MMF_SHARED_START            0xB8000000
 #define MMF_SHARED_END              0xC0000000

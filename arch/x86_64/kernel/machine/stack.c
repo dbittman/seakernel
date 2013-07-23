@@ -46,20 +46,7 @@ void setup_kernelstack()
 
 void print_trace(unsigned int MaxFrames)
 {
-	/*
-	unsigned int * ebp = &MaxFrames - 2;
-	for(unsigned int frame = 0; frame < MaxFrames; ++frame)
-	{
-		if((kernel_state_flags&KSF_MMU) && !vm_do_getmap((addr_t)ebp, 0, 1)) break;
-		unsigned int eip = ebp[1];
-		if(eip == 0)
-			break;
-		ebp = (unsigned int *)(ebp[0]);
-		const char *name = elf64_lookup_symbol(eip, &kernel_elf);
-		if(name) kprintf("  <%x>  %s\n", eip, name);
-	}
-	*/
-#warning "print_trace"
+	kprintf("-- x86_64: print_trace: not implemented\n");
 }
 
 void copy_update_stack(addr_t new, addr_t old, unsigned length)

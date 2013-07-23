@@ -113,15 +113,15 @@ void vm_init_2()
 	while(i < cpu_array_num)
 	{
 		printk(0, "[mm]: cloning directory for processor %d (%x)\n", cpu_array[i].apicid, &cpu_array[i]);
-		page_dir_t *pd = vm_clone(page_directory, 0);
-		cpu_array[i].kd_phys = pd[1023] & PAGE_MASK;
-		cpu_array[i].kd = pd;
+		pml4_t *p = vm_clone(kernel_dir, 0);
+		cpu_array[i].kd_phys = p[PML4_IDX(PHYSICAL_PML4_INDEX/0x1000)] & PAGE_MASK;
+		cpu_array[i].kd = p;
 		i++;
 	}
 #else
 	printk(0, "[mm]: cloning directory for primary cpu\n");
 	primary_cpu->kd = vm_clone((addr_t *)kernel_dir, 0);
-	primary_cpu->kd_phys = kernel_dir[PML4_IDX(PHYSICAL_PML4_INDEX/0x1000)] & PAGE_MASK;
+	primary_cpu->kd_phys = primary_cpu->kd[PML4_IDX(PHYSICAL_PML4_INDEX/0x1000)] & PAGE_MASK;
 #endif
 	kernel_dir = primary_cpu->kd;
 	vm_switch((addr_t *)primary_cpu->kd);

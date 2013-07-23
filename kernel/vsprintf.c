@@ -34,28 +34,10 @@ static int skip_atoi(const char **s)
 #define LEFT	16		/* left justified */
 #define SPECIAL	32		/* 0x */
 #define SMALL	64		/* use 'abcdef' instead of 'ABCDEF' */
-/*
-int __do_div(int *n, int base)
-{
-	int num = *n;
-	int __res;
-	__asm__("divl %4":"=a" (num),"=d" (__res):"0" (num),"1" (0),"r" (base));
-	*n = num;
-	return __res;
-}
-*/
-int do_div(long *n, int base)
-{
-	long num = *n;
-	int __res;
-	__res = num % base;
-	*n = num / base;
-	return __res;
-}
 
 static char * number(char * str, long num, int base, int size, int precision ,int type)
 {
-	char c,sign,tmp[36];
+	char c,sign,tmp[72];
 	const char *digits="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 	int i;
 
@@ -77,8 +59,10 @@ static char * number(char * str, long num, int base, int size, int precision ,in
 	i=0;
 	if (num==0)
 		tmp[i++]='0';
-	else while (num!=0)
-		tmp[i++]=digits[do_div(&num,base)];
+	else while (num!=0) {
+		tmp[i++]=digits[(unsigned long)num % base];
+		num = (unsigned long)num / base;
+	}
 	if (i>precision) precision=i;
 	size -= precision;
 	if (!(type&(ZEROPAD+LEFT)))

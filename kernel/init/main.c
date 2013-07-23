@@ -135,7 +135,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	kprintf("x86_64: halt\n");
 	asm("sti");
 	for(;;);
-	#endif	
+	#endif
 	parse_kernel_cmd((char *)(addr_t)mtboot->cmdline);
 	init_multitasking();
 	init_cache();

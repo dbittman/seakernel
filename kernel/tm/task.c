@@ -65,7 +65,7 @@ void init_multitasking()
 	primary_cpu->numtasks=1;
 	/* make this the "current_task" by assigning a specific location
 	 * in the page directory as the pointer to the task. */
-	arch_specific_set_current_task(page_directory, (addr_t)task);
+	arch_specific_set_current_task((addr_t *)kernel_dir, (addr_t)task);
 	kernel_task = task;
 	/* this is the final thing to allow the system to begin scheduling
 	 * once interrupts are enabled */

@@ -13,7 +13,7 @@ void copy_pde(page_dir_t *pd, page_dir_t *parent_pd, int idx)
 		return;
 	page_table_t *parent = (addr_t *)((parent_pd[idx] & PAGE_MASK) + PHYS_PAGE_MAP);
 	page_table_t table = pm_alloc_page(), *entries;
-	entries = (addr_t *)table;
+	entries = (addr_t *)(table+PHYS_PAGE_MAP);
 	int i;
 	for(i=0;i<512;i++)
 	{
@@ -75,14 +75,12 @@ pml4_t *vm_clone(pml4_t *parent_pml4, char cow)
 	for(i=0;i<512;i++)
 	{
 		if(i >= PML4_IDX(BOTTOM_HIGHER_KERNEL/0x1000) || i < PML4_IDX(TOP_LOWER_KERNEL/0x1000) || parent_pml4[i] == 0)
-		{
 			pml4[i] = parent_pml4[i];
-		} else {
+		else
 			copy_pml4e(pml4, parent_pml4, i);
-		}
 	}
 	pml4[PML4_IDX(PHYSICAL_PML4_INDEX/0x1000)] = pml4_phys;
-	
+	pml4[PML4_IDX(CURRENT_TASK_POINTER/0x1000)] = 0;
 	/* get the physical address of the page_dir_info for the new task, which is automatically
 	 * copied in the copy loop above */
 	addr_t info_phys;
@@ -103,7 +101,6 @@ pml4_t *vm_clone(pml4_t *parent_pml4, char cow)
 	mutex_create(&info->lock, MT_NOSCHED);
 	if(kernel_task)
 		mutex_release(&pd_cur_data->lock);
-	
 	return pml4;
 }
 
@@ -135,6 +132,7 @@ pml4_t *vm_copy(pml4_t *parent_pml4)
 		}
 	}
 	pml4[PML4_IDX(PHYSICAL_PML4_INDEX/0x1000)] = pml4_phys;
+	pml4[PML4_IDX(CURRENT_TASK_POINTER/0x1000)] = 0;
 	if(kernel_task)
 		mutex_release(&pd_cur_data->lock);
 	

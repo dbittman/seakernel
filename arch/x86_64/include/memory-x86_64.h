@@ -13,9 +13,13 @@
 #define TOP_USER_HEAP       0x0000700000000000
 #define TOP_LOWER_KERNEL          0x8000000000
 
+#define STACK_LOCATION     (0x0000700000002000 + ((CONFIG_STACK_PAGES+1) * 0x1000)*2)
+
 #define BOTTOM_HIGHER_KERNEL 0xFFFF800000000000
 
-#define EXEC_MINIMUM	         0x18000000000
+#define EXEC_MINIMUM	         0x20000000000
+
+#define START_FREE_LOCATION      0x18000000000
 
 #define KMALLOC_ADDR_START        0x1000000000
 #define KMALLOC_ADDR_END          0x2000000000
@@ -34,7 +38,10 @@
 #define RESERVED1           0xFFFFFE8000000000
 #define RESERVED1_END       0xFFFFFF0000000000
 
-#define SMP_CUR_TASK             0x11000000000
+#define RESERVED2                 0x8000000000
+#define RESERVED2_END            0x10000000000
+
+#define CURRENT_TASK_POINTER      0x8000000008
 
 #define MMF_SHARED_START            0xB8000000
 #define MMF_SHARED_END              0xC0000000
@@ -44,12 +51,9 @@
 /* where the signal injector code goes */
 #define SIGNAL_INJECT      0xB0001000
 
-#define IS_KERN_MEM(x) (x < TOP_LOWER_KERNEL || (x > MMF_SHARED_START && x < PDIR_DATA))
+#define IS_KERN_MEM(x) (x < TOP_LOWER_KERNEL || x > BOTTOM_HIGHER_KERNEL)
 
-#define IS_THREAD_SHARED_MEM(x) (((!(x >= TOP_TASK_MEM_EXEC && x < TOP_TASK_MEM)) || ((x&PAGE_MASK) == PDIR_DATA)) && x < DIR_PHYS)
-
-#define page_directory ((void *)0)
-#define page_tables ((addr_t *)0)
+#define IS_THREAD_SHARED_MEM(x) (((!(x >= TOP_TASK_MEM_EXEC && x < TOP_TASK_MEM)) || ((x&PAGE_MASK) == PDIR_DATA)))
 
 #define PAGE_MASK      0xFFFFFFFFFFFFF000
 #define ATTRIB_MASK    0x00000FFF
@@ -75,6 +79,6 @@
 #define flush_pd() \
 __asm__ __volatile__("mov %%cr3,%%rax\n\tmov %%rax,%%cr3": : :"ax", "eax", "rax")
 
-#define current_task (kernel_task ? ((task_t *)(addr_t)SMP_CUR_TASK) : 0)
+#define current_task (kernel_task ? ((task_t *)(*((addr_t *)CURRENT_TASK_POINTER))) : 0)
 
 #endif

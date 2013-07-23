@@ -38,6 +38,8 @@
 
 #define VIRT_TEMP (0xB0000000)
 
+#define STACK_LOCATION (0xB0002000 + ((CONFIG_STACK_PAGES+1) * 0x1000)*2)
+
 #define IS_KERN_MEM(x) (x < TOP_LOWER_KERNEL || (x > MMF_SHARED_START && x < PDIR_DATA))
 
 #define IS_THREAD_SHARED_MEM(x) (((!(x >= TOP_TASK_MEM_EXEC && x < TOP_TASK_MEM)) || ((x&PAGE_MASK) == PDIR_DATA)) && x < DIR_PHYS)

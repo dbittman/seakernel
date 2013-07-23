@@ -1,7 +1,7 @@
 #include <kernel.h>
 #include <memory.h>
 #include <elf-x86_64.h>
-extern unsigned int i_stack;
+extern addr_t i_stack;
 /* This function's design is based off of JamesM's tutorials. 
  * Yes, I know its bad. But it works okay. */
 void move_stack(void *start, size_t sz)
@@ -24,10 +24,10 @@ void move_stack(void *start, size_t sz)
 	new_base_pointer  = old_base_pointer  + offset; 
 	memcpy((void*)new_stack_pointer, (void*)old_stack_pointer, i_stack-old_stack_pointer);
 	
-	for(i = (u64int)start; i > (u64int)start-sz; i -= 4)
+	for(i = (u64int)start; i > (u64int)start-sz; i -= 8)
 	{
-		tmp = * (u64int*)i;
-		if (( old_stack_pointer < tmp) && (tmp < i_stack))
+		tmp = *(u64int*)i;
+		if((old_stack_pointer < tmp) && (tmp < i_stack))
 		{
 			tmp = tmp + offset;
 			tmp2 = (u64int*)i;
@@ -59,6 +59,7 @@ void print_trace(unsigned int MaxFrames)
 		if(name) kprintf("  <%x>  %s\n", eip, name);
 	}
 	*/
+#warning "print_trace"
 }
 
 void copy_update_stack(addr_t new, addr_t old, unsigned length)

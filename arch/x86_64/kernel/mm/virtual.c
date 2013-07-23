@@ -119,6 +119,7 @@ void vm_init_2()
 		i++;
 	}
 #else
+	printk(0, "[mm]: cloning directory for primary cpu\n");
 	primary_cpu->kd = vm_clone((addr_t *)kernel_dir, 0);
 	primary_cpu->kd_phys = kernel_dir[PML4_IDX(PHYSICAL_PML4_INDEX/0x1000)] & PAGE_MASK;
 #endif

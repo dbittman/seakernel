@@ -49,7 +49,7 @@ __attribute__((always_inline)) inline static void context_switch(task_t *n)
 	mov %2, %%rbp;       \
 	mov %3, %%cr3;"
 	: : "r"(0), "r"(n->esp), "r"(n->ebp), 
-		"r"(n->pd[1023]&PAGE_MASK) : "rax");
+		"r"(n->pd[PML4_IDX(PHYSICAL_PML4_INDEX/0x1000)]&PAGE_MASK) : "rax");
 }
 
 __attribute__((always_inline)) 

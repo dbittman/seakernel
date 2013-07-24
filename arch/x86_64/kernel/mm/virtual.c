@@ -92,6 +92,8 @@ void vm_init(addr_t id_map_to)
 	/* map in the signal return inject code. we need to do this, because
 	 * user code may not run the the kernel area of the page directory */
 	early_vm_map(pml4, SIGNAL_INJECT, pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE);
+	
+	early_vm_map(pml4, PDIR_DATA, pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE);
 	/* CR3 requires the physical address, so we directly 
 	 * set it because we have the physical address */
 	printk(0, "Setting new CR3...\n");

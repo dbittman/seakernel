@@ -131,20 +131,19 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 
 	init_memory(mtboot);
 	console_init_stage2();
-	#if CONFIG_ARCH == TYPE_ARCH_X86_64
-	kprintf("x86_64: halt\n");
-	asm("sti");
-	for(;;);
-	#endif
 	parse_kernel_cmd((char *)(addr_t)mtboot->cmdline);
 	init_multitasking();
 	init_cache();
 	init_dm();
+	#if CONFIG_ARCH == TYPE_ARCH_X86_64
+	kprintf("x86_64: halt\n");
+	set_int(1);
+	for(;;);
+#endif
 	init_vfs();
 	/* Load the rest... */
 	process_initrd();
 	init_kern_task();
-
 	get_timed(&kernel_start_time);
 	printk(KERN_MILE, "[kernel]: Kernel is setup (%2.2d:%2.2d:%2.2d, %s, kv=%d, ts=%d bytes: ok)\n", 
 	       kernel_start_time.tm_hour, kernel_start_time.tm_min, 

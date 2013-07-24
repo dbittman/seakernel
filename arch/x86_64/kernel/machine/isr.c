@@ -238,6 +238,7 @@ void entry_syscall_handler(volatile registers_t regs)
 /* This gets called from our ASM interrupt handler stub. */
 void isr_handler(volatile registers_t regs)
 {
+	printk(0, "irq: %d\n", regs.int_no);
 	assert(((regs.ds&(~0x7)) == 0x10 || (regs.ds&(~0x7)) == 0x20) && ((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));
 	/* this is explained in the IRQ handler */
 	int previous_interrupt_flag = set_int(0);
@@ -288,6 +289,7 @@ void isr_handler(volatile registers_t regs)
 
 void irq_handler(volatile registers_t regs)
 {
+	printk(0, "irq: %d\n", regs.int_no);
 	assert(((regs.ds&(~0x7)) == 0x10 || (regs.ds&(~0x7)) == 0x20) && ((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));
 	/* ok, so the assembly entry function clears interrupts in the cpu, 
 	 * but the kernel doesn't know that yet. So we clear the interrupt

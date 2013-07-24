@@ -140,6 +140,7 @@ void init_main_cpu()
 		kprintf("[smp]: error in init code, disabling SMP support\n");
 #else
 	primary_cpu = &primary_cpu_data;
+	memset(primary_cpu, 0, sizeof(cpu_t));
 	load_tables_ap(primary_cpu);
 #endif
 	assert(primary_cpu);

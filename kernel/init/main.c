@@ -128,18 +128,12 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 
 	/* Now get the management stuff going */
 	printk(1, "[kernel]: Starting system management\n");
-
 	init_memory(mtboot);
 	console_init_stage2();
 	parse_kernel_cmd((char *)(addr_t)mtboot->cmdline);
 	init_multitasking();
 	init_cache();
 	init_dm();
-	#if CONFIG_ARCH == TYPE_ARCH_X86_64
-	kprintf("x86_64: halt\n");
-	set_int(1);
-	for(;;);
-#endif
 	init_vfs();
 	/* Load the rest... */
 	process_initrd();
@@ -151,6 +145,15 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	assert(!set_int(1));
 	if(!fork())
 		init();
+#if CONFIG_ARCH == TYPE_ARCH_X86_64
+	kprintf("x86_64: halt\n");
+	set_int(1);
+	for(;;) {
+		__asm__ __volatile__("sti");
+		//kprintf("A");
+	}
+#endif
+
 	sys_setsid();
 	enter_system(255);
 	kernel_idle_task();
@@ -170,6 +173,14 @@ void printf(const char *fmt, ...)
 
 void init()
 {
+#if CONFIG_ARCH == TYPE_ARCH_X86_64
+	kprintf("init x86_64: halt\n");
+	//set_int(1);
+	for(;;) {
+		__asm__ __volatile__("sti");
+	//	kprintf("B");
+	}
+#endif
 	/* Call sys_setup. This sets up the root nodes, and filedesc's 0, 1 and 2. */
 	sys_setup();
 	kprintf("Something stirs and something tries, and starts to climb towards the light.\n");
@@ -189,7 +200,7 @@ void init()
 	//		printf("Hello!\n");
 	//		u_exit(0);
 	//	}
-		
+
 	//}
 	/* We have to be careful now. If we try to call any kernel functions
 	 * without doing a system call, the processor will generate a GPF (or 

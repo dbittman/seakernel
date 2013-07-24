@@ -12,11 +12,11 @@
 #include <syscall.h>
 unsigned int num_syscalls=0;
 //#define SC_DEBUG 1
-int sys_null()
+int sys_null(long a, long b, long c, long d, long e)
 {
 	#if DEBUG
-	kprintf("[kernel]: Null system call (%d) called in task %d\n", 
-			current_task->system, current_task->pid);
+	kprintf("[kernel]: Null system call (%d) called in task %d\n%x %x %x %x %x", 
+			current_task->system, current_task->pid, a, b, c, d, e);
 	#endif
 	return -ENOSYS;
 }
@@ -198,7 +198,7 @@ int syscall_handler(volatile registers_t *regs)
 		return -ENOSYS;
 	if(unlikely(!syscall_table[SYSCALL_NUM_AND_RET]))
 		return -ENOSYS;
-	volatile int ret;
+	volatile long ret;
 	if(!check_pointers(regs))
 		return -EINVAL;
 	//if(got_signal(current_task) || (unsigned)(ticks-current_task->slice) > (unsigned)current_task->cur_ts)
@@ -215,10 +215,8 @@ int syscall_handler(volatile registers_t *regs)
 		printk(SC_DEBUG, "syscall %d: enter %d\n", current_task->pid, SYSCALL_NUM_AND_RET);
 	int or_t = ticks;
 	#endif
-	
 	__do_syscall_jump(ret, syscall_table[SYSCALL_NUM_AND_RET], _E_, _D_, 
 					  _C_, _B_, _A_);
-	
 	#ifdef SC_DEBUG
 	if(current_task->tty == curcons->tty && (ticks - or_t >= 10 || 1) 
 		&& (ret < 0 || 1) && (ret == -EINTR || 1))
@@ -226,7 +224,7 @@ int syscall_handler(volatile registers_t *regs)
 			   current_task->pid, current_task->system, ret, ticks - or_t);
 		#endif
 		
-		set_int(0);
+	set_int(0);
 	exit_system();
 	__engage_idle();
 	/* if we need to reschedule, or we have overused our timeslice

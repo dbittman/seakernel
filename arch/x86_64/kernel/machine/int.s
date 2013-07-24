@@ -186,7 +186,7 @@ global isr80
 isr80:
     cli                         ; Disable interrupts.
     push qword 0
-    push qword 80                ; Push the interrupt number
+    push qword 0x80                ; Push the interrupt number
     jmp syscall_entry_code
 
 ; the asm entry handlers

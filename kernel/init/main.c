@@ -146,14 +146,6 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	assert(!set_int(1));
 	if(!fork())
 		init();
-#if CONFIG_ARCH == TYPE_ARCH_X86_64
-	kprintf("x86_64: halt\n");
-	set_int(1);
-	for(;;) {
-		kprintf("A");
-	}
-#endif
-
 	sys_setsid();
 	enter_system(255);
 	kernel_idle_task();
@@ -170,16 +162,10 @@ void printf(const char *fmt, ...)
 	u_write(1, printbuf);
 	va_end(args);
 }
-void reset_interrupt_state(int state);
+
 void init()
 {
-#if CONFIG_ARCH == TYPE_ARCH_X86_64
-	kprintf("init x86_64: halt\n");
-	set_int(1);
-	for(;;) {
-		kprintf("B");
-	}
-#endif
+
 	/* Call sys_setup. This sets up the root nodes, and filedesc's 0, 1 and 2. */
 	sys_setup();
 	kprintf("Something stirs and something tries, and starts to climb towards the light.\n");

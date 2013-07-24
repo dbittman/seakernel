@@ -27,7 +27,8 @@ void copy_pde(page_dir_t *pd, page_dir_t *parent_pd, int idx)
 		} else
 			entries[i]=0;
 	}
-	pd[idx] = table | PAGE_PRESENT | PAGE_WRITE;
+	unsigned attr = parent_pd[idx] & ATTRIB_MASK;
+	pd[idx] = table | attr;
 }
 
 void copy_pdpte(pdpt_t *pdpt, pdpt_t *parent_pdpt, int idx)

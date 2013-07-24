@@ -41,17 +41,17 @@ void vm_init(addr_t id_map_to)
 	pml4_t *pml4 = (addr_t *)pm_alloc_page();
 	memset(pml4, 0, 0x1000);
 	/* Identity map the kernel */
-	pml4[0] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+	pml4[0] = pm_alloc_page() | PAGE_PRESENT | PAGE_USER;
 	pdpt_t *pdpt = (addr_t *)(pml4[0] & PAGE_MASK);
-	pdpt[0] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+	pdpt[0] = pm_alloc_page() | PAGE_PRESENT | PAGE_USER;
 	page_dir_t *pd = (addr_t *)(pdpt[0] & PAGE_MASK);
-	pd[0] = (addr_t)(pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE);
-	pd[1] = (addr_t)(pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE);
-	pd[2] = (addr_t)(pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE);
-	pd[3] = (addr_t)(pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE);
-	pd[4] = (addr_t)(pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE);
-	pd[5] = (addr_t)(pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE);
-	pd[6] = (addr_t)(pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE);
+	pd[0] = (addr_t)(pm_alloc_page() | PAGE_PRESENT | PAGE_USER);
+	pd[1] = (addr_t)(pm_alloc_page() | PAGE_PRESENT | PAGE_USER);
+	pd[2] = (addr_t)(pm_alloc_page() | PAGE_PRESENT | PAGE_USER);
+	pd[3] = (addr_t)(pm_alloc_page() | PAGE_PRESENT | PAGE_USER);
+	pd[4] = (addr_t)(pm_alloc_page() | PAGE_PRESENT | PAGE_USER);
+	pd[5] = (addr_t)(pm_alloc_page() | PAGE_PRESENT | PAGE_USER);
+	pd[6] = (addr_t)(pm_alloc_page() | PAGE_PRESENT | PAGE_USER);
 	
 	page_table_t *pt;
 	addr_t address = 0;
@@ -60,7 +60,7 @@ void vm_init(addr_t id_map_to)
 		pt = (addr_t *)(pd[pdi] & PAGE_MASK);
 		for(int t = 0; t < 512; t++)
 		{
-			pt[t] = address | PAGE_PRESENT | PAGE_WRITE;
+			pt[t] = address | PAGE_PRESENT | PAGE_USER;
 			address += 0x1000;
 		}
 	}

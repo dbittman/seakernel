@@ -9,8 +9,9 @@ static long dosyscall(int num, long a, long b, long c, long d, long e)
 	return x;
 }
 
+/* backwards because of the calling conventions...it works. */
 #define __do_syscall_jump(ret, location, a, b, c, d, e) \
-	ret = ((long (*)(long, long, long, long, long))location)(a, b, c, d, e)
+	ret = ((long (*)(long, long, long, long, long))location)(e, d, c, b, a)
 
 #define SYSCALL_NUM_AND_RET regs->rax
 #define _E_ regs->rdi

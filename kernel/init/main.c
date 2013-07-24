@@ -13,6 +13,7 @@
 #include <cache.h>
 #include <mod.h>
 #include <elf.h>
+#include <cpu.h>
 
 struct multiboot *mtboot;
 addr_t i_stack=0;
@@ -149,8 +150,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	kprintf("x86_64: halt\n");
 	set_int(1);
 	for(;;) {
-		__asm__ __volatile__("sti");
-		//kprintf("A");
+		kprintf("A");
 	}
 #endif
 
@@ -170,15 +170,14 @@ void printf(const char *fmt, ...)
 	u_write(1, printbuf);
 	va_end(args);
 }
-
+void reset_interrupt_state(int state);
 void init()
 {
 #if CONFIG_ARCH == TYPE_ARCH_X86_64
 	kprintf("init x86_64: halt\n");
-	//set_int(1);
+	set_int(1);
 	for(;;) {
-		__asm__ __volatile__("sti");
-	//	kprintf("B");
+		kprintf("B");
 	}
 #endif
 	/* Call sys_setup. This sets up the root nodes, and filedesc's 0, 1 and 2. */
@@ -193,6 +192,7 @@ void init()
 	int ret=0;
 	int pid;
 	init_pid = current_task->pid+1;
+	set_cpu_interrupt_flag(1);
 	switch_to_user_mode();
 //#warning "MEMORY LEAK"
 	//for(;;) {

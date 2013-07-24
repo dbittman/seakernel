@@ -16,7 +16,7 @@ extern char tables;
 
 inline void set_kernel_stack(tss_entry_t *tss, u64int stack)
 {
-	tss->esp0 = stack;
+	tss->esp0 = stack & ~0xF; /* align 16 bytes */
 }
 
 void write_tss(gdt_entry_t *gdt, tss_entry_t *tss, s32int num, u16int ss0, u64int esp0)

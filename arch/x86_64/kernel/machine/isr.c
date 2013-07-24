@@ -130,6 +130,7 @@ void faulted(int fuckoff, int userspace, addr_t ip)
  * this is only used if SMP is disabled or unavailable */
 void ack_pic(int n)
 {
+	printk(0, "ack: %d\n", n);
 	assert(interrupt_controller == IOINT_PIC);
 	if(n >= IRQ0 && n < IRQ15) {
 		if (n >= 40)
@@ -238,7 +239,6 @@ void entry_syscall_handler(volatile registers_t regs)
 /* This gets called from our ASM interrupt handler stub. */
 void isr_handler(volatile registers_t regs)
 {
-	printk(0, "irq: %d\n", regs.int_no);
 	assert(((regs.ds&(~0x7)) == 0x10 || (regs.ds&(~0x7)) == 0x20) && ((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));
 	/* this is explained in the IRQ handler */
 	int previous_interrupt_flag = set_int(0);
@@ -374,6 +374,11 @@ void irq_handler(volatile registers_t regs)
 #if CONFIG_SMP
 	lapic_eoi();
 #endif
+}
+
+void reset_timer_state()
+{
+	if(interrupt_controller == IOINT_PIC) ack_pic(32);
 }
 
 /* make sure it eventually gets handled */

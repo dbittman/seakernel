@@ -369,6 +369,11 @@ void irq_handler(volatile registers_t regs)
 #endif
 }
 
+void reset_timer_state()
+{
+	if(interrupt_controller == IOINT_PIC) ack_pic(32);
+}
+
 /* make sure it eventually gets handled */
 void __KT_try_handle_stage2_interrupts()
 {

@@ -116,7 +116,7 @@
 %endmacro
 
 
-align 4
+align 8
 ; In isr.c
 extern isr_handler
 extern irq_handler

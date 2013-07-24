@@ -100,6 +100,7 @@ int schedule()
 	 * we access new->cpu */
 	mutex_release(&cpu->lock);
 	context_switch(next_task);
+	reset_timer_state();
 	/* tasks that have come from fork() (aka, new tasks) have this
 	 * flag set, such that here we just to their entry point in fork() */
 	if(likely(!(next_task->flags & TF_FORK)))

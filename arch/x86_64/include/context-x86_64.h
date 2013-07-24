@@ -38,7 +38,7 @@ __attribute__((always_inline)) inline static void store_context()
 __attribute__((always_inline)) inline static void restore_context(task_t *n)
 {
 	/* Update some last-minute things. The stack. */
-	set_kernel_stack(current_tss, n->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
+	set_kernel_stack(current_tss, (n->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE)) & ~0xF);
 	/* keep track of when we got to run */
 }
 

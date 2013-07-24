@@ -137,7 +137,6 @@ int do_fork(unsigned flags)
 		add_atomic(&cpu->numtasks, 1);
 		tqueue_insert(cpu->active_queue, (void *)task, task->activenode);
 		mutex_release(&cpu->lock);
-		/* And unlock everything and reschedule */
 		__engage_idle();
 		return task->pid;
 	}

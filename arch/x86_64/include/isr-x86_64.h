@@ -57,7 +57,7 @@ int irq_wait(int n);
 void wait_isr(int no);
 extern char interrupt_controller;
 void lapic_eoi();
-
+void reset_timer_state();
 void handle_ipi_cpu_halt(volatile registers_t regs);
 void handle_ipi_reschedule(volatile registers_t regs);
 void handle_ipi_tlb(volatile registers_t regs);

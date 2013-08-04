@@ -1,6 +1,6 @@
 #include <kernel.h>
 #include <dev.h>
-#include <pci.h>
+#include <modules/pci.h>
 #include "ata.h"
 extern struct ata_controller *primary, *secondary;
 

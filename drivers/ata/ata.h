@@ -1,6 +1,6 @@
 #ifndef ATA_H
 #define ATA_H
-#include <pci.h>
+#include <modules/pci.h>
 #include <mod.h>
 
 /* Most of these definitions and support functions have been borrowed from CDI */

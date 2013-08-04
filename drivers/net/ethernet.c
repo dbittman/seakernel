@@ -1,6 +1,7 @@
 #include <kernel.h>
 #include <dev.h>
 #include <mod.h>
+#include <modules/crc32.h>
 intptr_t find_kernel_function(char * unres);
 int (*process_packet_ipv4)(char *, int);
 int (*process_packet_ipv6)(char *, int);

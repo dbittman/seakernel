@@ -17,7 +17,7 @@ MCFLAGS=-std=c99 -g -O3 -fno-rename-registers \
 		-I../arch/${ARCH}/include \
 		-Iarch/${ARCH}/include \
 		-I../../arch/${ARCH}/include \
-		-I include -I../include -I./include -I../../include \
+		-I../include -I../../include \
 		-I../../../include \
 		-I../arch/$(ARCH)/include \
 		-I../../arch/$(ARCH)/include \

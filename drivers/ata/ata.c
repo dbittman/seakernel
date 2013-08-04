@@ -1,6 +1,6 @@
 #include <kernel.h>
 #include <dev.h>
-#include <pci.h>
+#include <modules/pci.h>
 #include "ata.h"
 #include <block.h>
 #include <sys/fcntl.h>

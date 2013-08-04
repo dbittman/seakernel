@@ -1,7 +1,7 @@
 #include <kernel.h>
 #include <isr.h>
 #include <keymap.h>
-#include <keyboard.h>
+#include <modules/keyboard.h>
 #include <console.h>
 #include <sig.h>
 #include <mod.h>

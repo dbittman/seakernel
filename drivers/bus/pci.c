@@ -23,7 +23,7 @@
  * We just use bus*256+dev*8+func. */
 #include <kernel.h>
 #include <types.h>
-#include <pci.h>
+#include <modules/pci.h>
 #include <mod.h>
 #include <task.h>
 #include <fs.h>

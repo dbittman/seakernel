@@ -1,6 +1,6 @@
 #include <kernel.h>
 #include <dev.h>
-#include <pci.h>
+#include <modules/pci.h>
 #include "ata.h"
 #include <block.h>
 int ata_pio_rw(struct ata_controller *cont, struct ata_device *dev, 

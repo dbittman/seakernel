@@ -45,18 +45,39 @@ fi
 
 echo "Allgood" > tools/confed
 
-cat > initrd.conf <<EOF
+cat > initrd-i586.conf <<EOF
 # default ramdisk listing for seaos
 # fileformat is local-file:initrd-file.
 
-data-initrd/usr/sbin/fsck       : /usr/sbin/fsck
-data-initrd/usr/sbin/fsck.ext2  : /usr/sbin/fsck.ext2
+data-initrd/usr32/sbin/fsck       : /usr/sbin/fsck
+data-initrd/usr32/sbin/fsck.ext2  : /usr/sbin/fsck.ext2
 data-initrd/preinit.sh          : /preinit.sh
 data-initrd/etc/fstab           : /etc/fstab
-data-initrd/bin/bash            : /sh
-data-initrd/bin/modprobe        : /modprobe
-data-initrd/bin/mount           : /mount
-data-initrd/bin/chroot          : /chroot
+data-initrd/bin32/bash            : /sh
+data-initrd/bin32/modprobe        : /modprobe
+data-initrd/bin32/mount           : /mount
+data-initrd/bin32/chroot          : /chroot
+
+drivers/built/ata               : /ata
+drivers/built/ext2			    : /ext2
+drivers/built/pci			    : /pci
+drivers/built/keyboard			: /keyboard
+drivers/built/partitions		: /partitions
+
+EOF
+
+cat > initrd-x86_64.conf <<EOF
+# default ramdisk listing for seaos
+# fileformat is local-file:initrd-file.
+
+data-initrd/usr64/sbin/fsck       : /usr/sbin/fsck
+data-initrd/usr64/sbin/fsck.ext2  : /usr/sbin/fsck.ext2
+data-initrd/preinit.sh          : /preinit.sh
+data-initrd/etc/fstab           : /etc/fstab
+data-initrd/bin64/bash            : /sh
+data-initrd/bin64/modprobe        : /modprobe
+data-initrd/bin64/mount           : /mount
+data-initrd/bin64/chroot          : /chroot
 
 drivers/built/ata               : /ata
 drivers/built/ext2			    : /ext2

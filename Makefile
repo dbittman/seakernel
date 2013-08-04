@@ -85,7 +85,7 @@ skernel: skernel.1
 
 initrd.img: modules
 	echo "Building initrd..."
-	./tools/ird.rb initrd.conf > /dev/null
+	./tools/ird.rb initrd-${ARCH_TC}.conf > /dev/null ;\
 
 modules: library/klib.a
 	echo Building modules, pass 1...

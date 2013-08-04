@@ -144,6 +144,7 @@ elf32_t parse_kernel_elf(struct multiboot *mb, elf32_t *);
 extern elf32_t kernel_elf;
 const char *elf32_lookup_symbol (uint32_t addr, elf32_t *elf);
 elf32_symtab_entry_t * fill_symbol_struct(uint8_t * buf, uint32_t symbol);
+char *get_symbol_string(uint8_t *buf, uint32_t index);
 intptr_t get_section_offset(uint8_t * buf, uint32_t info);
 int process_elf(char *mem, int fp, addr_t *start, addr_t *end);
 unsigned long long get_epoch_time();

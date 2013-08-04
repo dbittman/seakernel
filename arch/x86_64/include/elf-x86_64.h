@@ -83,8 +83,8 @@ typedef struct __attribute__((packed))
 } elf64_section_header_t;
 
 typedef struct __attribute__((packed)) {
-	uint64_t r_offset;
-	uint64_t r_info;
+	uint64_t offset;
+	uint64_t info;
 } elf64_rel_t;
 
 typedef struct __attribute__((packed))
@@ -188,12 +188,13 @@ typedef struct
 #define SHN_UNDEF   0
 
 int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int);
-const char *elf64_lookup_symbol (uint32_t addr, elf32_t *elf);
+const char *elf64_lookup_symbol (uint64_t addr, elf64_t *elf);
 elf32_t parse_kernel_elf(struct multiboot *mb, elf32_t *);
 extern elf32_t kernel_elf;
-const char *elf64_lookup_symbol (uint32_t addr, elf32_t *elf);
-elf32_symtab_entry_t * fill_symbol_struct(uint8_t * buf, uint32_t symbol);
-intptr_t get_section_offset(uint8_t * buf, uint32_t info);
+const char *elf64_lookup_symbol (uint64_t addr, elf64_t *elf);
+elf64_symtab_entry_t * fill_symbol_struct(uint8_t * buf, uint64_t symbol);
+intptr_t get_section_offset(uint8_t * buf, uint64_t info);
+char *get_symbol_string(uint8_t *buf, uint64_t index);
 int process_elf(char *mem, int fp, addr_t *start, addr_t *end);
 unsigned long long get_epoch_time();
 void remove_dfs_node(char *name);

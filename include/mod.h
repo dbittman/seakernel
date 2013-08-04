@@ -24,7 +24,6 @@ void _add_kernel_symbol(const intptr_t func, const char * funcstr);
 intptr_t find_kernel_function_user(char * unres);
 intptr_t find_kernel_function(char * unres);
 void init_kernel_symbols(void);
-char *get_symbol_string(uint8_t *buf, uint32_t index);
 void _add_kernel_symbol(const intptr_t func, const char * funcstr);
 intptr_t find_kernel_function(char * unres);
 int remove_kernel_symbol(char * unres);

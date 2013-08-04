@@ -82,7 +82,9 @@ elf32_t parse_kernel_elf(struct multiboot *mb, elf32_t *elf)
 	}
 	return *elf;
 }
+
 #if (CONFIG_MODULES)
+
 int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int force)
 {
 	uint32_t i, x;

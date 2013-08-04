@@ -104,9 +104,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	kernel_state_flags=0;
 	mtboot = mboot_header;
 	i_stack = initial_stack;
-#if CONFIG_ARCH == TYPE_ARCH_X86
 	parse_kernel_elf(mboot_header, &kernel_elf);
-#endif
 #if CONFIG_MODULES
 	init_kernel_symbols();
 #endif

@@ -11,3 +11,4 @@ sea_defines.inc
 initrd.conf
 skernel
 tools/mkird
+.kdev*

@@ -124,7 +124,7 @@ static inline int is_valid_elf(char *buf, short type)
 	elf64_header_t * eh;
 	eh = (elf64_header_t*)buf;
 	if(memcmp(eh->id + 1, (uint8_t*)"ELF", 3)
-		|| eh->machine != 0x03
+		|| eh->machine != 62
 		|| eh->type != type
 		|| eh->id[4] != 2 /* 64 bit */)
 		return 0;

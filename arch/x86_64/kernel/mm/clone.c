@@ -71,17 +71,26 @@ pml4_t *vm_clone(pml4_t *parent_pml4, char cow)
 	
 	if(kernel_task)
 		mutex_acquire(&pd_cur_data->lock);
-	
 	unsigned int i;
-	for(i=0;i<512;i++)
+	/* manually set up the pml4e #0 */
+	pml4[0] = pm_alloc_page() | PAGE_PRESENT | PAGE_USER;
+	pdpt_t *pdpt = (addr_t *)((pml4[0] & PAGE_MASK) + PHYS_PAGE_MAP);
+	memset(pdpt, 0, 0x1000);
+	pdpt_t *parent_pdpt = (addr_t *)((parent_pml4[0] & PAGE_MASK) + PHYS_PAGE_MAP);
+	pdpt[0] = parent_pdpt[0];
+	for(i=1;i<512;i++)
+		copy_pdpte(pdpt, parent_pdpt, i);
+	
+	for(i=1;i<512;i++)
 	{
-		if(i >= PML4_IDX(BOTTOM_HIGHER_KERNEL/0x1000) || i < PML4_IDX(TOP_LOWER_KERNEL/0x1000) || parent_pml4[i] == 0)
+		if(i >= PML4_IDX(BOTTOM_HIGHER_KERNEL/0x1000) || parent_pml4[i] == 0)
 			pml4[i] = parent_pml4[i];
 		else
 			copy_pml4e(pml4, parent_pml4, i);
 	}
 	pml4[PML4_IDX(PHYSICAL_PML4_INDEX/0x1000)] = pml4_phys;
 	pml4[PML4_IDX(CURRENT_TASK_POINTER/0x1000)] = 0;
+	
 	/* get the physical address of the page_dir_info for the new task, which is automatically
 	 * copied in the copy loop above */
 	addr_t info_phys;

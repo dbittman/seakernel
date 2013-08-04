@@ -163,7 +163,6 @@ void printf(const char *fmt, ...)
 
 void init()
 {
-
 	/* Call sys_setup. This sets up the root nodes, and filedesc's 0, 1 and 2. */
 	sys_setup();
 	kprintf("Something stirs and something tries, and starts to climb towards the light.\n");

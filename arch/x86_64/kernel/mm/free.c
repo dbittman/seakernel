@@ -48,10 +48,15 @@ void free_pml4e(pml4_t *pml4, unsigned idx)
 
 void free_thread_shared_directory()
 {
-	unsigned int S = PML4_IDX(START_FREE_LOCATION/0x1000);
+	/* don't free all of the first pml4e, only the stuff above 0x40000000 */
+	unsigned int S = 1;
 	unsigned int E = PML4_IDX(TOP_TASK_MEM_EXEC/0x1000);
 	for(unsigned i=S;i<E;i++)
 		free_pml4e(current_task->pd, i);
+	pml4_t *pml4 = current_task->pd;
+	pdpt_t *pdpt = (addr_t *)((pml4[0] & PAGE_MASK) + PHYS_PAGE_MAP);
+	for(unsigned i=1;i<512;i++)
+		free_pdpte(pdpt, i);
 }
 
 /* free the pml4, not the entries */
@@ -94,6 +99,8 @@ void destroy_task_page_directory(task_t *p)
 	
 	for(int i=0;i<4;i++)
 		pm_free_page(phys[i]);
+	
+	pm_free_page(p->pd[0] & PAGE_MASK);
 	
 	kfree(p->pd);
 }

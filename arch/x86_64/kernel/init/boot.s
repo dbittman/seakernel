@@ -52,11 +52,6 @@ gdtable:
 ; for. This isn't too tricky, just need to set up paging and enable
 ; some things.
 ;
-; ---NOTE---
-; We only identity map the first 12MB! Hopefully this will be enough for the kernel
-; to properly map the rest of the system later on, but it may need to be increased!!
-; ----------
-;
 ; Here is where the 32-bit entry code is.
 start:
 	mov esp, stack+STACKSIZE-4  ; set up the stack
@@ -80,38 +75,16 @@ start:
 	add edi, 0x1000             ; Add 0x1000 to the destination index.
 	mov DWORD [edi], (0x72003)  ; Set the qword at the destination index to 0x72003.
 	mov DWORD [edi+4], (0)
-	
-	add edi, 0x1000             ; Add 0x1000 to the destination index.
-	mov DWORD [edi], (0x73003)  ; Set the qword at the destination index to 0x73003.
-	mov DWORD [edi+4], (0)
-	
-	mov DWORD [edi+8], (0x74003)  ; Set the qword at the destination index to 0x74003.
-	mov DWORD [edi+12], (0)
-	
-	mov DWORD [edi+16], (0x75003)  ; Set the double word at the destination index to 0x75003.
-	mov DWORD [edi+20], (0)
-	
-	mov DWORD [edi+24], (0x76003)  ; Set the double word at the destination index to 0x76003.
-	mov DWORD [edi+28], (0)
-	
-	mov DWORD [edi+32], (0x77003)  ; Set the double word at the destination index to 0x77003.
-	mov DWORD [edi+36], (0)
-	
-	mov DWORD [edi+40], (0x78003)  ; Set the double word at the destination index to 0x78003.
-	mov DWORD [edi+44], (0)
-	
-	mov DWORD [edi+48], (0x79003)  ; Set the double word at the destination index to 0x79003.
-	mov DWORD [edi+52], (0)
 
     add edi, 0x1000
-	mov ebx, 0x00000003         ; Set the B-register to 0x00000003.
-	mov ecx, (4096-512)
-.SetEntry:
+	mov ebx, (0x00000003 | (1 << 7))
+	mov ecx, (512)
+.set_entry:
 	mov DWORD [edi], ebx        ; Set the qword at the destination index to the B-register.
 	mov DWORD [edi+4], 0
-	add ebx, 0x1000             ; Add 0x1000 to the B-register.
+	add ebx, 0x200000           ; Add 0x1000 to the B-register.
 	add edi, 8                  ; Add eight to the destination index.
-	loop .SetEntry 
+	loop .set_entry 
 	
 	; enable long mode
 	mov ecx, 0xC0000080

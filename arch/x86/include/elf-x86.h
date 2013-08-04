@@ -79,13 +79,14 @@ typedef struct __attribute__((packed))
 	uint32_t p_align;
 } elf32_program_header_t;
 
-static inline int is_valid_elf32(char *buf, short type)
+static inline int is_valid_elf(char *buf, short type)
 {
 	elf_header_t * eh;
 	eh = (elf_header_t*)buf;
 	if(memcmp(eh->id + 1, (uint8_t*)"ELF", 3)
 		|| eh->machine != 0x03
-		|| eh->type != type)
+		|| eh->type != type
+		|| eh->id[4] != 1 /* 32-bit */)
 		return 0;
 	return 1;
 }

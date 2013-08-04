@@ -95,7 +95,7 @@ int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int force)
 	eh = (elf_header_t *)buf;
 	
 	/* now actually do some error checking... */
-	if(!is_valid_elf32((char *)buf, 1))
+	if(!is_valid_elf((char *)buf, 1))
 		return _MOD_FAIL;
 	/* grab the functions we'll need */
 	for(i = 0; i < eh->shnum; i++)

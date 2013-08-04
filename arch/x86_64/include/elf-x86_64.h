@@ -11,7 +11,6 @@ typedef struct {
 	int flag;
 } kernel_symbol_t;
 
-
 typedef struct __attribute__((packed))
 {
 	uint8_t  id[16];
@@ -38,9 +37,9 @@ typedef struct __attribute__((packed))
 	uint16_t type;
 	uint16_t machine;
 	uint32_t version;
-	uint32_t entry;
-	uint32_t phoff;
-	uint32_t shoff;
+	addr_t entry;
+	uint64_t phoff;
+	uint64_t shoff;
 	uint32_t flags;
 	uint16_t size;
 	uint16_t phsize;
@@ -48,6 +47,7 @@ typedef struct __attribute__((packed))
 	uint16_t shsize;
 	uint16_t shnum;
 	uint16_t strndx;
+	/* these aren't....real. */
 	char *shbuf;
 	unsigned strtab_addr, symtab_addr, strtabsz, syment_len;
 } elf64_header_t;
@@ -70,14 +70,22 @@ typedef struct __attribute__((packed))
 
 typedef struct __attribute__((packed))
 {
-	int   offset;
-	uint32_t  info;
-} elf32_reloc_entry_t;
+	uint32_t name;
+	uint32_t type;
+	uint64_t flags;
+	addr_t address;
+	uint64_t offset;
+	uint64_t size;
+	uint32_t link;
+	uint32_t info;
+	uint64_t alignment;
+	uint64_t sect_size;
+} elf64_section_header_t;
 
 typedef struct __attribute__((packed)) {
-	uint32_t r_offset;
-	uint32_t r_info;
-} elf32_rel_t;
+	uint64_t r_offset;
+	uint64_t r_info;
+} elf64_rel_t;
 
 typedef struct __attribute__((packed))
 {
@@ -91,23 +99,34 @@ typedef struct __attribute__((packed))
 
 typedef struct __attribute__((packed))
 {
-	uint32_t p_type;
-	uint32_t p_offset;
-	uint32_t p_addr;
-	uint32_t p_paddr;
-	uint32_t p_filesz;
-	uint32_t p_memsz;
-	uint32_t p_flags;
-	uint32_t p_align;
-} elf32_program_header_t;
+	uint32_t name;
+	uint8_t  info;
+	uint8_t  other;
+	uint16_t shndx;
+	addr_t address;
+	uint64_t size;
+} elf64_symtab_entry_t;
 
-static inline int is_valid_elf32(char *buf, short type)
+typedef struct __attribute__((packed))
 {
-	elf32_header_t * eh;
-	eh = (elf32_header_t*)buf;
+	uint32_t p_type;
+	uint32_t p_flags;
+	uint64_t p_offset;
+	addr_t p_addr;
+	addr_t p_paddr;
+	uint64_t p_filesz;
+	uint64_t p_memsz;
+	uint64_t p_align;
+} elf64_program_header_t;
+
+static inline int is_valid_elf(char *buf, short type)
+{
+	elf64_header_t * eh;
+	eh = (elf64_header_t*)buf;
 	if(memcmp(eh->id + 1, (uint8_t*)"ELF", 3)
 		|| eh->machine != 0x03
-		|| eh->type != type)
+		|| eh->type != type
+		|| eh->id[4] != 2 /* 64 bit */)
 		return 0;
 	return 1;
 }
@@ -135,12 +154,12 @@ static inline int is_valid_elf32(char *buf, short type)
 
 #define ELF_ST_TYPE(i) ((i)&0xf)
 typedef struct {
-	uint16_t d_tag;
+	uint64_t d_tag;
 	union {
-		uint32_t d_val;
-		uint32_t d_ptr;
+		uint64_t d_val;
+		addr_t d_ptr;
 	} d_un;
-} elf32_dyn_t;
+} elf64_dyn_t;
 
 typedef struct
 {
@@ -150,6 +169,15 @@ typedef struct
 	uint32_t      strtabsz;
 	unsigned lookable;
 } elf32_t;
+
+typedef struct
+{
+	elf64_symtab_entry_t *symtab;
+	uint64_t      symtabsz;
+	const char   *strtab;
+	uint64_t      strtabsz;
+	unsigned lookable;
+} elf64_t;
 
 #define GET_RELOC_SYM(i)  ((i)>>8)
 #define GET_RELOC_TYPE(i) ((unsigned char)(i))

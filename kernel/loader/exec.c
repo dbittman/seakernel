@@ -77,7 +77,7 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	/* Detirmine if the file is a valid ELF */
 	char mem[sizeof(elf_header_t)];
 	read_data(desc, mem, 0, sizeof(elf_header_t));
-	if(!is_valid_elf32(mem, 2)) {
+	if(!is_valid_elf(mem, 2)) {
 		err = -ENOEXEC;
 		sys_close(desc);
 		goto error;

@@ -129,6 +129,7 @@ addr_t vm_do_getmap(addr_t v, addr_t *p, unsigned locked)
 	unsigned vpdpt = PDPT_IDX(vpage);
 	unsigned vdir = PAGE_DIR_IDX(vpage);
 	unsigned vtbl = PAGE_TABLE_IDX(vpage);
+	addr_t ret=0;
 	if(kernel_task && !locked)
 		mutex_acquire(&pd_cur_data->lock);
 	page_dir_t *pd;
@@ -138,20 +139,20 @@ addr_t vm_do_getmap(addr_t v, addr_t *p, unsigned locked)
 	
 	pml4 = (pml4_t *)((kernel_task && current_task) ? current_task->pd : kernel_dir);
 	if(!pml4[vp4])
-		pml4[vp4] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+		goto out;
 	pdpt = (addr_t *)((pml4[vp4]&PAGE_MASK) + PHYS_PAGE_MAP);
 	if(!pdpt[vpdpt])
-		pdpt[vpdpt] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+		goto out;
 	pd = (addr_t *)((pdpt[vpdpt]&PAGE_MASK) + PHYS_PAGE_MAP);
 	if(!pd[vdir])
-		pd[vdir] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+		goto out;
 	pt = (addr_t *)((pd[vdir]&PAGE_MASK) + PHYS_PAGE_MAP);
-	
-	addr_t ret = pt[vtbl] & PAGE_MASK;
-	if(kernel_task && !locked)
-		mutex_release(&pd_cur_data->lock);
+	ret = pt[vtbl] & PAGE_MASK;
 	if(p)
 		*p = ret;
+	out:
+	if(kernel_task && !locked)
+		mutex_release(&pd_cur_data->lock);
 	return ret;
 }
 
@@ -171,13 +172,13 @@ unsigned int vm_setattrib(addr_t v, short attr)
 	
 	pml4 = (pml4_t *)((kernel_task && current_task) ? current_task->pd : kernel_dir);
 	if(!pml4[vp4])
-		pml4[vp4] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+		pml4[vp4] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
 	pdpt = (addr_t *)((pml4[vp4]&PAGE_MASK) + PHYS_PAGE_MAP);
 	if(!pdpt[vpdpt])
-		pdpt[vpdpt] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+		pdpt[vpdpt] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
 	pd = (addr_t *)((pdpt[vpdpt]&PAGE_MASK) + PHYS_PAGE_MAP);
 	if(!pd[vdir])
-		pd[vdir] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+		pd[vdir] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
 	pt = (addr_t *)((pd[vdir]&PAGE_MASK) + PHYS_PAGE_MAP);
 	
 	pt[vtbl] &= PAGE_MASK;
@@ -194,6 +195,7 @@ unsigned int vm_do_getattrib(addr_t v, unsigned *p, unsigned locked)
 	unsigned vpdpt = PDPT_IDX(vpage);
 	unsigned vdir = PAGE_DIR_IDX(vpage);
 	unsigned vtbl = PAGE_TABLE_IDX(vpage);
+	unsigned ret=0;
 	if(kernel_task && !locked)
 		mutex_acquire(&pd_cur_data->lock);
 	page_dir_t *pd;
@@ -203,19 +205,20 @@ unsigned int vm_do_getattrib(addr_t v, unsigned *p, unsigned locked)
 	
 	pml4 = (pml4_t *)((kernel_task && current_task) ? current_task->pd : kernel_dir);
 	if(!pml4[vp4])
-		pml4[vp4] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+		goto out;
 	pdpt = (addr_t *)((pml4[vp4]&PAGE_MASK) + PHYS_PAGE_MAP);
 	if(!pdpt[vpdpt])
-		pdpt[vpdpt] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+		goto out;
 	pd = (addr_t *)((pdpt[vpdpt]&PAGE_MASK) + PHYS_PAGE_MAP);
 	if(!pd[vdir])
-		pd[vdir] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+		goto out;
 	pt = (addr_t *)((pd[vdir]&PAGE_MASK) + PHYS_PAGE_MAP);
 	
-	unsigned ret = pt[vtbl] & ATTRIB_MASK;
-	if(kernel_task && !locked)
-		mutex_release(&pd_cur_data->lock);
+	ret = pt[vtbl] & ATTRIB_MASK;
 	if(p)
 		*p = ret;
+	out:
+	if(kernel_task && !locked)
+		mutex_release(&pd_cur_data->lock);
 	return ret;
 }

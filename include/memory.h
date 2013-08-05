@@ -101,6 +101,8 @@ static inline void user_map_if_not_mapped(addr_t loc)
 	if(!vm_getmap(loc & PAGE_MASK, 0))
 		vm_map(loc & PAGE_MASK, __pm_alloc_page("map_if_not_mapped", 0), 
 		       PAGE_PRESENT | PAGE_WRITE | PAGE_USER, MAP_CRIT);
+	else
+		vm_setattrib(loc & PAGE_MASK, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
 }
 
 static inline void user_map_if_not_mapped_noclear(addr_t loc)
@@ -108,6 +110,8 @@ static inline void user_map_if_not_mapped_noclear(addr_t loc)
 	if(!vm_getmap(loc & PAGE_MASK, 0))
 		vm_map(loc & PAGE_MASK, __pm_alloc_page("map_if_not_mapped", 0), 
 		       PAGE_PRESENT | PAGE_WRITE | PAGE_USER, MAP_CRIT | MAP_NOCLEAR);
+	else
+		vm_setattrib(loc & PAGE_MASK, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
 }
 
 #endif

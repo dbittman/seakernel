@@ -73,7 +73,7 @@ pml4_t *vm_clone(pml4_t *parent_pml4, char cow)
 		mutex_acquire(&pd_cur_data->lock);
 	unsigned int i;
 	/* manually set up the pml4e #0 */
-	pml4[0] = pm_alloc_page() | PAGE_PRESENT | PAGE_USER;
+	pml4[0] = pm_alloc_page() | PAGE_PRESENT | PAGE_USER | PAGE_WRITE;
 	pdpt_t *pdpt = (addr_t *)((pml4[0] & PAGE_MASK) + PHYS_PAGE_MAP);
 	memset(pdpt, 0, 0x1000);
 	pdpt_t *parent_pdpt = (addr_t *)((parent_pml4[0] & PAGE_MASK) + PHYS_PAGE_MAP);

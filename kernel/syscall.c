@@ -123,21 +123,21 @@ void init_syscalls()
 	num_syscalls = sizeof(syscall_table)/sizeof(void *);
 }
 
-static inline int __is_valid_user_ptr(void *p, char flags)
+static inline int __is_valid_user_ptr(int num, void *p, char flags)
 {
 	addr_t addr = (addr_t)p;
 	if(!addr && !flags) return 0;
 	if(addr < TOP_LOWER_KERNEL && addr) {
 		#if DEBUG
-		printk(5, "[kernel]: warning - task %d passed ptr %x to syscall (invalid)\n", 
-			   current_task->pid, addr);
+		printk(5, "[kernel]: warning - task %d passed ptr %x to syscall %d (invalid)\n", 
+			   current_task->pid, addr, num);
 		#endif
 		return 0;
 	}
 	if(addr >= KMALLOC_ADDR_START) {
 		#if DEBUG
-		printk(5, "[kernel]: warning - task %d passed ptr %x to syscall (invalid)\n", 
-			   current_task->pid, addr);
+		printk(5, "[kernel]: warning - task %d passed ptr %x to syscall %d (invalid)\n", 
+			   current_task->pid, addr, num);
 		#endif
 		return 0;
 	}
@@ -154,39 +154,39 @@ int check_pointers(volatile registers_t *regs)
 		case SYS_READ: case SYS_FSTAT: case SYS_STAT: case SYS_GETPATH:
 		case SYS_READLINK: case SYS_GETNODESTR: 
 		case SYS_POSFSSTAT:
-			return __is_valid_user_ptr((void *)_B_, 0);
+			return __is_valid_user_ptr(SYSCALL_NUM_AND_RET, (void *)_B_, 0);
 			
 		case SYS_TIMES: case SYS_GETPWD: case SYS_PIPE: 
 		case SYS_MEMSTAT: case SYS_GETTIME: case SYS_GETHOSTNAME:
 		case SYS_UNAME:
-			return __is_valid_user_ptr((void *)_A_, 0);
+			return __is_valid_user_ptr(SYSCALL_NUM_AND_RET, (void *)_A_, 0);
 			
 		case SYS_SETSIG: case SYS_WAITPID:
-			return __is_valid_user_ptr((void *)_B_, 1);
+			return __is_valid_user_ptr(SYSCALL_NUM_AND_RET, (void *)_B_, 1);
 			
 		case SYS_SELECT:
-			if(!__is_valid_user_ptr((void *)_B_, 1))
+			if(!__is_valid_user_ptr(SYSCALL_NUM_AND_RET, (void *)_B_, 1))
 				return 0;
-			if(!__is_valid_user_ptr((void *)_C_, 1))
+			if(!__is_valid_user_ptr(SYSCALL_NUM_AND_RET, (void *)_C_, 1))
 				return 0;
-			if(!__is_valid_user_ptr((void *)_D_, 1))
+			if(!__is_valid_user_ptr(SYSCALL_NUM_AND_RET, (void *)_D_, 1))
 				return 0;
-			if(!__is_valid_user_ptr((void *)_E_, 1))
+			if(!__is_valid_user_ptr(SYSCALL_NUM_AND_RET, (void *)_E_, 1))
 				return 0;
 			break;
 			
 		case SYS_DIRSTAT:
-			if(!__is_valid_user_ptr((void *)_C_, 0))
+			if(!__is_valid_user_ptr(SYSCALL_NUM_AND_RET, (void *)_C_, 0))
 				return 0;
-			if(!__is_valid_user_ptr((void *)_D_, 0))
+			if(!__is_valid_user_ptr(SYSCALL_NUM_AND_RET, (void *)_D_, 0))
 				return 0;
 			break;
 			
 		case SYS_SIGACT: case SYS_SIGPROCMASK:
-			return __is_valid_user_ptr((void *)_C_, 1);
+			return __is_valid_user_ptr(SYSCALL_NUM_AND_RET, (void *)_C_, 1);
 			
 		case SYS_CHOWN: case SYS_CHMOD:
-			return __is_valid_user_ptr((void *)_A_, 1);
+			return __is_valid_user_ptr(SYSCALL_NUM_AND_RET, (void *)_A_, 1);
 	}
 	return 1;
 }

@@ -33,20 +33,19 @@ void set_as_dead(task_t *t)
 
 int __KT_try_releasing_tasks()
 {
-	task_t *t = ll_remove_head(kill_queue);
-	if(t) release_task(t);
+	struct llistnode *node = kill_queue->head;
+	if(!node) return 0;
+	task_t *t = node->entry;
+	assert(t && t != current_task);
+	if(!(t->flags & TF_BURIED))
+		return 1;
+	release_task(t);
+	ll_remove(kill_queue, node);
 	return ll_is_empty(kill_queue) ? 0 : 1;
 }
 
 void release_task(task_t *p)
 {
-	/* This is everything that the task itself cannot release. 
-	 * The kernel cleans up what little is left nicely */
-	assert(p && p != (task_t *)current_task);
-	/* don't release the task while it's still exiting... */
-	if(!(p->flags & TF_BURIED))
-		return;
-	/* Is this page table marked as unreferenced? */
 	destroy_task_page_directory(p);
 	kfree((void *)p->kernel_stack);
 	kfree((void *)p);

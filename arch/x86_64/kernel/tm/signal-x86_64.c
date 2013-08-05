@@ -26,9 +26,13 @@ int arch_userspace_signal_initializer(task_t *t, struct sigaction *sa)
 	memcpy((void *)&t->reg_b, (void *)iret, sizeof(registers_t));
 	iret->useresp = SIGSTACK;
 	iret->useresp -= STACK_ELEMENT_SIZE;
-	/* push the argument (signal number) */
-#warning "This may not work...need to figure out how to pass arguments..."
+	/* fuck it, just set all the parameter registers to the argument. */
 	iret->rdi = t->sigd;
+	iret->rsi = t->sigd;
+	iret->rdx = t->sigd;
+	iret->rcx = t->sigd;
+	iret->r8 = t->sigd;
+	iret->r9 = t->sigd;
 	*(addr_t *)(iret->useresp) = t->sigd;
 	iret->useresp -= STACK_ELEMENT_SIZE;
 	/* push the return address. this function is mapped in when

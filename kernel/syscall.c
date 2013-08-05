@@ -134,7 +134,7 @@ static inline int __is_valid_user_ptr(int num, void *p, char flags)
 		#endif
 		return 0;
 	}
-	if(addr >= KMALLOC_ADDR_START) {
+	if(addr >= TOP_TASK_MEM) {
 		#if DEBUG
 		printk(5, "[kernel]: warning - task %d passed ptr %x to syscall %d (invalid)\n", 
 			   current_task->pid, addr, num);

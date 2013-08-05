@@ -31,4 +31,15 @@ static int dosyscall(int num, int a, int b, int c, int d, int e)
 #define _B_ regs->ecx
 #define _A_ regs->ebx
 
+#define SIGNAL_INJECT_SIZE 7
+static char signal_return_injector[SIGNAL_INJECT_SIZE] = {
+	0xB8,
+	0x80,
+	0x00,
+	0x00,
+	0x00,
+	0xCD,
+	0x80
+};
+
 #endif

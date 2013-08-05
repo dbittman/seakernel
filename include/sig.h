@@ -70,17 +70,6 @@ typedef struct {
 } siginfo_t;
 typedef unsigned long sigset_t;
 
-#define SIGNAL_INJECT_SIZE 7
-static char signal_return_injector[SIGNAL_INJECT_SIZE] = {
-	0xB8,
-	0x80,
-	0x00,
-	0x00,
-	0x00,
-	0xCD,
-	0x80
-};
-
 typedef void (*_sig_func_ptr)(int);
 struct sigaction
 {

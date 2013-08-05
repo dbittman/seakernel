@@ -55,7 +55,7 @@ void copy_update_stack(addr_t new, addr_t old, unsigned length)
 	u64int offset=0;
 	offset = new-old;
 	addr_t i;
-	for(i = (addr_t)new+(length-8); i >= (u32int)new; i -= 8)
+	for(i = (addr_t)new+(length-8); i >= (addr_t)new; i -= 8)
 	{
 		u64int tmp = * (u64int*)i;
 		if (tmp >= old && tmp < old+length)

@@ -81,8 +81,8 @@ intptr_t find_kernel_function(char * unres)
 			!memcmp((uint8_t*)export_syms[i].name, (uint8_t*)unres, 
 					(int)strlen(unres))) {
 			mutex_release(&sym_mutex);
-		return export_syms[i].ptr;
-					}
+			return export_syms[i].ptr;
+		}
 	}
 	mutex_release(&sym_mutex);
 	return 0;

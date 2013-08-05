@@ -11,6 +11,11 @@ ifneq ($(MAKECMDGOALS),distclean)
 include ../arch/$(ARCH)/drivers/make.inc
 endif
 endif
+
+# note the use of mcmodel=large
+# I believe, but don't quote me on this, that
+# this flag is needed if we want to access relocations
+# that require 64bit fields...
 MCFLAGS=-std=c99 -g -O3 -fno-rename-registers \
 		-fno-regmove -D__KERNEL__ -mno-red-zone -nostdinc -ffreestanding \
 		-fno-common -nostdlib \
@@ -25,6 +30,11 @@ MCFLAGS=-std=c99 -g -O3 -fno-rename-registers \
 		-Wpointer-arith -Wcast-align -Wno-unused -Wnested-externs \
 		-fno-tree-loop-distribute-patterns -fno-tree-vectorize \
 		-Winline -Wno-long-long -Wno-unused-parameter -Wno-unused-but-set-parameter $(CFLAGS_ARCH)
+
+ifeq ($(ARCH), x86_64)
+MCFLAGS += -mcmodel=large
+endif
+
 
 export MCFLAGS
 export CC
@@ -91,7 +101,7 @@ install: $(MODULES)
 	$(CC) $(MCFLAGS) $(LDFLAGS_ARCH) $@.0 -o $@.1 -Wl,-r,-Tlink.ld ../library/klib.a -lgcc -static
 	rm $@.0
 	cat head $@.1 > $@
-	rm $@.1
+
 
 clean:
 	@-find -name "*.m" | xargs rm -f

@@ -74,6 +74,20 @@ elf32_t parse_kernel_elf(struct multiboot *mb, elf32_t *elf)
 }
 
 #if (CONFIG_MODULES)
+
+void elf64_write_field(int type, addr_t mem_addr, addr_t reloc_addr)
+{
+	switch(type)
+	{
+		case R_X86_64_32: case R_X86_64_PC32:
+			*(uint32_t*)mem_addr = (uint32_t)reloc_addr;
+			break;
+		default:
+			*(uint64_t*)mem_addr = reloc_addr;
+			break;
+	}
+}
+
 int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int force)
 {
 	uint32_t i, x;
@@ -81,6 +95,7 @@ int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int force)
 	elf_header_t * eh;
 	elf64_section_header_t * sh;
 	elf64_rel_t * reloc;
+	elf64_rela_t * rela;
 	elf64_symtab_entry_t * symtab;
 	int error=0;
 	eh = (elf_header_t *)buf;
@@ -123,69 +138,58 @@ int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int force)
 	for(i = 0; i < eh->shnum; i++)
 	{  
 		sh = (elf64_section_header_t*)(buf + eh->shoff + (i * eh->shsize));
-		if(sh->type == 9)
-		{
+		/* 64-bit ELF only deals in rela relocation sections */
+		if(sh->type == 4) {
+			
 			for(x = 0; x < sh->size; x += sh->sect_size)
 			{
-				reloc = (elf64_rel_t*)(buf + sh->offset + x);
-				symtab = fill_symbol_struct(buf, GET_RELOC_SYM(reloc->info));
+				rela = (elf64_rela_t*)(buf + sh->offset + x);
+				symtab = fill_symbol_struct(buf, GET_RELOC_SYM(rela->info));
+				mem_addr = (uint64_t)buf + rela->offset;
+				mem_addr += get_section_offset(buf, sh->info);
 				
-				/* absolute physical address */
-				if(GET_RELOC_TYPE(reloc->info) == 0x01)
+				reloc_addr = (uint64_t)buf + symtab->address;
+				reloc_addr += get_section_offset(buf, symtab->shndx);
+				if(symtab->shndx == 0)
 				{
-					mem_addr = (uint64_t)buf + reloc->offset;
-					mem_addr += get_section_offset(buf, sh->info);
-					/* external reference (kernel symbol most likely) */
-					if(symtab->shndx == 0)
+					reloc_addr = find_kernel_function(get_symbol_string(buf, symtab->name));
+					if(!reloc_addr)
 					{
-						reloc_addr = find_kernel_function(get_symbol_string(buf, symtab->name));
-						if(!reloc_addr)
-						{
-							printk(KERN_INFO, "[mod]: *ABS* unresolved dependency \"%s\"\n", 
-									get_symbol_string(buf, symtab->name));
-							error++;
-						}
+						printk(KERN_INFO, "[mod]: %x: unresolved dependency \"%s\"\n", 
+								rela->info, get_symbol_string(buf, symtab->name));
+						error++;
+					}
+				} else {
+					if(GET_RELOC_TYPE(rela->info) == R_X86_64_64)
+					{
+						reloc_addr += *(uint64_t *)(mem_addr) + rela->addend;
+					}
+					else if(GET_RELOC_TYPE(rela->info) == R_X86_64_PC32)
+					{
+						
+					}
+					else if(GET_RELOC_TYPE(rela->info) == R_X86_64_32) 
+					{
+						reloc_addr += *(uint64_t *)(mem_addr) + rela->addend;
 					}
 					else
 					{
-						reloc_addr = (uint64_t)buf + symtab->address + *(intptr_t*)mem_addr;
-						reloc_addr += get_section_offset(buf, symtab->shndx);
+						printk(KERN_INFO, "[mod]: invalid relocation type (%x)\n", 
+								GET_RELOC_TYPE(rela->info));
+						error++;
 					}
-					*(intptr_t*)mem_addr = reloc_addr;
 				}
-				/* relative physical address */
-				else if(GET_RELOC_TYPE(reloc->info) == 0x02)
+				
+				if(GET_RELOC_TYPE(rela->info) == R_X86_64_PC32)
 				{
-					mem_addr = (uint64_t)buf + reloc->offset;
-					mem_addr += get_section_offset(buf, sh->info);
-					/* external reference (kernel symbol most likely) */
-					if(symtab->shndx == 0)
-					{
-						reloc_addr = find_kernel_function(get_symbol_string(buf, 
-								symtab->name));
-						if(!reloc_addr)
-						{
-							printk(KERN_INFO, "[mod]: *REL* unresolved dependency \"%s\"\n", 
-									get_symbol_string(buf, symtab->name));
-							error++;
-						}
-					}
-					else
-					{
-						reloc_addr = (uint64_t)buf + symtab->address;
-						reloc_addr += get_section_offset(buf, symtab->shndx);
-					}
-					/* we need to make this relative to the memory address */
 					reloc_addr = mem_addr - reloc_addr + 4;
-					*(intptr_t*)mem_addr = -reloc_addr;
+					reloc_addr += rela->addend;
+					reloc_addr = -reloc_addr;
 				}
-				else
-				{
-					printk(KERN_INFO, "[mod]: invalid relocation type (%x)\n", 
-							GET_RELOC_TYPE(reloc->info));
-					error++;
-				}
-			}
+				elf64_write_field(GET_RELOC_TYPE(rela->info), mem_addr, reloc_addr);
+				
+			}	
+			
 		}
 	}
 	

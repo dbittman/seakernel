@@ -87,6 +87,12 @@ typedef struct __attribute__((packed)) {
 	uint64_t info;
 } elf64_rel_t;
 
+typedef struct __attribute__((packed)) {
+	uint64_t offset;
+	uint64_t info;
+	sint64_t addend;
+} elf64_rela_t;
+
 typedef struct __attribute__((packed))
 {
 	uint32_t name;
@@ -179,13 +185,25 @@ typedef struct
 	unsigned lookable;
 } elf64_t;
 
-#define GET_RELOC_SYM(i)  ((i)>>8)
-#define GET_RELOC_TYPE(i) ((unsigned char)(i))
+#define GET_RELOC_SYM(i)  ((i)>>32)
+#define GET_RELOC_TYPE(i) (i & 0xFFFFFFFF)
 
 #define GET_SYMTAB_BIND(i)   ((i)>>4)
 #define GET_SYMTAB_TYPE(i)   ((i)&0xf)
 
 #define SHN_UNDEF   0
+
+#define R_X86_64_NONE		0	/* No reloc */
+#define R_X86_64_64			1	/* Direct 64 bit  */
+#define R_X86_64_PC32		2	/* PC relative 32 bit signed */
+#define R_X86_64_GOT32		3	/* 32 bit GOT entry */
+#define R_X86_64_PLT32		4	/* 32 bit PLT address */
+#define R_X86_64_COPY		5	/* Copy symbol at runtime */
+#define R_X86_64_RELATIVE	8	/* Adjust by program base */
+#define R_X86_64_32			10	/* Direct 32 bit zero extended */
+#define R_X86_64_32S		11	/* Direct 32 bit sign extended */
+#define R_X86_64_16			12	/* Direct 16 bit zero extended */
+#define R_X86_64_PC16		13	/* 16 bit sign extended pc relative */
 
 int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int);
 const char *elf64_lookup_symbol (uint64_t addr, elf64_t *elf);

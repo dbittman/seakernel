@@ -19,13 +19,13 @@ void early_vm_map(pml4_t *pml4, addr_t addr, addr_t map)
 	page_table_t *pt;
 	
 	if(!pml4[PML4_IDX(addr/0x1000)])
-		pml4[PML4_IDX(addr/0x1000)] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+		pml4[PML4_IDX(addr/0x1000)] = pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE;
 	pdpt = (addr_t *)(pml4[PML4_IDX(addr/0x1000)] & PAGE_MASK);
 	if(!pdpt[PDPT_IDX(addr/0x1000)])
-		pdpt[PDPT_IDX(addr/0x1000)] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+		pdpt[PDPT_IDX(addr/0x1000)] = pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE;
 	pd = (addr_t *)(pdpt[PDPT_IDX(addr/0x1000)] & PAGE_MASK);
 	if(!pd[PAGE_DIR_IDX(addr/0x1000)])
-		pd[PAGE_DIR_IDX(addr/0x1000)] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+		pd[PAGE_DIR_IDX(addr/0x1000)] = pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE;
 	/* passing map as zero allows us to map in all the tables, but leave the
 	 * true mapping null. This is handy for the page stack and heap */
 	pt = (addr_t *)(pd[PAGE_DIR_IDX(addr/0x1000)] & PAGE_MASK);
@@ -38,12 +38,12 @@ void vm_init(addr_t id_map_to)
 	register_interrupt_handler (14, (isr_t)&page_fault, 0);
 
 	/* Create kernel directory */
-	pml4_t *pml4 = (addr_t *)pm_alloc_page();
+	pml4_t *pml4 = (addr_t *)pm_alloc_page_zero();
 	memset(pml4, 0, 0x1000);
 	/* Identity map the kernel */
-	pml4[0] = pm_alloc_page() | PAGE_PRESENT | PAGE_USER;
+	pml4[0] = pm_alloc_page_zero() | PAGE_PRESENT | PAGE_USER;
 	pdpt_t *pdpt = (addr_t *)(pml4[0] & PAGE_MASK);
-	pdpt[0] = pm_alloc_page() | PAGE_PRESENT | PAGE_USER;
+	pdpt[0] = pm_alloc_page_zero() | PAGE_PRESENT | PAGE_USER;
 	page_dir_t *pd = (addr_t *)(pdpt[0] & PAGE_MASK);
 	
 	addr_t address = 0;
@@ -56,7 +56,7 @@ void vm_init(addr_t id_map_to)
 	/* map in all possible physical memory, up to 512 GB. This way we can
 	 * access any physical page by simple accessing virtual memory (phys + PHYS_PAGE_MAP).
 	 * This should make mapping memory a LOT easier */
-	pml4[PML4_IDX(PHYS_PAGE_MAP/0x1000)] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+	pml4[PML4_IDX(PHYS_PAGE_MAP/0x1000)] = pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE;
 	pdpt = (addr_t *)(pml4[PML4_IDX(PHYS_PAGE_MAP/0x1000)] & PAGE_MASK);
 	if(primary_cpu->cpuid.ext_features_edx & CPU_EXT_FEATURES_GBPAGE) {
 		printk(0, "!!! CPU supports 1GB pages. This is untested code !!!\n");
@@ -79,8 +79,8 @@ void vm_init(addr_t id_map_to)
 #endif
 	/* map in the signal return inject code. we need to do this, because
 	 * user code may not run the the kernel area of the page directory */
-	early_vm_map(pml4, SIGNAL_INJECT, pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE);
-	early_vm_map(pml4, PDIR_DATA, pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE);
+	early_vm_map(pml4, SIGNAL_INJECT, pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE);
+	early_vm_map(pml4, PDIR_DATA, pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE);
 	/* CR3 requires the physical address, so we directly 
 	 * set it because we have the physical address */
 	printk(0, "Setting new CR3...\n");
@@ -173,13 +173,13 @@ unsigned int vm_setattrib(addr_t v, short attr)
 	
 	pml4 = (pml4_t *)((kernel_task && current_task) ? current_task->pd : kernel_dir);
 	if(!pml4[vp4])
-		pml4[vp4] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
+		pml4[vp4] = pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
 	pdpt = (addr_t *)((pml4[vp4]&PAGE_MASK) + PHYS_PAGE_MAP);
 	if(!pdpt[vpdpt])
-		pdpt[vpdpt] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
+		pdpt[vpdpt] = pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
 	pd = (addr_t *)((pdpt[vpdpt]&PAGE_MASK) + PHYS_PAGE_MAP);
 	if(!pd[vdir])
-		pd[vdir] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
+		pd[vdir] = pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
 	pt = (addr_t *)((pd[vdir]&PAGE_MASK) + PHYS_PAGE_MAP);
 	
 	pt[vtbl] &= PAGE_MASK;

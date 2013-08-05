@@ -81,13 +81,23 @@ addr_t __pm_alloc_page(char *file, int line)
 	return ret;
 }
 
+addr_t pm_alloc_page_zero()
+{
+	addr_t ret = pm_alloc_page();
+	if(kernel_state_flags & KSF_PAGING)
+		memset((void *)(ret + PHYS_PAGE_MAP), 0, 0x1000);
+	else
+		memset((void *)ret, 0, 0x1000);
+	return ret;
+}
+
 void pm_free_page(addr_t addr)
 {
 	if(!(kernel_state_flags & KSF_PAGING))
 		panic(PANIC_MEM | PANIC_NOSYNC, "Called free page without paging environment");
 	if(addr < pm_location || (((addr > highest_page) || addr < lowest_page)
 		&& memory_has_been_mapped)) {
-		panic(PANIC_MEM | PANIC_NOSYNC, "tried to free invalic physical address");
+		panic(PANIC_MEM | PANIC_NOSYNC, "tried to free invalid physical address (%x)", addr);
 		return;
 	}
 	assert(addr);

@@ -15,7 +15,7 @@ void free_pde(page_dir_t *pd, unsigned idx)
 		{
 			addr_t tmp = table[i];
 			table[i]=0;
-			pm_free_page(tmp);
+			pm_free_page(tmp & PAGE_MASK);
 		}
 	}
 	pd[idx]=0;
@@ -62,6 +62,7 @@ void free_thread_shared_directory()
 /* free the pml4, not the entries */
 void destroy_task_page_directory(task_t *p)
 {
+	assert(p->magic == TASK_MAGIC);
 	if(p->flags & TF_LAST_PDIR) {
 		addr_t *tmp;
 		addr_t phys[4];
@@ -78,8 +79,11 @@ void destroy_task_page_directory(task_t *p)
 		
 		p->pd[PML4_IDX(PDIR_DATA/0x1000)]=0;
 		
-		for(int i=0;i<4;i++)
-			pm_free_page(phys[i]);
+		for(int i=0;i<4;i++) {
+			if(phys[i]) pm_free_page(phys[i]);
+		}
+		
+		pm_free_page(p->pd[0] & PAGE_MASK);
 	}
 	
 	addr_t *tmp;
@@ -100,8 +104,6 @@ void destroy_task_page_directory(task_t *p)
 	for(int i=0;i<4;i++)
 		pm_free_page(phys[i]);
 	
-	pm_free_page(p->pd[0] & PAGE_MASK);
-	
 	kfree(p->pd);
 }
 
@@ -109,7 +111,7 @@ void destroy_task_page_directory(task_t *p)
 void free_thread_specific_directory()
 {
 	unsigned int S = PML4_IDX(TOP_TASK_MEM_EXEC/0x1000);
-	unsigned int E = PML4_IDX(TOP_TASK_MEM/0x1000);
+	unsigned int E = PML4_IDX((TOP_TASK_MEM+1)/0x1000);
 	for(unsigned i=S;i<E;i++)
 		free_pml4e(current_task->pd, i);
 }

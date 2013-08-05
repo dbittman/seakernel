@@ -176,7 +176,7 @@ void release_mutexes(task_t *t);
 int get_gid();
 int get_uid();
 int do_fork(unsigned);
-int read_eip();
+addr_t read_eip();
 int get_exit_status(int pid, int *status, int *retval, int *signum, int *);
 int sys_waitpid(int pid, int *st, int opt);
 int sys_wait3(int *, int, int *);

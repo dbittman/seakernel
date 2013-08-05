@@ -43,7 +43,7 @@
 /* where the signal injector code goes */
 #define SIGNAL_INJECT                  (0x40000000-0x1000)
 
-#define IS_KERN_MEM(x) (x < TOP_LOWER_KERNEL || x > BOTTOM_HIGHER_KERNEL)
+#define IS_KERN_MEM(x) (x < TOP_LOWER_KERNEL || x > TOP_TASK_MEM)
 
 #define IS_THREAD_SHARED_MEM(x) (((!(x >= TOP_TASK_MEM_EXEC && x < TOP_TASK_MEM)) || ((x&PAGE_MASK) == PDIR_DATA)))
 
@@ -72,5 +72,5 @@
 __asm__ __volatile__("mov %%cr3,%%rax\n\tmov %%rax,%%cr3": : :"ax", "eax", "rax")
 
 #define current_task (kernel_task ? ((task_t *)(*((addr_t *)CURRENT_TASK_POINTER))) : 0)
-
+addr_t pm_alloc_page_zero();
 #endif

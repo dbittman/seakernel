@@ -20,13 +20,13 @@ int vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned opt)
 	
 	pml4 = (pml4_t *)((kernel_task && current_task) ? current_task->pd : kernel_dir);
 	if(!pml4[vp4])
-		pml4[vp4] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
+		pml4[vp4] = pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
 	pdpt = (addr_t *)((pml4[vp4]&PAGE_MASK) + PHYS_PAGE_MAP);
 	if(!pdpt[vpdpt])
-		pdpt[vpdpt] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
+		pdpt[vpdpt] = pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
 	pd = (addr_t *)((pdpt[vpdpt]&PAGE_MASK) + PHYS_PAGE_MAP);
 	if(!pd[vdir])
-		pd[vdir] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
+		pd[vdir] = pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
 	pt = (addr_t *)((pd[vdir]&PAGE_MASK) + PHYS_PAGE_MAP);
 	
 	pt[vtbl] = (phys & PAGE_MASK) | attr;

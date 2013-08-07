@@ -161,7 +161,7 @@ void printf(const char *fmt, ...)
 	va_end(args);
 }
 
-__attribute__((noinline)) void init()
+void init()
 {
 	/* Call sys_setup. This sets up the root nodes, and filedesc's 0, 1 and 2. */
 	sys_setup();

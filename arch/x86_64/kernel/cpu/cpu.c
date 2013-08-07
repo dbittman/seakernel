@@ -14,7 +14,7 @@ unsigned cpu_array_num=0;
 cpu_t primary_cpu_data;
 
 extern mutex_t ipi_mutex;
-
+void init_lapic(int extint);
 void cpuid_get_features(cpuid_t *cpuid)
 {
 	int eax, ebx, ecx, edx;
@@ -85,6 +85,24 @@ void parse_cpuid(cpu_t *me)
 		cpuid_get_cpu_brand(&cpuid);
 	memcpy(&(me->cpuid), &cpuid, sizeof(me->cpuid));
 }
+#if CONFIG_SMP
+
+cpu_t *get_cpu(int id)
+{
+	return &cpu_array[id];
+}
+
+cpu_t *add_cpu(cpu_t *c)
+{
+	if(cpu_array_num >= CONFIG_MAX_CPUS)
+		return 0;
+	memcpy(&cpu_array[cpu_array_num], c, sizeof(cpu_t));
+	mutex_create((mutex_t *)&(cpu_array[cpu_array_num].lock), MT_NOSCHED);
+	return &cpu_array[cpu_array_num++];
+}
+
+int probe_smp();
+#endif
 
 int set_int(unsigned new)
 {

@@ -89,7 +89,7 @@ struct imps_interrupt
 	unsigned char dest_apic_intin;
 };
 
-extern unsigned imps_lapic_addr;
+extern addr_t imps_lapic_addr;
 #define IMPS_LAPIC_READ(x)  (*((volatile unsigned *) (imps_lapic_addr+(x))))
 #define IMPS_LAPIC_WRITE(x, y)   \
 (*((volatile unsigned *) (imps_lapic_addr+(x))) = (y))

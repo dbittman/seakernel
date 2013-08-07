@@ -8,10 +8,9 @@
 volatile addr_t *kernel_dir=0;
 int id_tables=0;
 struct pd_data *pd_cur_data = (struct pd_data *)PDIR_DATA;
-extern void id_map_apic(page_dir_t *);
+extern void id_map_apic();
 /* This function will setup a paging environment with a basic page dir, 
  * enough to process the memory map passed by grub */
-
 void early_vm_map(pml4_t *pml4, addr_t addr, addr_t map)
 {
 	pdpt_t *pdpt;
@@ -74,9 +73,6 @@ void vm_init(addr_t id_map_to)
 			}
 		}
 	}
-#if CONFIG_SMP
-	id_map_apic(pd);
-#endif
 	/* map in the signal return inject code. we need to do this, because
 	 * user code may not run the the kernel area of the page directory */
 	early_vm_map(pml4, SIGNAL_INJECT, pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE);
@@ -91,6 +87,9 @@ void vm_init(addr_t id_map_to)
 	memcpy((void *)SIGNAL_INJECT, (void *)signal_return_injector, SIGNAL_INJECT_SIZE);
 	set_ksf(KSF_PAGING);
 	memset(0, 0, 0x1000);
+#if CONFIG_SMP
+	id_map_apic();
+#endif
 }
 
 /* This relocates the stack to a safe place which is copied 
@@ -103,7 +102,7 @@ void vm_init_2()
 	while(i < cpu_array_num)
 	{
 		printk(0, "[mm]: cloning directory for processor %d (%x)\n", cpu_array[i].apicid, &cpu_array[i]);
-		pml4_t *p = vm_clone(kernel_dir, 0);
+		pml4_t *p = vm_clone((addr_t *)kernel_dir, 0);
 		cpu_array[i].kd_phys = p[PML4_IDX(PHYSICAL_PML4_INDEX/0x1000)] & PAGE_MASK;
 		cpu_array[i].kd = p;
 		i++;

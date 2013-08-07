@@ -57,25 +57,31 @@ int sys_waitpid(int pid, int *st, int opt)
 {
 	if(!pid || pid < -1)
 		return -ENOSYS;
+	current_task->flags |= TF_BGROUND;
 	task_t *t=kernel_task;
 	if(pid == -1) {
 		/* find first child */
 		t = search_tqueue(primary_queue, TSEARCH_PARENT, (addr_t)current_task, (void (*)(task_t *, int))0, 0, 0);
-		if(!t && !current_task->exlist)
+		if(!t && !current_task->exlist) {
+			current_task->flags &= ~TF_BGROUND;
 			return -ECHILD;
+		}
 	}
 	top:
 	if(current_task->sigd && 
 		((struct sigaction *)&(current_task->thread->signal_act
 		[current_task->sigd]))->_sa_func._sa_handler && !(current_task->thread->signal_act
-	[current_task->sigd].sa_flags & SA_RESTART))
+	[current_task->sigd].sa_flags & SA_RESTART)) {
+		current_task->flags &= ~TF_BGROUND;
 		return -EINTR;
+	}
 	t = (pid == -1 ? 0 : get_task_pid(pid));
 	if(t) {
 		if(!(opt & 1)) {
 			schedule();
 			goto top;
 		}
+		current_task->flags &= ~TF_BGROUND;
 		return 0;
 	}
 	int code, gotpid, res;
@@ -86,6 +92,7 @@ int sys_waitpid(int pid, int *st, int opt)
 			schedule();
 			goto top;
 		}
+		current_task->flags &= ~TF_BGROUND;
 		return 0;
 	}
 	if(res) {
@@ -93,6 +100,7 @@ int sys_waitpid(int pid, int *st, int opt)
 			schedule();
 			goto top;
 		}
+		current_task->flags &= ~TF_BGROUND;
 		return 0;
 	} else if(pid == -1){
 		ex_stat *es;
@@ -110,6 +118,7 @@ int sys_waitpid(int pid, int *st, int opt)
 	}
 	if(st) 
 		*st = code;
+	current_task->flags &= ~TF_BGROUND;
 	return gotpid;
 }
 

@@ -51,6 +51,7 @@ void tty_putch(struct vterm *con, int ch)
 
 void __tty_found_task_raise_action(task_t *t, int arg)
 {
+	if(t->flags & TF_BGROUND) return;
 	t->sigd = arg;
 	t->flags |= TF_SCHED;
 	if(t->blocklist)

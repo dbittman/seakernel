@@ -45,6 +45,7 @@ extern tqueue_t *primary_queue;
 #define TF_MOVECPU  0x20000 /* something is trying to move this task to
 							 * a different CPU */
 #define TF_IN_INT   0x40000 /* inside an interrupt handler */
+#define TF_BGROUND  0x80000
 
 #define PRIO_PROCESS 1
 #define PRIO_PGRP    2

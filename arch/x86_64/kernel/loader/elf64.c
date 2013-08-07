@@ -140,7 +140,6 @@ int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int force)
 		sh = (elf64_section_header_t*)(buf + eh->shoff + (i * eh->shsize));
 		/* 64-bit ELF only deals in rela relocation sections */
 		if(sh->type == 4) {
-			
 			for(x = 0; x < sh->size; x += sh->sect_size)
 			{
 				rela = (elf64_rela_t*)(buf + sh->offset + x);
@@ -161,13 +160,9 @@ int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int force)
 					}
 				} else {
 					if(GET_RELOC_TYPE(rela->info) == R_X86_64_64)
-					{
 						reloc_addr += *(uint64_t *)(mem_addr) + rela->addend;
-					}
-					else if(GET_RELOC_TYPE(rela->info) == R_X86_64_32) 
-					{
+					else if(GET_RELOC_TYPE(rela->info) == R_X86_64_32)
 						reloc_addr += *(uint64_t *)(mem_addr) + rela->addend;
-					}
 					else
 					{
 						printk(KERN_INFO, "[mod]: invalid relocation type (%x)\n", 
@@ -176,9 +171,7 @@ int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int force)
 					}
 				}
 				elf64_write_field(GET_RELOC_TYPE(rela->info), mem_addr, reloc_addr);
-				
-			}	
-			
+			}
 		}
 	}
 	

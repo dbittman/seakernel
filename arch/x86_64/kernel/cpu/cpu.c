@@ -34,7 +34,6 @@ void cpuid_get_features(cpuid_t *cpuid)
 	asm("cpuid" : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx) : "a"(eax));
 	cpuid->ext_features_edx = edx;
 	cpuid->ext_features_ecx = ecx;
-	printk(0, "--- %x %x ---\n", edx, ecx);
 } 
 
 void cpuid_get_cpu_brand(cpuid_t *cpuid)

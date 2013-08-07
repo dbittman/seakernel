@@ -205,6 +205,7 @@ typedef struct
 #define R_X86_64_16			12	/* Direct 16 bit zero extended */
 #define R_X86_64_PC16		13	/* 16 bit sign extended pc relative */
 
+const char *elf32_lookup_symbol (uint32_t addr, elf32_t *elf);
 int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int);
 const char *elf64_lookup_symbol (uint64_t addr, elf64_t *elf);
 elf32_t parse_kernel_elf(struct multiboot *mb, elf32_t *);

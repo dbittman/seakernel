@@ -89,7 +89,6 @@ void vm_init(addr_t id_map_to)
 	/* Enable paging */
 	printk(0, "Paging enabled!\n");
 	memcpy((void *)SIGNAL_INJECT, (void *)signal_return_injector, SIGNAL_INJECT_SIZE);
-	kprintf("%x\n", *(unsigned *)(SIGNAL_INJECT));
 	set_ksf(KSF_PAGING);
 	memset(0, 0, 0x1000);
 }

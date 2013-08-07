@@ -71,7 +71,11 @@ int sys_uname(struct utsname *name)
 	strncpy(name->nodename, "", 1);
 	get_kernel_version(name->release);
 	strncpy(name->version, "eclipse", 8);
+#if CONFIG_ARCH == TYPE_ARCH_X86
 	strncpy(name->machine, "i586", 5);
+#elif CONFIG_ARCH == TYPE_ARCH_X86_64
+	strncpy(name->machine, "x86_64", 6);
+#endif
 	strncpy(name->domainname, "", 1);
 	return 0;
 }

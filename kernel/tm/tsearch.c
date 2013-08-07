@@ -6,7 +6,7 @@
 
 #define FOUND_ACTION \
 	if(action) \
-		action(t, arg); \
+		action(tmp, arg); \
 	t = tmp; \
 	if(count) *count++; \
 	if(flags & TSEARCH_EXCLUSIVE) goto next;

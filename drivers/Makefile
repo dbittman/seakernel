@@ -106,6 +106,7 @@ install: $(MODULES)
 clean:
 	@-find -name "*.m" | xargs rm -f
 	@-find -name "*.o" | xargs rm -f
+	@-find -name "*.m.1" | xargs rm -f
 	@-rm -rf built/* make.deps
 	@-for i in "$(ALLSUBDIRS)"; do \
 		$(MAKE) -s -C $$i clean 2>/dev/null ;\

@@ -155,7 +155,7 @@ int load_module(char *path, char *args, int flags)
 	sys_fstat(desc, &sf);
 	int len = sf.st_size;
 	/* Allocate the space and read into it */
-	char *mem = (char *)kmalloc(len + 0x4000);
+	char *mem = (char *)kmalloc(len);
 	sys_read(desc, 0, mem, len);
 	sys_close(desc);
 	/* Fill out the slot info */
@@ -186,7 +186,7 @@ int load_module(char *path, char *args, int flags)
 	modules = tmp;
 	tmp->next = old;
 	mutex_release(&mod_mutex);
-	printk(0, "[mod]: loaded module '%s' @[%x - %x]\n", path, tmp->base, tmp->base + len + 0x4000);
+	printk(0, "[mod]: loaded module '%s' @[%x - %x]\n", path, tmp->base, tmp->base + len);
 	return ((int (*)(char *))tmp->entry)(args);
 }
 

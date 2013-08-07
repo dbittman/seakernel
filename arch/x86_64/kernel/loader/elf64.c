@@ -164,10 +164,6 @@ int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int force)
 					{
 						reloc_addr += *(uint64_t *)(mem_addr) + rela->addend;
 					}
-					else if(GET_RELOC_TYPE(rela->info) == R_X86_64_PC32)
-					{
-						
-					}
 					else if(GET_RELOC_TYPE(rela->info) == R_X86_64_32) 
 					{
 						reloc_addr += *(uint64_t *)(mem_addr) + rela->addend;
@@ -178,13 +174,6 @@ int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int force)
 								GET_RELOC_TYPE(rela->info));
 						error++;
 					}
-				}
-				
-				if(GET_RELOC_TYPE(rela->info) == R_X86_64_PC32)
-				{
-					reloc_addr = mem_addr - reloc_addr + 4;
-					reloc_addr += rela->addend;
-					reloc_addr = -reloc_addr;
 				}
 				elf64_write_field(GET_RELOC_TYPE(rela->info), mem_addr, reloc_addr);
 				

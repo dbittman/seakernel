@@ -1,3 +1,4 @@
+*.kdev4
 *.o
 *.m
 *.deps
@@ -12,3 +13,6 @@ initrd.conf
 skernel
 tools/mkird
 .kdev*
+*.1
+initrd-*
+drivers/built/

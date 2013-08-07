@@ -44,7 +44,7 @@ int vm_do_unmap_only(addr_t virt, unsigned locked)
 	pt = (addr_t *)((pd[vdir]&PAGE_MASK) + PHYS_PAGE_MAP);
 	
 	pt[vtbl] = 0;
-	asm("invlpg (%0)" : : "a" (virt));
+	asm("invlpg (%0)"::"r" (virt));
 	#if CONFIG_SMP
 	if(kernel_task && (virt&PAGE_MASK) != PDIR_DATA) {
 		if(IS_KERN_MEM(virt))
@@ -91,7 +91,7 @@ int vm_do_unmap(addr_t virt, unsigned locked)
 	
 	addr_t p = pt[vtbl];
 	pt[vtbl] = 0;
-	__asm__ volatile ("invlpg (%0)" : : "a" (virt));
+	asm("invlpg (%0)"::"r" (virt));
 	#if CONFIG_SMP
 	if(kernel_task && (virt&PAGE_MASK) != PDIR_DATA) {
 		if(IS_KERN_MEM(virt))

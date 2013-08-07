@@ -183,6 +183,7 @@ unsigned int vm_setattrib(addr_t v, short attr)
 	
 	pt[vtbl] &= PAGE_MASK;
 	pt[vtbl] |= attr;
+	asm("invlpg (%0)"::"r" (v));
 	if(kernel_task)
 		mutex_release(&pd_cur_data->lock);
 	return 0;

@@ -20,6 +20,7 @@ int vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned opt)
 		flush_pd();
 	}
 	page_tables[vpage] = (phys & PAGE_MASK) | attr;
+	asm("invlpg (%0)"::"r" (virt));
 	if(!(opt & MAP_NOCLEAR))
 		memset((void *)(virt&PAGE_MASK), 0, 0x1000);
 #if CONFIG_SMP

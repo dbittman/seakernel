@@ -30,7 +30,8 @@ int vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned opt)
 	pt = (addr_t *)((pd[vdir]&PAGE_MASK) + PHYS_PAGE_MAP);
 	
 	pt[vtbl] = (phys & PAGE_MASK) | attr;
-	if(!(opt & MAP_NOCLEAR))
+	asm("invlpg (%0)"::"r" (virt));
+	if(!(opt & MAP_NOCLEAR)) 
 		memset((void *)(virt&PAGE_MASK), 0, 0x1000);
 	
 	#if CONFIG_SMP

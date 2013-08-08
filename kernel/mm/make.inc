@@ -7,6 +7,7 @@ kernel/mm/kmalloc.o \
 kernel/mm/memory.o \
 kernel/mm/mmfile.o \
 kernel/mm/pager.o \
+kernel/mm/pmap.o \
 kernel/mm/slab.o
 
 KOBJS += $(SWAP-y)

@@ -4,46 +4,12 @@
 #include <kernel.h>
 #include <memory.h>
 #include <acpi.h>
-
-addr_t *__acpi_phys, *__acpi_virt;
-int __acpi_idx=0;
-int __acpi_idx_max=0;
+#include <mod.h>
+#include <pmap.h>
+struct pmap acpi_pmap;
 int __acpi_enable = 0;
-mutex_t __acpi_records_lock;
 int acpi_rsdt_pt_sz;
 struct acpi_dt_header *acpi_rsdt;
-static addr_t get_virtual_address_page(addr_t p)
-{
-	addr_t masked = p & PAGE_MASK;
-	for(int i=0;i<__acpi_idx;i++)
-	{
-		if(masked == __acpi_phys[i])
-			return __acpi_virt[i];
-	}
-	if(__acpi_idx == __acpi_idx_max)
-	{
-		__acpi_idx_max *= 2;
-		addr_t *tmp = kmalloc(__acpi_idx_max * sizeof(addr_t));
-		memcpy(tmp, __acpi_phys, sizeof(addr_t) * __acpi_idx);
-		tmp = kmalloc(__acpi_idx_max * sizeof(addr_t));
-		memcpy(tmp, __acpi_virt, sizeof(addr_t) * __acpi_idx);
-	}
-	__acpi_phys[__acpi_idx] = masked;
-	addr_t ret;
-	__acpi_virt[__acpi_idx] = ret = get_next_mm_device_page();
-	vm_map(ret, masked, PAGE_PRESENT | PAGE_WRITE, MAP_NOCLEAR);
-	__acpi_idx++;
-	return ret;
-}
-
-static addr_t translate_physical_address(addr_t p)
-{
-	int offset = (p - (p & PAGE_MASK));
-	mutex_acquire(&__acpi_records_lock);
-	addr_t v = get_virtual_address_page(p);
-	mutex_release(&__acpi_records_lock);
-	return v + offset;
-}
 
 int rsdp_validate_checksum(struct acpi_rsdp *rsdp)
 {
@@ -118,9 +84,9 @@ addr_t find_RSDT_entry(struct acpi_dt_header *rsdt, int pointer_size, const char
 	{
 		addr_t v;
 		if(pointer_size == 4)
-			v = translate_physical_address(*(uint32_t *)tmp);
+			v = pmap_get_mapping(&acpi_pmap, *(uint32_t *)tmp);
 		else
-			v = translate_physical_address(*(uint64_t *)tmp);
+			v = pmap_get_mapping(&acpi_pmap, *(uint64_t *)tmp);
 		char *test_sig = (char *)v;
 		if(!strncmp(test_sig, sig, 4))
 			return v;
@@ -141,10 +107,7 @@ void *acpi_get_table_data(const char *sig, int *length)
 
 void init_acpi()
 {
-	__acpi_idx_max = 64;
-	__acpi_phys = kmalloc(__acpi_idx_max * sizeof(addr_t));
-	__acpi_virt = kmalloc(__acpi_idx_max * sizeof(addr_t));
-	mutex_create(&__acpi_records_lock, 0);
+	pmap_create(&acpi_pmap, 0);
 	struct acpi_rsdp *rsdp = apci_get_RSDP();
 	if(!rsdp) return;
 	
@@ -152,9 +115,11 @@ void init_acpi()
 	int pointer_size = (rsdp->revision ? 8 : 4);
 	const char *sig = (rsdp->revision ? "XSDT" : "RSDT");
 	
-	addr_t rsdt_v = translate_physical_address((addr_t)rsdt);
+	addr_t rsdt_v = pmap_get_mapping(&acpi_pmap, (addr_t)rsdt);
 	int valid = acpi_validate_dt((void *)(rsdt_v), sig);
 	acpi_rsdt = (void *)rsdt_v;
 	acpi_rsdt_pt_sz = pointer_size;
 	if(valid) __acpi_enable=1;
+	add_kernel_symbol(acpi_get_table_data);
+	add_kernel_symbol(find_RSDT_entry);
 }

@@ -6,6 +6,7 @@
 #include <cpu.h>
 #include <mod.h>
 #include <atomic.h>
+#include <pmap.h>
 extern addr_t end;
 void slab_stat(struct mem_stat *s);
 void process_memorymap(struct multiboot *mboot)
@@ -79,6 +80,9 @@ void init_memory(struct multiboot *m)
 	add_kernel_symbol(vm_map);
 	add_kernel_symbol(vm_do_unmap);
 	add_kernel_symbol(vm_do_unmap_only);
+	add_kernel_symbol(pmap_get_mapping);
+	add_kernel_symbol(pmap_create);
+	add_kernel_symbol(pmap_destroy);
 #endif
 }
 

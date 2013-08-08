@@ -28,8 +28,8 @@
 #define DIR_PHYS           0xFFBFF000
 #define TBL_PHYS           0xFFC00000
 
-#define MMF_SHARED_START   0xB8000000
-#define MMF_SHARED_END     0xC0000000
+#define DEVICE_MAP_START   0xB8000000
+#define DEVICE_MAP_END     0xC0000000
 #define MMF_PRIV_START     0xA0000000
 #define MMF_PRIV_END       0xB0000000
 
@@ -40,7 +40,7 @@
 
 #define STACK_LOCATION (0xB0002000 + ((CONFIG_STACK_PAGES+1) * 0x1000)*2)
 
-#define IS_KERN_MEM(x) (x < TOP_LOWER_KERNEL || (x > MMF_SHARED_START && x < PDIR_DATA))
+#define IS_KERN_MEM(x) (x < TOP_LOWER_KERNEL || (x > DEVICE_MAP_START && x < PDIR_DATA))
 
 #define IS_THREAD_SHARED_MEM(x) (((!(x >= TOP_TASK_MEM_EXEC && x < TOP_TASK_MEM)) || ((x&PAGE_MASK) == PDIR_DATA)) && x < DIR_PHYS)
 #define page_directory ((unsigned *)DIR_PHYS)

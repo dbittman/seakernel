@@ -13,7 +13,7 @@ int imps_scan_mptables(unsigned addr, unsigned len);
 
 int probe_smp()
 {
-	unsigned long long lapic_msr = read_msr(0x1b);
+	/*unsigned long long lapic_msr = read_msr(0x1b);
 	write_msr(0x1b, (lapic_msr&0xFFFFF000) | 0x800, 0); //set global enable bit for lapic
 	unsigned mem_lower = ((CMOS_READ_BYTE(CMOS_BASE_MEMORY+1) << 8) | CMOS_READ_BYTE(CMOS_BASE_MEMORY)) << 10;
 	int res=0;
@@ -25,7 +25,7 @@ int probe_smp()
 		res=imps_scan_mptables(EBDA_SEG_ADDR, 1024);
 	if(!res)
 		res=imps_scan_mptables(0xF0000, 0x10000);
-	if(!res)
+	if(!res) */
 		return 0;
 	set_ksf(KSF_CPUS_RUNNING);
 	printk(5, "[cpu]: CPU%s initialized (boot=%d, #APs=%d: ok)                    \n", num_cpus > 1 ? "s" : "", primary_cpu->apicid, num_booted_cpus);

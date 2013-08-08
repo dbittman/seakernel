@@ -24,6 +24,9 @@
 #define KMALLOC_ADDR_START        0xFFFF820000000000
 #define KMALLOC_ADDR_END          0xFFFF830000000000
 
+#define DEVICE_MAP_END            0xFFFFFF7FC0000000
+#define DEVICE_MAP_START          0xFFFFFF0000000000
+
 #define PM_STACK_ADDR             0xFFFFFF7FC0000000
 #define PM_STACK_ADDR_TOP         0xFFFFFF8000000000
 
@@ -73,4 +76,5 @@ __asm__ __volatile__("mov %%cr3,%%rax\n\tmov %%rax,%%cr3": : :"ax", "eax", "rax"
 
 #define current_task (kernel_task ? ((task_t *)(*((addr_t *)CURRENT_TASK_POINTER))) : 0)
 addr_t pm_alloc_page_zero();
+addr_t get_next_mm_device_page();
 #endif

@@ -95,7 +95,8 @@ void parse_kernel_cmd(char *buf)
 	sprintf(stuff_to_pass[2], "/preinit.sh %s", root_device);
 	
 }
-
+void init_main_cpu_1();
+void init_main_cpu_2();
 /* This is the C kernel entry point */
 void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 {
@@ -123,11 +124,18 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	load_initrd(mtboot);
 	install_timer(1000);
 	pm_init(placement, mtboot);
+#if CONFIG_ARCH == TYPE_ARCH_X86
 	init_main_cpu();
+#else
+	init_main_cpu_1();
+#endif
 
 	/* Now get the management stuff going */
 	printk(1, "[kernel]: Starting system management\n");
 	init_memory(mtboot);
+#if CONFIG_ARCH == TYPE_ARCH_X86_64
+	init_main_cpu_2();
+#endif
 	console_init_stage2();
 	parse_kernel_cmd((char *)(addr_t)mtboot->cmdline);
 	init_multitasking();

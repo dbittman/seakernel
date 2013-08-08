@@ -14,3 +14,20 @@ int allocate_dma_buffer(size_t length, addr_t *virtual, addr_t *physical)
 	ata_off += length;
 	return 0;
 }
+
+addr_t mmdev_addr = 0;
+mutex_t mmd_lock;
+addr_t get_next_mm_device_page()
+{
+	if(!mmdev_addr) {
+		mutex_create(&mmd_lock, 0);
+		mmdev_addr = DEVICE_MAP_START;
+	}
+	mutex_acquire(&mmd_lock);
+	if(mmdev_addr >= DEVICE_MAP_END)
+		panic(0, "ran out of mmdev space");
+	addr_t ret = mmdev_addr;
+	mmdev_addr += 0x1000;
+	mutex_release(&mmd_lock);
+	return ret;
+}

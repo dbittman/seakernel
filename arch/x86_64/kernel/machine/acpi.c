@@ -10,6 +10,8 @@ int __acpi_idx=0;
 int __acpi_idx_max=0;
 int __acpi_enable = 0;
 mutex_t __acpi_records_lock;
+int acpi_rsdt_pt_sz;
+struct acpi_dt_header *acpi_rsdt;
 static addr_t get_virtual_address_page(addr_t p)
 {
 	addr_t masked = p & PAGE_MASK;
@@ -127,6 +129,16 @@ addr_t find_RSDT_entry(struct acpi_dt_header *rsdt, int pointer_size, const char
 	return 0;
 }
 
+void *acpi_get_table_data(const char *sig, int *length)
+{
+	addr_t head = find_RSDT_entry(acpi_rsdt, acpi_rsdt_pt_sz, sig);
+	if(!head) return (void *)0;
+	struct acpi_dt_header *dt = (struct acpi_dt_header *)head;
+	if(!acpi_validate_dt(dt, sig)) return 0;
+	if(length) *length = dt->length - sizeof(struct acpi_dt_header);
+	return (dt+1);
+}
+
 void init_acpi()
 {
 	__acpi_idx_max = 64;
@@ -142,5 +154,7 @@ void init_acpi()
 	
 	addr_t rsdt_v = translate_physical_address((addr_t)rsdt);
 	int valid = acpi_validate_dt((void *)(rsdt_v), sig);
+	acpi_rsdt = (void *)rsdt_v;
+	acpi_rsdt_pt_sz = pointer_size;
 	if(valid) __acpi_enable=1;
 }

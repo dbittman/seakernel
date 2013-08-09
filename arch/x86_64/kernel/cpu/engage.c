@@ -28,16 +28,13 @@ static inline  unsigned get_boot_flag()
 
 void cpu_k_task_entry(task_t *me)
 {
-	/* final part: set the current_task pointer to 'me', and set the 
-	 * task flags that allow the cpu to start executing */
-	arch_specific_set_current_task(me->pd, (addr_t)me);
 	((cpu_t *)(me->cpu))->flags |= CPU_TASK;
 	set_int(1);
 	/* wait until we have tasks to run */
 	for(;;) 
 		schedule();
 }
-
+extern pml4_t *kernel_dir_phys;
 /* it's important that this doesn't get inlined... */
 __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 {
@@ -48,45 +45,54 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	parse_cpuid(cpu);
 	setup_fpu(cpu);
 	init_sse(cpu);
-	cpu->flags |= CPU_RUNNING;
-	set_boot_flag(0xFFFFFFFF);
 	
-	kprintf("CPU UP!\n");
-	for(;;);
-	while(!(kernel_state_flags & KSF_SMP_ENABLE)) asm("cli");
-	init_lapic(0);
-	set_lapic_timer(lapic_timer_start);
-	/* now we need to wait up the memory manager is all set up */
-	while(!(kernel_state_flags & KSF_MMU)) asm("cli");
-	/* load in the directory provided and enable paging! */
-	__asm__ volatile ("mov %0, %%cr3" : : "r" (cpu->kd_phys));
-	
-	printk(0, "[cpu%d]: waiting for tasking...\n", apicid);
-	while(!kernel_task) asm("cli");
-	printk(0, "[cpu%d]: enable tasks...\n", apicid);
+	/* set up a real paging structure */
+	pml4_t *initial_pml4 = (pml4_t *)kernel_dir_phys;
+	asm("mov %0, %%cr3" :: "r"(initial_pml4));
+	pml4_t *new_pml4 = vm_clone((addr_t *)kernel_dir, 0);
+	vm_switch(new_pml4);
+	cpu->kd = new_pml4;
+
 	/* initialize tasking for this CPU */
 	task_t *task = task_create();
-	task->pid = add_atomic(&next_pid, 1)-1;
+	arch_specific_set_current_task(new_pml4, (addr_t)task);
 	task->pd = (page_dir_t *)cpu->kd;
 	task->stack_end=STACK_LOCATION;
 	task->priority = 1;
-	
-	cpu->active_queue = tqueue_create(0, 0);
-	tqueue_insert(primary_queue, (void *)task, task->listnode);
-	tqueue_insert(cpu->active_queue, (void *)task, task->activenode);
 	cpu->cur = cpu->ktask = task;
+	
+	asm("mov %0, %%rsp" : : "r" (STACK_LOCATION + STACK_SIZE - STACK_ELEMENT_SIZE));
+	asm("mov %0, %%rbp" : : "r" (STACK_LOCATION + STACK_SIZE - STACK_ELEMENT_SIZE));
+	
+	apicid = get_boot_flag();
+	cpu = get_cpu(apicid);
+	task = cpu->ktask;
+	
 	task->cpu = cpu;
 	mutex_create(&cpu->lock, MT_NOSCHED);
 	cpu->numtasks=1;
 	task->thread = thread_data_create();
 	set_kernel_stack(&cpu->tss, task->kernel_stack + (KERN_STACK_SIZE - STACK_ELEMENT_SIZE));
 	add_atomic(&running_processes, 1);
-	/* set up the real stack, and call cpu_k_task_entry with a pointer to this cpu's ktask as 
-	 * the argument */
-	kprintf("CPU: READY TO ENABLE TASKING\n");
-	for(;;);
+	cpu->flags |= CPU_RUNNING;
+	set_boot_flag(0xFFFFFFFF);
 	
-	/* we'll never get here */
+	while(!(kernel_state_flags & KSF_SMP_ENABLE)) asm("cli");
+	init_lapic(0);
+	set_lapic_timer(lapic_timer_start);
+
+	
+	printk(0, "[cpu%d]: waiting for tasking...\n", apicid);
+	while(!kernel_task) asm("cli");
+	
+	task->pid = add_atomic(&next_pid, 1)-1;
+	printk(0, "[cpu%d]: enable tasks...\n", apicid);
+	
+	tqueue_insert(primary_queue, (void *)task, task->listnode);
+	
+	cpu->active_queue = tqueue_create(0, 0);
+	tqueue_insert(cpu->active_queue, (void *)task, task->activenode);
+	cpu_k_task_entry(task);
 }
 
 /* C-side CPU entry code. Called from the assembly handler */

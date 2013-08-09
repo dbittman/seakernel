@@ -28,6 +28,7 @@ static addr_t get_virtual_address_page(struct pmap *m, addr_t p)
 
 addr_t pmap_get_mapping(struct pmap *m, addr_t p)
 {
+	assert(m->magic == PMAP_MAGIC);
 	int offset = (p - (p & PAGE_MASK));
 	mutex_acquire(&m->lock);
 	addr_t v = get_virtual_address_page(m, p);
@@ -60,7 +61,7 @@ void pmap_destroy(struct pmap *m)
 	if(m->flags & PMAP_ALLOC)
 		kfree(m);
 }
-#warning "make this it's own library"
+
 addr_t mmdev_addr = 0;
 mutex_t mmd_lock;
 addr_t get_next_mm_device_page()

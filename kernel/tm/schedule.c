@@ -81,6 +81,8 @@ int schedule()
 		return 0;
 	if((((cpu_t *)current_task->cpu)->flags & CPU_LOCK))
 		return 0;
+	if(!(((cpu_t *)current_task->cpu)->flags & CPU_TASK))
+		return 0;
 	assert(!(current_task->flags & TF_SETINT));
 	/* make sure to re-enable interrupts when we come back to this
 	 * task if we entered schedule with them enabled */

@@ -140,7 +140,7 @@ void ack_pic(int n)
 
 void ipi_handler(volatile registers_t regs)
 {
-	assert(regs.int_no == 0x80 && ((regs.ds&(~0x7)) == 0x10 || (regs.ds&(~0x7)) == 0x20) && ((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));
+	assert(((regs.ds&(~0x7)) == 0x10 || (regs.ds&(~0x7)) == 0x20) && ((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));
 	int previous_interrupt_flag = set_int(0);
 	add_atomic(&int_count[regs.int_no], 1);
 #if CONFIG_SMP

@@ -6,6 +6,7 @@
 #include <cpu.h>
 #include <atomic.h>
 volatile addr_t *kernel_dir=0;
+pml4_t *kernel_dir_phys=0;
 int id_tables=0;
 struct pd_data *pd_cur_data = (struct pd_data *)PDIR_DATA;
 extern void id_map_apic();
@@ -31,11 +32,8 @@ void early_vm_map(pml4_t *pml4, addr_t addr, addr_t map)
 	pt[PAGE_TABLE_IDX(addr/0x1000)] = map;
 }
 
-void vm_init(addr_t id_map_to)
+pml4_t *create_initial_directory()
 {
-	/* Register some stuff... */
-	register_interrupt_handler (14, (isr_t)&page_fault, 0);
-
 	/* Create kernel directory */
 	pml4_t *pml4 = (addr_t *)pm_alloc_page_zero();
 	memset(pml4, 0, 0x1000);
@@ -81,7 +79,14 @@ void vm_init(addr_t id_map_to)
 	 * set it because we have the physical address */
 	printk(0, "Setting new CR3...\n");
 	asm("mov %0, %%cr3"::"r"(pml4));
- 	kernel_dir = pml4;
+	return pml4;
+}
+
+void vm_init(addr_t id_map_to)
+{
+	/* Register some stuff... */
+	register_interrupt_handler (14, (isr_t)&page_fault, 0);
+ 	kernel_dir = create_initial_directory();
 	/* Enable paging */
 	printk(0, "Paging enabled!\n");
 	memcpy((void *)SIGNAL_INJECT, (void *)signal_return_injector, SIGNAL_INJECT_SIZE);
@@ -96,7 +101,7 @@ void vm_init_2()
 	printk(0, "[mm]: cloning directory for primary cpu\n");
 	primary_cpu->kd = vm_clone((addr_t *)kernel_dir, 0);
 	primary_cpu->kd_phys = primary_cpu->kd[PML4_IDX(PHYSICAL_PML4_INDEX/0x1000)] & PAGE_MASK;
-
+	kernel_dir_phys = (pml4_t *)primary_cpu->kd_phys;
 	kernel_dir = primary_cpu->kd;
 	vm_switch((addr_t *)primary_cpu->kd);
 }

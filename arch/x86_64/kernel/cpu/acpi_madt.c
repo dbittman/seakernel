@@ -3,7 +3,9 @@
 #include <kernel.h>
 #include <acpi.h>
 #include <cpu.h>
-
+#include <pmap.h>
+#include <imps-x86_64.h>
+struct pmap apic_pmap;
 
 
 
@@ -45,7 +47,9 @@ void acpi_madt_parse_processor(void *ent, int boot)
 		printk(2, "[smp]: refusing to initialize CPU %d\n", proc->apicid);
 		return;
 	}
-	int re = boot_cpu(proc->apicid, 0); //proc->apic_ver
+	int ver = APIC_VERSION(IMPS_LAPIC_READ(LAPIC_VER));
+	printk(0, "[acpi]: booting CPU %d %x\n", proc->apicid, ver);
+	int re = boot_cpu(proc->apicid, ver);
 	if(!re) {
 		cp->flags |= CPU_ERROR;
 		num_failed_cpus++;
@@ -64,15 +68,16 @@ int parse_acpi_madt()
 		uint8_t type;
 		uint8_t length;
 	} *ent;
+	pmap_create(&apic_pmap, 0);
 	kprintf("PARSE MADT\n");
 	int length;
 	void *ptr = acpi_get_table_data("APIC", &length);
 	if(!ptr) return 0;
 	
-	uint32_t controller_address = *(uint32_t *)ptr;
+	uint64_t controller_address = *(uint32_t *)ptr;
 	uint32_t flags = *(uint32_t *)((uint32_t *)ptr + 1);
-	controller_address = 0;//pmap_get_mapping
-	kprintf("%x %x\n", controller_address, flags);
+	imps_lapic_addr = pmap_get_mapping(&apic_pmap, controller_address);
+	kprintf("%x %x %x\n", controller_address, flags, imps_lapic_addr);
 	
 	void *tmp = (void *)((addr_t)ptr + 8);
 	/* the ACPI MADT specification says that we may assume

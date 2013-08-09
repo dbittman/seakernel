@@ -34,7 +34,7 @@ pmode_enter:
   ; set the stack to be right below the GDT data
   ; this will get changed almost immediately
   mov esp, (0x7100-4)
-  mov eax, DWORD cpu_entry
+  mov eax, DWORD cpu_start32
   jmp eax
 pmode_enter_end:
 

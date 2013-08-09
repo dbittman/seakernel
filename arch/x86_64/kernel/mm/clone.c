@@ -5,7 +5,6 @@
 #include <task.h>
 #include <swap.h>
 #include <cpu.h>
-extern addr_t imps_lapic_addr;
 
 void copy_pde(page_dir_t *pd, page_dir_t *parent_pd, int idx)
 {

@@ -61,9 +61,6 @@ rm_gdt_pointer:
   dw 0x18 - 1
   dd (0x7100 + 0x4)
 
-
-
-
 align 8
 ; descriptor for the temporary 64-bit GDT
 gdtdesc:

@@ -111,6 +111,7 @@ void vm_switch(addr_t *n/*VIRTUAL ADDRESS*/)
 	__asm__ volatile ("mov %0, %%cr3" : : "r" (n[PML4_IDX((PHYSICAL_PML4_INDEX/0x1000))]));
 }
 
+#warning "these should handle multiple page sizes"
 addr_t vm_do_getmap(addr_t v, addr_t *p, unsigned locked)
 {
 	addr_t vpage = (v&PAGE_MASK)/0x1000;

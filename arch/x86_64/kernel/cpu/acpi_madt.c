@@ -4,7 +4,6 @@
 #include <acpi.h>
 #include <cpu.h>
 #include <pmap.h>
-#include <imps-x86_64.h>
 struct pmap apic_pmap;
 
 void acpi_madt_parse_processor(void *ent, int boot)
@@ -33,7 +32,7 @@ void acpi_madt_parse_processor(void *ent, int boot)
 		printk(2, "[smp]: refusing to initialize CPU %d\n", proc->apicid);
 		return;
 	}
-	int ver = APIC_VERSION(IMPS_LAPIC_READ(LAPIC_VER));
+	int ver = APIC_VERSION(LAPIC_READ(LAPIC_VER));
 	printk(0, "[acpi]: booting CPU %d %x\n", proc->apicid, ver);
 	int re = boot_cpu(proc->apicid, ver);
 	if(!re) {
@@ -65,7 +64,7 @@ int parse_acpi_madt()
 	
 	uint64_t controller_address = *(uint32_t *)ptr;
 	uint32_t flags = *(uint32_t *)((uint32_t *)ptr + 1);
-	imps_lapic_addr = pmap_get_mapping(&apic_pmap, controller_address);
+	lapic_addr = pmap_get_mapping(&apic_pmap, controller_address);
 	void *tmp = (void *)((addr_t)ptr + 8);
 	/* the ACPI MADT specification says that we may assume
 	 * that the boot processor is the first processor listed

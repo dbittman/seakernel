@@ -16,7 +16,7 @@
 #include <cpu.h>
 #include <memory.h>
 #include <atomic.h>
-#include <imps-x86_64.h>
+
 mutex_t ipi_mutex;
 int send_ipi(unsigned char dest_shorthand, unsigned int dst, unsigned int v)
 {
@@ -29,15 +29,15 @@ int send_ipi(unsigned char dest_shorthand, unsigned int dst, unsigned int v)
 	mutex_acquire(&ipi_mutex);
 	/* Writing to the lower ICR register causes the interrupt
 	 * to get sent off (Intel 3A 10.6.1), so do the higher reg first */
-	IMPS_LAPIC_WRITE(LAPIC_ICR+0x10, (dst << 24));
+	LAPIC_WRITE(LAPIC_ICR+0x10, (dst << 24));
 	unsigned lower = v | (dest_shorthand << 18);
 	/* gotta have assert for all except init */
-	IMPS_LAPIC_WRITE(LAPIC_ICR, lower);
+	LAPIC_WRITE(LAPIC_ICR, lower);
 	/* Wait for send to finish */
 	to = 0;
 	do {
 		asm("pause");
-		send_status = IMPS_LAPIC_READ(LAPIC_ICR) & LAPIC_ICR_STATUS_PEND;
+		send_status = LAPIC_READ(LAPIC_ICR) & LAPIC_ICR_STATUS_PEND;
 	} while (send_status && (to++ < 1000));
 	mutex_release(&ipi_mutex);
 	set_int(old);
@@ -48,7 +48,7 @@ void handle_ipi_cpu_halt(volatile registers_t regs)
 {
 	set_int(0);
 	/* No interrupts */
-	IMPS_LAPIC_WRITE(LAPIC_TPR, 0xFFFFFFFF);
+	LAPIC_WRITE(LAPIC_TPR, 0xFFFFFFFF);
 	asm("cli");
 	while(1) asm("hlt");
 }

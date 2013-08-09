@@ -5,7 +5,6 @@
 #include <cpu.h>
 #include <task.h>
 #include <mutex.h>
-#include <imps-x86_64.h>
 
 #define MAX_IOAPIC 8
 #define write_ioapic(l,o,v) ioapic_rw(l, WRITE, o, v)
@@ -76,7 +75,7 @@ void lapic_eoi()
 {
 	if(!(kernel_state_flags & KSF_CPUS_RUNNING))
 		return;
-	IMPS_LAPIC_WRITE(LAPIC_EOI, 0x0);
+	LAPIC_WRITE(LAPIC_EOI, 0x0);
 }
 
 void set_lapic_timer(unsigned tmp)
@@ -89,9 +88,9 @@ void set_lapic_timer(unsigned tmp)
 	 * If you write the initial count before you
 	 * tell it to set periodic mode and set the vector
 	 * it will not generate an interrupt! */
-	IMPS_LAPIC_WRITE(LAPIC_LVTT, 32 | 0x20000);
-	IMPS_LAPIC_WRITE(LAPIC_TDCR, 3);
-	IMPS_LAPIC_WRITE(LAPIC_TICR, tmp);
+	LAPIC_WRITE(LAPIC_LVTT, 32 | 0x20000);
+	LAPIC_WRITE(LAPIC_TDCR, 3);
+	LAPIC_WRITE(LAPIC_TICR, tmp);
 }
 
 void calibrate_lapic_timer(unsigned freq)
@@ -99,15 +98,15 @@ void calibrate_lapic_timer(unsigned freq)
 	if(!(kernel_state_flags & KSF_CPUS_RUNNING))
 		return;
 	printk(0, "[smp]: calibrating LAPIC timer...");
-	IMPS_LAPIC_WRITE(LAPIC_LVTT, 32);
-	IMPS_LAPIC_WRITE(LAPIC_TDCR, 3);
-	IMPS_LAPIC_WRITE(LAPIC_TICR, 0xFFFFFFFF);
+	LAPIC_WRITE(LAPIC_LVTT, 32);
+	LAPIC_WRITE(LAPIC_TDCR, 3);
+	LAPIC_WRITE(LAPIC_TICR, 0xFFFFFFFF);
 	
 	/* wait 1/10 of a second */
 	delay_sleep(current_hz / 10);
 	/* read how much it has counted and stop the timer */
-	unsigned val = IMPS_LAPIC_READ(LAPIC_TCCR);
-	IMPS_LAPIC_WRITE(LAPIC_LVTT, LAPIC_DISABLE);
+	unsigned val = LAPIC_READ(LAPIC_TCCR);
+	LAPIC_WRITE(LAPIC_LVTT, LAPIC_DISABLE);
 	
 	/* calculate how much to set the timer to */
 	unsigned diff = (0xFFFFFFFF - val);
@@ -129,27 +128,27 @@ void init_lapic(int extint)
 	for(i=0;i<=255;i++)
 		lapic_eoi();
 	/* these are not yet configured */
-	IMPS_LAPIC_WRITE(LAPIC_DFR, 0xFFFFFFFF);
-	IMPS_LAPIC_WRITE(LAPIC_LDR, (IMPS_LAPIC_READ(LAPIC_LDR)&0x00FFFFFF)|1);
+	LAPIC_WRITE(LAPIC_DFR, 0xFFFFFFFF);
+	LAPIC_WRITE(LAPIC_LDR, (LAPIC_READ(LAPIC_LDR)&0x00FFFFFF)|1);
 	/* disable the timer while we set up */
-	IMPS_LAPIC_WRITE(LAPIC_LVTT, LAPIC_DISABLE);
+	LAPIC_WRITE(LAPIC_LVTT, LAPIC_DISABLE);
 	/* if we accept the extint stuff (the boot processor) we need to not
 	 * mask, and set the proper flags for these entries.
 	 * LVT1: NMI
 	 * LVT0: extINT, level triggered
 	 */
-	IMPS_LAPIC_WRITE(LAPIC_LVT1, 0x400 | (extint ? 0 : LAPIC_DISABLE)); //NMI
-	IMPS_LAPIC_WRITE(LAPIC_LVT0, 0x8700 | (extint ? 0 : LAPIC_DISABLE)); //external interrupts
+	LAPIC_WRITE(LAPIC_LVT1, 0x400 | (extint ? 0 : LAPIC_DISABLE)); //NMI
+	LAPIC_WRITE(LAPIC_LVT0, 0x8700 | (extint ? 0 : LAPIC_DISABLE)); //external interrupts
 	/* disable errors (can trigger while messing with masking) and performance
 	 * counter, but also set a non-zero vector */
-	IMPS_LAPIC_WRITE(LAPIC_LVTE, 0xFF | LAPIC_DISABLE);
-	IMPS_LAPIC_WRITE(LAPIC_LVTPC, 0xFF | LAPIC_DISABLE);
+	LAPIC_WRITE(LAPIC_LVTE, 0xFF | LAPIC_DISABLE);
+	LAPIC_WRITE(LAPIC_LVTPC, 0xFF | LAPIC_DISABLE);
 	
 	/* accept all priority levels */
-	IMPS_LAPIC_WRITE(LAPIC_TPR, 0);
+	LAPIC_WRITE(LAPIC_TPR, 0);
 	/* finally write to the spurious interrupt register to enable
 	 * the interrupts */
-	IMPS_LAPIC_WRITE(LAPIC_SPIV, 0x0100 | 0xFF);
+	LAPIC_WRITE(LAPIC_SPIV, 0x0100 | 0xFF);
 }
 
 void init_ioapic()

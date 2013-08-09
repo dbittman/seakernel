@@ -6,10 +6,8 @@
 #include <cpu.h>
 #include <memory.h>
 #include <atomic.h>
-#include <imps-x86_64.h>
 
 unsigned num_cpus=0, num_booted_cpus=0, num_failed_cpus=0;
-int imps_scan_mptables(unsigned addr, unsigned len);
 int parse_acpi_madt();
 int probe_smp()
 {

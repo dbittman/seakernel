@@ -11,6 +11,6 @@ typedef struct {
     char cpu_brand[49];
 } cpuid_t;
 
-#include <cpu-x86-common.h>
+#include <cpu-x86_common.h>
 
 #endif

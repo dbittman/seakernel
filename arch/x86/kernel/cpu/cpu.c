@@ -6,6 +6,7 @@
 #include <mutex.h>
 #include <atomic.h>
 #include <mod.h>
+#include <acpi.h>
 cpu_t *primary_cpu=0;
 #if CONFIG_SMP
 cpu_t cpu_array[CONFIG_MAX_CPUS];
@@ -133,7 +134,7 @@ int get_cpu_interrupt_flag()
 	return (cpu ? (cpu->flags&CPU_INTER) : 0);
 }
 
-void init_main_cpu()
+void init_main_cpu_1()
 {
 #if CONFIG_SMP
 	mutex_create(&ipi_mutex, MT_NOSCHED);
@@ -171,4 +172,9 @@ void init_main_cpu()
 	_add_kernel_symbol((unsigned)(cpu_t *)primary_cpu, "primary_cpu");
 	add_kernel_symbol(set_int);
 #endif
+}
+
+void init_main_cpu_2()
+{
+	init_acpi();
 }

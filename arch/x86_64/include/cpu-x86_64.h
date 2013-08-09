@@ -37,6 +37,6 @@ extern int rm_gdt_pointer(void);
 
 void add_ioapic(addr_t address, int id, int int_start);
 
-#include <cpu-x86-common.h>
+#include <cpu-x86_common.h>
 
 #endif

@@ -111,7 +111,7 @@ void init_acpi()
 	struct acpi_rsdp *rsdp = apci_get_RSDP();
 	if(!rsdp) return;
 	
-	struct acpi_dt_header *rsdt = (struct acpi_dt_header *)(rsdp->revision ? rsdp->xsdt_addr : rsdp->rsdt_addr);
+	struct acpi_dt_header *rsdt = (struct acpi_dt_header *)(rsdp->revision ? (addr_t)rsdp->xsdt_addr : (addr_t)rsdp->rsdt_addr);
 	int pointer_size = (rsdp->revision ? 8 : 4);
 	const char *sig = (rsdp->revision ? "XSDT" : "RSDT");
 	

@@ -7,20 +7,6 @@
 #include <imps-x86_64.h>
 struct pmap apic_pmap;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 void acpi_madt_parse_processor(void *ent, int boot)
 {
 	struct {
@@ -59,7 +45,11 @@ void acpi_madt_parse_processor(void *ent, int boot)
 
 void acpi_madt_parse_ioapic(void *ent)
 {
-	
+	struct {
+		uint8_t type, length, apicid, __reserved;
+		uint32_t address, int_start;
+	} *st = ent;
+	add_ioapic(pmap_get_mapping(&apic_pmap, st->address), 2, st->apicid, st->int_start);
 }
 
 int parse_acpi_madt()
@@ -69,7 +59,6 @@ int parse_acpi_madt()
 		uint8_t length;
 	} *ent;
 	pmap_create(&apic_pmap, 0);
-	kprintf("PARSE MADT\n");
 	int length;
 	void *ptr = acpi_get_table_data("APIC", &length);
 	if(!ptr) return 0;
@@ -77,8 +66,6 @@ int parse_acpi_madt()
 	uint64_t controller_address = *(uint32_t *)ptr;
 	uint32_t flags = *(uint32_t *)((uint32_t *)ptr + 1);
 	imps_lapic_addr = pmap_get_mapping(&apic_pmap, controller_address);
-	kprintf("%x %x %x\n", controller_address, flags, imps_lapic_addr);
-	
 	void *tmp = (void *)((addr_t)ptr + 8);
 	/* the ACPI MADT specification says that we may assume
 	 * that the boot processor is the first processor listed
@@ -94,8 +81,6 @@ int parse_acpi_madt()
 		boot_cpu = 0;
 		tmp = (void *)((addr_t)tmp + ent->length);
 	}
-	
-	
 	return 1;
 }
 

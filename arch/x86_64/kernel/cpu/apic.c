@@ -11,22 +11,28 @@
 #define write_ioapic(l,o,v) ioapic_rw(l, WRITE, o, v)
 #define read_ioapic(l,o) ioapic_rw(l, READ, o, 0)
 
+struct ioapic {
+	addr_t addr;
+	int type, id, start;
+};
+
 extern unsigned current_hz;
 unsigned lapic_timer_start=0;
 volatile unsigned num_ioapic=0;
-struct imps_ioapic *ioapic_list[MAX_IOAPIC];
+struct ioapic ioapic_list[MAX_IOAPIC];
 extern char imcr_present;
 
-void add_ioapic(struct imps_ioapic *ioapic)
+void add_ioapic(addr_t address, int type, int id, int int_start)
 {
-	assert(ioapic);
-	assert(ioapic->type == 2);
 	assert(num_ioapic < MAX_IOAPIC);
-	ioapic_list[num_ioapic]=ioapic;
-	ioapic_list[++num_ioapic]=0;
+	ioapic_list[num_ioapic].addr=address;
+	ioapic_list[num_ioapic].type=type;
+	ioapic_list[num_ioapic].id=id;
+	ioapic_list[num_ioapic].start=int_start;
+	ioapic_list[++num_ioapic].addr=0;
 }
 
-unsigned ioapic_rw(struct imps_ioapic *l, int rw, unsigned char off, unsigned val)
+unsigned ioapic_rw(struct ioapic *l, int rw, unsigned char off, unsigned val)
 {
 	*(uint32_t*)((addr_t)l->addr) = off;
 	if(rw == WRITE)
@@ -35,7 +41,7 @@ unsigned ioapic_rw(struct imps_ioapic *l, int rw, unsigned char off, unsigned va
 		return *(uint32_t*)((addr_t)l->addr + 0x10);
 }
 
-void write_ioapic_vector(struct imps_ioapic *l, unsigned irq, char masked, char trigger, char polarity, char mode, unsigned char vector)
+void write_ioapic_vector(struct ioapic *l, unsigned irq, char masked, char trigger, char polarity, char mode, unsigned char vector)
 {
 	unsigned lower=0, higher=0;
 	lower = (unsigned)vector & 0xFF;
@@ -56,7 +62,7 @@ void write_ioapic_vector(struct imps_ioapic *l, unsigned irq, char masked, char 
 	write_ioapic(l, irq*2 + 0x10, lower);
 }
 
-int program_ioapic(struct imps_ioapic *ia)
+int program_ioapic(struct ioapic *ia)
 {
 	int i;
 	for(i=0;i<16;i++) {
@@ -146,11 +152,6 @@ void init_lapic(int extint)
 	IMPS_LAPIC_WRITE(LAPIC_SPIV, 0x0100 | 0xFF);
 }
 
-void id_map_apic(page_dir_t *pd)
-{
-	panic(0, "ID_MAP_APIC");
-}
-
 void init_ioapic()
 {
 	if(!num_ioapic)
@@ -161,18 +162,13 @@ void init_ioapic()
 	disable_pic();
 	/* enable all discovered ioapics */
 	for(i=0;i<num_ioapic;i++) {
-		struct imps_ioapic *l = ioapic_list[i];
+		struct ioapic *l = &ioapic_list[i];
 		assert(l->type == 2);
-		printk(1, "[apic]: found ioapic at %x: ID %d, version %x; flags=%x\n", l->addr, l->id, l->ver, l->flags);
-		if(l->flags) num += program_ioapic(l);
+		printk(1, "[apic]: found ioapic at %x: ID %d\n", l->addr, l->id);
+		num += program_ioapic(l);
 	}
 	if(!num)
 		panic(0, "unable to initialize IOAPICs");
-	else if(imcr_present) {
-		/* Enable the IMCR */
-		outb(0x22, 0x70);
-		outb(0x23, 0x01);
-	}
 	interrupt_controller = IOINT_APIC;
 }
 #endif

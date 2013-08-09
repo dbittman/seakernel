@@ -94,7 +94,7 @@ extern addr_t imps_lapic_addr;
 #define IMPS_LAPIC_WRITE(x, y)   \
 (*((volatile unsigned *) (imps_lapic_addr+(x))) = (y))
 
-void add_ioapic(struct imps_ioapic *ioapic);
+void add_ioapic(addr_t address, int type, int id, int int_start);
 void init_ioapic();
 void lapic_eoi();
 

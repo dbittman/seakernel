@@ -1,7 +1,7 @@
 /* Privides functions for interrupt handling. */
 #include <kernel.h>
 #include <isr.h>
-#include <asm/system-x86_64.h>
+#include <asm/system.h>
 #include <task.h>
 #include <cpu.h>
 #include <mod.h>
@@ -140,7 +140,9 @@ void ack_pic(int n)
 
 void ipi_handler(volatile registers_t regs)
 {
+#if CONFIG_ARCH == TYPE_ARCH_X86_64
 	assert(((regs.ds&(~0x7)) == 0x10 || (regs.ds&(~0x7)) == 0x20) && ((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));
+#endif
 	int previous_interrupt_flag = set_int(0);
 	add_atomic(&int_count[regs.int_no], 1);
 #if CONFIG_SMP
@@ -177,14 +179,20 @@ void ipi_handler(volatile registers_t regs)
 void entry_syscall_handler(volatile registers_t regs)
 {
 	/* don't need to save the flag here, since it will always be true */
+#if CONFIG_ARCH == TYPE_ARCH_X86_64
 	assert(regs.int_no == 0x80 && ((regs.ds&(~0x7)) == 0x10 || (regs.ds&(~0x7)) == 0x20) && ((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));
+#endif
 	set_int(0);
 	add_atomic(&int_count[0x80], 1);
 	if(current_task->flags & TF_IN_INT)
 		panic(0, "attempted to enter syscall while handling an interrupt");
 	/* set the interrupt handling flag... */
 	current_task->flags |= TF_IN_INT;
+#if CONFIG_ARCH == TYPE_ARCH_X86_64
 	if(regs.rax == 128) {
+#elif CONFIG_ARCH == TYPE_ARCH_X86
+	if(regs.eax == 128) {
+#endif
 		/* the injection code at the end of the signal handler calls
 		 * a syscall with eax = 128. So here we handle returning from
 		 * a signal handler. First, copy back the old registers, and
@@ -238,7 +246,9 @@ void entry_syscall_handler(volatile registers_t regs)
 /* This gets called from our ASM interrupt handler stub. */
 void isr_handler(volatile registers_t regs)
 {
+#if CONFIG_ARCH == TYPE_ARCH_X86_64
 	assert(((regs.ds&(~0x7)) == 0x10 || (regs.ds&(~0x7)) == 0x20) && ((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));
+#endif
 	/* this is explained in the IRQ handler */
 	int previous_interrupt_flag = set_int(0);
 	add_atomic(&int_count[regs.int_no], 1);
@@ -288,7 +298,9 @@ void isr_handler(volatile registers_t regs)
 
 void irq_handler(volatile registers_t regs)
 {
+#if CONFIG_ARCH == TYPE_ARCH_X86_64
 	assert(((regs.ds&(~0x7)) == 0x10 || (regs.ds&(~0x7)) == 0x20) && ((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));
+#endif
 	/* ok, so the assembly entry function clears interrupts in the cpu, 
 	 * but the kernel doesn't know that yet. So we clear the interrupt
 	 * flag in the cpu structure as part of the normal set_int call, but

@@ -1,5 +1,4 @@
 KOBJS += arch/x86_64/kernel/mm/clone.o \
-		 arch/x86_64/kernel/mm/dma.o \
 		 arch/x86_64/kernel/mm/free.o \
 		 arch/x86_64/kernel/mm/pfault.o \
 		 arch/x86_64/kernel/mm/physical.o \

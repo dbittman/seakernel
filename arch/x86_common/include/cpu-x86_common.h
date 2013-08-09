@@ -71,4 +71,8 @@
 #define CR4_OSFXSR      (1 << 9)
 #define CR4_OSXMMEXCPT  (1 << 10)
 
+#define LAPIC_READ(x)  (*((volatile unsigned *) (lapic_addr+(x))))
+#define LAPIC_WRITE(x, y)   \
+   (*((volatile unsigned *) (lapic_addr+(x))) = (y))
+extern addr_t lapic_addr;
 #endif

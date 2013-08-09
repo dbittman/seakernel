@@ -8,7 +8,6 @@
 #include <atomic.h>
 #include <imps-x86.h>
 volatile int imps_release_cpus = 0;
-unsigned imps_lapic_addr = 0;
 char imcr_present=0;
 
 static int imps_get_checksum(unsigned start, int length)
@@ -132,12 +131,12 @@ static void imps_read_bios(struct imps_fps *fps_ptr)
 	} else
 		str_ptr = "Virtual Wire";
 	if (fps_ptr->cth_ptr)
-		imps_lapic_addr = local_cth_ptr->lapic_addr;
+		lapic_addr = local_cth_ptr->lapic_addr;
 	else
-		imps_lapic_addr = LAPIC_ADDR_DEFAULT;
+		lapic_addr = LAPIC_ADDR_DEFAULT;
 	printk(1, "[smp]: APIC config: \"%s mode\" local APIC address: 0x%x\n",
-		      str_ptr, imps_lapic_addr);
-	if (imps_lapic_addr != (read_msr(0x1b) & 0xFFFFF000)) {
+		      str_ptr, lapic_addr);
+	if (lapic_addr != (read_msr(0x1b) & 0xFFFFF000)) {
 		printk(1, "[smp]: inconsistent local APIC address, disabling SMP support\n");
 		return;
 	}

@@ -15,6 +15,7 @@ void set_lapic_timer(unsigned tmp);
 extern unsigned lapic_timer_start;
 void init_lapic(int);
 extern unsigned running_processes;
+addr_t lapic_addr;
 
 static inline void set_boot_flag(unsigned x)
 {
@@ -137,8 +138,8 @@ int boot_cpu(unsigned id, unsigned apic_ver)
 	CMOS_WRITE_BYTE(CMOS_RESET_CODE, CMOS_RESET_JUMP);
 	*((volatile unsigned *) bios_reset_vector) = ((bootaddr & 0xFF000) << 12);
 	/* clear the APIC error register */
-	IMPS_LAPIC_WRITE(LAPIC_ESR, 0);
-	accept_status = IMPS_LAPIC_READ(LAPIC_ESR);
+	LAPIC_WRITE(LAPIC_ESR, 0);
+	accept_status = LAPIC_READ(LAPIC_ESR);
 	/* assert INIT IPI */
 	send_ipi(LAPIC_ICR_SHORT_DEST, apicid, LAPIC_ICR_TM_LEVEL | LAPIC_ICR_LEVELASSERT | LAPIC_ICR_DM_INIT);
 	delay_sleep(10);
@@ -160,8 +161,8 @@ int boot_cpu(unsigned id, unsigned apic_ver)
 		success = 0;
 	set_int(0);
 	/* clear the APIC error register */
-	IMPS_LAPIC_WRITE(LAPIC_ESR, 0);
-	accept_status = IMPS_LAPIC_READ(LAPIC_ESR);
+	LAPIC_WRITE(LAPIC_ESR, 0);
+	accept_status = LAPIC_READ(LAPIC_ESR);
 
 	/* clean up BIOS reset vector */
 	CMOS_WRITE_BYTE(CMOS_RESET_CODE, 0);

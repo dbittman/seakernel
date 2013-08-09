@@ -60,7 +60,7 @@ int vm_copy_dir(page_dir_t *from, page_dir_t *new, char flags)
 	}
 	return 0;
 }
-extern addr_t imps_lapic_addr;
+extern addr_t lapic_addr;
 /* Accepts virtual, returns virtual */
 page_dir_t *vm_clone(page_dir_t *pd, char cow)
 {
@@ -88,7 +88,7 @@ page_dir_t *vm_clone(page_dir_t *pd, char cow)
 #if CONFIG_SMP
 	/* we can link since all page directories have this table set up
 	 * already */
-	unsigned pdi = PAGE_DIR_IDX(imps_lapic_addr / PAGE_SIZE);
+	unsigned pdi = PAGE_DIR_IDX(lapic_addr / PAGE_SIZE);
 	new[pdi] = pd[pdi];
 #endif
 	
@@ -152,7 +152,7 @@ page_dir_t *vm_copy(page_dir_t *pd)
 #if CONFIG_SMP
 	/* we can link since all page directories have this table set up
 	 * already */
-	unsigned pdi = PAGE_DIR_IDX(imps_lapic_addr / PAGE_SIZE);
+	unsigned pdi = PAGE_DIR_IDX(lapic_addr / PAGE_SIZE);
 	new[pdi] = pd[pdi];
 #endif
 

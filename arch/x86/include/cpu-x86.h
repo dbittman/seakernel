@@ -1,7 +1,6 @@
 #ifndef _CPU_X86_H
 #define _CPU_X86_H
 
-
 typedef struct {
     char manufacturer_string[13];
     int max_basic_input_val;
@@ -12,5 +11,6 @@ typedef struct {
     char cpu_brand[49];
 } cpuid_t;
 
+#include <cpu-x86-common.h>
 
 #endif

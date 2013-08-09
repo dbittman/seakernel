@@ -48,7 +48,7 @@ void acpi_madt_parse_ioapic(void *ent)
 		uint8_t type, length, apicid, __reserved;
 		uint32_t address, int_start;
 	} *st = ent;
-	add_ioapic(pmap_get_mapping(&apic_pmap, st->address), 2, st->apicid, st->int_start);
+	add_ioapic(pmap_get_mapping(&apic_pmap, st->address), st->apicid, st->int_start);
 }
 
 int parse_acpi_madt()

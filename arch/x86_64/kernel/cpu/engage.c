@@ -75,6 +75,7 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	set_kernel_stack(&cpu->tss, task->kernel_stack + (KERN_STACK_SIZE - STACK_ELEMENT_SIZE));
 	add_atomic(&running_processes, 1);
 	cpu->flags |= CPU_RUNNING;
+	/* indicate that we're ready for the next processor to run */
 	set_boot_flag(0xFFFFFFFF);
 	
 	while(!(kernel_state_flags & KSF_SMP_ENABLE)) asm("cli");

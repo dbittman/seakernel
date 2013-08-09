@@ -35,6 +35,8 @@ extern int rm_gdt_pointer(void);
 #define RM_GDT_START 0x7100
 #define BOOTFLAG_ADDR 0x7200
 
-void add_ioapic(addr_t address, int type, int id, int int_start);
+void add_ioapic(addr_t address, int id, int int_start);
+
+#include <cpu-x86-common.h>
 
 #endif

@@ -12,7 +12,7 @@
 
 struct ioapic {
 	addr_t addr;
-	int type, id, start;
+	int id, start;
 };
 
 extern unsigned current_hz;
@@ -21,11 +21,10 @@ volatile unsigned num_ioapic=0;
 struct ioapic ioapic_list[MAX_IOAPIC];
 extern char imcr_present;
 
-void add_ioapic(addr_t address, int type, int id, int int_start)
+void add_ioapic(addr_t address, int id, int int_start)
 {
 	assert(num_ioapic < MAX_IOAPIC);
 	ioapic_list[num_ioapic].addr=address;
-	ioapic_list[num_ioapic].type=type;
 	ioapic_list[num_ioapic].id=id;
 	ioapic_list[num_ioapic].start=int_start;
 	ioapic_list[++num_ioapic].addr=0;
@@ -46,8 +45,6 @@ void write_ioapic_vector(struct ioapic *l, unsigned irq, char masked, char trigg
 	lower = (unsigned)vector & 0xFF;
 	/* 8-10: delivery mode */
 	lower |= (mode << 8) & 0x700;
-	/* 11: destination mode */
-	//lower |= (1 << 11);
 	/* 13: polarity */
 	if(polarity) lower |= (1 << 13);
 	/* 15: trigger */
@@ -162,7 +159,6 @@ void init_ioapic()
 	/* enable all discovered ioapics */
 	for(i=0;i<num_ioapic;i++) {
 		struct ioapic *l = &ioapic_list[i];
-		assert(l->type == 2);
 		printk(1, "[apic]: found ioapic at %x: ID %d\n", l->addr, l->id);
 		num += program_ioapic(l);
 	}

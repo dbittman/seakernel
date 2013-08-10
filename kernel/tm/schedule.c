@@ -44,7 +44,7 @@ __attribute__((always_inline)) inline task_t *get_next_task(task_t *prev)
 
 __attribute__((always_inline)) static inline void post_context_switch()
 {
-	if(unlikely(current_task->state == TASK_SUICIDAL))
+	if(unlikely(current_task->state == TASK_SUICIDAL) && !(current_task->flags & TF_EXITING))
 		task_suicide();
 	/* We only process signals if we aren't in a system call.
 	 * this is because if a task is suddenly interrupted inside an

@@ -219,7 +219,7 @@ int sys_link(char *s, char *d);
 int sys_fsync(int f);
 int sync_inode_tofs(struct inode *i);
 int rmdir(char *);
-int sys_sbrk(int inc);
+int sys_sbrk(long inc);
 int sys_mount2(char *node, char *to, char *name, char *opts, int);
 extern struct inode *ramfs_root;
 void init_dev_fs();

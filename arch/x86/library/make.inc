@@ -14,3 +14,5 @@ STRINGOBJS= ../arch/x86/library/string/memchr.o \
 			../arch/x86/library/string/strnlen.o \
 			../arch/x86/library/string/strrchr.o \
 			string/strtok.o
+
+CFLAGS += -I ../arch/x86_common/include

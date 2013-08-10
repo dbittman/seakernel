@@ -1,5 +1,5 @@
 include ../../make.inc
-include ../../arch/$(ARCH)/drivers/make.inc
+include ../../arch/$(ARCH)/drivers/submake.inc
 
 all: make.deps $(OUTPUT)
 

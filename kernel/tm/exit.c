@@ -157,7 +157,7 @@ void exit(int code)
 	set_as_dead(t);
 	char flag_last_page_dir_task=0;
 	mutex_acquire(&pd_cur_data->lock);
-	flag_last_page_dir_task = (--pd_cur_data->count == 0) ? 1 : 0;
+	flag_last_page_dir_task = (sub_atomic(&pd_cur_data->count, 1) == 0) ? 1 : 0;
 	mutex_release(&pd_cur_data->lock);
 	if(flag_last_page_dir_task) {
 		/* no one else is referencing this directory. Clean it up... */

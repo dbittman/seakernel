@@ -150,7 +150,7 @@ int sys_ftruncate(int f, off_t length);
 int sys_getnodestr(char *path, char *node);
 int chroot(char *);
 int sys_chown(char *path, int, uid_t uid, gid_t gid);
-int sys_utime(char *path, unsigned a, unsigned m);
+int sys_utime(char *path, time_t a, time_t m);
 int get_pwd(char *buf, int);
 int unlink(char *f);
 int proc_get_major();

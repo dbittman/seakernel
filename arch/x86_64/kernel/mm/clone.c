@@ -132,7 +132,7 @@ pml4_t *vm_copy(pml4_t *parent_pml4)
 	unsigned int i;
 	for(i=0;i<512;i++)
 	{
-		if(parent_pml4[i] == 0 || i > PML4_IDX(BOTTOM_HIGHER_KERNEL/0x1000) || i < PML4_IDX(TOP_TASK_MEM_EXEC/0x1000))
+		if(parent_pml4[i] == 0 || i >= PML4_IDX(BOTTOM_HIGHER_KERNEL/0x1000) || i < PML4_IDX(TOP_TASK_MEM_EXEC/0x1000) || i == PML4_IDX(PDIR_DATA/0x1000))
 		{
 			pml4[i] = parent_pml4[i];
 		} else {
@@ -143,6 +143,5 @@ pml4_t *vm_copy(pml4_t *parent_pml4)
 	pml4[PML4_IDX(CURRENT_TASK_POINTER/0x1000)] = 0;
 	if(kernel_task)
 		mutex_release(&pd_cur_data->lock);
-	
 	return pml4;
 }

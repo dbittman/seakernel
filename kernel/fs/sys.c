@@ -229,7 +229,7 @@ int sys_chown(char *path, int fd, uid_t uid, gid_t gid)
 	return 0;
 }
 
-int sys_utime(char *path, unsigned a, unsigned m)
+int sys_utime(char *path, time_t a, time_t m)
 {
 	if(!path)
 		return -EINVAL;
@@ -240,8 +240,8 @@ int sys_utime(char *path, unsigned a, unsigned m)
 		iput(i);
 		return -EPERM;
 	}
-	i->mtime = m ? m : get_epoch_time();
-	i->atime = a ? a : get_epoch_time();
+	i->mtime = m ? m : (time_t)get_epoch_time();
+	i->atime = a ? a : (time_t)get_epoch_time();
 	sync_inode_tofs(i);
 	iput(i);
 	return 0;

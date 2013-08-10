@@ -79,7 +79,7 @@ int read_pipe(struct inode *ino, char *buffer, size_t length)
 	pipe_t *pipe = ino->pipe;
 	if(!pipe)
 		return -EINVAL;
-	unsigned len = length;
+	size_t len = length;
 	int ret=0;
 	size_t count=0;
 	/* should we even try reading? (empty pipe with no writing processes=no) */

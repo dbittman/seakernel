@@ -22,11 +22,8 @@
 #define	S_ISSOCK(m)	(((m)&_IFMT) == _IFSOCK)
 
 struct task_stat {
-	long pid, ppid, *waitflag;
-	time_t stime, utime;
-	uid_t uid;
-	gid_t gid;
-	int state;
+	unsigned pid, ppid, *waitflag, stime, utime;
+	int uid, gid, state;
 	unsigned char system;
 	int tty;
 	struct inode *exe;

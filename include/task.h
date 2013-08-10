@@ -128,6 +128,7 @@ struct task_struct
 	unsigned num_swapped;
 	
 	/* executable accounting */
+	/*** TODO: So, should these be shared by threads, or no? ***/
 	volatile addr_t heap_start, heap_end, he_red;
 	char command[128];
 	char **argv, **env;

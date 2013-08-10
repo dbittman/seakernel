@@ -140,7 +140,6 @@ pml4_t *vm_copy(pml4_t *parent_pml4)
 		}
 	}
 	pml4[PML4_IDX(PHYSICAL_PML4_INDEX/0x1000)] = pml4_phys;
-	pml4[PML4_IDX(CURRENT_TASK_POINTER/0x1000)] = 0;
 	if(kernel_task)
 		mutex_release(&pd_cur_data->lock);
 	return pml4;

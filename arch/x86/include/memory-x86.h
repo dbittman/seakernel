@@ -50,6 +50,8 @@
 
 #define PAGE_MASK      0xFFFFF000
 
+#define PAGE_SIZE_LOWER_KERNEL 0x1000
+
 #define PAGE_DIR_IDX(x) ((uint32_t)x/1024)
 #define PAGE_TABLE_IDX(x) ((uint32_t)x%1024)
 #define PAGE_DIR_PHYS(x) (x[1023]&PAGE_MASK)

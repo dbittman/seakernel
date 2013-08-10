@@ -54,11 +54,13 @@
 #define IS_THREAD_SHARED_MEM(x) (((!(x >= TOP_TASK_MEM_EXEC && x < TOP_TASK_MEM)) || ((x&PAGE_MASK) == PDIR_DATA)))
 
 #define PAGE_MASK      0xFFFFFFFFFFFFF000
-
+#define PAGE_LARGE (1 << 7)
 #define PML4_IDX(x) ((x/0x8000000) % 512)
 #define PDPT_IDX(x) ((x / 0x40000) % 512)
 #define PAGE_DIR_IDX(x) ((x / 0x200) % 512)
 #define PAGE_TABLE_IDX(x) (x % 512)
+
+#define PAGE_SIZE_LOWER_KERNEL (2 * 1024 * 1024)
 
 #define flush_pd() \
 __asm__ __volatile__("mov %%cr3,%%rax\n\tmov %%rax,%%cr3": : :"ax", "eax", "rax")

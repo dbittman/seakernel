@@ -104,8 +104,9 @@ int kernel_idle_task()
 		/* set it to write. We don't actually have to do this, because
 		 * ring0 code may always access memory. As long as the PAGE_USER
 		 * flag isn't set... */
-		vm_setattrib(addr, PAGE_PRESENT | PAGE_WRITE);
-		addr += PAGE_SIZE;
+		if(!(SIGNAL_INJECT >= addr && SIGNAL_INJECT < (addr + PAGE_SIZE_LOWER_KERNEL)))
+			vm_setattrib(addr, PAGE_PRESENT | PAGE_WRITE);
+		addr += PAGE_SIZE_LOWER_KERNEL;
 	}
 	set_int(1);
 	/* Now enter the main idle loop, waiting to do periodic cleanup */

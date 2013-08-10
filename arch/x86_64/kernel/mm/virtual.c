@@ -55,25 +55,20 @@ pml4_t *create_initial_directory()
 	 * This should make mapping memory a LOT easier */
 	pml4[PML4_IDX(PHYS_PAGE_MAP/0x1000)] = pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE;
 	pdpt = (addr_t *)(pml4[PML4_IDX(PHYS_PAGE_MAP/0x1000)] & PAGE_MASK);
-	if(primary_cpu->cpuid.ext_features_edx & CPU_EXT_FEATURES_GBPAGE) {
-		printk(0, "!!! CPU supports 1GB pages. This is untested code !!!\n");
-		for(int i = 0; i < 512; i++)
-			pdpt[i] = ((addr_t)0x40000000)*i | PAGE_PRESENT | PAGE_WRITE | (1 << 7);
-	} else {
-		address = 0;
-		for(int i = 0; i < 512; i++)
-		{
-			pdpt[i] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
-			pd = (addr_t *)(pdpt[i] & PAGE_MASK);
-			for(int j = 0; j < 512; j++) {
-				pd[j] = address | PAGE_PRESENT | PAGE_WRITE | (1 << 7);
-				address += 0x200000;
-			}
+
+	address = 0;
+	for(int i = 0; i < 512; i++)
+	{
+		pdpt[i] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+		pd = (addr_t *)(pdpt[i] & PAGE_MASK);
+		for(int j = 0; j < 512; j++) {
+			pd[j] = address | PAGE_PRESENT | PAGE_WRITE | (1 << 7);
+			address += 0x200000;
 		}
 	}
 	/* map in the signal return inject code. we need to do this, because
 	 * user code may not run the the kernel area of the page directory */
-	early_vm_map(pml4, SIGNAL_INJECT, pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE);
+	early_vm_map(pml4, SIGNAL_INJECT, pm_alloc_page_zero() | PAGE_PRESENT | PAGE_USER);
 	early_vm_map(pml4, PDIR_DATA, pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE);
 	/* CR3 requires the physical address, so we directly 
 	 * set it because we have the physical address */
@@ -111,7 +106,6 @@ void vm_switch(addr_t *n/*VIRTUAL ADDRESS*/)
 	__asm__ volatile ("mov %0, %%cr3" : : "r" (n[PML4_IDX((PHYSICAL_PML4_INDEX/0x1000))]));
 }
 
-#warning "these should handle multiple page sizes"
 addr_t vm_do_getmap(addr_t v, addr_t *p, unsigned locked)
 {
 	addr_t vpage = (v&PAGE_MASK)/0x1000;
@@ -133,14 +127,24 @@ addr_t vm_do_getmap(addr_t v, addr_t *p, unsigned locked)
 	pdpt = (addr_t *)((pml4[vp4]&PAGE_MASK) + PHYS_PAGE_MAP);
 	if(!pdpt[vpdpt])
 		goto out;
+	if(pdpt[vpdpt] & PAGE_LARGE)
+	{
+		ret = pdpt[vpdpt] & PAGE_MASK;
+		goto out;
+	}
 	pd = (addr_t *)((pdpt[vpdpt]&PAGE_MASK) + PHYS_PAGE_MAP);
 	if(!pd[vdir])
 		goto out;
+	if(pd[vdir] & PAGE_LARGE)
+	{
+		ret = pd[vdir] & PAGE_MASK;
+		goto out;
+	}
 	pt = (addr_t *)((pd[vdir]&PAGE_MASK) + PHYS_PAGE_MAP);
 	ret = pt[vtbl] & PAGE_MASK;
+	out:
 	if(p)
 		*p = ret;
-	out:
 	if(kernel_task && !locked)
 		mutex_release(&pd_cur_data->lock);
 	return ret;
@@ -164,15 +168,28 @@ unsigned int vm_setattrib(addr_t v, short attr)
 	if(!pml4[vp4])
 		pml4[vp4] = pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
 	pdpt = (addr_t *)((pml4[vp4]&PAGE_MASK) + PHYS_PAGE_MAP);
+	if(pdpt[vpdpt] & PAGE_LARGE)
+	{
+		pdpt[vpdpt] &= PAGE_MASK;
+		pdpt[vpdpt] |= (attr | PAGE_LARGE);
+		goto out;
+	}
 	if(!pdpt[vpdpt])
 		pdpt[vpdpt] = pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
 	pd = (addr_t *)((pdpt[vpdpt]&PAGE_MASK) + PHYS_PAGE_MAP);
+	if(pd[vdir] & PAGE_LARGE)
+	{
+		pd[vdir] &= PAGE_MASK;
+		pd[vdir] |= (attr | PAGE_LARGE);
+		goto out;
+	}
 	if(!pd[vdir])
 		pd[vdir] = pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
 	pt = (addr_t *)((pd[vdir]&PAGE_MASK) + PHYS_PAGE_MAP);
 	
 	pt[vtbl] &= PAGE_MASK;
 	pt[vtbl] |= attr;
+	out:
 	asm("invlpg (%0)"::"r" (v));
 	if(kernel_task)
 		mutex_release(&pd_cur_data->lock);
@@ -200,15 +217,24 @@ unsigned int vm_do_getattrib(addr_t v, unsigned *p, unsigned locked)
 	pdpt = (addr_t *)((pml4[vp4]&PAGE_MASK) + PHYS_PAGE_MAP);
 	if(!pdpt[vpdpt])
 		goto out;
+	if(pdpt[vpdpt] & PAGE_LARGE)
+	{
+		ret = pdpt[vpdpt] & ATTRIB_MASK;
+		goto out;
+	}
 	pd = (addr_t *)((pdpt[vpdpt]&PAGE_MASK) + PHYS_PAGE_MAP);
 	if(!pd[vdir])
 		goto out;
+	if(pd[vdir] & PAGE_LARGE)
+	{
+		ret = pd[vdir] & ATTRIB_MASK;
+		goto out;
+	}
 	pt = (addr_t *)((pd[vdir]&PAGE_MASK) + PHYS_PAGE_MAP);
-	
 	ret = pt[vtbl] & ATTRIB_MASK;
+	out:
 	if(p)
 		*p = ret;
-	out:
 	if(kernel_task && !locked)
 		mutex_release(&pd_cur_data->lock);
 	return ret;

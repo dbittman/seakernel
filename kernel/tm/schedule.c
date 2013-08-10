@@ -83,11 +83,13 @@ int schedule()
 		return 0;
 	if(!(((cpu_t *)current_task->cpu)->flags & CPU_TASK))
 		return 0;
-	assert(!(current_task->flags & TF_SETINT));
 	/* make sure to re-enable interrupts when we come back to this
 	 * task if we entered schedule with them enabled */
-	if(set_int(0))
+	if(set_int(0)) {
+		assert(!(current_task->flags & TF_SETINT));
 		current_task->flags |= TF_SETINT;
+	} else
+		assert(!(current_task->flags & TF_SETINT));
 	task_t *old = current_task;
 	cpu_t *cpu = (cpu_t *)old->cpu;
 	assert(cpu && cpu->cur == old);

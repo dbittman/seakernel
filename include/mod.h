@@ -9,7 +9,7 @@
 
 typedef struct module_s {
 	char *base;
-	int length;
+	long length;
 	addr_t entry;
 	addr_t exiter;
 	char name[128];
@@ -18,14 +18,14 @@ typedef struct module_s {
 	struct module_s *next;
 } module_t;
 
-#define add_kernel_symbol(x) {_add_kernel_symbol( (intptr_t)x, #x);}
-void _add_kernel_sym_user(const intptr_t func, const char * funcstr);
-void _add_kernel_symbol(const intptr_t func, const char * funcstr);
-intptr_t find_kernel_function_user(char * unres);
-intptr_t find_kernel_function(char * unres);
+#define add_kernel_symbol(x) {_add_kernel_symbol( (addr_t)x, #x);}
+void _add_kernel_sym_user(const addr_t func, const char * funcstr);
+void _add_kernel_symbol(const addr_t func, const char * funcstr);
+addr_t find_kernel_function_user(char * unres);
+addr_t find_kernel_function(char * unres);
 void init_kernel_symbols(void);
-void _add_kernel_symbol(const intptr_t func, const char * funcstr);
-intptr_t find_kernel_function(char * unres);
+void _add_kernel_symbol(const addr_t func, const char * funcstr);
+addr_t find_kernel_function(char * unres);
 int remove_kernel_symbol(char * unres);
 static inline void write_deps(char *b, char *str)
 {
@@ -57,7 +57,7 @@ extern module_t *modules;
 int remove_kernel_symbol(char *);
 int sys_load_module(char *path, char *args, int flags);
 int sys_unload_module(char *path, int flags);
-intptr_t find_kernel_function(char * unres);
+addr_t find_kernel_function(char * unres);
 int load_deps_c(char *);
 
 #endif

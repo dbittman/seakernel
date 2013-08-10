@@ -112,8 +112,8 @@ struct task_struct
 	volatile long tick;
 	
 	/* accounting */
-	unsigned stime, utime;
-	unsigned t_cutime, t_cstime;
+	time_t stime, utime;
+	time_t t_cutime, t_cstime;
 	volatile addr_t stack_end;
 	volatile unsigned num_pages;
 	unsigned last; /* the previous systemcall */
@@ -208,7 +208,6 @@ void take_issue_with_current_task();
 extern volatile unsigned next_pid;
 task_t *get_task_pid(int pid);
 int do_send_signal(int, int, int);
-extern unsigned glob_sched_eip;
 void kill_all_tasks();
 void task_unlock_mutexes(task_t *t);
 void do_force_nolock(task_t *t);

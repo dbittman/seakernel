@@ -6,7 +6,7 @@
 extern void gdt_flush(u32int);
 extern void idt_flush(u32int);
 static void init_idt();
-gdt_entry_t gdt_entries[6];
+gdt_entry_t gdt_entries[NUM_GDT_ENTRIES];
 gdt_ptr_t   gdt_ptr;
 idt_entry_t idt_entries[256];
 idt_ptr_t   idt_ptr;
@@ -33,7 +33,7 @@ void write_tss(gdt_entry_t *gdt, tss_entry_t *tss, s32int num, u16int ss0, u32in
 
 void init_gdt(gdt_entry_t *gdt, gdt_ptr_t *ptr)
 {
-	ptr->limit = (sizeof(gdt_entry_t) * 6) - 1;
+	ptr->limit = (sizeof(gdt_entry_t) * NUM_GDT_ENTRIES) - 1;
 	ptr->base  = (u32int)gdt;
 	gdt_set_gate(gdt, 0, 0, 0, 0, 0);                // Null segment
 	gdt_set_gate(gdt, 1, 0, 0xFFFFF, 0x98, 0xC); // Code segment

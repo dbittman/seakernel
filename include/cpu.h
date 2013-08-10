@@ -9,8 +9,8 @@
   #include <cpu-x86.h>
   #include <tables-x86.h>
 #elif CONFIG_ARCH == TYPE_ARCH_X86_64
-#include <cpu-x86_64.h>
-#include <tables-x86_64.h>
+  #include <cpu-x86_64.h>
+  #include <tables-x86_64.h>
 #endif
 
 #define CPU_STACK_TEMP_SIZE 1024
@@ -35,9 +35,11 @@ typedef struct __cpu_t__ {
 	tqueue_t *active_queue;
 	task_t *ktask, *cur;
 	mutex_t lock;
-	gdt_entry_t gdt[6];
+#if CONFIG_ARCH == TYPE_ARCH_X86 || CONFIG_ARCH == TYPE_ARCH_X86_64
+	gdt_entry_t gdt[NUM_GDT_ENTRIES];
 	gdt_ptr_t gdt_ptr;
 	tss_entry_t tss;
+#endif
 	unsigned numtasks;
 	unsigned stack[CPU_STACK_TEMP_SIZE];
 	struct __cpu_t__ *next, *prev;

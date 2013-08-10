@@ -1,6 +1,8 @@
 #ifndef NEW_MUTEX_H
 #define NEW_MUTEX_H
 
+#include <types.h>
+
 #define MUTEX_MAGIC 0xDEADBEEF
 #define MT_ALLOC 1
 #define MT_NOSCHED 2
@@ -14,7 +16,7 @@ typedef struct {
 	unsigned magic;
 	unsigned lock;
 	unsigned flags;
-	int pid;
+	long pid;
 } mutex_t;
 
 void __mutex_acquire(mutex_t *m,char*,int);

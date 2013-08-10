@@ -1,6 +1,6 @@
 #ifndef STAT_H
 #define STAT_H
-typedef signed long time_t;
+#include <types.h>
 #define S_IFMT  00170000
 #define	S_IFSOCK 0140000	/* socket */
 #define	S_IFLNK  0120000
@@ -22,8 +22,11 @@ typedef signed long time_t;
 #define	S_ISSOCK(m)	(((m)&_IFMT) == _IFSOCK)
 
 struct task_stat {
-	unsigned pid, ppid, *waitflag, stime, utime;
-	int uid, gid, state;
+	long pid, ppid, *waitflag;
+	time_t stime, utime;
+	uid_t uid;
+	gid_t gid;
+	int state;
 	unsigned char system;
 	int tty;
 	struct inode *exe;
@@ -63,15 +66,15 @@ struct stat {
 	unsigned long	st_blksize;
 	unsigned long	st_blocks;
 
-		time_t	st_atime;
-  long		st_spare1;
-  time_t	st_mtime;
-  long		st_spare2;
-  time_t	st_ctime;
+	time_t	st_atime;
+	long		st_spare1;
+	time_t	st_mtime;
+	long		st_spare2;
+	time_t	st_ctime;
 };
 
 struct fsstat {
-		unsigned f_type;
+	unsigned f_type;
     unsigned f_bsize;
     unsigned long long f_blocks;
     unsigned long long f_bfree;

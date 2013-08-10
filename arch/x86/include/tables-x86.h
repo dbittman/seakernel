@@ -3,7 +3,7 @@
 #include <types.h>
 #include <tss-x86.h>
 #include <config.h>
-
+#define NUM_GDT_ENTRIES 6
 struct gdt_entry_struct
 {
 	u16int limit_low;

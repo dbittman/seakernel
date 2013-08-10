@@ -1,5 +1,7 @@
 #ifndef MOD_KEYBOARD_H
 #define MOD_KEYBOARD_H
+#include <config.h>
+#ifdef CONFIG_MODULE_KEYBOARD
 #define K(n) n
 #define K_HOLE		K(0)
 #define K_ENTER		K(1)
@@ -21,14 +23,5 @@
 #define K_INCRCONSOLE	K(17)
 #define K_SPAWNCONSOLE	K(18)
 #define K_BARENUMLOCK	K(19)
-
-
-
-
-
-
-
-
-
-
+#endif
 #endif

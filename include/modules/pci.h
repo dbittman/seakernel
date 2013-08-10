@@ -1,5 +1,7 @@
 #ifndef PCI_H
 #define PCI_H
+#include <config.h>
+#ifdef CONFIG_MODULE_PCI
 #include <types.h>
 #include <fs.h>
 
@@ -73,4 +75,5 @@ void pci_write_dword(const uint16_t bus, const uint16_t dev,
 	const uint16_t func, const uint32_t reg, unsigned data);
 uint32_t pci_read_dword(const uint16_t bus, const uint16_t dev, 
 	const uint16_t func, const uint32_t reg);
+#endif
 #endif

@@ -46,6 +46,8 @@ typedef s32 gid_t;
 typedef s32 dev_t;
 /* internally we handle this as a 32-bit integer to allow for it to not fuck up system call registers */
 typedef u32 mode_t;
+typedef signed long time_t;
+typedef long pid_t;
 #define NULL 0
 
 #define FALSE 0

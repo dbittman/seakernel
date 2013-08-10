@@ -9,7 +9,7 @@ volatile addr_t pm_location=0;
 volatile addr_t pm_stack = PM_STACK_ADDR;
 volatile addr_t pm_stack_max = PM_STACK_ADDR;
 
-volatile unsigned pm_num_pages=0, pm_used_pages=0;
+volatile unsigned long pm_num_pages=0, pm_used_pages=0;
 volatile addr_t highest_page=0;
 volatile addr_t lowest_page=~0;
 

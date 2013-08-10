@@ -116,7 +116,7 @@ int sys_write(int fp, off_t off, char *buf, size_t count)
 	return ret;
 }
 
-int read_data(int fp, char *buf, unsigned off, int length)
+int read_data(int fp, char *buf, off_t off, size_t length)
 {
 	struct file *f = get_file_pointer((task_t *)current_task, fp);
 	if(!f) return -EBADF;

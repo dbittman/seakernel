@@ -27,7 +27,7 @@ export AR
 
 include make.inc
 
-CFLAGS_NOARCH = -Ofast -g -std=c99 -nostdlib -nostdinc \
+CFLAGS_NOARCH = -O3 -g -std=c99 -nostdlib -nostdinc \
                 -fno-builtin -ffreestanding \
                 -Iarch/${ARCH}/include \
                 -I../include -Iinclude -I ../../include -I ../../../include \

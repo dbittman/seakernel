@@ -209,7 +209,7 @@ slab_t *create_slab(slab_cache_t *sc, int num_pages, unsigned short flags)
 		slab->obj_num = ((num_pages*PAGE_SIZE)-sizeof(slab_t)) / sc->obj_size;
 	if(slab->obj_num > MAX_OBJ_ID)
 		slab->obj_num = MAX_OBJ_ID;
-	slab->stack = (unsigned short *)slab->stack_arr;
+	slab->stack = (unsigned *)slab->stack_arr;
 	/* Setup the stack of objects */
 	i=0;
 	while(i < slab->obj_num)
@@ -254,20 +254,20 @@ addr_t alloc_object(slab_t *slab)
 	return ret;
 }
 
-int do_release_object(slab_t *slab, int obj)
+unsigned do_release_object(slab_t *slab, int obj)
 {
 	assert(slab && slab->magic == SLAB_MAGIC);
 	assert(slab->obj_used);
 	/* Push the object onto the stack */
 	*(slab->stack) = (unsigned short)obj;
 	slab->stack++;
-	int ret = --slab->obj_used;
+	unsigned ret = --slab->obj_used;
 	return ret;
 }
 
 void release_object(slab_t *slab, int obj)
 {
-	int res = do_release_object(slab, obj);
+	unsigned res = do_release_object(slab, obj);
 	if(!res)
 	{
 		/* We must move it to the empty list or destroy it */
@@ -507,7 +507,7 @@ void do_kfree_slab(void *ptr)
 #ifdef SLAB_DEBUG
 	total -= sc->obj_size;
 #endif
-	int obj;
+	unsigned obj;
 	obj = ((addr_t)ptr-FIRST_OBJ(slab)) / sc->obj_size;
 	assert(obj < slab->obj_num);
 	release_object(slab, obj);

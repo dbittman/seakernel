@@ -35,15 +35,15 @@ struct inode {
 	unsigned int flags;
 	off_t len;
 	addr_t start;
-	unsigned int nblocks, ctime, atime, mtime;
+	unsigned int nblocks;
+	time_t ctime, atime, mtime;
 	int count, f_count, newlocks;
 	/* Identification */
 	char name[INAME_LEN];
-	unsigned int dev;
+	dev_t dev;
 	unsigned long num;
 	unsigned int sb_idx;
 	char node_str[INAME_LEN];
-	dev_t devnum;
 	/* Pointers */
 	struct inode_operations *i_ops;
 	struct inode *parent;
@@ -144,7 +144,6 @@ int get_path_string(struct inode *p, char *path, int);
 struct inode *do_get_idir(char *path, struct inode *b, int, int, int *);
 int iput(struct inode *i);
 int do_chdir(struct inode *);
-int change_ireq(struct inode *i, int c);
 int do_chroot(struct inode *);
 int chdir(char *);
 int sys_ftruncate(int f, off_t length);
@@ -249,5 +248,5 @@ struct inode *read_idir(struct inode *i, int num);
 int sys_dirstat_fd(int fd, unsigned num, char *namebuf, struct stat *statbuf);
 int do_sys_write_flags(struct file *f, off_t off, char *buf, size_t count);
 int do_sys_read_flags(struct file *f, off_t off, char *buf, size_t count);
-int read_data(int fp, char *buf, unsigned off, int length);
+int read_data(int fp, char *buf, off_t off, size_t length);
 #endif

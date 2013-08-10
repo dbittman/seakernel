@@ -6,6 +6,7 @@
 #include <ll.h>
 #include <rwlock.h>
 #include <atomic.h>
+#include <types.h>
 struct llist *fslist;
 unsigned fs_num=0;
 

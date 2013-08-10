@@ -14,7 +14,7 @@ typedef struct vmem_node {
 /* {[Index][...data...]}*/
 typedef struct vmem_area {
 	addr_t addr;
-	u16 num_ipages;
+	unsigned num_ipages;
 	mutex_t lock;
 	addr_t max;
 	/* This is the last PHYSICAL node */

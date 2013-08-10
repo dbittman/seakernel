@@ -23,7 +23,7 @@ extern struct pd_data *pd_cur_data;
 extern volatile addr_t pm_location;
 extern volatile addr_t pm_stack;
 extern volatile addr_t pm_stack_max;
-extern volatile unsigned pm_num_pages, pm_used_pages;
+extern volatile unsigned long pm_num_pages, pm_used_pages;
 extern volatile addr_t highest_page;
 extern volatile addr_t lowest_page;
 extern int memory_has_been_mapped;

@@ -42,10 +42,11 @@ struct vterm {
 		char *name;
 	} *driver;
 };
+
 typedef struct console_driver_s console_driver_t;
 extern struct vterm consoles[];
-
 extern struct vterm *curcons, *kernel_console, *log_console;
+
 void console_puts(struct vterm *c, char *s);
 void set_text_mode();
 int tty_write(int min, char *buf, size_t len);
@@ -54,7 +55,7 @@ int tty_close(int min);
 int tty_open(int min);
 void console_init_stage1();
 void console_init_stage2();
-void switch_console(struct vterm *new);
+void switch_console(struct vterm *);
 void clear_console(int);
 int set_console_font(int c, int fw, int fh, int es, unsigned char *fnt);
 int ttyx_rw(int rw, int min, char *buf, size_t count);

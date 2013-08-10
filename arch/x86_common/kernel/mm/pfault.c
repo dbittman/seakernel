@@ -4,11 +4,11 @@
 #include <task.h>
 #include <swap.h>
 #include <mod.h>
-#include <elf-x86.h>
-void print_pfe(int x, registers_t *regs, unsigned cr2)
+#include <elf.h>
+void print_pfe(int x, registers_t *regs, addr_t cr2)
 {
 	assert(regs);
-	printk (x, "Woah! Page Fault at 0x%x, faulting address 0x%x\n", regs->eip, cr2);
+	printk (x, "Woah! Page Fault at 0x%x, faulting address %x\n", regs->eip, cr2);
 	if(!(regs->err_code & 1))
 		printk (x, "Present, ");
 	else
@@ -39,7 +39,7 @@ int do_map_page(addr_t addr, unsigned attr)
 	return 1;
 }
 
-int map_in_page(unsigned int cr2, unsigned err_code)
+int map_in_page(unsigned long cr2, unsigned err_code)
 {
 	if(cr2 >= current_task->heap_start && cr2 <= current_task->heap_end) {
 		do_map_page(cr2, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
@@ -54,21 +54,21 @@ int map_in_page(unsigned int cr2, unsigned err_code)
 void page_fault(registers_t *regs)
 {
 	current_task->regs=0;
-	uint32_t cr2, err_code = regs->err_code;
+	addr_t cr2, err_code = regs->err_code;
 	__asm__ volatile ("mov %%cr2, %0" : "=r" (cr2));
 	if(USER_TASK) {
 		/* if we were in a user-space task, we can actually just
 		 * pretend to be a second-stage interrupt handler. */
-#if CONFIG_SWAP
+		#if CONFIG_SWAP
 		/* Has the page been swapped out? NOTE: We must always check this first */
 		if(current_task && num_swapdev && current_task->num_swapped && 
-				swap_in_page((task_t *)current_task, cr2 & PAGE_MASK) == 0) {
+			swap_in_page((task_t *)current_task, cr2 & PAGE_MASK) == 0) {
 			printk(1, "[swap]: Swapped back in page %x for task %d\n", 
-				cr2 & PAGE_MASK, current_task->pid);
+				   cr2 & PAGE_MASK, current_task->pid);
 			return;
 		}
-#endif
-
+		#endif
+		
 		if(pfault_mmf_check(err_code, cr2))
 			return;
 		print_pfe(0, regs, cr2);

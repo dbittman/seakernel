@@ -1,5 +1,8 @@
 #ifndef _MEMORY_X86_64_H
 #define _MEMORY_X86_64_H
+
+#include <memory-x86_common.h>
+
 /* due the the odd way that we are forced to address memory...
  * 
  * You can't use all 64 bits of an address, only the least significant 48.
@@ -51,20 +54,6 @@
 #define IS_THREAD_SHARED_MEM(x) (((!(x >= TOP_TASK_MEM_EXEC && x < TOP_TASK_MEM)) || ((x&PAGE_MASK) == PDIR_DATA)))
 
 #define PAGE_MASK      0xFFFFFFFFFFFFF000
-#define ATTRIB_MASK    0x00000FFF
-#define PAGE_PRESENT   0x1
-#define PAGE_WRITE     0x2
-#define PAGE_USER      0x4
-#define PAGE_WRITECACHE 0x8
-#define PAGE_NOCACHE   0x10
-#define PAGE_COW       512
-#define PAGE_SIZE 	   0x1000
-
-#define MAP_NOIPI     0x8
-#define MAP_PDLOCKED  0x4
-#define MAP_NOCLEAR   0x2
-#define MAP_CRIT      0x1
-#define MAP_NORM      0x0
 
 #define PML4_IDX(x) ((x/0x8000000) % 512)
 #define PDPT_IDX(x) ((x / 0x40000) % 512)

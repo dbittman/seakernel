@@ -5,7 +5,7 @@
 #include <dev.h>
 #include <memory.h>
 #include <fs.h>
-#include <elf-x86.h>
+#include <elf.h>
 #include <block.h>
 #include <char.h>
 #include <multiboot.h>
@@ -44,10 +44,10 @@ char *get_symbol_string(uint8_t *buf, uint32_t index)
 {  
 	uint32_t i;
 	char *ret;
-	elf_header_t *eh;
+	elf32_header_t *eh;
 	elf32_section_header_t *sh;
 	elf32_symtab_entry_t *symtab;
-	eh = (elf_header_t *)buf;
+	eh = (elf32_header_t *)buf;
 	
 	for(i = 0; i < eh->shnum; i++)
 	{  
@@ -70,10 +70,10 @@ char *get_symbol_string(uint8_t *buf, uint32_t index)
 elf32_symtab_entry_t * fill_symbol_struct(uint8_t * buf, uint32_t symbol)
 {
 	uint32_t i;
-	elf_header_t * eh;
+	elf32_header_t * eh;
 	elf32_section_header_t * sh;
 	elf32_symtab_entry_t * symtab;
-	eh = (elf_header_t *)buf;
+	eh = (elf32_header_t *)buf;
 	for(i = 0; i < eh->shnum; i++)
 	{  
 		sh = (elf32_section_header_t*)(buf + eh->shoff + (i * eh->shsize));
@@ -89,9 +89,9 @@ elf32_symtab_entry_t * fill_symbol_struct(uint8_t * buf, uint32_t symbol)
 
 intptr_t get_section_offset(uint8_t * buf, uint32_t info)
 {
-	elf_header_t * eh;
+	elf32_header_t * eh;
 	elf32_section_header_t * sh;
-	eh = (elf_header_t*)buf;
+	eh = (elf32_header_t*)buf;
 	sh = (elf32_section_header_t*)(buf + eh->shoff + (info * eh->shsize));
 	return sh->offset;
 }

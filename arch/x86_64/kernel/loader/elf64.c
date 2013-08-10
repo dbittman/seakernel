@@ -48,31 +48,6 @@ int process_elf(char *mem, int fp, addr_t *start, addr_t *end)
 	return process_elf64_phdr(mem, fp, start, end);
 }
 
-elf32_t parse_kernel_elf(struct multiboot *mb, elf32_t *elf)
-{
-	unsigned int i;
-	elf32_section_header_t *sh = (elf32_section_header_t*)(addr_t)mb->addr;
-	elf->lookable=0;
-	uint32_t shstrtab = sh[mb->shndx].address;
-	for (i = 0; i < (unsigned)mb->num; i++)
-	{
-		const char *name = (const char *) ((addr_t)shstrtab + sh[i].name);
-		if (!strcmp (name, ".strtab"))
-		{
-			elf->lookable |= 1;
-			elf->strtab = (const char *)(addr_t)sh[i].address;
-			elf->strtabsz = sh[i].size;
-		}
-		if (!strcmp (name, ".symtab"))
-		{
-			elf->lookable |= 2;
-			elf->symtab = (elf32_symtab_entry_t *)(addr_t)sh[i].address;
-			elf->symtabsz = sh[i].size;
-		}
-	}
-	return *elf;
-}
-
 #if (CONFIG_MODULES)
 
 void elf64_write_field(int type, addr_t mem_addr, addr_t reloc_addr)
@@ -88,7 +63,7 @@ void elf64_write_field(int type, addr_t mem_addr, addr_t reloc_addr)
 	}
 }
 
-int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int force)
+int arch_specific_parse_elf_module(uint8_t * buf, addr_t *entry, addr_t *exiter, addr_t *deps)
 {
 	uint32_t i, x;
 	uint64_t module_entry=0, reloc_addr, mem_addr, module_exiter=0, module_deps=0;
@@ -100,9 +75,6 @@ int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int force)
 	int error=0;
 	eh = (elf_header_t *)buf;
 	
-	/* now actually do some error checking... */
-	if(!is_valid_elf((char *)buf, 1))
-		return _MOD_FAIL;
 	/* grab the functions we'll need */
 	for(i = 0; i < eh->shnum; i++)
 	{  
@@ -131,8 +103,12 @@ int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int force)
 	if(!module_entry)
 	{
 		printk(KERN_INFO, "[mod]: module_install() entry point was not found\n");
-		return _MOD_FAIL;
+		return 1;
 	}
+	
+	*entry = module_entry;
+	*exiter = module_exiter;
+	*deps = module_deps;
 	
 	/* fix up the relocation entries */
 	for(i = 0; i < eh->shnum; i++)
@@ -174,38 +150,6 @@ int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int force)
 			}
 		}
 	}
-	
-	if(module_deps)
-	{
-		/* Load more deps */
-		char deps_str[128];
-		memset(deps_str, 0, 128);
-		unsigned kver = ((int (*)(char *))module_deps)(deps_str);
-		if(kver != KVERSION && !force)
-		{
-			printk(3, "[mod]: Module '%s' was compiled for a different kernel version!\n", 
-					mod->name);
-			return _MOD_FAIL;
-		}
-		strncpy(mod->deps, deps_str, 128);
-		/* make sure all deps are loaded */
-		char *cur = deps_str;
-		while(1) {
-			char *n = strchr(cur, ',');
-			if(!n) break;
-			*n=0;
-			n++;
-			if(!is_loaded(cur)) {
-				printk(3, "[mod]: Module '%s' has missing dependency '%s'\n", mod->name, cur);
-				return _MOD_FAIL;
-			}
-			cur = n;
-		}
-	}
-	if(error)
-		return _MOD_FAIL;
-	mod->entry=module_entry;
-	mod->exiter=module_exiter;
-	return _MOD_GO;
+	return error;
 }
 #endif

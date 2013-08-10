@@ -39,7 +39,6 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	addr_t end, eip;
 	unsigned int argc=0, envc=0;
 	int desc;
-	int err = 0;
 	char **backup_argv=0, **backup_env=0;
 	/* Sanity */
 	if(!t) panic(PANIC_NOSYNC, "Tried to execute with empty task");
@@ -48,11 +47,8 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 		panic(0, "I don't know, was really drunk at the time");
 	if(t->magic != TASK_MAGIC)
 		panic(0, "Invalid task in exec (%d)", t->pid);
-	if(!path || !*path) 
-	{
-		err = -EINVAL;
-		goto error;
-	}
+	if(!path || !*path)
+		return -EINVAL;
 	/* Load the file, and make sure that it is valid and accessable */
 	if(EXEC_LOG == 2) 
 		printk(0, "[%d]: Checking executable file (%s)\n", t->pid, path);
@@ -64,23 +60,24 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	else
 		desc = err_open;
 	if(desc < 0 || !efil)
-	{
-		err = -ENOENT;
-		goto error;
-	}
+		return -ENOENT;
 	if(!permissions(efil->inode, MAY_EXEC))
 	{
-		err = -EACCES;
 		sys_close(desc);
-		goto error;
+		return -EACCES;
 	}
 	/* Detirmine if the file is a valid ELF */
-	char mem[sizeof(elf_header_t)];
-	read_data(desc, mem, 0, sizeof(elf_header_t));
+	int header_size = 0;
+#if CONFIG_ARCH == TYPE_ARCH_X86_64
+	header_size = sizeof(elf64_header_t);
+#elif CONFIG_ARCH == TYPE_ARCH_X86
+	header_size = sizeof(elf32_header_t);
+#endif
+	char mem[header_size];
+	read_data(desc, mem, 0, header_size);
 	if(!is_valid_elf(mem, 2)) {
-		err = -ENOEXEC;
 		sys_close(desc);
-		goto error;
+		return -ENOEXEC;
 	}
 	
 	if(EXEC_LOG == 2) 
@@ -204,8 +201,7 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	set_int(0);
 	current_task->flags &= ~TF_SCHED;
 	arch_specific_exec_initializer(t, argc, eip);
-	error:
-	return err;
+	return 0;
 }
 
 int execve(char *path, char **argv, char **env)

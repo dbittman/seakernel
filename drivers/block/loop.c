@@ -185,7 +185,7 @@ int module_exit()
 		{
 			ll_maybe_reset_loop(loops, cur, next);
 			ll_remove(loops, cur);
-			//kfree(ld);
+			kfree(ld);
 			
 		}
 	}

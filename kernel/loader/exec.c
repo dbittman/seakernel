@@ -13,6 +13,7 @@
  * the executable. We keep it open through here so that we dont have to 
  * re-open it. */
 void arch_specific_exec_initializer(task_t *t, unsigned argc, addr_t eip);
+int process_elf_other(char *mem, int fp, addr_t *start, addr_t *end);
 task_t *preexec(task_t *t, int desc)
 {
 	if(t->magic != TASK_MAGIC)
@@ -75,7 +76,12 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 #endif
 	char mem[header_size];
 	read_data(desc, mem, 0, header_size);
-	if(!is_valid_elf(mem, 2)) {
+	int other_bitsize=0;
+#if CONFIG_ARCH == TYPE_ARCH_X86_64
+	if(is_valid_elf32_otherarch(mem, 2))
+		other_bitsize = 1;
+#endif
+	if(!is_valid_elf(mem, 2) && !other_bitsize) {
 		sys_close(desc);
 		return -ENOEXEC;
 	}
@@ -114,7 +120,13 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 		printk(0, "Executing (task %d, cpu %d, tty %d, cwd=%s): %s\n", t->pid, ((cpu_t *)t->cpu)->apicid, t->tty, current_task->thread->pwd->name, path);
 	preexec(t, desc);
 	strncpy((char *)t->command, path, 128);
-	if(!process_elf(mem, desc, &eip, &end))
+	if(other_bitsize)
+	{
+#if CONFIG_ARCH == TYPE_ARCH_X86_64
+		if(!process_elf_other(mem, desc, &eip, &end))
+			eip=0;
+#endif
+	} else if(!process_elf(mem, desc, &eip, &end))
 		eip=0;
 	sys_close(desc);
 	if(!eip) {
@@ -188,6 +200,7 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	kfree(path);
 	
 	t->heap_start = t->heap_end = end + PAGE_SIZE;
+	t->flags |= TF_OTHERBS;
 	user_map_if_not_mapped_noclear(t->heap_start);
 	/* Zero the heap and stack */
 	memset((void *)end_l, 0, PAGE_SIZE-(end_l%PAGE_SIZE));

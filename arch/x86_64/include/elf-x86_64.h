@@ -126,6 +126,18 @@ typedef struct
 
 #include <elf-x86_common.h>
 
+static inline int is_valid_elf32_otherarch(char *buf, short type)
+{
+	elf32_header_t * eh;
+	eh = (elf32_header_t*)buf;
+	if(memcmp(eh->id + 1, (uint8_t*)"ELF", 3)
+		|| eh->machine != 0x03
+		|| eh->type != type
+		|| eh->id[4] != 1 /* 32-bit */)
+		return 0;
+	return 1;
+}
+
 int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int);
 const char *elf64_lookup_symbol (uint64_t addr, elf64_t *elf);
 const char *elf64_lookup_symbol (uint64_t addr, elf64_t *elf);

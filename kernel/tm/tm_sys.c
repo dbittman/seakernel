@@ -5,7 +5,6 @@
 /* Low-level memory allocator implementation */
 int sys_sbrk(long inc)
 {
-	kprintf("SBRK: %d\n", inc);
 	assert(current_task);
 	if(inc < 0 && current_task->heap_start < current_task->heap_end) {
 		int dec = -inc;

@@ -47,6 +47,11 @@ int process_elf(char *mem, int fp, addr_t *start, addr_t *end)
 {
 	return process_elf64_phdr(mem, fp, start, end);
 }
+int process_elf32_phdr(char *mem, int fp, addr_t *start, addr_t *end);
+int process_elf_other(char *mem, int fp, addr_t *start, addr_t *end)
+{
+	return process_elf32_phdr(mem, fp, start, end);
+}
 
 #if (CONFIG_MODULES)
 

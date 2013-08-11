@@ -2,11 +2,6 @@
 #define __TABLES_X86_COMMON_H
 
 #include <types.h>
-
-
-
-
-
 extern void isr0 ();
 extern void isr1 ();
 extern void isr2 ();
@@ -69,7 +64,6 @@ extern void ipi_tlb();
 
 #endif
 
-
 void init_descriptor_tables(void);
 void set_kernel_stack(tss_entry_t *, addr_t stack);
 void load_doublefault_system(void);
@@ -78,8 +72,5 @@ void gdt_set_gate(gdt_entry_t *, s32int,u32int,u32int,u8int,u8int);
 void idt_set_gate(u8int,addr_t,u16int,u8int);
 void mask_pic_int(unsigned char irq, int mask);
 void disable_pic();
-
-
-
 
 #endif

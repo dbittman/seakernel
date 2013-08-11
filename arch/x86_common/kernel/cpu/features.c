@@ -8,7 +8,7 @@ void setup_fpu(cpu_t *me)
 		printk(KERN_EVERY, "\tFPU...");
 		asm("finit;");  
 		me->flags |= CPU_FPU;
-		uint64_t cr0, cr4;
+		unsigned long cr0, cr4;
 		asm("mov %%cr0, %0;":"=r"(cr0)); /* store CR0 */
 		cr0 |= 0x20;
 		asm("mov %0, %%cr0;"::"r"(cr0)); /* restore CR0 */
@@ -17,7 +17,7 @@ void setup_fpu(cpu_t *me)
 
 void init_sse(cpu_t *me)
 {
-	uint64_t cr0, cr4;
+	unsigned long cr0, cr4;
 	if(me->cpuid.features_edx & 0x06000001) /* test for SSE2, SSE, and FPU */
 	{
 		printk(KERN_EVERY, "SSE...");

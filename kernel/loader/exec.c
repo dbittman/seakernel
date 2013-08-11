@@ -151,7 +151,8 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	addr_t env_start = args_start;
 	addr_t alen = 0;
 	if(backup_argv) {
-		user_map_if_not_mapped_noclear(args_start);
+		for(i=0;i<(sizeof(addr_t) * (argc+1))/PAGE_SIZE + 2;i++)
+			user_map_if_not_mapped_noclear(args_start + i * PAGE_SIZE);
 		memcpy((void *)args_start, backup_argv, sizeof(addr_t) * argc);
 		alen += sizeof(addr_t) * argc;
 		*(addr_t *)(args_start + alen) = 0; /* set last argument value to zero */
@@ -174,7 +175,8 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	env_start = args_start + alen;
 	alen = 0;
 	if(backup_env) {
-		user_map_if_not_mapped_noclear(env_start);
+		for(i=0;i<(((sizeof(addr_t) * (envc+1))/PAGE_SIZE) + 2);i++)
+			user_map_if_not_mapped_noclear(env_start + i * PAGE_SIZE);
 		memcpy((void *)env_start, backup_env, sizeof(addr_t) * envc);
 		alen += sizeof(addr_t) * envc;
 		*(addr_t *)(env_start + alen) = 0; /* set last argument value to zero */

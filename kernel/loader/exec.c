@@ -200,7 +200,8 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	kfree(path);
 	
 	t->heap_start = t->heap_end = end + PAGE_SIZE;
-	t->flags |= TF_OTHERBS;
+	if(other_bitsize)
+		t->flags |= TF_OTHERBS;
 	user_map_if_not_mapped_noclear(t->heap_start);
 	/* Zero the heap and stack */
 	memset((void *)end_l, 0, PAGE_SIZE-(end_l%PAGE_SIZE));

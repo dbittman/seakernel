@@ -95,6 +95,8 @@ int remove_vmem_area(vma_t *v, vnode_t *n)
 	}
 	n->next=0;
 	unsigned i = (unsigned)(((addr_t)n - v->addr) / sizeof(vnode_t));
+	assert((addr_t)n >= (addr_t)v->addr);
+	assert((addr_t)n < ((addr_t)v->addr + v->num_ipages*PAGE_SIZE));
 	assert(i < NUM_NODES(v));
 	v->nodes[i]=0;
 	v->used_nodes--;

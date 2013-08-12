@@ -7,6 +7,8 @@
 #define _MOD_GO    1
 #define _MOD_AGAIN 2
 
+#define MAX_SYMS 600
+
 typedef struct module_s {
 	char *base;
 	long length;

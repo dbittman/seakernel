@@ -70,7 +70,7 @@ start:
 	mov edi, cr3                ; Set the destination index to control register 3.
 
 	mov DWORD [edi], (0x71003)  ; Set the qword at the destination index to 0x71003.
-	mov DWORD [edi+4], (0) 
+	mov DWORD [edi+4], (0)
 	
 	add edi, 0x1000             ; Add 0x1000 to the destination index.
 	mov DWORD [edi], (0x72003)  ; Set the qword at the destination index to 0x72003.

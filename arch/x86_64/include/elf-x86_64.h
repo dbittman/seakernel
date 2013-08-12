@@ -2,7 +2,7 @@
 #define ELF_x86_64_H
 #include <mod.h>
 #include <block.h>
-#define MAX_SYMS 512
+
 extern void * kernel_start;
 
 typedef struct __attribute__((packed))

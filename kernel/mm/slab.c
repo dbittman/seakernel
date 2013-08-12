@@ -454,7 +454,7 @@ addr_t do_kmalloc_slab(unsigned sz, char align)
 {
 	if(sz < 32) sz=32;
 	if(!align)
-		sz += sizeof(addr_t *);
+		sz += sizeof(addr_t *) * 2;
 	slab_t *slab=0, *old_slab=0;
 	try_again:
 	slab = find_usable_slab(sz, align, 1);
@@ -474,6 +474,11 @@ addr_t do_kmalloc_slab(unsigned sz, char align)
 			"slab allocation of aligned data failed! (returned %x)", addr);
 	if(!align)
 	{
+		if(((addr + sizeof(addr_t *)) & PAGE_MASK) == (addr + sizeof(addr_t *)))
+		{
+			/* force non-alignment */
+			addr += sizeof(addr_t *);
+		}
 		*(addr_t *)(addr) = (addr_t)slab;
 		addr += sizeof(addr_t *);
 	}
@@ -495,13 +500,16 @@ void do_kfree_slab(void *ptr)
 		try_alt:
 		n = find_vmem_area(&slab_area_alloc, (addr_t)ptr);
 		if(n) slab = (slab_t *)n->addr;
+#warning "TODO: THERE SEEMS TO BE A BUG AROUND HERE..."
+		//if(current_task->pid == 0) printk(0, "scanned %x %x\n", n, slab);
 	}
 	else {
 		slab = (slab_t *)*(addr_t *)((addr_t)ptr - sizeof(addr_t *));
 		n = slab->vnode;
 		if(!n) goto try_alt;
+		//if(current_task->pid == 0) printk(0, "found %x %x\n", n, slab);
  	}
-	if(!n)
+	if(!n || !slab)
 		panic(PANIC_MEM | PANIC_NOSYNC, "Kfree got invalid address in task %d, system=%d (%x)", current_task->pid, current_task->system, ptr);
 	slab_cache_t *sc = (slab_cache_t *)slab->parent;
 #ifdef SLAB_DEBUG

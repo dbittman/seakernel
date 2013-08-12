@@ -82,7 +82,6 @@
 	mov fs, ax
 	
 	mov rdi, rsp
-	sub rdi, (23*8)
 	
 	call %2 ; call the handler
 	

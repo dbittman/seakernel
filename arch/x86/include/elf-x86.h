@@ -2,7 +2,7 @@
 #define ELF_x86_H
 #include <mod.h>
 #include <block.h>
-#define MAX_SYMS 512
+
 extern void * kernel_start;
 #include <elf-x86_common.h>
 

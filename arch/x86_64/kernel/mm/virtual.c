@@ -191,6 +191,14 @@ unsigned int vm_setattrib(addr_t v, short attr)
 	pt[vtbl] |= attr;
 	out:
 	asm("invlpg (%0)"::"r" (v));
+#if CONFIG_SMP && 0
+	if(kernel_task) {
+		if(IS_KERN_MEM(v))
+			send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
+		else if((IS_THREAD_SHARED_MEM(v) && pd_cur_data->count > 1))
+			send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
+	}
+#endif
 	if(kernel_task)
 		mutex_release(&pd_cur_data->lock);
 	return 0;

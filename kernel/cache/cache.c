@@ -179,12 +179,10 @@ void remove_element(cache_t *c, struct ce_t *o, int locked)
 int do_sync_element(cache_t *c, struct ce_t *e, int locked)
 {
 	int ret=0;
-	rwlock_acquire(e->rwl, RWL_READER);
+	if(!locked) rwlock_acquire(c->rwl, RWL_WRITER);
 	if(c->sync)
 		ret = c->sync(e);
-	if(!locked) rwlock_acquire(c->rwl, RWL_WRITER);
 	set_dirty(c, e, 0);
-	rwlock_release(e->rwl, RWL_READER);
 	if(!locked) rwlock_release(c->rwl, RWL_WRITER);
 	return ret;
 }

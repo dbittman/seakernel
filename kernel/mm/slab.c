@@ -342,20 +342,13 @@ unsigned slab_init(addr_t start, addr_t end)
 
 unsigned slab_size(int sz)
 {
-	int s;
-	if(sz < 32) sz=32;
-	if(sz < 512)
-		s = sz * 128;
-	else if(sz >= 512 && sz < 0x500)
-		s = sz * 128;
-	else if(sz > 0x500 && sz < 0x1000)
-		s = sz*32;
-	else if(sz >= 0x1000 && sz < 10000)
-		s =  sz*16;
-	else
-		s = sz*8;
+	unsigned s = sz * MAX_OBJ_ID;
+	if(s > (0x1000 * 128))
+		s = 0x1000 * 128;
+	if(s < (unsigned)sz * 2) s = sz * 2;
 	s = (s&PAGE_MASK) + 0x1000;
-	return s + 0x1000;
+	//printk(0, ":: %x (%d)\n", s, s / 0x1000);
+	return s;
 }
 
 slab_t *find_usable_slab(unsigned size, int align, int allow_range)

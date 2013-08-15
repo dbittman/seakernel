@@ -49,7 +49,7 @@ void process_memorymap(struct multiboot *mboot)
 		printk(KERN_MILE, "%d GB and ", gbs);
 		mbs = mbs % 1024;
 	}
-	printk(KERN_MILE, "[mm]: %d MB available memory (page size=0x1000, kmalloc=%s: ok)\n"
+	printk(KERN_MILE, "%d MB available memory (page size=0x1000, kmalloc=%s: ok)\n"
  			, mbs, KMALLOC_NAME);
 	printk(1, "[mm]: num pages = %d\n", num_pages);
 	pm_num_pages=num_pages;

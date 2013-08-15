@@ -251,6 +251,8 @@ static inline int signal_will_be_fatal(task_t *t, int sig)
 
 static inline int got_signal(task_t *t)
 {
+	if(kernel_state_flags & KSF_SHUTDOWN)
+		return 0;
 	if(!t->sigd) return 0;
 	/* if the SA_RESTART flag is set, then return false */
 	if(t->thread->signal_act[t->sigd].sa_flags & SA_RESTART) return 0;

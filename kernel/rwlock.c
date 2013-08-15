@@ -10,7 +10,8 @@
 #include <atomic.h>
 #include <rwlock.h>
 #include <task.h>
-
+#undef DEBUG
+#define DEBUG 0
 void __rwlock_acquire(rwlock_t *lock, unsigned flags, char *file, int line)
 {
 #ifdef RWL_DEBUG

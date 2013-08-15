@@ -61,7 +61,7 @@
 
 #define MAJ_VER 0
 #define MIN_VER 2
-#define PRE_VER 4
+#define PRE_VER 8
 
 #define KVERSION (MAJ_VER * 200 + MIN_VER * 20 + PRE_VER)
 
@@ -73,7 +73,8 @@
 #if CONFIG_DEBUG
 #define EXEC_LOG 1
 #else
-#define EXEC_LOG 0
+/* This can be easily changed.... */
+#define EXEC_LOG 1
 #endif
 
 #ifdef DEBUG

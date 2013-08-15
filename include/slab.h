@@ -24,8 +24,8 @@ typedef struct slab_header_s {
 	/* For usage in the slab lists */
 	struct slab_header_s *next, *prev;
 	addr_t parent; /* Pointer to the slab cache that this slab is part of */
-	unsigned *stack;
-	unsigned stack_arr[MAX_OBJ_ID];
+	unsigned short *stack;
+	unsigned short stack_arr[MAX_OBJ_ID];
 	vnode_t *vnode;
 } slab_t;
 

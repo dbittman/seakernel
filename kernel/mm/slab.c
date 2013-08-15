@@ -209,7 +209,7 @@ slab_t *create_slab(slab_cache_t *sc, int num_pages, unsigned short flags)
 		slab->obj_num = ((num_pages*PAGE_SIZE)-sizeof(slab_t)) / sc->obj_size;
 	if(slab->obj_num > MAX_OBJ_ID)
 		slab->obj_num = MAX_OBJ_ID;
-	slab->stack = (unsigned *)slab->stack_arr;
+	slab->stack = (unsigned short *)slab->stack_arr;
 	/* Setup the stack of objects */
 	i=0;
 	while(i < slab->obj_num)
@@ -500,14 +500,11 @@ void do_kfree_slab(void *ptr)
 		try_alt:
 		n = find_vmem_area(&slab_area_alloc, (addr_t)ptr);
 		if(n) slab = (slab_t *)n->addr;
-#warning "TODO: THERE SEEMS TO BE A BUG AROUND HERE..."
-		//if(current_task->pid == 0) printk(0, "scanned %x %x\n", n, slab);
 	}
 	else {
 		slab = (slab_t *)*(addr_t *)((addr_t)ptr - sizeof(addr_t *));
 		n = slab->vnode;
 		if(!n) goto try_alt;
-		//if(current_task->pid == 0) printk(0, "found %x %x\n", n, slab);
  	}
 	if(!n || !slab)
 		panic(PANIC_MEM | PANIC_NOSYNC, "Kfree got invalid address in task %d, system=%d (%x)", current_task->pid, current_task->system, ptr);

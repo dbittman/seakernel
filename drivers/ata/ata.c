@@ -76,7 +76,7 @@ int ioctl_ata(int min, int cmd, long arg)
 	}
 	return -EINVAL;
 }
-
+int ata_disk_sync_nowait(struct ata_controller *cont);
 int module_install()
 {
 	nodes=0;
@@ -117,8 +117,8 @@ int module_exit()
 {
 	if(api) {
 		printk(1, "[ata]: Syncing disks...\n");
-		ata_disk_sync(primary);
-		ata_disk_sync(secondary);
+		ata_disk_sync_nowait(primary);
+		ata_disk_sync_nowait(secondary);
 		delay(100);
 		mutex_acquire(primary->wait);
 		mutex_acquire(secondary->wait);

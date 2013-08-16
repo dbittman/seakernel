@@ -21,9 +21,6 @@ void remove_devices()
 
 int ata_disk_sync(struct ata_controller *cont)
 {
-	mutex_acquire(cont->wait);
-	delay_sleep(100);
-	mutex_release(cont->wait);
 	return 0;
 	printk(1, "[ata]: Syncing controller %d\n", cont->id);
 	mutex_acquire(cont->wait);
@@ -41,8 +38,6 @@ int ata_disk_sync(struct ata_controller *cont)
 		}
 		if(!(poll & STATUS_BSY))
 			break;
-		delay_sleep(1);
-		printk(1, "%d: %d\n", poll, x);
 	}
 	if(!x)
 	{
@@ -51,8 +46,14 @@ int ata_disk_sync(struct ata_controller *cont)
 		mutex_release(cont->wait);
 		return -1;
 	}
-	delay_sleep(100);
 	mutex_release(cont->wait);
+	return 0;
+}
+
+int ata_disk_sync_nowait(struct ata_controller *cont)
+{
+	printk(1, "[ata]: Syncing controller %d\n", cont->id);
+	outb(cont->port_cmd_base+REG_COMMAND, 0xEA);
 	return 0;
 }
 

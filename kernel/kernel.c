@@ -22,7 +22,7 @@ void kernel_shutdown()
 #endif
 	current_task->thread->uid=0;
 #warning "need to make all of these atomic"
-	current_task->flags |= TF_SHUTDOWN;
+	raise_flag(TF_SHUTDOWN);
 	set_ksf(KSF_SHUTDOWN);
 	sys_sync(PRINT_LEVEL);
 	unmount_all();

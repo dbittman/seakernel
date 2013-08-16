@@ -50,7 +50,7 @@ struct inode *set_as_kernel_task(char *name)
 	rwlock_create(&i->rwl);
 	strncpy(i->name, name, INAME_LEN);
 	add_inode(kproclist, i);
-	current_task->flags |= TF_KTASK;
+	raise_flag(TF_KTASK);
 	strncpy((char *)current_task->command, name, 128);
 	return i;
 }

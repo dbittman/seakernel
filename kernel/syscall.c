@@ -201,6 +201,8 @@ int syscall_handler(volatile registers_t *regs)
 	volatile long ret;
 	if(!check_pointers(regs))
 		return -EINVAL;
+	if(kernel_state_flags & KSF_SHUTDOWN)
+		for(;;);
 	//if(got_signal(current_task) || (unsigned)(ticks-current_task->slice) > (unsigned)current_task->cur_ts)
 	//	schedule();
 	enter_system(SYSCALL_NUM_AND_RET);
@@ -236,7 +238,7 @@ int syscall_handler(volatile registers_t *regs)
 		|| ++current_task->syscall_count > 2)
 	{
 		/* clear out the flag. Either way in the if statement, we've rescheduled. */
-		current_task->flags &= ~TF_SCHED;
+		lower_flag(TF_SCHED);
 		schedule();
 	}
 	/* store the return value in the regs */
@@ -251,7 +253,7 @@ int syscall_handler(volatile registers_t *regs)
 #elif CONFIG_ARCH == TYPE_ARCH_X86_64
 		current_task->reg_b.rax=ret;
 #endif
-		current_task->flags &= ~TF_JUMPIN;
+		lower_flag(TF_JUMPIN);
 	}
 	return ret;
 }

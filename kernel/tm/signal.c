@@ -20,7 +20,7 @@ void handle_signal(task_t *t)
 	else if(!sa->_sa_func._sa_handler && !t->system)
 	{
 		/* Default Handlers */
-		t->flags |= TF_SCHED;
+		raise_task_flag(t, TF_SCHED);
 		switch(t->sigd)
 		{
 			case SIGHUP : case SIGKILL: case SIGQUIT: case SIGPIPE: 
@@ -54,11 +54,11 @@ void handle_signal(task_t *t)
 		}
 		t->sig_mask = t->old_mask;
 		t->sigd = 0;
-		t->flags &= ~TF_INSIG;
+		lower_task_flag(t, TF_INSIG);
 	} else {
 		t->sig_mask = t->old_mask;
-		t->flags &= ~TF_INSIG;
-		t->flags |= TF_SCHED;
+		lower_task_flag(t, TF_INSIG);
+		raise_task_flag(t, TF_SCHED);
 	}
 }
 
@@ -104,7 +104,7 @@ int do_send_signal(int pid, int __sig, int p)
 		kill_task(pid);
 	}
 	if(task == current_task)
-		task->flags |= TF_SCHED;
+		raise_task_flag(task, TF_SCHED);
 	return 0;
 }
 
@@ -143,7 +143,7 @@ int sys_alarm(int a)
 				current_task->alarm_next = t;
 				if(t) t->alarm_prev = current_task;
 			}
-			current_task->flags |= TF_ALARM;
+			raise_flag(TF_ALARM);
 			mutex_release(alarm_mutex);
 			set_int(old);
 		} else
@@ -151,7 +151,7 @@ int sys_alarm(int a)
 	} else {
 		task_t *t = current_task;
 		if((t->flags & TF_ALARM)) {
-			current_task->flags &= ~TF_ALARM;
+			lower_flag(TF_ALARM);
 			int old = set_int(0);
 			mutex_acquire(alarm_mutex);
 			if(current_task->alarm_prev) current_task->alarm_prev->alarm_next = current_task->alarm_next;

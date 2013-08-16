@@ -57,7 +57,7 @@ __attribute__((always_inline)) static inline void post_context_switch()
 		&& !(current_task->flags & TF_KTASK) && current_task->pid
 		&& !(current_task->flags & TF_EXITING))
 	{
-		current_task->flags |= TF_INSIG;
+		raise_flag(TF_INSIG);
 		/* Jump to the signal handler */
 		handle_signal((task_t *)current_task);
 		/* if we've gotten here, then we are interruptible or running.
@@ -71,7 +71,7 @@ __attribute__((always_inline)) static inline void post_context_switch()
 		/* should never enable interrupts inside an interrupt, except for
 		 * syscalls */
 		assert(!(current_task->flags & TF_IN_INT) || current_task->sysregs);
-		current_task->flags &= ~TF_SETINT;
+		lower_flag(TF_SETINT);
 		assert(!set_int(1));
 	}
 }
@@ -90,7 +90,7 @@ int schedule()
 	 * task if we entered schedule with them enabled */
 	if(set_int(0)) {
 		assert(!(current_task->flags & TF_SETINT));
-		current_task->flags |= TF_SETINT;
+		raise_flag(TF_SETINT);
 	} else
 		assert(!(current_task->flags & TF_SETINT));
 	task_t *old = current_task;
@@ -115,7 +115,7 @@ int schedule()
 		post_context_switch();
 		return 1;
 	}
-	next_task->flags &= ~TF_FORK;
+	lower_task_flag(next_task, TF_FORK);
 	asm("jmp *%0"::"r"(current_task->eip));
 	/* we never get here, but lets keep gcc happy */
 	return 1;
@@ -129,7 +129,7 @@ void check_alarms()
 	mutex_acquire(alarm_mutex);
 	if((unsigned)ticks > alarm_list_start->alarm_end)
 	{
-		alarm_list_start->flags &= ~TF_ALARM;
+		lower_task_flag(alarm_list_start, TF_ALARM);
 		alarm_list_start->sigd = SIGALRM;
 		alarm_list_start = alarm_list_start->alarm_next;
 		alarm_list_start->alarm_prev = 0;

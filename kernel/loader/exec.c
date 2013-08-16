@@ -203,7 +203,7 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	
 	t->heap_start = t->heap_end = end + PAGE_SIZE;
 	if(other_bitsize)
-		t->flags |= TF_OTHERBS;
+		raise_task_flag(t, TF_OTHERBS);
 	user_map_if_not_mapped_noclear(t->heap_start);
 	/* Zero the heap and stack */
 	memset((void *)end_l, 0, PAGE_SIZE-(end_l%PAGE_SIZE));
@@ -215,7 +215,7 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	
 	/* we clear this out, so we don't accidentally handle a signal...*/
 	set_int(0);
-	current_task->flags &= ~TF_SCHED;
+	lower_task_flag(t, TF_SCHED);
 	arch_specific_exec_initializer(t, argc, eip);
 	return 0;
 }

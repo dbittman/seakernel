@@ -53,7 +53,7 @@ void __tty_found_task_raise_action(task_t *t, int arg)
 {
 	if(t->flags & TF_BGROUND) return;
 	t->sigd = arg;
-	t->flags |= TF_SCHED;
+	raise_task_flag(t, TF_SCHED);
 	if(t->blocklist)
 		task_unblock(t->blocklist, t);
 }

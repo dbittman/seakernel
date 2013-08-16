@@ -30,7 +30,7 @@ __attribute__((always_inline)) inline static void store_context()
 	 * itself. It will never be scheduled again, and the page directory
 	 * will never be accessed again */
 	if(current_task->flags & TF_DYING)
-		current_task->flags |= TF_BURIED;
+		raise_flag(TF_BURIED);
 	current_task->syscall_count = 0;
 }
 

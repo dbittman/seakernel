@@ -182,7 +182,7 @@ void move_task_cpu(task_t *t, cpu_t *cpu)
 	if(t == cpu->ktask)
 		panic(0, "trying to move idle task");
 	printk(0, "moving task %d to cpu %d\n", t->pid, cpu->apicid);
-	t->flags |= TF_MOVECPU;
+	raise_task_flag(t, TF_MOVECPU);
 	cpu_t *oldcpu = t->cpu;
 	while(1)
 	{
@@ -199,5 +199,5 @@ void move_task_cpu(task_t *t, cpu_t *cpu)
 		tqueue_insert(cpu->active_queue, (void *)t, t->activenode);
 	
 	mutex_release(&oldcpu->lock);
-	t->flags &= ~TF_MOVECPU;
+	lower_task_flag(t, TF_MOVECPU);
 }

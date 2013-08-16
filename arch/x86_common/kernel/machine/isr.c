@@ -187,7 +187,7 @@ void entry_syscall_handler(volatile registers_t regs)
 	if(current_task->flags & TF_IN_INT)
 		panic(0, "attempted to enter syscall while handling an interrupt");
 	/* set the interrupt handling flag... */
-	current_task->flags |= TF_IN_INT;
+	raise_flag(TF_IN_INT);
 #if CONFIG_ARCH == TYPE_ARCH_X86_64
 	if(regs.rax == 128) {
 #elif CONFIG_ARCH == TYPE_ARCH_X86
@@ -200,8 +200,8 @@ void entry_syscall_handler(volatile registers_t regs)
 		memcpy((void *)&regs, (void *)&current_task->reg_b, sizeof(registers_t));
 		current_task->sig_mask = current_task->old_mask;
 		current_task->cursig=0;
-		current_task->flags &= ~TF_INSIG;
-		current_task->flags &= ~TF_JUMPIN;
+		lower_flag(TF_INSIG);
+		lower_flag(TF_JUMPIN);
 	} else {
 		assert(!current_task->sysregs && !current_task->regs);
 		/* otherwise, this is a normal system call. Save the regs for modification
@@ -237,7 +237,7 @@ void entry_syscall_handler(volatile registers_t regs)
 	set_cpu_interrupt_flag(1);
 	/* we're never returning to an interrupt, so we can
 	 * safely reset this flag */
-	current_task->flags &= ~TF_IN_INT;
+	lower_flag(TF_IN_INT);
 #if CONFIG_SMP
 	lapic_eoi();
 #endif
@@ -257,7 +257,7 @@ void isr_handler(volatile registers_t regs)
 	char already_in_interrupt = 0;
 	if(current_task->flags & TF_IN_INT)
 		already_in_interrupt = 1;
-	current_task->flags |= TF_IN_INT;
+	raise_flag(TF_IN_INT);
 	/* run the stage1 handlers, and see if we need any stage2s. And if we
 	 * don't handle it at all, we need to actually fault to handle the error
 	 * and kill the process or kernel panic */
@@ -289,7 +289,7 @@ void isr_handler(volatile registers_t regs)
 	/* restore previous interrupt state */
 	set_cpu_interrupt_flag(previous_interrupt_flag);
 	if(!already_in_interrupt)
-		current_task->flags &= ~TF_IN_INT;
+		lower_flag(TF_IN_INT);
 	/* send out the EOI... */
 #if CONFIG_SMP
 	lapic_eoi();
@@ -323,7 +323,7 @@ void irq_handler(volatile registers_t regs)
 	if(current_task->flags & TF_IN_INT)
 		already_in_interrupt = 1;
 	/* ...and set the flag so we know we're in an interrupt */
-	current_task->flags |= TF_IN_INT;
+	raise_flag(TF_IN_INT);
 	
 	/* now, run through the stage1 handlers, and see if we need any
 	 * stage2 handlers to run later */
@@ -378,7 +378,7 @@ void irq_handler(volatile registers_t regs)
 	set_cpu_interrupt_flag(previous_interrupt_flag);
 	/* and clear the state flag if this is going to return to user-space code */
 	if(!already_in_interrupt)
-		current_task->flags &= ~TF_IN_INT;
+		lower_flag(TF_IN_INT);
 	/* and send out the EOIs */
 	if(interrupt_controller == IOINT_PIC) ack_pic(regs.int_no);
 #if CONFIG_SMP

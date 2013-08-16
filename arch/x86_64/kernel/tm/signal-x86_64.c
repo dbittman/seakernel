@@ -42,6 +42,6 @@ int arch_userspace_signal_initializer(task_t *t, struct sigaction *sa)
 	t->cursig = t->sigd;
 	t->sigd=0;
 	/* sysregs is only set when we are in a syscall */
-	if(t->sysregs) t->flags |= TF_JUMPIN;
+	if(t->sysregs) raise_task_flag(t, TF_JUMPIN);
 	return 1;
 }

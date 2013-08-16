@@ -11,16 +11,19 @@ int sys_sync(int);
 void acpiPowerOff(void);
 int PRINT_LEVEL = DEF_PRINT_LEVEL;
 volatile unsigned kernel_state_flags=0;
-
+extern volatile unsigned num_halted_cpus;
 void kernel_shutdown()
 {
+	set_int(0);
 #if CONFIG_SMP
 	printk(0, "[smp]: shutting down application processors\n");
 	send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_SHUTDOWN);
+	while(num_halted_cpus < num_booted_cpus) asm("pause");
 #endif
 	current_task->thread->uid=0;
+#warning "need to make all of these atomic"
+	current_task->flags |= TF_SHUTDOWN;
 	set_ksf(KSF_SHUTDOWN);
-	set_int(0);
 	sys_sync(PRINT_LEVEL);
 	unmount_all();
 #if CONFIG_MODULES

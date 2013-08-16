@@ -65,6 +65,7 @@ __attribute__((always_inline)) static inline void post_context_switch()
 		 * wake up when signaled */
 		current_task->state = TASK_RUNNING;
 	}
+	assert(!(kernel_state_flags & KSF_SHUTDOWN) || current_task->flags & TF_SHUTDOWN);
 	assert(!get_cpu_interrupt_flag());
 	if(current_task->flags & TF_SETINT) {
 		/* should never enable interrupts inside an interrupt, except for
@@ -83,6 +84,8 @@ int schedule()
 		return 0;
 	if(!(((cpu_t *)current_task->cpu)->flags & CPU_TASK))
 		return 0;
+	assert(!(kernel_state_flags & KSF_SHUTDOWN) || current_task->flags & TF_SHUTDOWN);
+	if(kernel_state_flags & KSF_SHUTDOWN) return 1;
 	/* make sure to re-enable interrupts when we come back to this
 	 * task if we entered schedule with them enabled */
 	if(set_int(0)) {

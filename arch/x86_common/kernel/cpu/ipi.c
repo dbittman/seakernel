@@ -16,7 +16,7 @@
 #include <cpu.h>
 #include <memory.h>
 #include <atomic.h>
-
+extern volatile unsigned num_halted_cpus;
 mutex_t ipi_mutex;
 int send_ipi(unsigned char dest_shorthand, unsigned int dst, unsigned int v)
 {
@@ -49,6 +49,7 @@ void handle_ipi_cpu_halt(volatile registers_t regs)
 	set_int(0);
 	/* No interrupts */
 	LAPIC_WRITE(LAPIC_TPR, 0xFFFFFFFF);
+	add_atomic(&num_halted_cpus, 1);
 	asm("cli");
 	while(1) asm("hlt");
 }

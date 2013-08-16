@@ -47,6 +47,7 @@ extern tqueue_t *primary_queue;
 #define TF_IN_INT   0x40000 /* inside an interrupt handler */
 #define TF_BGROUND  0x80000
 #define TF_OTHERBS 0x100000
+#define TF_SHUTDOWN 0x200000
 
 #define PRIO_PROCESS 1
 #define PRIO_PGRP    2

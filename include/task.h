@@ -8,6 +8,7 @@
 #include <mmfile.h>
 #include <dev.h>
 #include <tqueue.h>
+#include <atomic.h>
 
 extern tqueue_t *primary_queue;
 
@@ -156,11 +157,11 @@ typedef volatile struct task_struct task_t;
 extern volatile task_t *kernel_task, *tokill, *alarm_list_start;
 extern mutex_t *alarm_mutex;
 
-#define raise_task_flag(t,f) t->flags |= f
-#define lower_task_flag(t,f) t->flags &= ~f
+#define raise_task_flag(t,f) or_atomic(&(t->flags), f)
+#define lower_task_flag(t,f) and_atomic(&(t->flags), ~f)
 
-#define raise_flag(f) current_task->flags |= f
-#define lower_flag(f) current_task->flags &= ~f
+#define raise_flag(f) or_atomic(&(current_task->flags), f)
+#define lower_flag(f) and_atomic(&(current_task->flags), ~f)
 
 #define FORK_SHAREDIR 0x1
 #define FORK_SHAREDAT 0x2

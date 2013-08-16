@@ -6,7 +6,7 @@
 #define add_atomic(ptr, v) (__sync_add_and_fetch(ptr, v))
 #define sub_atomic(ptr, v) (__sync_sub_and_fetch(ptr, v))
 
-#define and_atomic(ptr, v) (__sync_and_and_fetch(ptr, v));
-#define or_atomic(ptr, v) (__sync_or_and_fetch(ptr, v));
+#define and_atomic(ptr, v) (__sync_and_and_fetch(ptr, v))
+#define or_atomic(ptr, v) (__sync_or_and_fetch(ptr, v))
 
 #endif

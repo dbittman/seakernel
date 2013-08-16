@@ -16,10 +16,11 @@
  * previously */
 void __mutex_acquire(mutex_t *m, char *file, int line)
 {
+	assert(m->magic == MUTEX_MAGIC);
+	if(kernel_state_flags & KSF_SHUTDOWN) return;
 	/* are we re-locking ourselves? */
 	if(current_task && m->lock && ((m->pid == (int)current_task->pid) && ((m->lock & MT_LCK_INT) || !(current_task->flags & TF_IN_INT))))
-		panic(0, "task %d tried to relock mutex %x (%s:%d)", m->pid, m->lock, file, line);
-	assert(m->magic == MUTEX_MAGIC);
+		panic(0, "task %d tried to relock mutex %x (%s:%d)", m->pid, m->lock, file, line);	
 	/* check for a potential deadlock */
 	if(current_task
 #if CONFIG_SMP
@@ -52,10 +53,11 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 
 void __mutex_release(mutex_t *m, char *file, int line)
 {
+	assert(m->magic == MUTEX_MAGIC);
+	if(kernel_state_flags & KSF_SHUTDOWN) return;
 	assert(m->lock);
 	if(current_task && m->pid != (int)current_task->pid)
 		panic(0, "task %d tried to release mutex it didn't own (%s:%d)", m->pid, file, line);
-	assert(m->magic == MUTEX_MAGIC);
 	if(m->lock & MT_LCK_INT)
 	{
 		m->lock &= ~MT_LCK_INT;
@@ -81,6 +83,7 @@ mutex_t *mutex_create(mutex_t *m, unsigned flags)
 void mutex_destroy(mutex_t *m)
 {
 	assert(m->magic == MUTEX_MAGIC);
+	if(kernel_state_flags & KSF_SHUTDOWN) return;
 	m->lock = m->magic = 0;
 	if(m->flags & MT_ALLOC)
 		kfree(m);

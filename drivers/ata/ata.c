@@ -119,7 +119,6 @@ int module_exit()
 		printk(1, "[ata]: Syncing disks...\n");
 		ata_disk_sync_nowait(primary);
 		ata_disk_sync_nowait(secondary);
-		delay(100);
 		mutex_acquire(primary->wait);
 		mutex_acquire(secondary->wait);
 		remove_devices();

@@ -220,9 +220,8 @@ void sync_cache(cache_t *c)
 		do_sync_element(c, obj, 1);
 		rwlock_release(c->rwl, RWL_WRITER);
 		
-		if(got_signal(current_task)) {
+		if(got_signal(current_task))
 			return;
-		}
 		i++;
 	}
 	

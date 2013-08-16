@@ -52,7 +52,6 @@ int ata_disk_sync(struct ata_controller *cont)
 
 int ata_disk_sync_nowait(struct ata_controller *cont)
 {
-	return 0;
 	printk(1, "[ata]: Syncing controller %d\n", cont->id);
 	outb(cont->port_cmd_base+REG_COMMAND, 0xEA);
 	return 0;

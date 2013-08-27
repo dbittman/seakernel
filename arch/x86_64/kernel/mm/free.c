@@ -8,6 +8,7 @@ void free_pde(page_dir_t *pd, unsigned idx)
 	if(!pd[idx]) 
 		return;
 	addr_t physical = pd[idx]&PAGE_MASK;
+	assert(!(pd[idx] & (1 << 7)));
 	page_table_t *table = (addr_t *)(physical + PHYS_PAGE_MAP);
 	for(unsigned i=0;i<512;i++)
 	{
@@ -27,6 +28,7 @@ void free_pdpte(pdpt_t *pdpt, unsigned idx)
 	if(!pdpt[idx]) 
 		return;
 	addr_t physical = pdpt[idx]&PAGE_MASK;
+	assert(!(pdpt[idx] & (1 << 7)));
 	page_dir_t *pd = (addr_t *)(physical + PHYS_PAGE_MAP);
 	for(unsigned i=0;i<512;i++)
 		free_pde(pd, i);
@@ -63,9 +65,9 @@ void free_thread_shared_directory()
 void destroy_task_page_directory(task_t *p)
 {
 	assert(p->magic == TASK_MAGIC);
+	addr_t *tmp;
+	addr_t phys[4];
 	if(p->flags & TF_LAST_PDIR) {
-		addr_t *tmp;
-		addr_t phys[4];
 		phys[0] = p->pd[PML4_IDX(PDIR_DATA/0x1000)] & PAGE_MASK;
 		tmp = (addr_t *)(phys[0] + PHYS_PAGE_MAP);
 	
@@ -74,20 +76,15 @@ void destroy_task_page_directory(task_t *p)
 
 		phys[2] = tmp[PAGE_DIR_IDX(PDIR_DATA/0x1000)] & PAGE_MASK;
 		tmp = (addr_t *)(phys[2] + PHYS_PAGE_MAP);
-
-		phys[3] = tmp[PAGE_TABLE_IDX(PDIR_DATA/0x1000)] & PAGE_MASK;
 		
 		p->pd[PML4_IDX(PDIR_DATA/0x1000)]=0;
-		
-		for(int i=0;i<4;i++) {
-			if(phys[i]) pm_free_page(phys[i]);
-		}
+		/* this page was already unmapped, but the tables are still there */
+		for(int i=0;i<3;i++)
+			pm_free_page(phys[i]);
 		
 		pm_free_page(p->pd[0] & PAGE_MASK);
 	}
 	
-	addr_t *tmp;
-	addr_t phys[4];
 	phys[0] = p->pd[PML4_IDX(CURRENT_TASK_POINTER/0x1000)] & PAGE_MASK;
 	tmp = (addr_t *)(phys[0] + PHYS_PAGE_MAP);
 

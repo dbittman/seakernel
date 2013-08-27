@@ -347,7 +347,6 @@ unsigned slab_size(int sz)
 		s = 0x1000 * 128;
 	if(s < (unsigned)sz * 2) s = sz * 2;
 	s = (s&PAGE_MASK) + 0x1000;
-	//printk(0, ":: %x (%d)\n", s, s / 0x1000);
 	return s;
 }
 

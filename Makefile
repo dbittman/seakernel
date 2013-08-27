@@ -1,12 +1,11 @@
-# seakernel makefile 
+# seakernel makefile
+ARCH=__none__
 ifneq ($(MAKECMDGOALS),config)
-	ifneq ($(MAKECMDGOALS),defconfig)
-		include sea_defines.inc
-	else
-		ARCH=x86
-	endif
-else
-	ARCH=x86
+ifneq ($(MAKECMDGOALS),defconfig)
+ifneq ($(MAKECMDGOALS),clean)
+include sea_defines.inc
+endif
+endif
 endif
 
 ifeq ($(CONFIG_ARCH), 2)
@@ -39,8 +38,9 @@ CFLAGS_NOARCH = -O3 -g -std=c99 -nostdlib -nostdinc \
 	        -Wno-unused-parameter -Wno-unused-but-set-parameter -nodefaultlibs \
 	        -mpush-args -mno-accumulate-outgoing-args \
 	        -fno-tree-loop-distribute-patterns -fno-tree-vectorize 
-
+ifneq ($(ARCH),__none__)
 include arch/${ARCH}/make.inc
+endif
 
 export CFLAGS  = ${CFLAGS_NOARCH} ${CFLAGS_ARCH}
 export LDFLAGS = ${LDFLAGS_ARCH}

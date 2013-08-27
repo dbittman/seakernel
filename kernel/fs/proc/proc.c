@@ -16,9 +16,10 @@ int proc_mods(char rw, struct inode *n, int min, char *buf, int off, int len);
 int proc_cpu(char rw, struct inode *inode, int m, char *buf, int off, int len);
 int proc_vfs(char rw, struct inode *n, int m, char *buf, int off, int len);
 int proc_kern_rw(char rw, struct inode *inode, int m, char *buf, int off, int len);
+int proc_rw_mem(char rw, struct inode *inode, int m, char *buf, int off, int len);
 
 int *pfs_table[64] = {
- 0, //Memory
+ (int *)proc_rw_mem, //Memory
  (int *)0, //Tasking
  (int *)proc_vfs, //VFS
  (int *)proc_kern_rw, //Kernel

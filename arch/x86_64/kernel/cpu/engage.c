@@ -82,11 +82,11 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	init_lapic(0);
 	set_lapic_timer(lapic_timer_start);
 
-	printk(0, "[cpu%d]: waiting for tasking...\n", apicid);
+	//printk(0, "[cpu%d]: waiting for tasking...\n", apicid);
 	while(!kernel_task) asm("cli");
 	
 	task->pid = add_atomic(&next_pid, 1)-1;
-	printk(0, "[cpu%d]: enable tasks...\n", apicid);
+	//printk(0, "[cpu%d]: enable tasks...\n", apicid);
 	
 	tqueue_insert(primary_queue, (void *)task, task->listnode);
 	

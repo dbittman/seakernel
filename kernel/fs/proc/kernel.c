@@ -122,3 +122,13 @@ int proc_kern_rw(char rw, struct inode *inode, int m, char *buf, int off, int le
 	}
 	return 0;
 }
+
+int proc_rw_mem(char rw, struct inode *inode, int m, char *buf, int off, int len)
+{
+	if(rw == READ) {
+		char tmp[1024];
+		sprintf(tmp, "    TOTAL | FREE\n%9d | %d [%d%% used]\n", (pm_num_pages * PAGE_SIZE) / 1024, ((pm_num_pages-pm_used_pages) * PAGE_SIZE) / 1024, (pm_used_pages * 100)/pm_num_pages);
+		return proc_append_buffer(buf, tmp, 0, -1, off, len);
+	}
+	return 0;
+}

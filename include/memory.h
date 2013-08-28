@@ -82,6 +82,7 @@ extern void zero_page_physical(addr_t);
 #define kmalloc(a) __kmalloc(a, __FILE__, __LINE__)
 void __KT_swapper();
 void copy_update_stack(addr_t old, addr_t new, unsigned length);
+int __is_valid_user_ptr(int num, void *p, char flags);
 static inline void map_if_not_mapped(addr_t loc)
 {
 	if(!vm_getmap(loc & PAGE_MASK, 0))

@@ -9,6 +9,7 @@
 #include <sys/fcntl.h>
 #include <cpu.h>
 #include <elf.h>
+
 /* Prepares a process to recieve a new executable. Desc is the descriptor of 
  * the executable. We keep it open through here so that we dont have to 
  * re-open it. */
@@ -90,16 +91,16 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 		printk(0, "[%d]: Copy data\n", t->pid);
 	/* okay, lets back up argv and env so that we can
 	 * clear out the address space and not lose data..*/
-	if(argv) {
-		while(argv[argc] && *argv[argc]) argc++;
+	if(__is_valid_user_ptr(SYS_EXECVE, argv, 0)) {
+		while(__is_valid_user_ptr(SYS_EXECVE, argv[argc], 0) && *argv[argc]) argc++;
 		backup_argv = (char **)kmalloc(sizeof(addr_t) * argc);
 		for(i=0;i<argc;i++) {
 			backup_argv[i] = (char *)kmalloc(strlen(argv[i]) + 1);
 			_strcpy(backup_argv[i], argv[i]);
 		}
 	}
-	if(env) {
-		while(env[envc] && *env[envc]) envc++;
+	if(__is_valid_user_ptr(SYS_EXECVE, env, 0)) {
+		while(__is_valid_user_ptr(SYS_EXECVE, env[envc], 0) && *env[envc]) envc++;
 		backup_env = (char **)kmalloc(sizeof(addr_t) * envc);
 		for(i=0;i<envc;i++) {
 			backup_env[i] = (char *)kmalloc(strlen(env[i]) + 1);
@@ -216,6 +217,8 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	/* we clear this out, so we don't accidentally handle a signal...*/
 	set_int(0);
 	lower_task_flag(t, TF_SCHED);
+	if(!(kernel_state_flags & KSF_HAVEEXECED))
+		set_ksf(KSF_HAVEEXECED);
 	arch_specific_exec_initializer(t, argc, eip);
 	return 0;
 }

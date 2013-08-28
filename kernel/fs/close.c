@@ -29,9 +29,10 @@ int sys_close(int fp)
 				&& f->inode->pipe->type != PIPE_NAMED)
 			sub_atomic(&f->inode->pipe->wrcount, 1);
 		task_unblock_all(f->inode->pipe->read_blocked);
-		if(!f->inode->pipe->count && f->inode->pipe->type != PIPE_NAMED)
+		if(!f->inode->pipe->count && f->inode->pipe->type != PIPE_NAMED) {
 			free_pipe(f->inode);
-		else
+			f->inode->pipe = 0;
+		} else
 			mutex_release(f->inode->pipe->lock);
 	}
 	/* close devices */
@@ -39,7 +40,6 @@ int sys_close(int fp)
 		char_rw(CLOSE, f->inode->dev, 0, 0);
 	else if(S_ISBLK(f->inode->mode) && !fp)
 		block_device_rw(CLOSE, f->inode->dev, 0, 0, 0);
-	
 	if(!sub_atomic(&f->inode->f_count, 1) && f->inode->marked_for_deletion)
 		do_unlink(f->inode);
 	else

@@ -23,9 +23,10 @@
   #define KSF_SMP_ENABLE   0x10
 #endif
 #define KSF_PAGING         0x20
+#define KSF_HAVEEXECED     0x40 /* have we exec'd once? we dont check for valid pointers if this is unset */
 extern volatile unsigned kernel_state_flags;
 #define set_ksf(flag) {or_atomic(&kernel_state_flags, flag);}
-
+#define unset_ksf(flag) {and_atomic(&kernel_state_flags, ~flag);}
 extern volatile unsigned int __allow_idle;
 
 #define PANIC_NOSYNC 1

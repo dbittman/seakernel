@@ -437,7 +437,7 @@ slab_t *find_usable_slab(unsigned size, int align, int allow_range)
 		return find_usable_slab(size, align, 2);
 	}
 #ifdef SLAB_DEBUG
-	printk(1, "[slab]: Allocated new slab cache @ %x\n", (unsigned)new_sc);
+	printk(1, "[slab]: Allocated new slab cache @ %x\n", (addr_t)new_sc);
 #endif
 	return find_usable_slab(size, align, 0);
 }
@@ -474,6 +474,11 @@ addr_t do_kmalloc_slab(unsigned sz, char align)
 		*(addr_t *)(addr) = (addr_t)slab;
 		addr += sizeof(addr_t *);
 	}
+#ifdef SLAB_DEBUG
+	char tmp[128];
+	sprintf(tmp, "-> %d\n", total);
+	serial_puts_nolock(0, tmp);
+#endif
 	return addr;
 }
 

@@ -185,8 +185,11 @@ void init()
 	 * So we write simple wrapper functions for common functions that 
 	 * we will need */
 	ret = u_execve("/sh", (char **)stuff_to_pass, (char **)init_env);
+	unset_ksf(KSF_HAVEEXECED);
 	ret = u_execve("/bin/sh", (char **)stuff_to_pass, (char **)init_env);
+	unset_ksf(KSF_HAVEEXECED);
 	ret = u_execve("/usr/bin/sh", (char **)stuff_to_pass, (char **)init_env);
+	unset_ksf(KSF_HAVEEXECED);
 	printf("Failed to start the init process. Halting.\n");
 	u_exit(0);
 }

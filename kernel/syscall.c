@@ -123,10 +123,12 @@ void init_syscalls()
 	num_syscalls = sizeof(syscall_table)/sizeof(void *);
 }
 
-static inline int __is_valid_user_ptr(int num, void *p, char flags)
+int __is_valid_user_ptr(int num, void *p, char flags)
 {
 	addr_t addr = (addr_t)p;
 	if(!addr && !flags) return 0;
+	if(!(kernel_state_flags & KSF_HAVEEXECED))
+		return 1;
 	if(addr < TOP_LOWER_KERNEL && addr) {
 		#if DEBUG
 		printk(5, "[kernel]: warning - task %d passed ptr %x to syscall %d (invalid)\n", 

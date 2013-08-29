@@ -29,6 +29,7 @@ static inline  unsigned get_boot_flag()
 void cpu_k_task_entry(task_t *me)
 {
 	((cpu_t *)(me->cpu))->flags |= CPU_TASK;
+	me->system = -1;
 	set_int(1);
 	/* wait until we have tasks to run */
 	for(;;) 

@@ -47,7 +47,7 @@ int __KT_try_releasing_tasks()
 	ll_for_each_entry(kill_queue, cur, task_t *, t)
 	{
 		if(t->flags & TF_BURIED) {
-			if(t->parent == 0 || t->parent->state == TASK_DEAD || (t->parent->flags & TF_KTASK))
+			if(t->parent == 0 || t->parent->state == TASK_DEAD || (t->parent->flags & TF_KTASK) || t->parent == kernel_task)
 				move_task_to_kill_queue(t, 0);
 			if(t->flags & TF_KILLREADY)
 				break;

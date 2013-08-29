@@ -31,11 +31,16 @@ int wait_task(unsigned pid, int state)
 	return current_task->waiting_ret;
 }
 
-int get_status_int(int pid, int *st, int *__pid)
+void get_status_int(task_t *t, int *st, int *__pid)
 {
-	int ret_val = 0, sig_number=0;
+	int ret_val, sig_number;
 	int status=__EXIT;
-	int res = get_exit_status(pid, &status, &ret_val, &sig_number, __pid);
+	
+	sig_number = t->exit_reason.sig;
+	ret_val = t->exit_reason.ret;
+	status |= t->exit_reason.cause | t->exit_reason.coredump;
+	if(__pid) *__pid = t->exit_reason.pid;
+	
 	short code=0;
 	short info=0;
 	if(status & __COREDUMP) code |= 0x80;
@@ -50,7 +55,6 @@ int get_status_int(int pid, int *st, int *__pid)
 	}
 	if(st)
 		*st = code << 16 | info;
-	return res;
 }
 
 int sys_waitpid(int pid, int *st, int opt)
@@ -58,16 +62,19 @@ int sys_waitpid(int pid, int *st, int opt)
 	if(!pid || pid < -1)
 		return -ENOSYS;
 	raise_flag(TF_BGROUND);
-	task_t *t=kernel_task;
+	task_t *t=0;
 	if(pid == -1) {
 		/* find first child */
 		t = search_tqueue(primary_queue, TSEARCH_PARENT, (addr_t)current_task, (void (*)(task_t *, int))0, 0, 0);
-		if(!t && !current_task->exlist) {
-			lower_flag(TF_BGROUND);
-			return -ECHILD;
-		}
-	}
+	} else
+		t = get_task_pid(pid);
 	top:
+	
+	if(!t || t->parent != current_task) {
+		lower_flag(TF_BGROUND);
+		return -ECHILD;
+	}
+	
 	if(current_task->sigd && 
 		((struct sigaction *)&(current_task->thread->signal_act
 		[current_task->sigd]))->_sa_func._sa_handler && !(current_task->thread->signal_act
@@ -75,48 +82,19 @@ int sys_waitpid(int pid, int *st, int opt)
 		lower_flag(TF_BGROUND);
 		return -EINTR;
 	}
-	t = (pid == -1 ? 0 : get_task_pid(pid));
-	if(t) {
-		if(!(opt & 1)) {
+	
+	if(t->state != TASK_DEAD) {
+		if(!(opt & WNOHANG)) {
 			schedule();
 			goto top;
 		}
 		lower_flag(TF_BGROUND);
 		return 0;
 	}
-	int code, gotpid, res;
-	if(current_task->exlist)
-		res = get_status_int(pid, &code, &gotpid);
-	else {
-		if(!(opt & 1)) {
-			schedule();
-			goto top;
-		}
-		lower_flag(TF_BGROUND);
-		return 0;
-	}
-	if(res) {
-		if(!(opt & 1)) {
-			schedule();
-			goto top;
-		}
-		lower_flag(TF_BGROUND);
-		return 0;
-	} else if(pid == -1){
-		ex_stat *es;
-		int old = set_int(0);
-		mutex_acquire((mutex_t *)&current_task->exlock);
-		if((es=current_task->exlist)) {
-			current_task->exlist = current_task->exlist->next;
-			mutex_release((mutex_t *)&current_task->exlock);
-			set_int(old);
-			kfree(es);
-		} else {
-			mutex_release((mutex_t *)&current_task->exlock);
-			set_int(old);
-		}
-	}
-	if(st) 
+	int code, gotpid;
+	get_status_int(t, &code, &gotpid);
+	if(pid == -1) move_task_to_kill_queue(t, 0);
+	if(st)
 		*st = code;
 	lower_flag(TF_BGROUND);
 	return gotpid;

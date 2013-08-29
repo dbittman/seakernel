@@ -28,7 +28,6 @@ task_t *task_create()
 	task->listnode   = (void *)kmalloc(sizeof(struct llistnode));
 	task->activenode = (void *)kmalloc(sizeof(struct llistnode));
 	task->blocknode  = (void *)kmalloc(sizeof(struct llistnode));
-	mutex_create((mutex_t *)&task->exlock, MT_NOSCHED);
 	return task;
 }
 

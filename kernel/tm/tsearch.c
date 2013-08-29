@@ -18,9 +18,9 @@ task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned long value, void (*
 {
 	int old = set_int(0);
 	mutex_acquire(&tq->lock);
-	struct llistnode *cur;
+	struct llistnode *cur, *next;
 	task_t *tmp, *t=0;
-	ll_for_each_entry(&tq->tql, cur, task_t *, tmp)
+	ll_for_each_entry_safe(&tq->tql, cur, next, task_t *, tmp)
 	{
 		if(flags & TSEARCH_PID && tmp->pid == value)
 		{
@@ -46,7 +46,7 @@ task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned long value, void (*
 		{
 			FOUND_ACTION
 		}
-		if(flags & TSEARCH_ENUM && !value--)
+		if(flags & TSEARCH_ENUM && !(tmp->state == TASK_DEAD && (flags & TSEARCH_ENUM_ALIVE_ONLY)) && !value--)
 		{
 			t = tmp;
 			break;
@@ -65,14 +65,22 @@ task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned long value, void (*
 		if(flags & TSEARCH_EXIT_PARENT && tmp->parent == current_task)
 		{
 			tmp->parent = 0;
+			if(tmp->state == TASK_DEAD) {
+				ll_maybe_reset_loop(&tq->tql, cur, next);
+				move_task_to_kill_queue(tmp, 1);
+			}
 		}
 		next:
 		/* have we found something and are only looking for one thing? */
 		if(t && !(flags & TSEARCH_FINDALL))
 			break;
 	}
+	if(flags & TSEARCH_EXIT_PARENT && (current_task->parent == 0 || (current_task->parent->flags & TF_EXITING)) && (current_task->flags & TF_EXITING))
+	{
+		/* some more housekeeping... */
+		move_task_to_kill_queue(current_task, 1);
+	}
 	mutex_release(&tq->lock);
 	set_int(old);
 	return t;
 }
-

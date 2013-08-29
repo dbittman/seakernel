@@ -58,6 +58,15 @@ void tqueue_remove(tqueue_t *tq, struct llistnode *i)
 	set_int(old);
 }
 
+/* tsearch may occasionally need to remove tasks from the queue
+ * while the queue is locked, so we provide this for it */
+void tqueue_remove_nolock(tqueue_t *tq, struct llistnode *i)
+{
+	if(tq->current == i) tq->current=0;
+	ll_do_remove(&tq->tql, i, 0);
+	tq->num--;
+}
+
 void *tqueue_next(tqueue_t *tq)
 {
 	int old = set_int(0);

@@ -134,10 +134,12 @@ void do_task_stat(struct task_stat *s, task_t *t)
 	s->stime = t->stime;
 	s->utime = t->utime;
 	s->state = t->state;
-	s->uid = t->thread->uid;
-	s->gid = t->thread->gid;
+	if(s->state != TASK_DEAD) {
+		s->uid = t->thread->uid;
+		s->gid = t->thread->gid;
+	}
+	if(t->parent) s->ppid = t->parent->pid;
 	s->system = t->system;
-	s->ppid = t->parent->pid;
 	s->tty = t->tty;
 	s->argv = t->argv;
 	s->pid = t->pid;

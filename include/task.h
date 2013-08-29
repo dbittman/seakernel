@@ -48,23 +48,24 @@ extern tqueue_t *primary_queue;
 #define TF_IN_INT   0x40000 /* inside an interrupt handler */
 #define TF_BGROUND  0x80000
 #define TF_OTHERBS 0x100000
-#define TF_SHUTDOWN 0x200000
+#define TF_SHUTDOWN  0x200000
+#define TF_KILLREADY 0x400000
 
 #define PRIO_PROCESS 1
 #define PRIO_PGRP    2
 #define PRIO_USER    3
 
-#define TSEARCH_FINDALL        0x1
-#define TSEARCH_PID            0x2
-#define TSEARCH_UID            0x4
-#define TSEARCH_EUID           0x8
-#define TSEARCH_TTY           0x10
-#define TSEARCH_PARENT        0x20
-#define TSEARCH_ENUM          0x40
-#define TSEARCH_EXIT_WAITING  0x80
-#define TSEARCH_EXIT_PARENT  0x100
-#define TSEARCH_EXCLUSIVE    0x200
-
+#define TSEARCH_FINDALL           0x1
+#define TSEARCH_PID               0x2
+#define TSEARCH_UID               0x4
+#define TSEARCH_EUID              0x8
+#define TSEARCH_TTY              0x10
+#define TSEARCH_PARENT           0x20
+#define TSEARCH_ENUM             0x40
+#define TSEARCH_EXIT_WAITING     0x80
+#define TSEARCH_EXIT_PARENT     0x100
+#define TSEARCH_EXCLUSIVE       0x200
+#define TSEARCH_ENUM_ALIVE_ONLY 0x400
 #define current_tss (&((cpu_t *)current_task->cpu)->tss)
 
 #if SCHED_TTY
@@ -120,8 +121,7 @@ struct task_struct
 	volatile addr_t stack_end;
 	volatile unsigned num_pages;
 	unsigned last; /* the previous systemcall */
-	mutex_t exlock;
-	ex_stat exit_reason, we_res, *exlist;
+	ex_stat exit_reason, we_res;
 	/* pushed registers by the interrupt handlers */
 	registers_t reg_b; /* backup */
 	registers_t *regs, *sysregs;
@@ -163,6 +163,8 @@ extern mutex_t *alarm_mutex;
 #define raise_flag(f) or_atomic(&(current_task->flags), f)
 #define lower_flag(f) and_atomic(&(current_task->flags), ~f)
 
+#define WNOHANG 1
+
 #define FORK_SHAREDIR 0x1
 #define FORK_SHAREDAT 0x2
 #define fork() do_fork(0)
@@ -170,6 +172,7 @@ extern mutex_t *alarm_mutex;
 void destroy_task_page_directory(task_t *p);
 struct thread_shared_data *thread_data_create();
 task_t *task_create();
+void move_task_to_kill_queue(task_t *t, int);
 task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned long value, void (*action)(task_t *, int), int arg, int *);
 void delay_sleep(int t);
 void take_issue_with_current_task();

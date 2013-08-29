@@ -18,35 +18,55 @@ void set_as_dead(task_t *t)
 {
 	assert(t);
 	sub_atomic(&running_processes, 1);
-	t->state = TASK_DEAD;
-	tqueue_remove(primary_queue, t->listnode);
 	tqueue_remove(((cpu_t *)t->cpu)->active_queue, t->activenode);
-	kfree(t->listnode);
 	kfree(t->activenode);
 	kfree(t->blocknode);
-	mutex_destroy((mutex_t *)&t->exlock);
 	sub_atomic(&(((cpu_t *)t->cpu)->numtasks), 1);
-	t->listnode = ll_insert(kill_queue, (void *)t);
-	/* Add to death */
-	__engage_idle();
+	t->state = TASK_DEAD;
+}
+
+void move_task_to_kill_queue(task_t *t, int locked)
+{
+	if(locked)
+		tqueue_remove_nolock(primary_queue, t->listnode);
+	else
+		tqueue_remove(primary_queue, t->listnode);
+	raise_task_flag(t, TF_KILLREADY);
 }
 
 int __KT_try_releasing_tasks()
 {
-	struct llistnode *node = kill_queue->head;
-	if(!node) return 0;
-	task_t *t = node->entry;
-	assert(t && t != current_task);
-	if(!(t->flags & TF_BURIED))
-		return 1;
+	struct llistnode *cur;
+	rwlock_acquire(&kill_queue->rwl, RWL_READER);
+	if(ll_is_empty(kill_queue))
+	{
+		rwlock_release(&kill_queue->rwl, RWL_READER);
+		return 0;
+	}
+	task_t *t=0;
+	ll_for_each_entry(kill_queue, cur, task_t *, t)
+	{
+		if(t->flags & TF_BURIED) {
+			if(t->parent == 0 || t->parent->state == TASK_DEAD || (t->parent->flags & TF_KTASK))
+				move_task_to_kill_queue(t, 0);
+			if(t->flags & TF_KILLREADY)
+				break;
+		}
+	}
+	rwlock_release(&kill_queue->rwl, RWL_READER);
+	if(!t) return 0;
+	if(!((t->flags & TF_BURIED) && (t->flags & TF_KILLREADY))) return 0;
+	assert(t != current_task);
+	assert(cur->entry == t);
 	release_task(t);
-	ll_remove(kill_queue, node);
+	ll_remove(kill_queue, cur);
 	return ll_is_empty(kill_queue) ? 0 : 1;
 }
 
 void release_task(task_t *p)
 {
 	destroy_task_page_directory(p);
+	kfree(p->listnode);
 	kfree((void *)p->kernel_stack);
 	kfree((void *)p);
 }
@@ -72,78 +92,24 @@ void kill_task(unsigned int pid)
 	}
 }
 
-int get_exit_status(int pid, int *status, int *retval, int *signum, int *__pid)
-{
-	if(!pid) 
-		return -1;
-	ex_stat *es;
-	int old = set_int(0);
-	mutex_acquire((mutex_t *)&current_task->exlock);
-	ex_stat *ex = current_task->exlist;
-	if(pid != -1) 
-		while(ex && ex->pid != (unsigned)pid) ex=ex->next;
-	es=ex;
-	mutex_release((mutex_t *)&current_task->exlock);
-	set_int(old);
-	if(es)
-	{
-		if(__pid) *__pid = es->pid;
-		*status |= es->coredump | es->cause;
-		*retval = es->ret;
-		*signum = es->sig;
-		return 0;
-	}
-	return 1;
-}
-
-void add_exit_stat(task_t *t, ex_stat *e)
-{
-	e->pid = current_task->pid;
-	ex_stat *n = (ex_stat *)kmalloc(sizeof(*e));
-	memcpy(n, e, sizeof(*e));
-	n->prev=0;
-	int old_int = set_int(0);
-	mutex_acquire((mutex_t *)&t->exlock);
-	ex_stat *old = t->exlist;
-	if(old) old->prev = n;
-	t->exlist = n;
-	n->next=old;
-	mutex_release((mutex_t *)&t->exlock);
-	set_int(old_int);
-}
-extern unsigned int init_pid;
 void exit(int code)
 {
 	if(!current_task || current_task->pid == 0) 
 		panic(PANIC_NOSYNC, "kernel tried to exit");
 	task_t *t = (task_t *)current_task;
 	/* Get ready to exit */
+	ll_insert(kill_queue, (void *)t);
 	raise_flag(TF_EXITING);
-	if(code != -9) t->exit_reason.cause = 0;
+	if(code != -9) 
+		t->exit_reason.cause = 0;
 	t->exit_reason.ret = code;
-	if(t->parent && t->parent->pid != init_pid)
-		add_exit_stat((task_t *)t->parent, (ex_stat *)&t->exit_reason);
+	t->exit_reason.pid = t->pid;
 	/* Clear out system resources */
 	free_thread_specific_directory();
 	clear_resources(t);
-	/* this fixes all tasks that are children of current_task, or are waiting
-	 * on current_task. For those waiting, it signals the task. For those that
-	 * are children, it fixes the 'parent' pointer. */
-	search_tqueue(primary_queue, TSEARCH_EXIT_PARENT | TSEARCH_EXIT_WAITING, 0, 0, 0, 0);
 	/* tell our parent that we're dead */
 	if(t->parent)
 		do_send_signal(t->parent->pid, SIGCHILD, 1);
-	/* Lock out everything and modify the linked-lists */
-	int old = set_int(0);
-	mutex_acquire((mutex_t *)&t->exlock);
-	ex_stat *ex = t->exlist;
-	while(ex) {
-		ex_stat *n = ex->next;
-		kfree(ex);
-		ex=n;
-	}
-	mutex_release((mutex_t *)&t->exlock);
-	set_int(old);
 	if(!sub_atomic(&t->thread->count, 1))
 	{
 		/* we're the last thread to share this data. Clean it up */
@@ -152,8 +118,15 @@ void exit(int code)
 		if(t->thread->pwd) iput(t->thread->pwd);
 		mutex_destroy(&t->thread->files_lock);
 		kfree(t->thread);
+		t->thread = 0;
 	}
 	raise_flag(TF_DYING);
+	/* don't do this while the state is dead, as we may step on the toes of waitpid.
+	 * this fixes all tasks that are children of current_task, or are waiting
+	 * on current_task. For those waiting, it signals the task. For those that
+	 * are children, it fixes the 'parent' pointer. */
+	search_tqueue(primary_queue, TSEARCH_EXIT_PARENT | TSEARCH_EXIT_WAITING, 0, 0, 0, 0);
+	t->state = TASK_DEAD;
 	set_as_dead(t);
 	char flag_last_page_dir_task=0;
 	mutex_acquire(&pd_cur_data->lock);

@@ -128,10 +128,9 @@ void exit(int code)
 	search_tqueue(primary_queue, TSEARCH_EXIT_PARENT | TSEARCH_EXIT_WAITING, 0, 0, 0, 0);
 	t->state = TASK_DEAD;
 	set_as_dead(t);
-	char flag_last_page_dir_task=0;
-	mutex_acquire(&pd_cur_data->lock);
+	char flag_last_page_dir_task;
+	/* is this the last task to use this pd_info? */
 	flag_last_page_dir_task = (sub_atomic(&pd_cur_data->count, 1) == 0) ? 1 : 0;
-	mutex_release(&pd_cur_data->lock);
 	if(flag_last_page_dir_task) {
 		/* no one else is referencing this directory. Clean it up... */
 		free_thread_shared_directory();

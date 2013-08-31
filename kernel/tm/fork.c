@@ -80,6 +80,8 @@ cpu_t *fork_choose_cpu(task_t *parent)
 		if(tmp->active_queue->num < cpu->active_queue->num)
 			cpu = tmp;
 	}
+	if(!(cpu->flags & CPU_TASK))
+		return pc;
 	return cpu;
 }
 #endif

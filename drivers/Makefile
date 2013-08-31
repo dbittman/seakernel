@@ -16,7 +16,7 @@ endif
 # I believe, but don't quote me on this, that
 # this flag is needed if we want to access relocations
 # that require 64bit fields...
-MCFLAGS=-std=c99 -g -O3 -fno-rename-registers \
+MCFLAGS=        -std=c99 -fno-rename-registers \
 		-fno-regmove -D__KERNEL__ -mno-red-zone -nostdinc -ffreestanding \
 		-fno-common -nostdlib \
 		-I../arch/${ARCH}/include \
@@ -35,6 +35,11 @@ ifeq ($(ARCH), x86_64)
 MCFLAGS += -mcmodel=large
 endif
 
+MCFLAGS += -O$(CONFIG_OPTIMIZATION_LEVEL)
+
+ifeq ($(CONFIG_DEBUG),y)
+	MCFLAGS += -g -D__DEBUG__
+endif
 
 export MCFLAGS
 export CC

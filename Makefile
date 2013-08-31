@@ -8,6 +8,7 @@ endif
 endif
 endif
 
+# process the arch config, and set the arch string
 ifeq ($(CONFIG_ARCH), 2)
 	ARCH=x86_64
 	ARCH_TC=x86_64
@@ -24,20 +25,27 @@ export CC
 export LD
 export AR
 
-include make.inc
-
-CFLAGS_NOARCH = -O3 -g -std=c99 -nostdlib -nostdinc \
+CFLAGS_NOARCH = -std=c99 -nostdlib -nostdinc -nodefaultlibs \
                 -fno-builtin -ffreestanding \
+                -mno-red-zone -fno-omit-frame-pointer \
+                -mpush-args -mno-accumulate-outgoing-args \
+	        -fno-tree-loop-distribute-patterns -fno-tree-vectorize \
                 -Iarch/${ARCH}/include \
                 -I../include -Iinclude -I ../../include -I ../../../include \
-                -D__KERNEL__ -D__DEBUG__ \
+                -D__KERNEL__ \
                 -Wall -Wextra -Wformat-security -Wformat-nonliteral \
 	        -Wno-strict-aliasing -Wshadow -Wpointer-arith -Wcast-align \
 	        -Wno-unused -Wnested-externs -Waddress -Winline \
-	        -Wno-long-long -mno-red-zone -fno-omit-frame-pointer \
-	        -Wno-unused-parameter -Wno-unused-but-set-parameter -nodefaultlibs \
-	        -mpush-args -mno-accumulate-outgoing-args \
-	        -fno-tree-loop-distribute-patterns -fno-tree-vectorize 
+	        -Wno-long-long -Wno-unused-parameter -Wno-unused-but-set-parameter\
+	        
+CFLAGS_NOARCH += -O$(CONFIG_OPTIMIZATION_LEVEL)
+
+ifeq ($(CONFIG_DEBUG),y)
+	CFLAGS_NOARCH += -g -D__DEBUG__
+endif
+
+include make.inc
+	        
 ifneq ($(ARCH),__none__)
 include arch/${ARCH}/make.inc
 endif

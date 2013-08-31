@@ -3,6 +3,10 @@
 
 #include <../sea_defines.h>
 
+#if CONFIG_DEBUG
+#define DEBUG 1
+#endif
+
 #define TYPE_ARCH_X86 1
 #define TYPE_ARCH_X86_64 2
 

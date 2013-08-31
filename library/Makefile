@@ -1,6 +1,6 @@
 .c.o:
 	echo -n -e "[CC]\t$@        \n"
-	@$(CC) $(CFLAGS) -fno-tree-loop-distribute-patterns -fno-tree-vectorize -c -o $@ $<
+	@$(CC) $(CFLAGS) -c -o $@ $<
 
 -include ../make.inc
 -include ../sea_defines.inc

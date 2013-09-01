@@ -1,7 +1,7 @@
 #include <kernel.h>
 #include <dev.h>
 #include <modules/pci.h>
-#include "ata.h"
+#include <modules/ata.h>
 #include <block.h>
 #include <sys/fcntl.h>
 struct ata_controller *primary, *secondary;

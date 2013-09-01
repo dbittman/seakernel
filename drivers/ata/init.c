@@ -1,7 +1,7 @@
 #include <kernel.h>
 #include <dev.h>
 #include <modules/pci.h>
-#include "ata.h"
+#include <modules/ata.h>
 #include <block.h>
 int __a, __b, __c, __d;
 int init_ata_device()

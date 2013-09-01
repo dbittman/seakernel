@@ -1,7 +1,7 @@
 #ifndef ISR_x86_H
 #define ISR_x86_H
 
-typedef struct registers
+typedef struct __attribute__((packed))
 {
   volatile   u32int ds;
   volatile   u32int edi, esi, ebp, esp, ebx, edx, ecx, eax;

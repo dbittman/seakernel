@@ -91,7 +91,7 @@ struct partition {
 	char again_dont_care[3];
 	unsigned int start_lba;
 	unsigned int length;
-};
+}__attribute__((packed));
 
 struct ata_device {
 	struct ata_controller *controller;

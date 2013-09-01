@@ -64,7 +64,7 @@ struct vbecontrollerinfo {
    unsigned char capabilities[4];
    short videomodes[2];           // isa vbeFarPtr
    short totalMemory;             // as # of 64KB blocks
-};
+} __attribute__((packed));
 
 struct vbemodeinfo {
 	/* for all VBE revisions */

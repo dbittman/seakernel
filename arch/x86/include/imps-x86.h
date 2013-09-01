@@ -39,7 +39,7 @@ struct imps_cth
 	unsigned short extended_length;
 	unsigned char extended_checksum;
 	char reserved[1];
-};
+}__attribute__((packed));
 
 struct imps_fps
 {
@@ -49,7 +49,7 @@ struct imps_fps
 	unsigned char spec_rev;
 	unsigned char checksum;
 	unsigned char feature_info[5];
-};
+}__attribute__((packed));
 
 struct imps_processor
 {
@@ -60,14 +60,14 @@ struct imps_processor
 	unsigned signature;
 	unsigned features;
 	char reserved[8];
-};
+}__attribute__((packed));
 
 struct imps_bus
 {
 	unsigned char type;			/* must be 1 */
 	unsigned char id;
 	char bus_type[6];
-};
+}__attribute__((packed));
 
 struct imps_ioapic
 {
@@ -76,7 +76,7 @@ struct imps_ioapic
 	unsigned char ver;
 	unsigned char flags;
 	unsigned addr;
-};
+}__attribute__((packed));
 
 struct imps_interrupt
 {
@@ -87,7 +87,7 @@ struct imps_interrupt
 	unsigned char source_bus_irq;
 	unsigned char dest_apic_id;
 	unsigned char dest_apic_intin;
-};
+} __attribute__((packed));
 
 void add_ioapic(struct imps_ioapic *ioapic);
 void init_ioapic();

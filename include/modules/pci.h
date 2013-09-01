@@ -50,7 +50,7 @@ struct pci_config_space
     uint8_t  interrupt_pin;
     uint8_t  min_grant;
     uint8_t  max_latency;
-};
+}__attribute__((packed));
 
 #define PCI_DRIVEN  0x1 /* Device has a driver that has loaded it - set by the driver */
 #define PCI_ENGAGED 0x2 /* Driver is using the device (usually on if 0x1 is on) */

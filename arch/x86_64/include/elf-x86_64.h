@@ -87,7 +87,7 @@ static inline int is_valid_elf(char *buf, short type)
 	return 1;
 }
 
-typedef struct {
+typedef struct  __attribute__((packed)) {
 	uint64_t d_tag;
 	union {
 		uint64_t d_val;

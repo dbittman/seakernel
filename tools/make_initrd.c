@@ -9,9 +9,10 @@ struct initrd_header
 {
 	unsigned char magic;
 	char name[256];
+	char pad[3];
 	unsigned int offset;
 	unsigned int length;
-};
+} __attribute__((packed));
 
 int main(int argc, char **argv)
 {

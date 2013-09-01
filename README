@@ -38,13 +38,16 @@ Build Instructions
 ------------------
 Building is handled via gmake (make). The available targets are:
  - deps: generate Dependency information for the build system
- - os: build the kernel (requires deps to have been built)
+ - skernel: build the kernel (requires deps to have been built)
+ - modules: build all configured modules
+ - initrd.img: build the initial ram disk
+ - kernel: skernel, modules, and initrd.img
  - config: run the configuration system (interactive)
  - defconfig: generate the default configuration
  - clean: clean compiled files
  - distclean: clean everything
  - doc: generate documentation into human-readable format(s)
- - all: deps and os
+ - all: deps and kernel
  - install: install the kernel on a SeaOS system
 
 Generally, a good order for this would be: make config all

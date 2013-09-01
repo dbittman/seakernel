@@ -6,7 +6,8 @@
 #include <kernel.h>
 #include <memory.h>
 #include <task.h>
-
+#define NUM_NODES(v) ((((v->num_ipages*PAGE_SIZE)/sizeof(vnode_t)) > \
+			MAX_NODES) ? MAX_NODES : ((v->num_ipages*PAGE_SIZE)/sizeof(vnode_t)))
 static vnode_t *get_node_insert_location(vma_t *v, unsigned num_p)
 {
 	vnode_t *n = (vnode_t *)v->first;

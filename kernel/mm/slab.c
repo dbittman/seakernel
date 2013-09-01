@@ -42,7 +42,7 @@ void slab_stat(struct mem_stat *s)
 	s->km_numslab = num_slab;
 	s->km_maxscache=NUM_SCACHES;
 	s->km_usedscache=num_scache;
-	s->km_maxnodes = NUM_NODES((&slab_area_alloc));
+	s->km_maxnodes = 0;
 	s->km_usednodes = slab_area_alloc.used_nodes;
 }
 

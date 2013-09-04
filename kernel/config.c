@@ -5,7 +5,6 @@
 #include <dev.h>
 #include <fs.h>
 #include <sys/stat.h>
-#include <mod.h>
 #include <sys/sysconf.h>
 #include <cpu.h>
 

@@ -1,5 +1,5 @@
 #include <kernel.h>
-#include <mod.h>
+#include <module.h>
 #include <elf.h>
 
 int process_elf32_phdr(char *mem, int fp, addr_t *start, addr_t *end)

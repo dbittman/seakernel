@@ -9,7 +9,6 @@
 #include <dev.h>
 #include <fs.h>
 #include <init.h>
-#include <mod.h>
 #include <cache.h>
 #include <symbol.h>
 #include <elf.h>

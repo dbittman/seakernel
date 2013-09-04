@@ -4,7 +4,6 @@
 #include <task.h>
 #include <sys/stat.h>
 #include <dev.h>
-#include <mod.h>
 #include <swap.h>
 #include <cpu.h>
 struct inode *procfs_root, *procfs_kprocdir;

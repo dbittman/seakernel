@@ -2,7 +2,7 @@
 #include <fs.h>
 #include <dev.h>
 #include <char.h>
-#include <mod.h>
+
 int rand_maj=-1;
 int seed=0;
 int get_rand(void);

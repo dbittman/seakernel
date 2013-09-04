@@ -4,7 +4,6 @@
 #include <modules/keyboard.h>
 #include <console.h>
 #include <sig.h>
-#include <mod.h>
 #include <task.h>
 #include <symbol.h>
 

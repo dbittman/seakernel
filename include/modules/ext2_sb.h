@@ -1,4 +1,9 @@
-#include <kernel.h>
+#ifndef _MODULE_EXT2_SB_H
+#define _MODULE_EXT2_SB_H
+#include <config.h>
+#if CONFIG_MODULE_EXT2
+
+#include <types.h>
 typedef int int32_t;
 typedef short int16_t;
 typedef char int8_t;
@@ -166,3 +171,5 @@ static inline size_t ext2_sb_inodesize(ext2_superblock_t* sb) {
 		return sb->inode_size;
 	}
 }
+#endif
+#endif

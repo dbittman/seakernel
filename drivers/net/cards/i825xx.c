@@ -1,8 +1,9 @@
 #include <kernel.h>
 #include <dev.h>
-#include <pci.h>
-#include <mod.h>
+#include <modules/pci.h>
+#include <symbol.h>
 #include <char.h>
+#include <module.h>
 #define NUM_RX_DESCRIPTORS	768
 #define NUM_TX_DESCRIPTORS	768
 

@@ -7,7 +7,7 @@
 #include <block.h>
 #include <char.h>
 #include <multiboot.h>
-#include <mod.h>
+#include <symbol.h>
 #include <cache.h>
 #include <cpu.h>
 #include <multiboot.h>

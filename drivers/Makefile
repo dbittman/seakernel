@@ -49,7 +49,6 @@ MODULES-$(CONFIG_MODULE_LOOP)       += block/loop.m
 MODULES-$(CONFIG_MODULE_PCI)        += bus/pci.m
 MODULES-$(CONFIG_MODULE_KEYBOARD)   += char/keyboard.m
 MODULES-$(CONFIG_MODULE_RAND)	    += char/rand.m
-MODULES-$(CONFIG_MODULE_SYNC) 	    += other/sync.m
 MODULES-$(CONFIG_MODULE_CRC32)      += library/crc32.m
 MODULES-$(CONFIG_MODULE_ETHERNET)   += net/ethernet.m
 MODULES-$(CONFIG_MODULE_IPV4)	    += net/ipv4.m
@@ -112,7 +111,8 @@ clean:
 	@-find -name "*.m" | xargs rm -f
 	@-find -name "*.o" | xargs rm -f
 	@-find -name "*.m.1" | xargs rm -f
-	@-rm -rf built/* make.deps
+	@-find -name "make.deps" | xargs rm -f
+	@-rm -rf built/*
 	@-for i in "$(ALLSUBDIRS)"; do \
 		$(MAKE) -s -C $$i clean 2>/dev/null ;\
 	done

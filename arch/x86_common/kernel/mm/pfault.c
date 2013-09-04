@@ -3,7 +3,6 @@
 #include <mmfile.h>
 #include <task.h>
 #include <swap.h>
-#include <mod.h>
 #include <elf.h>
 void print_pfe(int x, registers_t *regs, addr_t cr2)
 {

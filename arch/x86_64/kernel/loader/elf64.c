@@ -1,6 +1,6 @@
 #include <kernel.h>
-#include <mod.h>
-#include <elf-x86_64.h>
+#include <module.h>
+#include <elf.h>
 #include <symbol.h>
 int process_elf64_phdr(char *mem, int fp, addr_t *start, addr_t *end)
 {

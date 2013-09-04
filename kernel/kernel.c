@@ -2,7 +2,7 @@
  * Provides some fairly standard functions for the kernel */
 #include <kernel.h>
 #include <asm/system.h>
-#include <mod.h>
+#include <module.h>
 #include <task.h>
 #include <cpu.h>
 #include <atomic.h>

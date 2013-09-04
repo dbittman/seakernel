@@ -1,7 +1,6 @@
 #include <kernel.h>
 #include <dev.h>
 #include <fs.h>
-#include <mod.h>
 #include <block.h>
 #include <symbol.h>
 struct partition {

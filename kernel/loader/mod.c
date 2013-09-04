@@ -4,7 +4,7 @@
 #include <fs.h>
 #include <task.h>
 #include <memory.h>
-#include <mod.h>
+#include <module.h>
 #include <elf.h>
 #include <symbol.h>
 module_t *modules=0;

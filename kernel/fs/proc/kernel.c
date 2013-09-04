@@ -4,7 +4,7 @@
 #include <task.h>
 #include <sys/stat.h>
 #include <dev.h>
-#include <mod.h>
+#include <module.h>
 #include <swap.h>
 #include <cpu.h>
 

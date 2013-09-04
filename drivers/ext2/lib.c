@@ -1,5 +1,5 @@
-#include "ext2.h"
-#include "sys/fcntl.h"
+#include <modules/ext2.h>
+#include <sys/fcntl.h>
 #include <kernel.h>
 #include <fs.h>
 #include <dev.h>

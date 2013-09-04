@@ -34,7 +34,7 @@
  */
 
 #include <string.h>
-#include "ext2.h"
+#include <modules/ext2.h>
 
 int ext2_dir_getnum(ext2_inode_t* inode,
 			       unsigned number, char *name)

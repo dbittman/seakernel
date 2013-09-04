@@ -33,7 +33,7 @@
 * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 /* This code is adapted from the CDI project */
-#include "ext2.h"
+#include <modules/ext2.h>
 #include <kernel.h>
 #include <cache.h>
 #include <block.h>

@@ -2,7 +2,6 @@
  * copyright 2013 Daniel Bittman */
 
 #include <kernel.h>
-#include <mod.h>
 
 int module_install()
 {

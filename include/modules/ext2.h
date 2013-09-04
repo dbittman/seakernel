@@ -1,13 +1,12 @@
 #ifndef H_EXT2
 #define H_EXT2
+#include <config.h>
+#if CONFIG_MODULE_EXT2
+
 #include <fs.h>
 #include <cache.h>
-#include <sys/stat.h>
-#include <asm/bitops.h>
-#include <task.h>
 #include <time.h>
-#define uint64_t asdasdasd
-#include "sb.h"
+#include <modules/ext2_sb.h>
 #include <ll.h>
 typedef struct e2_vol_data {
 	int flag;
@@ -143,4 +142,5 @@ int ext2_dir_getnum(ext2_inode_t* inode, unsigned number, char *);
 
 
 
+#endif
 #endif

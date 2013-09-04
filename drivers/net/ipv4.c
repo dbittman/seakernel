@@ -1,5 +1,6 @@
 #include <kernel.h>
-#include <mod.h>
+#include <symbol.h>
+#include <module.h>
 void reload_eth_routing_table();
 int process_packet_ipv4(char *b, unsigned len)
 {

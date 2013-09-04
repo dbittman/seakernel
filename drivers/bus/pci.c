@@ -24,7 +24,6 @@
 #include <kernel.h>
 #include <types.h>
 #include <modules/pci.h>
-#include <mod.h>
 #include <task.h>
 #include <fs.h>
 #include <dev.h>

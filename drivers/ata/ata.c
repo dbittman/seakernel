@@ -4,6 +4,7 @@
 #include <modules/ata.h>
 #include <block.h>
 #include <sys/fcntl.h>
+#include <module.h>
 struct ata_controller *primary, *secondary;
 struct pci_device *ata_pci;
 int api=0;

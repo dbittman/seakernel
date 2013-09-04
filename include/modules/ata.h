@@ -1,7 +1,8 @@
 #ifndef ATA_H
 #define ATA_H
+#include <config.h>
+#if CONFIG_MODULE_ATA
 #include <modules/pci.h>
-#include <mod.h>
 
 /* Most of these definitions and support functions have been borrowed from CDI */
 #define PCI_CLASS_ATA           0x01
@@ -248,4 +249,5 @@ int init_ata_device();
 extern int __a, __b, __c, __d;
 
 #define ATA_DMA_ENABLE 1
+#endif
 #endif

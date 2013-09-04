@@ -2,7 +2,6 @@
  * Copyright (C) 2013 Daniel Bittman
  */
 #include <kernel.h>
-#include <mod.h>
 #include <modules/crc32.h>
 #include <symbol.h>
 uint32_t crc32_table[256];

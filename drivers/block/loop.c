@@ -4,7 +4,6 @@
 #include <dev.h>
 #include <cache.h>
 #include <block.h>
-#include <mod.h>
 #include <ll.h>
 struct loop_device {
 	struct inode *node;

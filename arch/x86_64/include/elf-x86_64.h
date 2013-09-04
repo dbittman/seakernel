@@ -1,7 +1,6 @@
 #ifndef ELF_x86_64_H
 #define ELF_x86_64_H
-#include <mod.h>
-#include <block.h>
+#include <module.h>
 
 extern void * kernel_start;
 

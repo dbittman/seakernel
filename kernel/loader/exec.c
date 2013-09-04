@@ -4,7 +4,6 @@
 #include <memory.h>
 #include <fs.h>
 #include <dev.h>
-#include <mod.h>
 #include <init.h>
 #include <sys/fcntl.h>
 #include <cpu.h>

@@ -4,7 +4,6 @@
 #include <stdarg.h>
 #include <asm/system.h>
 #include <task.h>
-#include <mod.h>
 #include <cpu.h>
 #include <atomic.h>
 

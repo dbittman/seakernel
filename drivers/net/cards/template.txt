@@ -1,7 +1,7 @@
 #include <kernel.h>
 #include <dev.h>
 #include <pci.h>
-#include <mod.h>
+#include <symbol.h>
 #include <char.h>
 int rtl8139_maj=-1, rtl8139_min=0;
 // RX and TX descriptor structures

@@ -1,8 +1,9 @@
 #include <kernel.h>
 #include <dev.h>
-#include <pci.h>
-#include <mod.h>
+#include <modules/pci.h>
+#include <symbol.h>
 #include <char.h>
+#include <module.h>
 #include <ll.h>
 
 int rtl8139_maj=-1, rtl8139_min=0;

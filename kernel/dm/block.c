@@ -25,7 +25,7 @@ blockdevice_t *set_blockdevice(int maj, int (*f)(int, int, u64, char*), int bs,
 	mutex_create(&dev->acl, 0);
 	if(!c)
 		dev->ioctl=ioctl_stub;
-	dev->cache = BCACHE_WRITE | (CACHE_READ ? BCACHE_READ : 0);
+	dev->cache = BCACHE_WRITE | (CONFIG_BLOCK_READ_CACHE ? BCACHE_READ : 0);
 	add_device(DT_BLOCK, maj, dev);
 	return dev;
 }
@@ -52,9 +52,11 @@ int set_availablebd(int (*f)(int, int, u64, char*), int bs,
 void unregister_block_device(int n)
 {
 	printk(1, "[dev]: Unregistering block device %d\n", n);
+#if CONFIG_BLOCK_CACHE
 	int i;
 	for(i=0;i<256;i++)
 		disconnect_block_cache(GETDEV(n, i));
+#endif
 	mutex_acquire(&bd_search_lock);
 	device_t *dev = get_device(DT_BLOCK, n);
 	if(!dev) {
@@ -71,7 +73,9 @@ void unregister_block_device(int n)
 void init_block_devs()
 {
 	mutex_create(&bd_search_lock, 0);
+#if CONFIG_BLOCK_CACHE
 	block_cache_init();
+#endif
 }
 
 int do_block_rw(int rw, dev_t dev, u64 blk, char *buf, blockdevice_t *bd)
@@ -107,13 +111,13 @@ int block_rw(int rw, dev_t dev, u64 blk, char *buf, blockdevice_t *bd)
 	int ret=0;
 	if(rw == READ)
 	{
-#if USE_CACHE
+#if CONFIG_BLOCK_CACHE
 		if(bd->cache) ret = get_block_cache(dev, blk, buf);
 		if(ret)
 			return bd->blksz;
 #endif
 		ret = do_block_rw(rw, dev, blk, buf, bd);
-#if USE_CACHE
+#if CONFIG_BLOCK_CACHE
 		/* -dev signals that this is a read cache - 
 		 * meaning it is not 'dirty' to start with */
 		if(ret == bd->blksz && (bd->cache & BCACHE_READ)) 
@@ -121,7 +125,7 @@ int block_rw(int rw, dev_t dev, u64 blk, char *buf, blockdevice_t *bd)
 #endif
 	} else if(rw == WRITE)
 	{
-#if USE_CACHE
+#if CONFIG_BLOCK_CACHE
 		if(bd->cache) 
 		{
 			if(!cache_block(dev, blk, bd->blksz, buf))
@@ -149,7 +153,7 @@ unsigned do_block_read_multiple(blockdevice_t *bd, dev_t dev, u64 start,
 		return count;
 	}
 	num = bd->rw_multiple(READ, MINOR(dev), start, buf, num) / bd->blksz;
-#if USE_CACHE
+#if CONFIG_BLOCK_CACHE
 	if(bd->cache & BCACHE_READ) {
 		while(count < num) {
 			cache_block(-dev, start+count, bd->blksz, buf + count*bd->blksz);
@@ -168,7 +172,7 @@ unsigned block_read_multiple(blockdevice_t *bd, int dev, u64 start,
 {
 	unsigned count=0;
 	int ret;
-#if USE_CACHE
+#if CONFIG_BLOCK_CACHE
 	if(bd->cache & BCACHE_READ)  {
 		/* if we're gonna cache them, then we need to do some work. We try
 		 * to read any block that is in the cache from the cache, and only

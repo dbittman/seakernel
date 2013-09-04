@@ -53,8 +53,6 @@
 
 #define NUM_DT 4
 #define PIPE_SIZE 0x4000
-#define USE_CACHE 1
-#define CACHE_READ 1
 
 /* video */
 #define MAX_CONSOLES 10

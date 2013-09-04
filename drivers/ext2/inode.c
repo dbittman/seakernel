@@ -614,8 +614,10 @@ int ext2_inode_readblk(ext2_inode_t* inode, uint32_t block, void* buf, size_t co
 void force_sync(ext2_fs_t *fs, unsigned b)
 {
 	int off = b*2 + fs->block;
+#if CONFIG_BLOCK_CACHE
 	write_block_cache(fs->dev, off);
 	write_block_cache(fs->dev, off+1);
+#endif
 }
 
 static int writeblk(ext2_inode_t* inode, uint32_t block, const void* buf)

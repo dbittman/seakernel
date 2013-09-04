@@ -120,6 +120,8 @@ void init_acpi()
 	acpi_rsdt = (void *)rsdt_v;
 	acpi_rsdt_pt_sz = pointer_size;
 	if(valid) __acpi_enable=1;
+#if CONFIG_MODULES
 	add_kernel_symbol(acpi_get_table_data);
 	add_kernel_symbol(find_RSDT_entry);
+#endif
 }

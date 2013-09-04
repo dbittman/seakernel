@@ -116,8 +116,10 @@ int proc_kern_rw(char rw, struct inode *inode, int m, char *buf, int off, int le
 #endif
 			case 4:
 				return proc_read_int(buf, off, len);
+#if CONFIG_BLOCK_CACHE
 			case 6:
 				return proc_read_bcache(buf, off, len);
+#endif
 		}
 	}
 	return 0;

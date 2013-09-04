@@ -1,5 +1,7 @@
 /* Provides access layer to the kernel cache for block devices 
  * (write-through block cache. Speeds up writing */
+#include <config.h>
+#if CONFIG_BLOCK_CACHE
 #include <kernel.h>
 #include <dev.h>
 #include <block.h>
@@ -51,3 +53,4 @@ int proc_read_bcache(char *buf, int off, int len)
 {
 	return 0;
 }
+#endif

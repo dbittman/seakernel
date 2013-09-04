@@ -154,9 +154,11 @@ void init_main_cpu_1()
 #if CONFIG_MODULES
 	_add_kernel_symbol((addr_t)(cpu_t *)primary_cpu, "primary_cpu");
 	add_kernel_symbol(set_int);
+#if CONFIG_SMP
 	add_kernel_symbol(get_cpu);
 	add_kernel_symbol((addr_t)&cpu_array_num);
 	add_kernel_symbol((addr_t)&num_booted_cpus);
+#endif
 #endif
 }
 

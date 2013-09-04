@@ -14,8 +14,7 @@
 #include <cpu.h>
 #include <multiboot.h>
 #include <rwlock.h>
-extern mutex_t sym_mutex;
-extern kernel_symbol_t export_syms[MAX_SYMS];
+
 const char *elf32_lookup_symbol (uint32_t addr, elf32_t *elf)
 {
 	unsigned int i;

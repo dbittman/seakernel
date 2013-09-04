@@ -4,7 +4,6 @@
 #include <asm/system.h>
 #include <dev.h>
 #include <fs.h>
-extern struct inode *devfs_root, *procfs_root;
 
 int sync_inode_tofs(struct inode *i)
 {

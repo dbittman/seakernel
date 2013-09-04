@@ -3,8 +3,6 @@
 #include <isr.h>
 #include <tss-x86.h>
 #include <cpu.h>
-extern void gdt_flush(u32int);
-extern void idt_flush(u32int);
 static void init_idt();
 gdt_entry_t gdt_entries[NUM_GDT_ENTRIES];
 gdt_ptr_t   gdt_ptr;
@@ -12,7 +10,6 @@ idt_entry_t idt_entries[256];
 idt_ptr_t   idt_ptr;
 void int_sys_init();
 tss_entry_t tss_entry;
-extern char tables;
 
 inline void set_kernel_stack(tss_entry_t *tss, u32int stack)
 {

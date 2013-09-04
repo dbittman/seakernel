@@ -11,7 +11,22 @@ struct inode *procfs_root, *procfs_kprocdir;
 int proc_read_int(char *buf, int off, int len);
 int proc_read_mutex(char *buf, int off, int len);
 int proc_read_bcache(char *buf, int off, int len);
-extern struct inode_operations procfs_inode_ops;
+struct inode_operations procfs_inode_ops = {
+ pfs_read,
+ pfs_write,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0
+};
 int proc_mods(char rw, struct inode *n, int min, char *buf, int off, int len);
 int proc_cpu(char rw, struct inode *inode, int m, char *buf, int off, int len);
 int proc_vfs(char rw, struct inode *n, int m, char *buf, int off, int len);
@@ -160,20 +175,3 @@ int pfs_write(struct inode *i, off_t pos, size_t len, char *buffer)
 	callback = (int(*)(char, struct inode *, int, char *, int, int)) pfs_table[maj];
 	return callback(WRITE, i, min, buffer, pos, len);
 }
-
-struct inode_operations procfs_inode_ops = {
- pfs_read,
- pfs_write,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0
-};

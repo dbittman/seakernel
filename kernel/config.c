@@ -8,7 +8,6 @@
 #include <mod.h>
 #include <sys/sysconf.h>
 #include <cpu.h>
-extern int current_hz;
 
 long sys_sysconf(int cmd)
 {

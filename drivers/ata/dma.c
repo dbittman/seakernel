@@ -2,7 +2,6 @@
 #include <dev.h>
 #include <modules/pci.h>
 #include <modules/ata.h>
-extern struct ata_controller *primary, *secondary;
 
 typedef struct {
 	unsigned addr;

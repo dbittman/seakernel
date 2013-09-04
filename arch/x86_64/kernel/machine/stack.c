@@ -1,7 +1,7 @@
 #include <kernel.h>
 #include <memory.h>
 #include <elf-x86_64.h>
-extern addr_t i_stack;
+
 /* This function's design is based off of JamesM's tutorials. 
  * Yes, I know its bad. But it works okay. */
 void move_stack(void *start, size_t sz)

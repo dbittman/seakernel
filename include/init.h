@@ -40,4 +40,8 @@ int init_kern_task();
 #define u_write(a, b) dosyscall(SYS_WRITE, a, (addr_t)b, strlen(b), 0, 0)
 #define sys_setup() dosyscall(0,0,0,0,0,0)
 
+extern char *stuff_to_pass[128];
+extern int argc_STP;
+extern char tmp_cmd_line[2048];
+
 #endif

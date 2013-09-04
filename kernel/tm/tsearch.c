@@ -75,6 +75,8 @@ task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned long value, void (*
 		if(t && !(flags & TSEARCH_FINDALL))
 			break;
 	}
+	/* TSEARCH_EXIT_PARENT is specified only during a process's exit. If this task has no parent, or 
+	 * will soon have no parent, we just move ourselves to the kill queue immediately, saving time later */
 	if(flags & TSEARCH_EXIT_PARENT && (current_task->parent == 0 || (current_task->parent->flags & TF_EXITING)) && (current_task->flags & TF_EXITING))
 	{
 		/* some more housekeeping... */

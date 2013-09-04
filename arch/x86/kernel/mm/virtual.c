@@ -5,11 +5,14 @@
 #include <task.h>
 #include <cpu.h>
 #include <atomic.h>
+#if CONFIG_SMP
+#include <imps-x86.h>
+#endif
 volatile page_dir_t *kernel_dir=0;
 unsigned int cr0temp;
 int id_tables=0;
 struct pd_data *pd_cur_data = (struct pd_data *)PDIR_DATA;
-extern void id_map_apic(page_dir_t *);
+
 /* This function will setup a paging environment with a basic page dir, 
  * enough to process the memory map passed by grub */
 void vm_init(addr_t id_map_to)

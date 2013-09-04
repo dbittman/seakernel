@@ -223,6 +223,9 @@ int sys_sbrk(long inc);
 int sys_mount2(char *node, char *to, char *name, char *opts, int);
 extern struct inode *ramfs_root;
 void init_dev_fs();
+
+extern struct inode *procfs_kprocdir;
+
 void init_proc_fs();
 struct inode *pfs_cn_node(struct inode *to, char *name, mode_t mode, int major, int minor);
 int sys_posix_fsstat(int fd, struct posix_statfs *sb);

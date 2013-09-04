@@ -60,7 +60,7 @@ int vm_copy_dir(page_dir_t *from, page_dir_t *new, char flags)
 	}
 	return 0;
 }
-extern addr_t lapic_addr;
+
 /* Accepts virtual, returns virtual */
 page_dir_t *vm_clone(page_dir_t *pd, char cow)
 {

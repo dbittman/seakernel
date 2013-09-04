@@ -5,7 +5,7 @@
 #include <isr.h>
 #include <task.h>
 #include <init.h>
-extern int current_hz;
+
 int arch_userspace_signal_initializer(task_t *t, struct sigaction *sa);
 void handle_signal(task_t *t)
 {

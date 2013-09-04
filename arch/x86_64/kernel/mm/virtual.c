@@ -9,7 +9,7 @@ volatile addr_t *kernel_dir=0;
 pml4_t *kernel_dir_phys=0;
 int id_tables=0;
 struct pd_data *pd_cur_data = (struct pd_data *)PDIR_DATA;
-extern void id_map_apic();
+
 /* This function will setup a paging environment with a basic page dir, 
  * enough to process the memory map passed by grub */
 void early_vm_map(pml4_t *pml4, addr_t addr, addr_t map)

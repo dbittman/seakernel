@@ -11,9 +11,7 @@ initialization */
 
 void load_tables_ap();
 void set_lapic_timer(unsigned tmp);
-extern unsigned lapic_timer_start;
 void init_lapic(int);
-extern unsigned running_processes;
 addr_t lapic_addr = 0;
 
 static inline void set_boot_flag(unsigned x)
@@ -35,7 +33,7 @@ void cpu_k_task_entry(task_t *me)
 	for(;;) 
 		schedule();
 }
-extern pml4_t *kernel_dir_phys;
+
 /* it's important that this doesn't get inlined... */
 __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 {

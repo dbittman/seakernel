@@ -7,13 +7,10 @@
 #include <ll.h>
 #include <atomic.h>
 
-extern unsigned running_processes;
 volatile task_t *kernel_task=0, *alarm_list_start=0;
 mutex_t *alarm_mutex=0;
-extern volatile page_dir_t *kernel_dir;
 volatile unsigned next_pid=0;
 volatile task_t *tokill=0, *end_tokill=0;
-extern void do_switch_to_user_mode();
 struct llist *kill_queue=0;
 tqueue_t *primary_queue=0;
 

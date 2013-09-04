@@ -11,11 +11,9 @@
 #define write_ioapic(l,o,v) ioapic_rw(l, WRITE, o, v)
 #define read_ioapic(l,o) ioapic_rw(l, READ, o, 0)
 
-extern unsigned current_hz;
 unsigned lapic_timer_start=0;
 volatile unsigned num_ioapic=0;
 struct imps_ioapic *ioapic_list[MAX_IOAPIC];
-extern char imcr_present;
 
 void add_ioapic(struct imps_ioapic *ioapic)
 {

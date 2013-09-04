@@ -234,6 +234,7 @@ int get_task_mem_usage(task_t *t);
 int sys_nice(int which, int who, int val, int flags);
 int sys_setsid();
 int sys_setpgid(int a, int b);
+extern unsigned init_pid;
 void task_suicide();
 extern unsigned ret_values_size;
 extern unsigned *ret_values;
@@ -248,6 +249,11 @@ void task_unblock(struct llist *list, task_t *t);
 void task_resume(task_t *t);
 struct inode *set_as_kernel_task(char *name);
 void fput(task_t *, int, char);
+extern int current_hz;
+extern struct llist *kill_queue;
+extern unsigned running_processes;
+extern void do_switch_to_user_mode();
+extern void check_alarms();
 static inline int signal_will_be_fatal(task_t *t, int sig)
 {
 	if(sig == SIGKILL) return 1;

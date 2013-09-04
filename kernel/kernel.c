@@ -11,7 +11,7 @@ int sys_sync(int);
 void acpiPowerOff(void);
 int PRINT_LEVEL = DEF_PRINT_LEVEL;
 volatile unsigned kernel_state_flags=0;
-extern volatile unsigned num_halted_cpus;
+
 void kernel_shutdown()
 {
 	set_int(0);

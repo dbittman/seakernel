@@ -1,6 +1,9 @@
 #ifndef __CPU_X86_COMMON_H
 #define __CPU_X86_COMMON_H
 
+#include <mutex.h>
+#include <types.h>
+
 #define APIC_BCAST_ID			0xFF
 #define	APIC_VERSION(x)			((x) & 0xFF)
 #define	APIC_MAXREDIR(x)		(((x) >> 16) & 0xFF)
@@ -75,4 +78,6 @@
 #define LAPIC_WRITE(x, y)   \
    (*((volatile unsigned *) (lapic_addr+(x))) = (y))
 extern addr_t lapic_addr;
+extern unsigned lapic_timer_start;
+extern mutex_t ipi_mutex;
 #endif

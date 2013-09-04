@@ -3,12 +3,6 @@
 #include <task.h>
 #include <cpu.h>
 #include <atomic.h>
-extern void ack(int);
-extern unsigned read_epi();
-extern void check_alarms();
-extern unsigned heaping, waving;
-extern int current_hz;
-extern volatile long ticks;
 int current_hz=1000;
 volatile long ticks=0;
 int get_timer_th(int *t)

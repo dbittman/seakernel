@@ -7,8 +7,6 @@
 #include <cpu.h>
 #include <atomic.h>
 
-extern struct llist *kill_queue;
-extern unsigned running_processes;
 void clear_resources(task_t *t)
 {
 	clear_mmfiles(t, (t->flags&TF_EXITING) ? 1 : 0);
@@ -46,6 +44,7 @@ int __KT_try_releasing_tasks()
 	task_t *t=0;
 	ll_for_each_entry(kill_queue, cur, task_t *, t)
 	{
+		/* need to check for orphaned zombie tasks */
 		if(t->flags & TF_BURIED) {
 			if(t->parent == 0 || t->parent->state == TASK_DEAD || (t->parent->flags & TF_KTASK) || t->parent == kernel_task)
 				move_task_to_kill_queue(t, 0);

@@ -2,7 +2,7 @@
 #define _MEMORY_X86_64_H
 
 #include <memory-x86_common.h>
-
+#include <types.h>
 /* due the the odd way that we are forced to address memory...
  * 
  * You can't use all 64 bits of an address, only the least significant 48.
@@ -68,4 +68,5 @@ __asm__ __volatile__("mov %%cr3,%%rax\n\tmov %%rax,%%cr3": : :"ax", "eax", "rax"
 #define current_task (kernel_task ? ((task_t *)(*((addr_t *)CURRENT_TASK_POINTER))) : 0)
 addr_t pm_alloc_page_zero();
 addr_t get_next_mm_device_page();
+extern addr_t *kernel_dir_phys;
 #endif

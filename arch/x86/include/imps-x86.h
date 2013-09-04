@@ -106,4 +106,6 @@ extern int rm_gdt_pointer(void);
 #define RM_GDT_START 0x7100
 #define BOOTFLAG_ADDR 0x7200
 
+extern char imcr_present;
+extern void id_map_apic(addr_t *);
 #endif

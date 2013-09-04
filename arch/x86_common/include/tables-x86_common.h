@@ -72,5 +72,6 @@ void gdt_set_gate(gdt_entry_t *, s32int,u32int,u32int,u8int,u8int);
 void idt_set_gate(u8int,addr_t,u16int,u8int);
 void mask_pic_int(unsigned char irq, int mask);
 void disable_pic();
-
+extern void gdt_flush(unsigned long);
+extern void idt_flush(unsigned long);
 #endif

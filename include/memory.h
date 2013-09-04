@@ -75,6 +75,7 @@ void *kmalloc_p(size_t s, addr_t *);
 int vm_do_unmap_only(addr_t v, unsigned);
 void pm_free_page(addr_t addr);
 void vm_init_2();
+extern addr_t i_stack;
 void vm_init_tracking();
 unsigned int vm_setattrib(addr_t v, short attr);
 void setup_kernelstack();

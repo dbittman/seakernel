@@ -8,9 +8,6 @@
 #include <cpu.h>
 #include <atomic.h>
 
-extern int vsprintf(char *buf, const char *fmt, va_list args);
-extern unsigned end;
-
 static inline void _set_lowercase(char *b)
 {
 	while(*b) {

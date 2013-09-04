@@ -10,7 +10,23 @@
 
 struct inode *devfs_root;
 int devfs_nodescount=1;
-extern struct inode_operations devfs_inode_ops;
+struct inode_operations devfs_inode_ops = {
+ 0,
+ 0,
+ 0,
+ devfs_create,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0,
+ 0
+};
+
 void init_dev_fs()
 {
 	devfs_root = (struct inode*)kmalloc(sizeof(struct inode));
@@ -66,20 +82,3 @@ void devfs_remove(struct inode *i)
 	i->count=0;
 	iremove(i);
 }
-
-struct inode_operations devfs_inode_ops = {
- 0,
- 0,
- 0,
- devfs_create,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0,
- 0
-};

@@ -5,7 +5,6 @@
 #include <asm/system.h>
 #include <mutex.h>
 #include <console.h>
-extern void update_cursor(int);
 struct vterm *curcons=0;
 struct vterm *kernel_console, *log_console=0;
 extern console_driver_t crtc_drv;

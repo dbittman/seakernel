@@ -13,8 +13,6 @@ cpu_t cpu_array[CONFIG_MAX_CPUS];
 unsigned cpu_array_num=0;
 #endif
 cpu_t primary_cpu_data;
-
-extern mutex_t ipi_mutex;
 void init_lapic(int);
 
 void cpuid_get_features(cpuid_t *cpuid)

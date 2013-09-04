@@ -10,8 +10,7 @@
 #include <asm/system.h>
 #include <termios.h>
 #include <mod.h>
-extern unsigned init_pid;
-extern void update_cursor(int);
+
 struct vterm consoles[MAX_CONSOLES];
 unsigned *tty_calltable = 0;
 extern console_driver_t crtc_drv;

@@ -6,7 +6,6 @@
 #include <task.h>
 #include <atomic.h>
 void do_tick();
-extern int current_hz;
 void timer_handler(registers_t *);
 void install_timer(int hz)
 {

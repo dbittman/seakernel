@@ -7,7 +7,7 @@
 #include <mod.h>
 #include <atomic.h>
 #include <pmap.h>
-extern addr_t end;
+
 void slab_stat(struct mem_stat *s);
 void process_memorymap(struct multiboot *mboot)
 {

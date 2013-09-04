@@ -50,6 +50,7 @@ cpu_t *add_cpu(cpu_t *c);
 extern cpu_t *primary_cpu;
 extern cpu_t cpu_array[CONFIG_MAX_CPUS];
 extern unsigned cpu_array_num;
+extern volatile unsigned num_halted_cpus;
 void parse_cpuid(cpu_t *);
 void init_sse(cpu_t *);
 void setup_fpu(cpu_t *);

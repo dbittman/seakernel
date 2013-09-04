@@ -16,7 +16,7 @@
 #include <cpu.h>
 #include <memory.h>
 #include <atomic.h>
-extern volatile unsigned num_halted_cpus;
+
 mutex_t ipi_mutex;
 int send_ipi(unsigned char dest_shorthand, unsigned int dst, unsigned int v)
 {

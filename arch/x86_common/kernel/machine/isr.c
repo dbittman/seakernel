@@ -7,7 +7,45 @@
 #include <mod.h>
 #include <atomic.h>
 
-extern char *exception_messages[];
+char *exception_messages[] =
+{
+ "Division By Zero",
+ "Debug",
+ "Non Maskable Interrupt",
+ "Breakpoint",
+ "Into Detected Overflow",
+ "Out of Bounds",
+ "Invalid Opcode",
+ "No Coprocessor",
+
+ "Double Fault",
+ "Coprocessor Segment Overrun", //9
+ "Bad TSS",
+ "Segment Not Present",
+ "Stack Fault",
+ "General Protection Fault",
+ "Page Fault",
+ "Unknown Interrupt",
+
+ "Coprocessor Fault",
+ "Alignment Check?",
+ "Machine Check!",
+ "Reserved",
+ "Reserved",
+ "Reserved",
+ "Reserved",
+ "Reserved",
+
+ "Reserved",
+ "Reserved",
+ "Reserved",
+ "Reserved",
+ "Reserved",
+ "Reserved",
+ "Reserved",
+ "Reserved"
+};
+
 /* 3D array. So, the first "dimension" is all 255 of the possible
  * x86 processor interrupts. The second is all 255 of the allowed
  * handlers per interrupt. The third is the two stages of handlers
@@ -454,42 +492,3 @@ int proc_read_int(char *buf, int off, int len)
 	}
 	return total_len;
 }
-
-char *exception_messages[] =
-{
- "Division By Zero",
- "Debug",
- "Non Maskable Interrupt",
- "Breakpoint",
- "Into Detected Overflow",
- "Out of Bounds",
- "Invalid Opcode",
- "No Coprocessor",
-
- "Double Fault",
- "Coprocessor Segment Overrun", //9
- "Bad TSS",
- "Segment Not Present",
- "Stack Fault",
- "General Protection Fault",
- "Page Fault",
- "Unknown Interrupt",
-
- "Coprocessor Fault",
- "Alignment Check?",
- "Machine Check!",
- "Reserved",
- "Reserved",
- "Reserved",
- "Reserved",
- "Reserved",
-
- "Reserved",
- "Reserved",
- "Reserved",
- "Reserved",
- "Reserved",
- "Reserved",
- "Reserved",
- "Reserved"
-};

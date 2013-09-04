@@ -15,11 +15,9 @@ struct ioapic {
 	int id, start;
 };
 
-extern unsigned current_hz;
 unsigned lapic_timer_start=0;
 volatile unsigned num_ioapic=0;
 struct ioapic ioapic_list[MAX_IOAPIC];
-extern char imcr_present;
 
 void add_ioapic(addr_t address, int id, int int_start)
 {

@@ -7,7 +7,7 @@
 #include <mod.h>
 #include <swap.h>
 #include <cpu.h>
-extern struct inode *procfs_root, *procfs_kprocdir;
+
 int proc_read_int(char *buf, int off, int len);
 int proc_read_mutex(char *buf, int off, int len);
 int proc_read_bcache(char *buf, int off, int len);

@@ -1,12 +1,6 @@
 #ifndef __ELF_H
 #define __ELF_H
 
-#include <config.h>
-#include <types.h>
-#include <mutex.h>
-#include <mod.h>
-
-
 #if CONFIG_ARCH == TYPE_ARCH_X86
 #include <elf-x86.h>
 #elif CONFIG_ARCH == TYPE_ARCH_X86_64

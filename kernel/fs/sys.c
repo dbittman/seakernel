@@ -9,7 +9,7 @@
 #include <char.h>
 #include <atomic.h>
 #include <rwlock.h>
-#include <mod.h>
+#include <symbol.h>
 
 int system_setup=0;
 /* This function is called once at the start of the init process initialization.

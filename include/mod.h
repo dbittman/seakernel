@@ -7,7 +7,8 @@
 #define _MOD_GO    1
 #define _MOD_AGAIN 2
 
-#define MAX_SYMS 600
+#include <types.h>
+#include <task.h>
 
 typedef struct module_s {
 	char *base;
@@ -20,15 +21,6 @@ typedef struct module_s {
 	struct module_s *next;
 } module_t;
 
-#define add_kernel_symbol(x) {_add_kernel_symbol( (addr_t)x, #x);}
-void _add_kernel_sym_user(const addr_t func, const char * funcstr);
-void _add_kernel_symbol(const addr_t func, const char * funcstr);
-addr_t find_kernel_function_user(char * unres);
-addr_t find_kernel_function(char * unres);
-void init_kernel_symbols(void);
-void _add_kernel_symbol(const addr_t func, const char * funcstr);
-addr_t find_kernel_function(char * unres);
-int remove_kernel_symbol(char * unres);
 static inline void write_deps(char *b, char *str)
 {
 	int i=0;
@@ -54,12 +46,12 @@ int unload_module(char *name);
 void unload_all_modules();
 void load_all_config_mods(char *);
 module_t *canweunload(module_t *i);
-void _add_kernel_symbol(const addr_t func, const char * funcstr);
+
 extern module_t *modules;
-int remove_kernel_symbol(char *);
+
 int sys_load_module(char *path, char *args, int flags);
 int sys_unload_module(char *path, int flags);
-addr_t find_kernel_function(char * unres);
+
 int load_deps_c(char *);
 
 #endif

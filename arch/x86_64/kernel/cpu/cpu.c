@@ -5,7 +5,7 @@
 #include <task.h>
 #include <mutex.h>
 #include <atomic.h>
-#include <mod.h>
+#include <symbol.h>
 #include <acpi.h>
 cpu_t *primary_cpu=0;
 #if CONFIG_SMP

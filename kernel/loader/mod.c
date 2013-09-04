@@ -6,6 +6,7 @@
 #include <memory.h>
 #include <mod.h>
 #include <elf.h>
+#include <symbol.h>
 module_t *modules=0;
 int load_deps(char *);
 mutex_t mod_mutex;

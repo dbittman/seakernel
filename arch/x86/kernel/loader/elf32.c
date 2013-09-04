@@ -11,6 +11,7 @@
 #include <cache.h>
 #include <cpu.h>
 #include <multiboot.h>
+#include <symbol.h>
 int process_elf32_phdr(char *mem, int fp, addr_t *start, addr_t *end);
 int process_elf(char *mem, int fp, unsigned *start, unsigned *end)
 {

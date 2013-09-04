@@ -4,6 +4,7 @@
 #include <kernel.h>
 #include <mod.h>
 #include <modules/crc32.h>
+#include <symbol.h>
 uint32_t crc32_table[256];
 
 uint32_t calculate_crc32(uint32_t crc, const unsigned char *buf, size_t len)

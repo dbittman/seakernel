@@ -28,6 +28,7 @@
 #include <task.h>
 #include <fs.h>
 #include <dev.h>
+#include <symbol.h>
 
 #define PCI_LOGLEVEL 1
 

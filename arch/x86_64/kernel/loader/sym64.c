@@ -1,5 +1,6 @@
 #include <kernel.h>
 #include <elf-x86_64.h>
+#include <symbol.h>
 
 const char *elf64_lookup_symbol (uint64_t addr, elf64_t *elf)
 {

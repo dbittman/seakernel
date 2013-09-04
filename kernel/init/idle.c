@@ -14,7 +14,7 @@
 #include <dev.h>
 #include <fs.h>
 #include <init.h>
-#include <mod.h>
+#include <symbol.h>
 #include <cache.h>
 #include <swap.h>
 void get_timed(struct tm *now);

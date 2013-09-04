@@ -3,6 +3,7 @@
 #include <modules/pci.h>
 #include <modules/ata.h>
 #include <block.h>
+#include <symbol.h>
 int __a, __b, __c, __d;
 int init_ata_device()
 {

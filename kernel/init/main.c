@@ -11,7 +11,7 @@
 #include <init.h>
 #include <mod.h>
 #include <cache.h>
-#include <mod.h>
+#include <symbol.h>
 #include <elf.h>
 #include <cpu.h>
 

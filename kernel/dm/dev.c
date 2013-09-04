@@ -4,7 +4,7 @@
 #include <fs.h>
 #include <sys/stat.h>
 #include <block.h>
-#include <mod.h>
+#include <symbol.h>
 struct devhash_s devhash[NUM_DT];
 
 void init_dm()

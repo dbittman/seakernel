@@ -4,7 +4,7 @@
 #include <asm/system.h>
 #include <task.h>
 #include <cpu.h>
-#include <mod.h>
+#include <symbol.h>
 #include <atomic.h>
 
 char *exception_messages[] =

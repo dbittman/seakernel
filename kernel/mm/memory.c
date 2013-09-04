@@ -4,7 +4,7 @@
 #include <task.h>
 #include <swap.h>
 #include <cpu.h>
-#include <mod.h>
+#include <symbol.h>
 #include <atomic.h>
 #include <pmap.h>
 

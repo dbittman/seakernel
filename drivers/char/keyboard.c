@@ -6,6 +6,7 @@
 #include <sig.h>
 #include <mod.h>
 #include <task.h>
+#include <symbol.h>
 
 int is_ctrl=0, is_alt=0, is_shift=0, is_altgr=0;
 int capslock, slock;

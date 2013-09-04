@@ -4,7 +4,7 @@
 #include <kernel.h>
 #include <memory.h>
 #include <acpi.h>
-#include <mod.h>
+#include <symbol.h>
 #include <pmap.h>
 struct pmap acpi_pmap;
 int __acpi_enable = 0;

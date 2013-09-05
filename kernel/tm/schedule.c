@@ -109,7 +109,7 @@ int schedule()
 	 * we access new->cpu */
 	mutex_release(&cpu->lock);
 	context_switch(next_task);
-	reset_timer_state();
+	//reset_timer_state(); /* TODO: This may be needed... */
 	/* tasks that have come from fork() (aka, new tasks) have this
 	 * flag set, such that here we just to their entry point in fork() */
 	if(likely(!(current_task->flags & TF_FORK)))
@@ -118,6 +118,7 @@ int schedule()
 		return 1;
 	}
 	lower_task_flag(next_task, TF_FORK);
+	set_int(1);
 	asm("jmp *%0"::"r"(current_task->eip));
 	/* we never get here, but lets keep gcc happy */
 	return 1;

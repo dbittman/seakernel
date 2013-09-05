@@ -73,15 +73,6 @@ int kernel_idle_task()
 	if(!fork())
 	{
 		set_as_kernel_task("kpager");
-		/* This task likes to...fuck about with it's page directory.
-		 * So we set it's stack at a global location so it doesn't 
-		 * screw up some other task's stack. */
-		set_int(0);
-		set_kernel_stack(current_tss, current_task->kernel_stack+(KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
-		asm("	mov %0, %%esp; \
-			mov %0, %%ebp; \
-			"::"r"(current_task->kernel_stack+(KERN_STACK_SIZE-STACK_ELEMENT_SIZE)));
-		set_int(1);
 		__KT_pager();
 	}
 #endif

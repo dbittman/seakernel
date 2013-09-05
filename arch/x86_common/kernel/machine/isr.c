@@ -249,7 +249,8 @@ void entry_syscall_handler(volatile registers_t regs)
 		syscall_handler(&regs);
 		assert(!get_cpu_interrupt_flag());
 		/* handle stage2's here...*/
-		if(maybe_handle_stage_2 || !current_task->syscall_count) {
+		if(maybe_handle_stage_2) {
+			maybe_handle_stage_2 = 0;
 			mutex_acquire(&s2_lock);
 			for(int i=0;i<MAX_INTERRUPTS;i++)
 			{

@@ -96,6 +96,7 @@ int schedule()
 	task_t *old = current_task;
 	cpu_t *cpu = (cpu_t *)old->cpu;
 	assert(cpu && cpu->cur == old);
+	
 	mutex_acquire(&cpu->lock);
 	store_context();
 	volatile task_t *next_task = (volatile task_t *)get_next_task(old);
@@ -103,6 +104,7 @@ int schedule()
 	restore_context(next_task);
 	next_task->slice = ticks;
 	((cpu_t *)next_task->cpu)->cur = next_task;
+	
 	/* we need to call this after restore_context because in restore_context
 	 * we access new->cpu */
 	mutex_release(&cpu->lock);
@@ -110,7 +112,7 @@ int schedule()
 	reset_timer_state();
 	/* tasks that have come from fork() (aka, new tasks) have this
 	 * flag set, such that here we just to their entry point in fork() */
-	if(likely(!(next_task->flags & TF_FORK)))
+	if(likely(!(current_task->flags & TF_FORK)))
 	{
 		post_context_switch();
 		return 1;

@@ -103,13 +103,13 @@ cpu_t *add_cpu(cpu_t *c)
 int probe_smp();
 #endif
 
-int set_int(unsigned new)
+int set_int(unsigned _new)
 {
 	/* need to make sure we don't get interrupted... */
 	asm("cli");
 	cpu_t *cpu = current_task ? current_task->cpu : 0;
 	unsigned old = cpu ? cpu->flags&CPU_INTER : 0;
-	if(!new) {
+	if(!_new) {
 		asm("cli");
 		if(cpu) cpu->flags &= ~CPU_INTER;
 	} else if(!cpu || cpu->flags&CPU_RUNNING) {

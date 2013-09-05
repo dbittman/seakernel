@@ -108,26 +108,27 @@ int do_fork(unsigned flags)
 	 * into a new address space */
 	arch_specific_set_current_task(newspace, (addr_t)task);
 	/* Create the new task structure */
-	task_t *parent = (task_t *)current_task;
 	task->pd = newspace;
-	copy_task_struct(task, parent, flags & FORK_SHAREDAT);
+	copy_task_struct(task, current_task, flags & FORK_SHAREDAT);
 	add_atomic(&running_processes, 1);
 	/* Set the state as usleep temporarily, so that it doesn't accidentally run.
 	 * And then add it to the queue */
 	task->state = TASK_USLEEP;
 	tqueue_insert(primary_queue, (void *)task, task->listnode);
-	cpu_t *cpu = (cpu_t *)parent->cpu;
+	cpu_t *cpu = (cpu_t *)current_task->cpu;
 #if CONFIG_SMP
-	cpu = fork_choose_cpu(parent);
+	cpu = fork_choose_cpu(current_task);
 #endif
 	/* Copy the stack */
 	set_int(0);
-	engage_new_stack(task, parent);
+	engage_new_stack(task, current_task);
 	/* Here we read the EIP of this exact location. The parent then sets the
 	 * eip of the child to this. On the reschedule for the child, it will 
 	 * start here as well. */
+	volatile task_t *parent = current_task;
+	store_context_fork(task);
 	eip = read_eip();
-	if((task_t *)current_task == parent)
+	if(current_task == parent)
 	{
 		/* These last things allow full execution of the task */
 		task->eip=eip;

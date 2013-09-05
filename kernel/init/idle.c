@@ -42,13 +42,13 @@ static inline int __KT_clear_args()
 
 struct inode *set_as_kernel_task(char *name)
 {
-	printk(1, "[kernel]: Added '%s' as kernel task\n", name);
 	struct inode *i = (struct inode *)kmalloc(sizeof(struct inode));
 	rwlock_create(&i->rwl);
 	strncpy(i->name, name, INAME_LEN);
 	add_inode(kproclist, i);
 	raise_flag(TF_KTASK);
 	strncpy((char *)current_task->command, name, 128);
+	printk(1, "[kernel]: Added '%s' as kernel task\n", name);
 	return i;
 }
 

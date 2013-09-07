@@ -18,12 +18,9 @@ static void _overflow(char *type)
 
 __attribute__((always_inline)) inline static void store_context_fork(task_t *task)
 {
-	asm("mov %%eax, %0" : "=r"(task->preserved[0]));
-	asm("mov %%ebx, %0" : "=r"(task->preserved[1]));
-	asm("mov %%ecx, %0" : "=r"(task->preserved[2]));
-	asm("mov %%edx, %0" : "=r"(task->preserved[3]));
-	asm("mov %%edi, %0" : "=r"(task->preserved[4]));
-	asm("mov %%esi, %0" : "=r"(task->preserved[5]));
+	asm("mov %%ebx, %0" : "=r"(task->preserved[0]));
+	asm("mov %%edi, %0" : "=r"(task->preserved[1]));
+	asm("mov %%esi, %0" : "=r"(task->preserved[2]));
 }
 
 __attribute__((always_inline)) inline static void store_context()
@@ -31,12 +28,9 @@ __attribute__((always_inline)) inline static void store_context()
 	asm("mov %%esp, %0" : "=r"(current_task->esp));
 	asm("mov %%ebp, %0" : "=r"(current_task->ebp));
 	
-	asm("mov %%eax, %0" : "=r"(current_task->preserved[0]));
-	asm("mov %%ebx, %0" : "=r"(current_task->preserved[1]));
-	asm("mov %%ecx, %0" : "=r"(current_task->preserved[2]));
-	asm("mov %%edx, %0" : "=r"(current_task->preserved[3]));
-	asm("mov %%edi, %0" : "=r"(current_task->preserved[4]));
-	asm("mov %%esi, %0" : "=r"(current_task->preserved[5]));
+	asm("mov %%ebx, %0" : "=r"(current_task->preserved[0]));
+	asm("mov %%edi, %0" : "=r"(current_task->preserved[1]));
+	asm("mov %%esi, %0" : "=r"(current_task->preserved[2]));
 	/* Check for stack and heap overflow */
 	if(!current_task->esp || (!(current_task->esp >= TOP_TASK_MEM_EXEC && current_task->esp < TOP_TASK_MEM) 
 		&& !(current_task->esp >= KMALLOC_ADDR_START && current_task->esp < KMALLOC_ADDR_END)))
@@ -67,12 +61,9 @@ __attribute__((always_inline)) inline static void context_switch(task_t *new)
 	: : "r"(0), "r"(new->esp), "r"(new->ebp), 
 		"r"(new->pd[1023]&PAGE_MASK) : "eax");
 	
-	asm("mov %0, %%eax" :: "r"(current_task->preserved[0]));
-	asm("mov %0, %%ebx" :: "r"(current_task->preserved[1]));
-	asm("mov %0, %%ecx" :: "r"(current_task->preserved[2]));
-	asm("mov %0, %%edx" :: "r"(current_task->preserved[3]));
-	asm("mov %0, %%edi" :: "r"(current_task->preserved[4]));
-	asm("mov %0, %%esi" :: "r"(current_task->preserved[5]));
+	asm("mov %0, %%ebx" :: "r"(current_task->preserved[0]));
+	asm("mov %0, %%edi" :: "r"(current_task->preserved[1]));
+	asm("mov %0, %%esi" :: "r"(current_task->preserved[2]));
 }
 
 __attribute__((always_inline)) 

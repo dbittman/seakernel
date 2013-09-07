@@ -213,7 +213,6 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	if(EXEC_LOG == 2) 
 		printk(0, "[%d]: Performing call\n", t->pid);
 	
-	/* we clear this out, so we don't accidentally handle a signal...*/
 	set_int(0);
 	lower_task_flag(t, TF_SCHED);
 	if(!(kernel_state_flags & KSF_HAVEEXECED))

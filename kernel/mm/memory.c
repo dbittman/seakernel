@@ -12,7 +12,7 @@ void slab_stat(struct mem_stat *s);
 void process_memorymap(struct multiboot *mboot)
 {
 	addr_t i = mboot->mmap_addr;
-	int num_pages=0;
+	unsigned int num_pages=0;
 	addr_t j=0;
 	while(i < (mboot->mmap_addr + mboot->mmap_length)){
 		mmap_entry_t *me = (mmap_entry_t *)(i);
@@ -34,14 +34,14 @@ void process_memorymap(struct multiboot *mboot)
 		}
 		i += me->size + sizeof (uint32_t);
 	}
-	printk(1, "[mm]: Highest page = %x               \n", highest_page);
+	printk(1, "[mm]: Highest page = %x, num_pages = %d               \n", highest_page, num_pages);
 	if(!j)
 		panic(PANIC_MEM | PANIC_NOSYNC, "Memory map corrupted");
 	int gbs=0;
 	int mbs = ((num_pages * PAGE_SIZE)/1024)/1024;
 	if(mbs < 4){
 		puts("\n");
-		panic(PANIC_MEM | PANIC_NOSYNC, "Not enough memory, system wont work");
+		panic(PANIC_MEM | PANIC_NOSYNC, "Not enough memory, system wont work (%d MB, %d pages)", mbs, num_pages);
 	}
 	gbs = mbs/1024;
 	if(gbs > 0)

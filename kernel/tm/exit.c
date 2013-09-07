@@ -35,10 +35,10 @@ void move_task_to_kill_queue(task_t *t, int locked)
 int __KT_try_releasing_tasks()
 {
 	struct llistnode *cur;
-	rwlock_acquire(&kill_queue->rwl, RWL_READER);
+	rwlock_acquire(&kill_queue->rwl, RWL_WRITER);
 	if(ll_is_empty(kill_queue))
 	{
-		rwlock_release(&kill_queue->rwl, RWL_READER);
+		rwlock_release(&kill_queue->rwl, RWL_WRITER);
 		return 0;
 	}
 	task_t *t=0;
@@ -52,14 +52,22 @@ int __KT_try_releasing_tasks()
 				break;
 		}
 	}
-	rwlock_release(&kill_queue->rwl, RWL_READER);
-	if(!t) return 0;
-	if(!((t->flags & TF_BURIED) && (t->flags & TF_KILLREADY))) return 0;
+	if(!t || !((t->flags & TF_BURIED) && (t->flags & TF_KILLREADY)))
+	{
+		rwlock_release(&kill_queue->rwl, RWL_WRITER);
+		return 0;
+	}
 	assert(t != current_task);
 	assert(cur->entry == t);
+	void *node = ll_do_remove(kill_queue, cur, 1);
+	assert(node == cur);
+	int ret = 0;
+	if(!ll_is_empty(kill_queue))
+		ret = 1;
+	rwlock_release(&kill_queue->rwl, RWL_WRITER);
 	release_task(t);
-	ll_remove(kill_queue, cur);
-	return ll_is_empty(kill_queue) ? 0 : 1;
+	kfree(cur);
+	return ret;
 }
 
 void release_task(task_t *p)

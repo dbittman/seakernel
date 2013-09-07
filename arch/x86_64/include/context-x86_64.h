@@ -19,20 +19,11 @@ static void _overflow(char *type)
 
 __attribute__((always_inline)) inline static void store_context_fork(task_t *task)
 {
-	asm("mov %%rax, %0" : "=r"(task->preserved[0]));
-	asm("mov %%rbx, %0" : "=r"(task->preserved[1]));
-	asm("mov %%rcx, %0" : "=r"(task->preserved[2]));
-	asm("mov %%rdx, %0" : "=r"(task->preserved[3]));
-	asm("mov %%rdi, %0" : "=r"(task->preserved[4]));
-	asm("mov %%rsi, %0" : "=r"(task->preserved[5]));
-	asm("mov %%r8,  %0" : "=r"(task->preserved[6]));
-	asm("mov %%r9,  %0" : "=r"(task->preserved[7]));
-	asm("mov %%r10, %0" : "=r"(task->preserved[8]));
-	asm("mov %%r11, %0" : "=r"(task->preserved[9]));
-	asm("mov %%r12, %0" : "=r"(task->preserved[10]));
-	asm("mov %%r13, %0" : "=r"(task->preserved[11]));
-	asm("mov %%r14, %0" : "=r"(task->preserved[12]));
-	asm("mov %%r15, %0" : "=r"(task->preserved[13]));
+	asm("mov %%rbx, %0" : "=r"(task->preserved[0]));
+	asm("mov %%r12, %0" : "=r"(task->preserved[1]));
+	asm("mov %%r13, %0" : "=r"(task->preserved[2]));
+	asm("mov %%r14, %0" : "=r"(task->preserved[3]));
+	asm("mov %%r15, %0" : "=r"(task->preserved[4]));
 }
 
 __attribute__((always_inline)) inline static void store_context()
@@ -41,20 +32,11 @@ __attribute__((always_inline)) inline static void store_context()
 	asm("mov %%rbp, %0" : "=r"(current_task->ebp));
 	/* we save all registers, in case schedule was called within kernel
 	 * code, since that doesn't save registers like an interrupt */
-	asm("mov %%rax, %0" : "=r"(current_task->preserved[0]));
-	asm("mov %%rbx, %0" : "=r"(current_task->preserved[1]));
-	asm("mov %%rcx, %0" : "=r"(current_task->preserved[2]));
-	asm("mov %%rdx, %0" : "=r"(current_task->preserved[3]));
-	asm("mov %%rdi, %0" : "=r"(current_task->preserved[4]));
-	asm("mov %%rsi, %0" : "=r"(current_task->preserved[5]));
-	asm("mov %%r8,  %0" : "=r"(current_task->preserved[6]));
-	asm("mov %%r9,  %0" : "=r"(current_task->preserved[7]));
-	asm("mov %%r10, %0" : "=r"(current_task->preserved[8]));
-	asm("mov %%r11, %0" : "=r"(current_task->preserved[9]));
-	asm("mov %%r12, %0" : "=r"(current_task->preserved[10]));
-	asm("mov %%r13, %0" : "=r"(current_task->preserved[11]));
-	asm("mov %%r14, %0" : "=r"(current_task->preserved[12]));
-	asm("mov %%r15, %0" : "=r"(current_task->preserved[13]));
+	asm("mov %%rbx, %0" : "=r"(current_task->preserved[0]));
+	asm("mov %%r12, %0" : "=r"(current_task->preserved[1]));
+	asm("mov %%r13, %0" : "=r"(current_task->preserved[2]));
+	asm("mov %%r14, %0" : "=r"(current_task->preserved[3]));
+	asm("mov %%r15, %0" : "=r"(current_task->preserved[4]));
 
 	/* Check for stack and heap overflow */
 	if(!current_task->esp || (!(current_task->esp >= TOP_TASK_MEM_EXEC && current_task->esp < TOP_TASK_MEM) 
@@ -86,20 +68,11 @@ __attribute__((always_inline)) inline static void context_switch(task_t *n)
 	: : "r"(0), "r"(n->esp), "r"(n->ebp), 
 		"r"(n->pd[PML4_IDX(PHYSICAL_PML4_INDEX/0x1000)]&PAGE_MASK) : "rax");
 	
-	asm("mov %0, %%rax" :: "r"(current_task->preserved[0]));
-	asm("mov %0, %%rbx" :: "r"(current_task->preserved[1]));
-	asm("mov %0, %%rcx" :: "r"(current_task->preserved[2]));
-	asm("mov %0, %%rdx" :: "r"(current_task->preserved[3]));
-	asm("mov %0, %%rdi" :: "r"(current_task->preserved[4]));
-	asm("mov %0, %%rsi" :: "r"(current_task->preserved[5]));
-	asm("mov %0, %%r8"  :: "r"(current_task->preserved[6]));
-	asm("mov %0, %%r9"  :: "r"(current_task->preserved[7]));
-	asm("mov %0, %%r10" :: "r"(current_task->preserved[8]));
-	asm("mov %0, %%r11" :: "r"(current_task->preserved[9]));
-	asm("mov %0, %%r12" :: "r"(current_task->preserved[10]));
-	asm("mov %0, %%r13" :: "r"(current_task->preserved[11]));
-	asm("mov %0, %%r14" :: "r"(current_task->preserved[12]));
-	asm("mov %0, %%r15" :: "r"(current_task->preserved[13]));
+	asm("mov %0, %%rbx" :: "r"(current_task->preserved[0]));
+	asm("mov %0, %%r12" :: "r"(current_task->preserved[1]));
+	asm("mov %0, %%r13" :: "r"(current_task->preserved[2]));
+	asm("mov %0, %%r14" :: "r"(current_task->preserved[3]));
+	asm("mov %0, %%r15" :: "r"(current_task->preserved[4]));
 }
 
 __attribute__((always_inline)) 

@@ -108,6 +108,8 @@ int schedule()
 	/* we need to call this after restore_context because in restore_context
 	 * we access new->cpu */
 	mutex_release(&cpu->lock);
+	/* after calling context switch, we may NOT use any variables that
+	 * were used above it, since they are not necessarily valid. */
 	context_switch(next_task);
 	//reset_timer_state(); /* TODO: This may be needed... */
 	/* tasks that have come from fork() (aka, new tasks) have this
@@ -117,7 +119,7 @@ int schedule()
 		post_context_switch();
 		return 1;
 	}
-	lower_task_flag(next_task, TF_FORK);
+	lower_task_flag(current_task, TF_FORK);
 	set_int(1);
 	asm("jmp *%0"::"r"(current_task->eip));
 	/* we never get here, but lets keep gcc happy */

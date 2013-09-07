@@ -7,7 +7,7 @@
 #include <sys/stat.h>
 #include <sys/sysconf.h>
 #include <cpu.h>
-
+#include <uname.h>
 long sys_sysconf(int cmd)
 {
 	int ret = -EINVAL;

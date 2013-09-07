@@ -1,6 +1,6 @@
 #ifndef ISR_x86_H
 #define ISR_x86_H
-
+#include <types.h>
 typedef struct __attribute__((packed))
 {
   volatile   u32int ds;

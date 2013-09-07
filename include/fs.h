@@ -1,7 +1,7 @@
 #ifndef FS_H
 #define FS_H
+#include <types.h>
 #include <sys/stat.h>
-#include <task.h>
 #include <pipe.h>
 #include <sys/fcntl.h>
 #include <ll.h>

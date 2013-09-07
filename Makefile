@@ -2,9 +2,7 @@
 ARCH=__none__
 ifneq ($(MAKECMDGOALS),config)
 ifneq ($(MAKECMDGOALS),defconfig)
-ifneq ($(MAKECMDGOALS),clean)
 include sea_defines.inc
-endif
 endif
 endif
 

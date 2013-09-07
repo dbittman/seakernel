@@ -2,6 +2,7 @@
 #define ATA_H
 #include <config.h>
 #if CONFIG_MODULE_ATA
+#include <types.h>
 #include <modules/pci.h>
 
 /* Most of these definitions and support functions have been borrowed from CDI */

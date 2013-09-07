@@ -9,6 +9,7 @@
 #include <dev.h>
 #include <tqueue.h>
 #include <atomic.h>
+#include <config.h>
 
 extern tqueue_t *primary_queue;
 

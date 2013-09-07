@@ -3,11 +3,13 @@
 #include <config.h>
 #if CONFIG_MODULE_EXT2
 
+#include <types.h>
 #include <fs.h>
 #include <cache.h>
 #include <time.h>
 #include <modules/ext2_sb.h>
 #include <ll.h>
+#include <mutex.h>
 typedef struct e2_vol_data {
 	int flag;
 	unsigned long long dev, block;
@@ -109,8 +111,8 @@ extern struct inode_operations e2fs_inode_ops;
 int ext2_write_block(ext2_fs_t *fs, u64 block, unsigned char *buf);
 int ext2_read_block(ext2_fs_t *fs, u64 block, unsigned char *buf);
 
-int ext2_inode_readblk(ext2_inode_t* inode, uint32_t block, void* buf,
-		       size_t count);
+int ext2_inode_readblk(ext2_inode_t* inode, uint32_t block, void* buf, size_t count);
+
 int ext2_inode_writeblk(ext2_inode_t* inode, uint32_t block, void* buf);
 int ext2_inode_readdata(
 	ext2_inode_t* inode, uint32_t start, size_t len, unsigned char* buf);

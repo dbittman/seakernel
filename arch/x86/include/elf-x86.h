@@ -1,6 +1,7 @@
 #ifndef ELF_x86_H
 #define ELF_x86_H
 #include <module.h>
+#include <types.h>
 extern void * kernel_start;
 #include <elf-x86_common.h>
 

@@ -33,10 +33,12 @@
 * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 /* This code is adapted from the CDI project */
-#include <modules/ext2.h>
-#include <kernel.h>
+
+#include <types.h>
+#include <string.h>
 #include <cache.h>
 #include <block.h>
+#include <modules/ext2.h>
 static uint32_t block_free(ext2_fs_t* fs, uint32_t num);
 
 static inline int get_bg_block(ext2_fs_t* fs, int group_nr)

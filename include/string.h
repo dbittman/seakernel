@@ -1,7 +1,7 @@
 #ifndef STRING_H
 #define STRING_H
 #include <types.h>
-#define size_t unsigned
+
 void *memchr(const void *cs, int c, size_t count);
 #define memcpy memmove
 void *memmove(void *dest, const void *src, size_t n);

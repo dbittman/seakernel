@@ -4,12 +4,12 @@
 #include <kernel.h>
 #include <memory.h>
 #include <task.h>
-addr_t (*do_kmalloc_wrap)(unsigned, char)=0;
+addr_t (*do_kmalloc_wrap)(size_t, char)=0;
 void (*do_kfree_wrap)(void *)=0;
 char kmalloc_name[128];
 mutex_t km_m;
 void install_kmalloc(char *name, unsigned (*init)(addr_t, addr_t), 
-	addr_t (*alloc)(unsigned, char), void (*free)(void *))
+	addr_t (*alloc)(size_t, char), void (*free)(void *))
 {
 	do_kmalloc_wrap = alloc;
 	do_kfree_wrap = free;
@@ -19,7 +19,7 @@ void install_kmalloc(char *name, unsigned (*init)(addr_t, addr_t),
 		init(KMALLOC_ADDR_START, KMALLOC_ADDR_END);
 }
 
-addr_t do_kmalloc(unsigned sz, char align)
+addr_t do_kmalloc(size_t sz, char align)
 {
 	if(!do_kmalloc_wrap)
 		panic(PANIC_MEM | PANIC_NOSYNC, "No kernel-level allocator installed!");
@@ -32,17 +32,17 @@ addr_t do_kmalloc(unsigned sz, char align)
 	return ret;
 }
 
-void *__kmalloc(unsigned s, char *file, int line)
+void *__kmalloc(size_t s, char *file, int line)
 {
 	return (void *)do_kmalloc(s, 0);
 }
 
-void *kmalloc_a(unsigned s)
+void *kmalloc_a(size_t s)
 {
 	return (void *)do_kmalloc(s, 1);
 }
 
-void *kmalloc_p(unsigned s, addr_t *p)
+void *kmalloc_p(size_t s, addr_t *p)
 {
 	addr_t ret = do_kmalloc(s, 0);
 	vm_getmap(ret, p);
@@ -50,7 +50,7 @@ void *kmalloc_p(unsigned s, addr_t *p)
 	return (void *)ret;
 }
 
-void *kmalloc_ap(unsigned s, addr_t *p)
+void *kmalloc_ap(size_t s, addr_t *p)
 {
 	addr_t ret = do_kmalloc(s, 1);
 	vm_getmap(ret, p);

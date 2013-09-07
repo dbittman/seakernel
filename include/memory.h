@@ -1,10 +1,11 @@
 #ifndef MEMORY_H
 #define MEMORY_H
-#include <kernel.h>
+
 #include <isr.h>
 #include <multiboot.h>
 #include <sys/stat.h>
 #include <slab.h>
+#include <config.h>
 #if CONFIG_ARCH == TYPE_ARCH_X86
 #include <memory-x86.h>
 #elif CONFIG_ARCH == TYPE_ARCH_X86_64

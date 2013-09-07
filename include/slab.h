@@ -1,5 +1,6 @@
 #ifndef SLAB_H
 #define SLAB_H
+#include <types.h>
 #include <area.h>
 #include <config.h>
 #define SLAB_MAGIC 0x11235813

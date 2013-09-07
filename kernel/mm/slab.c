@@ -442,7 +442,7 @@ slab_t *find_usable_slab(unsigned size, int align, int allow_range)
 	return find_usable_slab(size, align, 0);
 }
 
-addr_t do_kmalloc_slab(unsigned sz, char align)
+addr_t do_kmalloc_slab(size_t sz, char align)
 {
 	if(sz < 32) sz=32;
 	if(!align)

@@ -1,6 +1,8 @@
 #ifndef PIPE_H
 #define PIPE_H
 
+#include <fs.h>
+#include <types.h>
 #include <mutex.h>
 #include <ll.h>
 

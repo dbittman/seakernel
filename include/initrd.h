@@ -1,6 +1,8 @@
 #ifndef INITRD_H
 #define INITRD_H
 
+#include <types.h>
+
 typedef struct __attribute__((packed))
 {
 	u32int nfiles;

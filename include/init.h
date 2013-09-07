@@ -1,5 +1,8 @@
 #ifndef INIT_H
 #define INIT_H
+
+#include <multiboot.h>
+
 void init();
 void setup_kernelstack();
 void install_timer(int);

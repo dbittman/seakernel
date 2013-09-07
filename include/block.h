@@ -3,6 +3,7 @@
 
 #define BCACHE_READ 1
 #define BCACHE_WRITE 2
+#include <mutex.h>
 
 typedef struct blockdevice_s {
 	int blksz;

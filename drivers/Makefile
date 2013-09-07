@@ -24,8 +24,6 @@ MCFLAGS=        -std=c99 -fno-rename-registers \
 		-I../../arch/${ARCH}/include \
 		-I../include -I../../include \
 		-I../../../include \
-		-I../arch/$(ARCH)/include \
-		-I../../arch/$(ARCH)/include \
 		-Wall -Wextra -Wformat-security -Wformat-nonliteral -Wshadow \
 		-Wpointer-arith -Wcast-align -Wno-unused -Wnested-externs \
 		-fno-tree-loop-distribute-patterns -fno-tree-vectorize \

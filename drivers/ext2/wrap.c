@@ -1,5 +1,9 @@
-#include <modules/ext2.h>
+#include <types.h>
+#include <fs.h>
 #include <task.h>
+#include <errno.h>
+#include <modules/ext2.h>
+
 int wrap_ext2_update(struct inode *i);
 struct inode *wrap_ext2_lookup(struct inode *in, char *name);
 int wrap_ext2_readfile(struct inode *in, off_t off, size_t len, char *buf);
@@ -16,6 +20,7 @@ int ext2_fs_stat(struct inode *i, struct posix_statfs *f);
 int ext2_dir_get_inode(ext2_inode_t* inode, char *name);
 int ext2_dir_change_num(ext2_inode_t* inode, char *name,
 			unsigned new_number);
+
 struct inode_operations e2fs_inode_ops = {
 	wrap_ext2_readfile,
 	wrap_ext2_writefile,

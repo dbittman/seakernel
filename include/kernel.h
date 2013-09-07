@@ -32,16 +32,6 @@ extern volatile unsigned int __allow_idle;
 #define PANIC_NOSYNC 1
 #define PANIC_MEM    2
 
-#define __UTSNAMELEN 65
-struct utsname {
-    char sysname[__UTSNAMELEN];
-    char nodename[__UTSNAMELEN];
-    char release[__UTSNAMELEN];
-    char version[__UTSNAMELEN];
-    char machine[__UTSNAMELEN];
-    char domainname[__UTSNAMELEN];
-};
-
 #define assert(c) if(__builtin_expect((!(c)),0)) panic_assert(__FILE__, __LINE__, #c)
 
 static inline void get_kernel_version(char *b)
@@ -61,16 +51,12 @@ static inline void get_kernel_version(char *b)
 	sprintf(b, "%d.%d%c%c%d", MAJ_VER, MIN_VER, t ? '-' : 0, t, p);
 }
 
-#define likely(x)       __builtin_expect((x),1)
-#define unlikely(x)     __builtin_expect((x),0)
-
 void print_trace(unsigned int);
 void panic(int flags, char *fmt, ...);
 void serial_puts(int, char *);
 void kernel_reset();
 void panic_assert(const char *file, u32int line, const char *desc);
 void kernel_poweroff();
-int sys_uname(struct utsname *name);
 int get_timer_th(int *t);
 extern int april_fools;
 int sys_isstate(int pid, int state);

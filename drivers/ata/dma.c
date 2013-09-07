@@ -1,5 +1,6 @@
 #include <kernel.h>
 #include <dev.h>
+#include <task.h>
 #include <modules/pci.h>
 #include <modules/ata.h>
 

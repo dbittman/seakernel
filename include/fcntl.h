@@ -1,8 +1,6 @@
 #ifndef _FCNTL_H
 #define _FCNTL_H
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
+#include <types.h>
 #include <fs.h>
 #include <sys/fcntl.h>
 

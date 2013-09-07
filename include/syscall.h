@@ -2,7 +2,7 @@
 #define SYSCALL_H
 #include <kernel.h>
 #include <isr.h>
-
+#include <config.h>
 #if CONFIG_ARCH == TYPE_ARCH_X86
 #include <syscall-x86.h>
 #elif CONFIG_ARCH == TYPE_ARCH_X86_64

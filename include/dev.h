@@ -1,8 +1,9 @@
 #ifndef DEV_H
 #define DEV_H
 
-#include <kernel.h>
-#include <task.h>
+#include <types.h>
+#include <mutex.h>
+
 #define OPEN 0
 #define CLOSE 1
 #define READ 2

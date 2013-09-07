@@ -3,6 +3,7 @@
 #include <modules/pci.h>
 #include <modules/ata.h>
 #include <block.h>
+#include <task.h>
 int ata_pio_rw(struct ata_controller *cont, struct ata_device *dev, 
 	int rw, unsigned long long blk, unsigned char *buffer, unsigned count)
 {

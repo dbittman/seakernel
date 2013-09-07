@@ -2,6 +2,7 @@
 #define __TABLES_X86_COMMON_H
 
 #include <types.h>
+#include <config.h>
 extern void isr0 ();
 extern void isr1 ();
 extern void isr2 ();

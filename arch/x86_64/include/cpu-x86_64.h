@@ -1,6 +1,6 @@
 #ifndef _CPU_X86_64_H
 #define _CPU_X86_64_H
-
+#include <types.h>
 #define CPU_EXT_FEATURES_GBPAGE (1 << 26)
 
 typedef struct {

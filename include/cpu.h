@@ -1,10 +1,11 @@
 #ifndef CPU_H
 #define CPU_H
-
+#include <types.h>
 #include <memory.h>
 #include <tqueue.h>
 #include <task.h>
 #include <mutex.h>
+#include <config.h>
 #if CONFIG_ARCH == TYPE_ARCH_X86
   #include <cpu-x86.h>
   #include <tables-x86.h>

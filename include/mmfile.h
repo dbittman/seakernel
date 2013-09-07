@@ -1,5 +1,7 @@
 #ifndef __MMF_H
 #define __MMF_H
+
+#include <area.h>
 /*
  * Prots to 'mmap'.
  */

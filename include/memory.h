@@ -85,21 +85,21 @@ extern void zero_page_physical(addr_t);
 void __KT_swapper();
 void copy_update_stack(addr_t old, addr_t new, unsigned length);
 int __is_valid_user_ptr(int num, void *p, char flags);
-static inline void map_if_not_mapped(addr_t loc)
+static void map_if_not_mapped(addr_t loc)
 {
 	if(!vm_getmap(loc & PAGE_MASK, 0))
 		vm_map(loc & PAGE_MASK, __pm_alloc_page("map_if_not_mapped", 0), 
 		       PAGE_PRESENT | PAGE_WRITE, MAP_CRIT);
 }
 
-static inline void map_if_not_mapped_noclear(addr_t loc)
+static void map_if_not_mapped_noclear(addr_t loc)
 {
 	if(!vm_getmap(loc & PAGE_MASK, 0))
 		vm_map(loc & PAGE_MASK, __pm_alloc_page("map_if_not_mapped", 0), 
 		       PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_NOCLEAR);
 }
 
-static inline void user_map_if_not_mapped(addr_t loc)
+static void user_map_if_not_mapped(addr_t loc)
 {
 	if(!vm_getmap(loc & PAGE_MASK, 0))
 		vm_map(loc & PAGE_MASK, __pm_alloc_page("map_if_not_mapped", 0), 
@@ -108,7 +108,7 @@ static inline void user_map_if_not_mapped(addr_t loc)
 		vm_setattrib(loc & PAGE_MASK, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
 }
 
-static inline void user_map_if_not_mapped_noclear(addr_t loc)
+static void user_map_if_not_mapped_noclear(addr_t loc)
 {
 	if(!vm_getmap(loc & PAGE_MASK, 0))
 		vm_map(loc & PAGE_MASK, __pm_alloc_page("map_if_not_mapped", 0), 

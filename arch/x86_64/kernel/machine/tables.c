@@ -55,7 +55,7 @@ void gdt_set_gate(gdt_entry_t *gdt, s32int num, u32int base, u32int limit, u8int
 	gdt[num].access      = access;
 }
 
-static inline
+static
 void io_wait( void )
 {
     asm ( "jmp 1f\n\t"

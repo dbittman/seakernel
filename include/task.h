@@ -255,7 +255,7 @@ extern struct llist *kill_queue;
 extern unsigned running_processes;
 extern void do_switch_to_user_mode();
 extern void check_alarms();
-static inline int signal_will_be_fatal(task_t *t, int sig)
+static int signal_will_be_fatal(task_t *t, int sig)
 {
 	if(sig == SIGKILL) return 1;
 	if(t->thread->signal_act[t->sigd]._sa_func._sa_handler) return 0;
@@ -264,7 +264,7 @@ static inline int signal_will_be_fatal(task_t *t, int sig)
 	return 1;
 }
 
-static inline int got_signal(task_t *t)
+static int got_signal(task_t *t)
 {
 	if(kernel_state_flags & KSF_SHUTDOWN)
 		return 0;
@@ -287,7 +287,7 @@ static __attribute__((always_inline)) inline void exit_system()
 	current_task->system=0;
 }
 
-static inline int GET_MAX_TS(task_t *t)
+static int GET_MAX_TS(task_t *t)
 {
 	if(t->flags & TF_EXITING)
 		return 1;
@@ -297,12 +297,12 @@ static inline int GET_MAX_TS(task_t *t)
 	return x;
 }
 
-static inline void __engage_idle()
+static void __engage_idle()
 {
 	task_resume((task_t *)kernel_task);
 }
 
-static inline void __disengage_idle()
+static void __disengage_idle()
 {
 	task_pause((task_t *)kernel_task);
 }

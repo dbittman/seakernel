@@ -62,7 +62,7 @@ char*_strcpy(char *dst0, const char *src0)
 #if defined(PREFER_SIZE_OVER_SPEED) || defined(__OPTIMIZE_SIZE__)
   char *s = dst0;
 
-  while (*dst0++ = *src0++)
+  while ((*dst0++ = *src0++))
     ;
 
   return s;

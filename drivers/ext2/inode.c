@@ -41,7 +41,7 @@
 #include <modules/ext2.h>
 static uint32_t block_free(ext2_fs_t* fs, uint32_t num);
 
-static inline int get_bg_block(ext2_fs_t* fs, int group_nr)
+static int get_bg_block(ext2_fs_t* fs, int group_nr)
 {
 	uint32_t num;
 	unsigned bs = ext2_sb_blocksize(fs->sb);
@@ -78,7 +78,7 @@ int ext2_bg_update(ext2_fs_t* fs, int group_nr, ext2_blockgroup_t* bg)
 *
 * @return Pointer auf das Handle fuer diesen Block
 */
-static inline int inode_get_block(
+static int inode_get_block(
 ext2_fs_t* fs, uint32_t inode_nr, size_t* offset)
 {
 	uint32_t    inode_offset;

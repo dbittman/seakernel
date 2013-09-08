@@ -22,7 +22,7 @@ void inc_parent_times(task_t *t, int u, int s)
 	}
 }
 
-inline static void do_run_scheduler()
+static void do_run_scheduler()
 {
 	if(!current_task ||
 		(current_task->flags&TF_DYING) || 

@@ -83,6 +83,11 @@ void init_memory(struct multiboot *m)
 	add_kernel_symbol(pmap_get_mapping);
 	add_kernel_symbol(pmap_create);
 	add_kernel_symbol(pmap_destroy);
+	add_kernel_symbol(__pm_alloc_page);
+	add_kernel_symbol(vm_do_getmap);
+	add_kernel_symbol(vm_do_getattrib);
+	add_kernel_symbol(vm_setattrib);
+	add_kernel_symbol(pm_free_page);
 #endif
 }
 

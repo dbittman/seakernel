@@ -79,6 +79,9 @@ void init_multitasking()
 	add_kernel_symbol(kill_task);
 	add_kernel_symbol(do_send_signal);
 	add_kernel_symbol(dosyscall);
+	add_kernel_symbol(task_pause);
+	add_kernel_symbol(task_resume);
+	add_kernel_symbol(got_signal);
  #if CONFIG_SMP
 	add_kernel_symbol(get_cpu);
  #endif

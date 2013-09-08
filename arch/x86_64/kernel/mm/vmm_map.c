@@ -46,3 +46,33 @@ int vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned opt)
 		mutex_release(&pd_cur_data->lock);
 	return 0;
 }
+
+int vm_early_map(pml4_t *pml4, addr_t virt, addr_t phys, unsigned attr, unsigned opt)
+{
+	addr_t vpage = (virt&PAGE_MASK)/0x1000;
+	unsigned vp4 = PML4_IDX(vpage);
+	unsigned vpdpt = PDPT_IDX(vpage);
+	unsigned vdir = PAGE_DIR_IDX(vpage);
+	unsigned vtbl = PAGE_TABLE_IDX(vpage);
+
+	page_dir_t *pd;
+	page_table_t *pt;
+	pdpt_t *pdpt;
+
+	if(!pml4[vp4])
+		pml4[vp4] = pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
+	pdpt = (addr_t *)((pml4[vp4]&PAGE_MASK) + PHYS_PAGE_MAP);
+	if(!pdpt[vpdpt])
+		pdpt[vpdpt] = pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
+	pd = (addr_t *)((pdpt[vpdpt]&PAGE_MASK) + PHYS_PAGE_MAP);
+	if(!pd[vdir])
+		pd[vdir] = pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
+	pt = (addr_t *)((pd[vdir]&PAGE_MASK) + PHYS_PAGE_MAP);
+	
+	pt[vtbl] = (phys & PAGE_MASK) | attr;
+	asm("invlpg (%0)"::"r" (virt));
+	if(!(opt & MAP_NOCLEAR)) 
+		memset((void *)(virt&PAGE_MASK), 0, 0x1000);
+	
+	return 0;
+}

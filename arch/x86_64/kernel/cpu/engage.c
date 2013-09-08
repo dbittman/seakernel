@@ -51,7 +51,7 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	pml4_t *new_pml4 = vm_clone((addr_t *)kernel_dir, 0);
 	vm_switch(new_pml4);
 	cpu->kd = new_pml4;
-
+	
 	/* initialize tasking for this CPU */
 	task_t *task = task_create();
 	arch_specific_set_current_task(new_pml4, (addr_t)task);
@@ -59,9 +59,6 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	task->stack_end=STACK_LOCATION;
 	task->priority = 1;
 	cpu->cur = cpu->ktask = task;
-	
-	asm("mov %0, %%rsp" : : "r" (STACK_LOCATION + STACK_SIZE - STACK_ELEMENT_SIZE));
-	asm("mov %0, %%rbp" : : "r" (STACK_LOCATION + STACK_SIZE - STACK_ELEMENT_SIZE));
 	
 	apicid = get_boot_flag();
 	cpu = get_cpu(apicid);
@@ -77,21 +74,20 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	/* indicate that we're ready for the next processor to run */
 	set_boot_flag(0xFFFFFFFF);
 	
-	while(!(kernel_state_flags & KSF_SMP_ENABLE)) asm("cli");
+	while(!(kernel_state_flags & KSF_SMP_ENABLE)) asm("cli; pause");
 	init_lapic(0);
 	set_lapic_timer(lapic_timer_start);
-
-	//printk(0, "[cpu%d]: waiting for tasking...\n", apicid);
-	while(!kernel_task) asm("cli");
+	
+	while(!kernel_task) asm("cli; pause");
 	
 	task->pid = add_atomic(&next_pid, 1)-1;
-	//printk(0, "[cpu%d]: enable tasks...\n", apicid);
-	
 	tqueue_insert(primary_queue, (void *)task, task->listnode);
 	
 	cpu->active_queue = tqueue_create(0, 0);
 	tqueue_insert(cpu->active_queue, (void *)task, task->activenode);
-	cpu_k_task_entry(task);
+	asm("mov %0, %%rsp" : : "r" (STACK_LOCATION + STACK_SIZE - STACK_ELEMENT_SIZE));
+	asm("mov %0, %%rbp" : : "r" (STACK_LOCATION + STACK_SIZE - STACK_ELEMENT_SIZE));
+	cpu_k_task_entry(current_task);
 }
 
 /* C-side CPU entry code. Called from the assembly handler */

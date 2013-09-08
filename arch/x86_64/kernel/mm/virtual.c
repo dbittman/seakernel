@@ -98,12 +98,12 @@ void vm_init_2()
 	primary_cpu->kd_phys = primary_cpu->kd[PML4_IDX(PHYSICAL_PML4_INDEX/0x1000)] & PAGE_MASK;
 	kernel_dir_phys = (pml4_t *)primary_cpu->kd_phys;
 	kernel_dir = primary_cpu->kd;
-	vm_switch((addr_t *)primary_cpu->kd);
+	asm ("mov %0, %%cr3" : : "r" (kernel_dir[PML4_IDX((PHYSICAL_PML4_INDEX/0x1000))]));
 }
 
 void vm_switch(addr_t *n/*VIRTUAL ADDRESS*/)
 {
-	__asm__ volatile ("mov %0, %%cr3" : : "r" (n[PML4_IDX((PHYSICAL_PML4_INDEX/0x1000))]));
+	asm ("mov %0, %%cr3" : : "r" (n[PML4_IDX((PHYSICAL_PML4_INDEX/0x1000))]));
 }
 
 addr_t vm_do_getmap(addr_t v, addr_t *p, unsigned locked)

@@ -87,24 +87,29 @@ void vm_init_2()
 	unsigned int i=0;
 	while(i < cpu_array_num)
 	{
-		printk(0, "[mm]: cloning directory for processor %d (%x)\n", cpu_array[i].apicid, &cpu_array[i]);
-		page_dir_t *pd = vm_clone(page_directory, 0);
-		cpu_array[i].kd_phys = pd[1023] & PAGE_MASK;
-		cpu_array[i].kd = pd;
+		if(primary_cpu != &cpu_array[i]) {
+			printk(0, "[mm]: cloning directory for processor %d (%x)\n", cpu_array[i].apicid, &cpu_array[i]);
+			page_dir_t *pd = vm_clone(page_directory, 0);
+			cpu_array[i].kd_phys = pd[1023] & PAGE_MASK;
+			cpu_array[i].kd = pd;
+		}
 		i++;
 	}
-#else
+#endif
 	primary_cpu->kd = vm_clone(page_directory, 0);
 	primary_cpu->kd_phys = primary_cpu->kd[1023] & PAGE_MASK;
-#endif
+
 	kernel_dir = primary_cpu->kd;
-	vm_switch((page_dir_t *)primary_cpu->kd);
+	/* can't call vm_switch, because we'll end up with the stack like it was
+	 * when we call vm_clone! So, we have to assume an invalid stack until
+	 * this function returns */
+	asm ("mov %0, %%cr3" :: "r" ((addr_t)kernel_dir[1023] & PAGE_MASK));
 }
 
 void vm_switch(page_dir_t *n/*VIRTUAL ADDRESS*/)
 {
 	/* n[1023] is the mapped bit that loops to itself */
-	__asm__ volatile ("mov %0, %%cr3" : : "r" (n[1023]&PAGE_MASK));
+ 	asm ("mov %0, %%cr3" :: "r" ((addr_t)n[1023] & PAGE_MASK));
 }
 
 addr_t vm_do_getmap(addr_t v, addr_t *p, unsigned locked)

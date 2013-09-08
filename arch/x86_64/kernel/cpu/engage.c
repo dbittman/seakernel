@@ -60,10 +60,6 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	task->priority = 1;
 	cpu->cur = cpu->ktask = task;
 	
-	apicid = get_boot_flag();
-	cpu = get_cpu(apicid);
-	task = cpu->ktask;
-	
 	task->cpu = cpu;
 	mutex_create(&cpu->lock, MT_NOSCHED);
 	cpu->numtasks=1;

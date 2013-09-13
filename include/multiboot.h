@@ -54,9 +54,7 @@ typedef struct
 
 
 typedef struct multiboot_header multiboot_header_t;
-typedef unsigned char u8;
-typedef unsigned short u16;
-typedef unsigned int u32;
+
 struct vbecontrollerinfo {
    char signature[4];             // == "VESA"
    short version;                 // == 0x0300 for VBE 3.0

@@ -21,7 +21,7 @@ static long dosyscall(int num, long a, long b, long c, long d, long e)
 #define _A_ regs->rbx
 
 #define SIGNAL_INJECT_SIZE 10
-static char signal_return_injector[SIGNAL_INJECT_SIZE] = {
+static unsigned char signal_return_injector[SIGNAL_INJECT_SIZE] = {
 	0x48,
 	0x31, /* xor rax, rax */
 	0xc0,

@@ -38,6 +38,7 @@ struct inode {
 	unsigned int nblocks;
 	time_t ctime, atime, mtime;
 	int count, f_count, newlocks;
+	size_t blksize;
 	/* Identification */
 	char name[INAME_LEN];
 	dev_t dev;
@@ -225,7 +226,8 @@ extern struct inode *ramfs_root;
 void init_dev_fs();
 
 extern struct inode *procfs_kprocdir;
-
+int proc_append_buffer(char *buffer, char *data, int off, int len, 
+	int req_off, int req_len);
 void init_proc_fs();
 struct inode *pfs_cn_node(struct inode *to, char *name, mode_t mode, int major, int minor);
 int sys_posix_fsstat(int fd, struct posix_statfs *sb);

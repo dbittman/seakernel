@@ -76,6 +76,8 @@
 	xor rax, rax
 	mov ax, ds
 	push rax
+	; load the proper segments (not really needed in 64-bit mode, but
+	; lets do it anyway for completeness sake).
 	mov ax, 0x10
 	mov ds, ax
 	mov es, ax
@@ -85,7 +87,7 @@
 	
 	call %2 ; call the handler
 	
-	; restore ds
+	; restore ds, and other segments
 	pop rax
 	mov ds, ax
 	mov es, ax

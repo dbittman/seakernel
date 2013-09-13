@@ -21,7 +21,6 @@ void kernel_shutdown()
 	while(num_halted_cpus < num_booted_cpus) asm("pause");
 #endif
 	current_task->thread->uid=0;
-#warning "need to make all of these atomic"
 	raise_flag(TF_SHUTDOWN);
 	set_ksf(KSF_SHUTDOWN);
 	sys_sync(PRINT_LEVEL);

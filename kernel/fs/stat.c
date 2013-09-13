@@ -46,6 +46,10 @@ void do_stat(struct inode * inode, struct stat * tmp)
 	tmp->st_atime = inode->atime;
 	tmp->st_mtime = inode->mtime;
 	tmp->st_ctime = inode->ctime;
+	tmp->st_blksize = inode->blksize;
+	/* HACK: some filesystems might not set this... */
+	if(!tmp->st_blksize)
+		tmp->st_blksize = 512;
 }
 
 int sys_stat(char *f, struct stat *statbuf, int lin)

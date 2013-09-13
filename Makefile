@@ -24,7 +24,7 @@ export LD
 export AR
 
 CFLAGS_NOARCH = -std=c99 -nostdlib -nostdinc -nodefaultlibs \
-                -fno-builtin -ffreestanding \
+                -ffreestanding \
                 -mno-red-zone -fno-omit-frame-pointer \
                 -mpush-args -mno-accumulate-outgoing-args \
 	        -fno-tree-loop-distribute-patterns -fno-tree-vectorize \

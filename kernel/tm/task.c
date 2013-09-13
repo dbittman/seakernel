@@ -178,7 +178,7 @@ void move_task_cpu(task_t *t, cpu_t *cpu)
 	 * running on it... */
 	if(t->flags & TF_MOVECPU)
 		panic(0, "trying to move task twice");
-	if(t == cpu->ktask)
+	if(t == cpu->ktask || t == kernel_task)
 		panic(0, "trying to move idle task");
 	printk(0, "moving task %d to cpu %d\n", t->pid, cpu->apicid);
 	raise_task_flag(t, TF_MOVECPU);

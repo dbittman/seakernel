@@ -3,6 +3,8 @@
 #include <dev.h>
 #include <asm/system.h>
 #include <ll.h>
+#include <mount.h>
+
 struct llist *mountlist, *sblist;
 
 struct inode *get_sb_table(int _n)

@@ -6,6 +6,7 @@
 #include <task.h>
 #include <cpu.h>
 #include <atomic.h>
+#include <mount.h>
 
 int sys_sync(int);
 void acpiPowerOff(void);

@@ -11,6 +11,8 @@
 #include <cpu.h>
 #include <syscall.h>
 #include <uname.h>
+#include <mount.h>
+
 unsigned int num_syscalls=0;
 //#define SC_DEBUG 1
 int sys_null(long a, long b, long c, long d, long e)

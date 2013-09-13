@@ -7,6 +7,8 @@
 #include <ll.h>
 #include <atomic.h>
 #include <rwlock.h>
+#include <mount.h>
+
 struct inode *init_tmpfs();
 
 int do_mount(struct inode *i, struct inode *p)

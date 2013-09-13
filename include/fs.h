@@ -61,18 +61,6 @@ struct inode {
 
 #define inode_has_children(i) (i->children.head && ll_is_active((&i->children)))
 
-struct sblktbl {
-	int version;
-	char name[16];
-	struct inode * (*sb_load)(dev_t dev, u64 block, char *);
-	struct llistnode *node;
-};
-
-struct mountlst {
-	struct inode *i;
-	struct llistnode *node;
-};
-
 struct file {
 	unsigned int flags, fd_flags, count;
 	off_t pos;
@@ -155,7 +143,7 @@ int sys_utime(char *path, time_t a, time_t m);
 int get_pwd(char *buf, int);
 int unlink(char *f);
 int proc_get_major();
-struct mountlst *get_mount(struct inode *i);
+
 int do_fs_stat(struct inode *i, struct fsstat *f);
 int rename(char *f, char *nname);
 int sys_isatty(int f);
@@ -167,15 +155,13 @@ struct inode *pfs_cn(char *name, mode_t mode, int major, int minor);
 int sys_getpath(int f, char *b, int);
 struct inode *read_dir(char *, int num);
 int mount(char *d, struct inode *p);
-int link(char *old, char *new);
+int link(char *old, char *n);
 int create_node(struct inode *i, char *name, mode_t mode, int maj, int min);
 int write_fs(struct inode *i, off_t off, size_t len, char *b);
 int read_fs(struct inode *i, off_t off, size_t len, char *b);
 int unmount(char *n, int);
 int do_unmount(struct inode *i, int);
-int do_fs_stat(struct inode *i, struct fsstat *f);
-int fs_stat(char *path, struct fsstat *f);
-int sys_fsstat(int fp, struct fsstat *fss);
+
 int sys_ioctl(int fp, int cmd, long arg);
 int sys_open(char *name, int flags);
 struct file *d_sys_open(char *name, int flags, mode_t mode, int *, int *);
@@ -188,13 +174,7 @@ int sys_dup(int f);
 int sys_dup2(int f, int n);
 int sys_fstat(int fp, struct stat *sb);
 int sys_stat(char *f, struct stat *statbuf, int);
-void add_mountlst(struct inode *n);
-void remove_mountlst(struct inode *n);
-void unmount_all();
-int register_sbt(char *name, int ver, int (*sbl)(dev_t,u64,char *));
-struct inode *sb_callback(char *fsn, dev_t dev, u64 block, char *n);
-struct inode *sb_check_all(dev_t dev, u64 block, char *n);
-int unregister_sbt(char *name);
+
 int execve(char *path, char **argv, char **env);
 int load_superblocktable();
 int get_ref_count(struct inode *i);
@@ -230,7 +210,7 @@ int proc_append_buffer(char *buffer, char *data, int off, int len,
 	int req_off, int req_len);
 void init_proc_fs();
 struct inode *pfs_cn_node(struct inode *to, char *name, mode_t mode, int major, int minor);
-int sys_posix_fsstat(int fd, struct posix_statfs *sb);
+
 int sys_sync();
 pipe_t *create_pipe();
 struct inode *init_ramfs();

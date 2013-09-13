@@ -8,6 +8,7 @@
 #include <sys/fcntl.h>
 #include <cpu.h>
 #include <elf.h>
+#include <file.h>
 
 /* Prepares a process to recieve a new executable. Desc is the descriptor of 
  * the executable. We keep it open through here so that we dont have to 

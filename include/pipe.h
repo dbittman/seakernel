@@ -23,5 +23,6 @@ void free_pipe(struct inode *i);
 int read_pipe(struct inode *ino, char *buffer, size_t length);
 int write_pipe(struct inode *ino, char *buffer, size_t length);
 int sys_pipe(int *files);
+pipe_t *create_pipe();
 
 #endif

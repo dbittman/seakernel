@@ -9,6 +9,7 @@
 #include <char.h>
 #include <rwlock.h>
 #include <atomic.h>
+#include <file.h>
 int sys_close(int fp)
 {
 	/* Make sure that we flush a mm file */

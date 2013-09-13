@@ -1,6 +1,7 @@
 #include <kernel.h>
 #include <module.h>
 #include <elf.h>
+#include <file.h>
 
 int process_elf32_phdr(char *mem, int fp, addr_t *start, addr_t *end)
 {

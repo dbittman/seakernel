@@ -3,7 +3,7 @@
 #include <fs.h>
 #include <pipe.h>
 #include <task.h>
-
+#include <file.h>
 pipe_t *create_pipe()
 {
 	pipe_t *pipe = (pipe_t *)kmalloc(sizeof(pipe_t));

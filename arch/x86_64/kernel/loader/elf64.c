@@ -2,6 +2,7 @@
 #include <module.h>
 #include <elf.h>
 #include <symbol.h>
+#include <file.h>
 int process_elf64_phdr(char *mem, int fp, addr_t *start, addr_t *end)
 {
 	uint32_t i, x;

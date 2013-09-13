@@ -17,7 +17,6 @@
 
 #define FPUT_CLOSE 1
 
-extern struct sblktbl *sb_table;
 #define INAME_LEN 128
 
 typedef struct {
@@ -61,16 +60,6 @@ struct inode {
 
 #define inode_has_children(i) (i->children.head && ll_is_active((&i->children)))
 
-struct file {
-	unsigned int flags, fd_flags, count;
-	off_t pos;
-	struct inode * inode;
-};
-
-struct file_ptr {
-	unsigned int num, count;
-	struct file *fi;
-};
 
 struct inode_operations {
 	int (*read) (struct inode *, off_t, size_t, char *);
@@ -118,20 +107,50 @@ int do_iremove(struct inode *i, int flag, int);
 
 #define add_inode(a,b) do_add_inode(a, b, 0)
 
-extern struct llist *mountlist;
-struct inode *devfs_add(struct inode *q, char *name, mode_t mode, int major, int minor);
-struct inode *devfs_create(struct inode *base, char *name, mode_t mode);
-void devfs_remove(struct inode *i);
+struct inode *do_get_idir(char *path, struct inode *b, int, int, int *);
+int iput(struct inode *i);
+
 
 int sys_chdir(char *n, int fd);
 int ichdir(struct inode *i);
 int sys_sync();
+int sys_isatty(int f);
+int sys_dirstat(char *dir, unsigned num, char *namebuf, struct stat *statbuf);
+int sys_getpath(int f, char *b, int);
+int sys_ioctl(int fp, int cmd, long arg);
+int sys_open(char *name, int flags);
+int sys_open_posix(char *name, int flags, mode_t mode);
+int sys_close(int fp);
+int sys_read(int fp, off_t off, char *buf, size_t count);
+int sys_write(int fp, off_t off, char *buf, size_t count);
+int sys_seek(int fp, off_t pos, unsigned);
+int sys_dup(int f);
+int sys_dup2(int f, int n);
+int sys_fstat(int fp, struct stat *sb);
+int sys_stat(char *f, struct stat *statbuf, int);
+int sys_mount(char *node, char *to);
+int sys_readpos(int fp, char *buf, size_t count);
+int sys_writepos(int fp, char *buf, size_t count);
+int sys_mknod(char *path, mode_t mode, dev_t dev);
+int sys_chmod(char *path, int, mode_t mode);
+int sys_access(char *path, mode_t mode);
+int sys_umask(mode_t mode);
+struct inode *sys_create(char *path);
+int sys_link(char *s, char *d);
+int sys_fsync(int f);
+int sys_mount2(char *node, char *to, char *name, char *opts, int);
+int sys_getdepth(int fd);
+int sys_getcwdlen();
+int sys_fcntl(int filedes, int cmd, long attr1, long attr2, long attr3);
+int sys_symlink(char *p1, char *p2);
+int sys_readlink(char *_link, char *buf, int nr);
+int sys_dirstat_fd(int fd, unsigned num, char *namebuf, struct stat *statbuf);
+
+
 int sync_inode_tofs(struct inode *i);
 int do_add_inode(struct inode *b, struct inode *i, int);
 int remove_inode(struct inode *b, char *name);
 int get_path_string(struct inode *p, char *path, int);
-struct inode *do_get_idir(char *path, struct inode *b, int, int, int *);
-int iput(struct inode *i);
 int do_chdir(struct inode *);
 int do_chroot(struct inode *);
 int chdir(char *);
@@ -142,17 +161,9 @@ int sys_chown(char *path, int, uid_t uid, gid_t gid);
 int sys_utime(char *path, time_t a, time_t m);
 int get_pwd(char *buf, int);
 int unlink(char *f);
-int proc_get_major();
-
 int do_fs_stat(struct inode *i, struct fsstat *f);
 int rename(char *f, char *nname);
-int sys_isatty(int f);
 int do_unlink(struct inode *i);
-int sys_dirstat(char *dir, unsigned num, char *namebuf, struct stat *statbuf);
-int pfs_write(struct inode *i, off_t pos, size_t len, char *buffer);
-int pfs_read(struct inode *i, off_t pos, size_t len, char *buffer);
-struct inode *pfs_cn(char *name, mode_t mode, int major, int minor);
-int sys_getpath(int f, char *b, int);
 struct inode *read_dir(char *, int num);
 int mount(char *d, struct inode *p);
 int link(char *old, char *n);
@@ -161,77 +172,46 @@ int write_fs(struct inode *i, off_t off, size_t len, char *b);
 int read_fs(struct inode *i, off_t off, size_t len, char *b);
 int unmount(char *n, int);
 int do_unmount(struct inode *i, int);
-
-int sys_ioctl(int fp, int cmd, long arg);
-int sys_open(char *name, int flags);
-struct file *d_sys_open(char *name, int flags, mode_t mode, int *, int *);
-int sys_open_posix(char *name, int flags, mode_t mode);
-int sys_close(int fp);
-int sys_read(int fp, off_t off, char *buf, size_t count);
-int sys_write(int fp, off_t off, char *buf, size_t count);
-int sys_seek(int fp, off_t pos, unsigned);
-int sys_dup(int f);
-int sys_dup2(int f, int n);
-int sys_fstat(int fp, struct stat *sb);
-int sys_stat(char *f, struct stat *statbuf, int);
-
-int execve(char *path, char **argv, char **env);
-int load_superblocktable();
 int get_ref_count(struct inode *i);
-int sys_mount(char *node, char *to);
 int s_mount(char *name, dev_t dev, u64 block, char *fsname, char *no);
 int mount(char *d, struct inode *p);
 int do_mount(struct inode *i, struct inode *p);
-int sys_readpos(int fp, char *buf, size_t count);
-int sys_writepos(int fp, char *buf, size_t count);
 int is_directory(struct inode *i);
 int get_ref_count(struct inode *i);
 int free_inode(struct inode *i, int);
 int remove_inode(struct inode *b, char *name);
 struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, int *);
 struct inode *lookup(struct inode *i, char *path);
-int sys_mknod(char *path, mode_t mode, dev_t dev);
-int sys_chmod(char *path, int, mode_t mode);
-int sys_access(char *path, mode_t mode);
-struct inode *sys_getidir(char *path, int fd);
-int sys_umask(mode_t mode);
-struct inode *sys_create(char *path);
-int sys_link(char *s, char *d);
-int sys_fsync(int f);
 int sync_inode_tofs(struct inode *i);
 int rmdir(char *);
-int sys_sbrk(long inc);
-int sys_mount2(char *node, char *to, char *name, char *opts, int);
-extern struct inode *ramfs_root;
-void init_dev_fs();
+int recur_total_refs(struct inode *i);
+int permissions(struct inode *, mode_t);
+struct inode *create_m(char *, mode_t);
+int change_icount(struct inode *i, int c);
+void init_flocks(struct inode *i);
+struct inode *read_idir(struct inode *i, int num);
+int read_data(int fp, char *buf, off_t off, size_t length);
 
-extern struct inode *procfs_kprocdir;
+
+struct inode *devfs_add(struct inode *q, char *name, mode_t mode, int major, int minor);
+struct inode *devfs_create(struct inode *base, char *name, mode_t mode);
+void devfs_remove(struct inode *i);
+int proc_get_major();
+int pfs_write(struct inode *i, off_t pos, size_t len, char *buffer);
+int pfs_read(struct inode *i, off_t pos, size_t len, char *buffer);
+struct inode *pfs_cn(char *name, mode_t mode, int major, int minor);
+struct inode *pfs_cn_node(struct inode *to, char *name, mode_t mode, int major, int minor);
 int proc_append_buffer(char *buffer, char *data, int off, int len, 
 	int req_off, int req_len);
 void init_proc_fs();
-struct inode *pfs_cn_node(struct inode *to, char *name, mode_t mode, int major, int minor);
-
-int sys_sync();
-pipe_t *create_pipe();
+void init_dev_fs();
 struct inode *init_ramfs();
-int sys_getdepth(int fd);
-int sys_getcwdlen();
 struct inode *rfs_create(struct inode *__p, char *name, mode_t mode);
 int rfs_read(struct inode *i, off_t off, size_t len, char *b);
 int rfs_write(struct inode *i, off_t off, size_t len, char *b);
-int recur_total_refs(struct inode *i);
 extern struct inode *devfs_root, *procfs_root;
-int sys_fcntl(int filedes, int cmd, long attr1, long attr2, long attr3);
-int permissions(struct inode *, mode_t);
-struct inode *create_m(char *, mode_t);
-int sys_symlink(char *p1, char *p2);
-int sys_readlink(char *_link, char *buf, int nr);
-int change_icount(struct inode *i, int c);
+extern struct inode *procfs_kprocdir;
+extern struct inode *ramfs_root;
 extern struct inode *kproclist;
-void init_flocks(struct inode *i);
-struct inode *read_idir(struct inode *i, int num);
-int sys_dirstat_fd(int fd, unsigned num, char *namebuf, struct stat *statbuf);
-int do_sys_write_flags(struct file *f, off_t off, char *buf, size_t count);
-int do_sys_read_flags(struct file *f, off_t off, char *buf, size_t count);
-int read_data(int fp, char *buf, off_t off, size_t length);
+
 #endif

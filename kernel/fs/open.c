@@ -10,6 +10,7 @@
 #include <char.h>
 #include <block.h>
 #include <atomic.h>
+#include <file.h>
 
 struct file *d_sys_open(char *name, int flags, mode_t _mode, int *error, int *num)
 {

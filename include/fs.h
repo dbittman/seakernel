@@ -17,7 +17,7 @@
 
 #define FPUT_CLOSE 1
 
-#define INAME_LEN 128
+#define INAME_LEN 256
 
 typedef struct {
 	struct inode *root;
@@ -60,7 +60,6 @@ struct inode {
 
 #define inode_has_children(i) (i->children.head && ll_is_active((&i->children)))
 
-
 struct inode_operations {
 	int (*read) (struct inode *, off_t, size_t, char *);
 	int (*write) (struct inode *, off_t, size_t, char *);
@@ -99,17 +98,16 @@ int do_iremove(struct inode *i, int flag, int);
 #define iremove_nofree(i) do_iremove(i, 3, 0)
 #define iremove_force(i)  do_iremove(i, 1, 0)
 
-#define get_idir(path,in_st) do_get_idir(path, in_st, 0, 0, 0)
-#define lget_idir(path,in_st) do_get_idir(path, in_st, 1, 0, 0)
-#define clget_idir(path,in_st,x) do_get_idir(path, in_st, 1, x, 0)
-#define cget_idir(path,in_st,x) do_get_idir(path, in_st, 1, x, 0)
+#define get_idir(path,in_st)         do_get_idir(path, in_st, 0, 0, 0)
+#define lget_idir(path,in_st)        do_get_idir(path, in_st, 1, 0, 0)
+#define clget_idir(path,in_st,x)     do_get_idir(path, in_st, 1, x, 0)
+#define cget_idir(path,in_st,x)      do_get_idir(path, in_st, 1, x, 0)
 #define ctget_idir(path,in_st,x,res) do_get_idir(path, in_st, 1, x, res)
 
 #define add_inode(a,b) do_add_inode(a, b, 0)
 
 struct inode *do_get_idir(char *path, struct inode *b, int, int, int *);
 int iput(struct inode *i);
-
 
 int sys_chdir(char *n, int fd);
 int ichdir(struct inode *i);
@@ -135,7 +133,6 @@ int sys_mknod(char *path, mode_t mode, dev_t dev);
 int sys_chmod(char *path, int, mode_t mode);
 int sys_access(char *path, mode_t mode);
 int sys_umask(mode_t mode);
-struct inode *sys_create(char *path);
 int sys_link(char *s, char *d);
 int sys_fsync(int f);
 int sys_mount2(char *node, char *to, char *name, char *opts, int);

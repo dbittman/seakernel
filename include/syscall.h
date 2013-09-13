@@ -61,7 +61,7 @@ int sys_setup();
 #define SYS_MOUNT		 41
 #define SYS_UMOUNT		 42
 #define SYS_READDIR		 43
-#define SYS_CREATE		 44
+#define SYS_UNUSED25		 44
 #define SYS_CREATE_CONSOLE	 45
 #define SYS_SWITCH_CONSOLE	 46
 

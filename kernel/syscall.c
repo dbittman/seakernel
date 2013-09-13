@@ -76,7 +76,7 @@ void *syscall_table[129] = {
 	
 	SC sys_link,       SC unlink,         SC get_ref_count, SC get_pwd, 
 	SC sys_getpath,    SC sys_null,       SC chroot,        SC chdir,
-	SC sys_mount,      SC unmount,        SC read_dir,      SC sys_create, 
+	SC sys_mount,      SC unmount,        SC read_dir,      SC sys_null, 
 	SC create_console, SC switch_console, SC sys_null,      SC sys_null,
 	
 	SC sys_null,       SC sys_mmap,       SC sys_munmap,    SC sys_sync, 

@@ -1,6 +1,7 @@
 #ifndef __FILE_H
 #define __FILE_H
 
+#include <types.h>
 
 struct file {
 	unsigned int flags, fd_flags, count;

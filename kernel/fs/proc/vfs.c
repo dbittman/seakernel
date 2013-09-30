@@ -88,5 +88,59 @@ int proc_vfs(char rw, struct inode *n, int m, char *buf, int off, int len)
 				sizeof(struct mnttab), off, len);
 		}
 	}
+	else if (m == 2)
+	{
+		struct inode *i;
+		int c=0;
+		while((i=get_sb_table(c++)))
+		{
+			char *dev, *mountp="", *fsname, *mtopts;
+			if(!i->node_str[0])
+			{
+				if(i->mount && i->mount->root)
+					dev = i->mount->root->name;
+				else
+					dev = i->name;
+			} else
+				dev = strrchr(i->node_str, '/')+1;
+			
+			if(i->mount_parent) {
+				if(i->mount_parent == current_task->thread->root || i == current_task->thread->root)
+					mountp = "/";
+				else {
+					if(!strcmp(i->mount_parent->name, "dev"))
+						mountp = "/dev";
+					if(!strcmp(i->mount_parent->name, "tmp"))
+						mountp = "/tmp";
+					if(!strcmp(i->mount_parent->name, "proc"))
+						mountp = "/proc";
+				}
+			}
+			fsname = i->name;
+			mtopts = "";
+			total_len += proc_append_buffer(buf, dev, total_len, 
+											strlen(dev), off, len);
+			total_len += proc_append_buffer(buf, "\t", total_len, 
+											strlen("\t"), off, len);
+			
+			total_len += proc_append_buffer(buf, mountp, total_len, 
+											strlen(mountp), off, len);
+			total_len += proc_append_buffer(buf, "\t", total_len, 
+											strlen("\t"), off, len);
+			
+			total_len += proc_append_buffer(buf, fsname, total_len, 
+											strlen(fsname), off, len);
+			total_len += proc_append_buffer(buf, "\t", total_len, 
+											strlen("\t"), off, len);
+			
+			total_len += proc_append_buffer(buf, mtopts, total_len, 
+											strlen(mtopts), off, len);
+			total_len += proc_append_buffer(buf, "\t", total_len, 
+											strlen("\t"), off, len);
+			
+			total_len += proc_append_buffer(buf, " 0 0\n", total_len, 
+											strlen(" 0 0\n"), off, len);
+		}
+	}
 	return total_len;
 }

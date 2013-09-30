@@ -145,7 +145,7 @@ void init_proc_fs()
 	pfs_cn("isr", S_IFREG, 3, 4);
 	pfs_cn("bcache", S_IFREG, 3, 6);
 	pfs_cn("modules", S_IFREG, 4, 0);
-	pfs_cn("mounts", S_IFREG, 2, 1);
+	pfs_cn("mounts", S_IFREG, 2, 2);
 	pfs_cn("seaos", S_IFREG, 3, 2);
 	/* Mount the filesystem */
 	add_inode(current_task->thread->root, procfs_root);

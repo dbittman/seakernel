@@ -7,10 +7,6 @@ Roadmap:
 	* bugfixes
 	* remove all code thats not mine from the kernel
 	* add atomic operations, and implement accordingly
-	* ata bus=1
-	* fix unmounting
-	* vfs proper locking
-	* global "create inode" api
 	* fix kernel symbol system
 0.2 B3
 	* new random driver

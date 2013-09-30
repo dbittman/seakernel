@@ -8,6 +8,7 @@ Roadmap:
 	* remove all code thats not mine from the kernel
 	* add atomic operations, and implement accordingly
 	* fix kernel symbol system
+	* fix filesystem reporting
 0.2 B3
 	* new random driver
 	* add chaining to file descriptors (and modify the return value for the sysconf entry)

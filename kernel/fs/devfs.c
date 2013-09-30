@@ -10,6 +10,7 @@
 
 struct inode *devfs_root;
 int devfs_nodescount=1;
+int devfs_fsstat(struct inode *i, struct posix_statfs *fs);
 struct inode_operations devfs_inode_ops = {
  0,
  0,
@@ -22,10 +23,18 @@ struct inode_operations devfs_inode_ops = {
  0,
  0,
  0,
- 0,
+ devfs_fsstat,
  0,
  0
 };
+
+int devfs_fsstat(struct inode *i, struct posix_statfs *fs)
+{
+	memset(fs, 0, sizeof(*fs));
+	fs->f_type = 1;
+	fs->f_fsid = 4;
+	return 0;
+}
 
 void init_dev_fs()
 {

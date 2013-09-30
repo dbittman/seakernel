@@ -95,6 +95,7 @@ int proc_vfs(char rw, struct inode *n, int m, char *buf, int off, int len)
 		while((i=get_sb_table(c++)))
 		{
 			char *dev, *mountp="", *fsname, *mtopts;
+			char tmp[1024];
 			if(!i->node_str[0])
 			{
 				if(i->mount && i->mount->root)
@@ -108,12 +109,9 @@ int proc_vfs(char rw, struct inode *n, int m, char *buf, int off, int len)
 				if(i->mount_parent == current_task->thread->root || i == current_task->thread->root)
 					mountp = "/";
 				else {
-					if(!strcmp(i->mount_parent->name, "dev"))
-						mountp = "/dev";
-					if(!strcmp(i->mount_parent->name, "tmp"))
-						mountp = "/tmp";
-					if(!strcmp(i->mount_parent->name, "proc"))
-						mountp = "/proc";
+					get_path_string(i->mount_parent, tmp, 1024);
+					kprintf("-> %s\n", tmp);
+					mountp = tmp;
 				}
 			}
 			fsname = i->name;

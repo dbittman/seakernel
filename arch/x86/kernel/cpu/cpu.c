@@ -176,12 +176,13 @@ void init_main_cpu_1()
 	add_kernel_symbol((addr_t)&num_booted_cpus);
 #endif
 #endif
-	/*
+
+#if CONFIG_GDB_STUB
 	set_debug_traps();
 	kprintf("waiting for GDB\n");
 	__asm__("int $3");
 	kprintf(" ok\n");
-	*/
+#endif
 }
 
 void init_main_cpu_2()

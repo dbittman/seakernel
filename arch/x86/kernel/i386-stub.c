@@ -1,3 +1,5 @@
+#include <config.h>
+#if CONFIG_GDB_STUB
 /****************************************************************************
 
 		THIS SOFTWARE IS NOT COPYRIGHTED
@@ -961,3 +963,5 @@ breakpoint (void)
   if (initialized)
     BREAKPOINT ();
 }
+
+#endif

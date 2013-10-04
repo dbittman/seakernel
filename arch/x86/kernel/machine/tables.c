@@ -209,3 +209,9 @@ void load_tables()
 	init_pic();
 	int_sys_init();
 }
+
+void exceptionHandler(int a, void *p)
+{
+	idt_set_gate(a, (u32int)p , 0x08, 0x8E);
+	idt_flush((u32int)&idt_ptr);
+}

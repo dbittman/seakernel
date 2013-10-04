@@ -10,6 +10,7 @@
 #include <asm/system.h>
 #include <termios.h>
 #include <symbol.h>
+#include <tqueue.h>
 
 struct vterm consoles[MAX_CONSOLES];
 unsigned *tty_calltable = 0;

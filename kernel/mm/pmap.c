@@ -41,8 +41,10 @@ struct pmap *pmap_create(struct pmap *m, unsigned flags)
 	if(!m) {
 		m = kmalloc(sizeof(struct pmap));
 		m->flags = PMAP_ALLOC | flags;
-	} else
+	} else {
+		memset(m, 0, sizeof(struct pmap));
 		m->flags = flags;
+	}
 	m->magic = PMAP_MAGIC;
 	mutex_create(&m->lock, 0);
 	m->idx_max = PMAP_INITIAL_MAX;

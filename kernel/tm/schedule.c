@@ -13,14 +13,16 @@ __attribute__((always_inline)) inline void update_task(task_t *t)
 }
 /* This here is the basic scheduler - It does nothing 
  * except find the next runable task */
-__attribute__((always_inline)) inline task_t *get_next_task(task_t *prev)
+__attribute__((always_inline)) inline task_t *get_next_task(task_t *prev, cpu_t *cpu)
 {
 	assert(prev && kernel_task);
-	cpu_t *cpu = prev->cpu;
+	assert(prev->cpu == cpu);
 	assert(cpu);
+	cpu = prev->cpu;
 	task_t *t = tqueue_next(cpu->active_queue);
 	while(t)
 	{
+		assert(t);
 		if(unlikely(t->magic != TASK_MAGIC))
 			panic(0, "Invalid task (%d:%d): %x", t->pid, t->state, t->magic);
 		/* this handles everything in the "active queue". This includes
@@ -86,6 +88,8 @@ int schedule()
 		return 0;
 	assert(!(kernel_state_flags & KSF_SHUTDOWN) || current_task->flags & TF_SHUTDOWN);
 	if(kernel_state_flags & KSF_SHUTDOWN) return 1;
+	assert(current_task->magic == TASK_MAGIC);
+	if(current_task->thread) assert(current_task->thread->magic == THREAD_MAGIC);
 	/* make sure to re-enable interrupts when we come back to this
 	 * task if we entered schedule with them enabled */
 	if(set_int(0)) {
@@ -99,7 +103,7 @@ int schedule()
 	
 	mutex_acquire(&cpu->lock);
 	store_context();
-	volatile task_t *next_task = (volatile task_t *)get_next_task(old);
+	volatile task_t *next_task = (volatile task_t *)get_next_task(old, cpu);
 	assert(cpu == next_task->cpu);
 	restore_context(next_task);
 	next_task->slice = ticks;
@@ -111,9 +115,11 @@ int schedule()
 	/* after calling context switch, we may NOT use any variables that
 	 * were used above it, since they are not necessarily valid. */
 	context_switch(next_task);
+	assert(current_task->magic == TASK_MAGIC);
+	if(current_task->thread) assert(current_task->thread->magic == THREAD_MAGIC);
 	//reset_timer_state(); /* TODO: This may be needed... */
 	/* tasks that have come from fork() (aka, new tasks) have this
-	 * flag set, such that here we just to their entry point in fork() */
+	 * flag set, such that here we just jump to their entry point in fork() */
 	if(likely(!(current_task->flags & TF_FORK)))
 	{
 		post_context_switch();

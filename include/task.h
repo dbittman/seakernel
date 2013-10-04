@@ -1,5 +1,6 @@
 #ifndef TASK_H
 #define TASK_H
+#include <config.h>
 #include <kernel.h>
 #include <memory.h>
 #include <fs.h>
@@ -7,21 +8,20 @@
 #include <sig.h>
 #include <mmfile.h>
 #include <dev.h>
-#include <tqueue.h>
 #include <atomic.h>
 #include <config.h>
-
-extern tqueue_t *primary_queue;
+#include <file.h>
 
 #define KERN_STACK_SIZE 0x16000
 
+/* exit reasons */
 #define __EXIT     0
 #define __COREDUMP 1
 #define __EXITSIG  2
 #define __STOPSIG  4
 
 #define TASK_MAGIC 0xCAFEBABE
-#define FILP_HASH_LEN 512
+#define THREAD_MAGIC 0xBABECAFE
 
 /* flags for different task states */
 #define TF_EXITING     0x2 /* entering the exit() function */
@@ -52,22 +52,10 @@ extern tqueue_t *primary_queue;
 #define TF_SHUTDOWN  0x200000
 #define TF_KILLREADY 0x400000
 
+
 #define PRIO_PROCESS 1
 #define PRIO_PGRP    2
 #define PRIO_USER    3
-
-#define TSEARCH_FINDALL           0x1
-#define TSEARCH_PID               0x2
-#define TSEARCH_UID               0x4
-#define TSEARCH_EUID              0x8
-#define TSEARCH_TTY              0x10
-#define TSEARCH_PARENT           0x20
-#define TSEARCH_ENUM             0x40
-#define TSEARCH_EXIT_WAITING     0x80
-#define TSEARCH_EXIT_PARENT     0x100
-#define TSEARCH_EXCLUSIVE       0x200
-#define TSEARCH_ENUM_ALIVE_ONLY 0x400
-#define current_tss (&((cpu_t *)current_task->cpu)->tss)
 
 #if SCHED_TTY
 static int sched_tty = SCHED_TTY_CYC;
@@ -85,6 +73,7 @@ typedef struct exit_status {
 } ex_stat;
 
 struct thread_shared_data {
+	unsigned magic;
 	unsigned count;
 	mutex_t files_lock;
 	struct inode *root, *pwd;
@@ -174,14 +163,12 @@ void destroy_task_page_directory(task_t *p);
 struct thread_shared_data *thread_data_create();
 task_t *task_create();
 void move_task_to_kill_queue(task_t *t, int);
-task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned long value, void (*action)(task_t *, int), int arg, int *);
 void delay_sleep(int t);
 void take_issue_with_current_task();
 void clear_resources(task_t *);
 int times(struct tms *buf);
 void run_scheduler();
 void arch_specific_set_current_task(page_dir_t *, addr_t);
-extern volatile long ticks;
 int set_gid(int);
 int set_uid(int);
 void release_mutexes(task_t *t);
@@ -204,29 +191,18 @@ int sys_getppid();
 void release_task(task_t *p);
 int wait_task(unsigned pid, int state);
 void delay(int);
-int send_signal(int, int);
-void handle_signal(task_t *t);
 struct file *get_file_pointer(task_t *t, int n);
 void remove_file_pointer(task_t *t, int n);
 int add_file_pointer(task_t *t, struct file *f);
 int add_file_pointer_after(task_t *, struct file *f, int after);
 void copy_file_handles(task_t *p, task_t *n);
-void freeze_all_tasks();
-void unfreeze_all_tasks();
 int sys_alarm(int a);
 int get_mem_usage();
 void take_issue_with_current_task();
-extern volatile unsigned next_pid;
 task_t *get_task_pid(int pid);
-int do_send_signal(int, int, int);
 void kill_all_tasks();
 void task_unlock_mutexes(task_t *t);
 void do_force_nolock(task_t *t);
-void clear_mmfiles(task_t *t, int);
-void copy_mmf(task_t *old, task_t *new);
-void check_mmf_and_flush(task_t *t, int fd);
-int load_so_library(char *name);
-int sys_ret_sig();
 void close_all_files(task_t *);
 int sys_gsetpriority(int set, int which, int id, int val);
 int sys_waitagain();
@@ -235,11 +211,10 @@ int get_task_mem_usage(task_t *t);
 int sys_nice(int which, int who, int val, int flags);
 int sys_setsid();
 int sys_setpgid(int a, int b);
-extern unsigned init_pid;
 void task_suicide();
-extern unsigned ret_values_size;
-extern unsigned *ret_values;
-void set_signal(int sig, addr_t hand);
+void handle_signal(task_t *t);
+int signal_will_be_fatal(task_t *t, int sig);
+int got_signal(task_t *t);
 int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds, 
 	struct timeval *timeout);
 int swap_in_page(task_t *, unsigned);
@@ -252,30 +227,22 @@ void task_unblock(struct llist *list, task_t *t);
 void task_resume(task_t *t);
 struct inode *set_as_kernel_task(char *name);
 void fput(task_t *, int, char);
+extern void do_switch_to_user_mode();
+extern void check_alarms();
+
+#if CONFIG_SMP
+void smp_cpu_task_idle(task_t *me);
+#endif
+
+extern volatile unsigned next_pid;
+extern unsigned init_pid;
+extern unsigned ret_values_size;
+extern unsigned *ret_values;
 extern int current_hz;
 extern struct llist *kill_queue;
 extern unsigned running_processes;
-extern void do_switch_to_user_mode();
-extern void check_alarms();
-static int signal_will_be_fatal(task_t *t, int sig)
-{
-	if(sig == SIGKILL) return 1;
-	if(t->thread->signal_act[t->sigd]._sa_func._sa_handler) return 0;
-	if(sig == SIGUSLEEP || sig == SIGISLEEP || sig == SIGSTOP || sig == SIGCHILD)
-		return 0;
-	return 1;
-}
+extern volatile long ticks;
 
-static int got_signal(task_t *t)
-{
-	if(kernel_state_flags & KSF_SHUTDOWN)
-		return 0;
-	if(!t->sigd) return 0;
-	/* if the SA_RESTART flag is set, then return false */
-	if(t->thread->signal_act[t->sigd].sa_flags & SA_RESTART) return 0;
-	/* otherwise, return if we have a signal */
-	return (t->sigd);
-}
 
 static __attribute__((always_inline)) inline void enter_system(int sys)
 {

@@ -12,8 +12,6 @@
 #include <file.h>
 int sys_close(int fp)
 {
-	/* Make sure that we flush a mm file */
-	check_mmf_and_flush((task_t *)current_task, fp);
 	struct file *f = get_file_pointer((task_t *) current_task, fp);
 	if(!f)
 		return -EBADF;

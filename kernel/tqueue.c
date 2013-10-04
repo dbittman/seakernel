@@ -4,6 +4,7 @@
 #include <mutex.h>
 #include <ll.h>
 #include <cpu.h>
+#include <atomic.h>
 /* the rules for tqueue's are simple:
  * 1) you MUST disable interrupts when accessing them. This makes
  *    it safe for single-cpu machines to use these.
@@ -23,6 +24,7 @@ tqueue_t *tqueue_create(tqueue_t *tq, unsigned flags)
 	mutex_create(&tq->lock, MT_NOSCHED);
 	ll_create_lockless(&tq->tql);
 	tq->num=0;
+	tq->magic = TQ_MAGIC;
 	return tq;
 }
 
@@ -38,22 +40,24 @@ struct llistnode *tqueue_insert(tqueue_t *tq, void *item, struct llistnode *node
 {
 	int old = set_int(0);
 	mutex_acquire(&tq->lock);
+	assert(tq->magic == TQ_MAGIC);
 	ll_do_insert(&tq->tql, node, item);
 	if(!tq->current)
 		tq->current = tq->tql.head;
-	tq->num++;
+	add_atomic(&tq->num, 1);
 	mutex_release(&tq->lock);
 	set_int(old);
 	return node;
 }
 
-void tqueue_remove(tqueue_t *tq, struct llistnode *i)
+void tqueue_remove(tqueue_t *tq, struct llistnode *node)
 {
 	int old = set_int(0);
 	mutex_acquire(&tq->lock);
-	if(tq->current == i) tq->current=0;
-	ll_do_remove(&tq->tql, i, 0);
-	tq->num--;
+	assert(tq->magic == TQ_MAGIC);
+	if(tq->current == node) tq->current=0;
+	ll_do_remove(&tq->tql, node, 0);
+	sub_atomic(&tq->num, 1);
 	mutex_release(&tq->lock);
 	set_int(old);
 }
@@ -62,22 +66,27 @@ void tqueue_remove(tqueue_t *tq, struct llistnode *i)
  * while the queue is locked, so we provide this for it */
 void tqueue_remove_nolock(tqueue_t *tq, struct llistnode *i)
 {
+	assert(tq->magic == TQ_MAGIC);
 	if(tq->current == i) tq->current=0;
 	ll_do_remove(&tq->tql, i, 0);
 	tq->num--;
 }
 
+/* this function may return null if there are no tasks in the queue */
 void *tqueue_next(tqueue_t *tq)
 {
 	int old = set_int(0);
 	mutex_acquire(&tq->lock);
+	assert(tq->magic == TQ_MAGIC);
+	assert(tq->num > 0);
 	if(tq->current) tq->current = tq->current->next;
 	/* can't use else here. Need to catch the case when current->next is
 	 * null above */
 	if(!tq->current) tq->current = tq->tql.head;
+	if(!tq->current) printk(0, "--> %x %d\n", tq->tql.head, tq->num);
+	assert(tq->current);
 	void *ret = tq->current->entry;
 	mutex_release(&tq->lock);
 	set_int(old);
-	assert(ret);
 	return ret;
 }

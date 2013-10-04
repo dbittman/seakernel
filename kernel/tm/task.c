@@ -31,6 +31,7 @@ task_t *task_create()
 struct thread_shared_data *thread_data_create()
 {
 	struct thread_shared_data *thread = (void *)kmalloc(sizeof(struct thread_shared_data));
+	thread->magic = THREAD_MAGIC;
 	thread->count = 1;
 	mutex_create(&thread->files_lock, 0);
 	return thread;
@@ -130,7 +131,6 @@ void task_resume(task_t *t)
  * (potentially) an interrupt handler */
 void task_block(struct llist *list, task_t *task)
 {
-	__engage_idle();
 	int old = set_int(0);
 	task->blocklist = list;
 	ll_do_insert(list, task->blocknode, (void *)task);
@@ -171,6 +171,7 @@ void task_unblock_all(struct llist *list)
 
 void move_task_cpu(task_t *t, cpu_t *cpu)
 {
+	panic(0, "NO!");
 	assert(t && cpu);
 	if(t->cpu == cpu) panic(0, "trying to move task to it's own cpu");
 	assert(t != current_task);

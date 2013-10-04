@@ -10,6 +10,7 @@ unsigned running_processes = 0;
 
 void copy_thread_data(task_t *task, task_t *parent)
 {
+	assert(parent->thread->magic == THREAD_MAGIC);
 	if(parent->thread->root) {
 		task->thread->root = parent->thread->root;
 		add_atomic(&task->thread->root->count, 1);
@@ -39,6 +40,7 @@ void copy_task_struct(task_t *task, task_t *parent, char share_thread_data)
 	} else {
 		add_atomic(&parent->thread->count, 1);
 		task->thread = parent->thread;
+		assert(parent->thread->magic == THREAD_MAGIC);
 	}
 	
 	task->tty = parent->tty;
@@ -50,13 +52,7 @@ void copy_task_struct(task_t *task, task_t *parent, char share_thread_data)
 	task->system = parent->system;
 	task->cmask = parent->cmask;
 	task->path_loc_start = parent->path_loc_start;
-	
-	if(parent->mmf_priv_space) {
-		task->mmf_priv_space = (vma_t *)kmalloc(sizeof(vma_t));
-		memcpy(task->mmf_priv_space, parent->mmf_priv_space, sizeof(vma_t));
-	}
-	task->mmf_share_space = parent->mmf_share_space;
-	copy_mmf(parent, task);
+
 	copy_file_handles(parent, task);
 	/* this flag gets cleared on the first scheduling of this task */
 	task->flags = TF_FORK;

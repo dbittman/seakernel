@@ -3,6 +3,8 @@
 
 #include <types.h>
 
+#define FILP_HASH_LEN 512
+
 struct file {
 	unsigned int flags, fd_flags, count;
 	off_t pos;

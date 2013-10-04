@@ -198,6 +198,8 @@ int check_pointers(volatile registers_t *regs)
 
 int syscall_handler(volatile registers_t *regs)
 {
+	assert(current_task->magic == TASK_MAGIC);
+	assert(current_task->thread->magic == THREAD_MAGIC);
 	/* SYSCALL_NUM_AND_RET is defined to be the correct register in the syscall regs struct. */
 	if(unlikely(SYSCALL_NUM_AND_RET >= num_syscalls))
 		return -ENOSYS;

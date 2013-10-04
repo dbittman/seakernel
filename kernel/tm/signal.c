@@ -209,3 +209,24 @@ int sys_sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict os
 	current_task->thread->global_sig_mask = current_task->sig_mask = nm;
 	return 0;
 }
+
+
+int signal_will_be_fatal(task_t *t, int sig)
+{
+	if(sig == SIGKILL) return 1;
+	if(t->thread->signal_act[t->sigd]._sa_func._sa_handler) return 0;
+	if(sig == SIGUSLEEP || sig == SIGISLEEP || sig == SIGSTOP || sig == SIGCHILD)
+		return 0;
+	return 1;
+}
+
+int got_signal(task_t *t)
+{
+	if(kernel_state_flags & KSF_SHUTDOWN)
+		return 0;
+	if(!t->sigd) return 0;
+	/* if the SA_RESTART flag is set, then return false */
+	if(t->thread->signal_act[t->sigd].sa_flags & SA_RESTART) return 0;
+	/* otherwise, return if we have a signal */
+	return (t->sigd);
+}

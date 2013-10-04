@@ -1,1 +1,1 @@
-KOBJS += kernel/cpu/cpu.o
+KOBJS += kernel/cpu/smp.o 

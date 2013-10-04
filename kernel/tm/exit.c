@@ -7,11 +7,6 @@
 #include <cpu.h>
 #include <atomic.h>
 
-void clear_resources(task_t *t)
-{
-	clear_mmfiles(t, (t->flags&TF_EXITING) ? 1 : 0);
-}
-
 void set_as_dead(task_t *t)
 {
 	assert(t);
@@ -57,7 +52,7 @@ int __KT_try_releasing_tasks()
 		rwlock_release(&kill_queue->rwl, RWL_WRITER);
 		return 0;
 	}
-	assert(t != current_task);
+	if(cur->entry != t) printk(0, "--> %x %x\n", cur->entry, t);
 	assert(cur->entry == t);
 	void *node = ll_do_remove(kill_queue, cur, 1);
 	assert(node == cur);
@@ -105,6 +100,7 @@ void exit(int code)
 		panic(PANIC_NOSYNC, "kernel tried to exit");
 	task_t *t = (task_t *)current_task;
 	/* Get ready to exit */
+	assert(t->thread->magic == THREAD_MAGIC);
 	ll_insert(kill_queue, (void *)t);
 	raise_flag(TF_EXITING);
 	if(code != -9) 
@@ -113,7 +109,6 @@ void exit(int code)
 	t->exit_reason.pid = t->pid;
 	/* Clear out system resources */
 	free_thread_specific_directory();
-	clear_resources(t);
 	/* tell our parent that we're dead */
 	if(t->parent)
 		do_send_signal(t->parent->pid, SIGCHILD, 1);

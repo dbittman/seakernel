@@ -89,4 +89,38 @@ struct sigaction
 
 int sys_sigact(int sig, const struct sigaction *act, struct sigaction *oact);
 int sys_sigprocmask(int how, const sigset_t *set, sigset_t *oset);
+void set_signal(int sig, addr_t hand);
+int sys_ret_sig();
+int do_send_signal(int, int, int);
+int send_signal(int, int);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #endif

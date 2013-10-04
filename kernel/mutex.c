@@ -72,8 +72,10 @@ mutex_t *mutex_create(mutex_t *m, unsigned flags)
 	if(!m) {
 		m = (void *)kmalloc(sizeof(mutex_t));
 		m->flags |= (MT_ALLOC | flags);
-	} else
+	} else {
+		memset(m, 0, sizeof(mutex_t));
 		m->flags=flags;
+	}
 	m->lock=0;
 	m->magic = MUTEX_MAGIC;
 	m->pid = -1;

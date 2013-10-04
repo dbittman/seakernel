@@ -6,6 +6,7 @@
 #include <char.h>
 #include <mutex.h>
 #include <symbol.h>
+#include <task.h>
 mutex_t serial_m;
 char serial_initialized=0;
 
@@ -16,7 +17,7 @@ void init_serial_port(int PORT)
 {
 	outb(PORT + 1, 0x00);    // Disable all interrupts
 	outb(PORT + 3, 0x80);    // Enable DLAB (set baud rate divisor)
-	outb(PORT + 0, 0x03);    // Set divisor to 3 (lo byte) 38400 baud
+	outb(PORT + 0, 12);    // Set divisor to 12 (lo byte) 9600 baud
 	outb(PORT + 1, 0x00);    //                  (hi byte)
 	outb(PORT + 3, 0x03);    // 8 bits, no parity, one stop bit
 	outb(PORT + 2, 0xC7);    // Enable FIFO, clear them, with 14-byte threshold
@@ -27,6 +28,12 @@ void write_serial(int p, char a)
 {
 	while (serial_transmit_empty(p) == 0);
 	outb(p,a);
+}
+
+char read_serial(int p)
+{
+	while (serial_received(p) == 0);
+	return inb(p);
 }
 
 void serial_puts(int port, char *s)
@@ -68,6 +75,19 @@ int serial_rw(int rw, int min, char *b, size_t c)
 		}
 		mutex_release(&serial_m);
 		return c;
+	} else if(rw == READ)
+	{
+		while(i--) {
+			while(serial_received(0x3f8) == 0)
+			{
+				if(got_signal(current_task))
+					return -EINTR;
+			}
+			*(b) = inb(0x3f8);
+			kprintf("GOT: %x\n", *(b));
+			b++;
+		}
+		return c;
 	}
 	return 0;
 }
@@ -80,5 +100,6 @@ void init_serial()
 	serial_puts_nolock(0, "[kernel]: started debug serial output\n");
 #if CONFIG_MODULES
 	add_kernel_symbol(serial_puts);
+	add_kernel_symbol(serial_puts_nolock);
 #endif
 }

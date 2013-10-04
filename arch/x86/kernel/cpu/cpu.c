@@ -131,7 +131,8 @@ int get_cpu_interrupt_flag()
 	cpu_t *cpu = current_task ? current_task->cpu : 0;
 	return (cpu ? (cpu->flags&CPU_INTER) : 0);
 }
-
+void
+set_debug_traps (void);
 void init_main_cpu_1()
 {
 #if CONFIG_SMP
@@ -175,6 +176,12 @@ void init_main_cpu_1()
 	add_kernel_symbol((addr_t)&num_booted_cpus);
 #endif
 #endif
+	/*
+	set_debug_traps();
+	kprintf("waiting for GDB\n");
+	__asm__("int $3");
+	kprintf(" ok\n");
+	*/
 }
 
 void init_main_cpu_2()

@@ -12,34 +12,36 @@
 #include <mutex.h>
 #include <task.h>
 
-struct llistnode *ll_do_insert(struct llist *list, struct llistnode *new, void *entry)
+struct llistnode *ll_do_insert(struct llist *list, struct llistnode *n, void *entry)
 {
 	if(!(list->flags & LL_LOCKLESS)) 
-		rwlock_acquire(&list->rwl, RWL_WRITER);
-	struct llistnode *old = list->head;
-	list->head = new;
-	list->head->next = old ? old : list->head;
-	list->head->prev = old ? old->prev : list->head;
-	if(old) {
-		old->prev->next = list->head;
-		old->prev = list->head;
+		rwlock_acquire(&list->rwl, RWL_WRITER); 
+	assert(list->magic == LLIST_MAGIC);
+	if(!list->head)
+	{
+		n->next = n->prev = n;
+		if(list->flags & LL_LOCKLESS) kprintf("ADDING TO EMPTY HEAD\n");
+	} else {
+		n->next = list->head;
+		n->prev = list->head->prev;
+		list->head->prev = n;
+		n->prev->next = n;
 	}
-	list->head->entry = entry;
-	/* In the unlikely event that list->head gets changed before the
-	 * return statement, we don't want to return an incorrect pointer.
-	 * Thus, we backup the new pointer and return it. */
-	old = list->head;
-	new->memberof = list;
+	list->head = n;
+	n->entry = entry;
+	n->memberof = list;
+	n->magic = LLISTNODE_MAGIC;
+	add_atomic(&list->num, 1);
 	if(!(list->flags & LL_LOCKLESS))
 		rwlock_release(&list->rwl, RWL_WRITER);
-	return old;
+	return n;
 }
 
 struct llistnode *ll_insert(struct llist *list, void *entry)
 {
 	assert(list && ll_is_active(list));
-	struct llistnode *new = (struct llistnode *)kmalloc(sizeof(struct llistnode));
-	return ll_do_insert(list, new, entry);
+	struct llistnode *n = (struct llistnode *)kmalloc(sizeof(struct llistnode));
+	return ll_do_insert(list, n, entry);
 }
 
 void *ll_do_remove(struct llist *list, struct llistnode *node, char locked)
@@ -47,22 +49,37 @@ void *ll_do_remove(struct llist *list, struct llistnode *node, char locked)
 	assert(list && node && ll_is_active(list));
 	if(!(list->flags & LL_LOCKLESS) && !locked)
 		rwlock_acquire(&list->rwl, RWL_WRITER);
+	assert(list->magic == LLIST_MAGIC);
+	assert(node->magic == LLISTNODE_MAGIC);
 	if(node->memberof == list) {
+		node->memberof = 0;
+		sub_atomic(&list->num, 1);
 		if(list->head == node) {
+			/* Now, is this the only node in the list? */
+			if(list->head == node->next) {
+				if(list->flags & LL_LOCKLESS) kprintf("--> %x NULLIFYING HEAD: %d %x %x %x\n", list, list->num, list->head, list->head->prev, list->head->next);
+#warning "DEBUG"
+				list->head = 0;
+				goto out;
+			}
 			/* Lets put the head at the next node, in case theres a search. */
 			list->head = node->next;
-			/* Now, is this the only node in the list? */
-			if(list->head == node) {
-				list->head = 0;
-				node->memberof=0;
-				if(!(list->flags & LL_LOCKLESS) && !locked)
-					rwlock_release(&list->rwl, RWL_WRITER);
-				return node;
-			}
+			assert(node->next->magic == LLISTNODE_MAGIC);
 		}
+		assert(node->prev->magic == LLISTNODE_MAGIC);
+		assert(node->next->magic == LLISTNODE_MAGIC);
 		node->prev->next = node->next;
 		node->next->prev = node->prev;
-		node->memberof=0;
+		if((list->head->next == list->head) && (list->head->prev == list->head)) {
+			if(list->flags & LL_LOCKLESS) 
+			{
+				char buf[555];
+				sprintf(buf, "--> %x HEAD EQUAL: %d %x %x %x\n", list, list->num, list->head, list->head->prev, list->head->next);
+				//serial_puts_nolock(0, buf);
+			}
+		}
+		out:
+		node->next = node->prev = 0;
 	}
 	if(!(list->flags & LL_LOCKLESS) && !locked)
 		rwlock_release(&list->rwl, RWL_WRITER);
@@ -80,6 +97,7 @@ void ll_remove_entry(struct llist *list, void *search)
 	void *ent;
 	if(!(list->flags & LL_LOCKLESS)) 
 		rwlock_acquire(&list->rwl, RWL_WRITER);
+	assert(list->magic == LLIST_MAGIC);
 	ll_for_each_entry_safe(list, cur, next, void *, ent)
 	{
 		if(ent == search) {
@@ -99,9 +117,11 @@ struct llist *ll_do_create(struct llist *list, char flags)
 		list = (struct llist *)kmalloc(sizeof(struct llist));
 		list->flags |= LL_ALLOC;
 	} else
-		list->flags = 0;
+		memset(list, 0, sizeof(struct llist));
 	rwlock_create(&list->rwl);
 	list->head = 0;
+	list->num = 0;
+	list->magic = LLIST_MAGIC;
 	list->flags |= (LL_ACTIVE | flags);
 	return list;
 }
@@ -126,9 +146,10 @@ void *ll_remove_head(struct llist *list)
 	void *ent;
 	if(!(list->flags & LL_LOCKLESS)) 
 		rwlock_acquire(&list->rwl, RWL_WRITER);
+	assert(list->magic == LLIST_MAGIC);
 	ent = list->head->entry;
 	if(ent)
-		kfree(ll_do_remove(list, list->head, 1));
+		kfree(ll_do_remove(list, (struct llistnode *)list->head, 1));
 		
 	if(!(list->flags & LL_LOCKLESS)) 
 		rwlock_release(&list->rwl, RWL_WRITER);

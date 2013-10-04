@@ -73,9 +73,9 @@ void init_memory(struct multiboot *m)
 #if CONFIG_MODULES
 	add_kernel_symbol(kernel_dir);
 	add_kernel_symbol(__kmalloc);
-	add_kernel_symbol(kmalloc_ap);
-	add_kernel_symbol(kmalloc_a);
-	add_kernel_symbol(kmalloc_p);
+	add_kernel_symbol(__kmalloc_ap);
+	add_kernel_symbol(__kmalloc_a);
+	add_kernel_symbol(__kmalloc_p);
 	add_kernel_symbol(kfree);
 	add_kernel_symbol(vm_map);
 	add_kernel_symbol(vm_do_unmap);

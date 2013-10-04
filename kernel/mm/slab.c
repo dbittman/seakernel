@@ -177,7 +177,6 @@ void remove_slab_list(slab_t *slab)
 slab_t *create_slab(slab_cache_t *sc, int num_pages, unsigned short flags)
 {
 	assert(sc && num_pages);
-	assert(!((flags & S_ALIGN) && num_pages == 1));
 	vnode_t *vnode=0;
 	addr_t addr=0;
 	vnode = alloc_slab(num_pages);
@@ -195,6 +194,8 @@ slab_t *create_slab(slab_cache_t *sc, int num_pages, unsigned short flags)
 			vm_map(j, pm_alloc_page(), PAGE_PRESENT | PAGE_USER, MAP_CRIT);
 	}
 	slab_t *slab = (slab_t *)addr;
+#warning "NOPE"
+	memset(slab, 0, num_pages * 0x1000);
 	memset(slab, 0, sizeof(slab_t));
 	slab->magic = SLAB_MAGIC;
 	slab->flags = flags;
@@ -354,7 +355,9 @@ slab_t *find_usable_slab(unsigned size, int align, int allow_range)
 {
 	unsigned i;
 	int perfect_fit=0;
+	slab_cache_t *new_sc;
 	slab_cache_t *sc=0;
+	unsigned short fl=0;
 	look_again_perfect:
 	i = perfect_fit;
 	if(i) i++;
@@ -364,10 +367,13 @@ slab_t *find_usable_slab(unsigned size, int align, int allow_range)
 		 * multiples of 0x1000 */
 		if(scache_list[i]->id != -1 
 			&& scache_list[i]->obj_size >= size 
-			&& (scache_list[i]->obj_size <= size*RANGE_MUL || allow_range == 2) 
-			&& (!align || !(scache_list[i]->obj_size%0x1000))) 
+			&& (scache_list[i]->obj_size <= size*RANGE_MUL || allow_range == 2)) 
 		{
 			if(scache_list[i]->obj_size != size && !allow_range)
+				continue;
+			if(!align && (scache_list[i]->flags & S_ALIGN))
+				continue;
+			if(align && !(scache_list[i]->flags & S_ALIGN))
 				continue;
 			perfect_fit = i;
 			break;
@@ -404,7 +410,6 @@ slab_t *find_usable_slab(unsigned size, int align, int allow_range)
 		return slab;
 	} else
 	{
-		unsigned short fl=0;
 		add_new_slab:
 		fl=0;
 		/* Can we add a slab to this cache? */
@@ -425,11 +430,10 @@ slab_t *find_usable_slab(unsigned size, int align, int allow_range)
 			add_slab_to_list(slab, TO_EMPTY);
 		return slab;
 	}
-	slab_cache_t *new_sc;
 	not_found:
 	/* Couldn't find a perfect fit.
 	 * Either add a new cache, or use a close fit. */
-	new_sc = get_empty_scache(size, 0);
+	new_sc = get_empty_scache(size, align ? S_ALIGN : 0);
 	if(!new_sc)
 	{
 		//if(allow_range)
@@ -446,7 +450,7 @@ addr_t do_kmalloc_slab(size_t sz, char align)
 {
 	if(sz < 32) sz=32;
 	if(!align)
-		sz += sizeof(addr_t *) * 2;
+		sz += (sizeof(addr_t) * 3);
 	slab_t *slab=0, *old_slab=0;
 	try_again:
 	slab = find_usable_slab(sz, align, 1);
@@ -466,19 +470,24 @@ addr_t do_kmalloc_slab(size_t sz, char align)
 			"slab allocation of aligned data failed! (returned %x)", addr);
 	if(!align)
 	{
-		if(((addr + sizeof(addr_t *)) & PAGE_MASK) == (addr + sizeof(addr_t *)))
+		if(((addr + sizeof(addr_t *)*2) & PAGE_MASK) == (addr + sizeof(addr_t *)*2))
 		{
 			/* force non-alignment */
-			addr += sizeof(addr_t *);
+			addr += sizeof(addr_t);
 		}
+		assert(*(addr_t *)(addr) == 0);
+		*(addr_t *)(addr) = (addr_t)0x1234;
+		addr += sizeof(addr_t);
 		*(addr_t *)(addr) = (addr_t)slab;
-		addr += sizeof(addr_t *);
+		addr += sizeof(addr_t);
 	}
 #ifdef SLAB_DEBUG
 	char tmp[128];
 	sprintf(tmp, "-> %d\n", total);
 	serial_puts_nolock(0, tmp);
 #endif
+	if(!align)
+		assert((addr & PAGE_MASK) != addr);
 	return addr;
 }
 
@@ -499,12 +508,14 @@ void do_kfree_slab(void *ptr)
 		if(n) slab = (slab_t *)n->addr;
 	}
 	else {
-		slab = (slab_t *)*(addr_t *)((addr_t)ptr - sizeof(addr_t *));
+		slab = (slab_t *)*(addr_t *)((addr_t)ptr - sizeof(addr_t));
+		*(addr_t *)((addr_t)ptr - (sizeof(addr_t *)*2)) = 0;
 		n = slab->vnode;
 		if(!n) goto try_alt;
  	}
 	if(!n || !slab)
 		panic(PANIC_MEM | PANIC_NOSYNC, "Kfree got invalid address in task %d, system=%d (%x)", current_task->pid, current_task->system, ptr);
+	assert(slab->magic == SLAB_MAGIC);
 	slab_cache_t *sc = (slab_cache_t *)slab->parent;
 #ifdef SLAB_DEBUG
 	total -= sc->obj_size;

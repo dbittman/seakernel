@@ -80,4 +80,7 @@
 extern addr_t lapic_addr;
 extern unsigned lapic_timer_start;
 extern mutex_t ipi_mutex;
+
+#define current_tss (&((cpu_t *)current_task->cpu)->tss)
+
 #endif

@@ -68,11 +68,11 @@ int vm_cleanup(page_dir_t *, unsigned *);
 int pm_stat_mem(struct mem_stat *s);
 void vm_free_page_table(int tbl, addr_t *t/* VIRTUAL ADDRESS */, addr_t *);
 void kfree(void * pt);
-addr_t do_kmalloc(size_t sz, char);
+addr_t do_kmalloc(size_t sz, char, char *, int);
 void *__kmalloc(size_t s, char *, int);
-void *kmalloc_a(size_t s);
-void *kmalloc_ap(size_t s, addr_t *);
-void *kmalloc_p(size_t s, addr_t *);
+void *__kmalloc_a(size_t s, char *, int);
+void *__kmalloc_ap(size_t s, addr_t *, char *, int);
+void *__kmalloc_p(size_t s, addr_t *, char *, int);
 int vm_do_unmap_only(addr_t v, unsigned);
 void pm_free_page(addr_t addr);
 void vm_init_2();
@@ -82,6 +82,10 @@ unsigned int vm_setattrib(addr_t v, short attr);
 void setup_kernelstack();
 extern void zero_page_physical(addr_t);
 #define kmalloc(a) __kmalloc(a, __FILE__, __LINE__)
+#define kmalloc_a(a) __kmalloc_a(a, __FILE__, __LINE__)
+#define kmalloc_p(a,x) __kmalloc_p(a, x, __FILE__, __LINE__)
+#define kmalloc_ap(a,x) __kmalloc_ap(a, x, __FILE__, __LINE__)
+
 void __KT_swapper();
 void copy_update_stack(addr_t old, addr_t new, unsigned length);
 int __is_valid_user_ptr(int num, void *p, char flags);

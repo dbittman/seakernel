@@ -273,3 +273,20 @@ void printk(int l, const char *fmt, ...)
 		puts(printbuf);
 	va_end(args);
 }
+
+/* Will print to screen only if the printlevel is above the log-level */
+void printk_safe(int l, const char *fmt, ...)
+{
+	char printbuf[2024];
+	va_list args;
+	int i=0;
+	va_start(args, fmt);
+	vsprintf(printbuf, fmt, args);
+	if(l >= LOGL_SERIAL)
+		serial_puts_nolock(0, printbuf);
+	if(l >= LOGL_LOGTTY && log_console)
+		console_puts(log_console, printbuf);
+	if(l >= PRINT_LEVEL)
+		puts(printbuf);
+	va_end(args);
+}

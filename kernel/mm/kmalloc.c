@@ -19,11 +19,12 @@ void install_kmalloc(char *name, unsigned (*init)(addr_t, addr_t),
 		init(KMALLOC_ADDR_START, KMALLOC_ADDR_END);
 }
 
-addr_t do_kmalloc(size_t sz, char align)
+addr_t do_kmalloc(size_t sz, char align, char *file, int line)
 {
 	if(!do_kmalloc_wrap)
 		panic(PANIC_MEM | PANIC_NOSYNC, "No kernel-level allocator installed!");
 	mutex_acquire(&km_m);
+	//printk(0, "alloc: %s:%d\n", file, line);
 	addr_t ret = do_kmalloc_wrap(sz, align);
 	mutex_release(&km_m);
 	if(!ret || ret >= KMALLOC_ADDR_END || ret < KMALLOC_ADDR_START)
@@ -34,25 +35,25 @@ addr_t do_kmalloc(size_t sz, char align)
 
 void *__kmalloc(size_t s, char *file, int line)
 {
-	return (void *)do_kmalloc(s, 0);
+	return (void *)do_kmalloc(s, 0, file, line);
 }
 
-void *kmalloc_a(size_t s)
+void *__kmalloc_a(size_t s, char *file, int line)
 {
-	return (void *)do_kmalloc(s, 1);
+	return (void *)do_kmalloc(s, 1, file, line);
 }
 
-void *kmalloc_p(size_t s, addr_t *p)
+void *__kmalloc_p(size_t s, addr_t *p, char *file, int line)
 {
-	addr_t ret = do_kmalloc(s, 0);
+	addr_t ret = do_kmalloc(s, 0, file, line);
 	vm_getmap(ret, p);
 	*p += ret%PAGE_SIZE;
 	return (void *)ret;
 }
 
-void *kmalloc_ap(size_t s, addr_t *p)
+void *__kmalloc_ap(size_t s, addr_t *p, char *file, int line)
 {
-	addr_t ret = do_kmalloc(s, 1);
+	addr_t ret = do_kmalloc(s, 1, file, line);
 	vm_getmap(ret, p);
 	*p += ret%PAGE_SIZE;
 	return (void *)ret;

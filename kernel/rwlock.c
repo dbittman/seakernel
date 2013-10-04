@@ -138,7 +138,7 @@ rwlock_t *rwlock_create(rwlock_t *lock)
 		lock = (void *)kmalloc(sizeof(rwlock_t));
 		lock->flags = RWL_ALLOC;
 	} else
-		lock->flags = 0;
+		memset((void *)lock, 0, sizeof(rwlock_t));
 	lock->locks = 0;
 	lock->magic = RWLOCK_MAGIC;
 	return lock;

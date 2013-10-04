@@ -19,7 +19,6 @@ task_t *preexec(task_t *t, int desc)
 {
 	if(t->magic != TASK_MAGIC)
 		panic(0, "Invalid task in exec (%d)", t->pid);
-	clear_resources(t);
 	free_thread_shared_directory();
 	t->sigd=0;
 	memset((void *)t->thread->signal_act, 0, sizeof(struct sigaction) * 128);

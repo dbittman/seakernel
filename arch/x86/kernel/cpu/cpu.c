@@ -179,9 +179,9 @@ void init_main_cpu_1()
 
 #if CONFIG_GDB_STUB
 	set_debug_traps();
-	kprintf("waiting for GDB\n");
+	kprintf("---[DEBUG - waiting for GDB connection]---\n");
 	__asm__("int $3");
-	kprintf(" ok\n");
+	kprintf("---[DEBUG - resuming]---\n");
 #endif
 }
 

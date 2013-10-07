@@ -105,16 +105,12 @@ extern void write_serial(int p, char a);
 char read_serial(int p);
 void putDebugChar(char a)
 {
-	char t[2];
-	t[0] = a;
-	t[1]=0;
-	puts(t);
-	write_serial(0x3f8, a);
+	write_serial(0x2F8, a);
 }
 
 int getDebugChar()
 {
-	return read_serial(0x3f8);
+	return read_serial(0x2F8);
 }
 
 
@@ -764,7 +760,8 @@ handle_exception (int exceptionVector)
   int addr, length;
   char *ptr;
   int newPC;
-
+  if(exceptionVector == 3)
+	  puts("---[DEBUG - breakpoint]---\n");
   gdb_i386vector = exceptionVector;
 
   if (remote_debug)
@@ -911,7 +908,8 @@ handle_exception (int exceptionVector)
 	  /* set the trace bit if we're stepping */
 	  if (stepping)
 	    registers[PS] |= 0x100;
-
+      else
+		  puts("---[DEBUG - resuming]---\n");
 	  _returnFromException ();	/* this is a jump */
 	  break;
 

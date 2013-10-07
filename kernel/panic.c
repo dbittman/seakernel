@@ -53,6 +53,10 @@ void panic(int flags, char *fmt, ...)
 		kprintf("\n[panic]: Done\n");
 	} else
 		kprintf("[panic]: not syncing\n");
+#if CONFIG_GDB_STUB
+	/* breakpoint so that GDB will catch us, allowing some better debugging */
+	asm("int $0x3");
+#endif
 	for(;;)
 	{
 		asm("cli; hlt;");

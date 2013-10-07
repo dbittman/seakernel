@@ -105,6 +105,10 @@ extern void write_serial(int p, char a);
 char read_serial(int p);
 void putDebugChar(char a)
 {
+	char t[2];
+	t[0] = a;
+	t[1]=0;
+	puts(t);
 	write_serial(0x3f8, a);
 }
 

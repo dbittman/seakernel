@@ -83,7 +83,10 @@ void *tqueue_next(tqueue_t *tq)
 	/* can't use else here. Need to catch the case when current->next is
 	 * null above */
 	if(!tq->current) tq->current = tq->tql.head;
-	if(!tq->current) printk(0, "--> %x %d\n", tq->tql.head, tq->num);
+	if(!tq->current) {
+		printk(0, "--> %x %d\n", tq->tql.head, tq->num);
+		asm("int $0x3");
+	}
 	assert(tq->current);
 	void *ret = tq->current->entry;
 	mutex_release(&tq->lock);

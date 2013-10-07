@@ -151,6 +151,10 @@ isr80:
     push 0x80                ; Push the interrupt number
     jmp syscall_entry_code
 
+global isr_ignore
+isr_ignore:
+	iretd
+
 ; the asm entry handlers
 INT_ENTRY_CODE isr, isr_handler
 INT_ENTRY_CODE irq, irq_handler

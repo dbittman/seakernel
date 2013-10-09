@@ -34,6 +34,7 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 #endif
 	if(current_task && (m->pid == (int)current_task->pid) && (current_task->flags & TF_IN_INT)) {
 		/* we don't need to be atomic, since we already own the lock */
+		assert(!(m->lock & MT_LCK_INT));
 		m->lock |= MT_LCK_INT;
 		return;
 	}
@@ -60,6 +61,7 @@ void __mutex_release(mutex_t *m, char *file, int line)
 		panic(0, "task %d tried to release mutex it didn't own (%s:%d)", m->pid, file, line);
 	if(m->lock & MT_LCK_INT)
 	{
+		assert(current_task->flags & TF_IN_INT);
 		m->lock &= ~MT_LCK_INT;
 		return;
 	}

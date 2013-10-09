@@ -31,28 +31,28 @@ void panic(int flags, char *fmt, ...)
 	task_t *t=current_task;
 	if(t) pid=t->pid;
 	
-	kprintf("\n\n*** kernel panic - ");
+	printk_safe(9, "\n\n*** kernel panic - ");
 	
 	char buf[512];
 	va_list args;
 	va_start(args, fmt);
 	vsprintf(buf, fmt, args);
 	_set_lowercase(buf);
-	kprintf(buf);
+	printk_safe(9,buf);
 	
-	kprintf(" ***\n");
+	printk_safe(9," ***\n");
 	
 	if(t) 
-		kprintf("current_task=%x:%d, sys=%d, flags=%x, F=%x. Stack trace:\n", t, 
+		printk_safe(9,"current_task=%x:%d, sys=%d, flags=%x, F=%x. Stack trace:\n", t, 
 				t->pid, t->system, t->flags, t->flag);
 	print_trace(10);
 	if(pid && !(flags & PANIC_NOSYNC))
 	{
-		kprintf("[panic]: syncing...");
+		printk_safe(9,"[panic]: syncing...");
 		sys_sync();
-		kprintf("\n[panic]: Done\n");
+		printk_safe(9,"\n[panic]: Done\n");
 	} else
-		kprintf("[panic]: not syncing\n");
+		printk_safe(9,"[panic]: not syncing\n");
 #if CONFIG_GDB_STUB
 	/* breakpoint so that GDB will catch us, allowing some better debugging */
 	asm("int $0x3");

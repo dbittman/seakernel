@@ -24,7 +24,6 @@ addr_t do_kmalloc(size_t sz, char align, char *file, int line)
 	if(!do_kmalloc_wrap)
 		panic(PANIC_MEM | PANIC_NOSYNC, "No kernel-level allocator installed!");
 	mutex_acquire(&km_m);
-	//printk(0, "alloc: %s:%d\n", file, line);
 	addr_t ret = do_kmalloc_wrap(sz, align);
 	mutex_release(&km_m);
 	if(!ret || ret >= KMALLOC_ADDR_END || ret < KMALLOC_ADDR_START)

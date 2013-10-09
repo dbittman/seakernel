@@ -46,7 +46,7 @@ struct llistnode *tqueue_insert(tqueue_t *tq, void *item, struct llistnode *node
 		tq->current = tq->tql.head;
 	add_atomic(&tq->num, 1);
 	mutex_release(&tq->lock);
-	set_int(old);
+	assert(!set_int(old));
 	return node;
 }
 
@@ -59,7 +59,7 @@ void tqueue_remove(tqueue_t *tq, struct llistnode *node)
 	ll_do_remove(&tq->tql, node, 0);
 	sub_atomic(&tq->num, 1);
 	mutex_release(&tq->lock);
-	set_int(old);
+	assert(!set_int(old));
 }
 
 /* tsearch may occasionally need to remove tasks from the queue
@@ -90,6 +90,6 @@ void *tqueue_next(tqueue_t *tq)
 	assert(tq->current);
 	void *ret = tq->current->entry;
 	mutex_release(&tq->lock);
-	set_int(old);
+	assert(!set_int(old));
 	return ret;
 }

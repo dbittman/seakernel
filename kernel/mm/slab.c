@@ -64,6 +64,7 @@ void free_slab(slab_t *slab)
 	assert(slab);
 	pages_used -= slab->num_pages;
 	vnode_t *t = slab->vnode;
+	slab->magic = 0;
 	addr_t j;
 	addr_t addr = (addr_t)slab;
 	for(j=addr;j<(addr + num_pages*PAGE_SIZE);j+=PAGE_SIZE) {
@@ -194,6 +195,7 @@ slab_t *create_slab(slab_cache_t *sc, int num_pages, unsigned short flags)
 			vm_map(j, pm_alloc_page(), PAGE_PRESENT | PAGE_USER, MAP_CRIT);
 	}
 	slab_t *slab = (slab_t *)addr;
+	assert(slab->magic != SLAB_MAGIC);
 #warning "NOPE"
 	memset(slab, 0, num_pages * 0x1000);
 	memset(slab, 0, sizeof(slab_t));

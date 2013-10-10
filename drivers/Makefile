@@ -16,7 +16,7 @@ endif
 # I believe, but don't quote me on this, that
 # this flag is needed if we want to access relocations
 # that require 64bit fields...
-MCFLAGS=        -std=c99 -fno-rename-registers \
+MCFLAGS=        -std=gnu11 -fno-rename-registers \
 		-fno-regmove -D__KERNEL__ -mno-red-zone -nostdinc -ffreestanding \
 		-fno-common -nostdlib \
 		-I../arch/${ARCH}/include \
@@ -27,7 +27,8 @@ MCFLAGS=        -std=c99 -fno-rename-registers \
 		-Wall -Wextra -Wformat-security -Wformat-nonliteral -Wshadow \
 		-Wpointer-arith -Wcast-align -Wno-unused -Wnested-externs \
 		-fno-tree-loop-distribute-patterns -fno-tree-vectorize \
-		-Winline -Wno-long-long -Wno-unused-parameter -Wno-unused-but-set-parameter $(CFLAGS_ARCH)
+		-Winline -Wno-long-long -Wno-unused-parameter -Wno-unused-but-set-parameter $(CFLAGS_ARCH) \
+		-mno-mmx -mno-sse -mno-sse2 -mno-sse3 -mno-3dnow
 
 ifeq ($(ARCH), x86_64)
 MCFLAGS += -mcmodel=large

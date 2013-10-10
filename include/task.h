@@ -90,6 +90,7 @@ struct task_struct
 	volatile unsigned pid;
 	/* used for storing context */
 	volatile addr_t eip, ebp, esp, preserved[16];
+	char fpu_save_data[512] __attribute__((aligned(16)));
 	page_dir_t *pd;
 	/* current state of the task (see sig.h) */
 	volatile int state;

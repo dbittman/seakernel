@@ -31,6 +31,12 @@ __attribute__((always_inline)) inline static void store_context()
 	asm("mov %%ebx, %0" : "=r"(current_task->preserved[0]));
 	asm("mov %%edi, %0" : "=r"(current_task->preserved[1]));
 	asm("mov %%esi, %0" : "=r"(current_task->preserved[2]));
+#warning "GET THIS WORKING"
+#if 0
+	if(((cpu_t *)current_task->cpu)->flags & CPU_SSE || ((cpu_t *)current_task->cpu)->flags & CPU_FPU)
+		__asm__ __volatile__("fxsave %0"
+			:: "m" (current_task->fpu_save_data));
+#endif
 	/* Check for stack and heap overflow */
 	if(!current_task->esp || (!(current_task->esp >= TOP_TASK_MEM_EXEC && current_task->esp < TOP_TASK_MEM) 
 		&& !(current_task->esp >= KMALLOC_ADDR_START && current_task->esp < KMALLOC_ADDR_END)))
@@ -45,11 +51,15 @@ __attribute__((always_inline)) inline static void store_context()
 	current_task->syscall_count = 0;
 }
 
-__attribute__((always_inline)) inline static void restore_context(task_t *new)
+__attribute__((always_inline)) inline static void restore_context(task_t *n)
 {
 	/* Update some last-minute things. The stack. */
-	set_kernel_stack(current_tss, new->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
-	/* keep track of when we got to run */
+	set_kernel_stack(current_tss, n->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
+#if 0
+	if(((cpu_t *)n->cpu)->flags & CPU_SSE || ((cpu_t *)n->cpu)->flags & CPU_FPU)
+		__asm__ __volatile__("fxrstor %0"
+			:: "m" (current_task->fpu_save_data));
+#endif
 }
 
 __attribute__((always_inline)) inline static void context_switch(task_t *new)

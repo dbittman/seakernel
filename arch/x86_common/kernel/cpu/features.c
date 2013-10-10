@@ -8,7 +8,7 @@ void setup_fpu(cpu_t *me)
 		printk(KERN_EVERY, "\tFPU...");
 		asm("finit;");  
 		me->flags |= CPU_FPU;
-		unsigned long cr0, cr4;
+		unsigned long cr0;
 		asm("mov %%cr0, %0;":"=r"(cr0)); /* store CR0 */
 		cr0 |= 0x20;
 		asm("mov %0, %%cr0;"::"r"(cr0)); /* restore CR0 */

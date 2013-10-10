@@ -23,7 +23,7 @@ export CC
 export LD
 export AR
 
-CFLAGS_NOARCH = -std=c99 -nostdlib -nostdinc -nodefaultlibs \
+CFLAGS_NOARCH = -std=gnu11 -nostdlib -nostdinc -nodefaultlibs \
                 -ffreestanding \
                 -mno-red-zone -fno-omit-frame-pointer \
                 -mpush-args -mno-accumulate-outgoing-args \
@@ -35,6 +35,7 @@ CFLAGS_NOARCH = -std=c99 -nostdlib -nostdinc -nodefaultlibs \
 	        -Wno-strict-aliasing -Wshadow -Wpointer-arith -Wcast-align \
 	        -Wno-unused -Wnested-externs -Waddress -Winline \
 	        -Wno-long-long -Wno-unused-parameter -Wno-unused-but-set-parameter\
+	        -mno-mmx -mno-sse -mno-sse2 -mno-sse3 -mno-3dnow
 	        
 CFLAGS_NOARCH += -O$(CONFIG_OPTIMIZATION_LEVEL)
 

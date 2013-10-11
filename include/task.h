@@ -90,7 +90,11 @@ struct task_struct
 	volatile unsigned pid;
 	/* used for storing context */
 	volatile addr_t eip, ebp, esp, preserved[16];
-	char fpu_save_data[512] __attribute__((aligned(16)));
+	/* this field is required to be aligned on a 16 byte boundary
+	 * but since we dynamically allocate task_structs, we cannot
+	 * make sure that that will happen. Thus, we need to align it
+	 * ourselves... */
+	char fpu_save_data[512 + 16 /* alignment */];
 	page_dir_t *pd;
 	/* current state of the task (see sig.h) */
 	volatile int state;

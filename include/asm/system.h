@@ -8,7 +8,12 @@
 #include <asm/system-x86_common.h>
 #endif
 
+#include <types.h>
+
 #define likely(x)       __builtin_expect((x),1)
 #define unlikely(x)     __builtin_expect((x),0)
+
+#define ALIGN(x,a) \
+		((void *)((((addr_t)x) & ~(a-1)) + a))
 
 #endif

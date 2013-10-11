@@ -25,6 +25,7 @@
 #define CPU_INTER  0x40
 #define CPU_TASK   0x80
 #define CPU_LOCK  0x100
+#define CPU_FXSAVE 0x200
 
 typedef struct __cpu_t__ {
 	unsigned num;

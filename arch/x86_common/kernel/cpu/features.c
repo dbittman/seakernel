@@ -29,5 +29,7 @@ void init_sse(cpu_t *me)
 		asm("mov %0, %%cr4;"::"r"(cr4)); /* restore CR4 */
 		asm("mov %0, %%cr0;"::"r"(cr0)); /* restore CR0 */
 		me->flags |= CPU_SSE;
-	}   
+	}
+	if(me->cpuid.features_edx & (1 << 24))
+		me->flags |= CPU_FXSAVE;
 }

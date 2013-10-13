@@ -119,8 +119,9 @@ void exit(int code)
 		if(t->thread->root)iput(t->thread->root);
 		if(t->thread->pwd) iput(t->thread->pwd);
 		mutex_destroy(&t->thread->files_lock);
-		kfree(t->thread);
+		void *addr = t->thread;
 		t->thread = 0;
+		kfree(addr);
 	}
 	raise_flag(TF_DYING);
 	/* don't do this while the state is dead, as we may step on the toes of waitpid.

@@ -33,7 +33,7 @@
 /* MM */
 #define MAX_NODES 4096*4
 //#define SLAB_DEBUG
-#define RANGE_MUL 1.4
+#define RANGE_MUL 2
 #define STACK_SIZE (CONFIG_STACK_PAGES * 0x1000)
 
 

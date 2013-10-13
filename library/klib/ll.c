@@ -20,7 +20,6 @@ struct llistnode *ll_do_insert(struct llist *list, struct llistnode *n, void *en
 	if(!list->head)
 	{
 		n->next = n->prev = n;
-		if(list->flags & LL_LOCKLESS) kprintf("ADDING TO EMPTY HEAD\n");
 	} else {
 		n->next = list->head;
 		n->prev = list->head->prev;

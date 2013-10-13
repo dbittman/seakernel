@@ -10,7 +10,6 @@
 volatile task_t *kernel_task=0, *alarm_list_start=0;
 mutex_t *alarm_mutex=0;
 volatile unsigned next_pid=0;
-volatile task_t *tokill=0, *end_tokill=0;
 struct llist *kill_queue=0;
 tqueue_t *primary_queue=0;
 
@@ -136,7 +135,7 @@ void task_block(struct llist *list, task_t *task)
 	ll_do_insert(list, task->blocknode, (void *)task);
 	tqueue_remove(((cpu_t *)task->cpu)->active_queue, task->activenode);
 	if(task == current_task) task_pause(task);
-	set_int(old);
+	assert(!set_int(old));
 }
 
 void task_unblock(struct llist *list, task_t *t)
@@ -147,7 +146,7 @@ void task_unblock(struct llist *list, task_t *t)
 	t->blocklist = 0;
 	ll_do_remove(list, bn, 0);
 	task_resume(t);
-	set_int(old);
+	assert(!set_int(old));
 }
 
 void task_unblock_all(struct llist *list)
@@ -158,15 +157,15 @@ void task_unblock_all(struct llist *list)
 	task_t *entry;
 	ll_for_each_entry_safe(list, cur, next, task_t *, entry)
 	{
-		tqueue_insert(((cpu_t *)entry->cpu)->active_queue, (void *)entry, entry->activenode);
 		entry->blocklist = 0;
 		assert(entry->blocknode == cur);
 		ll_maybe_reset_loop(list, cur, next);
 		ll_do_remove(list, cur, 1);
+		tqueue_insert(((cpu_t *)entry->cpu)->active_queue, (void *)entry, entry->activenode);
 		task_resume(entry);
 	}
 	rwlock_release(&list->rwl, RWL_WRITER);
-	set_int(old);
+	assert(!set_int(old));
 }
 
 void move_task_cpu(task_t *t, cpu_t *cpu)

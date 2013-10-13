@@ -20,12 +20,12 @@ typedef struct slab_header_s {
 	unsigned id;
 	unsigned num_pages;
 	unsigned short flags;
-	unsigned obj_used;/* Ref count */
+	volatile unsigned obj_used;/* Ref count */
 	unsigned obj_num;
 	/* For usage in the slab lists */
-	struct slab_header_s *next, *prev;
+	volatile struct slab_header_s *next, *prev;
 	addr_t parent; /* Pointer to the slab cache that this slab is part of */
-	unsigned short *stack;
+	volatile unsigned short *stack;
 	unsigned short stack_arr[MAX_OBJ_ID];
 	vnode_t *vnode;
 } slab_t;

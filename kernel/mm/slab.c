@@ -26,7 +26,7 @@ unsigned pages_used=0;
 unsigned num_slab=0, num_scache=0;
 void release_slab(slab_t *slab);
 mutex_t scache_lock;
-
+//#define SLAB_DEBUG 1
 #ifdef SLAB_DEBUG
 unsigned total=0;
 #endif
@@ -61,6 +61,9 @@ vnode_t *alloc_slab(unsigned np)
 void free_slab(slab_t *slab)
 {
 	unsigned num_pages = slab->num_pages;
+#ifdef SLAB_DEBUG
+	printk(0, "[slab]: free slab %x - %x\n", (addr_t)slab, (addr_t)slab + num_pages * 0x1000);
+#endif
 	assert(slab);
 	pages_used -= slab->num_pages;
 	vnode_t *t = slab->vnode;
@@ -215,11 +218,21 @@ slab_t *create_slab(slab_cache_t *sc, int num_pages, unsigned short flags)
 	slab->stack = (unsigned short *)slab->stack_arr;
 	/* Setup the stack of objects */
 	i=0;
-	while(i < slab->obj_num)
+	while(i < slab->obj_num && i<0xFFFF)
 	{
 		(*slab->stack) = i++;
 		slab->stack++;
 	}
+	unsigned short *tmp = slab->stack;
+	while(i < MAX_OBJ_ID)
+	{
+		(*tmp) = 0xFFFF;
+		i++;
+		tmp++;
+	}
+#ifdef SLAB_DEBUG
+	printk(0, "[slab]: created new slab: %x - %x: %x %x %x %x\n", addr, addr + num_pages * 0x1000, flags, sc->obj_size, num_pages, slab->obj_num);
+#endif
 	return slab;
 }
 
@@ -234,6 +247,7 @@ addr_t do_alloc_object(slab_t *slab)
 	assert(slab->stack > slab->stack_arr && slab->stack_arr);
 	/* Pop the object off the top of the stack */
 	unsigned short obj = *(--slab->stack);
+	assert(obj != 0xFFFF);
 	addr_t obj_addr = FIRST_OBJ(slab) + OBJ_SIZE(slab)*obj;
 	assert((obj_addr > (addr_t)slab) && (((obj_addr+sc->obj_size)-(addr_t)slab) <= slab->num_pages*0x1000));
 	slab->obj_used++;
@@ -246,6 +260,9 @@ addr_t alloc_object(slab_t *slab)
 	assert(slab->obj_used <= slab->obj_num);
 	if(ret && slab->obj_used == slab->obj_num)
 	{
+#ifdef SLAB_DEBUG
+		printk(0, "%x: moving to FULL\n", (addr_t)slab);
+#endif
 		remove_slab_list(slab);
 		add_slab_to_list(slab, TO_FULL);
 	}
@@ -274,6 +291,9 @@ void release_object(slab_t *slab, int obj)
 	if(!res)
 	{
 		/* We must move it to the empty list or destroy it */
+#ifdef SLAB_DEBUG
+		printk(0, "%x: destroy\n", (addr_t)slab);
+#endif
 		remove_slab_list(slab);
 		release_slab(slab);
 	} else
@@ -345,7 +365,7 @@ unsigned slab_init(addr_t start, addr_t end)
 
 unsigned slab_size(int sz)
 {
-	unsigned s = sz * MAX_OBJ_ID;
+	unsigned s = (sz * 12) + sizeof(slab_t);
 	if(s > (0x1000 * 128))
 		s = 0x1000 * 128;
 	if(s < (unsigned)sz * 2) s = sz * 2;
@@ -443,7 +463,7 @@ slab_t *find_usable_slab(unsigned size, int align, int allow_range)
 		return find_usable_slab(size, align, 2);
 	}
 #ifdef SLAB_DEBUG
-	printk(1, "[slab]: Allocated new slab cache @ %x\n", (addr_t)new_sc);
+	printk(1, "[slab]: Allocated new slab cache @ %x (%d/%d)\n", (addr_t)new_sc, num_scache, NUM_SCACHES);
 #endif
 	return find_usable_slab(size, align, 0);
 }
@@ -486,7 +506,7 @@ addr_t do_kmalloc_slab(size_t sz, char align)
 #ifdef SLAB_DEBUG
 	char tmp[128];
 	sprintf(tmp, "-> %d\n", total);
-	serial_puts_nolock(0, tmp);
+	//serial_puts_nolock(0, tmp);
 #endif
 	if(!align)
 		assert((addr & PAGE_MASK) != addr);

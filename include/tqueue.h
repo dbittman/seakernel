@@ -24,9 +24,10 @@ typedef struct {
 	unsigned magic;
 	unsigned flags;
 	mutex_t lock;
-	unsigned num;
+	volatile unsigned num;
 	volatile struct llistnode *current;
 	struct llist tql;
+	volatile int i;
 } tqueue_t;
 
 tqueue_t *tqueue_create(tqueue_t *tq, unsigned flags);

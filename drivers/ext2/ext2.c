@@ -164,7 +164,6 @@ int module_exit()
 		ext2_fs_t *f=0;
 		ll_for_each_entry_safe(fslist, cur, next, ext2_fs_t *, f);
 		{
-			ll_maybe_reset_loop(fslist, cur, next);
 			if(f)
 				ext2_unmount(0, f->flag);
 		}

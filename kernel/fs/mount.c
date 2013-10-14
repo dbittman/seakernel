@@ -55,7 +55,6 @@ void unmount_all()
 	{
 		printk_safe(0, "unmounting: %x\n", m);
 		do_unmount(m->i->mount_parent, 1);
-		ll_maybe_reset_loop(mountlist, cur, next);
 		ll_remove(mountlist, cur);
 	}
 }

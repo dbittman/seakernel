@@ -65,10 +65,8 @@ task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned long value, void (*
 		if(flags & TSEARCH_EXIT_PARENT && tmp->parent == current_task)
 		{
 			tmp->parent = 0;
-			if(tmp->state == TASK_DEAD) {
-				ll_maybe_reset_loop(&tq->tql, cur, next);
+			if(tmp->state == TASK_DEAD)
 				move_task_to_kill_queue(tmp, 1);
-			}
 		}
 		next:
 		/* have we found something and are only looking for one thing? */

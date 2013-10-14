@@ -40,9 +40,6 @@ struct llist {
 #define ll_for_each_entry_safe(list,curnode,_next,type,_entry) \
 		for(curnode=(struct llistnode *)((list)->head); !(_entry=0) && (curnode) && (_entry=ll_entry(type, curnode)) && ((_next=(struct llistnode *)(curnode->next))||1); curnode=(struct llistnode *)_next)
 
-#define ll_maybe_reset_loop(list,cur,next) \
-		if((list)->head == cur) next=0
-
 #define ll_create(a) ll_do_create(a, 0)
 #define ll_create_lockless(a) ll_do_create(a, LL_LOCKLESS)
 

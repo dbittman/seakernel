@@ -160,7 +160,6 @@ void task_unblock_all(struct llist *list)
 	{
 		entry->blocklist = 0;
 		assert(entry->blocknode == cur);
-		ll_maybe_reset_loop(list, cur, next);
 		ll_do_remove(list, cur, 1);
 		tqueue_insert(((cpu_t *)entry->cpu)->active_queue, (void *)entry, entry->activenode);
 		task_resume(entry);

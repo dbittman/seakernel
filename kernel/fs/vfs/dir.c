@@ -124,8 +124,6 @@ struct inode *do_readdir(struct inode *i, int num)
 		{
 			if(!n--) break;
 		}
-		if(num && cur == i->children.head)
-			c=0;
 		rwlock_release(&i->rwl, RWL_READER);
 	}
 	else if(i->i_ops && i->i_ops->readdir) {

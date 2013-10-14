@@ -109,7 +109,7 @@ int schedule()
 	 * will never be accessed again */
 	if(old->flags & TF_DYING) {
 		assert(old->state == TASK_DEAD);
-		raise_task_flag(old, TF_BURIED);
+		raise_flag(TF_BURIED);
 	}
 	old->syscall_count = 0;
 	task_t *next_task = (task_t *)get_next_task(old, cpu);

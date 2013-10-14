@@ -18,7 +18,7 @@ struct inode *get_sb_table(int _n)
 		if(!n) break;
 		n--;
 	}
-	if(cur == mountlist->head && _n) {
+	if(!cur) {
 		rwlock_release(&mountlist->rwl, RWL_READER);
 		return 0;
 	}
@@ -53,6 +53,7 @@ void unmount_all()
 	struct llistnode *cur, *next;
 	ll_for_each_entry_safe(mountlist, cur, next, struct mountlst *, m)
 	{
+		printk_safe(0, "unmounting: %x\n", m);
 		do_unmount(m->i->mount_parent, 1);
 		ll_maybe_reset_loop(mountlist, cur, next);
 		ll_remove(mountlist, cur);
@@ -90,8 +91,9 @@ struct inode *sb_callback(char *fsn, dev_t dev, u64 block, char *n)
 	{
 		if(!strcmp(fsn, s->name))
 		{
+			struct inode *i = s->sb_load(dev, block, n);
 			rwlock_release(&sblist->rwl, RWL_READER);
-			return s->sb_load(dev, block, n);
+			return i;
 		}
 	}
 	rwlock_release(&sblist->rwl, RWL_READER);

@@ -267,9 +267,10 @@ int destroy_cache(cache_t *c)
 	struct ce_t *obj;
 	ll_for_each_entry_safe(&c->primary_ll, curnode, next, struct ce_t *, obj)
 	{
-		ll_maybe_reset_loop(&c->primary_ll, curnode, next);
+		//ll_maybe_reset_loop(&c->primary_ll, curnode, next);
 		remove_element(c, obj, 1);
 	}
+	kprintf("--> %x %d\n", c->primary_ll.head, c->primary_ll.num);
 	ll_destroy(&c->dirty_ll);
 	ll_destroy(&c->primary_ll);
 	ll_remove_entry(cache_list, c);

@@ -81,6 +81,7 @@ int free_inode(struct inode *i, int recur)
 		{
 			ll_remove(&i->children, cur);
 			c->node=0;
+			c->parent=0;
 			free_inode(c, 1);
 		}
 	}

@@ -184,7 +184,6 @@ int module_exit()
 		{
 			ll_remove(loops, cur);
 			kfree(ld);
-			
 		}
 	}
 	ll_destroy(loops);

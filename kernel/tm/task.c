@@ -58,6 +58,7 @@ void init_multitasking()
 	tqueue_insert(primary_cpu->active_queue, (void *)task, task->activenode);
 	
 	primary_cpu->cur = task;
+	primary_cpu->ktask = task;
 	primary_cpu->numtasks=1;
 	/* make this the "current_task" by assigning a specific location
 	 * in the page directory as the pointer to the task. */
@@ -164,6 +165,7 @@ void task_unblock_all(struct llist *list)
 		tqueue_insert(((cpu_t *)entry->cpu)->active_queue, (void *)entry, entry->activenode);
 		task_resume(entry);
 	}
+	assert(!list->num);
 	rwlock_release(&list->rwl, RWL_WRITER);
 	assert(!set_int(old));
 }

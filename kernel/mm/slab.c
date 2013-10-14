@@ -365,6 +365,7 @@ unsigned slab_init(addr_t start, addr_t end)
 
 unsigned slab_size(int sz)
 {
+#warning "FIX"
 	unsigned s = (sz * 12) + sizeof(slab_t);
 	if(s > (0x1000 * 128))
 		s = 0x1000 * 128;

@@ -7,14 +7,14 @@
 #include <cpu.h>
 #include <atomic.h>
 
-void set_as_dead(task_t *t)
+__attribute__((always_inline)) inline void set_as_dead(task_t *t)
 {
 	assert(t);
 	sub_atomic(&running_processes, 1);
-	tqueue_remove(((cpu_t *)t->cpu)->active_queue, t->activenode);
-	kfree(t->activenode);
-	kfree(t->blocknode);
 	sub_atomic(&(((cpu_t *)t->cpu)->numtasks), 1);
+	set_int(0);
+	raise_flag(TF_DYING);
+	tqueue_remove(((cpu_t *)t->cpu)->active_queue, t->activenode);
 	t->state = TASK_DEAD;
 }
 
@@ -69,6 +69,8 @@ void release_task(task_t *p)
 {
 	destroy_task_page_directory(p);
 	kfree(p->listnode);
+	kfree(p->activenode);
+	kfree(p->blocknode);
 	kfree((void *)p->kernel_stack);
 	kfree((void *)p);
 }
@@ -123,14 +125,11 @@ void exit(int code)
 		t->thread = 0;
 		kfree(addr);
 	}
-	raise_flag(TF_DYING);
 	/* don't do this while the state is dead, as we may step on the toes of waitpid.
 	 * this fixes all tasks that are children of current_task, or are waiting
 	 * on current_task. For those waiting, it signals the task. For those that
 	 * are children, it fixes the 'parent' pointer. */
 	search_tqueue(primary_queue, TSEARCH_EXIT_PARENT | TSEARCH_EXIT_WAITING, 0, 0, 0, 0);
-	t->state = TASK_DEAD;
-	set_as_dead(t);
 	char flag_last_page_dir_task;
 	/* is this the last task to use this pd_info? */
 	flag_last_page_dir_task = (sub_atomic(&pd_cur_data->count, 1) == 0) ? 1 : 0;
@@ -140,5 +139,6 @@ void exit(int code)
 		vm_unmap(PDIR_DATA);
 		raise_flag(TF_LAST_PDIR);
 	}
+	set_as_dead(t);
 	for(;;) schedule();
 }

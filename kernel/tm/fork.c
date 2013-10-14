@@ -129,11 +129,9 @@ int do_fork(unsigned flags)
 		/* These last things allow full execution of the task */
 		task->eip=eip;
 		task->state = TASK_RUNNING;
-		mutex_acquire(&cpu->lock);
 		task->cpu = cpu;
 		add_atomic(&cpu->numtasks, 1);
 		tqueue_insert(cpu->active_queue, (void *)task, task->activenode);
-		mutex_release(&cpu->lock);
 		__engage_idle();
 		return task->pid;
 	}

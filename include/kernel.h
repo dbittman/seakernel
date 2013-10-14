@@ -29,8 +29,9 @@ extern volatile unsigned kernel_state_flags;
 #define unset_ksf(flag) {and_atomic(&kernel_state_flags, ~flag);}
 extern volatile unsigned int __allow_idle;
 
-#define PANIC_NOSYNC 1
-#define PANIC_MEM    2
+#define PANIC_NOSYNC  1
+#define PANIC_MEM     2
+#define PANIC_VERBOSE 4
 
 #define assert(c) if(__builtin_expect((!(c)),0)) panic_assert(__FILE__, __LINE__, #c)
 

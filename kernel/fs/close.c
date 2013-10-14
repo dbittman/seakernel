@@ -27,12 +27,16 @@ int sys_close(int fp)
 		if(f->flags & _FWRITE && f->inode->pipe->wrcount 
 				&& f->inode->pipe->type != PIPE_NAMED)
 			sub_atomic(&f->inode->pipe->wrcount, 1);
-		task_unblock_all(f->inode->pipe->read_blocked);
 		if(!f->inode->pipe->count && f->inode->pipe->type != PIPE_NAMED) {
+			assert(!f->inode->pipe->read_blocked->num);
+			assert(!f->inode->pipe->write_blocked->num);
 			free_pipe(f->inode);
 			f->inode->pipe = 0;
-		} else
+		} else {
+			task_unblock_all(f->inode->pipe->read_blocked);
+			task_unblock_all(f->inode->pipe->write_blocked);
 			mutex_release(f->inode->pipe->lock);
+		}
 	}
 	/* close devices */
 	if(S_ISCHR(f->inode->mode) && !fp)

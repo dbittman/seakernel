@@ -109,7 +109,7 @@ void kernel_fault(int fuckoff, addr_t ip)
 		printk(5, "Occured in task %d during systemcall %d (F=%d).\n",
 			current_task->pid, current_task->system, current_task->flag);
 	kprintf("return IP = %x\n", ip);
-	panic(0, exception_messages[fuckoff]);
+	panic(PANIC_NOSYNC | (fuckoff == 3 ? PANIC_VERBOSE : 0), exception_messages[fuckoff]);
 }
 
 const char *special_names(int i)

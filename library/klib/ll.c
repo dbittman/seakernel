@@ -19,12 +19,11 @@ struct llistnode *ll_do_insert(struct llist *list, struct llistnode *n, void *en
 	assert(list->magic == LLIST_MAGIC);
 	if(!list->head)
 	{
-		n->next = n->prev = n;
+		n->next = n->prev = 0;
 	} else {
 		n->next = list->head;
-		n->prev = list->head->prev;
+		n->prev = 0;
 		list->head->prev = n;
-		n->prev->next = n;
 	}
 	list->head = n;
 	n->entry = entry;
@@ -55,28 +54,24 @@ void *ll_do_remove(struct llist *list, struct llistnode *node, char locked)
 		sub_atomic(&list->num, 1);
 		if(list->head == node) {
 			/* Now, is this the only node in the list? */
-			if(list->head == node->next) {
+			if(list->head->next == 0) {
 				if(list->flags & LL_LOCKLESS) kprintf("--> %x NULLIFYING HEAD: %d %x %x %x\n", list, list->num, list->head, list->head->prev, list->head->next);
 #warning "DEBUG"
 				list->head = 0;
 				goto out;
 			}
-			/* Lets put the head at the next node, in case theres a search. */
 			list->head = node->next;
+			if(node->next)
+				assert(node->next->magic == LLISTNODE_MAGIC);
+		}
+		if(node->prev)
+			assert(node->prev->magic == LLISTNODE_MAGIC);
+		if(node->next)
 			assert(node->next->magic == LLISTNODE_MAGIC);
-		}
-		assert(node->prev->magic == LLISTNODE_MAGIC);
-		assert(node->next->magic == LLISTNODE_MAGIC);
-		node->prev->next = node->next;
-		node->next->prev = node->prev;
-		if((list->head->next == list->head) && (list->head->prev == list->head)) {
-			if(list->flags & LL_LOCKLESS) 
-			{
-				char buf[555];
-				sprintf(buf, "--> %x HEAD EQUAL: %d %x %x %x\n", list, list->num, list->head, list->head->prev, list->head->next);
-				//serial_puts_nolock(0, buf);
-			}
-		}
+		if(node->prev)
+			node->prev->next = node->next;
+		if(node->next)
+			node->next->prev = node->prev;
 		out:
 		node->next = node->prev = 0;
 	}

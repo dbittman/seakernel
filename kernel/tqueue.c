@@ -99,6 +99,7 @@ void *tqueue_next(tqueue_t *tq)
 	}
 	assert(tq->current);
 	void *ret = tq->current->entry;
+	assert(ret);
 	assert(tq->i == 1);
 	tq->i=0;
 	mutex_release(&tq->lock);

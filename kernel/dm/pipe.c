@@ -91,7 +91,8 @@ int read_pipe(struct inode *ino, char *buffer, size_t length)
 	while(!pipe->pending && (pipe->count > 1 && pipe->type != PIPE_NAMED 
 			&& pipe->wrcount>0)) {
 		mutex_release(pipe->lock);
-		task_block(pipe->read_blocked, (task_t *)current_task);
+		schedule();
+		//task_block(pipe->read_blocked, (task_t *)current_task);
 		if(got_signal(current_task))
 			return -EINTR;
 		mutex_acquire(pipe->lock);
@@ -114,6 +115,7 @@ int read_pipe(struct inode *ino, char *buffer, size_t length)
 		count+=ret;
 	}
 	task_unblock_all(pipe->write_blocked);
+	task_unblock_all(pipe->read_blocked);
 	mutex_release(pipe->lock);
 	return count;
 }
@@ -134,7 +136,8 @@ int write_pipe(struct inode *ino, char *buffer, size_t length)
 	/* IO block until we can write to it */
 	while((pipe->write_pos+length)>=PIPE_SIZE) {
 		mutex_release(pipe->lock);
-		task_block(pipe->write_blocked, (task_t *)current_task);
+		//task_block(pipe->write_blocked, (task_t *)current_task);
+		schedule();
 		if(got_signal(current_task))
 			return -EINTR;
 		mutex_acquire(pipe->lock);

@@ -36,6 +36,7 @@ __attribute__((always_inline)) inline task_t *get_next_task(task_t *prev, cpu_t 
 		 * runnable task, it gets forced to run */
 		if(t && t == prev && !task_is_runable(t)) {
 			/* make sure to update the state in case it slept */
+			assert(cpu->ktask);
 			cpu->ktask->state = TASK_RUNNING;
 			return (task_t *)cpu->ktask;
 		}
@@ -103,7 +104,16 @@ int schedule()
 	
 	mutex_acquire(&cpu->lock);
 	store_context();
-	volatile task_t *next_task = (volatile task_t *)get_next_task(old, cpu);
+	/* the exiting task has fully 'exited' and has now scheduled out of
+	 * itself. It will never be scheduled again, and the page directory
+	 * will never be accessed again */
+	if(old->flags & TF_DYING) {
+		assert(old->state == TASK_DEAD);
+		raise_task_flag(old, TF_BURIED);
+	}
+	old->syscall_count = 0;
+	task_t *next_task = (task_t *)get_next_task(old, cpu);
+	assert(next_task);
 	assert(cpu == next_task->cpu);
 	restore_context(next_task);
 	next_task->slice = ticks;

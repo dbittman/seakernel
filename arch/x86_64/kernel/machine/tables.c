@@ -171,7 +171,7 @@ static void init_idt()
 	idt_set_gate(47, (u64int)irq15, 0x08, 0x8E);
 	/* let the 0xFF vector be the 'spurious' vector. We iret immediately,
 	 * thus ignoring this interrupt. APIC, for example, needs this */
-	idt_set_gate(0xFF, (u32int)isr_ignore, 0x08, 0x8E);
+	idt_set_gate(0xFF, (u64int)isr_ignore, 0x08, 0x8E);
 	/* 0x80 is syscall */
 	idt_set_gate(0x80, (u64int)isr80, 0x08, 0x8E);
 #if CONFIG_SMP

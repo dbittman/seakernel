@@ -52,7 +52,6 @@ int __KT_try_releasing_tasks()
 		rwlock_release(&kill_queue->rwl, RWL_WRITER);
 		return 0;
 	}
-	if(cur->entry != t) printk(0, "--> %x %x\n", cur->entry, t);
 	assert(cur->entry == t);
 	void *node = ll_do_remove(kill_queue, cur, 1);
 	assert(node == cur);

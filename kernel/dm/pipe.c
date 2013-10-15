@@ -92,6 +92,7 @@ int read_pipe(struct inode *ino, char *buffer, size_t length)
 			&& pipe->wrcount>0)) {
 		mutex_release(pipe->lock);
 		schedule();
+	/* TODO: Proper blocking... */
 		//task_block(pipe->read_blocked, (task_t *)current_task);
 		if(got_signal(current_task))
 			return -EINTR;

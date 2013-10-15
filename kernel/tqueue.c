@@ -40,15 +40,11 @@ struct llistnode *tqueue_insert(tqueue_t *tq, void *item, struct llistnode *node
 {
 	int old = set_int(0);
 	mutex_acquire(&tq->lock);
-	if(tq->i != 0) panic(0, "I IS %d", tq->i);
-	tq->i=3;
 	assert(tq->magic == TQ_MAGIC);
 	ll_do_insert(&tq->tql, node, item);
 	if(!tq->current)
 		tq->current = tq->tql.head;
 	add_atomic(&tq->num, 1);
-	assert(tq->i == 3);
-	tq->i=0;
 	mutex_release(&tq->lock);
 	assert(!set_int(old));
 	return node;
@@ -58,14 +54,10 @@ void tqueue_remove(tqueue_t *tq, struct llistnode *node)
 {
 	int old = set_int(0);
 	mutex_acquire(&tq->lock);
-	if(tq->i != 0) panic(0, "I IS %d", tq->i);
-	tq->i=2;
 	assert(tq->magic == TQ_MAGIC);
 	if(tq->current == node) tq->current=0;
 	ll_do_remove(&tq->tql, node, 0);
 	sub_atomic(&tq->num, 1);
-	assert(tq->i == 2);
-	tq->i=0;
 	mutex_release(&tq->lock);
 	assert(!set_int(old));
 }
@@ -85,23 +77,15 @@ void *tqueue_next(tqueue_t *tq)
 {
 	int old = set_int(0);
 	mutex_acquire(&tq->lock);
-	if(tq->i != 0) panic(0, "I IS %d", tq->i);
-	tq->i=1;
 	assert(tq->magic == TQ_MAGIC);
 	assert(tq->num > 0);
 	if(tq->current) tq->current = tq->current->next;
 	/* can't use else here. Need to catch the case when current->next is
 	 * null above */
 	if(!tq->current) tq->current = tq->tql.head;
-	if(!tq->current) {
-		printk(0, "--> %x %d\n", tq->tql.head, tq->num);
-		asm("int $0x3");
-	}
 	assert(tq->current);
 	void *ret = tq->current->entry;
 	assert(ret);
-	assert(tq->i == 1);
-	tq->i=0;
 	mutex_release(&tq->lock);
 	assert(!set_int(old));
 	return ret;

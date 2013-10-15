@@ -27,7 +27,6 @@ typedef struct {
 	volatile unsigned num;
 	volatile struct llistnode *current;
 	struct llist tql;
-	volatile int i;
 } tqueue_t;
 
 tqueue_t *tqueue_create(tqueue_t *tq, unsigned flags);

@@ -171,9 +171,8 @@ void remove_slab_list(slab_t *slab)
 	else if(sc->full == slab)
 		list = &sc->full;
 	if(list) {
-		*list = slab->next;
-		if(!*list)
-			*list = slab->prev;
+		*list = (slab_t *)slab->next;
+		if(!*list) assert(!slab->prev);
 	}
 	slab->prev = slab->next=0;
 }
@@ -199,8 +198,6 @@ slab_t *create_slab(slab_cache_t *sc, int num_pages, unsigned short flags)
 	}
 	slab_t *slab = (slab_t *)addr;
 	assert(slab->magic != SLAB_MAGIC);
-#warning "NOPE"
-	memset(slab, 0, num_pages * 0x1000);
 	memset(slab, 0, sizeof(slab_t));
 	slab->magic = SLAB_MAGIC;
 	slab->flags = flags;
@@ -223,7 +220,7 @@ slab_t *create_slab(slab_cache_t *sc, int num_pages, unsigned short flags)
 		(*slab->stack) = i++;
 		slab->stack++;
 	}
-	unsigned short *tmp = slab->stack;
+	unsigned short *tmp = (unsigned short *)slab->stack;
 	while(i < MAX_OBJ_ID)
 	{
 		(*tmp) = 0xFFFF;
@@ -365,8 +362,7 @@ unsigned slab_init(addr_t start, addr_t end)
 
 unsigned slab_size(int sz)
 {
-#warning "FIX"
-	unsigned s = (sz * 12) + sizeof(slab_t);
+	unsigned s = (sz * MAX_OBJ_ID) + sizeof(slab_t);
 	if(s > (0x1000 * 128))
 		s = 0x1000 * 128;
 	if(s < (unsigned)sz * 2) s = sz * 2;
@@ -411,11 +407,11 @@ slab_t *find_usable_slab(unsigned size, int align, int allow_range)
 		slab_t *slab = sc->partial;
 		if(align)
 		{
-			while(slab && !(slab->flags & S_ALIGN)) slab=slab->next;
+			while(slab && !(slab->flags & S_ALIGN)) slab=(slab_t *)slab->next;
 			if(!slab)
 			{
 				slab = sc->empty;
-				while(slab && !(slab->flags & S_ALIGN)) slab=slab->next;
+				while(slab && !(slab->flags & S_ALIGN)) slab=(slab_t *)slab->next;
 			}
 		} else
 		{
@@ -473,7 +469,7 @@ addr_t do_kmalloc_slab(size_t sz, char align)
 {
 	if(sz < 32) sz=32;
 	if(!align)
-		sz += (sizeof(addr_t) * 3);
+		sz += (sizeof(addr_t) * 2);
 	slab_t *slab=0, *old_slab=0;
 	try_again:
 	slab = find_usable_slab(sz, align, 1);
@@ -493,14 +489,11 @@ addr_t do_kmalloc_slab(size_t sz, char align)
 			"slab allocation of aligned data failed! (returned %x)", addr);
 	if(!align)
 	{
-		if(((addr + sizeof(addr_t *)*2) & PAGE_MASK) == (addr + sizeof(addr_t *)*2))
+		if(((addr + sizeof(addr_t *)) & PAGE_MASK) == (addr + sizeof(addr_t *)))
 		{
 			/* force non-alignment */
 			addr += sizeof(addr_t);
 		}
-		assert(*(addr_t *)(addr) == 0);
-		*(addr_t *)(addr) = (addr_t)0x1234;
-		addr += sizeof(addr_t);
 		*(addr_t *)(addr) = (addr_t)slab;
 		addr += sizeof(addr_t);
 	}
@@ -532,7 +525,6 @@ void do_kfree_slab(void *ptr)
 	}
 	else {
 		slab = (slab_t *)*(addr_t *)((addr_t)ptr - sizeof(addr_t));
-		*(addr_t *)((addr_t)ptr - (sizeof(addr_t *)*2)) = 0;
 		n = slab->vnode;
 		if(!n) goto try_alt;
  	}

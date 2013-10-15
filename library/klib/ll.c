@@ -53,8 +53,6 @@ void *ll_do_remove(struct llist *list, struct llistnode *node, char locked)
 		if(list->head == node) {
 			/* Now, is this the only node in the list? */
 			if(list->head->next == 0) {
-				if(list->flags & LL_LOCKLESS) kprintf("--> %x NULLIFYING HEAD: %d %x %x %x\n", list, list->num, list->head, list->head->prev, list->head->next);
-#warning "DEBUG"
 				list->head = 0;
 				goto out;
 			}

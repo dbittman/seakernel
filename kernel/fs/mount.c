@@ -53,7 +53,6 @@ void unmount_all()
 	struct llistnode *cur, *next;
 	ll_for_each_entry_safe(mountlist, cur, next, struct mountlst *, m)
 	{
-		printk_safe(0, "unmounting: %x\n", m);
 		do_unmount(m->i->mount_parent, 1);
 		ll_remove(mountlist, cur);
 	}

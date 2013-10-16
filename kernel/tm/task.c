@@ -135,7 +135,17 @@ void task_block(struct llist *list, task_t *task)
 	task->blocklist = list;
 	ll_do_insert(list, task->blocknode, (void *)task);
 	tqueue_remove(((cpu_t *)task->cpu)->active_queue, task->activenode);
-	if(task == current_task) task_pause(task);
+	task_pause(task);
+	assert(!set_int(old));
+}
+
+void task_almost_block(struct llist *list, task_t *task)
+{
+	int old = set_int(0);
+	task->blocklist = list;
+	ll_do_insert(list, task->blocknode, (void *)task);
+	tqueue_remove(((cpu_t *)task->cpu)->active_queue, task->activenode);
+	task->state = TASK_ISLEEP;
 	assert(!set_int(old));
 }
 

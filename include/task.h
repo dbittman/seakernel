@@ -224,6 +224,7 @@ int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 	struct timeval *timeout);
 int swap_in_page(task_t *, unsigned);
 void task_block(struct llist *list, task_t *task);
+void task_almost_block(struct llist *list, task_t *task);
 int sys_sbrk(long inc);
 int execve(char *path, char **argv, char **env);
 void task_pause(task_t *t);

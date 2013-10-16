@@ -61,7 +61,10 @@ void panic(int flags, char *fmt, ...)
 		ll_for_each_entry(&primary_queue->tql, cur, task_t *, t)
 		{
 			printk_safe(9, "\ntask %5d: magic=%x, state=%d, flags=0x%x, F=%d, sys=%d\n", t->pid, t->magic, t->state, t->flags, t->flag, t->system);
-			printk_safe(9, "          : cpu=%x (%d)\n", t->cpu, ((cpu_t *)(t->cpu))->apicid);
+			addr_t a=0;
+			if(t->regs) a = t->regs->eip;
+			else if(t->sysregs) a = t->sysregs->eip;
+			printk_safe(9, "          : cpu=%x (%d), regs eip=%x\n", t->cpu, ((cpu_t *)(t->cpu))->apicid, a);
 		}
 	}
 #if CONFIG_GDB_STUB

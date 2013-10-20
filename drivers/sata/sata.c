@@ -4,7 +4,7 @@
 
 int module_install()
 {
-	
+	printk(0, "[sata]: initializing sata driver...\n");
 	return 0;
 }
 

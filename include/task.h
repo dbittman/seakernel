@@ -94,18 +94,18 @@ struct task_struct
 	 * but since we dynamically allocate task_structs, we cannot
 	 * make sure that that will happen. Thus, we need to align it
 	 * ourselves... */
-	char fpu_save_data[512 + 16 /* alignment */];
 	page_dir_t *pd;
 	/* current state of the task (see sig.h) */
 	volatile int state;
+	char fpu_save_data[512 + 16 /* alignment */];
 	volatile unsigned flags;
 	int flag;
+	
 	/* current system call (-1 for the kernel) */
 	unsigned int system; 
 	addr_t kernel_stack;
 	/* timeslicing */
 	int cur_ts, priority;
-	
 	/* waiting on something? */
 	volatile addr_t waiting_ret;
 	volatile long tick;

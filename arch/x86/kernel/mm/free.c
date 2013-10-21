@@ -3,7 +3,7 @@
 #include <kernel.h>
 #include <memory.h>
 #include <task.h>
-static void self_free_table(int t)
+__attribute__ ((noinline)) static void self_free_table(int t)
 {
 	addr_t virt = t*1024*PAGE_SIZE;
 	int i;

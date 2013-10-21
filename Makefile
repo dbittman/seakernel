@@ -35,7 +35,7 @@ CFLAGS_NOARCH = -std=gnu11 -nostdlib -nostdinc -nodefaultlibs \
 	        -Wno-strict-aliasing -Wshadow -Wpointer-arith -Wcast-align \
 	        -Wno-unused -Wnested-externs -Waddress -Winline \
 	        -Wno-long-long -Wno-unused-parameter -Wno-unused-but-set-parameter\
-	        -mno-mmx -mno-sse -mno-sse2 -mno-sse3 -mno-3dnow
+	        -mno-mmx -mno-sse -mno-sse2 -mno-sse3 -mno-3dnow -fno-inline-functions
 	        
 CFLAGS_NOARCH += -O$(CONFIG_OPTIMIZATION_LEVEL)
 
@@ -142,6 +142,9 @@ doc:
 love:
 	@echo Not war
 	
+gcc_print_optimizers:
+	@$(CC) $(CFLAGS) -Q --help=optimizers
+
 help:
 	@echo "make [target]"
 	@echo "Useful targets:"

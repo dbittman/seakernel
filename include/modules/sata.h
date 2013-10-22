@@ -134,74 +134,74 @@ struct fis_dma_setup {
 }__attribute__ ((packed));
 
 struct fis_dev_bits {
-	uint8_t fis_type;
+	volatile uint8_t fis_type;
 	
-	uint8_t pmport:4;
-	uint8_t reserved0:2;
-	uint8_t interrupt:1;
-	uint8_t notification:1;
+	volatile uint8_t pmport:4;
+	volatile uint8_t reserved0:2;
+	volatile uint8_t interrupt:1;
+	volatile uint8_t notification:1;
 	
-	uint8_t status;
-	uint8_t error;
+	volatile uint8_t status;
+	volatile uint8_t error;
 	
-	uint32_t protocol;
+	volatile uint32_t protocol;
 }__attribute__ ((packed));
 
 struct hba_port {
-	uint32_t command_list_base_l;
-	uint32_t command_list_base_h;
-	uint32_t fis_base_l;
-	uint32_t fis_base_h;
-	uint32_t interrupt_status;
-	uint32_t interrupt_enable;
-	uint32_t command;
-	uint32_t reserved0;
-	uint32_t task_file_data;
-	uint32_t signature;
-	uint32_t sata_status;
-	uint32_t sata_control;
-	uint32_t sata_error;
-	uint32_t sata_active;
-	uint32_t command_issue;
-	uint32_t sata_notification;
-	uint32_t fis_based_switch_control;
-	uint32_t reserved1[11];
-	uint32_t vendor[4];
+	volatile uint32_t command_list_base_l;
+	volatile uint32_t command_list_base_h;
+	volatile uint32_t fis_base_l;
+	volatile uint32_t fis_base_h;
+	volatile uint32_t interrupt_status;
+	volatile uint32_t interrupt_enable;
+	volatile uint32_t command;
+	volatile uint32_t reserved0;
+	volatile uint32_t task_file_data;
+	volatile uint32_t signature;
+	volatile uint32_t sata_status;
+	volatile uint32_t sata_control;
+	volatile uint32_t sata_error;
+	volatile uint32_t sata_active;
+	volatile uint32_t command_issue;
+	volatile uint32_t sata_notification;
+	volatile uint32_t fis_based_switch_control;
+	volatile uint32_t reserved1[11];
+	volatile uint32_t vendor[4];
 }__attribute__ ((packed));
 
 struct hba_memory {
-	uint32_t capability;
-	uint32_t global_host_control;
-	uint32_t interrupt_status;
-	uint32_t port_implemented;
-	uint32_t version;
-	uint32_t ccc_control;
-	uint32_t ccc_ports;
-	uint32_t em_location;
-	uint32_t em_control;
-	uint32_t ext_capabilities;
-	uint32_t bohc;
+	volatile uint32_t capability;
+	volatile uint32_t global_host_control;
+	volatile uint32_t interrupt_status;
+	volatile uint32_t port_implemented;
+	volatile uint32_t version;
+	volatile uint32_t ccc_control;
+	volatile uint32_t ccc_ports;
+	volatile uint32_t em_location;
+	volatile uint32_t em_control;
+	volatile uint32_t ext_capabilities;
+	volatile uint32_t bohc;
 	
-	uint8_t reserved[0xA0 - 0x2C];
+	volatile uint8_t reserved[0xA0 - 0x2C];
 	
-	uint8_t vendor[0x100 - 0xA0];
+	volatile uint8_t vendor[0x100 - 0xA0];
 	
-	struct hba_port ports[1];
+	volatile struct hba_port ports[1];
 }__attribute__ ((packed));
 
 struct hba_received_fis {
-	struct fis_dma_setup fis_ds;
-	uint8_t pad0[4];
+	volatile struct fis_dma_setup fis_ds;
+	volatile uint8_t pad0[4];
 	
-	struct fis_pio_setup fis_ps;
-	uint8_t pad1[12];
+	volatile struct fis_pio_setup fis_ps;
+	volatile uint8_t pad1[12];
 	
-	struct fis_reg_device_to_host fis_r;
-	uint8_t pad2[4];
+	volatile struct fis_reg_device_to_host fis_r;
+	volatile uint8_t pad2[4];
 	
-	struct fis_dev_bits fis_sdb;
-	uint8_t ufis[64];
-	uint8_t reserved[0x100 - 0xA0];
+	volatile struct fis_dev_bits fis_sdb;
+	volatile uint8_t ufis[64];
+	volatile uint8_t reserved[0x100 - 0xA0];
 }__attribute__ ((packed));
 
 struct hba_command_header {
@@ -234,14 +234,31 @@ struct hba_prdt_entry {
 	uint32_t byte_count:22;
 	uint32_t reserved1:9;
 	uint32_t interrupt_on_complete:1;
-};
+}__attribute__ ((packed));
 
 struct hba_command_table {
 	uint8_t command_fis[64];
 	uint8_t acmd[16];
 	uint8_t reserved[48];
 	struct hba_prdt_entry prdt_entries[1];
+}__attribute__ ((packed));
+
+#define AHCI_DEV_SATA 0x00000101
+
+struct ahci_device {
+	uint32_t type;
+	int idx;
+	mutex_t lock;
 };
+
+#define HBA_PxCMD_ST  (1 << 0)
+#define HBA_PxCMD_CR  (1 << 15)
+#define HBA_PxCMD_FR  (1 << 14)
+#define HBA_PxCMD_FRE (1 << 4)
+
+#define HBA_GHC_AHCI_ENABLE (1 << 31)
+#define HBA_GHC_INTERRUPT_ENABLE (1 << 1)
+#define HBA_GHC_RESET (1 << 0)
 
 #endif
 #endif

@@ -75,5 +75,6 @@ void pci_write_dword(const uint16_t bus, const uint16_t dev,
 	const uint16_t func, const uint32_t reg, unsigned data);
 uint32_t pci_read_dword(const uint16_t bus, const uint16_t dev, 
 	const uint16_t func, const uint32_t reg);
+struct pci_device *pci_locate_class(unsigned short class, unsigned short _subclass);
 #endif
 #endif

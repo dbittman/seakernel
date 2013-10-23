@@ -70,6 +70,7 @@ pml4_t *create_initial_directory()
 	 * user code may not run the the kernel area of the page directory */
 	early_vm_map(pml4, SIGNAL_INJECT, pm_alloc_page_zero() | PAGE_PRESENT | PAGE_USER);
 	early_vm_map(pml4, PDIR_DATA, pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE);
+	
 	/* CR3 requires the physical address, so we directly 
 	 * set it because we have the physical address */
 	printk(0, "Setting new CR3...\n");

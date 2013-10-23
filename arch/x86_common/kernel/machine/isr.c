@@ -363,7 +363,6 @@ void irq_handler(volatile registers_t regs)
 		already_in_interrupt = 1;
 	/* ...and set the flag so we know we're in an interrupt */
 	raise_flag(TF_IN_INT);
-	
 	/* now, run through the stage1 handlers, and see if we need any
 	 * stage2 handlers to run later */
 	char need_second_stage = 0;

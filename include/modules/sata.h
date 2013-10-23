@@ -244,11 +244,14 @@ struct hba_command_table {
 }__attribute__ ((packed));
 
 #define AHCI_DEV_SATA 0x00000101
+#define HBA_COMMAND_HEADER_NUM 32
 
 struct ahci_device {
 	uint32_t type;
 	int idx;
 	mutex_t lock;
+	void *fis_virt, *clb_virt;
+	void *ch[HBA_COMMAND_HEADER_NUM];
 };
 
 #define HBA_PxCMD_ST  (1 << 0)
@@ -259,6 +262,8 @@ struct ahci_device {
 #define HBA_GHC_AHCI_ENABLE (1 << 31)
 #define HBA_GHC_INTERRUPT_ENABLE (1 << 1)
 #define HBA_GHC_RESET (1 << 0)
+
+#define ATA_CMD_IDENTIFY 0xEC
 
 #endif
 #endif

@@ -18,6 +18,11 @@ struct pci_device *get_sata_pci()
 	sata->flags |= PCI_ENGAGED;
 	sata->flags |= PCI_DRIVEN;
 	hba_mem = (void *)sata->pcs->bar5;
+	if(!(sata->pcs->command & 4))
+		printk(0, "[sata]: setting PCI command to bus mastering mode\n");
+	unsigned short cmd = sata->pcs->command | 4;
+	sata->pcs->command = cmd;
+	pci_write_dword(sata->bus, sata->dev, sata->func, 4, cmd);
 	/* of course, we need to map a virtual address to physical address
 	 * for paging to not hate on us... */
 	hba_mem = (void *)pmap_get_mapping(sata_pmap, (addr_t)hba_mem);
@@ -49,7 +54,62 @@ void ahci_start_port_command_engine(volatile struct hba_port *port)
 	port->command |= HBA_PxCMD_ST; 
 }
 
-//char data[512] __attribute__ ((aligned (16)));
+int ahci_dma_port_read(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev, int slot)
+{
+	port->interrupt_status = ~0;
+	struct hba_command_header *h = (struct hba_command_header *)dev->clb_virt;
+	h += slot;
+	h->write=0;
+	h->prdb_count=0;
+	h->atapi=0;
+	h->fis_length = sizeof(struct fis_reg_host_to_device) / 4;
+	h->prdt_len=1;
+	
+	struct hba_command_table *tbl = (struct hba_command_table *)(dev->ch[slot]);
+	struct fis_reg_host_to_device *fis = (struct fis_reg_host_to_device *)(tbl->command_fis);
+	memset(fis, 0, sizeof(*fis));
+	fis->fis_type = FIS_TYPE_REG_H2D;
+	fis->command = ATA_CMD_READ_DMA_EX;
+	fis->device = 1<<6;
+	fis->count_l=1;
+	fis->c=1;	
+	
+	addr_t data_phys;
+	volatile char *data = kmalloc_ap(0x1000, &data_phys);
+	memset(data, 1, 512);
+	
+	struct hba_prdt_entry *prd = &tbl->prdt_entries[0];
+	prd->byte_count = 512-1;
+	prd->data_base_l = (uint32_t)data_phys;
+	prd->data_base_h = 0;
+	prd->interrupt_on_complete=0;
+
+	while ((port->task_file_data & (ATA_DEV_BUSY | ATA_DEV_DRQ)))
+	{
+		asm("pause");
+	}
+	kprintf("Command issue\n");
+	port->command_issue = (1 << slot);
+	ahci_flush_commands(port);
+	while(1)
+	{
+		if(!((port->sata_active | port->command_issue) & (1 << slot)))
+			break;
+	}
+	kprintf("RET LOOP\n");
+	
+	for(int j=0;j<512;j++)
+	{
+		printk(0, "%x ", (unsigned char)data[j]);
+	}
+	
+	struct hba_received_fis *hf;
+	hf = (struct hba_received_fis *)dev->fis_virt;
+	
+	kprintf(":: %x %x %x; %x %x\n", port->sata_error, port->task_file_data, h->prdb_count, hf->fis_r.error, hf->fis_r.status);
+	
+	for(;;);
+}
 
 void ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev)
 {
@@ -61,7 +121,7 @@ void ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev)
 	port->command |= 6;
 	/* initialize state */
 	port->interrupt_status = ~0; /* clear pending interrupts */
-	port->interrupt_enable = 15; /* we want some interrupts */
+	port->interrupt_enable = ~0; /* we want some interrupts */
 	
 	port->command |= (1 << 28); /* set interface to active */
 	port->command &= ~((1 << 27) | (1 << 26)); /* clear some bits */
@@ -91,8 +151,8 @@ void ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev)
 	port->fis_base_l = (fis_phys & 0xFFFFFFFF);
 	port->fis_base_h = ((fis_phys >> 32) & 0xFFFFFFFF);
 	
-	ahci_start_port_command_engine(port);
-	
+ 	ahci_start_port_command_engine(port);
+	printk(0, "ERR: %x\n", port->sata_error);
 	/* identify */
 	h = (struct hba_command_header *)clb_virt;
 	
@@ -105,22 +165,29 @@ void ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev)
 	fis->command = ATA_CMD_IDENTIFY;
 	addr_t data_phys;
 	volatile short *data = kmalloc_ap(0x1000, &data_phys);
-	
+	printk(0, "ERR: %x\n", port->sata_error);
 	memset(data, 0, 512);
 	
 	struct hba_prdt_entry *prd = &tbl->prdt_entries[0];
-	prd->byte_count = 256 - 1;
+	prd->byte_count = 512 - 1;
 	prd->data_base_l = (uint32_t)data_phys;
 	prd->data_base_h = 0;
 	prd->interrupt_on_complete=0;
 	
 	h->prdt_len=1;
 	
-	
 	fis->c=1;
+	kprintf("Command issue\n");
 	port->command_issue |= 1;
-	
 	ahci_flush_commands(port);
+	
+	while(1)
+	{
+		if(!((port->sata_active | port->command_issue) & 1))
+			break;
+		printk(0, "%x, %x\n", port->sata_active, port->command_issue);
+	}
+	
 	kprintf("...ok...\n");
 	
 	//while(1)
@@ -130,11 +197,12 @@ void ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev)
 	//}
 	
 	/* create device */
-	for(int j=0;j<128;j++)
+	for(int j=0;j<256;j++)
 	{
-		printk(0, "%d: %x\n", j, (unsigned short)data[j]);
+		printk(0, "%x ", (unsigned short)data[j]);
 	}
 	
+	printk(0, "ERR: %x\n", port->sata_error);
 	
 	uint16_t q = *((uint16_t *)(data)+83);
 	
@@ -145,8 +213,12 @@ void ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev)
 	
 	
 	uint64_t l = *(unsigned long long *)(data+100);
+	l *= 512;
 	
-	kprintf("len = %d (%d KB) (%d MB)\n", (uint32_t)l, (uint32_t)l / 1024, ((uint32_t)l/1024)/1024);
+	kprintf("len = %d (%d KB) (%d MB)...%d\n", (uint32_t)l, (uint32_t)l / 1024, ((uint32_t)l/1024)/1024, h->prdb_count);
+	
+	ahci_dma_port_read(abar, port, dev, 1);
+	
 	for(;;);
 	
 }

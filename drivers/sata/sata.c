@@ -107,8 +107,56 @@ int ahci_dma_port_read(struct hba_memory *abar, struct hba_port *port, struct ah
 	hf = (struct hba_received_fis *)dev->fis_virt;
 	
 	kprintf(":: %x %x %x; %x %x\n", port->sata_error, port->task_file_data, h->prdb_count, hf->fis_r.error, hf->fis_r.status);
+}
+
+int ahci_dma_port_write_test(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev, int slot)
+{
+	port->interrupt_status = ~0;
+	struct hba_command_header *h = (struct hba_command_header *)dev->clb_virt;
+	h += slot;
+	h->write=1;
+	h->prdb_count=0;
+	h->atapi=0;
+	h->fis_length = sizeof(struct fis_reg_host_to_device) / 4;
+	h->prdt_len=1;
 	
-	for(;;);
+	struct hba_command_table *tbl = (struct hba_command_table *)(dev->ch[slot]);
+	struct fis_reg_host_to_device *fis = (struct fis_reg_host_to_device *)(tbl->command_fis);
+	memset(fis, 0, sizeof(*fis));
+	fis->fis_type = FIS_TYPE_REG_H2D;
+	fis->command = ATA_CMD_WRITE_DMA_EX;
+	fis->device = 1<<6;
+	fis->count_l=1;
+	fis->c=1;
+	
+	addr_t data_phys;
+	volatile char *data = kmalloc_ap(0x1000, &data_phys);
+	memset(data, 0x55, 512);
+	
+	struct hba_prdt_entry *prd = &tbl->prdt_entries[0];
+	prd->byte_count = 512-1;
+	prd->data_base_l = (uint32_t)data_phys;
+	prd->data_base_h = 0;
+	prd->interrupt_on_complete=0;
+
+	while ((port->task_file_data & (ATA_DEV_BUSY | ATA_DEV_DRQ)))
+	{
+		asm("pause");
+	}
+	kprintf("WRITE Command issue\n");
+	port->command_issue = (1 << slot);
+	ahci_flush_commands(port);
+	while(1)
+	{
+		if(!((port->sata_active | port->command_issue) & (1 << slot)))
+			break;
+	}
+	kprintf("RET LOOP\n");
+	
+	struct hba_received_fis *hf;
+	hf = (struct hba_received_fis *)dev->fis_virt;
+	
+	kprintf(":: %x %x %x; %x %x\n", port->sata_error, port->task_file_data, h->prdb_count, hf->fis_r.error, hf->fis_r.status);
 }
 
 void ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev)
@@ -218,8 +266,9 @@ void ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev)
 	kprintf("len = %d (%d KB) (%d MB)...%d\n", (uint32_t)l, (uint32_t)l / 1024, ((uint32_t)l/1024)/1024, h->prdb_count);
 	
 	ahci_dma_port_read(abar, port, dev, 1);
-	
-	for(;;);
+	ahci_dma_port_write_test(abar, port, dev, 1);
+	ahci_dma_port_read(abar, port, dev, 1);
+	//for(;;);
 	
 }
 

@@ -123,6 +123,11 @@ int ahci_write_prdt(struct hba_memory *abar, struct hba_port *port, struct ahci_
 	return num_entries;
 }
 
+int ahci_reset_device(struct hba_memory *abar, struct hba_port *port)
+{
+#warning "implement"
+}
+
 int ahci_port_dma_data_transfer(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev, int slot, int write, addr_t virt_buffer, int sectors, uint64_t lba)
 {
 	port->interrupt_status = ~0;
@@ -160,16 +165,18 @@ int ahci_port_dma_data_transfer(struct hba_memory *abar, struct hba_port *port, 
 	}
 	if(port->sata_error)
 	{
-		printk(0, "[sata]: err: %x\n", port->sata_error);
-		return 0;
+		printk(0, "[sata]: device %d: sata error: %x\n", dev->idx, port->sata_error);
+		goto error;
 	}
 	if(port->task_file_data & ATA_DEV_ERR)
 	{
-		printk(0, "[sata]: tfd err!\n");
-		return 0;
+		printk(0, "[sata]: device %d returned task file data error\n", dev->idx);
+		goto error;
 	}
-	//printk(0, "******** %d\n", h->prdb_count);
 	return 1;
+	error:
+	ahci_reset_device(abar, port);
+	return 0;
 }
 
 uint32_t ahci_get_previous_byte_count(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev, int slot)
@@ -357,7 +364,6 @@ void ahci_interrupt_handler()
  */
 int ahci_rw_multiple_do(int rw, int min, u64 blk, char *out_buffer, int count)
 {
-	int num_read_blocks = count;
 	uint32_t length = count * ATA_SECTOR_SIZE;
 	
 	int d = min % 32;
@@ -385,6 +391,8 @@ int ahci_rw_multiple_do(int rw, int min, u64 blk, char *out_buffer, int count)
 	assert(length <= (unsigned)num_pages * 0x1000);
 	unsigned char *buf = kmalloc_a(0x1000 * num_pages);
 	
+	int num_read_blocks = count;
+	
 	if(rw == WRITE)
 		memcpy(buf, out_buffer, length);
 	
@@ -392,11 +400,12 @@ int ahci_rw_multiple_do(int rw, int min, u64 blk, char *out_buffer, int count)
 	
 	struct hba_port *port = (struct hba_port *)&hba_mem->ports[dev->idx];
 	int slot=0;
-	ahci_port_dma_data_transfer(hba_mem, port, dev, slot, rw == WRITE ? 1 : 0, (addr_t)buf, count, blk);
+	if(!ahci_port_dma_data_transfer(hba_mem, port, dev, slot, rw == WRITE ? 1 : 0, (addr_t)buf, count, blk))
+		num_read_blocks = 0;
 	
 	mutex_release(&dev->lock);
 	
-	if(rw == READ)
+	if(rw == READ && num_read_blocks)
 		memcpy(out_buffer, buf, length);
 	
 	kfree(buf);

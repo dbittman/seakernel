@@ -1,5 +1,5 @@
 OFILES=main.o ahci.o command.o
-NAME=sata
+NAME=ahci
 OUTPUT=$(NAME).m
 
 include ../submake.inc

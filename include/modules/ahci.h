@@ -1,7 +1,7 @@
 #ifndef __MOD_SATA_H
 #define __MOD_SATA_H
 #include <config.h>
-#if CONFIG_MODULE_SATA
+#if CONFIG_MODULE_AHCI
 #include <types.h>
 #include <fs.h>
 typedef enum

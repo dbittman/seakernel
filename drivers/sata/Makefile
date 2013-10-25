@@ -1,4 +1,4 @@
-OFILES=sata.o pio.o
+OFILES=main.o ahci.o command.o
 NAME=sata
 OUTPUT=$(NAME).m
 

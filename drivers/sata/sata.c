@@ -23,7 +23,7 @@ struct pci_device *get_sata_pci()
 		return 0;
 	sata->flags |= PCI_ENGAGED;
 	sata->flags |= PCI_DRIVEN;
-	hba_mem = (void *)sata->pcs->bar5;
+	hba_mem = (void *)(addr_t)sata->pcs->bar5;
 	if(!(sata->pcs->command & 4))
 		printk(0, "[sata]: setting PCI command to bus mastering mode\n");
 	unsigned short cmd = sata->pcs->command | 4;
@@ -372,7 +372,13 @@ int ahci_rw_multiple_do(int rw, int min, u64 blk, char *out_buffer, int count)
 	}
 	blk += part_off;
 	
-	if((blk+count) >= end_blk)
+	if(blk >= end_blk)
+		return 0;
+	
+	if((blk+count) > end_blk)
+		count = end_blk - blk;
+	
+	if(!count)
 		return 0;
 	
 	int num_pages = ((ATA_SECTOR_SIZE * (count-1)) / PAGE_SIZE) + 1;

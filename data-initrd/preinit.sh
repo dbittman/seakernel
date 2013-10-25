@@ -25,7 +25,7 @@ if [[ "$1" = "/" ]]; then
 	sh
 else
 	fsck -p -T -C $1
-	printf "Mounting filesystems: / "
+	printf "Mounting filesystems: $1 -> / "
 	mount $1 /mnt
 	printf "dev "
 	mount -t devfs \* /mnt/dev

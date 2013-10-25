@@ -2,6 +2,7 @@
 #include <module.h>
 #include <pmap.h>
 #include <mutex.h>
+#include <memory.h>
 #include <types.h>
 #include <modules/sata.h>
 #include <modules/pci.h>
@@ -92,7 +93,7 @@ void ahci_send_command(struct hba_port *port, int slot)
 	ahci_flush_commands(port);
 }
 
-int ahci_write_prdt(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev, int slot, int offset, int length, addr_t phys_buffer)
+int ahci_write_prdt(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev, int slot, int offset, int length, addr_t virt_buffer)
 {
 	int num_entries = ((length-1) / PRDT_MAX_COUNT) + 1;
 	struct hba_command_table *tbl = (struct hba_command_table *)(dev->ch[slot]);
@@ -100,6 +101,7 @@ int ahci_write_prdt(struct hba_memory *abar, struct hba_port *port, struct ahci_
 	struct hba_prdt_entry *prd;
 	for(i=0;i<num_entries-1;i++)
 	{
+		addr_t phys_buffer = vm_do_getmap(virt_buffer, 0, 0);
 		prd = &tbl->prdt_entries[i+offset];
 		prd->byte_count = PRDT_MAX_COUNT-1;
 		prd->data_base_l = phys_buffer & 0xFFFFFFFF;
@@ -107,8 +109,9 @@ int ahci_write_prdt(struct hba_memory *abar, struct hba_port *port, struct ahci_
 		prd->interrupt_on_complete=0;
 		
 		length -= PRDT_MAX_COUNT;
-		phys_buffer += PRDT_MAX_COUNT;
+		virt_buffer += PRDT_MAX_COUNT;
 	}
+	addr_t phys_buffer = vm_do_getmap(virt_buffer, 0, 0);
 	prd = &tbl->prdt_entries[i+offset];
 	prd->byte_count = length-1;
 	prd->data_base_l = phys_buffer & 0xFFFFFFFF;
@@ -118,11 +121,11 @@ int ahci_write_prdt(struct hba_memory *abar, struct hba_port *port, struct ahci_
 	return num_entries;
 }
 
-int ahci_port_dma_data_transfer(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev, int slot, int write, addr_t phys_buffer, int sectors, uint64_t lba)
+int ahci_port_dma_data_transfer(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev, int slot, int write, addr_t virt_buffer, int sectors, uint64_t lba)
 {
 	port->interrupt_status = ~0;
 	int fis_len = sizeof(struct fis_reg_host_to_device) / 4;
-	int ne = ahci_write_prdt(abar, port, dev, slot, 0, ATA_SECTOR_SIZE * sectors, phys_buffer);
+	int ne = ahci_write_prdt(abar, port, dev, slot, 0, ATA_SECTOR_SIZE * sectors, virt_buffer);
 	struct hba_command_header *h = ahci_initialize_command_header(abar, port, dev, slot, write, 0, ne, fis_len);
 	struct fis_reg_host_to_device *fis = ahci_initialize_fis_host_to_device(abar, port, dev, slot, 1, write ? ATA_CMD_WRITE_DMA_EX : ATA_CMD_READ_DMA_EX);
 	fis->device = 1<<6;
@@ -178,12 +181,8 @@ void ahci_device_identify_sata(struct hba_memory *abar, struct hba_port *port, s
 {
 	int fis_len = sizeof(struct fis_reg_host_to_device) / 4;
 	addr_t buf_phys;
-	unsigned short *buf_tmp = kmalloc_p(512+1 /* alignment */, &buf_phys);
-	/* buffer needs to be word aligned... */
-	char *buf = ALIGN(buf_tmp, 2);
-	buf_phys = (addr_t)ALIGN(buf_phys, 2);
-	
-	ahci_write_prdt(abar, port, dev, 0, 0, 512, buf_phys);
+	unsigned short *buf = kmalloc_ap(0x1000, &buf_phys);
+	ahci_write_prdt(abar, port, dev, 0, 0, 512, buf);
 	struct hba_command_header *h = ahci_initialize_command_header(abar, port, dev, 0, 0, 0, 1, fis_len);
 	struct fis_reg_host_to_device *fis = ahci_initialize_fis_host_to_device(abar, port, dev, 0, 1, ATA_CMD_IDENTIFY);
 	
@@ -199,7 +198,7 @@ void ahci_device_identify_sata(struct hba_memory *abar, struct hba_port *port, s
 			break;
 	}
 	memcpy(&dev->identify, buf, sizeof(struct ata_identify));
-	kfree(buf_tmp);
+	kfree(buf);
 	printk(2, "[sata]: device %d: num sectors=%d: %x, %x\n", dev->idx, dev->identify.lba48_addressable_sectors, dev->identify.ss_2);
 }
 
@@ -259,6 +258,38 @@ uint32_t ahci_check_type(volatile struct hba_port *port)
 	return port->signature;
 }
 
+int read_partitions(struct ahci_device *dev, char *node, int port)
+{
+	addr_t p = find_kernel_function("enumerate_partitions");
+	if(!p)
+		return 0;
+	int d = GETDEV(ahci_major, port);
+	int (*e_p)(int, int, struct partition *);
+	e_p = (int (*)(int, int, struct partition *))p;
+	struct partition part;
+	int i=0;
+	while(i<64)
+	{
+		/* Returns the i'th partition of device 'd' into info struct part. */
+		int r = e_p(i, d, &part);
+		if(!r)
+			break;
+		if(part.sysid)
+		{
+			printk(0, "[sata]: %d: read partition start=%d, len=%d\n", port, part.start_lba, part.length);
+			int a = port;
+			char tmp[17];
+			memset(tmp, 0, 17);
+			sprintf(tmp, "%s%d", node, i+1);
+			devfs_add(devfs_root, tmp, S_IFBLK, ahci_major, a+(i+1)*32);
+		}
+		memcpy(&(dev->part[i]), &part, sizeof(struct partition));
+		i++;
+	}
+	
+	return 0;
+}
+
 void ahci_create_device(struct ahci_device *dev)
 {
 	char node[16];
@@ -266,6 +297,7 @@ void ahci_create_device(struct ahci_device *dev)
 	if(dev->idx > 25) c = 'A';
 	sprintf(node, "sd%c", (dev->idx % 26) + c);
 	dev->node = devfs_add(devfs_root, node, S_IFBLK, ahci_major, dev->idx);
+	read_partitions(dev, node, dev->idx);
 }
 
 void ahci_probe_ports(struct hba_memory *abar)
@@ -315,15 +347,36 @@ void ahci_interrupt_handler()
 	}
 }
 
+/* since a DMA transfer must write to contiguous physical RAM, we need to allocate
+ * buffers that allow us to create PRDT entries that do not cross a page boundary.
+ * That means that each PRDT entry can transfer a maximum of PAGE_SIZE bytes (for
+ * 0x1000 page size, that's 8 sectors). Thus, we allocate a buffer that is page aligned, 
+ * in a multiple of PAGE_SIZE, so that the PRDT will write to contiguous physical ram
+ * (the key here is that the buffer need not be contiguous across multiple PRDT entries).
+ */
 int ahci_rw_multiple_do(int rw, int min, u64 blk, char *out_buffer, int count)
 {
 	int num_read_blocks = count;
 	uint32_t length = count * ATA_SECTOR_SIZE;
-	assert(length <= 0x1000);
-	struct ahci_device *dev = ports[min];
-	//printk(0, "blk: %d / %d\n", (int)blk, (int)dev->identify.lba48_addressable_sectors);
-	addr_t buf_phys;
-	unsigned char *buf = kmalloc_ap(0x1000, &buf_phys);
+	
+	int d = min % 32;
+	int p = min / 32;
+	struct ahci_device *dev = ports[d];
+	uint32_t part_off=0, part_len=0;
+	u64 end_blk = dev->identify.lba48_addressable_sectors;
+	if(p > 0) {
+		part_off = dev->part[p-1].start_lba;
+		part_len = dev->part[p-1].length;
+		end_blk = part_len + part_off;
+	}
+	blk += part_off;
+	
+	if((blk+count) >= end_blk)
+		return 0;
+	
+	int num_pages = ((ATA_SECTOR_SIZE * (count-1)) / PAGE_SIZE) + 1;
+	assert(length <= num_pages * 0x1000);
+	unsigned char *buf = kmalloc_a(0x1000 * num_pages);
 	
 	if(rw == WRITE)
 		memcpy(buf, out_buffer, length);
@@ -332,7 +385,7 @@ int ahci_rw_multiple_do(int rw, int min, u64 blk, char *out_buffer, int count)
 	
 	struct hba_port *port = (struct hba_port *)&hba_mem->ports[dev->idx];
 	int slot=0;
-	ahci_port_dma_data_transfer(hba_mem, port, dev, slot, rw == WRITE ? 1 : 0, buf_phys, count, blk);
+	ahci_port_dma_data_transfer(hba_mem, port, dev, slot, rw == WRITE ? 1 : 0, buf, count, blk);
 	
 	mutex_release(&dev->lock);
 	
@@ -343,14 +396,17 @@ int ahci_rw_multiple_do(int rw, int min, u64 blk, char *out_buffer, int count)
 	return num_read_blocks * ATA_SECTOR_SIZE;
 }
 
+/* and then since there is a maximum transfer amount because of the page size
+ * limit, wrap the transfer function to allow for bigger transfers than that even.
+ */
 int ahci_rw_multiple(int rw, int min, u64 blk, char *out_buffer, int count)
 {
 	int i=0;
 	int ret=0;
 	int c = count;
-	for(i=0;i<count;i+=(0x1000 / ATA_SECTOR_SIZE))
+	for(i=0;i<count;i+=(PRDT_MAX_ENTRIES * PRDT_MAX_COUNT) / ATA_SECTOR_SIZE)
 	{
-		int n = (0x1000 / ATA_SECTOR_SIZE);
+		int n = (PRDT_MAX_ENTRIES * PRDT_MAX_COUNT) / ATA_SECTOR_SIZE;
 		if(n > c)
 			n=c;
 		ret += ahci_rw_multiple_do(rw, min, blk+i, out_buffer + ret, n);

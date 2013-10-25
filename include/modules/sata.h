@@ -312,6 +312,16 @@ struct ata_identify {
 	/* ...and more */
 };
 
+struct partition {
+	char flag;
+	char ext;
+	char i_dont_care[2];
+	char sysid;
+	char again_dont_care[3];
+	unsigned int start_lba;
+	unsigned int length;
+}__attribute__((packed));
+
 struct ahci_device {
 	uint32_t type;
 	int idx;
@@ -320,7 +330,10 @@ struct ahci_device {
 	void *ch[HBA_COMMAND_HEADER_NUM];
 	struct ata_identify identify;
 	struct inode *node;
+	struct partition part[64];
 };
+
+
 
 #define HBA_PxCMD_ST  (1 << 0)
 #define HBA_PxCMD_CR  (1 << 15)
@@ -340,7 +353,9 @@ struct ahci_device {
 #define ATA_CMD_READ_DMA_EX 0x25
 #define ATA_CMD_WRITE_DMA_EX 0x35
 
-#define PRDT_MAX_COUNT 0x400000
+#define PRDT_MAX_COUNT 0x1000
+
+#define PRDT_MAX_ENTRIES 65535
 
 #define ATA_SECTOR_SIZE 512
 

@@ -3,6 +3,7 @@
 #include <config.h>
 #if CONFIG_MODULE_SATA
 #include <types.h>
+#include <fs.h>
 typedef enum
 {
 	FIS_TYPE_REG_H2D	= 0x27,	// Register FIS - host to device
@@ -246,12 +247,79 @@ struct hba_command_table {
 #define AHCI_DEV_SATA 0x00000101
 #define HBA_COMMAND_HEADER_NUM 32
 
+struct ata_identify {
+	uint16_t ata_device;
+	
+	uint16_t dont_care[48];
+	
+	uint16_t cap0;
+	uint16_t cap1;
+	
+	uint16_t obs[2];
+	
+	uint16_t free_fall;
+	
+	uint16_t dont_care_2[8];
+	
+	uint16_t dma_mode0;
+	
+	uint16_t pio_modes;
+	
+	uint16_t dont_care_3[4];
+	
+	uint16_t additional_supported;
+	
+	uint16_t rsv1[6];
+	
+	uint16_t serial_ata_cap0;
+	
+	uint16_t rsv2;
+	
+	uint16_t serial_ata_features;
+	
+	uint16_t serial_ata_features_enabled;
+	
+	uint16_t maj_ver;
+	
+	uint16_t min_ver;
+	
+	uint16_t features0;
+	
+	uint16_t features1;
+	
+	uint16_t features2;
+	
+	uint16_t features3;
+	
+	uint16_t features4;
+	
+	uint16_t features5;
+	
+	uint16_t udma_modes;
+	
+	uint16_t dont_care_4[11];
+	
+	uint64_t lba48_addressable_sectors;
+	
+	uint16_t wqewqe[2];
+	
+	uint16_t ss_1;
+	
+	uint16_t rrrrr[4];
+	
+	uint32_t ss_2;
+	
+	/* ...and more */
+};
+
 struct ahci_device {
 	uint32_t type;
 	int idx;
 	mutex_t lock;
 	void *fis_virt, *clb_virt;
 	void *ch[HBA_COMMAND_HEADER_NUM];
+	struct ata_identify identify;
+	struct inode *node;
 };
 
 #define HBA_PxCMD_ST  (1 << 0)
@@ -267,9 +335,14 @@ struct ahci_device {
 
 #define ATA_DEV_BUSY 0x80
 #define ATA_DEV_DRQ 0x08
+#define ATA_DEV_ERR 0x01
 
 #define ATA_CMD_READ_DMA_EX 0x25
 #define ATA_CMD_WRITE_DMA_EX 0x35
+
+#define PRDT_MAX_COUNT 0x400000
+
+#define ATA_SECTOR_SIZE 512
 
 #endif
 #endif

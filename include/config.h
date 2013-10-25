@@ -14,10 +14,12 @@
 	#define STACK_ELEMENT_SIZE 4
 	#define BITS_PER_LONG 32
 	#define LOCK_PREFIX "lock "
+	#define ADDR_BITS 32
 #elif CONFIG_ARCH == TYPE_ARCH_X86_64
 	#define STACK_ELEMENT_SIZE 8
 	#define BITS_PER_LONG 64
 	#define LOCK_PREFIX "lock "
+	#define ADDR_BITS 64
 #else
 	#error "unsupported architecture"
 #endif

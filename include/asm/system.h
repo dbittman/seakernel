@@ -13,6 +13,10 @@
 #define likely(x)       __builtin_expect((x),1)
 #define unlikely(x)     __builtin_expect((x),0)
 
+
+#define UPPER32(x) \
+	((sizeof(x) > 32) ? ((x >> 32) & 0xFFFFFFFF) : 0)
+
 #define ALIGN(x,a) \
 		((void *)((((addr_t)x) & ~(a-1)) + a))
 

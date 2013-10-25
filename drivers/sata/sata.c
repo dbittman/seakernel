@@ -6,8 +6,10 @@
 #include <types.h>
 #include <modules/sata.h>
 #include <modules/pci.h>
+#include <asm/system.h>
 #include <isr.h>
 #include <block.h>
+#include <symbol.h>
 struct pci_device *sata_pci;
 int ahci_int = 0;
 struct hba_memory *hba_mem;
@@ -105,7 +107,7 @@ int ahci_write_prdt(struct hba_memory *abar, struct hba_port *port, struct ahci_
 		prd = &tbl->prdt_entries[i+offset];
 		prd->byte_count = PRDT_MAX_COUNT-1;
 		prd->data_base_l = phys_buffer & 0xFFFFFFFF;
-		prd->data_base_h = (phys_buffer >> 32) & 0xFFFFFFFF;
+		prd->data_base_h = UPPER32(phys_buffer);
 		prd->interrupt_on_complete=0;
 		
 		length -= PRDT_MAX_COUNT;
@@ -115,7 +117,7 @@ int ahci_write_prdt(struct hba_memory *abar, struct hba_port *port, struct ahci_
 	prd = &tbl->prdt_entries[i+offset];
 	prd->byte_count = length-1;
 	prd->data_base_l = phys_buffer & 0xFFFFFFFF;
-	prd->data_base_h = (phys_buffer >> 32) & 0xFFFFFFFF;
+	prd->data_base_h = UPPER32(phys_buffer);
 	prd->interrupt_on_complete=0;
 	
 	return num_entries;
@@ -180,9 +182,8 @@ uint32_t ahci_get_previous_byte_count(struct hba_memory *abar, struct hba_port *
 void ahci_device_identify_sata(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev)
 {
 	int fis_len = sizeof(struct fis_reg_host_to_device) / 4;
-	addr_t buf_phys;
-	unsigned short *buf = kmalloc_ap(0x1000, &buf_phys);
-	ahci_write_prdt(abar, port, dev, 0, 0, 512, buf);
+	unsigned short *buf = kmalloc_a(0x1000);
+	ahci_write_prdt(abar, port, dev, 0, 0, 512, (addr_t)buf);
 	struct hba_command_header *h = ahci_initialize_command_header(abar, port, dev, 0, 0, 0, 1, fis_len);
 	struct fis_reg_host_to_device *fis = ahci_initialize_fis_host_to_device(abar, port, dev, 0, 1, ATA_CMD_IDENTIFY);
 	
@@ -232,15 +233,15 @@ void ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev)
 		dev->ch[i] = kmalloc_ap(0x1000, &phys);
 		memset(h, 0, sizeof(*h));
 		h->command_table_base_l = phys & 0xFFFFFFFF;
-		h->command_table_base_h = (phys >> 32) & 0xFFFFFFFF;
+		h->command_table_base_h = UPPER32(phys);
 		h++;
 	}
 	
 	port->command_list_base_l = (clb_phys & 0xFFFFFFFF);
-	port->command_list_base_h = ((clb_phys >> 32) & 0xFFFFFFFF);
+	port->command_list_base_h = UPPER32(clb_phys);
 	
 	port->fis_base_l = (fis_phys & 0xFFFFFFFF);
-	port->fis_base_h = ((fis_phys >> 32) & 0xFFFFFFFF);
+	port->fis_base_h = UPPER32(fis_phys);
 	
  	ahci_start_port_command_engine(port);
 	ahci_device_identify_sata(abar, port, dev);
@@ -342,7 +343,7 @@ void ahci_interrupt_handler()
 		if(hba_mem->interrupt_status & (1 << i)) {
 			hba_mem->ports[i].interrupt_status = ~0;
 			hba_mem->interrupt_status = (1 << i);
-			ahci_flush_commands(&hba_mem->ports[i]);
+			ahci_flush_commands((struct hba_port *)&hba_mem->ports[i]);
 		}
 	}
 }
@@ -375,7 +376,7 @@ int ahci_rw_multiple_do(int rw, int min, u64 blk, char *out_buffer, int count)
 		return 0;
 	
 	int num_pages = ((ATA_SECTOR_SIZE * (count-1)) / PAGE_SIZE) + 1;
-	assert(length <= num_pages * 0x1000);
+	assert(length <= (unsigned)num_pages * 0x1000);
 	unsigned char *buf = kmalloc_a(0x1000 * num_pages);
 	
 	if(rw == WRITE)
@@ -385,7 +386,7 @@ int ahci_rw_multiple_do(int rw, int min, u64 blk, char *out_buffer, int count)
 	
 	struct hba_port *port = (struct hba_port *)&hba_mem->ports[dev->idx];
 	int slot=0;
-	ahci_port_dma_data_transfer(hba_mem, port, dev, slot, rw == WRITE ? 1 : 0, buf, count, blk);
+	ahci_port_dma_data_transfer(hba_mem, port, dev, slot, rw == WRITE ? 1 : 0, (addr_t)buf, count, blk);
 	
 	mutex_release(&dev->lock);
 	

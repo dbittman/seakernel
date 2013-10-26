@@ -25,9 +25,23 @@ void ahci_start_port_command_engine(volatile struct hba_port *port)
 	port->command |= HBA_PxCMD_ST; 
 }
 
-int ahci_reset_device(struct hba_memory *abar, struct hba_port *port)
+void ahci_reset_device(struct hba_memory *abar, struct hba_port *port)
 {
-#warning "implement"
+	ahci_stop_port_command_engine(port);
+	/* power on, spin up */
+	port->command |= 6;
+	delay_sleep(1);
+	/* initialize state */
+	port->interrupt_status = ~0; /* clear pending interrupts */
+	port->interrupt_enable = ~0; /* we want some interrupts */
+	port->command &= ~((1 << 27) | (1 << 26)); /* clear some bits */
+	port->sata_control |= 1;
+	delay_sleep(10);
+	port->sata_control |= (~1);
+	delay_sleep(10);
+	port->interrupt_status = ~0; /* clear pending interrupts */
+	port->interrupt_enable = ~0; /* we want some interrupts */
+	ahci_start_port_command_engine(port);
 }
 
 uint32_t ahci_get_previous_byte_count(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev, int slot)
@@ -44,13 +58,19 @@ void ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev)
 	
 	/* power on, spin up */
 	port->command |= 6;
+	delay_sleep(1);
 	/* initialize state */
 	port->interrupt_status = ~0; /* clear pending interrupts */
 	port->interrupt_enable = ~0; /* we want some interrupts */
 	
 	port->command |= (1 << 28); /* set interface to active */
 	port->command &= ~((1 << 27) | (1 << 26)); /* clear some bits */
-	/* TODO: Do we need a delay here? */
+	port->sata_control |= 1;
+	delay_sleep(10);
+	port->sata_control |= (~1);
+	delay_sleep(10);
+	port->interrupt_status = ~0; /* clear pending interrupts */
+	port->interrupt_enable = ~0; /* we want some interrupts */
 	/* map memory */
 	addr_t clb_phys, fis_phys;
 	void *clb_virt, *fis_virt;

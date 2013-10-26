@@ -369,7 +369,7 @@ void ahci_device_identify_ahci(struct hba_memory *abar, struct hba_port *port, s
 uint32_t ahci_flush_commands(struct hba_port *port);
 void ahci_stop_port_command_engine(volatile struct hba_port *port);
 void ahci_start_port_command_engine(volatile struct hba_port *port);
-int ahci_reset_device(struct hba_memory *abar, struct hba_port *port);
+void ahci_reset_device(struct hba_memory *abar, struct hba_port *port);
 uint32_t ahci_get_previous_byte_count(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev, int slot);
 void ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev);
 uint32_t ahci_check_type(volatile struct hba_port *port);

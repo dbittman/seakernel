@@ -331,6 +331,7 @@ struct ahci_device {
 	struct ata_identify identify;
 	struct inode *node;
 	struct partition part[64];
+	uint32_t slots;
 };
 
 
@@ -357,6 +358,9 @@ struct ahci_device {
 
 #define PRDT_MAX_ENTRIES 65535
 
+#define ATA_TFD_TIMEOUT  100000
+#define AHCI_CMD_TIMEOUT 100000
+
 #define ATA_SECTOR_SIZE 512
 
 struct hba_command_header *ahci_initialize_command_header(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev, int slot, int write, int atapi, int prd_entries, int fis_len);
@@ -364,14 +368,14 @@ struct fis_reg_host_to_device *ahci_initialize_fis_host_to_device(struct hba_mem
 void ahci_send_command(struct hba_port *port, int slot);
 int ahci_write_prdt(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev, int slot, int offset, int length, addr_t virt_buffer);
 int ahci_port_dma_data_transfer(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev, int slot, int write, addr_t virt_buffer, int sectors, uint64_t lba);
-void ahci_device_identify_ahci(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev);
+int ahci_device_identify_ahci(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev);
 
 uint32_t ahci_flush_commands(struct hba_port *port);
 void ahci_stop_port_command_engine(volatile struct hba_port *port);
 void ahci_start_port_command_engine(volatile struct hba_port *port);
-void ahci_reset_device(struct hba_memory *abar, struct hba_port *port);
+void ahci_reset_device(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev);
 uint32_t ahci_get_previous_byte_count(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev, int slot);
-void ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev);
+int ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev);
 uint32_t ahci_check_type(volatile struct hba_port *port);
 void ahci_probe_ports(struct hba_memory *abar);
 void ahci_init_hba(struct hba_memory *abar);

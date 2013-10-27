@@ -2,7 +2,6 @@
 #include <module.h>
 #include <modules/ahci.h>
 
-
 uint32_t ahci_flush_commands(struct hba_port *port)
 {
 	uint32_t c = port->command;
@@ -25,8 +24,11 @@ void ahci_start_port_command_engine(volatile struct hba_port *port)
 	port->command |= HBA_PxCMD_ST; 
 }
 
-void ahci_reset_device(struct hba_memory *abar, struct hba_port *port)
+void ahci_reset_device(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev)
 {
+	/* TODO: This needs to clear out old commands and lock properly so that new commands can't get sent
+	 * while the device is resetting */
+	printk(KERN_DEBUG, "[ahci]: device %d: sending COMRESET and reinitializing\n", dev->idx);
 	ahci_stop_port_command_engine(port);
 	/* power on, spin up */
 	port->command |= 6;
@@ -42,6 +44,7 @@ void ahci_reset_device(struct hba_memory *abar, struct hba_port *port)
 	port->interrupt_status = ~0; /* clear pending interrupts */
 	port->interrupt_enable = ~0; /* we want some interrupts */
 	ahci_start_port_command_engine(port);
+	dev->slots=0;
 }
 
 uint32_t ahci_get_previous_byte_count(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev, int slot)
@@ -50,7 +53,8 @@ uint32_t ahci_get_previous_byte_count(struct hba_memory *abar, struct hba_port *
 	h += slot;
 	return h->prdb_count;
 }
-void ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev)
+
+int ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev)
 {
 	printk(0, "[ahci]: initializing device %d\n", dev->idx);
 	struct hba_port *port = (struct hba_port *)&abar->ports[dev->idx];
@@ -78,7 +82,7 @@ void ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev)
 	fis_virt = kmalloc_ap(0x1000, &fis_phys);
 	dev->clb_virt = clb_virt;
 	dev->fis_virt = fis_virt;
-	
+	dev->slots=0;
 	struct hba_command_header *h = (struct hba_command_header *)clb_virt;
 	int i;
 	for(i=0;i<HBA_COMMAND_HEADER_NUM;i++) {
@@ -97,7 +101,7 @@ void ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev)
 	port->fis_base_h = UPPER32(fis_phys);
 	
  	ahci_start_port_command_engine(port);
-	ahci_device_identify_ahci(abar, port, dev);
+	return ahci_device_identify_ahci(abar, port, dev);
 }
 
 uint32_t ahci_check_type(volatile struct hba_port *port)
@@ -126,8 +130,10 @@ void ahci_probe_ports(struct hba_memory *abar)
 				ports[i]->type = type;
 				ports[i]->idx = i;
 				mutex_create(&(ports[i]->lock), 0);
-				ahci_initialize_device(abar, ports[i]);
-				ahci_create_device(ports[i]);
+				if(ahci_initialize_device(abar, ports[i]))
+					ahci_create_device(ports[i]);
+				else
+					printk(KERN_DEBUG, "[ahci]: failed to initialize device %d, disabling port\n", i);
 			}
 		}
 		i++;

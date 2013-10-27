@@ -67,7 +67,7 @@ int ahci_write_prdt(struct hba_memory *abar, struct hba_port *port, struct ahci_
 
 int ahci_port_dma_data_transfer(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev, int slot, int write, addr_t virt_buffer, int sectors, uint64_t lba)
 {
-	port->interrupt_status = ~0;
+	int timeout;
 	int fis_len = sizeof(struct fis_reg_host_to_device) / 4;
 	int ne = ahci_write_prdt(abar, port, dev, slot, 0, ATA_SECTOR_SIZE * sectors, virt_buffer);
 	struct hba_command_header *h = ahci_initialize_command_header(abar, port, dev, slot, write, 0, ne, fis_len);
@@ -83,59 +83,80 @@ int ahci_port_dma_data_transfer(struct hba_memory *abar, struct hba_port *port, 
 	fis->lba4 = (unsigned char)((lba >> 32) & 0xFF);
 	fis->lba5 = (unsigned char)((lba >> 40) & 0xFF);
 	
-	while ((port->task_file_data & (ATA_DEV_BUSY | ATA_DEV_DRQ)))
+	timeout = ATA_TFD_TIMEOUT;
+	while ((port->task_file_data & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && --timeout)
 	{
 		asm("pause");
 	}
+	if(!timeout) goto port_hung;
 	
 	ahci_send_command(port, slot);
 	
-	while ((port->task_file_data & (ATA_DEV_BUSY | ATA_DEV_DRQ)))
+	timeout = ATA_TFD_TIMEOUT;
+	while ((port->task_file_data & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && --timeout)
 	{
 		asm("pause");
 	}
+	if(!timeout) goto port_hung;
 	
-	while(1)
+	timeout = AHCI_CMD_TIMEOUT;
+	while(--timeout)
 	{
 		if(!((port->sata_active | port->command_issue) & (1 << slot)))
 			break;
+		schedule();
 	}
+	if(!timeout) goto port_hung;
 	if(port->sata_error)
 	{
-		printk(0, "[ahci]: device %d: ahci error: %x\n", dev->idx, port->sata_error);
+		printk(0, "[ahci]: device %d: ahci error\n", dev->idx);
 		goto error;
 	}
 	if(port->task_file_data & ATA_DEV_ERR)
 	{
-		printk(0, "[ahci]: device %d returned task file data error\n", dev->idx);
+		printk(0, "[ahci]: device %d: task file data error\n", dev->idx);
 		goto error;
 	}
 	return 1;
+	port_hung:
+	printk(0, "[ahci]: device %d: port hung\n", dev->idx);
 	error:
-	ahci_reset_device(abar, port);
+	printk(0, "[ahci]: device %d: tfd=%x, serr=%x\n", dev->idx, port->task_file_data, port->sata_error);
+	ahci_reset_device(abar, port, dev);
 	return 0;
 }
 
-void ahci_device_identify_ahci(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev)
+int ahci_device_identify_ahci(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev)
 {
 	int fis_len = sizeof(struct fis_reg_host_to_device) / 4;
 	unsigned short *buf = kmalloc_a(0x1000);
 	ahci_write_prdt(abar, port, dev, 0, 0, 512, (addr_t)buf);
 	struct hba_command_header *h = ahci_initialize_command_header(abar, port, dev, 0, 0, 0, 1, fis_len);
 	struct fis_reg_host_to_device *fis = ahci_initialize_fis_host_to_device(abar, port, dev, 0, 1, ATA_CMD_IDENTIFY);
-	
-	while ((port->task_file_data & (ATA_DEV_BUSY | ATA_DEV_DRQ)))
-	{
+	int timeout = ATA_TFD_TIMEOUT;
+	while ((port->task_file_data & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && --timeout)
 		asm("pause");
+	if(!timeout)
+	{
+		printk(0, "[ahci]: device %d: identify: port hung\n", dev->idx);
+		printk(0, "[ahci]: device %d: identify: tfd=%x, serr=%x\n", dev->idx, port->task_file_data, port->sata_error);
+		return 0;
 	}
 	ahci_send_command(port, 0);
-	
-	while(1)
+	timeout = AHCI_CMD_TIMEOUT;
+	while(--timeout)
 	{
 		if(!((port->sata_active | port->command_issue) & 1))
 			break;
 	}
+	if(!timeout)
+	{
+		printk(0, "[ahci]: device %d: identify: port hung\n", dev->idx);
+		printk(0, "[ahci]: device %d: identify: tfd=%x, serr=%x\n", dev->idx, port->task_file_data, port->sata_error);
+		return 0;
+	}
 	memcpy(&dev->identify, buf, sizeof(struct ata_identify));
 	kfree(buf);
 	printk(2, "[ahci]: device %d: num sectors=%d: %x, %x\n", dev->idx, dev->identify.lba48_addressable_sectors, dev->identify.ss_2);
+	return 1;
 }

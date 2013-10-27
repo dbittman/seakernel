@@ -93,6 +93,31 @@ void ahci_interrupt_handler()
 	}
 }
 
+int ahci_port_acquire_slot(struct ahci_device *dev)
+{
+	while(1) {
+		int i;
+		mutex_acquire(&dev->lock);
+		for(i=0;i<32;i++)
+		{
+			if(!(dev->slots & (1 << i))) {
+				dev->slots |= (1 << i);
+				mutex_release(&dev->lock);
+				return i;
+			}
+		}
+		mutex_release(&dev->lock);
+		schedule();
+	}
+}
+
+void ahci_port_release_slot(struct ahci_device *dev, int slot)
+{
+	mutex_acquire(&dev->lock);
+	dev->slots &= ~(1 << slot);
+	mutex_release(&dev->lock);
+}
+
 /* since a DMA transfer must write to contiguous physical RAM, we need to allocate
  * buffers that allow us to create PRDT entries that do not cross a page boundary.
  * That means that each PRDT entry can transfer a maximum of PAGE_SIZE bytes (for
@@ -103,7 +128,6 @@ void ahci_interrupt_handler()
 int ahci_rw_multiple_do(int rw, int min, u64 blk, char *out_buffer, int count)
 {
 	uint32_t length = count * ATA_SECTOR_SIZE;
-	
 	int d = min % 32;
 	int p = min / 32;
 	struct ahci_device *dev = ports[d];
@@ -115,33 +139,26 @@ int ahci_rw_multiple_do(int rw, int min, u64 blk, char *out_buffer, int count)
 		end_blk = part_len + part_off;
 	}
 	blk += part_off;
-	
 	if(blk >= end_blk)
 		return 0;
-	
 	if((blk+count) > end_blk)
 		count = end_blk - blk;
-	
 	if(!count)
 		return 0;
 	
 	int num_pages = ((ATA_SECTOR_SIZE * (count-1)) / PAGE_SIZE) + 1;
 	assert(length <= (unsigned)num_pages * 0x1000);
 	unsigned char *buf = kmalloc_a(0x1000 * num_pages);
-	
 	int num_read_blocks = count;
-	
+	struct hba_port *port = (struct hba_port *)&hba_mem->ports[dev->idx];
 	if(rw == WRITE)
 		memcpy(buf, out_buffer, length);
 	
-	mutex_acquire(&dev->lock);
-	
-	struct hba_port *port = (struct hba_port *)&hba_mem->ports[dev->idx];
-	int slot=0;
+	int slot=ahci_port_acquire_slot(dev);
 	if(!ahci_port_dma_data_transfer(hba_mem, port, dev, slot, rw == WRITE ? 1 : 0, (addr_t)buf, count, blk))
 		num_read_blocks = 0;
 	
-	mutex_release(&dev->lock);
+	ahci_port_release_slot(dev, slot);
 	
 	if(rw == READ && num_read_blocks)
 		memcpy(out_buffer, buf, length);

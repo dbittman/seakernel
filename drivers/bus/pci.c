@@ -169,8 +169,8 @@ struct pci_config_space *get_pci_config(int bus, int dev, int func)
 			*(uint32_t*)((addr_t)pcs + i + 12) = pci_read_dword(bus, dev, func, i + 12);
 		}
 		if(pcs->class_code < 13 && pcs->subclass != 0x80) {
-			printk(PCI_LOGLEVEL, "[pci]: [%3.3d:%2.2d:%d] Vendor %4.4x, Device %4.4x: %s %s\n", 
-				bus, dev, func, pcs->vendor_id, pcs->device_id, 
+			printk(PCI_LOGLEVEL, "[pci]: [%3.3d:%2.2d:%d] Vendor %4.4x, Device %4.4x, cc %2.2x, sc %2.2x: %s %s\n", 
+				bus, dev, func, pcs->vendor_id, pcs->device_id, pcs->class_code, pcs->subclass,
 				subclass[pcs->class_code][pcs->subclass], 
 				class_code[pcs->class_code]);
 		}
@@ -236,10 +236,12 @@ struct pci_device *pci_locate_devices(unsigned short vendor, unsigned short devi
 	struct pci_device *tmp = pci_list;
 	while(tmp)
 	{
-		if(!i && tmp->pcs->vendor_id == vendor && tmp->pcs->device_id == device)
-			return tmp;
+		if(tmp->pcs->vendor_id == vendor && tmp->pcs->device_id == device) {
+			if(!i)
+				return tmp;
+			i--;
+		}
 		tmp=tmp->next;
-		i--;
 	}
 	return 0;
 }

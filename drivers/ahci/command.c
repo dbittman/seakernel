@@ -109,19 +109,19 @@ int ahci_port_dma_data_transfer(struct hba_memory *abar, struct hba_port *port, 
 	if(!timeout) goto port_hung;
 	if(port->sata_error)
 	{
-		printk(0, "[ahci]: device %d: ahci error\n", dev->idx);
+		printk(KERN_DEBUG, "[ahci]: device %d: ahci error\n", dev->idx);
 		goto error;
 	}
 	if(port->task_file_data & ATA_DEV_ERR)
 	{
-		printk(0, "[ahci]: device %d: task file data error\n", dev->idx);
+		printk(KERN_DEBUG, "[ahci]: device %d: task file data error\n", dev->idx);
 		goto error;
 	}
 	return 1;
 	port_hung:
-	printk(0, "[ahci]: device %d: port hung\n", dev->idx);
+	printk(KERN_DEBUG, "[ahci]: device %d: port hung\n", dev->idx);
 	error:
-	printk(0, "[ahci]: device %d: tfd=%x, serr=%x\n", dev->idx, port->task_file_data, port->sata_error);
+	printk(KERN_DEBUG, "[ahci]: device %d: tfd=%x, serr=%x\n", dev->idx, port->task_file_data, port->sata_error);
 	ahci_reset_device(abar, port, dev);
 	return 0;
 }
@@ -138,8 +138,8 @@ int ahci_device_identify_ahci(struct hba_memory *abar, struct hba_port *port, st
 		asm("pause");
 	if(!timeout)
 	{
-		printk(0, "[ahci]: device %d: identify: port hung\n", dev->idx);
-		printk(0, "[ahci]: device %d: identify: tfd=%x, serr=%x\n", dev->idx, port->task_file_data, port->sata_error);
+		printk(KERN_DEBUG, "[ahci]: device %d: identify: port hung\n", dev->idx);
+		printk(KERN_DEBUG, "[ahci]: device %d: identify: tfd=%x, serr=%x\n", dev->idx, port->task_file_data, port->sata_error);
 		return 0;
 	}
 	ahci_send_command(port, 0);
@@ -151,8 +151,8 @@ int ahci_device_identify_ahci(struct hba_memory *abar, struct hba_port *port, st
 	}
 	if(!timeout)
 	{
-		printk(0, "[ahci]: device %d: identify: port hung\n", dev->idx);
-		printk(0, "[ahci]: device %d: identify: tfd=%x, serr=%x\n", dev->idx, port->task_file_data, port->sata_error);
+		printk(KERN_DEBUG, "[ahci]: device %d: identify: port hung\n", dev->idx);
+		printk(KERN_DEBUG, "[ahci]: device %d: identify: tfd=%x, serr=%x\n", dev->idx, port->task_file_data, port->sata_error);
 		return 0;
 	}
 	memcpy(&dev->identify, buf, sizeof(struct ata_identify));

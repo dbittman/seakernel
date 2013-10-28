@@ -56,7 +56,7 @@ uint32_t ahci_get_previous_byte_count(struct hba_memory *abar, struct hba_port *
 
 int ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev)
 {
-	printk(0, "[ahci]: initializing device %d\n", dev->idx);
+	printk(KERN_DEBUG, "[ahci]: initializing device %d\n", dev->idx);
 	struct hba_port *port = (struct hba_port *)&abar->ports[dev->idx];
 	ahci_stop_port_command_engine(port);
 	
@@ -111,8 +111,9 @@ uint32_t ahci_check_type(volatile struct hba_port *port)
 	ipm = (s >> 8) & 0x0F;
 	det = s & 0x0F;
 	/* TODO: Where do these numbers come from? */
-	if(ipm != 1 || det != 3)
-		return 0;
+	printk(1, "--> %x %x\n", ipm, det);
+	//if(ipm != 1 || det != 3)
+	//	return 0;
 	return port->signature;
 }
 
@@ -120,11 +121,13 @@ void ahci_probe_ports(struct hba_memory *abar)
 {
 	uint32_t pi = abar->port_implemented;
 	int i=0;
+	printk(KERN_DEBUG, "[ahci]: dev list: ");
 	while(i < 32)
 	{
 		if(pi & 1)
 		{
 			uint32_t type = ahci_check_type(&abar->ports[i]);
+			printk(KERN_DEBUG, "(%d:%x) ", i, type);
 			if(type) {
 				ports[i] = kmalloc(sizeof(struct ahci_device));
 				ports[i]->type = type;
@@ -139,6 +142,7 @@ void ahci_probe_ports(struct hba_memory *abar)
 		i++;
 		pi >>= 1;
 	}
+	printk(KERN_DEBUG, "\n");
 }
 
 void ahci_init_hba(struct hba_memory *abar)

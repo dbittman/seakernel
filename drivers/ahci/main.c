@@ -19,21 +19,23 @@ int ahci_major=0;
 struct pci_device *get_ahci_pci()
 {
 	struct pci_device *ahci = pci_locate_class(0x1, 0x6);
+	if(!ahci) ahci = pci_locate_device(0x8086, 0x8c03);
+	if(!ahci) ahci = pci_locate_device(0x8086, 0x2922);
 	if(!ahci)
 		return 0;
 	ahci->flags |= PCI_ENGAGED;
 	ahci->flags |= PCI_DRIVEN;
 	hba_mem = (void *)(addr_t)ahci->pcs->bar5;
 	if(!(ahci->pcs->command & 4))
-		printk(0, "[ahci]: setting PCI command to bus mastering mode\n");
+		printk(KERN_DEBUG, "[ahci]: setting PCI command to bus mastering mode\n");
 	unsigned short cmd = ahci->pcs->command | 4;
 	ahci->pcs->command = cmd;
 	pci_write_dword(ahci->bus, ahci->dev, ahci->func, 4, cmd);
 	/* of course, we need to map a virtual address to physical address
 	 * for paging to not hate on us... */
 	hba_mem = (void *)pmap_get_mapping(ahci_pmap, (addr_t)hba_mem);
-	printk(0, "[ahci]: mapping hba_mem to %x -> %x\n", hba_mem, ahci->pcs->bar5);
-	printk(0, "[ahci]: using interrupt %d\n", ahci->pcs->interrupt_line+32);
+	printk(KERN_DEBUG, "[ahci]: mapping hba_mem to %x -> %x\n", hba_mem, ahci->pcs->bar5);
+	printk(KERN_DEBUG, "[ahci]: using interrupt %d\n", ahci->pcs->interrupt_line+32);
 	ahci_int = ahci->pcs->interrupt_line+32;
 	return ahci;
 }
@@ -56,7 +58,7 @@ int read_partitions(struct ahci_device *dev, char *node, int port)
 			break;
 		if(part.sysid)
 		{
-			printk(0, "[ahci]: %d: read partition start=%d, len=%d\n", port, part.start_lba, part.length);
+			printk(KERN_DEBUG, "[ahci]: %d: read partition start=%d, len=%d\n", port, part.start_lba, part.length);
 			int a = port;
 			char tmp[17];
 			memset(tmp, 0, 17);
@@ -199,11 +201,11 @@ int ioctl_ahci(int min, int cmd, long arg)
 int irq1;
 int module_install()
 {
-	printk(0, "[ahci]: initializing ahci driver...\n");
+	printk(KERN_DEBUG, "[ahci]: initializing ahci driver...\n");
 	ahci_pmap = pmap_create(0, 0);
 	if(!(ahci_pci = get_ahci_pci()))
 	{
-		printk(0, "[ahci]: no AHCI controllers present!\n");
+		printk(KERN_DEBUG, "[ahci]: no AHCI controllers present!\n");
 		pmap_destroy(ahci_pmap);
 		return -ENOENT;
 	}

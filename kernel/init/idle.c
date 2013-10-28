@@ -101,14 +101,8 @@ int kernel_idle_task()
 	printk(0, "[idle]: entering background loop\n");
 	for(;;) {
 		task=__KT_try_releasing_tasks();
-		if(!task && init_pid) {
-			/* Note that, while we go into a wait here, the scheduler 
-			 * may awaken the kernel at any time if its the only runable
-			 * task. But it doesn't really matter, we'll just end up 
-			 * back here. We also ignore signals */
-			__disengage_idle();
-		}
 		__KT_try_handle_stage2_interrupts();
+		schedule();
 		set_int(1);
 	}
 }

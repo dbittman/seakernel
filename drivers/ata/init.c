@@ -172,12 +172,18 @@ int init_ata_controller(struct ata_controller *cont)
 		outb(cont->port_cmd_base+REG_DEVICE, i ? 0xB0 : 0xA0);
 		ATA_DELAY(cont);
 		
-		if(!inb(cont->port_cmd_base+REG_STATUS)) continue;
+		if(!inb(cont->port_cmd_base+REG_STATUS)) {
+			printk(2, "[ata]: %d:%d: no status\n", cont->id, i);
+			continue;
+		}
 		
 		/* reset the LBA ports, and send the identify command */
 		outb(cont->port_cmd_base+REG_LBA_LOW, 0);
+		ATA_DELAY(cont);
 		outb(cont->port_cmd_base+REG_LBA_MID, 0);
+		ATA_DELAY(cont);
 		outb(cont->port_cmd_base+REG_LBA_HIG, 0);
+		ATA_DELAY(cont);
 		outb(cont->port_cmd_base+REG_COMMAND, COMMAND_IDENTIFY);
 		ATA_DELAY(cont);
 		
@@ -187,16 +193,21 @@ int init_ata_controller(struct ata_controller *cont)
 			in = inb(cont->port_cmd_base+REG_STATUS);
 			if((!(in & STATUS_BSY) && (in & STATUS_DRQ)) || in & STATUS_ERR || !in)
 				break;
+			ATA_DELAY(cont);
 		}
 		
 		/* no device here. go to the next device */
-		if(!in) 
+		if(!in) {
+			printk(4, "[ata]: %d:%d: no device\n", cont->id, i);
 			continue;
+		}
 		/* we got an ABORT response. This means that the device is likely
 		 * an ATAPI or a SATA drive. */
 		if(in & STATUS_ERR)
 		{
+			ATA_DELAY(cont);
 			m=inb(cont->port_cmd_base+REG_LBA_MID);
+			ATA_DELAY(cont);
 			h=inb(cont->port_cmd_base+REG_LBA_HIG);
 			if((m == 0x14 && h == 0xEB))
 			{
@@ -208,8 +219,10 @@ int init_ata_controller(struct ata_controller *cont)
 				dev.flags |= F_SATA;
 			} else if(m == 0x69 && h == 0x96) {
 				dev.flags |= F_SATAPI;
-			} else
+			} else {
+				printk(2, "[ata]: %d:%d: unknown (%d:%d)\n", cont->id, i, m, h);
 				continue;
+			}
 		}
 		
 		dev.flags |= F_EXIST;

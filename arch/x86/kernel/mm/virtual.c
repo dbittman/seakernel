@@ -39,7 +39,7 @@ void vm_init(addr_t id_map_to)
 		pt = (unsigned int *)(pd[mapper] & PAGE_MASK);
 		memset(pt, 0, 0x1000);
 		/* we map as user for now, since the init() function runs in
-		 * ring0 for a short amount of time and needs read access to the
+		 * ring3 for a short amount of time and needs read access to the
 		 * kernel code. This is later re-mapped by the kernel idle 
 		 * process with proper protection flags */
 		for(i=0;i<1024;i++)
@@ -90,6 +90,7 @@ void vm_init(addr_t id_map_to)
 	__asm__ volatile ("mov %0, %%cr3" : : "r" (pd));
 	/* Enable */
 	enable_paging();
+	
 	set_ksf(KSF_PAGING);
 	memset(0, 0, 0x1000);
 }

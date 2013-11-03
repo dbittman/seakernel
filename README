@@ -1,23 +1,21 @@
 				SeaKernel
-	A simple unix-like kernel designed for simplicity and speed, with
-a nod towards research concepts. In it's current iteration, it is a
-monolithic kernel with loadable module support.
+A simple unix-like kernel designed for simplicity and speed. In it's 
+current iteration, it is a monolithic kernel with loadable module support.
 
 Features Overview
 -----------------
 Some primary features include:
  * Kernel-level threading support (incomplete)
  * SMP support
- * Multiprocess scheduling (preemptive)
- * Unix-like syscalls and a standard C library support
+ * Multiprocessor scheduling (preemptive)
+ * Unix-like syscalls and a standard C library
  * Loadable and unloadable modules
  * ATA hard drives
+ * AHCI controller (incomplete)
  * ext4 file systems
- * access to devices via /dev filesystem
  * ELF binaries
  * user-mode protections
- * ix86 processors
- * unix style IPC
+ * ix86 processors (32-bit and 64-bit)
 
 History
 -------
@@ -28,11 +26,10 @@ complexity and features.
 
 Usage Instructions
 ------------------
-You need to have a cross compiler installed (typically i586-pc-seaos-gcc)
-to build the kernel. This is built automatically by the SeaOS userspace
-system, available on github (dbittman/sea). After initializing, The kernel 
-will try to run a script in a ramdisk (sh /preinit.sh). The ramdisk should 
-provide a minimum of a shell and the init script.
+You need to have a cross compiler installed (typically i586-pc-seaos-gcc or
+x86_64-pc-seaos-gcc) to build the kernel. This is built automatically by the
+SeaOS userspace system, available on github (dbittman/sea). After initializing,
+The kernel will try to run a script in a ramdisk (sh /preinit.sh). The ramdisk should provide a minimum of a shell and the init script.
 
 Build Instructions
 ------------------
@@ -51,3 +48,4 @@ Building is handled via gmake (make). The available targets are:
  - install: install the kernel on a SeaOS system
 
 Generally, a good order for this would be: make config all
+

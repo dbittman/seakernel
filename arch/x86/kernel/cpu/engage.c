@@ -13,7 +13,7 @@ initialization */
 void load_tables_ap();
 void set_lapic_timer(unsigned tmp);
 void init_lapic(int);
-addr_t lapic_addr;
+addr_t lapic_addr=0;
 
 static inline void set_boot_flag(unsigned x)
 {

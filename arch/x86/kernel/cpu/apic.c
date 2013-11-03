@@ -146,6 +146,7 @@ void init_lapic(int extint)
 
 void id_map_apic(page_dir_t *pd)
 {
+	if(!lapic_addr) return;
 	int a = PAGE_DIR_IDX(lapic_addr / 0x1000);
 	int t = PAGE_TABLE_IDX(lapic_addr / 0x1000);
 	pd[a] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;

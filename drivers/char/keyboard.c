@@ -258,14 +258,17 @@ int try_console_switch(int code)
 	}
 	return 0;
 }
-#define BREAKER 69
+#define BREAKER1 69
+#define BREAKER0 225
+unsigned char last_sc=0;
 int keyboard_int()
 {
 	unsigned char scancode = inb(0x60);
-	if(scancode == BREAKER)
+	if(scancode == BREAKER1 && last_sc == BREAKER0)
 	{
 		asm("int $0x3");
 	}
+	last_sc = scancode;
 	int release = (scancode > 127) ? 1 : 0;
 	if(release) scancode -= 128;
 	unsigned short *map = get_keymap(is_shift, is_alt, is_ctrl, is_altgr);

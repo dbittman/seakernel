@@ -112,8 +112,8 @@ uint32_t ahci_check_type(volatile struct hba_port *port)
 	det = s & 0x0F;
 	/* TODO: Where do these numbers come from? */
 	printk(1, "--> %x %x\n", ipm, det);
-	//if(ipm != 1 || det != 3)
-	//	return 0;
+	if(ipm != 1 || det != 3)
+		return 0;
 	return port->signature;
 }
 

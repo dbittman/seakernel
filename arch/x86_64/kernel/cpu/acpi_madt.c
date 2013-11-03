@@ -60,7 +60,10 @@ int parse_acpi_madt()
 	pmap_create(&apic_pmap, 0);
 	int length;
 	void *ptr = acpi_get_table_data("APIC", &length);
-	if(!ptr) return 0;
+	if(!ptr) {
+		printk(0, "[smp]: could not parse ACPI tables for multiprocessor information\n");
+		return 0;
+	}
 	
 	uint64_t controller_address = *(uint32_t *)ptr;
 	uint32_t flags = *(uint32_t *)((uint32_t *)ptr + 1);
@@ -73,11 +76,12 @@ int parse_acpi_madt()
 	while((addr_t)tmp < (addr_t)ptr+length)
 	{
 		ent = tmp;
-		if(ent->type == 0)
+		if(ent->type == 0) {
 			acpi_madt_parse_processor(ent, boot_cpu);
+			boot_cpu = 0;
+		}
 		else if(ent->type == 1)
 			acpi_madt_parse_ioapic(ent);
-		boot_cpu = 0;
 		tmp = (void *)((addr_t)tmp + ent->length);
 	}
 	return 1;

@@ -46,7 +46,8 @@ struct acpi_rsdp *apci_get_RSDP()
 	struct acpi_rsdp *rsdp;
 	if(0xA0000 < ebda_bottom || ((0xA0000 - ebda_bottom) > (128 * 1024))) {
 		printk(0, "[acpi]: got invalid lower ebda address (%x)\n", ebda_bottom);
-		return 0;
+		tmp = 0xE0000;
+		//return 0;
 	}
 	/* scan the EBDA and other region */
 	while(tmp < end)
@@ -110,7 +111,7 @@ void init_acpi()
 	pmap_create(&acpi_pmap, 0);
 	struct acpi_rsdp *rsdp = apci_get_RSDP();
 	if(!rsdp) return;
-	
+	printk(0, "[acpi]: found valid RSDP structure at %x\n", rsdp);
 	struct acpi_dt_header *rsdt = (struct acpi_dt_header *)(rsdp->revision ? (addr_t)rsdp->xsdt_addr : (addr_t)rsdp->rsdt_addr);
 	int pointer_size = (rsdp->revision ? 8 : 4);
 	const char *sig = (rsdp->revision ? "XSDT" : "RSDT");

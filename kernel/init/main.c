@@ -136,9 +136,6 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	init_cache();
 	init_dm();
 	init_vfs();
-	
-	init_sound();
-	
 	/* Load the rest... */
 	process_initrd();
 	init_kern_task();

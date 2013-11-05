@@ -92,7 +92,6 @@ void vm_init(addr_t id_map_to)
 	enable_paging();
 	
 	set_ksf(KSF_PAGING);
-	memset(0, 0, 0x1000);
 }
 
 /* This relocates the stack to a safe place which is copied 
@@ -107,12 +106,14 @@ void vm_init_2()
 		if(primary_cpu != &cpu_array[i]) {
 			printk(0, "[mm]: cloning directory for processor %d (%x)\n", cpu_array[i].apicid, &cpu_array[i]);
 			page_dir_t *pd = vm_clone(page_directory, 0);
+			printk(0, "[mm]: engaging CPU %d paging\n", cpu_array[i].apicid);
 			cpu_array[i].kd_phys = pd[1023] & PAGE_MASK;
 			cpu_array[i].kd = pd;
 		}
 		i++;
 	}
 #endif
+	printk(0, "[mm]: cloning directory for boot processor\n");
 	primary_cpu->kd = vm_clone(page_directory, 0);
 	primary_cpu->kd_phys = primary_cpu->kd[1023] & PAGE_MASK;
 
@@ -120,7 +121,8 @@ void vm_init_2()
 	/* can't call vm_switch, because we'll end up with the stack like it was
 	 * when we call vm_clone! So, we have to assume an invalid stack until
 	 * this function returns */
-	asm ("mov %0, %%cr3" :: "r" ((addr_t)kernel_dir[1023] & PAGE_MASK));
+	asm ("mov %0, %%cr3; nop; nop" :: "r" ((addr_t)kernel_dir[1023] & PAGE_MASK));
+	flush_pd();
 }
 
 void vm_switch(page_dir_t *n/*VIRTUAL ADDRESS*/)

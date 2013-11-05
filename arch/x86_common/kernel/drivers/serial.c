@@ -13,8 +13,16 @@ char serial_initialized=0;
 #define serial_received(x) (inb(x+5)&0x01)
 #define serial_transmit_empty(x) (inb(x+5)&0x20)
 
+#define DISABLE_SERIAL 0
+
+#if DISABLE_SERIAL
+#define DS_RET return
+#else
+#define DS_RET
+#endif
+
 void init_serial_port(int PORT) 
-{
+{DS_RET;
 	outb(PORT + 1, 0x00);    // Disable all interrupts
 	outb(PORT + 3, 0x80);    // Enable DLAB (set baud rate divisor)
 	outb(PORT + 0, 12);    // Set divisor to 12 (lo byte) 9600 baud
@@ -25,19 +33,19 @@ void init_serial_port(int PORT)
 }
 
 void write_serial(int p, char a) 
-{
+{DS_RET;
 	while (serial_transmit_empty(p) == 0);
 	outb(p,a);
 }
 
 char read_serial(int p)
-{
+{DS_RET 0;
 	while (serial_received(p) == 0);
 	return inb(p);
 }
 
 void serial_puts(int port, char *s)
-{
+{DS_RET;
 	if(!serial_initialized)
 		return;
 	mutex_acquire(&serial_m);
@@ -50,7 +58,7 @@ void serial_puts(int port, char *s)
 }
 
 void serial_puts_nolock(int port, char *s)
-{
+{DS_RET;
 	if(!serial_initialized)
 		return;
 	while(*s)
@@ -61,7 +69,7 @@ void serial_puts_nolock(int port, char *s)
 }
 
 int serial_rw(int rw, int min, char *b, size_t c)
-{
+{DS_RET c;
 	if(!serial_initialized) 
 		return -EINVAL;
 	int i=c;
@@ -94,10 +102,12 @@ int serial_rw(int rw, int min, char *b, size_t c)
 
 void init_serial()
 {
+#if ! DISABLE_SERIAL
 	mutex_create(&serial_m, 0);
 	init_serial_port(0x3f8);
 	serial_initialized = 1;
 	serial_puts_nolock(0, "[kernel]: started debug serial output\n");
+#endif
 #if CONFIG_MODULES
 	add_kernel_symbol(serial_puts);
 	add_kernel_symbol(serial_puts_nolock);

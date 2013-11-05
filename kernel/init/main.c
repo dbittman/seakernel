@@ -96,6 +96,7 @@ void parse_kernel_cmd(char *buf)
 }
 void init_main_cpu_1();
 void init_main_cpu_2();
+void init_sound();
 /* This is the C kernel entry point */
 void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 {
@@ -135,6 +136,9 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	init_cache();
 	init_dm();
 	init_vfs();
+	
+	init_sound();
+	
 	/* Load the rest... */
 	process_initrd();
 	init_kern_task();

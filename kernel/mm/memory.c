@@ -16,20 +16,23 @@ void process_memorymap(struct multiboot *mboot)
 	addr_t j=0;
 	while(i < (mboot->mmap_addr + mboot->mmap_length)){
 		mmap_entry_t *me = (mmap_entry_t *)(i);
-		printk(1, "[mm]: Map %d: %x -> %x\n", me->type, me->base_addr_low, 
-				me->base_addr_low+me->length_low);
+		//printk(1, "[mm]: Map %d: %x -> %x\n", me->type, me->base_addr_low, 
+		//		me->base_addr_low+me->length_low);
 		if(me->type == 1)
 		{
 			for (j = me->base_addr_low; 
 				j < (me->base_addr_low+me->length_low); j += PAGE_SIZE)
 			{
-				if(lowest_page > j)
-					lowest_page=j;
-				if(j > highest_page)
-					highest_page=j;
-				if(j >= pm_location)
-					pm_free_page(j);
-				num_pages++;
+				/* HACK!!!! */
+				if(j < 0xC0000000) {
+					if(lowest_page > j)
+						lowest_page=j;
+					if(j > highest_page)
+						highest_page=j;
+					if(j >= pm_location)
+						pm_free_page(j);
+					num_pages++;
+				}
 			}
 		}
 		i += me->size + sizeof (uint32_t);

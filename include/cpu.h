@@ -33,7 +33,7 @@ typedef struct __cpu_t__ {
 	cpuid_t cpuid;
 	int apicid;
 	volatile page_dir_t *kd;
-	addr_t kd_phys;
+	volatile addr_t kd_phys;
 	tqueue_t *active_queue;
 	task_t *ktask, *cur;
 	mutex_t lock;

@@ -59,23 +59,27 @@ int ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev)
 	printk(KERN_DEBUG, "[ahci]: initializing device %d\n", dev->idx);
 	struct hba_port *port = (struct hba_port *)&abar->ports[dev->idx];
 	ahci_stop_port_command_engine(port);
-	
+	printk(KERN_DEBUG, "[ahci]: %d: power, spin, ", dev->idx);
 	/* power on, spin up */
 	port->command |= 6;
 	delay_sleep(1);
+	printk(KERN_DEBUG, "int, ");
 	/* initialize state */
 	port->interrupt_status = ~0; /* clear pending interrupts */
 	port->interrupt_enable = ~0; /* we want some interrupts */
-	
+	printk(KERN_DEBUG, "init, ");
 	port->command |= (1 << 28); /* set interface to active */
 	port->command &= ~((1 << 27) | (1 << 26)); /* clear some bits */
 	port->sata_control |= 1;
 	delay_sleep(10);
+	printk(KERN_DEBUG, "ok, ");
 	port->sata_control |= (~1);
 	delay_sleep(10);
+	printk(KERN_DEBUG, "int2, ");
 	port->interrupt_status = ~0; /* clear pending interrupts */
 	port->interrupt_enable = ~0; /* we want some interrupts */
 	/* map memory */
+	printk(KERN_DEBUG, "map, ");
 	addr_t clb_phys, fis_phys;
 	void *clb_virt, *fis_virt;
 	clb_virt = kmalloc_ap(0x2000, &clb_phys);
@@ -99,8 +103,9 @@ int ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev)
 	
 	port->fis_base_l = (fis_phys & 0xFFFFFFFF);
 	port->fis_base_h = UPPER32(fis_phys);
-	
+	printk(KERN_DEBUG, "start, ");
  	ahci_start_port_command_engine(port);
+	printk(KERN_DEBUG, "identify\n");
 	return ahci_device_identify_ahci(abar, port, dev);
 }
 

@@ -45,15 +45,17 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	init_sse(cpu);
 	cpu->flags |= CPU_RUNNING;
 	set_boot_flag(0xFFFFFFFF);
-	while(!(kernel_state_flags & KSF_SMP_ENABLE)) asm("cli");
+	while(!(kernel_state_flags & KSF_SMP_ENABLE)) asm("cli; pause");
 	init_lapic(0);
 	set_lapic_timer(lapic_timer_start);
 	/* now we need to wait up the memory manager is all set up */
-	while(!(kernel_state_flags & KSF_MMU)) asm("cli");
+	while(!(kernel_state_flags & KSF_MMU)) 
+		asm("cli; pause");
 	/* load in the directory provided and enable paging! */
 	__asm__ volatile ("mov %0, %%cr3" : : "r" (cpu->kd_phys));
+	flush_pd();
 	unsigned cr0temp;
-	
+	printk(0, "[cpu%d]: enabling paging...\n", apicid);
 	enable_paging();
 	/* map in the real stack */
 	unsigned i;
@@ -63,7 +65,7 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	}
 	
 	printk(0, "[cpu%d]: waiting for tasking...\n", apicid);
-	while(!kernel_task) asm("cli");
+	while(!kernel_task) asm("cli; pause");
 	printk(0, "[cpu%d]: enable tasks...\n", apicid);
 	/* initialize tasking for this CPU */
 	task_t *task = task_create();

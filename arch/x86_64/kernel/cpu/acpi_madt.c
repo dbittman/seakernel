@@ -61,7 +61,7 @@ int parse_acpi_madt()
 	int length;
 	void *ptr = acpi_get_table_data("APIC", &length);
 	if(!ptr) {
-		printk(0, "[smp]: could not parse ACPI tables for multiprocessor information\n");
+		printk(4, "[smp]: could not parse ACPI tables for multiprocessor information\n");
 		return 0;
 	}
 	

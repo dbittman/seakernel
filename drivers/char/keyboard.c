@@ -261,9 +261,28 @@ int try_console_switch(int code)
 #define BREAKER1 69
 #define BREAKER0 225
 unsigned char last_sc=0;
-int keyboard_int()
+unsigned char key_stack[64];
+int ks_idx=0;
+int keyboard_int_stage1()
 {
 	unsigned char scancode = inb(0x60);
+	int x = add_atomic(&ks_idx, 1)-1;
+	if(ks_idx > 63) {
+		sub_atomic(&ks_idx, 1);
+		return 0;
+	}
+	key_stack[x] = scancode;
+	return 0;
+}
+
+int keyboard_int_stage2()
+{
+	int x = sub_atomic(&ks_idx, 1);
+	if(x < 0) {
+		ks_idx=0;
+		return 0;
+	}
+	unsigned char scancode = key_stack[x];
 	if(scancode == BREAKER1 && last_sc == BREAKER0)
 	{
 		asm("int $0x3");
@@ -320,7 +339,7 @@ int keyboard_int()
 
 void do_keyboard_int()
 {
-	keyboard_int();
+	keyboard_int_stage2();
 	flush_port();
 }
 
@@ -339,13 +358,14 @@ int module_install()
 	printk(1, "[keyboard]: Driver loading\n");
 	is_shift=0;
 	is_alt=0;
+	ks_idx=0;
 	is_ctrl=0;
 	is_altgr=0;
 	capslock=0;
 	_keymap_callback=0;
 	add_kernel_symbol(set_keymap_callback);
 	add_kernel_symbol(get_keymap_callback);
-	irqk = register_interrupt_handler(IRQ1, 0, (isr_t)&do_keyboard_int);
+	irqk = register_interrupt_handler(IRQ1, (isr_t)&keyboard_int_stage1, (isr_t)&keyboard_int_stage2);
 	flush_port();
 	printk(1, "[keyboard]: initialized keyboard\n");
 	return 0;

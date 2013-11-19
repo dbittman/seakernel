@@ -22,6 +22,7 @@ void ahci_start_port_command_engine(volatile struct hba_port *port)
 	while(port->command & HBA_PxCMD_CR);
 	port->command |= HBA_PxCMD_FRE;
 	port->command |= HBA_PxCMD_ST; 
+	ahci_flush_commands(port);
 }
 
 void ahci_reset_device(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev)
@@ -30,6 +31,7 @@ void ahci_reset_device(struct hba_memory *abar, struct hba_port *port, struct ah
 	 * while the device is resetting */
 	printk(KERN_DEBUG, "[ahci]: device %d: sending COMRESET and reinitializing\n", dev->idx);
 	ahci_stop_port_command_engine(port);
+	port->sata_error = ~0;
 	/* power on, spin up */
 	port->command |= 6;
 	delay_sleep(1);
@@ -42,7 +44,7 @@ void ahci_reset_device(struct hba_memory *abar, struct hba_port *port, struct ah
 	port->sata_control |= (~1);
 	delay_sleep(10);
 	port->interrupt_status = ~0; /* clear pending interrupts */
-	port->interrupt_enable = ~0; /* we want some interrupts */
+	port->interrupt_enable = 0; /* we want some interrupts */
 	ahci_start_port_command_engine(port);
 	dev->slots=0;
 }
@@ -59,14 +61,17 @@ int ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev)
 	printk(KERN_DEBUG, "[ahci]: initializing device %d\n", dev->idx);
 	struct hba_port *port = (struct hba_port *)&abar->ports[dev->idx];
 	ahci_stop_port_command_engine(port);
+	port->sata_error = ~0;
 	printk(KERN_DEBUG, "[ahci]: %d: power, spin, ", dev->idx);
 	/* power on, spin up */
-	port->command |= 6;
+	port->command |= 2;
+	port->command |= 4;
+	ahci_flush_commands(port);
 	delay_sleep(1);
 	printk(KERN_DEBUG, "int, ");
 	/* initialize state */
 	port->interrupt_status = ~0; /* clear pending interrupts */
-	port->interrupt_enable = ~0; /* we want some interrupts */
+	port->interrupt_enable = 0; /* we want some interrupts */
 	printk(KERN_DEBUG, "init, ");
 	port->command |= (1 << 28); /* set interface to active */
 	port->command &= ~((1 << 27) | (1 << 26)); /* clear some bits */
@@ -77,7 +82,7 @@ int ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev)
 	delay_sleep(10);
 	printk(KERN_DEBUG, "int2, ");
 	port->interrupt_status = ~0; /* clear pending interrupts */
-	port->interrupt_enable = ~0; /* we want some interrupts */
+	port->interrupt_enable = 0; /* we want some interrupts */
 	/* map memory */
 	printk(KERN_DEBUG, "map, ");
 	addr_t clb_phys, fis_phys;
@@ -106,6 +111,7 @@ int ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev)
 	printk(KERN_DEBUG, "start, ");
  	ahci_start_port_command_engine(port);
 	printk(KERN_DEBUG, "identify\n");
+	port->sata_error = ~0;
 	return ahci_device_identify_ahci(abar, port, dev);
 }
 
@@ -152,6 +158,14 @@ void ahci_probe_ports(struct hba_memory *abar)
 
 void ahci_init_hba(struct hba_memory *abar)
 {
+	if(abar->ext_capabilities & 1) {
+		/* request BIOS/OS ownership handoff */
+		printk(KERN_DEBUG, "[ahci]: requesting AHCI ownership change\n");
+		abar->bohc |= (1 << 1);
+		while((abar->bohc & 1) || !(abar->bohc & (1<<1))) asm("pause");
+		printk(KERN_DEBUG, "[ahci]: ownership change completed\n");
+	}
+	
 	/* enable the AHCI and reset it */
 	abar->global_host_control |= HBA_GHC_AHCI_ENABLE;
 	abar->global_host_control |= HBA_GHC_RESET;
@@ -160,4 +174,6 @@ void ahci_init_hba(struct hba_memory *abar)
 	/* enable the AHCI and interrupts */
 	abar->global_host_control |= HBA_GHC_AHCI_ENABLE;
 	abar->global_host_control |= HBA_GHC_INTERRUPT_ENABLE;
+	delay_sleep(10);
+	printk(KERN_DEBUG, "[ahci]: caps and ver: %x %x v %x\n", abar->capability, abar->ext_capabilities, abar->version);
 }

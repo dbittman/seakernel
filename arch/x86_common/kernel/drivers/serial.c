@@ -13,13 +13,15 @@ char serial_initialized=0;
 #define serial_received(x) (inb(x+5)&0x01)
 #define serial_transmit_empty(x) (inb(x+5)&0x20)
 
-#define DISABLE_SERIAL 0
+#define DISABLE_SERIAL 1
 
 #if DISABLE_SERIAL
 #define DS_RET return
 #else
-#define DS_RET
+#define DS_RET if(serial_debug_port == 0) return
 #endif
+
+int serial_debug_port = 0;
 
 void init_serial_port(int PORT) 
 {DS_RET;
@@ -51,7 +53,7 @@ void serial_puts(int port, char *s)
 	mutex_acquire(&serial_m);
 	while(*s)
 	{
-		write_serial(0x3f8, *s);
+		write_serial(serial_debug_port, *s);
 		s++;
 	}
 	mutex_release(&serial_m);
@@ -63,7 +65,7 @@ void serial_puts_nolock(int port, char *s)
 		return;
 	while(*s)
 	{
-		write_serial(0x3f8, *s);
+		write_serial(serial_debug_port, *s);
 		s++;
 	}
 }
@@ -78,7 +80,7 @@ int serial_rw(int rw, int min, char *b, size_t c)
 		mutex_acquire(&serial_m);
 		while(i)
 		{
-			write_serial(0x3f8, *(b++));
+			write_serial(serial_debug_port, *(b++));
 			i--;
 		}
 		mutex_release(&serial_m);
@@ -86,12 +88,12 @@ int serial_rw(int rw, int min, char *b, size_t c)
 	} else if(rw == READ)
 	{
 		while(i--) {
-			while(serial_received(0x3f8) == 0)
+			while(serial_received(serial_debug_port) == 0)
 			{
 				if(got_signal(current_task))
 					return -EINTR;
 			}
-			*(b) = inb(0x3f8);
+			*(b) = inb(serial_debug_port);
 			kprintf("GOT: %x\n", *(b));
 			b++;
 		}
@@ -104,7 +106,9 @@ void init_serial()
 {
 #if ! DISABLE_SERIAL
 	mutex_create(&serial_m, 0);
-	init_serial_port(0x3f8);
+	/* BIOS data area */
+	serial_debug_port = *(unsigned short *)(0x400);
+	init_serial_port(serial_debug_port);
 	serial_initialized = 1;
 	serial_puts_nolock(0, "[kernel]: started debug serial output\n");
 #endif

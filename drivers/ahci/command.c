@@ -82,7 +82,7 @@ int ahci_port_dma_data_transfer(struct hba_memory *abar, struct hba_port *port, 
 	fis->lba3 = (unsigned char)((lba >> 24) & 0xFF);
 	fis->lba4 = (unsigned char)((lba >> 32) & 0xFF);
 	fis->lba5 = (unsigned char)((lba >> 40) & 0xFF);
-	
+	port->sata_error = ~0;
 	timeout = ATA_TFD_TIMEOUT;
 	while ((port->task_file_data & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && --timeout)
 	{
@@ -91,7 +91,7 @@ int ahci_port_dma_data_transfer(struct hba_memory *abar, struct hba_port *port, 
 	if(!timeout) goto port_hung;
 	
 	ahci_send_command(port, slot);
-	
+	port->sata_error = ~0;
 	timeout = ATA_TFD_TIMEOUT;
 	while ((port->task_file_data & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && --timeout)
 	{
@@ -134,12 +134,13 @@ int ahci_device_identify_ahci(struct hba_memory *abar, struct hba_port *port, st
 	struct hba_command_header *h = ahci_initialize_command_header(abar, port, dev, 0, 0, 0, 1, fis_len);
 	struct fis_reg_host_to_device *fis = ahci_initialize_fis_host_to_device(abar, port, dev, 0, 1, ATA_CMD_IDENTIFY);
 	int timeout = ATA_TFD_TIMEOUT;
+	port->sata_error = ~0;
 	while ((port->task_file_data & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && --timeout)
 		asm("pause");
 	if(!timeout)
 	{
-		printk(KERN_DEBUG, "[ahci]: device %d: identify: port hung\n", dev->idx);
-		printk(KERN_DEBUG, "[ahci]: device %d: identify: tfd=%x, serr=%x\n", dev->idx, port->task_file_data, port->sata_error);
+		printk(KERN_DEBUG, "[ahci]: device %d: identify 1: port hung\n", dev->idx);
+		printk(KERN_DEBUG, "[ahci]: device %d: identify 1: tfd=%x, serr=%x\n", dev->idx, port->task_file_data, port->sata_error);
 		return 0;
 	}
 	ahci_send_command(port, 0);
@@ -151,8 +152,8 @@ int ahci_device_identify_ahci(struct hba_memory *abar, struct hba_port *port, st
 	}
 	if(!timeout)
 	{
-		printk(KERN_DEBUG, "[ahci]: device %d: identify: port hung\n", dev->idx);
-		printk(KERN_DEBUG, "[ahci]: device %d: identify: tfd=%x, serr=%x\n", dev->idx, port->task_file_data, port->sata_error);
+		printk(KERN_DEBUG, "[ahci]: device %d: identify 2: port hung\n", dev->idx);
+		printk(KERN_DEBUG, "[ahci]: device %d: identify 2: tfd=%x, serr=%x\n", dev->idx, port->task_file_data, port->sata_error);
 		return 0;
 	}
 	memcpy(&dev->identify, buf, sizeof(struct ata_identify));

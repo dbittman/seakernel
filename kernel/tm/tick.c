@@ -65,7 +65,8 @@ void do_tick()
 void timer_handler(registers_t r)
 {
 	/* prevent multiple cpus from adding to ticks */
-	if(!current_task || !current_task->cpu || ((cpu_t *)current_task->cpu) == primary_cpu)
+	/* TODO */
+	//if(!current_task || !current_task->cpu || ((cpu_t *)current_task->cpu) == primary_cpu)
 		add_atomic(&ticks, 1);
 	/* engage the idle task occasionally */
 	if((ticks % current_hz*10) == 0)
@@ -94,9 +95,15 @@ void delay_sleep(int t)
 {
 	long end = ticks+t+1;
 	int old = set_int(1);
+	int to=100000;
+	long start = ticks;
 	while(ticks < end) {
 		asm("pause");
 		set_int(1);
+		if(!--to && start == ticks) {
+			printk(4, "[tm]: delay_sleep reached timeout!\n");
+			break;
+		}
 	}
 	set_int(old);
 }

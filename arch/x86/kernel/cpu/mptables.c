@@ -31,7 +31,6 @@ static void imps_add_processor(struct imps_processor *proc)
 	new_cpu.flags=0;
 	cpu_t *cp = add_cpu(&new_cpu);
 	if (proc->flags & (IMPS_CPUFLAG_BOOT)) {
-		printk(4, "[smp]: boot processor is %d\n", apicid);
 		primary_cpu = cp;
 		return;
 	}

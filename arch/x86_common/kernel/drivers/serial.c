@@ -13,7 +13,9 @@ char serial_initialized=0;
 #define serial_received(x) (inb(x+5)&0x01)
 #define serial_transmit_empty(x) (inb(x+5)&0x20)
 
-#define DISABLE_SERIAL 0
+#if ! CONFIG_SERIAL_DEBUG
+#define DISABLE_SERIAL 1
+#endif
 
 #if DISABLE_SERIAL
 #define DS_RET return

@@ -22,7 +22,7 @@ void ahci_start_port_command_engine(volatile struct hba_port *port)
 	while(port->command & HBA_PxCMD_CR);
 	port->command |= HBA_PxCMD_FRE;
 	port->command |= HBA_PxCMD_ST; 
-	ahci_flush_commands(port);
+	ahci_flush_commands((struct hba_port *)port);
 }
 
 void ahci_reset_device(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev)
@@ -47,6 +47,7 @@ void ahci_reset_device(struct hba_memory *abar, struct hba_port *port, struct ah
 	port->interrupt_enable = 0; /* we want some interrupts */
 	ahci_start_port_command_engine(port);
 	dev->slots=0;
+	port->sata_error = ~0;
 }
 
 uint32_t ahci_get_previous_byte_count(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev, int slot)

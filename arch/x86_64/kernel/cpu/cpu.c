@@ -88,7 +88,11 @@ void parse_cpuid(cpu_t *me)
 
 cpu_t *get_cpu(int id)
 {
-	return &cpu_array[id];
+	for(unsigned int i=0;i<cpu_array_num;i++)
+	{
+		if(cpu_array[i].apicid == id) return &cpu_array[i];
+	}
+	return 0;
 }
 
 cpu_t *add_cpu(cpu_t *c)

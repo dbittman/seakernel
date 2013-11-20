@@ -24,7 +24,7 @@ void acpi_madt_parse_processor(void *ent, int boot)
 	new_cpu.flags=0;
 	cpu_t *cp = add_cpu(&new_cpu);
 	if(boot) {
-		primary_cpu = &cpu_array[proc->apicid];
+		primary_cpu = cp;
 		return;
 	}
 	if(!cp)

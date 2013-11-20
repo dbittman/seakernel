@@ -8,18 +8,15 @@
 #if CONFIG_SMP
 #include <imps-x86.h>
 #endif
-volatile page_dir_t *kernel_dir=0;
+volatile page_dir_t *kernel_dir=0, *minimal_directory=0;
 unsigned int cr0temp;
 int id_tables=0;
 struct pd_data *pd_cur_data = (struct pd_data *)PDIR_DATA;
 
-/* This function will setup a paging environment with a basic page dir, 
- * enough to process the memory map passed by grub */
-void vm_init(addr_t id_map_to)
-{
-	/* Register some stuff... */
-	register_interrupt_handler (14, (isr_t)&page_fault, 0);
+addr_t id_mapped_location;
 
+addr_t vm_init_directory(addr_t id_map_to)
+{
 	/* Create kernel directory. 
 	 * This includes looping upon itself for self-reference */
 	page_dir_t *pd;
@@ -60,6 +57,7 @@ void vm_init(addr_t id_map_to)
 	memset(pt, 0, 0x1000);
 	pt[sig_tbi] = (unsigned)pm_alloc_page() | PAGE_PRESENT | PAGE_USER;
 	memcpy((void *)(pt[sig_tbi] & PAGE_MASK), (void *)signal_return_injector, SIGNAL_INJECT_SIZE);
+	/* premap the tables of stuff so that cloning directories works properly */
 	/* Pre-map the heap's tables */
 	unsigned heap_pd_idx = PAGE_DIR_IDX(KMALLOC_ADDR_START / 0x1000);
 	for(i=heap_pd_idx;i<(int)PAGE_DIR_IDX(KMALLOC_ADDR_END / 0x1000);i++)
@@ -84,7 +82,19 @@ void vm_init(addr_t id_map_to)
 		pt = (unsigned int *)(pd[i] & PAGE_MASK);
 		memset(pt, 0, 0x1000);
 	}
+	return (addr_t)pd;
+}
+
+/* This function will setup a paging environment with a basic page dir, 
+ * enough to process the memory map passed by grub */
+void vm_init(addr_t id_map_to)
+{
+	id_mapped_location=id_map_to;
+	/* Register some stuff... */
+	register_interrupt_handler (14, (isr_t)&page_fault, 0);
 	
+	page_dir_t *pd = (page_dir_t *)vm_init_directory(id_map_to);
+	minimal_directory = pd;
 	/* CR3 requires the physical address, so we directly 
 	 * set it because we have the physical address */
 	__asm__ volatile ("mov %0, %%cr3" : : "r" (pd));
@@ -99,30 +109,17 @@ void vm_init(addr_t id_map_to)
 void vm_init_2()
 {
 	setup_kernelstack(id_tables);
-#if CONFIG_SMP
-	unsigned int i=0;
-	while(i < cpu_array_num)
-	{
-		if(primary_cpu != &cpu_array[i]) {
-			printk(0, "[mm]: cloning directory for processor %d (%x)\n", cpu_array[i].apicid, &cpu_array[i]);
-			page_dir_t *pd = vm_clone(page_directory, 0);
-			printk(0, "[mm]: engaging CPU %d paging\n", cpu_array[i].apicid);
-			cpu_array[i].kd_phys = pd[1023] & PAGE_MASK;
-			cpu_array[i].kd = pd;
-		}
-		i++;
-	}
-#endif
 	printk(0, "[mm]: cloning directory for boot processor\n");
 	primary_cpu->kd = vm_clone(page_directory, 0);
 	primary_cpu->kd_phys = primary_cpu->kd[1023] & PAGE_MASK;
-
+	printk(0, "[mm]: cloned\n");
 	kernel_dir = primary_cpu->kd;
 	/* can't call vm_switch, because we'll end up with the stack like it was
 	 * when we call vm_clone! So, we have to assume an invalid stack until
 	 * this function returns */
 	asm ("mov %0, %%cr3; nop; nop" :: "r" ((addr_t)kernel_dir[1023] & PAGE_MASK));
 	flush_pd();
+	printk(0, "[mm]: switched\n");
 }
 
 void vm_switch(page_dir_t *n/*VIRTUAL ADDRESS*/)

@@ -286,7 +286,8 @@ void entry_syscall_handler(volatile registers_t regs)
 void isr_handler(volatile registers_t regs)
 {
 #if CONFIG_ARCH == TYPE_ARCH_X86_64
-	assert(((regs.ds&(~0x7)) == 0x10 || (regs.ds&(~0x7)) == 0x20) && ((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));
+	assert(((regs.ds&(~0x7)) == 0x10 || (regs.ds&(~0x7)) == 0x20));
+	assert(((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));
 #endif
 	/* this is explained in the IRQ handler */
 	int previous_interrupt_flag = set_int(0);

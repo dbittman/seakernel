@@ -14,6 +14,9 @@ void load_tables_ap();
 void set_lapic_timer(unsigned tmp);
 void init_lapic(int);
 addr_t lapic_addr=0;
+extern page_dir_t *minimal_directory;
+int cpu_s1_lock_init=0;
+mutex_t cpu_stage1_lock;
 
 static inline void set_boot_flag(unsigned x)
 {
@@ -51,19 +54,21 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	/* now we need to wait up the memory manager is all set up */
 	while(!(kernel_state_flags & KSF_MMU)) 
 		asm("cli; pause");
-	/* load in the directory provided and enable paging! */
-	__asm__ volatile ("mov %0, %%cr3" : : "r" (cpu->kd_phys));
-	flush_pd();
+	/* CR3 requires the physical address, so we directly 
+	 * set it because we have the physical address */
+	__asm__ volatile ("mov %0, %%cr3" : : "r" (minimal_directory));
+	/* Enable */
 	unsigned cr0temp;
-	printk(0, "[cpu%d]: enabling paging...\n", apicid);
 	enable_paging();
-	/* map in the real stack */
-	unsigned i;
-	for(i=(unsigned int)STACK_LOCATION+STACK_SIZE; i >= (unsigned int)STACK_LOCATION - STACK_SIZE*2;i -= 0x1000) {
-		vm_map(i, pm_alloc_page(), PAGE_PRESENT | PAGE_WRITE | PAGE_USER, MAP_CRIT);
-		memset((void *)i, 0, 0x1000);
-	}
 	
+	mutex_acquire(&cpu_stage1_lock);
+	printk(0, "[mm]: cloning directory for processor %d\n", apicid);
+	cpu->kd = vm_clone(page_directory, 0);
+	cpu->kd_phys = cpu->kd[1023] & PAGE_MASK;
+	printk(0, "[mm]: cloned\n");
+	asm ("mov %0, %%cr3; nop; nop" :: "r" ((addr_t)cpu->kd[1023] & PAGE_MASK));
+	flush_pd();
+	mutex_release(&cpu_stage1_lock);
 	printk(0, "[cpu%d]: waiting for tasking...\n", apicid);
 	while(!kernel_task) asm("cli; pause");
 	printk(0, "[cpu%d]: enable tasks...\n", apicid);
@@ -93,7 +98,7 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 		mov %2, %%ebp; \
 		push %%ebx; \
 		call *%%eax;" :: "r" (cpu_k_task_entry),"r"(task),"r"(STACK_LOCATION + STACK_SIZE - STACK_ELEMENT_SIZE));
-	/* we'll never get here */
+	/* we'll never get here */	
 }
 
 /* C-side CPU entry code. Called from the assembly handler */
@@ -115,6 +120,13 @@ int boot_cpu(unsigned id, unsigned apic_ver)
 	int apicid = id, success = 1, to;
 	unsigned bootaddr, accept_status;
 	unsigned bios_reset_vector = BIOS_RESET_VECTOR;
+	
+	if(!cpu_s1_lock_init)
+	{
+		cpu_s1_lock_init=1;
+		mutex_create(&cpu_stage1_lock, MT_NOSCHED);
+	}
+	
 	set_int(0);
 	/* choose this as the bios reset vector */
 	bootaddr = 0x7000;

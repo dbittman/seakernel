@@ -140,8 +140,8 @@ void faulted(int fuckoff, int userspace, addr_t ip)
 		kernel_fault(fuckoff, ip);
 	} else
 	{
-		printk(5, "%s occured in task %d (F=%d): He's dead, Jim.\n", 
-				exception_messages[fuckoff], current_task->pid, current_task->flag);
+		printk(5, "%s occured in task %d (F=%d, ip=%x): He's dead, Jim.\n", 
+				exception_messages[fuckoff], current_task->pid, current_task->flag, ip);
 		/* we die for different reasons on different interrupts */
 		switch(fuckoff)
 		{
@@ -286,8 +286,8 @@ void entry_syscall_handler(volatile registers_t regs)
 void isr_handler(volatile registers_t regs)
 {
 #if CONFIG_ARCH == TYPE_ARCH_X86_64
-	assert(((regs.ds&(~0x7)) == 0x10 || (regs.ds&(~0x7)) == 0x20));
 	assert(((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));
+	assert(((regs.ds&(~0x7)) == 0x10 || (regs.ds&(~0x7)) == 0x20));
 #endif
 	/* this is explained in the IRQ handler */
 	int previous_interrupt_flag = set_int(0);

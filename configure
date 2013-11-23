@@ -59,6 +59,7 @@ data-initrd/bin32/mount           : /mount
 data-initrd/bin32/chroot          : /chroot
 
 drivers/built/ata               : /ata
+drivers/built/psm               : /psm
 drivers/built/ahci               : /ahci
 drivers/built/ext2			    : /ext2
 drivers/built/pci			    : /pci
@@ -81,6 +82,7 @@ data-initrd/bin64/mount           : /mount
 data-initrd/bin64/chroot          : /chroot
 
 drivers/built/ata               : /ata
+drivers/built/psm               : /psm
 drivers/built/ahci               : /ahci
 drivers/built/ext2			    : /ext2
 drivers/built/pci			    : /pci

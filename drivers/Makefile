@@ -62,8 +62,9 @@ SUBDIRS-$(CONFIG_MODULE_AHCI)	    += ahci
 SUBDIRS-$(CONFIG_MODULE_EXT2)	    += ext2
 SUBDIRS-$(CONFIG_MODULE_ISO9660)    += iso9660
 SUBDIRS-$(CONFIG_MODULE_FAT)	    += fat
+SUBDIRS-$(CONFIG_MODULE_PSM)	    += psm
 SUBDIRS = "$(SUBDIRS-y)"
-ALLSUBDIRS = "ata ext2 iso9660 fat ahci"
+ALLSUBDIRS = "ata ext2 iso9660 fat ahci psm"
 VERSION=${KERNEL_VERSION}
 
 all:

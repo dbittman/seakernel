@@ -35,13 +35,13 @@ int sys_setup(int a)
 	init_dev_fs();
 	init_proc_fs();
 	add_inode(procfs_root, kproclist);
-	char_rw(OPEN, 3*256+1, 0, 0);
+	char_rw(OPEN, GETDEV(3, 1), 0, 0);
 	sys_open("/dev/tty1", O_RDWR);   /* stdin  */
 	sys_open("/dev/tty1", O_WRONLY); /* stdout */
 	sys_open("/dev/tty1", O_WRONLY); /* stderr */
 	current_task->tty=1;
 	system_setup=1;
-	printk(KERN_MILE, "done (i/o/e=%x [tty1]: ok)\n", 3*256+1);
+	printk(KERN_MILE, "done (i/o/e=%x [tty1]: ok)\n", GETDEV(3, 1));
 	return 12;
 }
 

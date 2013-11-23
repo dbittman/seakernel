@@ -79,7 +79,7 @@ struct inode *pfs_cn(char *name, mode_t  mode, int major, int minor)
 	i->i_ops = &procfs_inode_ops;
 	i->parent = procfs_root;
 	i->mode = mode | 0xFFF;
-	i->dev = 256*major+minor;
+	i->dev = GETDEV(major, minor);
 	rwlock_create(&i->rwl);
 	add_inode(procfs_root, i);
 	return i;
@@ -94,7 +94,7 @@ struct inode *pfs_cn_node(struct inode *to, char *name, mode_t mode, int major, 
 	i->i_ops = &procfs_inode_ops;
 	i->parent = procfs_root;
 	i->mode = mode | 0x1FF;
-	i->dev = 256*major+minor;
+	i->dev = GETDEV(major, minor);
 	rwlock_create(&i->rwl);
 	add_inode(to, i);
 	

@@ -18,14 +18,14 @@
 #define ASY_RW 0
 #define SIM_RW 1
 
-#define MAJOR(a) (((unsigned)(a))>>8)
-#define MINOR(a) ((a)&0xff)
+#define MAJOR(a) (((uint32_t)a)>>16)
+#define MINOR(a) (((uint32_t)a)&0xffff)
 
-#define SETDEV(j, n, c) \
-		c = j*256; \
-		c += n;
+#define NUM_MINOR 0x10000
 
-#define GETDEV(maj, min) (maj*256+min)
+#define SETDEV(j, n, c) c = (((uint16_t)j)*NUM_MINOR+((uint16_t)n))
+
+#define GETDEV(maj, min) (((uint16_t)maj)*NUM_MINOR+((uint16_t)min))
 
 #define DH_SZ 64
 typedef struct device_ss {

@@ -58,7 +58,7 @@ int init_kern_task()
 	_strcpy(kproclist->name, "kproclist");
 	kproclist->mode = S_IFDIR | 0xFFF;
 	kproclist->count=1;
-	kproclist->dev = 256*3;
+	kproclist->dev = GETDEV(3, 0);
 	rwlock_create(&kproclist->rwl);
 #if CONFIG_MODULES
 	_add_kernel_symbol((addr_t)(struct inode **)&kproclist, "kproclist");

@@ -92,7 +92,7 @@ int read_partitions(struct ata_controller *cont, struct ata_device *dev, char *n
 	addr_t p = find_kernel_function("enumerate_partitions");
 	if(!p)
 		return 0;
-	int d = 3*256 + cont->id * 2 + dev->id;
+	int d = GETDEV(3, cont->id * 2 + dev->id);
 	int (*e_p)(int, int, struct partition *);
 	e_p = (int (*)(int, int, struct partition *))p;
 	struct partition part;

@@ -67,7 +67,7 @@ void init_dev_fs()
 struct inode *devfs_add(struct inode *q, char *name, mode_t mode, int major, int minor)
 {
 	struct inode *i = devfs_create(q, name, mode);
-	i->dev = 256 * major + minor;
+	i->dev = GETDEV(major, minor);
 	return i;
 }
 

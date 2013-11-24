@@ -50,8 +50,10 @@ int psm_enumerate_partitions(int id, dev_t dev, struct disk_info *di)
 		char name[16];
 		generate_name(id, dev, name, i+1);
 		pi.num = i+1;
-		int minor = psm_table_insert(dev, di, &pi);
-		devfs_add(devfs_root, name, S_IFBLK, psm_major, minor);
+		int minor = psm_table_insert(dev, di, &pi, name);
+		printk(KERN_DEBUG, "[psm]: register (%d, %d): partition %s\n", MAJOR(dev), MINOR(dev), name);
+		struct inode *node = devfs_add(devfs_root, name, S_IFBLK, psm_major, minor);
+		psm_table_set_node(minor, node);
 		i++;
 	}
 	return i;
@@ -59,11 +61,13 @@ int psm_enumerate_partitions(int id, dev_t dev, struct disk_info *di)
 
 int psm_register_disk_device(int identifier, dev_t dev, struct disk_info *info)
 {
-	int minor = psm_table_insert(dev, info, 0);
-	/* create raw device node */
 	char name[16];
 	generate_name(identifier, dev, name, 0);
-	devfs_add(devfs_root, name, S_IFBLK, psm_major, minor);
+	int minor = psm_table_insert(dev, info, 0, name);
+	/* create raw device node */
+	printk(KERN_DEBUG, "[psm]: register (%d, %d): %s\n", MAJOR(dev), MINOR(dev), name);
+	struct inode *node = devfs_add(devfs_root, name, S_IFBLK, psm_major, minor);
+	psm_table_set_node(minor, node);
 	/* enumerate partitions and create partitions nodes */
 	psm_enumerate_partitions(identifier, dev, info);
 	return minor;
@@ -71,7 +75,7 @@ int psm_register_disk_device(int identifier, dev_t dev, struct disk_info *info)
 
 int psm_unregister_disk_device(int identifier, int psm_minor)
 {
-	
+	printk(KERN_INFO, "[psm]: unregister_disk_device: not implemented\n");
 	return 0;
 }
 
@@ -132,14 +136,14 @@ int module_install()
 	printk(KERN_DEBUG, "[psm]: initializing\n");
 	psm_initialize_table();
 	psm_major = set_availablebd(psm_rw_single, 512, psm_ioctl, psm_rw_multiple, psm_select);
-	
 	add_kernel_symbol(psm_register_disk_device);
-	
 	return 0;
 }
 
 int module_exit()
 {
-	
+	unregister_block_device(psm_major);
+	remove_kernel_symbol("psm_register_disk_device");
+	psm_table_destroy();
 	return 0;
 }

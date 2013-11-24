@@ -52,11 +52,6 @@ int set_availablebd(int (*f)(int, int, u64, char*), int bs,
 void unregister_block_device(int n)
 {
 	printk(1, "[dev]: Unregistering block device %d\n", n);
-#if CONFIG_BLOCK_CACHE
-	int i;
-	for(i=0;i<NUM_MINOR;i++)
-		disconnect_block_cache(GETDEV(n, i));
-#endif
 	mutex_acquire(&bd_search_lock);
 	device_t *dev = get_device(DT_BLOCK, n);
 	if(!dev) {

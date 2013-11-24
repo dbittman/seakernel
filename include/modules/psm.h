@@ -4,7 +4,7 @@
 #if CONFIG_MODULE_PSM
 #include <types.h>
 #include <dev.h>
-
+#include <fs.h>
 #define PSM_DEVICE_MAGIC 0xBEE51E55
 
 struct disk_info {
@@ -25,6 +25,7 @@ struct psm_device {
 	uint32_t magic;
 	struct disk_info info;
 	struct part_info part;
+	struct inode *node;
 	dev_t dev;
 };
 
@@ -34,9 +35,11 @@ int psm_register_disk_device(int identifier, dev_t dev, struct disk_info *info);
 int psm_unregister_disk_device(int identifier, int psm_minor);
 
 void psm_initialize_table();
-int psm_table_insert(dev_t dev, struct disk_info *di, struct part_info *pt);
+void psm_table_destroy();
+int psm_table_insert(dev_t dev, struct disk_info *di, struct part_info *pt, char *);
 void psm_table_remove(int index);
 void psm_table_get(int index, struct psm_device *d);
+void psm_table_set_node(int index, struct inode *n);
 
 #endif
 #endif

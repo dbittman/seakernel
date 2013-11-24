@@ -246,7 +246,6 @@ int destroy_all_id(cache_t *c, u64 id)
 				do_sync_element(c, obj, 1);
 			remove_element(c, obj, 1);
 		}
-		
 	}
 	rwlock_release(c->rwl, RWL_WRITER);
 	return 0;

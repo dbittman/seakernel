@@ -25,13 +25,14 @@ int block_device_rw(int mode, dev_t dev, off_t off, char *buf, size_t len);
 
 int block_ioctl(dev_t dev, int cmd, long arg);
 
+int do_block_rw_multiple(int rw, dev_t dev, u64 blk, char *buf, int count, blockdevice_t *bd);
+
 int do_block_rw(int rw, dev_t dev, u64 blk, char *buf, blockdevice_t *bd);
 
 int set_availablebd(int (*f)(int, int, u64, char*), int bs, 
 	int (*c)(int, int, long), int (*m)(int, int, u64, char *, int), int (*s)(int, int));
 
-int do_block_rw_multiple(int rw, dev_t dev, u64 blk, char *buf, 
-	blockdevice_t *bd, int count);
+int block_device_select(dev_t dev, int rw);
 
 void block_cache_init();
 

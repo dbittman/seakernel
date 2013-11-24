@@ -10,6 +10,7 @@
 #include <isr.h>
 #include <block.h>
 #include <symbol.h>
+#include <modules/psm.h>
 struct pci_device *ahci_pci;
 int ahci_int = 0;
 struct hba_memory *hba_mem;
@@ -80,6 +81,13 @@ void ahci_create_device(struct ahci_device *dev)
 	sprintf(node, "sd%c", (dev->idx % 26) + c);
 	dev->node = devfs_add(devfs_root, node, S_IFBLK, ahci_major, dev->idx);
 	read_partitions(dev, node, dev->idx);
+	
+	struct disk_info di;
+	di.length=dev->identify.lba48_addressable_sectors*512;
+	di.num_sectors=dev->identify.lba48_addressable_sectors;
+	di.sector_size=512;
+	psm_register_disk_device(PSM_AHCI_ID, GETDEV(ahci_major, dev->idx), &di);
+	
 }
 
 

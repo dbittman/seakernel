@@ -340,7 +340,7 @@ int keyboard_int_stage2()
 void do_keyboard_int()
 {
 	keyboard_int_stage2();
-	flush_port();
+	//flush_port();
 }
 
 void set_keymap_callback(addr_t ptr)

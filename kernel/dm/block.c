@@ -99,6 +99,27 @@ int do_block_rw(int rw, dev_t dev, u64 blk, char *buf, blockdevice_t *bd)
 	return -EIO;
 }
 
+int do_block_rw_multiple(int rw, dev_t dev, u64 blk, char *buf, int count, blockdevice_t *bd)
+{
+	if(dev < 0)
+		dev=-dev;
+	if(!bd) 
+	{
+		device_t *dt = get_device(DT_BLOCK, MAJOR(dev));
+		if(!dt)
+			return -ENXIO;
+		bd = (blockdevice_t *)dt->ptr;
+	}
+	if(bd->rw_multiple)
+	{
+		mutex_acquire(&bd->acl);
+		int ret = (bd->rw_multiple)(rw, MINOR(dev), blk, buf, count);
+		mutex_release(&bd->acl);
+		return ret;
+	}
+	return -EIO;
+}
+
 int block_rw(int rw, dev_t dev, u64 blk, char *buf, blockdevice_t *bd)
 {
 	if(!bd) 
@@ -329,9 +350,8 @@ int block_ioctl(dev_t dev, int cmd, long arg)
 		return 0;
 }
 
-int blockdev_select(struct inode *in, int rw)
+int block_device_select(dev_t dev, int rw)
 {
-	int dev = in->dev;
 	device_t *dt = get_device(DT_BLOCK, MAJOR(dev));
 	if(!dt)
 		return 1;
@@ -339,6 +359,11 @@ int blockdev_select(struct inode *in, int rw)
 	if(bd->select)
 		return bd->select(MINOR(dev), rw);
 	return 1;
+}
+
+int blockdev_select(struct inode *in, int rw)
+{
+	return block_device_select(in->dev, rw);
 }
 
 void send_sync_block()

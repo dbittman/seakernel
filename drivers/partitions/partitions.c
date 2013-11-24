@@ -3,6 +3,7 @@
 #include <fs.h>
 #include <block.h>
 #include <symbol.h>
+#include <modules/psm.h>
 struct partition {
 	char flag;
 	char ext;
@@ -73,9 +74,23 @@ int enumerate_partitions(int num, int dev, struct partition *part)
 	return 0;
 }
 
+int part_get_partition(dev_t dev, struct part_info *part, int n)
+{
+	struct partition p;
+	int ret = enumerate_partitions(n, dev, &p);
+	if(!p.sysid) return 0;
+	if(ret) {
+		part->num_sectors=p.length;
+		part->start_lba=p.start_lba;
+		part->sysid = p.sysid;
+	}
+	return ret;
+}
+
 int module_install()
 {
 	add_kernel_symbol(enumerate_partitions);
+	add_kernel_symbol(part_get_partition);
 	printk(1, "[partitions]: Telling any HD drivers to reload their partition information\n");
 	block_ioctl(3, 1, 0);
 	return 0;

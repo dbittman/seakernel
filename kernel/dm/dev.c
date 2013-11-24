@@ -26,7 +26,10 @@ void init_dm()
 	add_kernel_symbol(unregister_char_device);
 	add_kernel_symbol(get_device);
 	add_kernel_symbol(block_read);
+	add_kernel_symbol(blockdev_select);
+	add_kernel_symbol(block_device_select);
 	add_kernel_symbol(do_block_rw);
+	add_kernel_symbol(do_block_rw_multiple);
 	add_kernel_symbol(block_write);
 	add_kernel_symbol(set_blockdevice);
 	add_kernel_symbol(set_chardevice);

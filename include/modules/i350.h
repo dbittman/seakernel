@@ -1,0 +1,72 @@
+#ifndef __MODULES_I350_H
+#define __MODULES_I350_H
+#include <types.h>
+#include <modules/pci.h>
+
+struct i350_receive_descriptor {
+	uint64_t buffer;
+	uint64_t length:16;
+	uint64_t frag_check:16;
+	uint64_t status:8;
+	uint64_t error:8;
+	uint64_t vlan_tag:16;
+};
+
+struct i350_device {
+	struct pci_device *pci;
+	addr_t mem, pcsmem;
+	
+	addr_t receive_list_physical;
+	void *receive_ring;
+	uint32_t receive_list_length;
+	
+	
+};
+
+
+
+#define E1000_CTRL     0x00000
+#define E1000_STATUS   0x00008
+#define E1000_CTRL_EXT 0x00018
+#define E1000_RCTL     0x00100  /* RX Control - RW */
+#define E1000_RDTR1    0x02820  /* RX Delay Timer (1) - RW */
+#define E1000_RDBAL1   0x02900  /* RX Descriptor Base Address Low (1) - RW */
+#define E1000_RDBAH1   0x02904  /* RX Descriptor Base Address High (1) - RW */
+#define E1000_RDLEN1   0x02908  /* RX Descriptor Length (1) - RW */
+#define E1000_RDH1     0x02910  /* RX Descriptor Head (1) - RW */
+#define E1000_RDT1     0x02918  /* RX Descriptor Tail (1) - RW */
+#define E1000_IMS      0x000D0  /* Interrupt Mask Set - RW */
+#define E1000_IMC      0x000D8  /* Interrupt Mask Clear - WO */
+
+#define E1000_RDBAL    0x02800  /* RX Descriptor Base Address Low - RW */
+#define E1000_RDBAH    0x02804  /* RX Descriptor Base Address High - RW */
+#define E1000_RDLEN    0x02808  /* RX Descriptor Length - RW */
+#define E1000_RDH      0x02810  /* RX Descriptor Head - RW */
+#define E1000_RDT      0x02818  /* RX Descriptor Tail - RW */
+#define E1000_RDTR     0x02820  /* RX Delay Timer - RW */
+#define E1000_RDBAL0   E1000_RDBAL /* RX Desc Base Address Low (0) - RW */
+#define E1000_RDBAH0   E1000_RDBAH /* RX Desc Base Address High (0) - RW */
+#define E1000_RDLEN0   E1000_RDLEN /* RX Desc Length (0) - RW */
+#define E1000_RDH0     E1000_RDH   /* RX Desc Head (0) - RW */
+#define E1000_RDT0     E1000_RDT   /* RX Desc Tail (0) - RW */
+#define E1000_RDTR0    E1000_RDTR  /* RX Delay Timer (0) - RW */
+#define E1000_RXDCTL   0x02828  /* RX Descriptor Control queue 0 - RW */
+
+#define E1000_PCS_LCTL    0x04208  /* PCS Link Control - RW */
+
+
+
+#define E1000_PCS_LCTL_AN_ENABLE (1 << 16)
+#define E1000_PCS_LCTL_AN_RESTART (1 << 17)
+
+#define E1000_CTRL_EXT_DRVLOADED (1 << 28)
+
+#define E1000_CTRL_RESET (1 << 26)
+#define E1000_CTRL_GIO_MASTER_DISABLE (1 << 2)
+#define E1000_CTRL_ILOS (1 << 7)
+
+#define E1000_STATUS_RESET_DONE (1 << 21)
+#define E1000_STATUS_GIO_MASTER_ENABLE (1 << 19)
+
+
+#endif

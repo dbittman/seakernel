@@ -17,8 +17,9 @@ struct i350_device {
 	addr_t mem, pcsmem;
 	
 	addr_t receive_list_physical;
-	void *receive_ring;
-	uint32_t receive_list_length;
+	struct i350_receive_buffer *receive_ring;
+	uint32_t rx_list_count;
+	uint32_t rx_buffer_len;
 	
 	
 };
@@ -37,6 +38,7 @@ struct i350_device {
 #define E1000_RDT1     0x02918  /* RX Descriptor Tail (1) - RW */
 #define E1000_IMS      0x000D0  /* Interrupt Mask Set - RW */
 #define E1000_IMC      0x000D8  /* Interrupt Mask Clear - WO */
+#define E1000_ICR      0x01500
 
 #define E1000_RDBAL    0x02800  /* RX Descriptor Base Address Low - RW */
 #define E1000_RDBAH    0x02804  /* RX Descriptor Base Address High - RW */
@@ -51,6 +53,7 @@ struct i350_device {
 #define E1000_RDT0     E1000_RDT   /* RX Desc Tail (0) - RW */
 #define E1000_RDTR0    E1000_RDTR  /* RX Delay Timer (0) - RW */
 #define E1000_RXDCTL   0x02828  /* RX Descriptor Control queue 0 - RW */
+#define E1000_SRRCTL0   0xC00C
 
 #define E1000_PCS_LCTL    0x04208  /* PCS Link Control - RW */
 

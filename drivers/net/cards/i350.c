@@ -6,7 +6,7 @@
 
 int i350_int;
 struct pmap i350_pmap;
-
+struct i350_device *i350_dev;
 
 struct pci_device *get_i350_pci()
 {
@@ -28,25 +28,15 @@ struct pci_device *get_i350_pci()
 
 void i350_write32(struct i350_device *dev, uint32_t reg, uint32_t value)
 {
-	volatile uint32_t *a = (uint32_t *)(dev->mem + reg);
+	addr_t addr = pmap_get_mapping(&i350_pmap, dev->mem + reg);
+	volatile uint32_t *a = (uint32_t *)(addr);
 	*a = value;
 }
 
 uint32_t i350_read32(struct i350_device *dev, uint32_t reg)
 {
-	volatile uint32_t *a = (uint32_t *)(dev->mem + reg);
-	return *a;
-}
-
-void i350_pcs_write32(struct i350_device *dev, uint32_t reg, uint32_t value)
-{
-	volatile uint32_t *a = (uint32_t *)(dev->pcsmem + (reg-0x4000));
-	*a = value;
-}
-
-uint32_t i350_pcs_read32(struct i350_device *dev, uint32_t reg)
-{
-	volatile uint32_t *a = (uint32_t *)(dev->pcsmem + (reg-0x4000));
+	addr_t addr = pmap_get_mapping(&i350_pmap, dev->mem + reg);
+	volatile uint32_t *a = (uint32_t *)(addr);
 	return *a;
 }
 
@@ -84,17 +74,50 @@ void i350_reset(struct i350_device *dev)
 
 void i350_allocate_receive_buffers(struct i350_device *dev)
 {
+	dev->rx_buffer_len = 0x1000;
 	
+	struct i350_receive_descriptor *r;
+	addr_t rxring;
+	r = kmalloc_ap(0x1000, &rxring);
+	dev->rx_list_count = (0x1000 / sizeof(struct i350_receive_descriptor));
+	kprintf("[i350]: allocated rx_list: %d descs\n", dev->rx_list_count);
+
+	for(int i=0;i<dev->rx_list_count;i++)
+	{
+		addr_t ba;
+		kmalloc_ap(0x1000, &ba);
+		memset(r, 0, sizeof(*r));
+		r->buffer = ba;
+		r++;
+	}
+
+	uint32_t tmp = i350_read32(dev, E1000_RXDCTL);
+	tmp &= ~(1 << 25);
+	i350_write32(dev, E1000_RXDCTL, tmp);
+
+	tmp = dev->rx_list_count / 8;
+	i350_write32(dev, E1000_RDLEN0, tmp << 7);
+
+	i350_write32(dev, E1000_SRRCTL0, 4);
+
+
+	i350_write32(dev, E1000_RDBAL0, rxring & 0xFFFFFFFF);
+	i350_write32(dev, E1000_RDBAH0, (rxring >> 32) & 0xFFFFFFFF);
+
+
+	tmp |= (1<<25);
+	i350_write32(dev, E1000_RXDCTL, tmp);
+
+
+	tmp = i350_read32(dev, E1000_RCTL);
+	i350_write32(dev, E1000_RCTL, tmp | (1<<1) | (1<<3) | (1<<4) | (1<<15));
+
 }
 
 void i350_init(struct i350_device *dev)
 {
-	addr_t mem = pmap_get_mapping(&i350_pmap, dev->pci->pcs->bar0);
-	dev->mem = mem;
-	dev->pcsmem = pmap_get_mapping(&i350_pmap, dev->pci->pcs->bar0+0x4000);
+	dev->mem = dev->pci->pcs->bar0;
 	kprintf("[i350]: using interrupt %d\n", i350_int);
-	kprintf("[i350]: mapping %x -> %x\n", mem, dev->pci->pcs->bar0);
-	kprintf("[i350]: mapping %x -> %x\n", dev->pcsmem, dev->pci->pcs->bar0+0x4000);
 	
 	/* disable interrupts */
 	i350_write32(dev, E1000_IMC, ~0);
@@ -112,16 +135,32 @@ void i350_init(struct i350_device *dev)
 	i350_write32(dev, E1000_CTRL, tmp);
 	
 	/* set Auto-Negotiation */
-	tmp = i350_pcs_read32(dev, E1000_PCS_LCTL);
+	tmp = i350_read32(dev, E1000_PCS_LCTL);
 	tmp |= E1000_PCS_LCTL_AN_ENABLE;
-	i350_pcs_write32(dev, E1000_PCS_LCTL, tmp);
+	i350_write32(dev, E1000_PCS_LCTL, tmp);
 	
 	delay_sleep(10);
 	
 	i350_allocate_receive_buffers(dev);
-	/* write the registers for the receive ring */
-	
+
+	i350_write32(dev, E1000_IMS, ~0);
+
+	for(;;)
+	{
+		tmp = i350_read32(dev, E1000_RDH0);
+		kprintf("%d\n", tmp);
+		delay_sleep(1500);
+	}
+
 }
+
+void i350_interrupt()
+{
+	kprintf("1350 int\n");
+	i350_read32(i350_dev, E1000_ICR);
+}
+
+int irq1;
 
 int module_install()
 {
@@ -134,6 +173,8 @@ int module_install()
 	pmap_create(&i350_pmap, 0);
 	struct i350_device *dev = kmalloc(sizeof(struct i350_device));
 	dev->pci = i350;
+	irq1=register_interrupt_handler(i350_int, i350_interrupt, 0);
+	i350_dev = dev;
 	i350_init(dev);
 	
 	return 0;

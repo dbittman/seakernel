@@ -312,16 +312,6 @@ struct ata_identify {
 	/* ...and more */
 };
 
-struct partition {
-	char flag;
-	char ext;
-	char i_dont_care[2];
-	char sysid;
-	char again_dont_care[3];
-	unsigned int start_lba;
-	unsigned int length;
-}__attribute__((packed));
-
 struct ahci_device {
 	uint32_t type;
 	int idx;
@@ -329,12 +319,9 @@ struct ahci_device {
 	void *fis_virt, *clb_virt;
 	void *ch[HBA_COMMAND_HEADER_NUM];
 	struct ata_identify identify;
-	struct inode *node;
-	struct partition part[64];
 	uint32_t slots;
+	int created, psm_minor;
 };
-
-
 
 #define HBA_PxCMD_ST  (1 << 0)
 #define HBA_PxCMD_CR  (1 << 15)
@@ -362,6 +349,8 @@ struct ahci_device {
 #define AHCI_CMD_TIMEOUT 1000000
 
 #define ATA_SECTOR_SIZE 512
+
+#define AHCI_DEFAULT_INT 0
 
 struct hba_command_header *ahci_initialize_command_header(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev, int slot, int write, int atapi, int prd_entries, int fis_len);
 struct fis_reg_host_to_device *ahci_initialize_fis_host_to_device(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev, int slot, int cmdctl, int ata_command);

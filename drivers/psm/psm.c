@@ -1,3 +1,8 @@
+/* Persistant Storage Manager - psm
+ * Provides a common interface for creating device nodes, and
+ * devices nodes for partitions, translating partition R/Ws into
+ * raw device R/Ws.
+ */
 #include <kernel.h>
 #include <module.h>
 #include <block.h>
@@ -137,6 +142,7 @@ int module_install()
 	psm_initialize_table();
 	psm_major = set_availablebd(psm_rw_single, 512, psm_ioctl, psm_rw_multiple, psm_select);
 	add_kernel_symbol(psm_register_disk_device);
+	add_kernel_symbol(psm_unregister_disk_device);
 	return 0;
 }
 
@@ -144,6 +150,7 @@ int module_exit()
 {
 	unregister_block_device(psm_major);
 	remove_kernel_symbol("psm_register_disk_device");
+	remove_kernel_symbol("psm_unregister_disk_device");
 	psm_table_destroy();
 	return 0;
 }

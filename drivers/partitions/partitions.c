@@ -74,6 +74,7 @@ int enumerate_partitions(int num, int dev, struct partition *part)
 	return 0;
 }
 
+#if CONFIG_MODULE_PSM
 int part_get_partition(dev_t dev, struct part_info *part, int n)
 {
 	struct partition p;
@@ -86,11 +87,14 @@ int part_get_partition(dev_t dev, struct part_info *part, int n)
 	}
 	return ret;
 }
+#endif
 
 int module_install()
 {
 	add_kernel_symbol(enumerate_partitions);
+#if CONFIG_MODULE_PSM
 	add_kernel_symbol(part_get_partition);
+#endif
 	printk(1, "[partitions]: Telling any HD drivers to reload their partition information\n");
 	block_ioctl(3, 1, 0);
 	return 0;
@@ -99,6 +103,9 @@ int module_install()
 int module_exit()
 {
 	remove_kernel_symbol("enumerate_partitions");
+#if CONFIG_MODULE_PSM
+	remove_kernel_symbol("part_get_partition");
+#endif
 	return 0;
 }
 

@@ -41,55 +41,17 @@ struct pci_device *get_ahci_pci()
 	return ahci;
 }
 
-int read_partitions(struct ahci_device *dev, char *node, int port)
-{
-	addr_t p = find_kernel_function("enumerate_partitions");
-	if(!p)
-		return 0;
-	int d = GETDEV(ahci_major, port);
-	int (*e_p)(int, int, struct partition *);
-	e_p = (int (*)(int, int, struct partition *))p;
-	struct partition part;
-	int i=0;
-	while(i<64)
-	{
-		/* Returns the i'th partition of device 'd' into info struct part. */
-		int r = e_p(i, d, &part);
-		if(!r)
-			break;
-		if(part.sysid)
-		{
-			printk(KERN_DEBUG, "[ahci]: %d: read partition start=%d, len=%d\n", port, part.start_lba, part.length);
-			int a = port;
-			char tmp[17];
-			memset(tmp, 0, 17);
-			sprintf(tmp, "%s%d", node, i+1);
-			devfs_add(devfs_root, tmp, S_IFBLK, ahci_major, a+(i+1)*32);
-		}
-		memcpy(&(dev->part[i]), &part, sizeof(struct partition));
-		i++;
-	}
-	
-	return 0;
-}
-
 void ahci_create_device(struct ahci_device *dev)
 {
-	char node[16];
-	char c = 'a';
-	if(dev->idx > 25) c = 'A';
-	sprintf(node, "sd%c", (dev->idx % 26) + c);
-	dev->node = devfs_add(devfs_root, node, S_IFBLK, ahci_major, dev->idx);
-	read_partitions(dev, node, dev->idx);
-	
+	dev->created=1;
+#if CONFIG_MODULE_PSM
 	struct disk_info di;
 	di.length=dev->identify.lba48_addressable_sectors*512;
 	di.num_sectors=dev->identify.lba48_addressable_sectors;
 	di.sector_size=512;
-	psm_register_disk_device(PSM_AHCI_ID, GETDEV(ahci_major, dev->idx), &di);
-	
+	dev->psm_minor = psm_register_disk_device(PSM_AHCI_ID, GETDEV(ahci_major, dev->idx), &di);
+#endif
 }
-
 
 void ahci_interrupt_handler()
 {
@@ -138,17 +100,9 @@ void ahci_port_release_slot(struct ahci_device *dev, int slot)
 int ahci_rw_multiple_do(int rw, int min, u64 blk, char *out_buffer, int count)
 {
 	uint32_t length = count * ATA_SECTOR_SIZE;
-	int d = min % 32;
-	int p = min / 32;
+	int d = min;
 	struct ahci_device *dev = ports[d];
-	uint32_t part_off=0, part_len=0;
 	u64 end_blk = dev->identify.lba48_addressable_sectors;
-	if(p > 0) {
-		part_off = dev->part[p-1].start_lba;
-		part_len = dev->part[p-1].length;
-		end_blk = part_len + part_off;
-	}
-	blk += part_off;
 	if(blk >= end_blk)
 		return 0;
 	if((blk+count) > end_blk)
@@ -243,6 +197,10 @@ int module_exit()
 			kfree(ports[i]->fis_virt);
 			for(int j=0;j<HBA_COMMAND_HEADER_NUM;j++)
 				kfree(ports[i]->ch[j]);
+#if CONFIG_MODULE_PSM
+			if(ports[i]->created)
+				psm_unregister_disk_device(PSM_AHCI_ID, ports[i]->psm_minor);
+#endif
 			kfree(ports[i]);
 		}
 	}

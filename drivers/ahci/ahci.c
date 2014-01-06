@@ -4,6 +4,9 @@
 
 uint32_t ahci_flush_commands(struct hba_port *port)
 {
+	/* the commands may not take effect until the command
+	 * register is read again by software, because reasons.
+	 */
 	uint32_t c = port->command;
 	c=c;
 	return c;
@@ -33,18 +36,20 @@ void ahci_reset_device(struct hba_memory *abar, struct hba_port *port, struct ah
 	ahci_stop_port_command_engine(port);
 	port->sata_error = ~0;
 	/* power on, spin up */
-	port->command |= 6;
+	port->command |= 2;
+	port->command |= 4;
+	ahci_flush_commands(port);
 	delay_sleep(1);
 	/* initialize state */
 	port->interrupt_status = ~0; /* clear pending interrupts */
-	port->interrupt_enable = ~0; /* we want some interrupts */
+	port->interrupt_enable = AHCI_DEFAULT_INT; /* we want some interrupts */
 	port->command &= ~((1 << 27) | (1 << 26)); /* clear some bits */
 	port->sata_control |= 1;
 	delay_sleep(10);
 	port->sata_control |= (~1);
 	delay_sleep(10);
 	port->interrupt_status = ~0; /* clear pending interrupts */
-	port->interrupt_enable = 0; /* we want some interrupts */
+	port->interrupt_enable = AHCI_DEFAULT_INT; /* we want some interrupts */
 	ahci_start_port_command_engine(port);
 	dev->slots=0;
 	port->sata_error = ~0;
@@ -63,29 +68,23 @@ int ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev)
 	struct hba_port *port = (struct hba_port *)&abar->ports[dev->idx];
 	ahci_stop_port_command_engine(port);
 	port->sata_error = ~0;
-	printk(KERN_DEBUG, "[ahci]: %d: power, spin, ", dev->idx);
 	/* power on, spin up */
 	port->command |= 2;
 	port->command |= 4;
 	ahci_flush_commands(port);
 	delay_sleep(1);
-	printk(KERN_DEBUG, "int, ");
 	/* initialize state */
 	port->interrupt_status = ~0; /* clear pending interrupts */
-	port->interrupt_enable = 0; /* we want some interrupts */
-	printk(KERN_DEBUG, "init, ");
+	port->interrupt_enable = AHCI_DEFAULT_INT; /* we want some interrupts */
 	port->command |= (1 << 28); /* set interface to active */
 	port->command &= ~((1 << 27) | (1 << 26)); /* clear some bits */
 	port->sata_control |= 1;
 	delay_sleep(10);
-	printk(KERN_DEBUG, "ok, ");
 	port->sata_control |= (~1);
 	delay_sleep(10);
-	printk(KERN_DEBUG, "int2, ");
 	port->interrupt_status = ~0; /* clear pending interrupts */
-	port->interrupt_enable = 0; /* we want some interrupts */
+	port->interrupt_enable = AHCI_DEFAULT_INT; /* we want some interrupts */
 	/* map memory */
-	printk(KERN_DEBUG, "map, ");
 	addr_t clb_phys, fis_phys;
 	void *clb_virt, *fis_virt;
 	clb_virt = kmalloc_ap(0x2000, &clb_phys);
@@ -109,9 +108,7 @@ int ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev)
 	
 	port->fis_base_l = (fis_phys & 0xFFFFFFFF);
 	port->fis_base_h = UPPER32(fis_phys);
-	printk(KERN_DEBUG, "start, ");
  	ahci_start_port_command_engine(port);
-	printk(KERN_DEBUG, "identify\n");
 	port->sata_error = ~0;
 	return ahci_device_identify_ahci(abar, port, dev);
 }
@@ -122,8 +119,6 @@ uint32_t ahci_check_type(volatile struct hba_port *port)
 	uint8_t ipm, det;
 	ipm = (s >> 8) & 0x0F;
 	det = s & 0x0F;
-	/* TODO: Where do these numbers come from? */
-	printk(1, "--> %x %x\n", ipm, det);
 	if(ipm != 1 || det != 3)
 		return 0;
 	return port->signature;
@@ -133,13 +128,11 @@ void ahci_probe_ports(struct hba_memory *abar)
 {
 	uint32_t pi = abar->port_implemented;
 	int i=0;
-	printk(KERN_DEBUG, "[ahci]: dev list: ");
 	while(i < 32)
 	{
 		if(pi & 1)
 		{
 			uint32_t type = ahci_check_type(&abar->ports[i]);
-			printk(KERN_DEBUG, "(%d:%x) ", i, type);
 			if(type) {
 				ports[i] = kmalloc(sizeof(struct ahci_device));
 				ports[i]->type = type;
@@ -154,7 +147,6 @@ void ahci_probe_ports(struct hba_memory *abar)
 		i++;
 		pi >>= 1;
 	}
-	printk(KERN_DEBUG, "\n");
 }
 
 void ahci_init_hba(struct hba_memory *abar)

@@ -53,7 +53,11 @@ struct i350_device {
 #define E1000_RDT0     E1000_RDT   /* RX Desc Tail (0) - RW */
 #define E1000_RDTR0    E1000_RDTR  /* RX Delay Timer (0) - RW */
 #define E1000_RXDCTL   0x02828  /* RX Descriptor Control queue 0 - RW */
-#define E1000_SRRCTL0   0xC00C
+#define E1000_SRRCTL0  0x0C00C
+
+#define E1000_GPRC     0x04074
+#define E1000_RXERR    0x0400C
+#define E1000_MPC      0x04010
 
 #define E1000_PCS_LCTL    0x04208  /* PCS Link Control - RW */
 
@@ -66,7 +70,9 @@ struct i350_device {
 
 #define E1000_CTRL_RESET (1 << 26)
 #define E1000_CTRL_GIO_MASTER_DISABLE (1 << 2)
+#define E1000_CTRL_SLU (1 << 6)
 #define E1000_CTRL_ILOS (1 << 7)
+#define E1000_CTRL_RXFC (1 << 27)
 
 #define E1000_STATUS_RESET_DONE (1 << 21)
 #define E1000_STATUS_GIO_MASTER_ENABLE (1 << 19)

@@ -103,6 +103,8 @@ void i350_allocate_receive_buffers(struct i350_device *dev)
 
 	i350_write32(dev, E1000_RDBAL0, rxring & 0xFFFFFFFF);
 	i350_write32(dev, E1000_RDBAH0, (rxring >> 32) & 0xFFFFFFFF);
+	
+	i350_write32(dev, E1000_RDT0, dev->rx_list_count-1);
 
 
 	tmp |= (1<<25);
@@ -129,7 +131,7 @@ void i350_init(struct i350_device *dev)
 	i350_write32(dev, E1000_IMC, ~0);
 	
 	/* clear ILOS bit */
-	uint32_t tmp;
+	uint32_t tmp, tmp2, tmp3;
 	tmp = i350_read32(dev, E1000_CTRL);
 	tmp &= ~E1000_CTRL_ILOS;
 	i350_write32(dev, E1000_CTRL, tmp);
@@ -142,14 +144,22 @@ void i350_init(struct i350_device *dev)
 	delay_sleep(10);
 	
 	i350_allocate_receive_buffers(dev);
-
+	
+	tmp = i350_read32(dev, E1000_CTRL);
+	kprintf("::: %x\n", tmp);
+	tmp |= E1000_CTRL_SLU;
+	tmp &= ~(E1000_CTRL_RXFC);
+	i350_write32(dev, E1000_CTRL, tmp);
+	
 	i350_write32(dev, E1000_IMS, ~0);
 
 	for(;;)
 	{
 		tmp = i350_read32(dev, E1000_RDH0);
-		kprintf("%d\n", tmp);
-		delay_sleep(1500);
+		tmp2 = i350_read32(dev, E1000_RDT0);
+		tmp3 = i350_read32(dev, E1000_GPRC);
+		kprintf("%d %d: %x\n", tmp, tmp2, tmp3);
+		delay_sleep(4000);
 	}
 
 }

@@ -104,8 +104,7 @@ void i350_allocate_receive_buffers(struct i350_device *dev)
 	i350_write32(dev, E1000_RDBAL0, rxring & 0xFFFFFFFF);
 	i350_write32(dev, E1000_RDBAH0, (rxring >> 32) & 0xFFFFFFFF);
 	
-	i350_write32(dev, E1000_RDT0, dev->rx_list_count-1);
-
+	
 
 	tmp |= (1<<25);
 	i350_write32(dev, E1000_RXDCTL, tmp);
@@ -152,14 +151,14 @@ void i350_init(struct i350_device *dev)
 	i350_write32(dev, E1000_CTRL, tmp);
 	
 	i350_write32(dev, E1000_IMS, ~0);
-
+	i350_write32(dev, E1000_RDT0, dev->rx_list_count-1);
 	for(;;)
 	{
 		tmp = i350_read32(dev, E1000_RDH0);
 		tmp2 = i350_read32(dev, E1000_RDT0);
 		tmp3 = i350_read32(dev, E1000_GPRC);
 		kprintf("%d %d: %x\n", tmp, tmp2, tmp3);
-		delay_sleep(4000);
+		delay_sleep(400);
 	}
 
 }

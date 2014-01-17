@@ -60,7 +60,7 @@
 
     mov ax, ds               ; Lower 16-bits of eax = ds.
     push eax                 ; save the data segment descriptor
-
+    
     mov ax, 0x10  ; load the kernel data segment descriptor
     mov ds, ax
     mov es, ax

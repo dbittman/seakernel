@@ -98,7 +98,7 @@ struct partition {
 struct ata_device {
 	struct ata_controller *controller;
 	unsigned char flags;
-	int id;
+	int id, psm_minor, created;
 	unsigned long long length;
 	struct partition ptable[64];
 };
@@ -227,8 +227,9 @@ static inline void insw(unsigned long addr, void *buffer, int count)
 	}
 }
 int atapi_rw_main(int rw, int dev, u64 blk_, char *buf);
+int atapi_rw_main_multiple(int rw, int dev, u64 blk, char *buf, int num);
 int ioctl_atapi(int min, int cmd, long arg);
-struct ata_device *get_ata_device(int min, int *part);
+struct ata_device *get_ata_device(int min);
 int ata_dma_rw(struct ata_controller *cont, struct ata_device *dev, int rw, 
 	u64 blk, unsigned char *buf, int count);
 void remove_devices();

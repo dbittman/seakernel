@@ -49,6 +49,7 @@ void ahci_create_device(struct ahci_device *dev)
 	di.length=dev->identify.lba48_addressable_sectors*512;
 	di.num_sectors=dev->identify.lba48_addressable_sectors;
 	di.sector_size=512;
+	di.flags = 0;
 	dev->psm_minor = psm_register_disk_device(PSM_AHCI_ID, GETDEV(ahci_major, dev->idx), &di);
 #endif
 }

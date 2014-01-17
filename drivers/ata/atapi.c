@@ -67,8 +67,7 @@ int atapi_pio_rw(struct ata_controller *cont, struct ata_device *dev, int rw,
 int atapi_rw_main(int rw, int dev, u64 blk_, char *buf)
 {
 	unsigned long long blk = blk_;
-	int part;
-	struct ata_device *device = get_ata_device(dev, &part);
+	struct ata_device *device = get_ata_device(dev);
 	struct ata_controller *cont = device->controller;
 	mutex_acquire(cont->wait);
 	if(!(device->flags & F_EXIST)) {
@@ -79,6 +78,16 @@ int atapi_rw_main(int rw, int dev, u64 blk_, char *buf)
 	ret = atapi_pio_rw(cont, device, rw, blk, (unsigned char*)buf);
 	mutex_release(cont->wait);
 	return ret;
+}
+
+int atapi_rw_main_multiple(int rw, int dev, u64 blk, char *buf, int num)
+{
+	int count=0;
+	for(int i=0;i<num;i++)
+	{
+		count += atapi_rw_main(rw, dev, blk + i, buf + (i * 2048));
+	}
+	return count;
 }
 
 int ioctl_atapi(int min, int cmd, long arg)

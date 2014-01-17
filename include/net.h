@@ -13,7 +13,7 @@ struct net_dev_calls {
 struct net_dev {
 	uint32_t flags;
 	uint32_t state;
-	size_t rx_count, tx_count, rx_err_count, tx_err_count;
+	size_t rx_count, tx_count, rx_err_count, tx_err_count, rx_pending;
 	struct net_dev_calls *callbacks;
 };
 

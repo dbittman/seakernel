@@ -7,11 +7,13 @@
 #include <fs.h>
 #define PSM_DEVICE_MAGIC 0xBEE51E55
 
+#define PSM_DISK_INFO_NOPART 1
+
 struct disk_info {
 	uint64_t length;
 	uint64_t num_sectors;
 	uint64_t sector_size;
-	
+	uint32_t flags;
 };
 
 struct part_info {
@@ -30,6 +32,7 @@ struct psm_device {
 };
 
 #define PSM_AHCI_ID 1
+#define PSM_ATA_ID  0
 
 int psm_register_disk_device(int identifier, dev_t dev, struct disk_info *info);
 int psm_unregister_disk_device(int identifier, int psm_minor);

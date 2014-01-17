@@ -74,7 +74,8 @@ int psm_register_disk_device(int identifier, dev_t dev, struct disk_info *info)
 	struct inode *node = devfs_add(devfs_root, name, S_IFBLK, psm_major, minor);
 	psm_table_set_node(minor, node);
 	/* enumerate partitions and create partitions nodes */
-	psm_enumerate_partitions(identifier, dev, info);
+	if(!(info->flags & PSM_DISK_INFO_NOPART))
+		psm_enumerate_partitions(identifier, dev, info);
 	return minor;
 }
 

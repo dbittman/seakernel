@@ -4,7 +4,8 @@
 #include <modules/ata.h>
 #include <block.h>
 #include <symbol.h>
-int __a, __b, __c, __d;
+#include <modules/psm.h>
+
 int init_ata_device()
 {
 	struct pci_device *ata = pci_locate_class(0x1, 0x1);
@@ -51,77 +52,6 @@ int init_ata_device()
 	
 	secondary->irq = ATA_SECONDARY_IRQ;
 	secondary->id=1;
-	return 0;
-}
-
-int create_device(struct ata_controller *cont, struct ata_device *dev, char *node)
-{
-	int maj=3;
-	if(dev->flags & F_ATAPI || dev->flags & F_SATAPI)
-		maj = api;
-	int a = cont->id * 2 + dev->id;
-	char n = 'h';
-	int v=0;
-	if(dev->flags & F_ATAPI) {
-		n = 'c';
-		v=__b++;
-	}
-	else if(dev->flags & F_SATA)
-	{
-		n = 's';
-		v=__c++;
-	}
-	else if(dev->flags & F_SATAPI) {
-		n = 'p';
-		v=__d++;
-	} else
-		v=__a++;
-	memset(node, 0, 16);
-	sprintf(node, "%cd%c", n, 'a' + v);
-	struct inode *i = devfs_add(devfs_root, node, S_IFBLK, maj, a);
-	struct dev_rec *d = nodes;
-	struct dev_rec *new = (struct dev_rec *)kmalloc(sizeof(*d));
-	new->node=i;
-	new->next = d;
-	nodes=new;
-	return 0;
-}
-
-int read_partitions(struct ata_controller *cont, struct ata_device *dev, char *node)
-{
-	addr_t p = find_kernel_function("enumerate_partitions");
-	if(!p)
-		return 0;
-	int d = GETDEV(3, cont->id * 2 + dev->id);
-	int (*e_p)(int, int, struct partition *);
-	e_p = (int (*)(int, int, struct partition *))p;
-	struct partition part;
-	int i=0;
-	while(i<64)
-	{
-		/* Returns the i'th partition of device 'd' into info struct part. */
-		int r = e_p(i, d, &part);
-		if(!r)
-			break;
-		memcpy(&dev->ptable[i], &part, sizeof(part));
-		if(dev->ptable[i].sysid)
-		{
-			printk(0, "[ata]: %d:%d: read partition start=%d, len=%d\n", cont->id, dev->id, dev->ptable[i].start_lba, dev->ptable[i].length);
-			int a = cont->id * 2 + dev->id;
-			char tmp[17];
-			memset(tmp, 0, 17);
-			sprintf(tmp, "%s%d", node, i+1);
-			struct inode *in = devfs_add(devfs_root, tmp, S_IFBLK, (dev->flags & F_ATAPI 
-				|| dev->flags & F_SATAPI) ? api : 3, a+(i+1)*4);
-			struct dev_rec *dr = nodes;
-			struct dev_rec *new = (struct dev_rec *)kmalloc(sizeof(*dr));
-			new->node=in;
-			new->next = dr;
-			nodes=new;
-		}
-		i++;
-	}
-	
 	return 0;
 }
 
@@ -271,10 +201,21 @@ int init_ata_controller(struct ata_controller *cont)
 		else
 			printk(2, "[ata]: %d:%d: device reports no LBA accessing modes. Disabling this device.\n", cont->id, dev.id);
 		memcpy(&cont->devices[i], &dev, sizeof(struct ata_device));
-		char node[16];
-		create_device(cont, &cont->devices[i], node);
-		if((dev.flags & F_ENABLED) && !(dev.flags & F_ATAPI) && !(dev.flags & F_SATAPI))
-			read_partitions(cont, &cont->devices[i], node);
+#if CONFIG_MODULE_PSM
+		struct disk_info di;
+		int size = 512;
+		if(dev.flags & F_ATAPI) {
+			size = 2048;
+			di.flags = PSM_DISK_INFO_NOPART;
+		} else
+			di.flags = 0;
+		di.length=dev.length*size;
+		di.num_sectors=dev.length;
+		di.sector_size=size;
+		
+		cont->devices[i].created = 1;
+		cont->devices[i].psm_minor = psm_register_disk_device(PSM_ATA_ID, GETDEV((dev.flags & F_ATAPI) ? api : 3, cont->id * 2 + dev.id), &di);
+#endif
 	}
 	return 0;
 }

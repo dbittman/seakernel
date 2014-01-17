@@ -4,20 +4,6 @@
 #include <modules/ata.h>
 #include <block.h>
 #include <atomic.h>
-void remove_devices()
-{
-	struct dev_rec *next1;
-	while(nodes)
-	{
-		next1 = nodes->next;
-		nodes->node->count=0;
-		if(nodes->node)
-			devfs_remove(nodes->node);
-		kfree(nodes);
-		nodes = next1;
-	}
-	__a=__b=__c=__d=0;
-}
 
 int ata_disk_sync(struct ata_controller *cont)
 {
@@ -57,12 +43,10 @@ int ata_disk_sync_nowait(struct ata_controller *cont)
 	return 0;
 }
 
-struct ata_device *get_ata_device(int min, int *part)
+struct ata_device *get_ata_device(int min)
 {
-	int a = min % 4;
-	int cont = a / 2;
-	int dev = a % 2;
-	*part = ((min / 4)-1);
+	int cont = min / 2;
+	int dev = min % 2;
 	if(cont)
 		return &secondary->devices[dev];
 	return &primary->devices[dev];

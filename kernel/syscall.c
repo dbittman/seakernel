@@ -210,10 +210,8 @@ int syscall_handler(volatile registers_t *regs)
 		return -EINVAL;
 	if(kernel_state_flags & KSF_SHUTDOWN)
 		for(;;);
-	//if(got_signal(current_task) || (unsigned)(ticks-current_task->slice) > (unsigned)current_task->cur_ts)
-	//	schedule();
 	enter_system(SYSCALL_NUM_AND_RET);
-	/* most syscalls are re-entrant, so we enable interrupts and
+	/* most syscalls are pre-emptible, so we enable interrupts and
 	 * expect handlers to disable them if needed */
 	set_int(1);
 	/* start accounting information! */
@@ -231,7 +229,7 @@ int syscall_handler(volatile registers_t *regs)
 		&& (ret < 0 || 1) && (ret == -EINTR || 1))
 		printk(SC_DEBUG, "syscall %d: %d ret %d, took %d ticks\n", 
 			   current_task->pid, current_task->system, ret, ticks - or_t);
-		#endif
+	#endif
 		
 	set_int(0);
 	exit_system();

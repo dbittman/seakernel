@@ -80,6 +80,7 @@ void i350_allocate_receive_buffers(struct i350_device *dev)
 	addr_t rxring;
 	r = kmalloc_ap(0x1000, &rxring);
 	dev->rx_list_count = (0x1000 / sizeof(struct i350_receive_descriptor));
+	dev->receive_ring = r;
 	kprintf("[i350]: allocated rx_list: %d descs\n", dev->rx_list_count);
 
 	for(int i=0;i<dev->rx_list_count;i++)
@@ -145,7 +146,6 @@ void i350_init(struct i350_device *dev)
 	i350_allocate_receive_buffers(dev);
 	
 	tmp = i350_read32(dev, E1000_CTRL);
-	kprintf("::: %x\n", tmp);
 	tmp |= E1000_CTRL_SLU;
 	tmp &= ~(E1000_CTRL_RXFC);
 	i350_write32(dev, E1000_CTRL, tmp);
@@ -154,19 +154,86 @@ void i350_init(struct i350_device *dev)
 	i350_write32(dev, E1000_RDT0, dev->rx_list_count-1);
 	for(;;)
 	{
-		tmp = i350_read32(dev, E1000_RDH0);
-		tmp2 = i350_read32(dev, E1000_RDT0);
-		tmp3 = i350_read32(dev, E1000_GPRC);
-		kprintf("%d %d: %x\n", tmp, tmp2, tmp3);
-		delay_sleep(400);
+		//tmp = i350_read32(dev, E1000_RDH0);
+		//tmp2 = i350_read32(dev, E1000_RDT0);
+		//tmp3 = i350_read32(dev, E1000_GPRC);
+		//kprintf("%d %d: %x\n", tmp, tmp2, tmp3);
+		//if(tmp) {
+		//	struct i350_receive_descriptor *r;
+		//	r = dev->receive_ring;
+		//	kprintf("%x %x %x\n", r->status, r->error, r->length);
+		//}
+		//delay_sleep(400);
 	}
 
 }
 
+void i350_notify_packet_available()
+{
+	/* tell networking subsystem that this device has a packet available
+	 * for reading. This doesn't do anything about the rx rings, that is
+	 * up to the networking system to call i350_receive_packet */
+}
+
+int i350_receive_packet()
+{
+	struct i350_device *dev = i350_dev;
+	uint32_t head = i350_read32(dev, E1000_RDH0);
+	uint32_t tail = i350_read32(dev, E1000_RDT0);
+	
+	uint32_t next = tail + 1;
+	if(next > (dev->rx_list_count-1))
+		next = 0;
+	
+	if(next == head) return 0;
+
+	struct i350_receive_descriptor *r = &dev->receive_ring[next];
+	
+	kprintf("GOT PACKET (%d %d %d): %x, %d\n", head, tail, next, r->status, r->length);
+	
+	i350_write32(dev, E1000_RDT0, next);
+	return 1;
+}
+
+void i350_link_status_change()
+{
+	kprintf("[i350]: link status changed\n");
+}
+
+void i350_transmitted_packet()
+{
+	
+}
+
+void i350_rx_miss()
+{
+	kprintf("[i350]: warning - missed packet\n");
+}
+
+void i350_error_interrupt()
+{
+	kprintf("[i350]: error - fatal error interrupt received\n");
+}
+
 void i350_interrupt()
 {
-	kprintf("1350 int\n");
-	i350_read32(i350_dev, E1000_ICR);
+	uint32_t t = i350_read32(i350_dev, E1000_ICR);
+	if(!(t & (1 << 31)))
+		return;
+	
+	if((t & E1000_ICR_LSC))
+		i350_link_status_change();
+	if((t & E1000_ICR_RXDW))
+		i350_notify_packet_available();
+	if((t & E1000_ICR_TXDW))
+		i350_transmitted_packet();
+	if((t & E1000_ICR_RXMISS))
+		i350_rx_miss();
+	if((t & E1000_ICR_FER) || (t & E1000_ICR_PCIEX))
+		i350_error_interrupt();
+	
+	/* clear interrupt cause */
+	i350_write32(i350_dev, E1000_ICR, t);
 }
 
 int irq1;

@@ -12,8 +12,8 @@
 #define IOCTL 4
 
 #define NUM_DT 4
-#define DT_CHAR 0
-#define DT_BLOCK 1
+#define DT_CHAR   0
+#define DT_BLOCK  1
 
 #define ASY_RW 0
 #define SIM_RW 1

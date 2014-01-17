@@ -17,7 +17,7 @@ struct i350_device {
 	addr_t mem, pcsmem;
 	
 	addr_t receive_list_physical;
-	struct i350_receive_buffer *receive_ring;
+	struct i350_receive_descriptor *receive_ring;
 	uint32_t rx_list_count;
 	uint32_t rx_buffer_len;
 	
@@ -77,5 +77,11 @@ struct i350_device {
 #define E1000_STATUS_RESET_DONE (1 << 21)
 #define E1000_STATUS_GIO_MASTER_ENABLE (1 << 19)
 
+#define E1000_ICR_RXDW    (1 << 7)
+#define E1000_ICR_LSC     (1 << 2)
+#define E1000_ICR_TXDW    (1 << 0)
+#define E1000_ICR_RXMISS  (1 << 6)
+#define E1000_ICR_FER     (1 << 22)
+#define E1000_ICR_PCIEX   (1 << 24)
 
 #endif

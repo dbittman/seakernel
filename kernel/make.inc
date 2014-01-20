@@ -17,4 +17,5 @@ include kernel/init/make.inc
 include kernel/loader/make.inc
 include kernel/machine/make.inc
 include kernel/mm/make.inc
+include kernel/net/make.inc
 include kernel/tm/make.inc

@@ -3,10 +3,19 @@
 #include <modules/pci.h>
 #include <modules/i350.h>
 #include <pmap.h>
+#include <net.h>
 
 int i350_int;
 struct pmap i350_pmap;
 struct i350_device *i350_dev;
+struct net_dev *i350_net_dev;
+
+int i350_receive_packet(struct net_dev *nd, struct net_packet *, int count);
+
+struct net_dev_calls i350_net_callbacks = {
+	i350_receive_packet,
+	0,0,0
+};
 
 struct pci_device *get_i350_pci()
 {
@@ -173,10 +182,13 @@ void i350_notify_packet_available()
 	/* tell networking subsystem that this device has a packet available
 	 * for reading. This doesn't do anything about the rx rings, that is
 	 * up to the networking system to call i350_receive_packet */
+	net_notify_packet_ready(i350_net_dev);
 }
 
-int i350_receive_packet()
+/* this is called by the networking subsystem, to read in packets */
+int i350_receive_packet(struct net_dev *nd, struct net_packet *packets, int count)
 {
+	if(count > 1) panic(0, "count > 1: NI");
 	struct i350_device *dev = i350_dev;
 	uint32_t head = i350_read32(dev, E1000_RDH0);
 	uint32_t tail = i350_read32(dev, E1000_RDT0);
@@ -189,7 +201,7 @@ int i350_receive_packet()
 
 	struct i350_receive_descriptor *r = &dev->receive_ring[next];
 	
-	kprintf("GOT PACKET (%d %d %d): %x, %d\n", head, tail, next, r->status, r->length);
+	kprintf("POLL PACKET (%d %d %d): %x, %d\n", head, tail, next, r->status, r->length);
 	
 	i350_write32(dev, E1000_RDT0, next);
 	return 1;
@@ -251,6 +263,7 @@ int module_install()
 	dev->pci = i350;
 	irq1=register_interrupt_handler(i350_int, i350_interrupt, 0);
 	i350_dev = dev;
+	i350_net_dev = net_add_device(&i350_net_callbacks, 0);
 	i350_init(dev);
 	
 	return 0;

@@ -51,7 +51,7 @@ int atapi_pio_rw(struct ata_controller *cont, struct ata_device *dev, int rw,
 		return 0;
 	/* Read data. */
 	again:
-	insw (cont->port_cmd_base+REG_DATA, buffer, size / 2);
+	insw (cont->port_cmd_base + REG_DATA, buffer, size / 2);
 	
 	/* The controller will send another IRQ even though we've read all
 	* the data we want.  Wait for it -- so it doesn't interfere with

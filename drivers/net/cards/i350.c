@@ -201,8 +201,8 @@ int i350_receive_packet(struct net_dev *nd, struct net_packet *packets, int coun
 
 	struct i350_receive_descriptor *r = &dev->receive_ring[next];
 	
-	kprintf("POLL PACKET (%d %d %d): %x, %d\n", head, tail, next, r->status, r->length);
-	
+	kprintf("PACKET (%d %d %d): %x, %d\n", head, tail, next, r->status, r->length);
+	sub_atomic(&nd->rx_pending, 1);
 	i350_write32(dev, E1000_RDT0, next);
 	return 1;
 }
@@ -248,6 +248,16 @@ void i350_interrupt()
 	i350_write32(i350_dev, E1000_ICR, t);
 }
 
+void i350_interrupt_lvl2()
+{
+	if(i350_net_dev->rx_pending)
+	{
+		struct net_packet packet;
+		i350_receive_packet(i350_net_dev, &packet, 1);
+		net_receive_packet(i350_net_dev, &packet, 1);
+	}
+}
+
 int irq1;
 
 int module_install()
@@ -261,7 +271,7 @@ int module_install()
 	pmap_create(&i350_pmap, 0);
 	struct i350_device *dev = kmalloc(sizeof(struct i350_device));
 	dev->pci = i350;
-	irq1=register_interrupt_handler(i350_int, i350_interrupt, 0);
+	irq1=register_interrupt_handler(i350_int, i350_interrupt, i350_interrupt_lvl2);
 	i350_dev = dev;
 	i350_net_dev = net_add_device(&i350_net_callbacks, 0);
 	i350_init(dev);

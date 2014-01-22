@@ -14,6 +14,7 @@ void net_init()
 	add_kernel_symbol(net_add_device);
 	add_kernel_symbol(net_notify_packet_ready);
 	add_kernel_symbol(net_block_for_packets);
+	add_kernel_symbol(net_receive_packet);
 #endif
 }
 
@@ -37,8 +38,20 @@ void net_notify_packet_ready(struct net_dev *nd)
 	add_atomic(&nd->rx_pending, 1);
 }
 
-int net_block_for_packets(struct net_dev *nd, struct net_packet *packets, int count)
+void net_receive_packet(struct net_dev *nd, struct net_packet *packets, int count)
 {
-	while(!nd->rx_pending) schedule();
-	return net_callback_poll(nd, packets, count);
+	/* all the packets sent to this function must be copied */
+}
+
+int net_block_for_packets(struct net_dev *nd, struct net_packet *packets, int max)
+{
+	int ret=0;
+	do {
+		if(!(nd->flags & ND_RX_POLLING)) {
+			while(!nd->rx_pending)
+				schedule();
+		} else
+			schedule();
+	} while(!(ret=net_callback_poll(nd, packets, max)));
+	return ret;
 }

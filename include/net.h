@@ -4,6 +4,8 @@
 #include <types.h>
 #include <ll.h>
 
+#define ND_RX_POLLING 1
+
 struct net_dev {
 	uint32_t flags;
 	uint32_t state;
@@ -39,7 +41,8 @@ int net_callback_set_flags(struct net_dev *, uint32_t);
 int net_callback_get_flags(struct net_dev *, uint32_t *);
 
 void net_notify_packet_ready(struct net_dev *nd);
-int net_block_for_packets(struct net_dev *nd, struct net_packet *, int count);
+int net_block_for_packets(struct net_dev *nd, struct net_packet *, int max);
+void net_receive_packet(struct net_dev *nd, struct net_packet *packets, int count);
 struct net_dev *net_add_device(struct net_dev_calls *fn, void *);
 
 #endif

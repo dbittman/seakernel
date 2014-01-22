@@ -12,14 +12,29 @@ struct i350_receive_descriptor {
 	uint64_t vlan_tag:16;
 };
 
+struct i350_transmit_descriptor {
+	uint64_t buffer;
+	uint64_t length:16;
+	uint64_t cso:8;
+	uint64_t cmd:8;
+	uint64_t sta:4;
+	uint64_t __reserved:4;
+	uint64_t css:8;
+	uint64_t vlan:16;
+};
+
 struct i350_device {
 	struct pci_device *pci;
 	addr_t mem, pcsmem;
 	
 	addr_t receive_list_physical;
+	addr_t transmit_list_physical;
 	struct i350_receive_descriptor *receive_ring;
+	struct i350_transmit_descriptor *transmit_ring;
 	uint32_t rx_list_count;
 	uint32_t rx_buffer_len;
+	uint32_t tx_list_count;
+	uint32_t tx_buffer_len;
 	
 	
 };
@@ -55,7 +70,19 @@ struct i350_device {
 #define E1000_RXDCTL   0x02828  /* RX Descriptor Control queue 0 - RW */
 #define E1000_SRRCTL0  0x0C00C
 
+
+#define E1000_TCTL     0x0400
+#define E1000_TDBAL0   0xE000
+#define E1000_TDBAH0   0xE004
+#define E1000_TDLEN0   0xE008
+#define E1000_TDH0     0xE010
+#define E1000_TDT0     0xE018
+#define E1000_TXDCTL   0xE028
+
+
+
 #define E1000_GPRC     0x04074
+#define E1000_GPTC     0x04080
 #define E1000_RXERR    0x0400C
 #define E1000_MPC      0x04010
 

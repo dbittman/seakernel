@@ -88,11 +88,12 @@ void i350_allocate_receive_buffers(struct i350_device *dev)
 	struct i350_receive_descriptor *r;
 	addr_t rxring;
 	r = kmalloc_ap(0x1000, &rxring);
+	dev->receive_list_physical = rxring;
 	dev->rx_list_count = (0x1000 / sizeof(struct i350_receive_descriptor));
 	dev->receive_ring = r;
 	kprintf("[i350]: allocated rx_list: %d descs\n", dev->rx_list_count);
-
-	for(int i=0;i<dev->rx_list_count;i++)
+	
+	for(unsigned int i=0;i<dev->rx_list_count;i++)
 	{
 		addr_t ba;
 		kmalloc_ap(0x1000, &ba);
@@ -100,29 +101,69 @@ void i350_allocate_receive_buffers(struct i350_device *dev)
 		r->buffer = ba;
 		r++;
 	}
-
+	
 	uint32_t tmp = i350_read32(dev, E1000_RXDCTL);
 	tmp &= ~(1 << 25);
 	i350_write32(dev, E1000_RXDCTL, tmp);
-
+	
 	tmp = dev->rx_list_count / 8;
 	i350_write32(dev, E1000_RDLEN0, tmp << 7);
-
+	
 	i350_write32(dev, E1000_SRRCTL0, 4);
-
-
+	
+	
 	i350_write32(dev, E1000_RDBAL0, rxring & 0xFFFFFFFF);
-	i350_write32(dev, E1000_RDBAH0, (rxring >> 32) & 0xFFFFFFFF);
+	i350_write32(dev, E1000_RDBAH0, UPPER32(rxring));
 	
-	
-
 	tmp |= (1<<25);
 	i350_write32(dev, E1000_RXDCTL, tmp);
-
-
+	
+	while(!(i350_read32(dev, E1000_RXDCTL) & (1<<25))) asm("pause");
+	
 	tmp = i350_read32(dev, E1000_RCTL);
 	i350_write32(dev, E1000_RCTL, tmp | (1<<1) | (1<<3) | (1<<4) | (1<<15));
+	
+}
 
+void i350_allocate_transmit_buffers(struct i350_device *dev)
+{
+	dev->tx_buffer_len = 0x1000;
+	
+	struct i350_transmit_descriptor *r;
+	addr_t txring;
+	r = kmalloc_ap(0x1000, &txring);
+	dev->transmit_list_physical = txring;
+	dev->tx_list_count = (0x1000 / sizeof(struct i350_transmit_descriptor));
+	dev->transmit_ring = r;
+	kprintf("[i350]: allocated tx_list: %d descs\n", dev->tx_list_count);
+	
+	for(unsigned int i=0;i<dev->tx_list_count;i++)
+	{
+		addr_t ba;
+		kmalloc_ap(0x1000, &ba);
+		memset(r, 0, sizeof(*r));
+		r->buffer = ba;
+		r++;
+	}
+	
+	uint32_t tmp = i350_read32(dev, E1000_RXDCTL);
+	tmp &= ~(1 << 25);
+	i350_write32(dev, E1000_TXDCTL, tmp);
+	
+	tmp = dev->tx_list_count / 8;
+	i350_write32(dev, E1000_TDLEN0, tmp << 7);
+	
+	i350_write32(dev, E1000_TDBAL0, txring & 0xFFFFFFFF);
+	i350_write32(dev, E1000_TDBAH0, UPPER32(txring));
+	
+	tmp |= (1<<25);
+	i350_write32(dev, E1000_TXDCTL, tmp);
+	
+	while(!(i350_read32(dev, E1000_TXDCTL) & (1<<25))) asm("pause");
+	
+	tmp = i350_read32(dev, E1000_TCTL);
+	i350_write32(dev, E1000_TCTL, tmp | (1<<1) | (1<<3));
+	
 }
 
 void i350_init(struct i350_device *dev)
@@ -140,7 +181,7 @@ void i350_init(struct i350_device *dev)
 	i350_write32(dev, E1000_IMC, ~0);
 	
 	/* clear ILOS bit */
-	uint32_t tmp, tmp2, tmp3;
+	uint32_t tmp, tmp2, tmp3, tmp4;
 	tmp = i350_read32(dev, E1000_CTRL);
 	tmp &= ~E1000_CTRL_ILOS;
 	i350_write32(dev, E1000_CTRL, tmp);
@@ -153,6 +194,7 @@ void i350_init(struct i350_device *dev)
 	delay_sleep(10);
 	
 	i350_allocate_receive_buffers(dev);
+	i350_allocate_transmit_buffers(dev);
 	
 	tmp = i350_read32(dev, E1000_CTRL);
 	tmp |= E1000_CTRL_SLU;
@@ -161,18 +203,23 @@ void i350_init(struct i350_device *dev)
 	
 	i350_write32(dev, E1000_IMS, ~0);
 	i350_write32(dev, E1000_RDT0, dev->rx_list_count-1);
+	int t=0;
 	for(;;)
 	{
-		//tmp = i350_read32(dev, E1000_RDH0);
-		//tmp2 = i350_read32(dev, E1000_RDT0);
-		//tmp3 = i350_read32(dev, E1000_GPRC);
-		//kprintf("%d %d: %x\n", tmp, tmp2, tmp3);
-		//if(tmp) {
-		//	struct i350_receive_descriptor *r;
-		//	r = dev->receive_ring;
-		//	kprintf("%x %x %x\n", r->status, r->error, r->length);
-		//}
-		//delay_sleep(400);
+		tmp2 = i350_read32(dev, E1000_GPTC);
+		tmp3 = i350_read32(dev, E1000_GPRC);
+		tmp = i350_read32(dev, E1000_TDH0);
+		tmp4 = i350_read32(dev, E1000_TDT0);
+		kprintf("%d %d, %d %d: %x\n", tmp2, tmp3, tmp, tmp4, dev->transmit_ring[0].sta);
+		delay_sleep(1000);
+		if(t == 5)
+		{
+			kprintf("SENDING\n");
+			dev->transmit_ring[0].length = 32;
+			dev->transmit_ring[0].cmd = 1 | (1 << 3);
+			i350_write32(dev, E1000_TDT0, 1);
+		}
+		t++;
 	}
 
 }

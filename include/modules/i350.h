@@ -31,7 +31,9 @@ struct i350_device {
 	addr_t receive_list_physical;
 	addr_t transmit_list_physical;
 	struct i350_receive_descriptor *receive_ring;
+	addr_t *rx_ring_virt_buffers;
 	struct i350_transmit_descriptor *transmit_ring;
+	addr_t *tx_ring_virt_buffers;
 	uint32_t rx_list_count;
 	uint32_t rx_buffer_len;
 	uint32_t tx_list_count;

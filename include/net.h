@@ -18,7 +18,7 @@ struct net_dev {
 };
 
 struct net_packet {
-	char data[0x1000];
+	unsigned char data[0x1000];
 	size_t length;
 	size_t flags;
 };

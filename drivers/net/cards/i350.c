@@ -96,10 +96,12 @@ void i350_allocate_receive_buffers(struct i350_device *dev)
 	dev->receive_ring = r;
 	kprintf("[i350]: allocated rx_list: %d descs\n", dev->rx_list_count);
 	
+	dev->rx_ring_virt_buffers = kmalloc(sizeof(addr_t) * dev->rx_list_count);
+	
 	for(unsigned int i=0;i<dev->rx_list_count;i++)
 	{
 		addr_t ba;
-		kmalloc_ap(0x1000, &ba);
+		dev->rx_ring_virt_buffers[i] = (addr_t)kmalloc_ap(0x1000, &ba);
 		memset(r, 0, sizeof(*r));
 		r->buffer = ba;
 		r++;
@@ -140,10 +142,12 @@ void i350_allocate_transmit_buffers(struct i350_device *dev)
 	dev->transmit_ring = r;
 	kprintf("[i350]: allocated tx_list: %d descs\n", dev->tx_list_count);
 	
+	dev->tx_ring_virt_buffers = kmalloc(sizeof(addr_t) * dev->rx_list_count);
+	
 	for(unsigned int i=0;i<dev->tx_list_count;i++)
 	{
 		addr_t ba;
-		kmalloc_ap(0x1000, &ba);
+		dev->tx_ring_virt_buffers[i] = (addr_t)kmalloc_ap(0x1000, &ba);
 		memset(r, 0, sizeof(*r));
 		r->buffer = ba;
 		r++;
@@ -209,7 +213,7 @@ void i350_init(struct i350_device *dev)
 	int t=0;
 	for(;;)
 	{
-		tmp2 = i350_read32(dev, E1000_GPTC);
+		/*tmp2 = i350_read32(dev, E1000_GPTC);
 		tmp3 = i350_read32(dev, E1000_GPRC);
 		tmp = i350_read32(dev, E1000_TDH0);
 		tmp4 = i350_read32(dev, E1000_TDT0);
@@ -222,7 +226,12 @@ void i350_init(struct i350_device *dev)
 			dev->transmit_ring[0].cmd = 1 | (1 << 3);
 			i350_write32(dev, E1000_TDT0, 1);
 		}
-		t++;
+		t++;*/
+		
+		//struct net_packet packet;
+	//	packet.length=32;
+		//i350_transmit_packet(i350_net_dev, &packet, 1);
+		delay_sleep(100);
 	}
 
 }
@@ -256,7 +265,7 @@ int i350_receive_packet(struct net_dev *nd, struct net_packet *packets, int coun
 	kprintf("PACKET (%d %d %d): %x, %d\n", head, tail, next, r->status, r->length);
 	sub_atomic(&nd->rx_pending, 1);
 	
-	memcpy(packets[0].data, (void *)((addr_t)r->buffer), r->length);
+	memcpy(packets[0].data, (void *)(dev->rx_ring_virt_buffers[next]), r->length);
 	packets[0].length = r->length;
 	packets[0].flags = 0;
 	
@@ -273,10 +282,9 @@ int i350_transmit_packet(struct net_dev *nd, struct net_packet *packets, int cou
 	uint32_t head = i350_read32(dev, E1000_TDH0);
 	uint32_t tail = i350_read32(dev, E1000_TDT0);
 	
-	memset(&dev->transmit_ring[tail], 0, sizeof(struct i350_transmit_descriptor));
-	memcpy((void *)((addr_t)dev->transmit_ring[tail].buffer), packets[0].data, packets[0].length);
+	memcpy((void *)(dev->tx_ring_virt_buffers[tail]), packets[0].data, packets[0].length);
 	dev->transmit_ring[tail].cmd = (1 | (1<<3));
-	
+	kprintf("SEND: %d\n", tail);
 	tail++;
 	if(tail == dev->tx_list_count)
 		tail=0;
@@ -293,7 +301,7 @@ void i350_link_status_change()
 
 void i350_transmitted_packet()
 {
-	
+	//kprintf("[i350]: transmit complete\n");
 }
 
 void i350_rx_miss()
@@ -331,9 +339,9 @@ void i350_interrupt_lvl2()
 {
 	if(i350_net_dev->rx_pending)
 	{
-		struct net_packet packet;
-		i350_receive_packet(i350_net_dev, &packet, 1);
-		net_receive_packet(i350_net_dev, &packet, 1);
+		struct net_packet packet[1];
+		i350_receive_packet(i350_net_dev, packet, 1);
+		net_receive_packet(i350_net_dev, packet, 1);
 	}
 }
 

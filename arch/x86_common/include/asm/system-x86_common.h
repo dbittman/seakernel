@@ -21,7 +21,9 @@ extern char tables;
 #define BS16(x) (((x&0xFF00)>>8)|((x&0x00FF)<<8))
 #define BS32(x) (((x&0xFF000000)>>24)|((x&0x00FF0000)>>8)|((x&0x0000FF00)<<8)|((x&0x000000FF)<<24))
 #define BS64(x) (x)
+
 #define LITTLE_ENDIAN
+
 #ifdef LITTLE_ENDIAN
 
 #define LITTLE_TO_HOST8(x) (x)

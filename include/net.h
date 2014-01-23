@@ -30,6 +30,7 @@ struct net_dev_calls {
 	 * available. 
 	 */
 	int (*poll)(struct net_dev *, struct net_packet *packets, int max);
+	int (*send)(struct net_dev *, struct net_packet *packets, int count);
 	int (*set_flags)(struct net_dev *, uint32_t);
 	int (*get_flags)(struct net_dev *, uint32_t *);
 	int (*change_link)(struct net_dev *, uint32_t);
@@ -39,6 +40,7 @@ int net_callback_poll(struct net_dev *, struct net_packet *, int);
 int net_callback_change_link(struct net_dev *, uint32_t);
 int net_callback_set_flags(struct net_dev *, uint32_t);
 int net_callback_get_flags(struct net_dev *, uint32_t *);
+int net_callback_send(struct net_dev *nd, struct net_packet *packets, int count);
 
 void net_notify_packet_ready(struct net_dev *nd);
 int net_block_for_packets(struct net_dev *nd, struct net_packet *, int max);

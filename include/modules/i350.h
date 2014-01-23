@@ -2,6 +2,7 @@
 #define __MODULES_I350_H
 #include <types.h>
 #include <modules/pci.h>
+#include <mutex.h>
 
 struct i350_receive_descriptor {
 	uint64_t buffer;
@@ -36,6 +37,8 @@ struct i350_device {
 	uint32_t tx_list_count;
 	uint32_t tx_buffer_len;
 	
+	mutex_t *tx_queue_lock[1];
+	mutex_t *rx_queue_lock[1];
 	
 };
 

@@ -43,6 +43,11 @@ void net_receive_packet(struct net_dev *nd, struct net_packet *packets, int coun
 	/* all the packets sent to this function must be copied */
 }
 
+int net_transmit_packet(struct net_dev *nd, struct net_packet *packets, int count)
+{
+	return net_callback_send(nd, packets, count);
+}
+
 int net_block_for_packets(struct net_dev *nd, struct net_packet *packets, int max)
 {
 	int ret=0;

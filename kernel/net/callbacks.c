@@ -30,3 +30,10 @@ int net_callback_get_flags(struct net_dev *nd, uint32_t *flags)
 		return -EINVAL;
 	return nd->callbacks->get_flags(nd, flags);
 }
+
+int net_callback_send(struct net_dev *nd, struct net_packet *packets, int count)
+{
+	if(!nd || !nd->callbacks || !nd->callbacks->send || !packets)
+		return -EINVAL;
+	return nd->callbacks->send(nd, packets, count);
+}

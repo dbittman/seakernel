@@ -4,6 +4,7 @@
 #include <modules/i350.h>
 #include <pmap.h>
 #include <net.h>
+#include <mutex.h>
 
 int i350_int;
 struct pmap i350_pmap;
@@ -11,9 +12,11 @@ struct i350_device *i350_dev;
 struct net_dev *i350_net_dev;
 
 int i350_receive_packet(struct net_dev *nd, struct net_packet *, int count);
+int i350_transmit_packet(struct net_dev *nd, struct net_packet *packets, int count);
 
 struct net_dev_calls i350_net_callbacks = {
 	i350_receive_packet,
+	i350_transmit_packet,
 	0,0,0
 };
 
@@ -236,7 +239,9 @@ void i350_notify_packet_available()
 int i350_receive_packet(struct net_dev *nd, struct net_packet *packets, int count)
 {
 	if(count > 1) panic(0, "count > 1: NI");
+	int num=1;
 	struct i350_device *dev = i350_dev;
+	mutex_acquire(dev->rx_queue_lock[0]);
 	uint32_t head = i350_read32(dev, E1000_RDH0);
 	uint32_t tail = i350_read32(dev, E1000_RDT0);
 	
@@ -250,8 +255,35 @@ int i350_receive_packet(struct net_dev *nd, struct net_packet *packets, int coun
 	
 	kprintf("PACKET (%d %d %d): %x, %d\n", head, tail, next, r->status, r->length);
 	sub_atomic(&nd->rx_pending, 1);
+	
+	memcpy(packets[0].data, (void *)((addr_t)r->buffer), r->length);
+	packets[0].length = r->length;
+	packets[0].flags = 0;
+	
 	i350_write32(dev, E1000_RDT0, next);
-	return 1;
+	mutex_release(dev->rx_queue_lock[0]);
+	return num;
+}
+
+int i350_transmit_packet(struct net_dev *nd, struct net_packet *packets, int count)
+{
+	if(count > 1) panic(0, "count > 1: NI");
+	struct i350_device *dev = i350_dev;
+	mutex_acquire(dev->tx_queue_lock[0]);
+	uint32_t head = i350_read32(dev, E1000_TDH0);
+	uint32_t tail = i350_read32(dev, E1000_TDT0);
+	
+	memset(&dev->transmit_ring[tail], 0, sizeof(struct i350_transmit_descriptor));
+	memcpy((void *)((addr_t)dev->transmit_ring[tail].buffer), packets[0].data, packets[0].length);
+	dev->transmit_ring[tail].cmd = (1 | (1<<3));
+	
+	tail++;
+	if(tail == dev->tx_list_count)
+		tail=0;
+	
+	i350_write32(dev, E1000_TDT0, tail);
+	mutex_release(dev->tx_queue_lock[0]);
+	return count;
 }
 
 void i350_link_status_change()
@@ -320,6 +352,8 @@ int module_install()
 	dev->pci = i350;
 	irq1=register_interrupt_handler(i350_int, i350_interrupt, i350_interrupt_lvl2);
 	i350_dev = dev;
+	dev->tx_queue_lock[0] = mutex_create(0, 0);
+	dev->rx_queue_lock[0] = mutex_create(0, 0);
 	i350_net_dev = net_add_device(&i350_net_callbacks, 0);
 	i350_init(dev);
 	

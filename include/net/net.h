@@ -14,6 +14,8 @@ struct net_dev {
 	struct net_dev_calls *callbacks;
 	void *data; /* driver specific data */
 	
+	uint8_t mac[6];
+	
 	struct llistnode *node;
 };
 
@@ -31,6 +33,7 @@ struct net_dev_calls {
 	 */
 	int (*poll)(struct net_dev *, struct net_packet *packets, int max);
 	int (*send)(struct net_dev *, struct net_packet *packets, int count);
+	int (*get_mac)(struct net_dev *, uint8_t mac[6]);
 	int (*set_flags)(struct net_dev *, uint32_t);
 	int (*get_flags)(struct net_dev *, uint32_t *);
 	int (*change_link)(struct net_dev *, uint32_t);
@@ -41,10 +44,12 @@ int net_callback_change_link(struct net_dev *, uint32_t);
 int net_callback_set_flags(struct net_dev *, uint32_t);
 int net_callback_get_flags(struct net_dev *, uint32_t *);
 int net_callback_send(struct net_dev *nd, struct net_packet *packets, int count);
+int net_callback_get_mac(struct net_dev *nd, uint8_t mac[6]);
 
 void net_notify_packet_ready(struct net_dev *nd);
 int net_block_for_packets(struct net_dev *nd, struct net_packet *, int max);
 void net_receive_packet(struct net_dev *nd, struct net_packet *packets, int count);
 struct net_dev *net_add_device(struct net_dev_calls *fn, void *);
+int net_transmit_packet(struct net_dev *nd, struct net_packet *packets, int count);
 
 #endif

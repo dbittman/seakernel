@@ -1,6 +1,6 @@
 #include <kernel.h>
 #include <types.h>
-#include <net.h>
+#include <net/net.h>
 #include <errno.h>
 
 int net_callback_poll(struct net_dev *nd, struct net_packet *packets, int max)
@@ -36,4 +36,11 @@ int net_callback_send(struct net_dev *nd, struct net_packet *packets, int count)
 	if(!nd || !nd->callbacks || !nd->callbacks->send || !packets)
 		return -EINVAL;
 	return nd->callbacks->send(nd, packets, count);
+}
+
+int net_callback_get_mac(struct net_dev *nd, uint8_t mac[6])
+{
+	if(!nd || !nd->callbacks || !nd->callbacks->get_mac || !mac)
+		return -EINVAL;
+	return nd->callbacks->get_mac(nd, mac);
 }

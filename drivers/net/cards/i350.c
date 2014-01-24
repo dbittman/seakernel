@@ -3,7 +3,7 @@
 #include <modules/pci.h>
 #include <modules/i350.h>
 #include <pmap.h>
-#include <net.h>
+#include <net/net.h>
 #include <mutex.h>
 
 int i350_int;
@@ -14,9 +14,21 @@ struct net_dev *i350_net_dev;
 int i350_receive_packet(struct net_dev *nd, struct net_packet *, int count);
 int i350_transmit_packet(struct net_dev *nd, struct net_packet *packets, int count);
 
+int i350_get_mac(struct net_dev *nd, uint8_t mac[6])
+{
+	mac[0] = 1;
+	mac[1] = 2;
+	mac[2] = 3;
+	mac[3] = 5;
+	mac[4] = 4;
+	mac[5] = 6;
+	return 0;
+}
+
 struct net_dev_calls i350_net_callbacks = {
 	i350_receive_packet,
 	i350_transmit_packet,
+	i350_get_mac,
 	0,0,0
 };
 
@@ -283,7 +295,7 @@ int i350_transmit_packet(struct net_dev *nd, struct net_packet *packets, int cou
 	uint32_t tail = i350_read32(dev, E1000_TDT0);
 	
 	memcpy((void *)(dev->tx_ring_virt_buffers[tail]), packets[0].data, packets[0].length);
-	dev->transmit_ring[tail].cmd = (1 | (1<<3));
+	dev->transmit_ring[tail].cmd = (1 | (1<<3) | (1<<2));
 	kprintf("SEND: %d\n", tail);
 	tail++;
 	if(tail == dev->tx_list_count)

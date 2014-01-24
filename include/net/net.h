@@ -1,5 +1,5 @@
-#ifndef __SEA_NET_H
-#define __SEA_NET_H
+#ifndef __NET_NET_H
+#define __NET_NET_H
 
 #include <types.h>
 #include <ll.h>

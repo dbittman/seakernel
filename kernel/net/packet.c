@@ -1,6 +1,6 @@
 #include <kernel.h>
 #include <atomic.h>
-#include <net.h>
+#include <net/net.h>
 #include <ll.h>
 #include <task.h>
 #include <symbol.h>
@@ -39,12 +39,6 @@ void net_notify_packet_ready(struct net_dev *nd)
 	add_atomic(&nd->rx_pending, 1);
 }
 
-struct __attribute__((__packed__)) eth_header {
-	uint8_t dest_mac[6];
-	uint8_t src_mac[6];
-	uint16_t type;
-};
-
 struct __attribute__((__packed__)) arp_packet {
 	uint16_t hw_type;
 	uint16_t prot_type;
@@ -67,7 +61,7 @@ void net_receive_packet(struct net_dev *nd, struct net_packet *packets, int coun
 {
 	/* all the packets sent to this function must be copied */
 	kprintf("NET: PACKET: %d\n", packets[0].length);
-	struct eth_header *e = (struct eth_header *)packets[0].data;
+	/*struct eth_header *e = (struct eth_header *)packets[0].data;
 	if(BIG_TO_HOST16(e->type) == 0x806)
 	{
 		kprintf("ARP packet!\n");
@@ -81,7 +75,7 @@ void net_receive_packet(struct net_dev *nd, struct net_packet *packets, int coun
 			
 		}
 		
-	}
+	}*/
 }
 
 int net_transmit_packet(struct net_dev *nd, struct net_packet *packets, int count)

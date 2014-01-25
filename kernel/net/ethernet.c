@@ -21,6 +21,7 @@ void ethernet_send_packet(struct net_dev *nd, struct ethernet_header *head, unsi
 	memcpy((void *)((addr_t)packet.data + sizeof(*head)), payload, length);
 	/* may need to insert checksum here...? */
 	packet.length = length + sizeof(*head);
+	kprintf("ETH: Send packet size %d\n", packet.length);
 	net_transmit_packet(nd, &packet, 1);
 }
 

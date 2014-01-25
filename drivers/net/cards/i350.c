@@ -295,6 +295,7 @@ int i350_transmit_packet(struct net_dev *nd, struct net_packet *packets, int cou
 	uint32_t tail = i350_read32(dev, E1000_TDT0);
 	
 	memcpy((void *)(dev->tx_ring_virt_buffers[tail]), packets[0].data, packets[0].length);
+	dev->transmit_ring[tail].length = packets[0].length;
 	dev->transmit_ring[tail].cmd = (1 | (1<<3) | (1<<2));
 	kprintf("SEND: %d\n", tail);
 	tail++;

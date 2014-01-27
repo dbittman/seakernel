@@ -17,10 +17,12 @@ void ethernet_construct_header(struct ethernet_header *head, uint8_t src_mac[6],
 void ethernet_send_packet(struct net_dev *nd, struct ethernet_header *head, unsigned char *payload, int length)
 {
 	struct net_packet packet;
+	memset(packet.data, 0, 64);
 	memcpy(packet.data, head, sizeof(*head));
 	memcpy((void *)((addr_t)packet.data + sizeof(*head)), payload, length);
 	/* may need to insert checksum here...? */
 	packet.length = length + sizeof(*head);
+	if(packet.length < 60) packet.length = 60;
 	kprintf("ETH: Send packet size %d\n", packet.length);
 	net_transmit_packet(nd, &packet, 1);
 }

@@ -222,28 +222,11 @@ void i350_init(struct i350_device *dev)
 	
 	i350_write32(dev, E1000_IMS, ~0);
 	i350_write32(dev, E1000_RDT0, dev->rx_list_count-1);
-	int t=0;
 	for(;;)
 	{
-		/*tmp2 = i350_read32(dev, E1000_GPTC);
-		tmp3 = i350_read32(dev, E1000_GPRC);
-		tmp = i350_read32(dev, E1000_TDH0);
-		tmp4 = i350_read32(dev, E1000_TDT0);
-		kprintf("%d %d, %d %d: %x\n", tmp2, tmp3, tmp, tmp4, dev->transmit_ring[0].sta);
-		delay_sleep(1000);
-		if(t == 5)
-		{
-			kprintf("SENDING\n");
-			dev->transmit_ring[0].length = 32;
-			dev->transmit_ring[0].cmd = 1 | (1 << 3);
-			i350_write32(dev, E1000_TDT0, 1);
-		}
-		t++;*/
-		
-		//struct net_packet packet;
-	//	packet.length=32;
-		//i350_transmit_packet(i350_net_dev, &packet, 1);
-		delay_sleep(100);
+		//tmp2 = i350_read32(dev, E1000_GPTC);
+		//kprintf("**%d**\n", tmp2);
+		delay_sleep(2000);
 	}
 
 }
@@ -296,7 +279,8 @@ int i350_transmit_packet(struct net_dev *nd, struct net_packet *packets, int cou
 	
 	memcpy((void *)(dev->tx_ring_virt_buffers[tail]), packets[0].data, packets[0].length);
 	dev->transmit_ring[tail].length = packets[0].length;
-	dev->transmit_ring[tail].cmd = (1 | (1<<3));
+	dev->transmit_ring[tail].cmd = (1 | (1<<3) | (1<<1));
+	int old = tail;
 	kprintf("SEND: %d\n", tail);
 	tail++;
 	if(tail == dev->tx_list_count)

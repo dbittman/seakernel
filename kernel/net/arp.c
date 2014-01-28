@@ -53,9 +53,9 @@ int arp_receive_packet(struct net_dev *nd, struct arp_packet *packet)
 			
 			arp_set_mac(nd->mac, &(reply.src_hw_addr_1), &(reply.src_hw_addr_2), &(reply.src_hw_addr_3));
 			
-			reply.tar_p_addr_1 = packet->tar_p_addr_1;
-			reply.tar_p_addr_2 = packet->tar_p_addr_2;
-			reply.oper = ARP_OPER_REPLY;
+			reply.tar_p_addr_1 = packet->src_p_addr_1;
+			reply.tar_p_addr_2 = packet->src_p_addr_2;
+			reply.oper = HOST_TO_BIG16(ARP_OPER_REPLY);
 			
 			reply.src_p_addr_1 = 0xa;
 			reply.src_p_addr_2 = 0x200;

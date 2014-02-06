@@ -2,20 +2,23 @@
 #define __SEA_LIB_HASH
 
 #include <types.h>
+#include <rwlock.h>
 
 struct hash_table {
 	unsigned flags;
 	uint32_t magic;
 	int size;
-	uint32_t *entries;
+	void **entries;
 	struct hash_collision_resolver *resolver;
+	rwlock_t lock;
 };
 
 struct hash_collision_resolver {
 	char *name;
-	void * (*get_entry)(struct hash_table *h, void *key, size_t elem_sz, size_t len);
-	void (*set_entry)(struct hash_table *h, void *key, size_t elem_sz, size_t len, void *value);
-	void * (*enumerate)(struct hash_table *h, uint64_t num);
+	int (*get)(void **h, size_t size, void *key, size_t elem_sz, size_t len, void **value);
+	int (*set)(void **h, size_t size, void *key, size_t elem_sz, size_t len, void *value);
+	int (*del)(void **h, size_t size, void *key, size_t elem_sz, size_t len);
+	int (*enumerate)(void **h, size_t size, uint64_t num, void **key, size_t *elem_sz, size_t *len, void **value);
 };
 
 

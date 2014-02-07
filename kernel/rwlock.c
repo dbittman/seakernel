@@ -149,7 +149,6 @@ void rwlock_destroy(rwlock_t *lock)
 	assert(lock->magic == RWLOCK_MAGIC);
 	if(kernel_state_flags & KSF_SHUTDOWN) return;
 	lock->magic=0;
-	assert(!lock->locks);
 	if(lock->flags & RWL_ALLOC) 
 		kfree((void *)lock);
 }

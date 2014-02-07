@@ -7,7 +7,7 @@
 
 include ../arch/$(ARCH)/library/make.inc
 CFLAGS+=-I../arch/$(ARCH)/include -nostdinc
-KLIBO = klib/ll.o \
+KLIBO = klib/hash.o klib/ll.o \
 		klib/strtoint.o
 
 -include arch/$(ARCH)/library/make.inc

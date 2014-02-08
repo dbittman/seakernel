@@ -219,7 +219,7 @@ int syscall_handler(volatile registers_t *regs)
 	
 	#ifdef SC_DEBUG
 	if(current_task->tty == curcons->tty) 
-		printk(SC_DEBUG, "syscall %d: enter %d\n", current_task->pid, SYSCALL_NUM_AND_RET);
+		printk(SC_DEBUG, "syscall %d (from: %x): enter %d\n", current_task->pid, current_task->sysregs->eip, SYSCALL_NUM_AND_RET);
 	int or_t = ticks;
 	#endif
 	__do_syscall_jump(ret, syscall_table[SYSCALL_NUM_AND_RET], _E_, _D_, 

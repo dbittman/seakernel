@@ -54,8 +54,10 @@ struct hash_table_chain_node {
 	void *entry;
 	void *key;
 	size_t elem_sz, len;
-	int num_in_chain;
+	size_t num_in_chain;
 	struct hash_table_chain_node *next;
 };
+
+extern struct hash_collision_resolver __hash_chain_resolver;
 
 #endif

@@ -44,7 +44,7 @@ int hash_chain_set(void **h, int (*fn)(int, void *, size_t, size_t, int), size_t
 
 int hash_chain_del(void **h, int (*fn)(int, void *, size_t, size_t, int), size_t size, void *key, size_t elem_sz, size_t len)
 {
-	assert(fn && value);
+	assert(fn);
 	int loc = fn(size, key, elem_sz, len, 0);
 	struct hash_table_chain_node *n = h[loc], *prev=0;
 	while(n && __hash_table_compare_keys(n->key, n->elem_sz, n->len, key, elem_sz, len)) {
@@ -70,5 +70,30 @@ int hash_chain_del(void **h, int (*fn)(int, void *, size_t, size_t, int), size_t
 
 int hash_chain_enumerate(void **h, size_t size, uint64_t num, void **key, size_t *elem_sz, size_t *len, void **value)
 {
-	
+	size_t i=0;
+	while(i < size) {
+		struct hash_table_chain_node *n = h[i];
+		if(n->num_in_chain > num) {
+			while(n && num--)
+				n=n->next;
+			assert(n);
+			*key = n->key;
+			*elem_sz = n->elem_sz;
+			*len = n->len;
+			*value = n->entry;
+			return 0;
+		} else {
+			num -= n->num_in_chain;
+			i++;
+		}
+	}
+	return -ENOENT;
 }
+
+struct hash_collision_resolver __hash_chain_resolver = {
+	"chain",
+	hash_chain_get,
+	hash_chain_set,
+	hash_chain_del,
+	hash_chain_enumerate
+};

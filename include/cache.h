@@ -3,6 +3,7 @@
 
 #include <rwlock.h>
 #include <ll.h>
+#include <lib/hash.h>
 
 typedef struct chash_chain_s {
 	void *ptr;
@@ -30,7 +31,7 @@ struct ce_t {
 typedef struct cache_t_s {
 	unsigned dirty;
 	unsigned count, acc, slow, syncing;
-	chash_t *hash;
+	struct hash_table *hash;
 	int (*sync)(struct ce_t *);
 	rwlock_t *rwl;
 	char name[32];

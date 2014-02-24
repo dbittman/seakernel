@@ -13,6 +13,24 @@ struct hash_collision_resolver *hash_collision_resolvers[NUM_HASH_COLLISION_RESO
 	0
 };
 
+int __default_byte_sum_fn(int sz, void *key, size_t kesz, size_t len, int iteration)
+{
+	unsigned int i;
+	unsigned sum=0;
+	unsigned char tmp;
+	for(i=0;i<len*kesz;i++)
+	{
+		tmp = *(((unsigned char *)key) + i);
+		sum += tmp;
+	}
+	sum += iteration;
+	return sum % sz;
+}
+
+void *hash_functions_list[NUM_HASH_FUNCTIONS] = {
+	__default_byte_sum_fn
+};
+
 int __hash_table_compare_keys(void *key_1, size_t es_1, size_t len_1, void *key_2, size_t es_2, size_t len_2)
 {
 	if(es_1 != es_2) return (int)(es_1 - es_2);
@@ -55,9 +73,20 @@ struct hash_table *hash_table_create(struct hash_table *h, unsigned flags, unsig
 	h->size = 0;
 	h->entries = 0;
 	h->count=0;
+	h->fn = 0;
 	rwlock_create(&h->lock);
 	h->magic = HASH_MAGIC;
 	return h;
+}
+
+void hash_table_specify_function(struct hash_table *h, unsigned fn)
+{
+	assert(fn < NUM_HASH_FUNCTIONS);
+	assert(h && h->magic == HASH_MAGIC);
+	rwlock_acquire(&h->lock, RWL_WRITER);
+	assert(!h->fn || (h->count==0));
+	h->fn = hash_functions_list[fn];
+	rwlock_release(&h->lock, RWL_WRITER);
 }
 
 int hash_table_resize(struct hash_table *h, unsigned mode, size_t new_size)
@@ -83,7 +112,7 @@ int hash_table_resize(struct hash_table *h, unsigned mode, size_t new_size)
 			while(__hash_table_enumerate(h, h->entries, h->size, i++, &key, &elem_sz, &len, &value) != -ENOENT)
 				__hash_table_delete(h, h->entries, h->size, key, elem_sz, len);
 			h->count=0;
-		} else
+		} else if(mode != HASH_RESIZE_MODE_IGNORE)
 			panic(0, "hash resize got invalid mode %d", mode);
 		kfree(h->entries);
 	}
@@ -141,12 +170,11 @@ void hash_table_destroy(struct hash_table *h)
 	if(!h || h->magic != HASH_MAGIC) panic(0, "tried to destroy invalid hash table");
 	
 	uint64_t i = 0;
-	void *key, *value;
+	void *key;
 	size_t elem_sz, len;
 	rwlock_acquire(&h->lock, RWL_WRITER);
-	while(__hash_table_enumerate(h, h->entries, h->size, i++, &key, &elem_sz, &len, &value) != -ENOENT)
+	while(__hash_table_enumerate(h, h->entries, h->size, i++, &key, &elem_sz, &len, 0) != -ENOENT)
 		__hash_table_delete(h, h->entries, h->size, key, elem_sz, len);
-	
 	kfree(h->entries);
 	rwlock_destroy(&h->lock);
 	h->magic=0;

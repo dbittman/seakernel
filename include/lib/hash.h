@@ -27,6 +27,7 @@ struct hash_collision_resolver {
 
 #define HASH_ALLOC     1
 
+#define HASH_RESIZE_MODE_IGNORE 0
 #define HASH_RESIZE_MODE_REHASH 1
 #define HASH_RESIZE_MODE_DELETE 2
 
@@ -36,12 +37,16 @@ struct hash_collision_resolver {
 #define HASH_TYPE_QUAD      3
 #define HASH_TYPE_DOUBLE    4
 
+#define HASH_FUNCTION_BYTE_SUM 0
+
 #define NUM_HASH_COLLISION_RESOLVERS 5
+#define NUM_HASH_FUNCTIONS           1
 
 int __hash_table_compare_keys(void *key_1, size_t es_1, size_t len_1, void *key_2, size_t es_2, size_t len_2);
 
 struct hash_table *hash_table_create(struct hash_table *h, unsigned flags, unsigned type);
 int hash_table_resize(struct hash_table *h, unsigned mode, size_t new_size);
+void hash_table_specify_function(struct hash_table *h, unsigned fn);
 int hash_table_get_entry(struct hash_table *h, void *key, size_t key_element_size, size_t key_len, void **value);
 int hash_table_set_entry(struct hash_table *h, void *key, size_t key_element_size, size_t key_len, void *value);
 int hash_table_delete_entry(struct hash_table *h, void *key, size_t key_element_size, size_t key_len);

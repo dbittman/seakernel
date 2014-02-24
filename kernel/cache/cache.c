@@ -9,6 +9,7 @@
 #include <ll.h>
 #include <atomic.h>
 #include <symbol.h>
+#include <lib/hash.h>
 struct llist *cache_list;
 int disconnect_block_cache(int dev);
 int write_block_cache(int dev, u64 blk);
@@ -89,7 +90,9 @@ cache_t *get_empty_cache(int (*sync)(struct ce_t *), char *name)
 	c->rwl = rwlock_create(0);
 	c->count=0;
 	c->slow=1000;
-	c->hash = chash_create(100000);
+	c->hash = hash_table_create(0, 0, HASH_TYPE_CHAIN);
+	hash_table_resize(c->hash, HASH_RESIZE_MODE_IGNORE,100000);
+	hash_table_specify_function(c->hash, HASH_FUNCTION_BYTE_SUM);
 	strncpy(c->name, name, 32);
 	ll_create(&c->dirty_ll);
 	ll_create(&c->primary_ll);
@@ -104,7 +107,10 @@ int cache_add_element(cache_t *c, struct ce_t *obj, int locked)
 	accessed_cache(c);
 	if(!locked) rwlock_acquire(c->rwl, RWL_WRITER);
 	
-	chash_add(c->hash, obj->id, obj->key, obj);
+	uint64_t key[2];
+	key[0] = obj->id;
+	key[1] = obj->key;
+	hash_table_set_entry(c->hash, key, sizeof(uint64_t), 2, obj);
 	obj->list_node = ll_insert(&c->primary_ll, obj);
 	c->count++;
 	obj->acount=1;
@@ -116,7 +122,13 @@ struct ce_t *find_cache_element(cache_t *c, u64 id, u64 key)
 {
 	accessed_cache(c);
 	rwlock_acquire(c->rwl, RWL_READER);
-	struct ce_t *ret = c->hash ? chash_search(c->hash, id, key) : 0;
+	struct ce_t *ret;
+	if(!c->hash) return 0;
+	uint64_t key_arr[2];
+	key_arr[0] = id;
+	key_arr[1] = key;
+	if(hash_table_get_entry(c->hash, key_arr, sizeof(uint64_t), 2, (void **)&ret) != 0)
+		ret = 0;
 	rwlock_release(c->rwl, RWL_READER);
 	return ret;
 }
@@ -125,7 +137,12 @@ int do_cache_object(cache_t *c, u64 id, u64 key, int sz, char *buf, int dirty)
 {
 	accessed_cache(c);
 	rwlock_acquire(c->rwl, RWL_WRITER);
-	struct ce_t *obj = chash_search(c->hash, id, key);
+	struct ce_t *obj;
+	uint64_t key_arr[2];
+	key_arr[0] = id;
+	key_arr[1] = key;
+	if(hash_table_get_entry(c->hash, key_arr, sizeof(uint64_t), 2, (void **)&obj) != 0)
+		obj = 0;
 	if(obj)
 	{
 		memcpy(obj->data, buf, obj->length);
@@ -137,8 +154,8 @@ int do_cache_object(cache_t *c, u64 id, u64 key, int sz, char *buf, int dirty)
 	{
 		u64 a, b;
 		struct ce_t *q;
-		if((q = chash_get_any_object(c->hash, &a, &b)))
-		{
+		
+		if(hash_table_enumerate_entries(c->hash, 0, 0, 0, 0, (void **)&q) == 0) {
 			if(q->dirty)
 				do_sync_element(c, q, 1);
 			remove_element(c, q, 1);
@@ -170,7 +187,13 @@ void remove_element(cache_t *c, struct ce_t *o, int locked)
 	assert(c->count);
 	sub_atomic(&c->count, 1);
 	ll_remove(&c->primary_ll, o->list_node);
-	if(c->hash) chash_delete(c->hash, o->id, o->key);
+	
+	if(c->hash) {
+		uint64_t key[2];
+		key[0] = o->id;
+		key[1] = o->key;
+		hash_table_delete_entry(c->hash, key, sizeof(uint64_t), 2);
+	}
 	if(o->data)
 		kfree(o->data);
 	rwlock_destroy(o->rwl);
@@ -255,11 +278,10 @@ int destroy_cache(cache_t *c)
 {
 	printk(1, "[cache]: Destroying cache '%s'...\n", c->name);
 	rwlock_acquire(c->rwl, RWL_WRITER);
-	chash_t *h = c->hash;
+	struct hash_table *h = c->hash;
 	c->hash = 0;
 	sync_cache(c);
-	/* Destroy the tree */
-	chash_destroy(h);
+	hash_table_destroy(h);
 	
 	struct llistnode *curnode, *next;
 	struct ce_t *obj;

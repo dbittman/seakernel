@@ -73,17 +73,22 @@ int hash_chain_enumerate(void **h, size_t size, uint64_t num, void **key, size_t
 	size_t i=0;
 	while(i < size) {
 		struct hash_table_chain_node *n = h[i];
-		if(n->num_in_chain > num) {
+		if(n && n->num_in_chain > num) {
 			while(n && num--)
 				n=n->next;
 			assert(n);
-			*key = n->key;
-			*elem_sz = n->elem_sz;
-			*len = n->len;
-			*value = n->entry;
+			if(key)
+				*key = n->key;
+			if(elem_sz)
+				*elem_sz = n->elem_sz;
+			if(len)
+				*len = n->len;
+			if(value)
+				*value = n->entry;
 			return 0;
 		} else {
-			num -= n->num_in_chain;
+			if(n) 
+				num -= n->num_in_chain;
 			i++;
 		}
 	}

@@ -5,17 +5,6 @@
 #include <ll.h>
 #include <lib/hash.h>
 
-typedef struct chash_chain_s {
-	void *ptr;
-	uint64_t id, key;
-	struct chash_chain_s *next, *prev;
-} chash_chain_t;
-
-typedef struct {
-	unsigned length;
-	chash_chain_t **hash;
-} chash_t;
-
 struct ce_t {
 	uint64_t id, key;
 	char dirty;
@@ -44,12 +33,6 @@ extern cache_t caches[NUM_CACHES];
 #define cache_object(c,id,key,sz,buf) do_cache_object(c, id, key, sz, buf, 1)
 #define cache_object_clean(c,id,key,sz,buf) do_cache_object(c, id, key, sz, buf, 0)
 
-chash_t *chash_create(unsigned length);
-int chash_destroy(chash_t *h);
-void *chash_search(chash_t *h, uint64_t id, uint64_t key);
-int chash_delete(chash_t *h, uint64_t id, uint64_t key);
-void *chash_get_any_object(chash_t *h, uint64_t *id, uint64_t *key);
-int chash_add(chash_t *h, uint64_t id, uint64_t key, void *ptr);
 int destroy_all_id(cache_t *c, uint64_t);
 int do_cache_object(cache_t *, uint64_t id, uint64_t key, int sz, char *buf, int dirty);
 cache_t * get_empty_cache(int (*)(struct ce_t *), char *);

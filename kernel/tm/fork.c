@@ -82,7 +82,7 @@ cpu_t *fork_choose_cpu(task_t *parent)
 }
 #endif
 
-int do_fork(unsigned flags)
+int tm_do_fork(unsigned flags)
 {
 	assert(current_task && kernel_task);
 	assert(running_processes < (unsigned)MAX_TASKS || MAX_TASKS == -1);

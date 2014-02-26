@@ -145,7 +145,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	       kernel_start_time.tm_hour, kernel_start_time.tm_min, 
 	       kernel_start_time.tm_sec, KVERSION, sizeof(task_t), BITS_PER_LONG);
 	assert(!set_int(1));
-	if(!fork())
+	if(!tm_fork())
 		init();
 	sys_setsid();
 	enter_system(255);

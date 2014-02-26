@@ -6,17 +6,7 @@
 #include <mutex.h>
 #include <ll.h>
 
-#define PIPE_NAMED 1
-typedef struct pipe_struct {
-	volatile unsigned pending;
-	volatile unsigned write_pos, read_pos;
-	volatile char *buffer;
-	volatile off_t length;
-	mutex_t *lock;
-	char type;
-	volatile int count, wrcount;
-	struct llist *read_blocked, *write_blocked;
-} pipe_t;
+#include <sea/dm/pipe.h>
 
 int sys_mkfifo(char *path, mode_t mode);
 void free_pipe(struct inode *i);

@@ -7,7 +7,7 @@
 #include <cpu.h>
 #include <atomic.h>
 
-__attribute__((always_inline)) inline void set_as_dead(task_t *t)
+static __attribute__((always_inline)) inline void set_as_dead(task_t *t)
 {
 	assert(t);
 	sub_atomic(&running_processes, 1);
@@ -18,7 +18,7 @@ __attribute__((always_inline)) inline void set_as_dead(task_t *t)
 	t->state = TASK_DEAD;
 }
 
-void move_task_to_kill_queue(task_t *t, int locked)
+void __tm_move_task_to_kill_queue(task_t *t, int locked)
 {
 	if(locked)
 		tqueue_remove_nolock(primary_queue, t->listnode);
@@ -42,7 +42,7 @@ int __KT_try_releasing_tasks()
 		/* need to check for orphaned zombie tasks */
 		if(t->flags & TF_BURIED && (t != ((cpu_t *)t->cpu)->cur)) {
 			if(t->parent == 0 || t->parent->state == TASK_DEAD || (t->parent->flags & TF_KTASK) || t->parent == kernel_task)
-				move_task_to_kill_queue(t, 0);
+				__tm_move_task_to_kill_queue(t, 0);
 			if(t->flags & TF_KILLREADY)
 				break;
 		}

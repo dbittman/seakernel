@@ -73,10 +73,13 @@ unsigned sys_mmap(void *addr, void *str, int prot, int flags, int fildes)
 
 mmf_t *find_mmf(task_t *t, vnode_t *n)
 {
+	/*
 	mmf_t *m = t->mm_files;
 	while(m && m->node != n)
 		m=m->next;
 	return m;
+	*/
+	return 0;
 }
 
 void flush_mmf(mmf_t *m, int un_map, unsigned off, unsigned addr, unsigned end)
@@ -108,10 +111,11 @@ void flush_mmf(mmf_t *m, int un_map, unsigned off, unsigned addr, unsigned end)
 int change_count(mmf_t *mf, int ch)
 {
 	
-	*mf->count += ch;
-	int r = *mf->count;
+	//*mf->count += ch;
+	//int r = *mf->count;
 	
-	return r;
+	//return r;
+	return 0;
 }
 
 int sys_munmap(void *ptr, unsigned sz)
@@ -157,6 +161,7 @@ int sys_mprotect()
 
 void check_mmf_and_flush(task_t *t, int fd)
 {
+	/*
 	mmf_t *mf = t->mm_files, *nex;
 	while(mf)
 	{
@@ -165,6 +170,7 @@ void check_mmf_and_flush(task_t *t, int fd)
 			flush_mmf(mf, 0, mf->off, mf->node->addr, mf->sz);
 		mf=nex;
 	}
+	*/
 }
 
 void copy_mmf(task_t *old, task_t *new)

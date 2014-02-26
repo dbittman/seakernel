@@ -1,5 +1,7 @@
 /* searches a task queue for a task with specific properties. */
-
+#include <sea/subsystem.h>
+#define SUBSYSTEM _SUBSYSTEM_TM
+#include <sea/tm/_tm.h>
 #include <kernel.h>
 #include <task.h>
 #include <tqueue.h>
@@ -66,7 +68,7 @@ task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned long value, void (*
 		{
 			tmp->parent = 0;
 			if(tmp->state == TASK_DEAD)
-				move_task_to_kill_queue(tmp, 1);
+				__tm_move_task_to_kill_queue(tmp, 1);
 		}
 		next:
 		/* have we found something and are only looking for one thing? */
@@ -78,7 +80,7 @@ task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned long value, void (*
 	if(flags & TSEARCH_EXIT_PARENT && (current_task->parent == 0 || (current_task->parent->flags & TF_EXITING)) && (current_task->flags & TF_EXITING))
 	{
 		/* some more housekeeping... */
-		move_task_to_kill_queue(current_task, 1);
+		__tm_move_task_to_kill_queue(current_task, 1);
 	}
 	mutex_release(&tq->lock);
 	set_int(old);

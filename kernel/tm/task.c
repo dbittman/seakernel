@@ -76,7 +76,7 @@ void init_multitasking()
 	add_kernel_symbol(run_scheduler);
 	add_kernel_symbol(exit);
 	add_kernel_symbol(sys_setsid);
-	add_kernel_symbol(do_fork);
+	add_kernel_symbol(tm_do_fork);
 	add_kernel_symbol(kill_task);
 	add_kernel_symbol(do_send_signal);
 	add_kernel_symbol(dosyscall);

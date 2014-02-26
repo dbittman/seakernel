@@ -70,7 +70,7 @@ int kernel_idle_task()
 {
 	int task, cache;
 #if CONFIG_SWAP
-	if(!fork())
+	if(!tm_fork())
 	{
 		set_as_kernel_task("kpager");
 		__KT_pager();

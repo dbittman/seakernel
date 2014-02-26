@@ -1,0 +1,171 @@
+#ifndef _SEA_TM_PROCESS_H
+#define _SEA_TM_PROCESS_H
+
+#include <types.h>
+#include <ll.h>
+#include <sea/fs/inode.h>
+#include <sea/fs/file.h>
+#include <sea/cpu/registers.h>
+#include <sea/tm/signal.h>
+#include <sea/mm/context.h>
+
+#define KERN_STACK_SIZE 0x16000
+
+/* exit reasons */
+#define __EXIT     0
+#define __COREDUMP 1
+#define __EXITSIG  2
+#define __STOPSIG  4
+
+#define TASK_MAGIC 0xCAFEBABE
+#define THREAD_MAGIC 0xBABECAFE
+
+/* flags for different task states */
+#define TF_EXITING        0x2 /* entering the exit() function */
+#define TF_ALARM          0x4 /* we have an alarm we are waiting for */
+#define TF_SWAP          0x10 /* swapped out */
+#define TF_KTASK         0x20 /* this is a kernel process */
+#define TF_SWAPQUEUE     0x40 /* waiting to swap */
+#define TF_LOCK          0x80 /* locked. the scheduler will not change out of this task */
+#define TF_DYING        0x200 /* waiting to be reaped */
+#define TF_FORK         0x400 /* newly forked, but hasn't been run yet */
+#define TF_INSIG        0x800 /* inside a signal */
+#define TF_SCHED       0x1000 /* we request a reschedule after this syscall completes */
+#define TF_JUMPIN      0x2000 /* going to jump to a signal handler on the next IRET
+* used by the syscall handler to determine if it needs to back up
+* it's return value */
+#define TF_LAST_PDIR   0x4000 /* this is the last task referencing it's page directory.
+* this is used to tell the kernel to free the page directory
+* when it cleans up this task */
+#define TF_SETINT      0x8000 /* was schedule called with interrupts enabled? if so, 
+* we need to re-enable them when we schedule into this
+* task */
+#define TF_BURIED     0x10000
+#define TF_MOVECPU    0x20000 /* something is trying to move this task to
+* a different CPU */
+#define TF_IN_INT     0x40000 /* inside an interrupt handler */
+#define TF_BGROUND    0x80000 /* is waiting for things in the kernel (NOT blocking for a resource) */
+#define TF_OTHERBS   0x100000 /* other bit-size. Task is running as different bit-size than the CPU */
+#define TF_SHUTDOWN  0x200000 /* this task called shutdown */
+#define TF_KILLREADY 0x400000 /* task is ready to be killed */
+
+
+#define PRIO_PROCESS 1
+#define PRIO_PGRP    2
+#define PRIO_USER    3
+
+#define TASK_RUNNING 0
+#define TASK_ISLEEP 1
+#define TASK_USLEEP 2
+#define TASK_SUICIDAL 4
+#define TASK_DEAD (-1)
+
+typedef struct exit_status {
+	unsigned pid;
+	int ret;
+	unsigned sig;
+	char coredump;
+	int cause;
+	struct exit_status *next, *prev;
+} ex_stat;
+
+struct thread_shared_data {
+	unsigned magic;
+	unsigned count;
+	mutex_t files_lock;
+	struct inode *root, *pwd;
+	uid_t uid, _uid;
+	gid_t gid, _gid;
+	struct sigaction signal_act[128];
+	volatile sigset_t global_sig_mask;
+	struct file_ptr *filp[FILP_HASH_LEN];
+};
+
+struct task_struct
+{
+	volatile unsigned magic;
+	volatile unsigned pid;
+	/* used for storing context */
+	volatile addr_t eip, ebp, esp, preserved[16];
+	/* this field is required to be aligned on a 16 byte boundary
+	 * but since we dynamically allocate task_structs, we cannot
+	 * make sure that that will happen. Thus, we need to align it
+	 * ourselves... */
+	vmm_context_t *pd;
+	/* current state of the task (see sig.h) */
+	volatile int state;
+	char fpu_save_data[512 + 16 /* alignment */];
+	volatile unsigned flags;
+	int flag;
+	
+	/* current system call (-1 for the kernel) */
+	unsigned int system; 
+	addr_t kernel_stack;
+	/* timeslicing */
+	int cur_ts, priority;
+	/* waiting on something? */
+	volatile addr_t waiting_ret;
+	volatile long tick;
+	
+	/* accounting */
+	time_t stime, utime;
+	time_t t_cutime, t_cstime;
+	volatile addr_t stack_end;
+	volatile unsigned num_pages;
+	unsigned last; /* the previous systemcall */
+	ex_stat exit_reason, we_res;
+	/* pushed registers by the interrupt handlers */
+	registers_t reg_b; /* backup */
+	registers_t *regs, *sysregs;
+	unsigned phys_mem_usage;
+	unsigned freed, allocated;
+	volatile unsigned wait_again, path_loc_start;
+	unsigned num_swapped;
+	
+	/* executable accounting */
+	/*** TODO: So, should these be shared by threads, or no? ***/
+	volatile addr_t heap_start, heap_end, he_red;
+	char command[128];
+	char **argv, **env;
+	int cmask;
+	int tty;
+	unsigned long slice;
+	//mmf_t *mm_files;
+	//vma_t *mmf_priv_space, *mmf_share_space;
+	
+	/* signal handling */
+	volatile sigset_t sig_mask;
+	volatile unsigned sigd, cursig, syscall_count;
+	sigset_t old_mask;
+	unsigned alarm_end;
+	struct llistnode *listnode, *blocknode, *activenode;
+	struct llist *blocklist;
+	void *cpu;
+	struct thread_shared_data *thread;
+	volatile struct task_struct *parent, *waiting, *alarm_next, *alarm_prev;
+};
+typedef volatile struct task_struct task_t;
+
+extern volatile task_t *kernel_task;
+
+#define raise_task_flag(t,f) or_atomic(&(t->flags), f)
+#define lower_task_flag(t,f) and_atomic(&(t->flags), ~f)
+
+#define raise_flag(f) or_atomic(&(current_task->flags), f)
+#define lower_flag(f) and_atomic(&(current_task->flags), ~f)
+
+#define WNOHANG 1
+
+#define FORK_SHAREDIR 0x1
+#define FORK_SHAREDAT 0x2
+#define tm_fork() tm_do_fork(0)
+
+extern volatile unsigned next_pid;
+extern unsigned init_pid;
+extern unsigned running_processes;
+
+void tm_process_enter_system(int sys);
+void tm_process_exit_system();
+int tm_do_fork(unsigned flags);
+
+#endif

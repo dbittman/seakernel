@@ -1,3 +1,7 @@
+#include <sea/subsystem.h>
+#define SUBSYSTEM _SUBSYSTEM_TM
+#include <sea/tm/_tm.h>
+
 #include <kernel.h>
 #include <memory.h>
 #include <task.h>
@@ -93,7 +97,7 @@ int sys_waitpid(int pid, int *st, int opt)
 	}
 	int code, gotpid;
 	get_status_int(t, &code, &gotpid);
-	if(pid == -1) move_task_to_kill_queue(t, 0);
+	if(pid == -1) __tm_move_task_to_kill_queue(t, 0);
 	if(st)
 		*st = code;
 	lower_flag(TF_BGROUND);

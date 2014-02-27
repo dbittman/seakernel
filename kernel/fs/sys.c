@@ -27,7 +27,7 @@ int sys_setup(int a)
 {
 	if(system_setup)
 	{
-		schedule();
+		tm_schedule();
 		return 1;
 	}
 	printk(KERN_MILE, "[kernel]: Setting up environment...");
@@ -430,7 +430,7 @@ int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 			ret = total_set;
 		if((!wait && timeout) || is_ok)
 			break;
-		schedule();
+		tm_schedule();
 		if(got_signal(current_task))
 			return -EINTR;
 	}

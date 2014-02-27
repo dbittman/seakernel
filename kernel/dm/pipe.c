@@ -93,7 +93,7 @@ int read_pipe(struct inode *ino, char *buffer, size_t length)
 		int old = set_int(0);
 		task_almost_block(pipe->read_blocked, (task_t *)current_task);
 		mutex_release(pipe->lock);
-		while(!schedule());
+		while(!tm_schedule());
 		assert(!set_int(old));
 		if(got_signal(current_task))
 			return -EINTR;
@@ -140,7 +140,7 @@ int write_pipe(struct inode *ino, char *buffer, size_t length)
 		int old = set_int(0);
 		task_almost_block(pipe->write_blocked, (task_t *)current_task);
 		mutex_release(pipe->lock);
-		while(!schedule());
+		while(!tm_schedule());
 		assert(!set_int(old));
 		if(got_signal(current_task))
 			return -EINTR;

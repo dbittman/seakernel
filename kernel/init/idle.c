@@ -81,7 +81,7 @@ int kernel_idle_task()
 	 * that we wont need anymore */
 	while(!__KT_clear_args())
 	{
-		schedule();
+		tm_schedule();
 		set_int(1);
 	}
 	set_int(0);
@@ -102,7 +102,7 @@ int kernel_idle_task()
 	for(;;) {
 		task=__KT_try_releasing_tasks();
 		__KT_try_handle_stage2_interrupts();
-		schedule();
+		tm_schedule();
 		set_int(1);
 	}
 }

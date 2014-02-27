@@ -31,7 +31,7 @@ void __rwlock_acquire(rwlock_t *lock, unsigned flags, char *file, int line)
 		/* now, spinlock-acquire the write_lock bit */
 		timeout = 100000;
 #else
-		while((flags & RWL_WRITER) && lock->locks) schedule();
+		while((flags & RWL_WRITER) && lock->locks) tm_schedule();
 #endif
 		/* now try to get the write lock so we have exclusive access
 		 * to the lock itself */
@@ -42,7 +42,7 @@ void __rwlock_acquire(rwlock_t *lock, unsigned flags, char *file, int line)
 			panic(0, "(2) waited too long to acquire the lock:%s:%d\n", file, line);
 #else
 		while(bts_atomic(&lock->locks, 0))
-			schedule();
+			tm_schedule();
 #endif
 		/* if we're trying to read, we need to increment the locks by 2
 		 * thus skipping over the write_lock bit */
@@ -89,7 +89,7 @@ void __rwlock_escalate(rwlock_t *lock, unsigned flags, char *file, int line)
 				panic(0, "(1) waited too long to acquire the lock:%s:%d\n", file, line);
 			timeout=100000;
 #else
-			while(lock->locks != 2) schedule();
+			while(lock->locks != 2) tm_schedule();
 #endif
 			/* now, spinlock-acquire the write_lock bit */
 #if DEBUG
@@ -99,7 +99,7 @@ void __rwlock_escalate(rwlock_t *lock, unsigned flags, char *file, int line)
 				panic(0, "(2) waited too long to acquire the lock:%s:%d\n", file, line);
 #else
 			while(bts_atomic(&lock->locks, 0))
-				schedule();
+				tm_schedule();
 #endif
 			if(lock->locks == 3)
 			{

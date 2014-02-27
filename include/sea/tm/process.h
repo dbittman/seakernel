@@ -146,7 +146,9 @@ struct task_struct
 };
 typedef volatile struct task_struct task_t;
 
-extern volatile task_t *kernel_task;
+extern volatile task_t *kernel_task, *tokill;
+extern volatile task_t *alarm_list_start;
+extern mutex_t *alarm_mutex;
 
 #define raise_task_flag(t,f) or_atomic(&(t->flags), f)
 #define lower_task_flag(t,f) and_atomic(&(t->flags), ~f)

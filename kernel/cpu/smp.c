@@ -11,7 +11,7 @@ void smp_cpu_task_idle(task_t *me)
 	set_int(1);
 	/* wait until we have tasks to run */
 	for(;;) 
-		schedule();
+		tm_schedule();
 }
 
 #endif

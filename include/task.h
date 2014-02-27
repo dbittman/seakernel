@@ -13,16 +13,8 @@
 #include <file.h>
 
 #include <sea/tm/process.h>
-
-#if SCHED_TTY
-static int sched_tty = SCHED_TTY_CYC;
-#else
-static int sched_tty = 0;
-#endif
-
-
-extern volatile task_t *tokill, *alarm_list_start;
-extern mutex_t *alarm_mutex;
+#include <sea/tm/signal.h>
+#include <sea/tm/schedule.h>
 
 
 void destroy_task_page_directory(task_t *p);
@@ -51,7 +43,6 @@ int schedule();
 int get_pid();
 void init_multitasking();
 void exit(int);
-task_t *get_next_task();
 void kill_task(unsigned int);
 int sys_getppid();
 void release_task(task_t *p);

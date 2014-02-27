@@ -1,6 +1,8 @@
 #ifndef __SEA_TM_SIGNAL_H
 #define __SEA_TM_SIGNAL_H
 
+#include <mutex.h>
+
 #define SA_NOCLDSTOP	0x00000001
 #define SA_NOCLDWAIT	0x00000002
 #define SA_SIGINFO		0x00000004

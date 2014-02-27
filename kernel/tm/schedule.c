@@ -5,7 +5,7 @@
 #include <cpu.h>
 #include <context.h>
 
-__attribute__((always_inline)) inline void update_task(task_t *t)
+static __attribute__((always_inline)) inline void update_task(task_t *t)
 {
 	/* task's delay ran out */
 	if((t->state == TASK_USLEEP || t->state == TASK_ISLEEP) && t->tick <= ticks && t->tick)
@@ -13,7 +13,7 @@ __attribute__((always_inline)) inline void update_task(task_t *t)
 }
 /* This here is the basic scheduler - It does nothing 
  * except find the next runable task */
-__attribute__((always_inline)) inline task_t *get_next_task(task_t *prev, cpu_t *cpu)
+static __attribute__((always_inline)) inline task_t *get_next_task(task_t *prev, cpu_t *cpu)
 {
 	assert(prev && kernel_task);
 	assert(prev->cpu == cpu);
@@ -79,7 +79,7 @@ __attribute__((always_inline)) static inline void post_context_switch()
 	}
 }
 
-int schedule()
+int tm_schedule()
 {
 	if(unlikely(!current_task || !kernel_task))
 		return 0;

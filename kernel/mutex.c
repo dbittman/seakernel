@@ -41,7 +41,7 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 	/* wait until we can set bit 0. once this is done, we have the lock */
 	while(bts_atomic(&m->lock, 0)) {
 		if(!(m->flags & MT_NOSCHED))
-			schedule();
+			tm_schedule();
 		else
 			asm("pause"); /* the intel manuals suggest this */
 #if DEBUG

@@ -127,7 +127,7 @@ int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw,
 	outb(cont->port_bmr_base + BMR_COMMAND, cmdReg);
 	timeout=1000000;
 	while((ret && timeout--)) {
-		schedule();
+		tm_schedule();
 		char wst = inb(cont->port_bmr_base + BMR_STATUS);
 		if(wst & BMR_STATUS_ERROR)
 			ret=0;

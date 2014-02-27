@@ -61,9 +61,9 @@ int net_block_for_packets(struct net_dev *nd, struct net_packet *packets, int ma
 	do {
 		if(!(nd->flags & ND_RX_POLLING)) {
 			while(!nd->rx_pending)
-				schedule();
+				tm_schedule();
 		} else
-			schedule();
+			tm_schedule();
 	} while(!(ret=net_callback_poll(nd, packets, max)));
 	return ret;
 }

@@ -237,14 +237,14 @@ int syscall_handler(volatile registers_t *regs)
 	/* if we need to reschedule, or we have overused our timeslice
 	 * then we need to reschedule. this prevents tasks that do a continuous call
 	 * to write() from starving the resources of other tasks. syscall_count resets
-	 * on each call to schedule() */
+	 * on each call to tm_tm_schedule() */
 	if(current_task->flags & TF_SCHED 
 		|| (unsigned)(ticks-current_task->slice) > (unsigned)current_task->cur_ts
 		|| ++current_task->syscall_count > 2)
 	{
 		/* clear out the flag. Either way in the if statement, we've rescheduled. */
 		lower_flag(TF_SCHED);
-		schedule();
+		tm_schedule();
 	}
 	/* store the return value in the regs */
 	SYSCALL_NUM_AND_RET = ret;

@@ -104,7 +104,7 @@ pml4_t *vm_clone(pml4_t *parent_pml4, char cow)
 	/* create the lock. We assume that the only time that two threads
 	 * may be trying to access this lock at the same time is when they're
 	 * running on different processors, thus we get away with NOSCHED. Also, 
-	 * calling schedule() may be problematic inside code that is locked by
+	 * calling tm_schedule() may be problematic inside code that is locked by
 	 * this, but it may not be an issue. We'll see. */
 	mutex_create(&info->lock, MT_NOSCHED);
 	if(kernel_task)

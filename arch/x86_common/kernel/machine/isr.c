@@ -158,9 +158,9 @@ void faulted(int fuckoff, int userspace, addr_t ip)
 				kill_task(current_task->pid);
 				break;
 		}
-		/* the above signals WILL be handled, since at the end of schedule(), it checks
+		/* the above signals WILL be handled, since at the end of tm_tm_schedule(), it checks
 		 * for signals. Since we are returning to user-space here, the handler will always run */
-		while(!schedule());
+		while(!tm_schedule());
 	}
 }
 

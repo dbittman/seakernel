@@ -28,7 +28,7 @@ static void do_run_scheduler()
 		(current_task->flags&TF_DYING) || 
 		(current_task->flags&TF_LOCK))
 		return;
-	schedule();
+	tm_schedule();
 }
 
 void run_scheduler()
@@ -83,12 +83,12 @@ void delay(int t)
 	{
 		set_int(1);
 		while(ticks < end)
-			schedule();
+			tm_schedule();
 		return;
 	}
 	current_task->tick=end;
 	current_task->state=TASK_ISLEEP;
-	while(!schedule());
+	while(!tm_schedule());
 }
 
 void delay_sleep(int t)

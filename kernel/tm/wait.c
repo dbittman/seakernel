@@ -27,7 +27,7 @@ int wait_task(unsigned pid, int state)
 			task = get_task_pid(pid);
 			if(!task || task->state == state)
 				break;
-			schedule();
+			tm_schedule();
 		}
 	}
 	if(current_task->sigd != SIGWAIT && current_task->sigd)
@@ -89,7 +89,7 @@ int sys_waitpid(int pid, int *st, int opt)
 	
 	if(t->state != TASK_DEAD) {
 		if(!(opt & WNOHANG)) {
-			schedule();
+			tm_schedule();
 			goto top;
 		}
 		lower_flag(TF_BGROUND);

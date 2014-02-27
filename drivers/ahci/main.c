@@ -80,7 +80,7 @@ int ahci_port_acquire_slot(struct ahci_device *dev)
 			}
 		}
 		mutex_release(&dev->lock);
-		schedule();
+		tm_schedule();
 	}
 }
 

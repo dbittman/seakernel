@@ -86,7 +86,7 @@ int ahci_port_dma_data_transfer(struct hba_memory *abar, struct hba_port *port, 
 	timeout = ATA_TFD_TIMEOUT;
 	while ((port->task_file_data & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && --timeout)
 	{
-		schedule();
+		tm_schedule();
 	}
 	if(!timeout) goto port_hung;
 	
@@ -95,7 +95,7 @@ int ahci_port_dma_data_transfer(struct hba_memory *abar, struct hba_port *port, 
 	timeout = ATA_TFD_TIMEOUT;
 	while ((port->task_file_data & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && --timeout)
 	{
-		schedule();
+		tm_schedule();
 	}
 	if(!timeout) goto port_hung;
 	
@@ -104,7 +104,7 @@ int ahci_port_dma_data_transfer(struct hba_memory *abar, struct hba_port *port, 
 	{
 		if(!((port->sata_active | port->command_issue) & (1 << slot)))
 			break;
-		schedule();
+		tm_schedule();
 	}
 	if(!timeout) goto port_hung;
 	if(port->sata_error)

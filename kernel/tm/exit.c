@@ -91,7 +91,7 @@ void kill_task(unsigned int pid)
 	task->sigd = 0; /* fuck your signals */
 	if(task == current_task)
 	{
-		for(;;) schedule();
+		for(;;) tm_schedule();
 	}
 }
 
@@ -139,5 +139,5 @@ void exit(int code)
 		raise_flag(TF_LAST_PDIR);
 	}
 	set_as_dead(t);
-	for(;;) schedule();
+	for(;;) tm_schedule();
 }

@@ -10,11 +10,11 @@
 #include <sea/tm/process.h>
 
 /* process.c */
-void __tm_engage_idle();
 void __tm_disengage_idle();
-int __tm_task_is_runable(task_t *task);
+int __tm_process_is_runable(task_t *task);
 
 /* exit.c */
 void __tm_move_task_to_kill_queue(task_t *t, int locked);
+void __tm_handle_signal(task_t *);
 
 #endif

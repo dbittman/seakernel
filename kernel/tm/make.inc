@@ -1,5 +1,6 @@
 KOBJS+= kernel/tm/exit.o \
 		kernel/tm/fork.o \
+		kernel/tm/process.o \
 		kernel/tm/schedule.o \
 		kernel/tm/signal.o \
 		kernel/tm/task.o \

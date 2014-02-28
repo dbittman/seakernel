@@ -13,6 +13,8 @@
 #include <symbol.h>
 #include <elf.h>
 #include <cpu.h>
+#include <sea/mm/init.h>
+#include <sea/dm/dev.h>
 
 struct multiboot *mtboot;
 addr_t i_stack=0;
@@ -107,18 +109,18 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	i_stack = initial_stack;
 	parse_kernel_elf(mboot_header, &kernel_elf);
 #if CONFIG_MODULES
-	init_kernel_symbols();
+	loader_init_kernel_symbols();
 #endif
 	init_serial();
 	console_init_stage1();
 	load_tables();
-	puts("~ SeaOS Version ");	
+	console_kernel_puts("~ SeaOS Version ");	
 	char ver[32];
 	get_kernel_version(ver);
-	puts(ver);
-	puts(" Booting Up ~\n\r");
+	console_kernel_puts(ver);
+	console_kernel_puts(" Booting Up ~\n\r");
 #if CONFIG_MODULES
-	init_module_system();
+	loader_init_modules();
 #endif
 	init_syscalls();
 	load_initrd(mtboot);
@@ -128,18 +130,18 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 
 	/* Now get the management stuff going */
 	printk(1, "[kernel]: Starting system management\n");
-	init_memory(mtboot);
+	mm_init(mtboot);
 	init_main_cpu_2();
 	console_init_stage2();
 	parse_kernel_cmd((char *)(addr_t)mtboot->cmdline);
 	init_multitasking();
 	init_cache();
-	init_dm();
+	dm_init();
 	init_vfs();
 	net_init();
 	/* Load the rest... */
 	process_initrd();
-	init_kern_task();
+	kt_init_kernel_tasking();
 	get_timed(&kernel_start_time);
 	printk(KERN_MILE, "[kernel]: Kernel is setup (%2.2d:%2.2d:%2.2d, kv=%d, ts=%d bytes, bits=%d: ok)\n", 
 	       kernel_start_time.tm_hour, kernel_start_time.tm_min, 
@@ -148,8 +150,8 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	if(!tm_fork())
 		init();
 	sys_setsid();
-	enter_system(255);
-	kernel_idle_task();
+	tm_process_enter_system(255);
+	kt_kernel_idle_task();
 }
 
 /* User-mode printf function */

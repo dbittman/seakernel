@@ -1,6 +1,6 @@
 /* This file handles the kernel task. It has a couple of purposes: 
  * -> Provides a task to run if all other tasks have slept
- * -> Cleans up after tasks that exit
+ * -> Cleans up after tasks that tm_exit
  * Note: We want to spend as little time here as possible, since it's 
  * cleanup code can run slowly and when theres
  * nothing else to do. So we reschedule often.
@@ -40,19 +40,19 @@ static inline int __KT_clear_args()
 	return 0;
 }
 
-struct inode *set_as_kernel_task(char *name)
+struct inode *kt_set_as_kernel_task(char *name)
 {
 	struct inode *i = (struct inode *)kmalloc(sizeof(struct inode));
 	rwlock_create(&i->rwl);
 	strncpy(i->name, name, INAME_LEN);
 	add_inode(kproclist, i);
-	raise_flag(TF_KTASK);
+	tm_raise_flag(TF_KTASK);
 	strncpy((char *)current_task->command, name, 128);
 	printk(1, "[kernel]: Added '%s' as kernel task\n", name);
 	return i;
 }
 
-int init_kern_task()
+int kt_init_kernel_tasking()
 {
 	kproclist = (struct inode *)kmalloc(sizeof(struct inode));
 	_strcpy(kproclist->name, "kproclist");
@@ -61,22 +61,22 @@ int init_kern_task()
 	kproclist->dev = GETDEV(3, 0);
 	rwlock_create(&kproclist->rwl);
 #if CONFIG_MODULES
-	_add_kernel_symbol((addr_t)(struct inode **)&kproclist, "kproclist");
+	loader_do_add_kernel_symbol((addr_t)(struct inode **)&kproclist, "kproclist");
 #endif
 	return 0;
 }
 
-int kernel_idle_task()
+int kt_kernel_idle_task()
 {
 	int task, cache;
 #if CONFIG_SWAP
 	if(!tm_fork())
 	{
-		set_as_kernel_task("kpager");
+		kt_set_as_kernel_task("kpager");
 		__KT_pager();
 	}
 #endif
-	set_as_kernel_task("kidle");
+	kt_set_as_kernel_task("kidle");
 	/* First stage is to wait until we can clear various allocated things
 	 * that we wont need anymore */
 	while(!__KT_clear_args())

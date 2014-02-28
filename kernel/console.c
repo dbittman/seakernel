@@ -5,27 +5,28 @@
 #include <asm/system.h>
 #include <mutex.h>
 #include <console.h>
+#include <sea/tty/terminal.h>
 struct vterm *curcons=0;
 struct vterm *kernel_console, *log_console=0;
-extern console_driver_t crtc_drv;
+extern struct console_driver crtc_drv;
 #define VIDEO_MEMORY 0xb8000
 
 /* Simple way to display messages before tty and vsprintf get working */
 void console_puts(struct vterm *c, char *s)
 {
 	while(s && *s && c) {
-		c->rend.putch(c, *s);
+		c->rend->putch(c, *s);
 		if(*(s++) == '\n')
-			c->rend.putch(c, '\r');
+			c->rend->putch(c, '\r');
 	}
 }
 
-void puts(char *s)
+void console_kernel_puts(char *s)
 {
 	console_puts(kernel_console, s);
 }
 
-void destroy_console(struct vterm *con)
+void console_destroy(struct vterm *con)
 {
 	if(con == curcons)
 		curcons = kernel_console;
@@ -35,7 +36,7 @@ void destroy_console(struct vterm *con)
 	con->flag=0;
 }
 
-void create_console(struct vterm *con)
+void console_create(struct vterm *con)
 {
 	if(con->flag) return;
 	con->term.c_lflag=ECHO | ISIG | ECHONL | ICANON;
@@ -47,7 +48,7 @@ void create_console(struct vterm *con)
 	con->flag=1;
 }
 
-void init_console(struct vterm *con, console_driver_t *driver)
+void console_initialize_vterm(struct vterm *con, struct console_driver *driver)
 {
 	driver->init(con);
 	con->driver = driver;
@@ -55,7 +56,7 @@ void init_console(struct vterm *con, console_driver_t *driver)
 				con, driver->init, driver->name);
 }
 
-void switch_console(struct vterm *new)
+void console_switch(struct vterm *n)
 {
 	/* Copy screen to old console */
 	struct vterm *old = curcons;
@@ -63,24 +64,24 @@ void switch_console(struct vterm *new)
 	memcpy(curcons->vmem, (char *)curcons->video, 
 				curcons->h*curcons->w*curcons->bd);
 	curcons->cur_mem = curcons->vmem;
-	curcons = new;
+	curcons = n;
 	curcons->cur_mem = (char *)curcons->video;
-	if(curcons->rend.switch_in)
-		curcons->rend.switch_in(curcons);
+	if(curcons->rend->switch_in)
+		curcons->rend->switch_in(curcons);
 	memcpy(curcons->cur_mem, curcons->vmem, curcons->w*curcons->h*curcons->bd);
-	if(curcons->rend.update_cursor)
-		curcons->rend.update_cursor(curcons);
+	if(curcons->rend->update_cursor)
+		curcons->rend->update_cursor(curcons);
 	mutex_release(&old->wlock);
 }
 
 void console_init_stage1()
 {
 	tty_init(&kernel_console);
-	create_console(kernel_console);
+	console_create(kernel_console);
 	kernel_console->vmem=kernel_console->cur_mem
 						=kernel_console->video=(char *)VIDEO_MEMORY;
 	curcons = kernel_console;
-	init_console(kernel_console, &crtc_drv);
-	curcons->rend.clear(curcons);
+	console_initialize_vterm(kernel_console, &crtc_drv);
+	curcons->rend->clear(curcons);
 	printk(0, "[console]: Video output ready\n");
 }

@@ -18,38 +18,25 @@
 #include <task.h>
 #include <atomic.h>
 
+#include <sea/mm/vmem.h>
+
 slab_cache_t *scache_list[NUM_SCACHES];
 addr_t slab_start=0, slab_end=0;
 vma_t slab_area_alloc;
 unsigned pages_used=0;
 #define SLAB_NUM_INDEX 120
 unsigned num_slab=0, num_scache=0;
-void release_slab(slab_t *slab);
+static void release_slab(slab_t *slab);
 mutex_t scache_lock;
 //#define SLAB_DEBUG 1
 #ifdef SLAB_DEBUG
 unsigned total=0;
 #endif
 
-void slab_stat(struct mem_stat *s)
-{
-	_strcpy(s->km_name, "slab");
-	s->km_version = 0.3;
-	s->km_loc=slab_start;
-	s->km_end=slab_end;
-	s->km_numindex = SLAB_NUM_INDEX;
-	s->km_pagesused=pages_used;
-	s->km_numslab = num_slab;
-	s->km_maxscache=NUM_SCACHES;
-	s->km_usedscache=num_scache;
-	s->km_maxnodes = 0;
-	s->km_usednodes = slab_area_alloc.used_nodes;
-}
-
-vnode_t *alloc_slab(unsigned np)
+static vnode_t *alloc_slab(unsigned np)
 {
 	assert(np);
-	vnode_t *n = insert_vmem_area(&slab_area_alloc, np);
+	vnode_t *n = vmem_insert_node(&slab_area_alloc, np);
 	if(!n)
 		return 0;
 	assert(n->num_pages >= np);
@@ -58,7 +45,7 @@ vnode_t *alloc_slab(unsigned np)
 	return n;
 }
 
-void free_slab(slab_t *slab)
+static void free_slab(slab_t *slab)
 {
 	unsigned num_pages = slab->num_pages;
 #ifdef SLAB_DEBUG
@@ -74,11 +61,11 @@ void free_slab(slab_t *slab)
 		if(vm_getmap(j, 0))
 			vm_unmap(j);
 	}
-	remove_vmem_area(&slab_area_alloc, t);
+	vmem_remove_node(&slab_area_alloc, t);
 	sub_atomic(&num_slab, 1);
 }
 
-slab_cache_t *get_empty_scache(int size, unsigned short flags)
+static slab_cache_t *get_empty_scache(int size, unsigned short flags)
 {
 	assert(size);
 	unsigned i=0;
@@ -104,7 +91,7 @@ slab_cache_t *get_empty_scache(int size, unsigned short flags)
 	return scache_list[i];
 }
 
-void release_scache(slab_cache_t *sc)
+static void release_scache(slab_cache_t *sc)
 {
 	assert(sc);
 	assert(!sc->full && !sc->partial && !sc->empty);
@@ -118,7 +105,7 @@ void release_scache(slab_cache_t *sc)
  * from it's old list though. WARNING: Before calling this, remove the 
  * slab from the current list first, Otherwise, we might corrupt the 
  * current list */
-int add_slab_to_list(slab_t *slab, char to)
+static int add_slab_to_list(slab_t *slab, char to)
 {
 	assert(slab && slab->magic == SLAB_MAGIC);
 	assert(slab->next==0 && slab->prev==0);
@@ -153,7 +140,7 @@ int add_slab_to_list(slab_t *slab, char to)
 	return 0;
 }
 
-void remove_slab_list(slab_t *slab)
+static void remove_slab_list(slab_t *slab)
 {
 	assert(slab && slab->magic == SLAB_MAGIC);
 	slab_cache_t *sc = (slab_cache_t *)(slab->parent);
@@ -177,7 +164,7 @@ void remove_slab_list(slab_t *slab)
 	slab->prev = slab->next=0;
 }
 
-slab_t *create_slab(slab_cache_t *sc, int num_pages, unsigned short flags)
+static slab_t *create_slab(slab_cache_t *sc, int num_pages, unsigned short flags)
 {
 	assert(sc && num_pages);
 	vnode_t *vnode=0;
@@ -233,7 +220,7 @@ slab_t *create_slab(slab_cache_t *sc, int num_pages, unsigned short flags)
 	return slab;
 }
 
-addr_t do_alloc_object(slab_t *slab)
+static addr_t do_alloc_object(slab_t *slab)
 {
 	assert(slab && slab->magic == SLAB_MAGIC);
 	slab_cache_t *sc = (slab_cache_t *)(slab->parent);
@@ -251,7 +238,7 @@ addr_t do_alloc_object(slab_t *slab)
 	return obj_addr;
 }
 
-addr_t alloc_object(slab_t *slab)
+static addr_t alloc_object(slab_t *slab)
 {
 	addr_t ret = do_alloc_object(slab);
 	assert(slab->obj_used <= slab->obj_num);
@@ -271,7 +258,7 @@ addr_t alloc_object(slab_t *slab)
 	return ret;
 }
 
-unsigned do_release_object(slab_t *slab, int obj)
+static unsigned do_release_object(slab_t *slab, int obj)
 {
 	assert(slab && slab->magic == SLAB_MAGIC);
 	assert(slab->obj_used);
@@ -282,7 +269,7 @@ unsigned do_release_object(slab_t *slab, int obj)
 	return ret;
 }
 
-void release_object(slab_t *slab, int obj)
+static void release_object(slab_t *slab, int obj)
 {
 	unsigned res = do_release_object(slab, obj);
 	if(!res)
@@ -304,7 +291,7 @@ void release_object(slab_t *slab, int obj)
 	}
 }
 
-void do_release_slab(slab_t *slab)
+static void do_release_slab(slab_t *slab)
 {
 	assert(slab && slab->magic == SLAB_MAGIC);
 	slab_cache_t *sc = (slab_cache_t *)(slab->parent);
@@ -316,7 +303,7 @@ void do_release_slab(slab_t *slab)
 	free_slab(slab);
 }
 
-void release_slab(slab_t *slab)
+static void release_slab(slab_t *slab)
 {
 	slab_cache_t *sc = (slab_cache_t *)(slab->parent);
 	assert(sc);
@@ -325,7 +312,7 @@ void release_slab(slab_t *slab)
 		release_scache(sc);
 }
 
-unsigned slab_init(addr_t start, addr_t end)
+unsigned __mm_slab_init(addr_t start, addr_t end)
 {
 	printk(1, "[slab]: Initiating slab allocator...");
 	map_if_not_mapped(start);
@@ -333,7 +320,7 @@ unsigned slab_init(addr_t start, addr_t end)
 	slab_start = start;
 	slab_end = end;
 	assert(start < end && start);
-	init_vmem_area(&slab_area_alloc, start+PAGE_SIZE, end, SLAB_NUM_INDEX);
+	vmem_create(&slab_area_alloc, start+PAGE_SIZE, end, SLAB_NUM_INDEX);
 	unsigned i;
 	for(i=0;i<NUM_SCACHES;i++)
 	{
@@ -360,7 +347,7 @@ unsigned slab_init(addr_t start, addr_t end)
  * 			(no) > Look for free slots of differing sizes
  */
 
-unsigned slab_size(int sz)
+static unsigned slab_size(int sz)
 {
 	unsigned s = (sz * MAX_OBJ_ID) + sizeof(slab_t);
 	if(s > (0x1000 * 128))
@@ -370,7 +357,7 @@ unsigned slab_size(int sz)
 	return s;
 }
 
-slab_t *find_usable_slab(unsigned size, int align, int allow_range)
+static slab_t *find_usable_slab(unsigned size, int align, int allow_range)
 {
 	unsigned i;
 	int perfect_fit=0;
@@ -442,8 +429,8 @@ slab_t *find_usable_slab(unsigned size, int align, int allow_range)
 				: slab_size(size)/PAGE_SIZE, fl);
 		if(!slab)
 		{
-			__engage_idle();
-			delay(100);
+			tm_engage_idle();
+			tm_delay(100);
 			return 0;
 		} else 
 			add_slab_to_list(slab, TO_EMPTY);
@@ -465,7 +452,7 @@ slab_t *find_usable_slab(unsigned size, int align, int allow_range)
 	return find_usable_slab(size, align, 0);
 }
 
-addr_t do_kmalloc_slab(size_t sz, char align)
+addr_t __mm_do_kmalloc_slab(size_t sz, char align)
 {
 	if(sz < 32) sz=32;
 	if(!align)
@@ -500,14 +487,14 @@ addr_t do_kmalloc_slab(size_t sz, char align)
 #ifdef SLAB_DEBUG
 	char tmp[128];
 	sprintf(tmp, "-> %d\n", total);
-	//serial_puts_nolock(0, tmp);
+	//serial_console_kernel_puts_nolock(0, tmp);
 #endif
 	if(!align)
 		assert((addr & PAGE_MASK) != addr);
 	return addr;
 }
 
-void do_kfree_slab(void *ptr)
+void __mm_do_kfree_slab(void *ptr)
 {
 	if(!((addr_t)ptr >= slab_start && (addr_t)ptr < slab_end))
 	{
@@ -520,7 +507,7 @@ void do_kfree_slab(void *ptr)
 	slab_t *slab=0;
 	if(((addr_t)ptr&PAGE_MASK) == (addr_t)ptr) {
 		try_alt:
-		n = find_vmem_area(&slab_area_alloc, (addr_t)ptr);
+		n = vmem_find_node(&slab_area_alloc, (addr_t)ptr);
 		if(n) slab = (slab_t *)n->addr;
 	}
 	else {

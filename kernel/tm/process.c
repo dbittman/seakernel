@@ -3,6 +3,8 @@
 #include <sea/tm/_tm.h>
 #include <sea/tm/process.h>
 
+#include <task.h>
+
 void tm_process_enter_system(int sys)
 {
 	current_task->system=(!sys ? -1 : sys);
@@ -15,7 +17,21 @@ void tm_process_exit_system()
 	current_task->system=0;
 }
 
-void __tm_engage_idle()
+void tm_process_pause(task_t *t)
+{
+	/* don't care what other processors do */
+	t->state = TASK_ISLEEP;
+	if(t == current_task) {
+		while(!tm_schedule());
+	}
+}
+
+void tm_process_resume(task_t *t)
+{
+	t->state = TASK_RUNNING;
+}
+
+void tm_engage_idle()
 {
 	tm_process_resume((task_t *)kernel_task);
 }
@@ -25,7 +41,7 @@ void __tm_disengage_idle()
 	tm_process_pause((task_t *)kernel_task);
 }
 
-int __tm_task_is_runable(task_t *task)
+int __tm_process_is_runable(task_t *task)
 {
 	assert(task);
 	if(task->state == TASK_DEAD)

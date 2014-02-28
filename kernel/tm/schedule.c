@@ -1,3 +1,7 @@
+#include <sea/subsystem.h>
+#define SUBSYSTEM _SUBSYSTEM_TM
+#include <sea/tm/_tm.h>
+#include <sea/tm/process.h>
 /* Functions for scheduling tasks */
 #include <kernel.h>
 #include <memory.h>
@@ -7,7 +11,7 @@
 
 static __attribute__((always_inline)) inline void update_task(task_t *t)
 {
-	/* task's delay ran out */
+	/* task's tm_delay ran out */
 	if((t->state == TASK_USLEEP || t->state == TASK_ISLEEP) && t->tick <= ticks && t->tick)
 		t->state = TASK_RUNNING;
 }
@@ -28,13 +32,13 @@ static __attribute__((always_inline)) inline task_t *get_next_task(task_t *prev,
 		/* this handles everything in the "active queue". This includes
 		 * running tasks, tasks that have timed blocks... */
 		update_task(t);
-		if(task_is_runable(t) && !(t->flags & TF_MOVECPU))
+		if(__tm_process_is_runable(t) && !(t->flags & TF_MOVECPU))
 			return t;
 		t = tqueue_next(cpu->active_queue);
 		/* This way the kernel can sleep without being in danger of 
 		 * causing a lockup. Basically, if the kernel is the only
 		 * runnable task, it gets forced to run */
-		if(t && t == prev && !task_is_runable(t)) {
+		if(t && t == prev && !__tm_process_is_runable(t)) {
 			/* make sure to update the state in case it slept */
 			assert(cpu->ktask);
 			cpu->ktask->state = TASK_RUNNING;
@@ -48,7 +52,7 @@ static __attribute__((always_inline)) inline task_t *get_next_task(task_t *prev,
 __attribute__((always_inline)) static inline void post_context_switch()
 {
 	if(unlikely(current_task->state == TASK_SUICIDAL) && !(current_task->flags & TF_EXITING))
-		task_suicide();
+		tm_process_suicide();
 	/* We only process signals if we aren't in a system call.
 	 * this is because if a task is suddenly interrupted inside an
 	 * important syscall while doing something important the results
@@ -56,13 +60,13 @@ __attribute__((always_inline)) static inline void post_context_switch()
 	 * a method of detecting signals and returning safely. */
 	if(current_task->sigd 
 		&& (!(current_task->flags & TF_INSIG) 
-		   || signal_will_be_fatal(current_task, current_task->sigd))
+		   || tm_signal_will_be_fatal(current_task, current_task->sigd))
 		&& !(current_task->flags & TF_KTASK) && current_task->pid
 		&& !(current_task->flags & TF_EXITING) && !(current_task->system == SYS_FORK))
 	{
-		raise_flag(TF_INSIG);
+		tm_raise_flag(TF_INSIG);
 		/* Jump to the signal handler */
-		handle_signal((task_t *)current_task);
+		__tm_handle_signal((task_t *)current_task);
 		/* if we've gotten here, then we are interruptible or running.
 		 * set the state to running since interruptible tasks fully
 		 * wake up when signaled */
@@ -74,7 +78,7 @@ __attribute__((always_inline)) static inline void post_context_switch()
 		/* should never enable interrupts inside an interrupt, except for
 		 * syscalls */
 		assert(!(current_task->flags & TF_IN_INT) || current_task->sysregs);
-		lower_flag(TF_SETINT);
+		tm_lower_flag(TF_SETINT);
 		assert(!set_int(1));
 	}
 }
@@ -95,7 +99,7 @@ int tm_schedule()
 	 * task if we entered schedule with them enabled */
 	if(set_int(0)) {
 		assert(!(current_task->flags & TF_SETINT));
-		raise_flag(TF_SETINT);
+		tm_raise_flag(TF_SETINT);
 	} else
 		assert(!(current_task->flags & TF_SETINT));
 	task_t *old = current_task;
@@ -104,12 +108,12 @@ int tm_schedule()
 	
 	mutex_acquire(&cpu->lock);
 	store_context();
-	/* the exiting task has fully 'exited' and has now scheduled out of
+	/* the tm_exiting task has fully 'exited' and has now scheduled out of
 	 * itself. It will never be scheduled again, and the page directory
 	 * will never be accessed again */
 	if(old->flags & TF_DYING) {
 		assert(old->state == TASK_DEAD);
-		raise_flag(TF_BURIED);
+		tm_raise_flag(TF_BURIED);
 	}
 	old->syscall_count = 0;
 	task_t *next_task = (task_t *)get_next_task(old, cpu);
@@ -135,14 +139,14 @@ int tm_schedule()
 		post_context_switch();
 		return 1;
 	}
-	lower_task_flag(current_task, TF_FORK);
+	tm_process_lower_flag(current_task, TF_FORK);
 	set_int(1);
 	asm("jmp *%0"::"r"(current_task->eip));
 	/* we never get here, but lets keep gcc happy */
 	return 1;
 }
 
-void check_alarms()
+void __tm_check_alarms()
 {
 	if(!alarm_list_start) return;
 	/* interrupts will be disabled here. Thus, we can aquire 
@@ -150,7 +154,7 @@ void check_alarms()
 	mutex_acquire(alarm_mutex);
 	if((unsigned)ticks > alarm_list_start->alarm_end)
 	{
-		lower_task_flag(alarm_list_start, TF_ALARM);
+		tm_process_lower_flag(alarm_list_start, TF_ALARM);
 		alarm_list_start->sigd = SIGALRM;
 		alarm_list_start = alarm_list_start->alarm_next;
 		alarm_list_start->alarm_prev = 0;

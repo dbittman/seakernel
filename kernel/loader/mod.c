@@ -7,53 +7,55 @@
 #include <module.h>
 #include <elf.h>
 #include <symbol.h>
+#include <sea/loader/module.h>
+
 module_t *modules=0;
 int load_deps(char *);
 mutex_t mod_mutex;
 mutex_t sym_mutex;
 kernel_symbol_t export_syms[MAX_SYMS];
-void init_kernel_symbols(void)
+void loader_init_kernel_symbols(void)
 {
 	uint32_t i;
 	for(i = 0; i < MAX_SYMS; i++)
 		export_syms[i].ptr = 0;
 	mutex_create(&sym_mutex, 0);
 	/* symbol functions */
-	add_kernel_symbol(find_kernel_function);
-	add_kernel_symbol(remove_kernel_symbol);
-	add_kernel_symbol(_add_kernel_symbol);
+	loader_add_kernel_symbol(loader_find_kernel_function);
+	loader_add_kernel_symbol(loader_remove_kernel_symbol);
+	loader_add_kernel_symbol(loader_do_add_kernel_symbol);
 	/* basic kernel functions */
-	add_kernel_symbol(panic_assert);
-	add_kernel_symbol(panic);
-	_add_kernel_symbol((addr_t)&kernel_state_flags, "kernel_state_flags");
-	add_kernel_symbol(printk);
-	add_kernel_symbol(kprintf);
-	add_kernel_symbol(sprintf);
-	add_kernel_symbol(memset);
-	add_kernel_symbol(memcpy);
-	add_kernel_symbol(_strcpy);
-	add_kernel_symbol(inb);
-	add_kernel_symbol(outb);
-	add_kernel_symbol(inw);
-	add_kernel_symbol(outw);
-	add_kernel_symbol(inl);
-	add_kernel_symbol(outl);
-	add_kernel_symbol(mutex_create);
-	add_kernel_symbol(mutex_destroy);
-	add_kernel_symbol(__mutex_release);
-	add_kernel_symbol(__mutex_acquire);
-	add_kernel_symbol(__rwlock_acquire);
-	add_kernel_symbol(rwlock_release);
-	add_kernel_symbol(__rwlock_escalate);
-	add_kernel_symbol(rwlock_create);
-	add_kernel_symbol(rwlock_destroy);
+	loader_add_kernel_symbol(panic_assert);
+	loader_add_kernel_symbol(panic);
+	loader_do_add_kernel_symbol((addr_t)&kernel_state_flags, "kernel_state_flags");
+	loader_add_kernel_symbol(printk);
+	loader_add_kernel_symbol(kprintf);
+	loader_add_kernel_symbol(sprintf);
+	loader_add_kernel_symbol(memset);
+	loader_add_kernel_symbol(memcpy);
+	loader_add_kernel_symbol(_strcpy);
+	loader_add_kernel_symbol(inb);
+	loader_add_kernel_symbol(outb);
+	loader_add_kernel_symbol(inw);
+	loader_add_kernel_symbol(outw);
+	loader_add_kernel_symbol(inl);
+	loader_add_kernel_symbol(outl);
+	loader_add_kernel_symbol(mutex_create);
+	loader_add_kernel_symbol(mutex_destroy);
+	loader_add_kernel_symbol(__mutex_release);
+	loader_add_kernel_symbol(__mutex_acquire);
+	loader_add_kernel_symbol(__rwlock_acquire);
+	loader_add_kernel_symbol(rwlock_release);
+	loader_add_kernel_symbol(__rwlock_escalate);
+	loader_add_kernel_symbol(rwlock_create);
+	loader_add_kernel_symbol(rwlock_destroy);
 	
 	/* these systems export these, but have no initialization function */
-	add_kernel_symbol(get_epoch_time);
-	add_kernel_symbol(allocate_dma_buffer);
+	loader_add_kernel_symbol(get_epoch_time);
+	loader_add_kernel_symbol(allocate_dma_buffer);
 }
 
-void _add_kernel_symbol(const intptr_t func, const char * funcstr)
+void loader_do_add_kernel_symbol(const intptr_t func, const char * funcstr)
 {
 	uint32_t i;
 	if(func < (addr_t)&kernel_start)
@@ -71,7 +73,7 @@ void _add_kernel_symbol(const intptr_t func, const char * funcstr)
 	mutex_release(&sym_mutex);
 }
 
-intptr_t find_kernel_function(char * unres)
+intptr_t loader_find_kernel_function(char * unres)
 {
 	uint32_t i;
 	mutex_acquire(&sym_mutex);
@@ -89,7 +91,7 @@ intptr_t find_kernel_function(char * unres)
 	return 0;
 }
 
-int remove_kernel_symbol(char * unres)
+int loader_remove_kernel_symbol(char * unres)
 {
 	uint32_t i;
 	mutex_acquire(&sym_mutex);
@@ -109,7 +111,7 @@ int remove_kernel_symbol(char * unres)
 	return 0;
 }
 
-int is_loaded(char *name)
+int loader_module_is_loaded(char *name)
 {
 	mutex_acquire(&mod_mutex);
 	module_t *m = modules;
@@ -125,7 +127,7 @@ int is_loaded(char *name)
 	return 0;
 }
 
-int load_module(char *path, char *args, int flags)
+static int load_module(char *path, char *args, int flags)
 {
 	if(!path)
 		return -EINVAL;
@@ -136,7 +138,7 @@ int load_module(char *path, char *args, int flags)
 	if(r) r++; else r = path;
 	strncpy(tmp->name, r, 128);
 	strncpy(tmp->path, path, 128);
-	if(is_loaded(tmp->name)) {
+	if(loader_module_is_loaded(tmp->name)) {
 		kfree(tmp);
 		return -EEXIST;
 	}
@@ -192,7 +194,7 @@ int load_module(char *path, char *args, int flags)
 }
 
 /* This checks if module 'm' depends on module 'yo' */
-int do_it_depend_on(module_t *yo, module_t *m)
+static int do_it_depend_on(module_t *yo, module_t *m)
 {
 	char *d = m->deps;
 	if(!*d) return 0;
@@ -217,7 +219,7 @@ int do_it_depend_on(module_t *yo, module_t *m)
 }
 
 /* This makes sure module 'i' can unload and not break dependencies */
-module_t *canweunload(module_t *i)
+module_t *loader_module_free_to_unload(module_t *i)
 {
 	module_t *mq = modules;
 	while(mq) {
@@ -228,7 +230,7 @@ module_t *canweunload(module_t *i)
 	return 0;
 }
 
-int do_unload_module(char *name, int flags)
+static int do_unload_module(char *name, int flags)
 {
 	/* Is it going to work? */
 	mutex_acquire(&mod_mutex);
@@ -245,7 +247,7 @@ int do_unload_module(char *name, int flags)
 	}
 	/* Determine if are being depended upon or if we can unload */
 	module_t *mo;
-	if(!(flags & 1) && (mo = canweunload(mq))) {
+	if(!(flags & 1) && (mo = loader_module_free_to_unload(mq))) {
 		mutex_release(&mod_mutex);
 		return -EINVAL;
 	}
@@ -272,14 +274,14 @@ int do_unload_module(char *name, int flags)
 	return ret;
 }
 
-int unload_module(char *name)
+static int unload_module(char *name)
 {
 	if(!name)
 		return -EINVAL;
 	return do_unload_module(name, 0);
 }
 
-void unload_all_modules()
+void loader_unload_all_modules()
 {
 	/* Unload all loaded modules */
 	int todo=1;
@@ -303,7 +305,7 @@ void unload_all_modules()
 	}
 }
 
-void init_module_system()
+void loader_init_modules()
 {
 	mutex_create(&mod_mutex, 0);
 }

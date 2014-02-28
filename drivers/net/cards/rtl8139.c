@@ -34,12 +34,12 @@ int rtl8139_reset(int base_addr)
 	while(1) {
 			//outb(base_addr+0x50, inb(base_addr+0x50)|(0x03 << 6));
 			
-			delay(10);
+			tm_delay(10);
 			if(done)
 					break;
 			outb(base_addr+0x37, 0x10);
 			while(--timeout){
-					delay(10);
+					tm_delay(10);
 					if(!(inb(base_addr+0x37)&(1<<4)))
 							break;
 			}
@@ -57,7 +57,7 @@ int rtl8139_reset(int base_addr)
 	{
 			if((inw(base_addr+0x64) & 0x2C) == 0x2C)
 					break;
-			delay(50);
+			tm_delay(50);
 	}
 	if(timeout < 1) {
 			printk(KERN_WARN, "RTL8139: An error occured\n");
@@ -220,7 +220,7 @@ int module_install()
 {
 	rtl8139_min=0;
 	rtl_cards = ll_create(0);
-	rtl8139_maj = set_availablecd(rtl8139_rw_main, ioctl_rtl8139, 0);
+	rtl8139_maj = dm_set_available_char_device(rtl8139_rw_main, ioctl_rtl8139, 0);
 	int i=0;
 	printk(1, "[rtl8139]: Scanning PCI bus...\n");
 	while(1) {
@@ -239,7 +239,7 @@ int module_deps(char *b)
 	return KVERSION;
 }
 
-int module_exit()
+int module_tm_exit()
 {
 	printk(1, "[rtl8139]: Shutting down all cards...\n");
 	unregister_char_device(rtl8139_maj);

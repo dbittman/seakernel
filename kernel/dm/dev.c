@@ -7,36 +7,36 @@
 #include <symbol.h>
 struct devhash_s devhash[NUM_DT];
 
-void init_dm()
+void dm_init()
 {
 	printk(KERN_DEBUG, "[dev]: Loading device management...\n");
 	memset(devhash, 0, sizeof(struct devhash_s)*NUM_DT);
 	int i;
 	for(i=0;i<NUM_DT;i++) 
 		mutex_create(&devhash[i].lock, 0);
-	init_char_devs();
-	init_block_devs();
+	dm_init_char_devices();
+	dm_init_block_devices();
 #if CONFIG_MODULES
-	add_kernel_symbol(block_rw);
-	add_kernel_symbol(block_ioctl);
-	add_kernel_symbol(block_device_rw);
-	add_kernel_symbol(set_availablebd);
-	add_kernel_symbol(set_availablecd);
-	add_kernel_symbol(unregister_block_device);
-	add_kernel_symbol(unregister_char_device);
-	add_kernel_symbol(get_device);
-	add_kernel_symbol(block_read);
-	add_kernel_symbol(blockdev_select);
-	add_kernel_symbol(block_device_select);
-	add_kernel_symbol(do_block_rw);
-	add_kernel_symbol(do_block_rw_multiple);
-	add_kernel_symbol(block_write);
-	add_kernel_symbol(set_blockdevice);
-	add_kernel_symbol(set_chardevice);
+	loader_add_kernel_symbol(dm_block_rw);
+	loader_add_kernel_symbol(dm_block_ioctl);
+	loader_add_kernel_symbol(dm_block_device_rw);
+	loader_add_kernel_symbol(dm_set_available_block_device);
+	loader_add_kernel_symbol(dm_set_available_char_device);
+	loader_add_kernel_symbol(dm_unregister_block_device);
+	loader_add_kernel_symbol(dm_unregister_char_device);
+	loader_add_kernel_symbol(dm_get_device);
+	loader_add_kernel_symbol(dm_block_read);
+	loader_add_kernel_symbol(dm_blockdev_select);
+	loader_add_kernel_symbol(dm_block_device_select);
+	loader_add_kernel_symbol(dm_do_block_rw);
+	loader_add_kernel_symbol(dm_do_block_rw_multiple);
+	loader_add_kernel_symbol(dm_block_write);
+	loader_add_kernel_symbol(dm_set_block_device);
+	loader_add_kernel_symbol(dm_set_char_device);
 #endif
 }
 
-device_t *get_device(int type, int major)
+device_t *dm_get_device(int type, int major)
 {
 	if(type >= NUM_DT)
 		return 0;
@@ -51,7 +51,7 @@ device_t *get_device(int type, int major)
 	return dt;
 }
 
-device_t *get_n_device(int type, int n)
+device_t *dm_get_enumerated_device(int type, int n)
 {
 	if(type >= NUM_DT)
 		return 0;
@@ -72,7 +72,7 @@ device_t *get_n_device(int type, int n)
 	return dt;
 }
 
-int add_device(int type, int major, void *str)
+int dm_add_device(int type, int major, void *str)
 {
 	if(type >= NUM_DT)
 		return -1;
@@ -89,7 +89,7 @@ int add_device(int type, int major, void *str)
 	return 0;
 }
 
-int remove_device(int type, int major)
+int dm_remove_device(int type, int major)
 {
 	if(type >= NUM_DT)
 		return -1;
@@ -120,15 +120,15 @@ int remove_device(int type, int major)
 int dm_ioctl(int type, dev_t dev, int cmd, long arg)
 {
 	if(S_ISCHR(type))
-		return char_ioctl(dev, cmd, arg);
+		return dm_char_ioctl(dev, cmd, arg);
 	else if(S_ISBLK(type))
-		return block_ioctl(dev, cmd, arg);
+		return dm_block_ioctl(dev, cmd, arg);
 	else
 		return -EINVAL;
 	return 0;
 }
 
-void sync_dm()
+void dm_sync()
 {
-	send_sync_block();
+	dm_send_sync_block();
 }

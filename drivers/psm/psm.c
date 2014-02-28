@@ -7,6 +7,7 @@
 #include <module.h>
 #include <block.h>
 #include <symbol.h>
+#include <sea/dm/block.h>
 #include <modules/psm.h>
 
 #define MAX_PREFIXES 64
@@ -39,7 +40,7 @@ void generate_name(int id, dev_t dev, char *name, int part)
 
 int read_partition_dev(dev_t dev, struct part_info *pi, int n)
 {
-	addr_t p = find_kernel_function("part_get_partition");
+	addr_t p = loader_find_kernel_function("part_get_partition");
 	if(!p)
 		return 0;
 	int (*call)(dev_t, struct part_info *, int) = (void *)p;
@@ -106,7 +107,7 @@ int psm_do_rw_multiple(int multiple, int rw, int min, u64 blk, char *out_buffer,
 		count = end_blk - blk;
 	if(!count)
 		return 0;
-	return multiple ? do_block_rw_multiple(rw, d.dev, blk, out_buffer, count, 0) : do_block_rw(rw, d.dev, blk, out_buffer, 0);
+	return multiple ? dm_do_block_rw_multiple(rw, d.dev, blk, out_buffer, count, 0) : dm_do_block_rw(rw, d.dev, blk, out_buffer, 0);
 }
 
 int psm_rw_multiple(int rw, int min, u64 blk, char *out_buffer, int count)
@@ -125,7 +126,7 @@ int psm_select(int min, int rw)
 	psm_table_get(min, &d);
 	if(d.magic != PSM_DEVICE_MAGIC)
 		return -ENOENT;
-	return block_device_select(d.dev, rw);
+	return dm_block_device_select(d.dev, rw);
 }
 
 int psm_ioctl(int min, int cmd, long arg)
@@ -134,24 +135,24 @@ int psm_ioctl(int min, int cmd, long arg)
 	psm_table_get(min, &d);
 	if(d.magic != PSM_DEVICE_MAGIC)
 		return -ENOENT;
-	return block_ioctl(d.dev, cmd, arg);
+	return dm_block_ioctl(d.dev, cmd, arg);
 }
 
 int module_install()
 {
 	printk(KERN_DEBUG, "[psm]: initializing\n");
 	psm_initialize_table();
-	psm_major = set_availablebd(psm_rw_single, 512, psm_ioctl, psm_rw_multiple, psm_select);
-	add_kernel_symbol(psm_register_disk_device);
-	add_kernel_symbol(psm_unregister_disk_device);
+	psm_major = dm_set_available_block_device(psm_rw_single, 512, psm_ioctl, psm_rw_multiple, psm_select);
+	loader_add_kernel_symbol(psm_register_disk_device);
+	loader_add_kernel_symbol(psm_unregister_disk_device);
 	return 0;
 }
 
-int module_exit()
+int module_tm_exit()
 {
-	unregister_block_device(psm_major);
-	remove_kernel_symbol("psm_register_disk_device");
-	remove_kernel_symbol("psm_unregister_disk_device");
+	dm_unregister_block_device(psm_major);
+	loader_remove_kernel_symbol("psm_register_disk_device");
+	loader_remove_kernel_symbol("psm_unregister_disk_device");
 	psm_table_destroy();
 	return 0;
 }

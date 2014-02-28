@@ -27,13 +27,13 @@
 #define DEF_PRINT_LEVEL CONFIG_LOG_LEVEL
 #define MAX_TASKS (CONFIG_MAX_TASKS)
 
-#define KMALLOC_INIT slab_init
-#define KMALLOC_ALLOC do_kmalloc_slab
-#define KMALLOC_FREE  do_kfree_slab
+#define KMALLOC_INIT __mm_slab_init
+#define KMALLOC_ALLOC __mm_do_kmalloc_slab
+#define KMALLOC_FREE  __mm_do_kfree_slab
 #define KMALLOC_NAME ((char *)"slab")
 
 /* MM */
-#define MAX_NODES 4096*4
+
 //#define SLAB_DEBUG
 #define RANGE_MUL 2
 #define STACK_SIZE (CONFIG_STACK_PAGES * 0x1000)

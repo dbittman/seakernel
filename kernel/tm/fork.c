@@ -8,7 +8,7 @@
 
 unsigned running_processes = 0;
 
-void copy_thread_data(task_t *task, task_t *parent)
+static void copy_thread_data(task_t *task, task_t *parent)
 {
 	assert(parent->thread->magic == THREAD_MAGIC);
 	if(parent->thread->root) {
@@ -28,14 +28,14 @@ void copy_thread_data(task_t *task, task_t *parent)
 	task->thread->global_sig_mask = parent->thread->global_sig_mask;
 }
 
-void copy_task_struct(task_t *task, task_t *parent, char share_thread_data)
+static void copy_task_struct(task_t *task, task_t *parent, char share_thread_data)
 {
 	task->parent = parent;
 	task->pid = add_atomic(&next_pid, 1)-1;
 	/* copy over the data if we're a new process. If this is going to be a thread, 
 	 * then add to the count and set the pointer */
 	if(!share_thread_data) {
-		task->thread = thread_data_create();
+		task->thread = tm_thread_data_create();
 		copy_thread_data(task, parent);
 	} else {
 		add_atomic(&parent->thread->count, 1);
@@ -61,7 +61,7 @@ void copy_task_struct(task_t *task, task_t *parent, char share_thread_data)
 
 #if CONFIG_SMP
 unsigned int __counter = 0;
-cpu_t *fork_choose_cpu(task_t *parent)
+static cpu_t *fork_choose_cpu(task_t *parent)
 {
 	cpu_t *pc = parent->cpu;
 	cpu_t *cpu = &cpu_array[__counter];
@@ -87,7 +87,7 @@ int tm_do_fork(unsigned flags)
 	assert(current_task && kernel_task);
 	assert(running_processes < (unsigned)MAX_TASKS || MAX_TASKS == -1);
 	addr_t eip;
-	task_t *task = task_create();
+	task_t *task = tm_task_create();
 	page_dir_t *newspace;
 	if(flags & FORK_SHAREDIR)
 		newspace = vm_copy(current_task->pd);
@@ -132,7 +132,7 @@ int tm_do_fork(unsigned flags)
 		task->cpu = cpu;
 		add_atomic(&cpu->numtasks, 1);
 		tqueue_insert(cpu->active_queue, (void *)task, task->activenode);
-		__engage_idle();
+		tm_engage_idle();
 		return task->pid;
 	}
 	return 0;

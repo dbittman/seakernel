@@ -153,7 +153,7 @@ int module_install()
 	return 0;
 }
 
-int module_exit()
+int module_tm_exit()
 {
 	printk(1, "[ext2]: Unmounting all ext2 filesystems\n");
 	int i=0;

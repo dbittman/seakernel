@@ -1,19 +1,7 @@
 #ifndef BLOCK_H
 #define BLOCK_H
 
-#define BCACHE_READ 1
-#define BCACHE_WRITE 2
-#include <mutex.h>
-
-typedef struct blockdevice_s {
-	int blksz;
-	int (*rw)(int mode, int minor, u64 blk, char *buf);
-	int (*rw_multiple)(int mode, int minor, u64, char *buf, int);
-	int (*ioctl)(int min, int cmd, long arg);
-	int (*select)(int min, int rw);
-	unsigned char cache;
-	mutex_t acl;
-} blockdevice_t;
+#include <sea/dm/block.h>
 
 void init_block_devs();
 blockdevice_t *set_blockdevice(int maj, int (*f)(int, int, u64, char*), 

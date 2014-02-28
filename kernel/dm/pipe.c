@@ -4,7 +4,7 @@
 #include <pipe.h>
 #include <task.h>
 #include <file.h>
-pipe_t *create_pipe()
+pipe_t *dm_create_pipe()
 {
 	pipe_t *pipe = (pipe_t *)kmalloc(sizeof(pipe_t));
 	pipe->length = PIPE_SIZE;
@@ -28,7 +28,7 @@ static struct inode *create_anon_pipe()
 	node->f_count=2;
 	rwlock_create(&node->rwl);
 	
-	pipe_t *pipe = create_pipe();
+	pipe_t *pipe = dm_create_pipe();
 	pipe->count=2;
 	pipe->wrcount=1;
 	node->pipe = pipe;
@@ -62,7 +62,7 @@ int sys_pipe(int *files)
 	return 0;
 }
 
-void free_pipe(struct inode *i)
+void dm_free_pipe(struct inode *i)
 {
 	if(!i || !i->pipe) return;
 	kfree((void *)i->pipe->buffer);
@@ -73,7 +73,7 @@ void free_pipe(struct inode *i)
 	i->pipe=0;
 }
 
-int read_pipe(struct inode *ino, char *buffer, size_t length)
+int dm_read_pipe(struct inode *ino, char *buffer, size_t length)
 {
 	if(!ino || !buffer)
 		return -EINVAL;
@@ -91,11 +91,11 @@ int read_pipe(struct inode *ino, char *buffer, size_t length)
 	while(!pipe->pending && (pipe->count > 1 && pipe->type != PIPE_NAMED 
 			&& pipe->wrcount>0)) {
 		int old = set_int(0);
-		task_almost_block(pipe->read_blocked, (task_t *)current_task);
+		tm_add_to_blocklist(pipe->read_blocked, (task_t *)current_task);
 		mutex_release(pipe->lock);
 		while(!tm_schedule());
 		assert(!set_int(old));
-		if(got_signal(current_task))
+		if(tm_process_got_signal(current_task))
 			return -EINTR;
 		mutex_acquire(pipe->lock);
 	}
@@ -116,13 +116,13 @@ int read_pipe(struct inode *ino, char *buffer, size_t length)
 		len -= ret;
 		count+=ret;
 	}
-	task_unblock_all(pipe->write_blocked);
-	task_unblock_all(pipe->read_blocked);
+	tm_remove_all_from_blocklist(pipe->write_blocked);
+	tm_remove_all_from_blocklist(pipe->read_blocked);
 	mutex_release(pipe->lock);
 	return count;
 }
 
-int write_pipe(struct inode *ino, char *buffer, size_t length)
+int dm_write_pipe(struct inode *ino, char *buffer, size_t length)
 {
 	if(!ino || !buffer)
 		return -EINVAL;
@@ -138,11 +138,11 @@ int write_pipe(struct inode *ino, char *buffer, size_t length)
 	/* IO block until we can write to it */
 	while((pipe->write_pos+length)>=PIPE_SIZE) {
 		int old = set_int(0);
-		task_almost_block(pipe->write_blocked, (task_t *)current_task);
+		tm_add_to_blocklist(pipe->write_blocked, (task_t *)current_task);
 		mutex_release(pipe->lock);
 		while(!tm_schedule());
 		assert(!set_int(old));
-		if(got_signal(current_task))
+		if(tm_process_got_signal(current_task))
 			return -EINTR;
 		mutex_acquire(pipe->lock);
 	}
@@ -160,13 +160,13 @@ int write_pipe(struct inode *ino, char *buffer, size_t length)
 	pipe->write_pos += length;
 	pipe->pending += length;
 	/* now, unblock the tasks */
-	task_unblock_all(pipe->read_blocked);
-	task_unblock_all(pipe->write_blocked);
+	tm_remove_all_from_blocklist(pipe->read_blocked);
+	tm_remove_all_from_blocklist(pipe->write_blocked);
 	mutex_release(pipe->lock);
 	return length;
 }
 
-int pipedev_select(struct inode *in, int rw)
+int dm_pipedev_select(struct inode *in, int rw)
 {
 	if(rw != READ)
 		return 1;

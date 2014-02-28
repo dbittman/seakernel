@@ -85,8 +85,8 @@ int module_install()
 	}
 	irq1 = register_interrupt_handler(32 + ATA_PRIMARY_IRQ, &ata_irq_handler, 0);
 	irq2 = register_interrupt_handler(32 + ATA_SECONDARY_IRQ, &ata_irq_handler, 0);
-	api = set_availablebd(atapi_rw_main, 2048, ioctl_atapi, atapi_rw_main_multiple, 0);
-	set_blockdevice(3, ata_rw_main, 512, ioctl_ata, ata_rw_multiple, 0);
+	api = dm_set_available_block_device(atapi_rw_main, 2048, ioctl_atapi, atapi_rw_main_multiple, 0);
+	dm_set_block_device(3, ata_rw_main, 512, ioctl_ata, ata_rw_multiple, 0);
 	primary->wait   = mutex_create(0, 0);
 	secondary->wait = mutex_create(0, 0);
 	primary->id=0;
@@ -102,7 +102,7 @@ int module_deps(char *b)
 	return KVERSION;
 }
 
-int module_exit()
+int module_tm_exit()
 {
 	if(api) {
 		printk(1, "[ata]: Syncing disks...\n");
@@ -120,7 +120,7 @@ int module_exit()
 		if(secondary->devices[1].created)
 			psm_unregister_disk_device(PSM_ATA_ID, secondary->devices[1].psm_minor);
 #endif
-		unregister_block_device(api);
+		dm_unregister_block_device(api);
 		ata_pci->flags = 0;
 		mutex_destroy(primary->wait);
 		mutex_destroy(secondary->wait);

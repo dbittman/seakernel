@@ -6,8 +6,10 @@
 #include <kernel.h>
 #include <memory.h>
 #include <task.h>
+
 #define NUM_NODES(v) ((((v->num_ipages*PAGE_SIZE)/sizeof(vnode_t)) > \
 			MAX_NODES) ? MAX_NODES : ((v->num_ipages*PAGE_SIZE)/sizeof(vnode_t)))
+
 static vnode_t *get_node_insert_location(vma_t *v, unsigned num_p)
 {
 	vnode_t *n = (vnode_t *)v->first;
@@ -38,7 +40,7 @@ static vnode_t *get_node_insert_location(vma_t *v, unsigned num_p)
 	return n;
 }
 
-vnode_t *insert_vmem_area(vma_t *v, unsigned num_p)
+vnode_t *vmem_insert_node(vma_t *v, unsigned num_p)
 {
 	assert(v && num_p);
 	if((num_p * PAGE_SIZE + v->addr+(v->num_ipages*PAGE_SIZE)) > v->max)
@@ -82,7 +84,7 @@ vnode_t *insert_vmem_area(vma_t *v, unsigned num_p)
 	return newn;
 }
 
-int remove_vmem_area(vma_t *v, vnode_t *n)
+int vmem_remove_node(vma_t *v, vnode_t *n)
 {
 	mutex_acquire(&v->lock);
 	if(n == v->first)
@@ -105,7 +107,7 @@ int remove_vmem_area(vma_t *v, vnode_t *n)
 	return 0;
 }
 
-vnode_t *find_vmem_area(vma_t *v, addr_t addr)
+vnode_t *vmem_find_node(vma_t *v, addr_t addr)
 {
 	if(!v)
 		return 0;
@@ -120,7 +122,7 @@ vnode_t *find_vmem_area(vma_t *v, addr_t addr)
 	return t;
 }
 
-int init_vmem_area(vma_t *v, addr_t addr, addr_t max, int num_ipages)
+int vmem_create(vma_t *v, addr_t addr, addr_t max, int num_ipages)
 {
 	memset(v, 0, sizeof(vma_t));
 	v->addr = addr;

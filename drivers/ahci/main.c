@@ -11,6 +11,8 @@
 #include <block.h>
 #include <symbol.h>
 #include <modules/psm.h>
+#include <sea/tm/schedule.h>
+
 struct pci_device *ahci_pci;
 int ahci_int = 0;
 struct hba_memory *hba_mem;
@@ -173,7 +175,7 @@ int module_install()
 		return -ENOENT;
 	}
 	irq1 = register_interrupt_handler(ahci_int, ahci_interrupt_handler, 0);
-	ahci_major = set_availablebd(ahci_rw_single, ATA_SECTOR_SIZE, ioctl_ahci, ahci_rw_multiple, 0);
+	ahci_major = dm_set_available_block_device(ahci_rw_single, ATA_SECTOR_SIZE, ioctl_ahci, ahci_rw_multiple, 0);
 	ahci_init_hba(hba_mem);
 	ahci_probe_ports(hba_mem);
 	return 0;
@@ -185,10 +187,10 @@ int module_deps(char *b)
 	return KVERSION;
 }
 
-int module_exit()
+int module_tm_exit()
 {
 	int i;
-	unregister_block_device(ahci_major);
+	dm_unregister_block_device(ahci_major);
 	unregister_interrupt_handler(ahci_int, irq1);
 	for(i=0;i<32;i++)
 	{

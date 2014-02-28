@@ -13,7 +13,7 @@ static void _overflow(char *type)
 	#if DEBUG
 	panic(0, "Overflow");
 	#endif
-	task_suicide();
+	tm_process_suicide();
 }
 
 __attribute__((always_inline)) inline static void store_context_fork(task_t *task)

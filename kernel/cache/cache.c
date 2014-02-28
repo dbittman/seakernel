@@ -31,19 +31,15 @@ int should_element_be_added(cache_t *c)
 int init_cache()
 {
 #if CONFIG_MODULES
-	add_kernel_symbol(get_empty_cache);
-	add_kernel_symbol(find_cache_element);
-	add_kernel_symbol(do_cache_object);
-	add_kernel_symbol(remove_element);
-	add_kernel_symbol(sync_element);
-	add_kernel_symbol(destroy_cache);
-	add_kernel_symbol(sync_cache);
-#if CONFIG_BLOCK_CACHE
-	add_kernel_symbol(write_block_cache);
-	add_kernel_symbol(disconnect_block_cache);
-#endif
-	add_kernel_symbol(destroy_all_id);
-	add_kernel_symbol(kernel_cache_sync);
+	loader_add_kernel_symbol(get_empty_cache);
+	loader_add_kernel_symbol(find_cache_element);
+	loader_add_kernel_symbol(do_cache_object);
+	loader_add_kernel_symbol(remove_element);
+	loader_add_kernel_symbol(sync_element);
+	loader_add_kernel_symbol(destroy_cache);
+	loader_add_kernel_symbol(sync_cache);
+	loader_add_kernel_symbol(destroy_all_id);
+	loader_add_kernel_symbol(kernel_cache_sync);
 #endif
 	cache_list = ll_create(0);
 	return 0;
@@ -245,7 +241,7 @@ void sync_cache(cache_t *c)
 		do_sync_element(c, obj, 1);
 		rwlock_release(c->rwl, RWL_WRITER);
 		
-		if(got_signal(current_task))
+		if(tm_process_got_signal(current_task))
 			return;
 		i++;
 	}

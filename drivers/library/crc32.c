@@ -39,12 +39,12 @@ void init_crc32_table()
 int module_install()
 {
 	init_crc32_table();
-	add_kernel_symbol(calculate_crc32);
+	loader_add_kernel_symbol(calculate_crc32);
 	return 0;
 }
 
-int module_exit()
+int module_tm_exit()
 {
-	remove_kernel_symbol("calculate_crc32");
+	loader_remove_kernel_symbol("calculate_crc32");
 	return 0;
 }

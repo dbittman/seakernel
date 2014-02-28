@@ -22,12 +22,12 @@ void kernel_shutdown()
 	while(num_halted_cpus < num_booted_cpus) asm("pause");
 #endif
 	current_task->thread->uid=0;
-	raise_flag(TF_SHUTDOWN);
+	tm_raise_flag(TF_SHUTDOWN);
 	set_ksf(KSF_SHUTDOWN);
 	sys_sync(PRINT_LEVEL);
 	unmount_all();
 #if CONFIG_MODULES
-	unload_all_modules(1);
+	loader_unload_all_modules(1);
 #endif
 	kprintf("Everything under the sun is in tune, but the sun is eclipsed by the moon.\n");
 }

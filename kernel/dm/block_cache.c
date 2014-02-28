@@ -6,34 +6,49 @@
 #include <dev.h>
 #include <block.h>
 #include <cache.h>
+#include <sea/loader/symbol.h>
 cache_t *blk_cache=0;
 
-int block_cache_sync(struct ce_t *c)
+int dm_block_cache_sync(struct ce_t *c)
 {
 	u64 dev = c->id;
 	u64 blk = c->key;
 	if(c->dirty)
-		do_block_rw(WRITE, dev, blk, c->data, 0);
+		dm_do_block_rw(WRITE, dev, blk, c->data, 0);
 	return 1;
 }
 
-void block_cache_init()
-{
-	blk_cache = get_empty_cache(block_cache_sync, "block");
-}
-
-int disconnect_block_cache(int dev)
+int dm_disconnect_block_cache(int dev)
 {
 	return destroy_all_id(blk_cache, dev);
 }
 
-int cache_block(int dev, u64 blk, int sz, char *buf)
+int dm_write_block_cache(int dev, u64 blk)
+{
+	struct ce_t *c = find_cache_element(blk_cache, dev, blk);
+	dm_block_cache_sync(c);
+	return 1;
+}
+
+void dm_block_cache_init()
+{
+#if CONFIG_MODULES
+#if CONFIG_BLOCK_CACHE
+	loader_add_kernel_symbol(dm_write_block_cache);
+	loader_add_kernel_symbol(dm_disconnect_block_cache);
+#endif
+#endif
+	
+	blk_cache = get_empty_cache(dm_block_cache_sync, "block");
+}
+
+int dm_cache_block(int dev, u64 blk, int sz, char *buf)
 {
 	return do_cache_object(blk_cache, dev < 0 ? -dev : dev, blk, sz, buf, 
 		dev < 0 ? 0 : 1);
 }
 
-int get_block_cache(int dev, u64 blk, char *buf)
+int dm_get_block_cache(int dev, u64 blk, char *buf)
 {
 	struct ce_t *c = find_cache_element(blk_cache, dev, blk);
 	if(!c)
@@ -42,14 +57,7 @@ int get_block_cache(int dev, u64 blk, char *buf)
 	return 1;
 }
 
-int write_block_cache(int dev, u64 blk)
-{
-	struct ce_t *c = find_cache_element(blk_cache, dev, blk);
-	block_cache_sync(c);
-	return 1;
-}
-
-int proc_read_bcache(char *buf, int off, int len)
+int dm_proc_read_bcache(char *buf, int off, int len)
 {
 	return 0;
 }

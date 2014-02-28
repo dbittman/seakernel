@@ -157,14 +157,14 @@ int ioctl_main(int min, int cmd, long arg)
 
 int module_install()
 {
-	loop_maj = set_availablebd(loop_rw, 512, ioctl_main, 0, 0);
+	loop_maj = dm_set_available_block_device(loop_rw, 512, ioctl_main, 0, 0);
 	if(loop_maj < 0) return EINVAL;
-	device_t *dev = get_device(DT_BLOCK, loop_maj);
+	device_t *dev = dm_get_device(DT_BLOCK, loop_maj);
 	if(dev && dev->ptr) {
 		blockdevice_t *bd = dev->ptr;
 		bd->cache=0;
 	} else {
-		unregister_block_device(loop_maj);
+		dm_unregister_block_device(loop_maj);
 		return EINVAL;
 	}
 	loops = ll_create(0);
@@ -173,9 +173,9 @@ int module_install()
 	return 0;
 }
 
-int module_exit()
+int module_tm_exit()
 {
-	unregister_block_device(loop_maj);
+	dm_unregister_block_device(loop_maj);
 	if(ll_is_active(loops))
 	{
 		struct llistnode *cur, *next;

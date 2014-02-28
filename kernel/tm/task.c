@@ -1,3 +1,7 @@
+#include <sea/subsystem.h>
+#define SUBSYSTEM _SUBSYSTEM_TM
+#include <sea/tm/_tm.h>
+#include <sea/tm/process.h>
 #include <kernel.h>
 #include <memory.h>
 #include <task.h>
@@ -15,7 +19,7 @@ tqueue_t *primary_queue=0;
 
 /* create the bare task structure. This needs to be then populated with all the data
  * required for an actual process */
-task_t *task_create()
+task_t *tm_task_create()
 {
 	task_t *task = (task_t *)kmalloc(sizeof(task_t));
 	task->kernel_stack = (addr_t)kmalloc(KERN_STACK_SIZE);
@@ -27,7 +31,7 @@ task_t *task_create()
 	return task;
 }
 
-struct thread_shared_data *thread_data_create()
+struct thread_shared_data *tm_thread_data_create()
 {
 	struct thread_shared_data *thread = (void *)kmalloc(sizeof(struct thread_shared_data));
 	thread->magic = THREAD_MAGIC;
@@ -40,13 +44,13 @@ void init_multitasking()
 {
 	printk(KERN_DEBUG, "[sched]: Starting multitasking system...\n");
 	/* make the kernel task */
-	task_t *task = task_create();
+	task_t *task = tm_task_create();
 	task->pid = next_pid++;
 	task->pd = (page_dir_t *)kernel_dir;
 	task->stack_end=STACK_LOCATION;
 	task->priority = 1;
 	task->cpu = primary_cpu;
-	task->thread = thread_data_create();
+	task->thread = tm_thread_data_create();
 	/* alarm_mutex is aquired inside a kernel tick, so we may not schedule. */
 	alarm_mutex = mutex_create(0, MT_NOSCHED);
 	
@@ -70,39 +74,39 @@ void init_multitasking()
 	
 	add_atomic(&running_processes, 1);
 #if CONFIG_MODULES
-	add_kernel_symbol(delay);
-	add_kernel_symbol(delay_sleep);
-	add_kernel_symbol(tm_schedule);
-	add_kernel_symbol(run_scheduler);
-	add_kernel_symbol(exit);
-	add_kernel_symbol(sys_setsid);
-	add_kernel_symbol(tm_do_fork);
-	add_kernel_symbol(kill_task);
-	add_kernel_symbol(do_send_signal);
-	add_kernel_symbol(dosyscall);
-	add_kernel_symbol(task_pause);
-	add_kernel_symbol(task_resume);
-	add_kernel_symbol(got_signal);
+	loader_add_kernel_symbol(tm_delay);
+	loader_add_kernel_symbol(tm_delay_sleep);
+	loader_add_kernel_symbol(tm_schedule);
+	loader_add_kernel_symbol(tm_exit);
+	loader_add_kernel_symbol(sys_setsid);
+	loader_add_kernel_symbol(tm_do_fork);
+	loader_add_kernel_symbol(tm_kill_process);
+	loader_add_kernel_symbol(tm_do_send_signal);
+	loader_add_kernel_symbol(dosyscall);
+	loader_add_kernel_symbol(tm_process_pause);
+	loader_add_kernel_symbol(tm_process_resume);
+	loader_add_kernel_symbol(tm_process_got_signal);
  #if CONFIG_SMP
-	add_kernel_symbol(get_cpu);
+	loader_add_kernel_symbol(get_cpu);
  #endif
-	_add_kernel_symbol((addr_t)(task_t **)&kernel_task, "kernel_task");
+	loader_do_add_kernel_symbol((addr_t)(task_t **)&kernel_task, "kernel_task");
 #endif
 }
 
 void switch_to_user_mode()
 {
+#warning "clean up"
 	/* set up the kernel stack first...*/
 	set_kernel_stack(current_tss, current_task->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
-	do_switch_to_user_mode();
+	arch_do_switch_to_user_mode();
 }
 
-task_t *get_task_pid(int pid)
+task_t *tm_get_process_by_pid(int pid)
 {
-	return search_tqueue(primary_queue, TSEARCH_PID, pid, 0, 0, 0);
+	return tm_search_tqueue(primary_queue, TSEARCH_PID, pid, 0, 0, 0);
 }
 
-int times(struct tms *buf)
+int sys_times(struct tms *buf)
 {
 	if(buf) {
 		buf->tms_utime = current_task->utime;
@@ -113,33 +117,19 @@ int times(struct tms *buf)
 	return ticks;
 }
 
-void task_pause(task_t *t)
-{
-	/* don't care what other processors do */
-	t->state = TASK_ISLEEP;
-	if(t == current_task) {
-		while(!tm_schedule());
-	}
-}
-
-void task_resume(task_t *t)
-{
-	t->state = TASK_RUNNING;
-}
-
 /* we set interrupts to zero here so that we may use rwlocks in
  * (potentially) an interrupt handler */
-void task_block(struct llist *list, task_t *task)
+void tm_add_to_blocklist_and_block(struct llist *list, task_t *task)
 {
 	int old = set_int(0);
 	task->blocklist = list;
 	ll_do_insert(list, task->blocknode, (void *)task);
 	tqueue_remove(((cpu_t *)task->cpu)->active_queue, task->activenode);
-	task_pause(task);
+	tm_process_pause(task);
 	assert(!set_int(old));
 }
 
-void task_almost_block(struct llist *list, task_t *task)
+void tm_add_to_blocklist(struct llist *list, task_t *task)
 {
 	int old = set_int(0);
 	task->blocklist = list;
@@ -149,18 +139,18 @@ void task_almost_block(struct llist *list, task_t *task)
 	assert(!set_int(old));
 }
 
-void task_unblock(struct llist *list, task_t *t)
+void tm_remove_from_blocklist(struct llist *list, task_t *t)
 {
 	int old = set_int(0);
 	tqueue_insert(((cpu_t *)t->cpu)->active_queue, (void *)t, t->activenode);
 	struct llistnode *bn = t->blocknode;
 	t->blocklist = 0;
 	ll_do_remove(list, bn, 0);
-	task_resume(t);
+	tm_process_resume(t);
 	assert(!set_int(old));
 }
 
-void task_unblock_all(struct llist *list)
+void tm_remove_all_from_blocklist(struct llist *list)
 {
 	int old = set_int(0);
 	rwlock_acquire(&list->rwl, RWL_WRITER);
@@ -172,14 +162,14 @@ void task_unblock_all(struct llist *list)
 		assert(entry->blocknode == cur);
 		ll_do_remove(list, cur, 1);
 		tqueue_insert(((cpu_t *)entry->cpu)->active_queue, (void *)entry, entry->activenode);
-		task_resume(entry);
+		tm_process_resume(entry);
 	}
 	assert(!list->num);
 	rwlock_release(&list->rwl, RWL_WRITER);
 	assert(!set_int(old));
 }
 
-void move_task_cpu(task_t *t, cpu_t *cpu)
+void tm_move_task_cpu(task_t *t, cpu_t *cpu)
 {
 	panic(0, "NO!");
 	assert(t && cpu);
@@ -192,7 +182,7 @@ void move_task_cpu(task_t *t, cpu_t *cpu)
 	if(t == cpu->ktask || t == kernel_task)
 		panic(0, "trying to move idle task");
 	printk(0, "moving task %d to cpu %d\n", t->pid, cpu->apicid);
-	raise_task_flag(t, TF_MOVECPU);
+	tm_process_raise_flag(t, TF_MOVECPU);
 	cpu_t *oldcpu = t->cpu;
 	while(1)
 	{
@@ -209,5 +199,5 @@ void move_task_cpu(task_t *t, cpu_t *cpu)
 		tqueue_insert(cpu->active_queue, (void *)t, t->activenode);
 	
 	mutex_release(&oldcpu->lock);
-	lower_task_flag(t, TF_MOVECPU);
+	tm_process_lower_flag(t, TF_MOVECPU);
 }

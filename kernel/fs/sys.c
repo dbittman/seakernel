@@ -11,6 +11,7 @@
 #include <symbol.h>
 #include <mount.h>
 #include <file.h>
+#include <sea/dm/block.h>
 
 int system_setup=0;
 /* This function is called once at the start of the init process initialization.
@@ -35,7 +36,7 @@ int sys_setup(int a)
 	init_dev_fs();
 	init_proc_fs();
 	add_inode(procfs_root, kproclist);
-	char_rw(OPEN, GETDEV(3, 1), 0, 0);
+	dm_char_rw(OPEN, GETDEV(3, 1), 0, 0);
 	sys_open("/dev/tty1", O_RDWR);   /* stdin  */
 	sys_open("/dev/tty1", O_WRONLY); /* stdout */
 	sys_open("/dev/tty1", O_WRONLY); /* stderr */
@@ -49,27 +50,27 @@ void init_vfs()
 {
 	load_superblocktable();
 #if CONFIG_MODULES
-	add_kernel_symbol(do_iremove);
-	add_kernel_symbol(pfs_cn_node);
-	add_kernel_symbol(pfs_cn);
-	add_kernel_symbol(sys_open);
-	add_kernel_symbol(sys_read);
-	add_kernel_symbol(set_as_kernel_task);
-	add_kernel_symbol(sys_write);
-	add_kernel_symbol(sys_close);
-	add_kernel_symbol(read_fs);
-	add_kernel_symbol(write_fs);
-	add_kernel_symbol(sys_ioctl);
-	add_kernel_symbol(proc_append_buffer);
-	add_kernel_symbol(sys_stat);
-	add_kernel_symbol(sys_fstat);
-	add_kernel_symbol(register_sbt);
-	add_kernel_symbol(unregister_sbt);
-	add_kernel_symbol(iput);
-	_add_kernel_symbol((addr_t)(struct inode **)&devfs_root, "devfs_root");
-	add_kernel_symbol(do_get_idir);
-	add_kernel_symbol(proc_set_callback);
-	add_kernel_symbol(proc_get_major);
+	loader_add_kernel_symbol(do_iremove);
+	loader_add_kernel_symbol(pfs_cn_node);
+	loader_add_kernel_symbol(pfs_cn);
+	loader_add_kernel_symbol(sys_open);
+	loader_add_kernel_symbol(sys_read);
+	loader_add_kernel_symbol(kt_set_as_kernel_task);
+	loader_add_kernel_symbol(sys_write);
+	loader_add_kernel_symbol(sys_close);
+	loader_add_kernel_symbol(read_fs);
+	loader_add_kernel_symbol(write_fs);
+	loader_add_kernel_symbol(sys_ioctl);
+	loader_add_kernel_symbol(proc_append_buffer);
+	loader_add_kernel_symbol(sys_stat);
+	loader_add_kernel_symbol(sys_fstat);
+	loader_add_kernel_symbol(register_sbt);
+	loader_add_kernel_symbol(unregister_sbt);
+	loader_add_kernel_symbol(iput);
+	loader_do_add_kernel_symbol((addr_t)(struct inode **)&devfs_root, "devfs_root");
+	loader_add_kernel_symbol(do_get_idir);
+	loader_add_kernel_symbol(proc_set_callback);
+	loader_add_kernel_symbol(proc_get_major);
 #endif
 }
 
@@ -289,7 +290,7 @@ int sys_mknod(char *path, mode_t mode, dev_t dev)
 	i->mode = (mode & ~0xFFF) | ((mode&0xFFF) & (~current_task->cmask&0xFFF));
 	sync_inode_tofs(i);
 	if(S_ISFIFO(i->mode)) {
-		i->pipe = create_pipe();
+		i->pipe = dm_create_pipe();
 		i->pipe->type = PIPE_NAMED;
 	}
 	iput(i);
@@ -373,11 +374,11 @@ int select_filedes(int i, int rw)
 	if(S_ISREG(in->mode) || S_ISDIR(in->mode) || S_ISLNK(in->mode))
 		ready = vfs_callback_select(in, rw);
 	else if(S_ISCHR(in->mode))
-		ready = chardev_select(in, rw);
+		ready = dm_chardev_select(in, rw);
 	else if(S_ISBLK(in->mode))
-		ready = blockdev_select(in, rw);
+		ready = dm_blockdev_select(in, rw);
 	else if(S_ISFIFO(in->mode))
-		ready = pipedev_select(in, rw);
+		ready = dm_pipedev_select(in, rw);
 	fput((task_t *)current_task, i, 0);
 	return ready;
 }
@@ -431,7 +432,7 @@ int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 		if((!wait && timeout) || is_ok)
 			break;
 		tm_schedule();
-		if(got_signal(current_task))
+		if(tm_process_got_signal(current_task))
 			return -EINTR;
 	}
 	if(timeout)

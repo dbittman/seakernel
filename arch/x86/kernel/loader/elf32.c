@@ -21,7 +21,7 @@ int process_elf(char *mem, int fp, unsigned *start, unsigned *end)
 
 #if (CONFIG_MODULES)
 
-int arch_specific_parse_elf_module(uint8_t * buf, addr_t *entry, addr_t *exiter, addr_t *deps)
+int arch_specific_parse_elf_module(uint8_t * buf, addr_t *entry, addr_t *tm_exiter, addr_t *deps)
 {
 	uint32_t i, x;
 	uint32_t module_entry=0, reloc_addr, mem_addr, module_exiter=0, module_deps=0;
@@ -46,7 +46,7 @@ int arch_specific_parse_elf_module(uint8_t * buf, addr_t *entry, addr_t *exiter,
 					module_entry = get_section_offset(buf, symtab->shndx) + 
 						symtab->address + (uint32_t)buf;
 				if(!memcmp((uint8_t*)get_symbol_string(buf, symtab->name), 
-						(uint8_t*)"module_exit", 11))
+						(uint8_t*)"module_tm_exit", 11))
 					module_exiter = get_section_offset(buf, symtab->shndx) + 
 						symtab->address + (uint32_t)buf;
 				if(!memcmp((uint8_t*)get_symbol_string(buf, symtab->name), 
@@ -64,7 +64,7 @@ int arch_specific_parse_elf_module(uint8_t * buf, addr_t *entry, addr_t *exiter,
 	}
 	
 	*entry = module_entry;
-	*exiter = module_exiter;
+	*tm_exiter = module_exiter;
 	*deps = module_deps;
 	
 	/* fix up the relocation entries */
@@ -86,7 +86,7 @@ int arch_specific_parse_elf_module(uint8_t * buf, addr_t *entry, addr_t *exiter,
 					/* external reference (kernel symbol most likely) */
 					if(symtab->shndx == 0)
 					{
-						reloc_addr = find_kernel_function(get_symbol_string(buf, symtab->name));
+						reloc_addr = loader_find_kernel_function(get_symbol_string(buf, symtab->name));
 						if(!reloc_addr)
 						{
 							printk(KERN_INFO, "[mod]: *ABS* unresolved dependency \"%s\"\n", 
@@ -109,7 +109,7 @@ int arch_specific_parse_elf_module(uint8_t * buf, addr_t *entry, addr_t *exiter,
 					/* external reference (kernel symbol most likely) */
 					if(symtab->shndx == 0)
 					{
-						reloc_addr = find_kernel_function(get_symbol_string(buf, 
+						reloc_addr = loader_find_kernel_function(get_symbol_string(buf, 
 								symtab->name));
 						if(!reloc_addr)
 						{

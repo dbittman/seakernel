@@ -24,7 +24,7 @@ void move_task_to_kill_queue(task_t *t, int);
 void delay_sleep(int t);
 void take_issue_with_current_task();
 void clear_resources(task_t *);
-int times(struct tms *buf);
+int sys_times(struct tms *buf);
 void run_scheduler();
 void arch_specific_set_current_task(page_dir_t *, addr_t);
 int set_gid(int);
@@ -100,48 +100,5 @@ extern int current_hz;
 extern struct llist *kill_queue;
 extern unsigned running_processes;
 extern volatile long ticks;
-
-
-static __attribute__((always_inline)) inline void enter_system(int sys)
-{
-	current_task->system=(!sys ? -1 : sys);
-	current_task->cur_ts/=2;
-}
-
-static __attribute__((always_inline)) inline void exit_system()
-{
-	current_task->last = current_task->system;
-	current_task->system=0;
-}
-
-static int GET_MAX_TS(task_t *t)
-{
-	if(t->flags & TF_EXITING)
-		return 1;
-	int x = t->priority;
-	if(t->tty == curcons->tty)
-		x += sched_tty;
-	return x;
-}
-
-static void __engage_idle()
-{
-	task_resume((task_t *)kernel_task);
-}
-
-static void __disengage_idle()
-{
-	task_pause((task_t *)kernel_task);
-}
-
-__attribute__((always_inline)) inline static int task_is_runable(task_t *task)
-{
-	assert(task);
-	if(task->state == TASK_DEAD)
-		return 0;
-	return (int)(task->state == TASK_RUNNING 
-		|| task->state == TASK_SUICIDAL 
-		|| (task->state == TASK_ISLEEP && (task->sigd)));
-}
 
 #endif

@@ -56,7 +56,7 @@ void handle_ipi_cpu_halt(volatile registers_t regs)
 
 void handle_ipi_reschedule(volatile registers_t regs)
 {
-	run_scheduler();
+	tm_schedule();
 }
 
 void handle_ipi_tlb(volatile registers_t regs)

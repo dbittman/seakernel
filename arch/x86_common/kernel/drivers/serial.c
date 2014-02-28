@@ -48,7 +48,7 @@ char read_serial(int p)
 	return inb(p);
 }
 
-void serial_puts(int port, char *s)
+void serial_console_puts(int port, char *s)
 {DS_RET;
 	if(!serial_initialized)
 		return;
@@ -61,7 +61,7 @@ void serial_puts(int port, char *s)
 	mutex_release(&serial_m);
 }
 
-void serial_puts_nolock(int port, char *s)
+void serial_console_puts_nolock(int port, char *s)
 {DS_RET;
 	if(!serial_initialized)
 		return;
@@ -92,7 +92,7 @@ int serial_rw(int rw, int min, char *b, size_t c)
 		while(i--) {
 			while(serial_received(serial_debug_port) == 0)
 			{
-				if(got_signal(current_task))
+				if(tm_process_got_signal(current_task))
 					return -EINTR;
 			}
 			*(b) = inb(serial_debug_port);
@@ -112,10 +112,10 @@ void init_serial()
 	serial_debug_port = *(unsigned short *)(0x400);
 	init_serial_port(serial_debug_port);
 	serial_initialized = 1;
-	serial_puts_nolock(0, "[kernel]: started debug serial output\n");
+	serial_console_puts_nolock(0, "[kernel]: started debug serial output\n");
 #endif
 #if CONFIG_MODULES
-	add_kernel_symbol(serial_puts);
-	add_kernel_symbol(serial_puts_nolock);
+	loader_add_kernel_symbol(serial_console_puts);
+	loader_add_kernel_symbol(serial_console_puts_nolock);
 #endif
 }

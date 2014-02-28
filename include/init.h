@@ -26,11 +26,11 @@ int kernel_cache_sync_slow(int all);
 void get_timed(struct tm *now);
 extern void enter_system();
 void kernel_task_freer();
-int kernel_idle_task();
+int kt_kernel_idle_task();
 void init_vfs();
 int init_cache();
+int kt_init_kernel_tasking();
 void init_serial();
-int init_kern_task();
 void net_init();
 /* Adds an env var to the init_env array */
 #define add_init_env(x) init_env[count_ie++] = x;init_env[count_ie]=0

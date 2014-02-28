@@ -57,7 +57,7 @@ struct file *d_sys_open(char *name, int flags, mode_t _mode, int *error, int *nu
 	ret = add_file_pointer((task_t *)current_task, f);
 	if(num) *num = ret;
 	if(S_ISCHR(inode->mode) && !(flags & _FNOCTTY))
-		char_rw(OPEN, inode->dev, 0, 0);
+		dm_char_rw(OPEN, inode->dev, 0, 0);
 	if(flags & _FTRUNC && S_ISREG(inode->mode))
 	{
 		inode->len=0;
@@ -104,8 +104,8 @@ int duplicate(task_t *t, int fp, int n)
 	if(f->inode->pipe && !f->inode->pipe->type) {
 		add_atomic(&f->inode->pipe->count, 1);
 		if(f->flags & _FWRITE) add_atomic(&f->inode->pipe->wrcount, 1);
-		task_unblock_all(f->inode->pipe->read_blocked);
-		task_unblock_all(f->inode->pipe->write_blocked);
+		tm_remove_all_from_blocklist(f->inode->pipe->read_blocked);
+		tm_remove_all_from_blocklist(f->inode->pipe->write_blocked);
 	}
 	int ret = 0;
 	if(n)

@@ -9,14 +9,14 @@ int process_packet_ipv4(char *b, unsigned len)
 
 int module_install()
 {
-	add_kernel_symbol(process_packet_ipv4);
+	loader_add_kernel_symbol(process_packet_ipv4);
 	reload_eth_routing_table();
 	return 0;
 }
 
-int module_exit()
+int module_tm_exit()
 {
-	remove_kernel_symbol("process_packet_ipv4");
+	loader_remove_kernel_symbol("process_packet_ipv4");
 	reload_eth_routing_table();
 	return 0;
 }

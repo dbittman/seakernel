@@ -7,7 +7,7 @@
 #include <ll.h>
 #include <sea/fs/flock.h>
 #include <sea/fs/stat.h>
-#include <sea/dm/pipe.h>
+
 
 #define MAY_EXEC      0100
 #define MAY_WRITE     0200
@@ -23,6 +23,8 @@ typedef struct {
 	struct inode *root;
 	struct inode *parent;
 } mount_pt_t;
+
+typedef struct pipe_struct pipe_t;
 
 struct inode {
 	/* Attributes */

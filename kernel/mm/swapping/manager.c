@@ -69,7 +69,7 @@ swapdev_t *init_swapdevice(int dev, unsigned size, unsigned flags, unsigned bs)
 		printk(6, "[swap]: Device %x already registered!\n", dev);
 		return 0;
 	}
-	device_t *dt = get_device(DT_BLOCK, MAJOR(dev));
+	device_t *dt = dm_get_device(DT_BLOCK, MAJOR(dev));
 	if(!dt)
 	{
 		printk(6, "[swap]: Device %x does not exist or is not a block device!\n", dev);
@@ -95,8 +95,8 @@ swapdev_t *init_swapdevice(int dev, unsigned size, unsigned flags, unsigned bs)
 #ifdef SWAP_DEBUG
 	printk(0, "[swap]: Disabling block cache on device %x\n", dev);
 #endif
-	s->old_cache = block_ioctl(dev, -2, 0);
-	block_ioctl(dev, -3, 0);
+	s->old_cache = dm_block_ioctl(dev, -2, 0);
+	dm_block_ioctl(dev, -3, 0);
 	add_swapdevice(s);
 #ifdef SWAP_DEBUG
 	printk(0, "[swap]: Added swap device\n");
@@ -139,7 +139,7 @@ int sys_swapon(char *node, unsigned size /*0 for all */)
 	if(in) iput(in);
 	unsigned bs=0;
 	if(!size) {
-		size = block_ioctl(dev, -7, (int)&bs);
+		size = dm_block_ioctl(dev, -7, (int)&bs);
 	}
 	else 
 		bs=1;
@@ -200,7 +200,7 @@ int sys_swapoff(char *node, unsigned flags)
 	printk(0, "[swap]: Swapping on device %s disabled. Restoring cache settings...\n", node);
 #endif
 	remove_swapdevice(s);
-	block_ioctl(dev, -3, s->old_cache);
+	dm_block_ioctl(dev, -3, s->old_cache);
 	kfree(s->page_index);
 	kfree(s->block_index);
 	destroy_mutex(s->lock);
@@ -308,7 +308,7 @@ void __KT_swapper()
 	
 	//for(;;)
 	//{
-		delay(1000);
+		tm_delay(1000);
 		
 		if(num_swapdev)
 		{
@@ -339,7 +339,7 @@ void __KT_swapper()
 						break;
 					}
 					t=t->next;
-					//delay(100);
+					//tm_delay(100);
 				}
 			}
 		}
@@ -350,7 +350,7 @@ int sys_swaptask(unsigned pid)
 {
 	if(current_task->uid)
 		return -1;
-	task_t *t = get_task_pid(pid);
+	task_t *t = tm_get_process_by_pid(pid);
 	if(!t)
 		return -2;
 	if(t->flags & TF_KTASK || !t->pid)

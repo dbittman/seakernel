@@ -7,6 +7,7 @@
 #include <module.h>
 #include <swap.h>
 #include <cpu.h>
+#include <sea/dm/block.h>
 
 int proc_read_int(char *buf, int off, int len);
 int proc_read_mutex(char *buf, int off, int len);
@@ -118,7 +119,7 @@ int proc_kern_rw(char rw, struct inode *inode, int m, char *buf, int off, int le
 				return proc_read_int(buf, off, len);
 #if CONFIG_BLOCK_CACHE
 			case 6:
-				return proc_read_bcache(buf, off, len);
+				return dm_proc_read_bcache(buf, off, len);
 #endif
 		}
 	}

@@ -5,6 +5,8 @@
 #include <pmap.h>
 #include <net/net.h>
 #include <mutex.h>
+#include <sea/tm/process.h>
+#include <atomic.h>
 
 int i350_int;
 struct pmap i350_pmap;
@@ -210,7 +212,7 @@ void i350_init(struct i350_device *dev)
 	tmp |= E1000_PCS_LCTL_AN_ENABLE;
 	i350_write32(dev, E1000_PCS_LCTL, tmp);
 	
-	delay_sleep(10);
+	tm_delay_sleep(10);
 	
 	i350_allocate_receive_buffers(dev);
 	i350_allocate_transmit_buffers(dev);
@@ -226,7 +228,7 @@ void i350_init(struct i350_device *dev)
 	{
 		//tmp2 = i350_read32(dev, E1000_GPTC);
 		//kprintf("**%d**\n", tmp2);
-		delay_sleep(2000);
+		tm_delay_sleep(2000);
 	}
 
 }
@@ -365,7 +367,7 @@ int module_install()
 	return 0;
 }
 
-int module_exit()
+int module_tm_exit()
 {
 	return 0;
 }

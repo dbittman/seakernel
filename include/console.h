@@ -1,49 +1,8 @@
 #ifndef CONSOLE_H
 #define CONSOLE_H
-#include <termios.h>
-#include <mutex.h>
-#include <ll.h>
-#define TTY_IBLEN 256
 
-#define KERN_PANIC 8
-#define KERN_CRIT 7
-#define KERN_ERROR 6
-#define KERN_WARN 5
-#define KERN_MILE 4
-#define KERN_INFO 3
-#define KERN_MSG 2
-#define KERN_DEBUG 1
-#define KERN_EVERY 0
+#include <sea/tty/terminal.h>
 
-struct vterm {
-	char flag;
-	volatile int x, ox, y, oy, f, b, w, h, bd, fw, fh, mode, es, scrollt, scrollb;
-	char *vmem, *cur_mem, *video;
-	char input[TTY_IBLEN];
- 	volatile int inpos;
-	volatile int reading;
-	unsigned char *font;
-	int tty;
-	char no_wrap;
-	mutex_t wlock, inlock;
-	struct llist input_block;
-	struct termios term;
-	struct renderer {
-		void (*scroll)(struct vterm *);
-		void (*scroll_up)(struct vterm *);
-		void (*update_cursor)(struct vterm *);
-		void (*clear)(struct vterm *);
-		void (*putch)(struct vterm *, char);
-		void (*switch_in)(struct vterm *);
-		void (*clear_cursor)(struct vterm *);
-	} rend;
-	struct console_driver_s {
-		void (*init)(struct vterm *);
-		char *name;
-	} *driver;
-};
-
-typedef struct console_driver_s console_driver_t;
 extern struct vterm consoles[];
 extern struct vterm *curcons, *kernel_console, *log_console;
 
@@ -67,6 +26,6 @@ void puts(char *s);
 void tty_init(struct vterm **);
 void create_console(struct vterm *con);
 void destroy_console(struct vterm *con);
-void init_console(struct vterm *con, console_driver_t *driver);
+void init_console(struct vterm *con, struct console_driver *driver);
 int read_escape_seq(struct vterm *, char *seq);
 #endif

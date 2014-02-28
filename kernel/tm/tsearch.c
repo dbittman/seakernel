@@ -16,7 +16,7 @@
 /* assumes that the passed task queue contains
  * elements of task_t.
  */
-task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned long value, void (*action)(task_t *, int), int arg, int *count)
+task_t *tm_search_tqueue(tqueue_t *tq, unsigned flags, unsigned long value, void (*action)(task_t *, int), int arg, int *count)
 {
 	int old = set_int(0);
 	mutex_acquire(&tq->lock);
@@ -53,7 +53,7 @@ task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned long value, void (*
 			t = tmp;
 			break;
 		}
-		/* special actions required by exit */
+		/* special actions required by tm_exit */
 		if(flags & TSEARCH_EXIT_WAITING && tmp->waiting == current_task)
 		{
 			tmp->sigd = SIGWAIT;
@@ -62,7 +62,7 @@ task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned long value, void (*
 			memcpy((void *)&tmp->we_res, (void *)&current_task->exit_reason, 
 				   sizeof(current_task->exit_reason));
 			tmp->we_res.pid = current_task->pid;
-			task_resume(tmp);	
+			tm_process_resume(tmp);	
 		}
 		if(flags & TSEARCH_EXIT_PARENT && tmp->parent == current_task)
 		{
@@ -75,7 +75,7 @@ task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned long value, void (*
 		if(t && !(flags & TSEARCH_FINDALL))
 			break;
 	}
-	/* TSEARCH_EXIT_PARENT is specified only during a process's exit. If this task has no parent, or 
+	/* TSEARCH_EXIT_PARENT is specified only during a process's tm_exit. If this task has no parent, or 
 	 * will soon have no parent, we just move ourselves to the kill queue immediately, saving time later */
 	if(flags & TSEARCH_EXIT_PARENT && (current_task->parent == 0 || (current_task->parent->flags & TF_EXITING)) && (current_task->flags & TF_EXITING))
 	{

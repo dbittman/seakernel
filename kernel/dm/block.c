@@ -12,7 +12,7 @@ int ioctl_stub(int a, int b, long c)
 	return -1;
 }
 
-blockdevice_t *set_blockdevice(int maj, int (*f)(int, int, u64, char*), int bs, 
+blockdevice_t *dm_set_block_device(int maj, int (*f)(int, int, u64, char*), int bs, 
 	int (*c)(int, int, long), int (*m)(int, int, u64, char *, int), int (*s)(int, int))
 {
 	printk(1, "[dev]: Setting block device %d, bs=%d (%x, %x)\n", maj, bs, f, c);
@@ -26,19 +26,19 @@ blockdevice_t *set_blockdevice(int maj, int (*f)(int, int, u64, char*), int bs,
 	if(!c)
 		dev->ioctl=ioctl_stub;
 	dev->cache = BCACHE_WRITE | (CONFIG_BLOCK_READ_CACHE ? BCACHE_READ : 0);
-	add_device(DT_BLOCK, maj, dev);
+	dm_add_device(DT_BLOCK, maj, dev);
 	return dev;
 }
 
-int set_availablebd(int (*f)(int, int, u64, char*), int bs, 
+int dm_set_available_block_device(int (*f)(int, int, u64, char*), int bs, 
 	int (*c)(int, int, long), int (*m)(int, int, u64, char *, int), int (*s)(int, int))
 {
 	int i=10; /* first 10 devices are reserved by the system */
 	mutex_acquire(&bd_search_lock);
 	while(i>0) {
-		if(!get_device(DT_BLOCK, i))
+		if(!dm_get_device(DT_BLOCK, i))
 		{
-			set_blockdevice(i, f, bs, c, m, s);
+			dm_set_block_device(i, f, bs, c, m, s);
 			break;
 		}
 		i++;
@@ -49,37 +49,37 @@ int set_availablebd(int (*f)(int, int, u64, char*), int bs,
 	return i;
 }
 
-void unregister_block_device(int n)
+void dm_unregister_block_device(int n)
 {
 	printk(1, "[dev]: Unregistering block device %d\n", n);
 	mutex_acquire(&bd_search_lock);
-	device_t *dev = get_device(DT_BLOCK, n);
+	device_t *dev = dm_get_device(DT_BLOCK, n);
 	if(!dev) {
 		mutex_release(&bd_search_lock);
 		return;
 	}
 	void *fr = dev->ptr;
-	remove_device(DT_BLOCK, n);
+	dm_remove_device(DT_BLOCK, n);
 	mutex_release(&bd_search_lock);
 	mutex_destroy(&((blockdevice_t *)(dev->ptr))->acl);
 	kfree(fr);
 }
 
-void init_block_devs()
+void dm_init_block_devices()
 {
 	mutex_create(&bd_search_lock, 0);
 #if CONFIG_BLOCK_CACHE
-	block_cache_init();
+	dm_block_cache_init();
 #endif
 }
 
-int do_block_rw(int rw, dev_t dev, u64 blk, char *buf, blockdevice_t *bd)
+int dm_do_block_rw(int rw, dev_t dev, u64 blk, char *buf, blockdevice_t *bd)
 {
 	if(dev < 0)
 		dev=-dev;
 	if(!bd) 
 	{
-		device_t *dt = get_device(DT_BLOCK, MAJOR(dev));
+		device_t *dt = dm_get_device(DT_BLOCK, MAJOR(dev));
 		if(!dt)
 			return -ENXIO;
 		bd = (blockdevice_t *)dt->ptr;
@@ -94,13 +94,13 @@ int do_block_rw(int rw, dev_t dev, u64 blk, char *buf, blockdevice_t *bd)
 	return -EIO;
 }
 
-int do_block_rw_multiple(int rw, dev_t dev, u64 blk, char *buf, int count, blockdevice_t *bd)
+int dm_do_block_rw_multiple(int rw, dev_t dev, u64 blk, char *buf, int count, blockdevice_t *bd)
 {
 	if(dev < 0)
 		dev=-dev;
 	if(!bd) 
 	{
-		device_t *dt = get_device(DT_BLOCK, MAJOR(dev));
+		device_t *dt = dm_get_device(DT_BLOCK, MAJOR(dev));
 		if(!dt)
 			return -ENXIO;
 		bd = (blockdevice_t *)dt->ptr;
@@ -115,11 +115,11 @@ int do_block_rw_multiple(int rw, dev_t dev, u64 blk, char *buf, int count, block
 	return -EIO;
 }
 
-int block_rw(int rw, dev_t dev, u64 blk, char *buf, blockdevice_t *bd)
+int dm_block_rw(int rw, dev_t dev, u64 blk, char *buf, blockdevice_t *bd)
 {
 	if(!bd) 
 	{
-		device_t *dt = get_device(DT_BLOCK, MAJOR(dev));
+		device_t *dt = dm_get_device(DT_BLOCK, MAJOR(dev));
 		if(!dt)
 			return -ENXIO;
 		bd = (blockdevice_t *)dt->ptr;
@@ -128,33 +128,33 @@ int block_rw(int rw, dev_t dev, u64 blk, char *buf, blockdevice_t *bd)
 	if(rw == READ)
 	{
 #if CONFIG_BLOCK_CACHE
-		if(bd->cache) ret = get_block_cache(dev, blk, buf);
+		if(bd->cache) ret = dm_get_block_cache(dev, blk, buf);
 		if(ret)
 			return bd->blksz;
 #endif
-		ret = do_block_rw(rw, dev, blk, buf, bd);
+		ret = dm_do_block_rw(rw, dev, blk, buf, bd);
 #if CONFIG_BLOCK_CACHE
 		/* -dev signals that this is a read cache - 
 		 * meaning it is not 'dirty' to start with */
 		if(ret == bd->blksz && (bd->cache & BCACHE_READ)) 
-			cache_block(-dev, blk, bd->blksz, buf);
+			dm_cache_block(-dev, blk, bd->blksz, buf);
 #endif
 	} else if(rw == WRITE)
 	{
 #if CONFIG_BLOCK_CACHE
 		if(bd->cache) 
 		{
-			if(!cache_block(dev, blk, bd->blksz, buf))
+			if(!dm_cache_block(dev, blk, bd->blksz, buf))
 				return bd->blksz;
 		}
 #endif
-		ret = do_block_rw(rw, dev, blk, buf, bd);
+		ret = dm_do_block_rw(rw, dev, blk, buf, bd);
 	}
 	return ret;
 }
 
 /* reads many blocks and caches them */
-unsigned do_block_read_multiple(blockdevice_t *bd, dev_t dev, u64 start, 
+static unsigned do_dm_block_read_multiple(blockdevice_t *bd, dev_t dev, u64 start, 
 	unsigned num, char *buf)
 {
 	unsigned count=0;
@@ -162,7 +162,7 @@ unsigned do_block_read_multiple(blockdevice_t *bd, dev_t dev, u64 start,
 	 * and read them individually. block_rw will cache them */
 	if(!bd->rw_multiple) {
 		while(num--) {
-			if(block_rw(READ, dev, start+count, buf+count*bd->blksz, bd) != bd->blksz)
+			if(dm_block_rw(READ, dev, start+count, buf+count*bd->blksz, bd) != bd->blksz)
 				return count;
 			count++;
 		}
@@ -172,7 +172,7 @@ unsigned do_block_read_multiple(blockdevice_t *bd, dev_t dev, u64 start,
 #if CONFIG_BLOCK_CACHE
 	if(bd->cache & BCACHE_READ) {
 		while(count < num) {
-			cache_block(-dev, start+count, bd->blksz, buf + count*bd->blksz);
+			dm_cache_block(-dev, start+count, bd->blksz, buf + count*bd->blksz);
 			count++;
 		}
 	} else
@@ -183,7 +183,7 @@ unsigned do_block_read_multiple(blockdevice_t *bd, dev_t dev, u64 start,
 	return count;
 }
 
-unsigned block_read_multiple(blockdevice_t *bd, int dev, u64 start, 
+static unsigned dm_block_read_multiple(blockdevice_t *bd, int dev, u64 start, 
 	unsigned num, char *buf)
 {
 	unsigned count=0;
@@ -199,16 +199,16 @@ unsigned block_read_multiple(blockdevice_t *bd, int dev, u64 start,
 		 * and it could be more complicated. This gives the minimum reads from
 		 * the block device and reads in the largest chunks possible */
 		while(count<num) {
-			ret = get_block_cache(dev, start+count, buf + count*bd->blksz);
+			ret = dm_get_block_cache(dev, start+count, buf + count*bd->blksz);
 			if(!ret) {
 				unsigned x = count+1;
-				while(x < num && !get_block_cache(dev, start+x, buf + x*bd->blksz))
+				while(x < num && !dm_get_block_cache(dev, start+x, buf + x*bd->blksz))
 					x++;
 				unsigned r;
 				if(x-count == 1)
-					r = block_rw(READ, dev, start+count, buf+count*bd->blksz, bd)/bd->blksz;
+					r = dm_block_rw(READ, dev, start+count, buf+count*bd->blksz, bd)/bd->blksz;
 				else
-					r = do_block_read_multiple(bd, dev, start+count, x-count, buf + count*bd->blksz);
+					r = do_dm_block_read_multiple(bd, dev, start+count, x-count, buf + count*bd->blksz);
 				if(r != x-count)
 					return count+r;
 				count = x;
@@ -218,16 +218,16 @@ unsigned block_read_multiple(blockdevice_t *bd, int dev, u64 start,
 				count++;
 		}
 	} else
-		count=do_block_read_multiple(bd, dev, start, num, buf);
+		count=do_dm_block_read_multiple(bd, dev, start, num, buf);
 #else
-	count=do_block_read_multiple(bd, dev, start, num, buf);
+	count=do_dm_block_read_multiple(bd, dev, start, num, buf);
 #endif
 	return count;
 }
 
-int block_read(dev_t dev, off_t posit, char *buf, size_t c)
+int dm_block_read(dev_t dev, off_t posit, char *buf, size_t c)
 {
-	device_t *dt = get_device(DT_BLOCK, MAJOR(dev));
+	device_t *dt = dm_get_device(DT_BLOCK, MAJOR(dev));
 	if(!dt)
 		return -ENXIO;
 	blockdevice_t *bd = (blockdevice_t *)dt->ptr;
@@ -242,7 +242,7 @@ int block_read(dev_t dev, off_t posit, char *buf, size_t c)
 	/* read in the first (possibly) partial block */
 	offset = pos % blk_size;
 	if(offset) {
-		ret = block_rw(READ, dev, pos/blk_size, tmp, bd);
+		ret = dm_block_rw(READ, dev, pos/blk_size, tmp, bd);
 		if(ret != (int)blk_size)
 			return count;
 		count = blk_size - offset;
@@ -254,7 +254,7 @@ int block_read(dev_t dev, off_t posit, char *buf, size_t c)
 	/* read in the bulk full blocks */
 	if((c-count) >= blk_size) {
 		i = (c-count)/blk_size;
-		unsigned int r = block_read_multiple(bd, dev, pos / blk_size, i, buf + count);
+		unsigned int r = dm_block_read_multiple(bd, dev, pos / blk_size, i, buf + count);
 		if(r != i)
 			return count + r*blk_size;
 		pos += i * blk_size;
@@ -263,7 +263,7 @@ int block_read(dev_t dev, off_t posit, char *buf, size_t c)
 	if(count >= c) return count;
 	/* read in the remainder */
 	if(end % blk_size && pos < end) {
-		ret = block_rw(READ, dev, pos/blk_size, tmp, bd);
+		ret = dm_block_rw(READ, dev, pos/blk_size, tmp, bd);
 		if(ret != (int)blk_size)
 			return count;
 		memcpy(buf+count, tmp, end % blk_size);
@@ -272,9 +272,9 @@ int block_read(dev_t dev, off_t posit, char *buf, size_t c)
 	return count;
 }
 
-int block_write(dev_t dev, off_t posit, char *buf, size_t count)
+int dm_block_write(dev_t dev, off_t posit, char *buf, size_t count)
 {
-	device_t *dt = get_device(DT_BLOCK, MAJOR(dev));
+	device_t *dt = dm_get_device(DT_BLOCK, MAJOR(dev));
 	if(!dt)
 		return -ENXIO;
 	blockdevice_t *bd = (blockdevice_t *)dt->ptr;
@@ -285,14 +285,14 @@ int block_write(dev_t dev, off_t posit, char *buf, size_t count)
 	/* If we are offset in a block, we dont wanna overwrite stuff */
 	if(pos % blk_size)
 	{
-		if(block_rw(READ, dev, pos/blk_size, buffer, bd) != blk_size)
+		if(dm_block_rw(READ, dev, pos/blk_size, buffer, bd) != blk_size)
 			return 0;
 		/* If count is less than whats remaining, just use count */
 		int write = (blk_size-(pos % blk_size));
 		if(count < (unsigned)write)
 			write=count;
 		memcpy(buffer+(pos % blk_size), buf, write);
-		if(block_rw(WRITE, dev, pos/blk_size, buffer, bd) != blk_size)
+		if(dm_block_rw(WRITE, dev, pos/blk_size, buffer, bd) != blk_size)
 			return 0;
 		buf += write;
 		count -= write;
@@ -300,7 +300,7 @@ int block_write(dev_t dev, off_t posit, char *buf, size_t count)
 	}
 	while(count >= (unsigned int)blk_size)
 	{
-		if(block_rw(WRITE, dev, pos/blk_size, buf, bd) != blk_size)
+		if(dm_block_rw(WRITE, dev, pos/blk_size, buf, bd) != blk_size)
 			return (pos-posit);
 		count -= blk_size;
 		pos += blk_size;
@@ -309,31 +309,31 @@ int block_write(dev_t dev, off_t posit, char *buf, size_t count)
 	/* Anything left over? */
 	if(count > 0)
 	{
-		if(block_rw(READ, dev, pos/blk_size, buffer, bd) != blk_size)
+		if(dm_block_rw(READ, dev, pos/blk_size, buffer, bd) != blk_size)
 			return pos-posit;
 		memcpy(buffer, buf, count);
-		block_rw(WRITE, dev, pos/blk_size, buffer, bd);
+		dm_block_rw(WRITE, dev, pos/blk_size, buffer, bd);
 		pos+=count;
 	}
 	return pos-posit;
 }
 
 /* General functions */
-int block_device_rw(int mode, dev_t dev, off_t off, char *buf, size_t len)
+int dm_block_device_rw(int mode, dev_t dev, off_t off, char *buf, size_t len)
 {
 	if(mode == READ)
-		return block_read(dev, off, buf, len);
+		return dm_block_read(dev, off, buf, len);
 	if(mode == WRITE)
-		return block_write(dev, off, buf, len);
+		return dm_block_write(dev, off, buf, len);
 	return -EINVAL;
 }
 
 /* Reserved commands:
  * -1: Sync any data in device buffer
  */
-int block_ioctl(dev_t dev, int cmd, long arg)
+int dm_block_ioctl(dev_t dev, int cmd, long arg)
 {
-	device_t *dt = get_device(DT_BLOCK, MAJOR(dev));
+	device_t *dt = dm_get_device(DT_BLOCK, MAJOR(dev));
 	if(!dt)
 		return -ENXIO;
 	blockdevice_t *bd = (blockdevice_t *)dt->ptr;
@@ -345,9 +345,9 @@ int block_ioctl(dev_t dev, int cmd, long arg)
 		return 0;
 }
 
-int block_device_select(dev_t dev, int rw)
+int dm_block_device_select(dev_t dev, int rw)
 {
-	device_t *dt = get_device(DT_BLOCK, MAJOR(dev));
+	device_t *dt = dm_get_device(DT_BLOCK, MAJOR(dev));
 	if(!dt)
 		return 1;
 	blockdevice_t *bd = (blockdevice_t *)dt->ptr;
@@ -356,23 +356,23 @@ int block_device_select(dev_t dev, int rw)
 	return 1;
 }
 
-int blockdev_select(struct inode *in, int rw)
+int dm_blockdev_select(struct inode *in, int rw)
 {
-	return block_device_select(in->dev, rw);
+	return dm_block_device_select(in->dev, rw);
 }
 
-void send_sync_block()
+void dm_send_sync_block()
 {
 	int i=0;
 	while(i>=0) {
-		device_t *d = get_n_device(DT_BLOCK, i);
+		device_t *d = dm_get_enumerated_device(DT_BLOCK, i);
 		if(!d) break;
 		assert(d->ptr);
 		blockdevice_t *cd = (blockdevice_t *)d->ptr;
 		if(cd->ioctl)
 			cd->ioctl(0, -1, 0);
 		i++;
-		if(got_signal(current_task))
+		if(tm_process_got_signal(current_task))
 			return;
 	}
 }

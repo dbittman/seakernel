@@ -36,7 +36,7 @@ void tqueue_remove_entry(tqueue_t *tq, void *item);
 void tqueue_remove_nolock(tqueue_t *tq, struct llistnode *i);
 void tqueue_remove(tqueue_t *tq, struct llistnode *i);
 void *tqueue_next(tqueue_t *tq);
-task_t *search_tqueue(tqueue_t *tq, unsigned flags, unsigned long value, void (*action)(task_t *, int), int arg, int *);
+task_t *tm_search_tqueue(tqueue_t *tq, unsigned flags, unsigned long value, void (*action)(task_t *, int), int arg, int *);
 extern tqueue_t *primary_queue;
 
 #endif

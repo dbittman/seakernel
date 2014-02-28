@@ -363,15 +363,15 @@ int module_install()
 	is_altgr=0;
 	capslock=0;
 	_keymap_callback=0;
-	add_kernel_symbol(set_keymap_callback);
-	add_kernel_symbol(get_keymap_callback);
+	loader_add_kernel_symbol(set_keymap_callback);
+	loader_add_kernel_symbol(get_keymap_callback);
 	irqk = register_interrupt_handler(IRQ1, (isr_t)&keyboard_int_stage1, (isr_t)&keyboard_int_stage2);
 	flush_port();
 	printk(1, "[keyboard]: initialized keyboard\n");
 	return 0;
 }
 
-int module_exit()
+int module_tm_exit()
 {
 	flush_port();
 	printk(1, "[keyboard]: Restoring old handler\n");

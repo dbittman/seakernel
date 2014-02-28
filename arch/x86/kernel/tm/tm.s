@@ -3,8 +3,8 @@ read_eip:
   pop eax ; this is so cheating.
   jmp eax ; this really shouldn't work. But damn, it's cool.
 
-[GLOBAL do_switch_to_user_mode]
-do_switch_to_user_mode:
+[GLOBAL arch_do_switch_to_user_mode]
+arch_do_switch_to_user_mode:
 	mov   ax, 0x23        ; Load the new data segment descriptor with an RPL of 3.
 	mov   ds, ax          ; Propagate the change to all segment registers.
 	mov   es, ax

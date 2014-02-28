@@ -35,11 +35,11 @@ struct inode *proc_pci;
 volatile int proc_pci_maj;
 struct pci_device *pci_list=0;
 mutex_t *pci_mutex;
-int remove_kernel_symbol(char * unres);
+int loader_remove_kernel_symbol(char * unres);
 int proc_set_callback(int major, int( *callback)(char rw, struct inode *inode, 
 	int m, char *buf, int, int));
 /* Adds a device to the list of devices */
-int pci_add_device(struct pci_device *dev)
+int pci_dm_add_device(struct pci_device *dev)
 {
 	if(!dev) return 0;
 	mutex_acquire(pci_mutex);
@@ -54,7 +54,7 @@ int pci_add_device(struct pci_device *dev)
 }
 
 /* Removes a device from the linked list */
-void pci_remove_device(struct pci_device *dev)
+void pci_dm_remove_device(struct pci_device *dev)
 {
 	if(!dev) return;
 	mutex_acquire(pci_mutex);
@@ -80,7 +80,7 @@ void pci_destroy_list()
 	while(tmp)
 	{
 		struct pci_device *next1 = tmp->next;
-		pci_remove_device(tmp);
+		pci_dm_remove_device(tmp);
 		tmp=next1;
 	}
 }
@@ -198,7 +198,7 @@ void pci_scan()
 					new->dev=dev;
 					new->func=func;
 					new->pcs=pcs;
-					pci_add_device(new);
+					pci_dm_add_device(new);
 					char name[64];
 					int min=0;
 					min = 256*bus + dev*8 + func;
@@ -325,27 +325,27 @@ int module_install()
 	printk(1, "[pci]: Scanning pci bus\n");
 	pci_scan();
 	
-	add_kernel_symbol(pci_locate_device);
-	add_kernel_symbol(pci_locate_devices);
-	add_kernel_symbol(pci_locate_class);
-	add_kernel_symbol(pci_get_base_address);
-	add_kernel_symbol(pci_read_dword);
-	add_kernel_symbol(pci_write_dword);
+	loader_add_kernel_symbol(pci_locate_device);
+	loader_add_kernel_symbol(pci_locate_devices);
+	loader_add_kernel_symbol(pci_locate_class);
+	loader_add_kernel_symbol(pci_get_base_address);
+	loader_add_kernel_symbol(pci_read_dword);
+	loader_add_kernel_symbol(pci_write_dword);
 	return 0;
 }
 
-int module_exit()
+int module_tm_exit()
 {
 	pci_destroy_list();
 	rwlock_acquire(&proc_pci->rwl, RWL_WRITER);
 	iremove_force(proc_pci);
 	proc_set_callback(proc_pci_maj, 0);
-	remove_kernel_symbol("pci_locate_device");
-	remove_kernel_symbol("pci_locate_devices");
-	remove_kernel_symbol("pci_locate_class");
-	remove_kernel_symbol("pci_get_base_address");
-	remove_kernel_symbol("pci_read_dword");
-	remove_kernel_symbol("pci_write_dword");
+	loader_remove_kernel_symbol("pci_locate_device");
+	loader_remove_kernel_symbol("pci_locate_devices");
+	loader_remove_kernel_symbol("pci_locate_class");
+	loader_remove_kernel_symbol("pci_get_base_address");
+	loader_remove_kernel_symbol("pci_read_dword");
+	loader_remove_kernel_symbol("pci_write_dword");
 	mutex_destroy(pci_mutex);
 	return 0;
 }

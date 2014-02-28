@@ -52,12 +52,12 @@ void init_main_cpu_1()
 	printk(KERN_EVERY, "done\n");
 	mutex_create((mutex_t *)&primary_cpu->lock, MT_NOSCHED);
 #if CONFIG_MODULES
-	_add_kernel_symbol((unsigned)(cpu_t *)primary_cpu, "primary_cpu");
-	add_kernel_symbol(set_int);
+	loader_do_add_kernel_symbol((unsigned)(cpu_t *)primary_cpu, "primary_cpu");
+	loader_add_kernel_symbol(set_int);
 #if CONFIG_SMP
-	add_kernel_symbol(get_cpu);
-	add_kernel_symbol((addr_t)&cpu_array_num);
-	add_kernel_symbol((addr_t)&num_booted_cpus);
+	loader_add_kernel_symbol(get_cpu);
+	loader_add_kernel_symbol((addr_t)&cpu_array_num);
+	loader_add_kernel_symbol((addr_t)&num_booted_cpus);
 #endif
 #endif
 

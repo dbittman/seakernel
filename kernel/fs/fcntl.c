@@ -44,7 +44,7 @@ int sys_fcntl(int filedes, int cmd, long attr1, long attr2, long attr3)
 			break;
 		case F_SETOWN: case F_GETOWN:
 			printk(5, "Task attempted to access socket controls on non-socket descriptor!\n");
-			kill_task(current_task->pid);
+			tm_kill_process(current_task->pid);
 			break;
 		case F_SETLK: 
 			ret = fcntl_setlk(f, attr1);

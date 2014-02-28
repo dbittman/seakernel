@@ -12,6 +12,7 @@
 #include <syscall.h>
 #include <uname.h>
 #include <mount.h>
+#include <sea/tty/terminal.h>
 
 unsigned int num_syscalls=0;
 //#define SC_DEBUG 1
@@ -51,10 +52,10 @@ int sys_syslog(int level, char *buf, int len, int ctl)
 void *syscall_table[129] = {
 	SC sys_setup,
 	
-	SC exit,           SC tm_do_fork,        SC wait_task,     SC sys_readpos, 
+	SC tm_exit,           SC tm_do_fork,        SC tm_process_wait,     SC sys_readpos, 
 	SC sys_writepos,   SC sys_open_posix, SC sys_close,     SC sys_fstat,
-	SC sys_stat,       SC sys_isatty,     SC sys_seek,      SC send_signal, 
-	SC sys_sbrk,       SC times,          SC sys_dup,       SC sys_dup2,
+	SC sys_stat,       SC sys_isatty,     SC sys_seek,      SC tm_send_signal, 
+	SC sys_sbrk,       SC sys_times,          SC sys_dup,       SC sys_dup2,
 	
 	SC sys_ioctl,      SC sys_null,       SC sys_null,      SC sys_null, 
 	SC sys_null,       SC sys_null,       SC sys_null,      SC sys_null,
@@ -63,8 +64,8 @@ void *syscall_table[129] = {
 	#if CONFIG_MODULES
 	SC sys_load_module, 
 	SC sys_unload_module, 
-	SC canweunload, 
-	SC unload_all_modules, 
+	SC loader_module_free_to_unload, 
+	SC loader_unload_all_modules, 
 	#else
 	SC sys_null,
 	SC sys_null,
@@ -77,7 +78,7 @@ void *syscall_table[129] = {
 	SC sys_link,       SC unlink,         SC get_ref_count, SC get_pwd, 
 	SC sys_getpath,    SC sys_null,       SC chroot,        SC chdir,
 	SC sys_mount,      SC unmount,        SC read_dir,      SC sys_null, 
-	SC create_console, SC switch_console, SC sys_null,      SC sys_null,
+	SC console_create, SC console_switch, SC sys_null,      SC sys_null,
 	
 	SC sys_null,       SC sys_mmap,       SC sys_munmap,    SC sys_sync, 
 	SC rmdir,          SC sys_fsync,      SC sys_alarm,     SC sys_select,
@@ -95,13 +96,13 @@ void *syscall_table[129] = {
 	SC /**64*/sys_nice,
 	
 	SC sys_null,       SC sys_null,       SC sys_null,      SC task_stat, 
-	SC sys_null,       SC sys_null,       SC delay,         SC kernel_reset,
+	SC sys_null,       SC sys_null,       SC tm_delay,         SC kernel_reset,
 	SC kernel_poweroff,SC get_uid,        SC get_gid,       SC set_uid, 
-	SC set_gid,        SC pm_stat_mem,    SC task_pstat,    SC sys_mount2,
+	SC set_gid,        SC sys_null,    SC task_pstat,    SC sys_mount2,
 	
-	SC sys_null,       SC sys_null,       SC sys_pipe,      SC set_signal, 
+	SC sys_null,       SC sys_null,       SC sys_pipe,      SC tm_set_signal, 
 	SC sys_null,       SC sys_null,       SC sys_null,      SC sys_null,
-	SC get_time,       SC get_timer_th,   SC sys_isstate,   SC sys_wait3, 
+	SC get_time,       SC sys_get_timer_th,   SC sys_isstate,   SC sys_wait3, 
 	SC sys_null,       SC sys_null,       SC sys_getcwdlen, 
 	
 	#if CONFIG_SWAP
@@ -210,7 +211,7 @@ int syscall_handler(volatile registers_t *regs)
 		return -EINVAL;
 	if(kernel_state_flags & KSF_SHUTDOWN)
 		for(;;);
-	enter_system(SYSCALL_NUM_AND_RET);
+	tm_process_enter_system(SYSCALL_NUM_AND_RET);
 	/* most syscalls are pre-emptible, so we enable interrupts and
 	 * expect handlers to disable them if needed */
 	set_int(1);
@@ -232,8 +233,8 @@ int syscall_handler(volatile registers_t *regs)
 	#endif
 		
 	set_int(0);
-	exit_system();
-	__engage_idle();
+	tm_process_exit_system();
+	tm_engage_idle();
 	/* if we need to reschedule, or we have overused our timeslice
 	 * then we need to reschedule. this prevents tasks that do a continuous call
 	 * to write() from starving the resources of other tasks. syscall_count resets
@@ -243,7 +244,7 @@ int syscall_handler(volatile registers_t *regs)
 		|| ++current_task->syscall_count > 2)
 	{
 		/* clear out the flag. Either way in the if statement, we've rescheduled. */
-		lower_flag(TF_SCHED);
+		tm_lower_flag(TF_SCHED);
 		tm_schedule();
 	}
 	/* store the return value in the regs */
@@ -258,7 +259,7 @@ int syscall_handler(volatile registers_t *regs)
 #elif CONFIG_ARCH == TYPE_ARCH_X86_64
 		current_task->reg_b.rax=ret;
 #endif
-		lower_flag(TF_JUMPIN);
+		tm_lower_flag(TF_JUMPIN);
 	}
 	return ret;
 }

@@ -7,7 +7,7 @@
 #include <init.h>
 
 int arch_userspace_signal_initializer(task_t *t, struct sigaction *sa);
-void handle_signal(task_t *t)
+void __tm_handle_signal(task_t *t)
 {
 	t->exit_reason.sig=0;
 	struct sigaction *sa = (struct sigaction *)&(t->thread->signal_act[t->sigd]);
@@ -20,7 +20,7 @@ void handle_signal(task_t *t)
 	else if(!sa->_sa_func._sa_handler && !t->system)
 	{
 		/* Default Handlers */
-		raise_task_flag(t, TF_SCHED);
+		tm_process_raise_flag(t, TF_SCHED);
 		switch(t->sigd)
 		{
 			case SIGHUP : case SIGKILL: case SIGQUIT: case SIGPIPE: 
@@ -29,7 +29,7 @@ void handle_signal(task_t *t)
 			case SIGINT : case SIGTERM: case SIGUSR1: case SIGUSR2:
 				t->exit_reason.cause=__EXITSIG;
 				t->exit_reason.sig=t->sigd;
-				kill_task(t->pid);
+				tm_kill_process(t->pid);
 				break;
 			case SIGUSLEEP:
 				if(t->thread->uid >= t->thread->uid) {
@@ -54,15 +54,15 @@ void handle_signal(task_t *t)
 		}
 		t->sig_mask = t->old_mask;
 		t->sigd = 0;
-		lower_task_flag(t, TF_INSIG);
+		tm_process_lower_flag(t, TF_INSIG);
 	} else {
 		t->sig_mask = t->old_mask;
-		lower_task_flag(t, TF_INSIG);
-		raise_task_flag(t, TF_SCHED);
+		tm_process_lower_flag(t, TF_INSIG);
+		tm_process_raise_flag(t, TF_SCHED);
 	}
 }
 
-int do_send_signal(int pid, int __sig, int p)
+int tm_do_send_signal(int pid, int __sig, int p)
 {
 	if(!current_task)
 	{
@@ -73,7 +73,7 @@ int do_send_signal(int pid, int __sig, int p)
 	
 	if(!pid && !p && current_task->thread->uid && current_task->pid)
 		return -EPERM;
-	task_t *task = get_task_pid(pid);
+	task_t *task = tm_get_process_by_pid(pid);
 	if(!task) return -ESRCH;
 	if(__sig == 127) {
 		if(task->parent) task = task->parent;
@@ -101,19 +101,19 @@ int do_send_signal(int pid, int __sig, int p)
 		task->exit_reason.cause=__EXITSIG;
 		task->exit_reason.sig=__sig;
 		task->state = TASK_RUNNING;
-		kill_task(pid);
+		tm_kill_process(pid);
 	}
 	if(task == current_task)
-		raise_task_flag(task, TF_SCHED);
+		tm_process_raise_flag(task, TF_SCHED);
 	return 0;
 }
 
-int send_signal(int p, int s)
+int tm_send_signal(int p, int s)
 {
-	return do_send_signal(p, s, 0);
+	return tm_do_send_signal(p, s, 0);
 }
 
-void set_signal(int sig, addr_t hand)
+void tm_set_signal(int sig, addr_t hand)
 {
 	assert(current_task);
 	if(sig > 128)
@@ -143,7 +143,7 @@ int sys_alarm(int a)
 				current_task->alarm_next = t;
 				if(t) t->alarm_prev = current_task;
 			}
-			raise_flag(TF_ALARM);
+			tm_raise_flag(TF_ALARM);
 			mutex_release(alarm_mutex);
 			set_int(old);
 		} else
@@ -151,7 +151,7 @@ int sys_alarm(int a)
 	} else {
 		task_t *t = current_task;
 		if((t->flags & TF_ALARM)) {
-			lower_flag(TF_ALARM);
+			tm_lower_flag(TF_ALARM);
 			int old = set_int(0);
 			mutex_acquire(alarm_mutex);
 			if(current_task->alarm_prev) current_task->alarm_prev->alarm_next = current_task->alarm_next;
@@ -211,7 +211,7 @@ int sys_sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict os
 }
 
 
-int signal_will_be_fatal(task_t *t, int sig)
+int tm_signal_will_be_fatal(task_t *t, int sig)
 {
 	if(sig == SIGKILL) return 1;
 	if(t->thread->signal_act[t->sigd]._sa_func._sa_handler) return 0;
@@ -220,7 +220,7 @@ int signal_will_be_fatal(task_t *t, int sig)
 	return 1;
 }
 
-int got_signal(task_t *t)
+int tm_process_got_signal(task_t *t)
 {
 	if(kernel_state_flags & KSF_SHUTDOWN)
 		return 0;

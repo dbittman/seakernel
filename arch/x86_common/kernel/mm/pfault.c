@@ -82,7 +82,7 @@ void page_fault(registers_t *regs)
 			   current_task->pid, regs->eip, cr2, err_code);
 		printk(0, "[pf]: task heap: %x -> %x\n", current_task->heap_start, current_task->heap_end);
 		kprintf("[pf]: Segmentation Fault\n");
-		kill_task(current_task->pid);
+		tm_kill_process(current_task->pid);
 		return;
 	}
 	print_pfe(5, regs, cr2);

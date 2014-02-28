@@ -52,7 +52,6 @@ int vm_unmap_all(addr_t virt);
 addr_t vm_do_getmap(addr_t v, addr_t *p, unsigned);
 page_dir_t *vm_clone(page_dir_t *pd, char);
 page_dir_t *vm_copy(page_dir_t *pd);
-void process_memorymap(struct multiboot *mboot);
 void pm_init(addr_t start, struct multiboot *);
 addr_t __pm_alloc_page(char *, int);
 void install_kmalloc(char *name, unsigned (*init)(addr_t, addr_t), 
@@ -69,7 +68,6 @@ int vm_cleanup(page_dir_t *, unsigned *);
 int pm_stat_mem(struct mem_stat *s);
 void vm_free_page_table(int tbl, addr_t *t/* VIRTUAL ADDRESS */, addr_t *);
 void kfree(void * pt);
-addr_t do_kmalloc(size_t sz, char, char *, int);
 void *__kmalloc(size_t s, char *, int);
 void *__kmalloc_a(size_t s, char *, int);
 void *__kmalloc_ap(size_t s, addr_t *, char *, int);

@@ -65,7 +65,7 @@ int add_file_pointer_do(task_t *t, struct file_ptr *f, int after)
 	if(after >= FILP_HASH_LEN) {
 		printk(1, "[vfs]: task %d ran out of files (syscall=%d). killed.\n", 
 				t->pid, t == current_task ? (int)t->system : -1);
-		kill_task(t->pid);
+		tm_kill_process(t->pid);
 	}
 	t->thread->filp[after] = f;
 	f->num = after;
@@ -116,8 +116,8 @@ void copy_file_handles(task_t *p, task_t *n)
 				add_atomic(&i->pipe->count, 1);
 				if(fp->fi->flags & _FWRITE)
 					add_atomic(&i->pipe->wrcount, 1);
-				task_unblock_all(i->pipe->read_blocked);
-				task_unblock_all(i->pipe->write_blocked);
+				tm_remove_all_from_blocklist(i->pipe->read_blocked);
+				tm_remove_all_from_blocklist(i->pipe->write_blocked);
 			}
 			n->thread->filp[c] = fp;
 		}

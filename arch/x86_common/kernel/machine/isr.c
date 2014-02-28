@@ -70,7 +70,7 @@ volatile char maybe_handle_stage_2=0;
  *         handle it. These may be written like normal kernel code,
  *         utilizing normal kernel features and functions. However, this
  *         code will not always run right away. There may be a small
- *         delay until a task is able to run this handler. If a userspace
+ *         tm_delay until a task is able to run this handler. If a userspace
  *         task handles the interrupt, it will probably run the second
  *         stage handler right away.
  */
@@ -155,7 +155,7 @@ void faulted(int fuckoff, int userspace, addr_t ip)
 				current_task->sigd = SIGABRT;
 				break;
 			default:
-				kill_task(current_task->pid);
+				tm_kill_process(current_task->pid);
 				break;
 		}
 		/* the above signals WILL be handled, since at the end of tm_tm_schedule(), it checks
@@ -225,7 +225,7 @@ void entry_syscall_handler(volatile registers_t regs)
 	if(current_task->flags & TF_IN_INT)
 		panic(0, "attempted to enter syscall while handling an interrupt");
 	/* set the interrupt handling flag... */
-	raise_flag(TF_IN_INT);
+	tm_raise_flag(TF_IN_INT);
 #if CONFIG_ARCH == TYPE_ARCH_X86_64
 	if(regs.rax == 128) {
 #elif CONFIG_ARCH == TYPE_ARCH_X86
@@ -238,8 +238,8 @@ void entry_syscall_handler(volatile registers_t regs)
 		memcpy((void *)&regs, (void *)&current_task->reg_b, sizeof(registers_t));
 		current_task->sig_mask = current_task->old_mask;
 		current_task->cursig=0;
-		lower_flag(TF_INSIG);
-		lower_flag(TF_JUMPIN);
+		tm_lower_flag(TF_INSIG);
+		tm_lower_flag(TF_JUMPIN);
 	} else {
 		assert(!current_task->sysregs && !current_task->regs);
 		/* otherwise, this is a normal system call. Save the regs for modification
@@ -276,7 +276,7 @@ void entry_syscall_handler(volatile registers_t regs)
 	set_cpu_interrupt_flag(1);
 	/* we're never returning to an interrupt, so we can
 	 * safely reset this flag */
-	lower_flag(TF_IN_INT);
+	tm_lower_flag(TF_IN_INT);
 #if CONFIG_SMP
 	lapic_eoi();
 #endif
@@ -297,7 +297,7 @@ void isr_handler(volatile registers_t regs)
 	char already_in_interrupt = 0;
 	if(current_task->flags & TF_IN_INT)
 		already_in_interrupt = 1;
-	raise_flag(TF_IN_INT);
+	tm_raise_flag(TF_IN_INT);
 	/* run the stage1 handlers, and see if we need any stage2s. And if we
 	 * don't handle it at all, we need to actually fault to handle the error
 	 * and kill the process or kernel panic */
@@ -329,7 +329,7 @@ void isr_handler(volatile registers_t regs)
 	/* restore previous interrupt state */
 	set_cpu_interrupt_flag(previous_interrupt_flag);
 	if(!already_in_interrupt)
-		lower_flag(TF_IN_INT);
+		tm_lower_flag(TF_IN_INT);
 	/* send out the EOI... */
 #if CONFIG_SMP
 	lapic_eoi();
@@ -363,7 +363,7 @@ void irq_handler(volatile registers_t regs)
 	if(current_task->flags & TF_IN_INT)
 		already_in_interrupt = 1;
 	/* ...and set the flag so we know we're in an interrupt */
-	raise_flag(TF_IN_INT);
+	tm_raise_flag(TF_IN_INT);
 	/* now, run through the stage1 handlers, and see if we need any
 	 * stage2 handlers to run later */
 	char need_second_stage = 0;
@@ -417,7 +417,7 @@ void irq_handler(volatile registers_t regs)
 	set_cpu_interrupt_flag(previous_interrupt_flag);
 	/* and clear the state flag if this is going to return to user-space code */
 	if(!already_in_interrupt)
-		lower_flag(TF_IN_INT);
+		tm_lower_flag(TF_IN_INT);
 	/* and send out the EOIs */
 	if(interrupt_controller == IOINT_PIC) ack_pic(regs.int_no);
 #if CONFIG_SMP
@@ -472,9 +472,9 @@ void int_sys_init()
 	mutex_create(&isr_lock, 0);
 	mutex_create(&s2_lock, 0);
 #if CONFIG_MODULES
-	add_kernel_symbol(register_interrupt_handler);
-	add_kernel_symbol(unregister_interrupt_handler);
-	_add_kernel_symbol((addr_t)interrupt_handlers, "interrupt_handlers");
+	loader_add_kernel_symbol(register_interrupt_handler);
+	loader_add_kernel_symbol(unregister_interrupt_handler);
+	loader_do_add_kernel_symbol((addr_t)interrupt_handlers, "interrupt_handlers");
 #endif
 }
 

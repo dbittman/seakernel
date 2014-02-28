@@ -68,7 +68,7 @@ void release_vol(fat_volume *fs)
 int fat_read_block(fat_volume *fs, unsigned block, unsigned char *buf)
 {
 	int off = block * fs->bpb->bytes_per_sector + fs->block*512;
-	return block_device_rw(READ, fs->dev, off, (char *)buf, fs->bpb->bytes_per_sector);
+	return dm_block_device_rw(READ, fs->dev, off, (char *)buf, fs->bpb->bytes_per_sector);
 }
 
 struct inode *create_sea_inode(fat_volume *fs, fat_dirent *in)
@@ -200,7 +200,7 @@ int module_install()
 	return 0;
 }
 
-int module_exit()
+int module_tm_exit()
 {
 	unregister_sbt("ext2");
 	return 0;

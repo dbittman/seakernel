@@ -8,7 +8,7 @@ addr_t (*do_kmalloc_wrap)(size_t, char)=0;
 void (*do_kfree_wrap)(void *)=0;
 char kmalloc_name[128];
 mutex_t km_m;
-void install_kmalloc(char *name, unsigned (*init)(addr_t, addr_t), 
+void kmalloc_create(char *name, unsigned (*init)(addr_t, addr_t), 
 	addr_t (*alloc)(size_t, char), void (*free)(void *))
 {
 	do_kmalloc_wrap = alloc;
@@ -19,7 +19,7 @@ void install_kmalloc(char *name, unsigned (*init)(addr_t, addr_t),
 		init(KMALLOC_ADDR_START, KMALLOC_ADDR_END);
 }
 
-addr_t do_kmalloc(size_t sz, char align, char *file, int line)
+static addr_t do_kmalloc(size_t sz, char align, char *file, int line)
 {
 	if(!do_kmalloc_wrap)
 		panic(PANIC_MEM | PANIC_NOSYNC, "No kernel-level allocator installed!");

@@ -26,7 +26,7 @@ void free_thread_shared_directory()
 	{
 		if(!pd[i])
 			continue;
-		/* Only clear out shared libraries if we are exiting */
+		/* Only clear out shared libraries if we are tm_exiting */
 		if(i >= A && i < B && !(current_task->flags & TF_EXITING))
 			continue;
 		self_free_table(i);

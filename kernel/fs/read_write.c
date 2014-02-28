@@ -17,11 +17,11 @@ int do_sys_read_flags(struct file *f, off_t off, char *buf, size_t count)
 	struct inode *inode = f->inode;
 	int mode = inode->mode;
 	if(S_ISFIFO(mode))
-		return read_pipe(inode, buf, count);
+		return dm_read_pipe(inode, buf, count);
 	else if(S_ISCHR(mode))
-		return char_rw(READ, inode->dev, buf, count);
+		return dm_char_rw(READ, inode->dev, buf, count);
 	else if(S_ISBLK(mode))
-		return block_device_rw(READ, inode->dev, off, buf, count);
+		return dm_block_device_rw(READ, inode->dev, off, buf, count);
 	/* We read the data for a link as well. If we have gotten to the point
 	 * where we have the inode for the link we probably want to read the link 
 	 * itself */
@@ -69,11 +69,11 @@ int do_sys_write_flags(struct file *f, off_t off, char *buf, size_t count)
 		return -EINVAL;
 	struct inode *inode = f->inode;
 	if(S_ISFIFO(inode->mode))
-		return write_pipe(inode, buf, count);
+		return dm_write_pipe(inode, buf, count);
 	else if(S_ISCHR(inode->mode))
-		return char_rw(WRITE, inode->dev, buf, count);
+		return dm_char_rw(WRITE, inode->dev, buf, count);
 	else if(S_ISBLK(inode->mode))
-		return (block_device_rw(WRITE, inode->dev, off, buf, count));
+		return (dm_block_device_rw(WRITE, inode->dev, off, buf, count));
 	/* Again, we want to write to the link because we have that node */
 	else if(S_ISDIR(inode->mode) || S_ISREG(inode->mode) || S_ISLNK(inode->mode))
 		return write_fs(inode, off, count, buf);

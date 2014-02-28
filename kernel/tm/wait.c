@@ -7,24 +7,24 @@
 #include <task.h>
 #include <cpu.h>
 
-int wait_task(unsigned pid, int state)
+int tm_process_wait(unsigned pid, int state)
 {
 	if(!state) return 0;
 	if(!pid) return 0;
 	if(current_task->pid) current_task->system=0;
-	task_t *task = get_task_pid(pid);
+	task_t *task = tm_get_process_by_pid(pid);
 	if(!task) return -ESRCH;
 	current_task->waiting = task;
 	if(state == -1)
 		/* We wait for it to be dead. When it is, we recieve a signal, 
 		 * so why loop? */
-		task_pause(current_task);
+		tm_process_pause(current_task);
 	else {
-		/* So, here we just wait until either the task exits or the 
+		/* So, here we just wait until either the task tm_exits or the 
 		 * state becomes equal. Unfortunately we are forced to check 
 		 * the state whenever we can */
 		while(1) {
-			task = get_task_pid(pid);
+			task = tm_get_process_by_pid(pid);
 			if(!task || task->state == state)
 				break;
 			tm_schedule();
@@ -35,7 +35,7 @@ int wait_task(unsigned pid, int state)
 	return current_task->waiting_ret;
 }
 
-void get_status_int(task_t *t, int *st, int *__pid)
+static void get_status_int(task_t *t, int *st, int *__pid)
 {
 	int ret_val, sig_number;
 	int status=__EXIT;
@@ -65,17 +65,17 @@ int sys_waitpid(int pid, int *st, int opt)
 {
 	if(!pid || pid < -1)
 		return -ENOSYS;
-	raise_flag(TF_BGROUND);
+	tm_raise_flag(TF_BGROUND);
 	task_t *t=0;
 	if(pid == -1) {
 		/* find first child */
-		t = search_tqueue(primary_queue, TSEARCH_PARENT, (addr_t)current_task, (void (*)(task_t *, int))0, 0, 0);
+		t = tm_search_tqueue(primary_queue, TSEARCH_PARENT, (addr_t)current_task, (void (*)(task_t *, int))0, 0, 0);
 	} else
-		t = get_task_pid(pid);
+		t = tm_get_process_by_pid(pid);
 	top:
 	
 	if(!t || t->parent != current_task) {
-		lower_flag(TF_BGROUND);
+		tm_lower_flag(TF_BGROUND);
 		return -ECHILD;
 	}
 	
@@ -83,7 +83,7 @@ int sys_waitpid(int pid, int *st, int opt)
 		((struct sigaction *)&(current_task->thread->signal_act
 		[current_task->sigd]))->_sa_func._sa_handler && !(current_task->thread->signal_act
 	[current_task->sigd].sa_flags & SA_RESTART)) {
-		lower_flag(TF_BGROUND);
+		tm_lower_flag(TF_BGROUND);
 		return -EINTR;
 	}
 	
@@ -92,7 +92,7 @@ int sys_waitpid(int pid, int *st, int opt)
 			tm_schedule();
 			goto top;
 		}
-		lower_flag(TF_BGROUND);
+		tm_lower_flag(TF_BGROUND);
 		return 0;
 	}
 	int code, gotpid;
@@ -100,7 +100,7 @@ int sys_waitpid(int pid, int *st, int opt)
 	if(pid == -1) __tm_move_task_to_kill_queue(t, 0);
 	if(st)
 		*st = code;
-	lower_flag(TF_BGROUND);
+	tm_lower_flag(TF_BGROUND);
 	return gotpid;
 }
 

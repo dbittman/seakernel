@@ -15,7 +15,7 @@
  * re-open it. */
 void arch_specific_exec_initializer(task_t *t, unsigned argc, addr_t eip);
 int process_elf_other(char *mem, int fp, addr_t *start, addr_t *end);
-task_t *preexec(task_t *t, int desc)
+static task_t *preexec(task_t *t, int desc)
 {
 	if(t->magic != TASK_MAGIC)
 		panic(0, "Invalid task in exec (%d)", t->pid);
@@ -25,7 +25,7 @@ task_t *preexec(task_t *t, int desc)
 	return 0;
 }
 
-void free_dp(char **mem, int num)
+static void free_dp(char **mem, int num)
 {
 	/* an error occured and free need to kfree some things */
 	int i;
@@ -34,7 +34,7 @@ void free_dp(char **mem, int num)
 	kfree(mem);
 }
 
-int do_exec(task_t *t, char *path, char **argv, char **env)
+static int do_exec(task_t *t, char *path, char **argv, char **env)
 {
 	unsigned int i=0;
 	addr_t end, eip;
@@ -136,7 +136,7 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 #if DEBUG
 		panic(0, "");
 #endif
-		exit(0);
+		tm_exit(0);
 	}
 	
 	if(EXEC_LOG == 2) 
@@ -203,7 +203,7 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 	
 	t->heap_start = t->heap_end = end + PAGE_SIZE;
 	if(other_bitsize)
-		raise_task_flag(t, TF_OTHERBS);
+		tm_process_raise_flag(t, TF_OTHERBS);
 	user_map_if_not_mapped_noclear(t->heap_start);
 	/* Zero the heap and stack */
 	memset((void *)end_l, 0, PAGE_SIZE-(end_l%PAGE_SIZE));
@@ -214,7 +214,7 @@ int do_exec(task_t *t, char *path, char **argv, char **env)
 		printk(0, "[%d]: Performing call\n", t->pid);
 	
 	set_int(0);
-	lower_task_flag(t, TF_SCHED);
+	tm_process_lower_flag(t, TF_SCHED);
 	if(!(kernel_state_flags & KSF_HAVEEXECED))
 		set_ksf(KSF_HAVEEXECED);
 	arch_specific_exec_initializer(t, argc, eip);

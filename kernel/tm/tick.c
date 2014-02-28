@@ -1,3 +1,7 @@
+#include <sea/subsystem.h>
+#define SUBSYSTEM _SUBSYSTEM_TM
+#include <sea/tm/_tm.h>
+#include <sea/tm/process.h>
 #include <kernel.h>
 #include <isr.h>
 #include <task.h>
@@ -5,15 +9,25 @@
 #include <atomic.h>
 int current_hz=1000;
 volatile long ticks=0;
-int get_timer_th(int *t)
+int sys_get_timer_th(int *t)
 {
 	if(t)
 		*t = ticks;
 	return current_hz;
 }
 
+static int GET_MAX_TS(task_t *t)
+{
+	if(t->flags & TF_EXITING)
+		return 1;
+	int x = t->priority;
+	if(t->tty == curcons->tty)
+		x += sched_tty;
+	return x;
+}
+
 /* Iterate through the parents of tasks and update their times */
-void inc_parent_times(task_t *t, int u, int s)
+static void inc_parent_times(task_t *t, int u, int s)
 {
 	while(t && t != kernel_task) {
 		t->t_cutime += u;
@@ -31,14 +45,9 @@ static void do_run_scheduler()
 	tm_schedule();
 }
 
-void run_scheduler()
-{
-	do_run_scheduler();
-}
-
 #define __SYS 0, 1
 #define __USR 1, 0
-void do_tick()
+static void do_tick()
 {
 	if(!current_task || (kernel_state_flags&KSF_PANICING))
 		return;
@@ -51,9 +60,9 @@ void do_tick()
 		inc_parent_times(current_task->parent, 
 			current_task->system ? __SYS : __USR);
 	}
-	check_alarms();
+	__tm_check_alarms();
 	if(current_task != kernel_task) {
-		if(task_is_runable(current_task) && current_task->cur_ts>0 
+		if(__tm_process_is_runable(current_task) && current_task->cur_ts>0 
 				&& --current_task->cur_ts)
 			return;
 		else if(current_task->cur_ts <= 0)
@@ -62,7 +71,7 @@ void do_tick()
 	do_run_scheduler();
 }
 
-void timer_handler(registers_t r)
+void tm_timer_handler(registers_t *r)
 {
 	/* prevent multiple cpus from adding to ticks */
 	/* TODO */
@@ -70,14 +79,14 @@ void timer_handler(registers_t r)
 		add_atomic(&ticks, 1);
 	/* engage the idle task occasionally */
 	if((ticks % current_hz*10) == 0)
-		__engage_idle();
+		tm_engage_idle();
 	do_tick();
 }
 
-void delay(int t)
+void tm_delay(int t)
 {
 	if((kernel_state_flags & KSF_SHUTDOWN))
-		return (void) delay_sleep(t);
+		return (void) tm_delay_sleep(t);
 	long end = ticks + t + 1;
 	if(!current_task || current_task->pid == 0)
 	{
@@ -91,7 +100,7 @@ void delay(int t)
 	while(!tm_schedule());
 }
 
-void delay_sleep(int t)
+void tm_delay_sleep(int t)
 {
 	long end = ticks+t+1;
 	int old = set_int(1);
@@ -101,7 +110,7 @@ void delay_sleep(int t)
 		asm("pause");
 		set_int(1);
 		if(!--to && start == ticks) {
-			printk(4, "[tm]: delay_sleep reached timeout!\n");
+			printk(4, "[tm]: tm_delay_sleep reached timeout!\n");
 			break;
 		}
 	}

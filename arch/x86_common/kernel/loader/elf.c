@@ -1,7 +1,10 @@
 #include <kernel.h>
 #include <module.h>
 #include <elf.h>
+#include <task.h>
 #include <file.h>
+#include <sea/loader/module.h>
+#include <sea/tm/schedule.h>
 
 int process_elf32_phdr(char *mem, int fp, addr_t *start, addr_t *end)
 {
@@ -102,7 +105,7 @@ int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int force)
 			if(!n) break;
 			*n=0;
 			n++;
-			if(!is_loaded(cur)) {
+			if(!loader_module_is_loaded(cur)) {
 				printk(3, "[mod]: Module '%s' has missing dependency '%s'\n", mod->name, cur);
 				return _MOD_FAIL;
 			}

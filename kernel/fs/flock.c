@@ -200,7 +200,7 @@ int fcntl_setlkw(struct file *file, long arg)
 		if(ret != -EAGAIN)
 			return -EACCES;
 		tm_schedule();
-		if(got_signal(current_task))
+		if(tm_process_got_signal(current_task))
 			return -EINTR;
 	}
 }

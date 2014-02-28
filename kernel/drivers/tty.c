@@ -14,15 +14,15 @@
 
 struct vterm consoles[MAX_CONSOLES];
 unsigned *tty_calltable = 0;
-extern console_driver_t crtc_drv;
+extern struct console_driver crtc_drv;
 /* Create a terminal if needed, and set as current */
 int tty_open(int min)
 {
 	if((unsigned)min >= MAX_CONSOLES)
 		return -ENOENT;
 	if(!consoles[min].flag && min) {
-		create_console(&consoles[min]);
-		init_console(&consoles[min], &crtc_drv);
+		console_create(&consoles[min]);
+		console_initialize_vterm(&consoles[min], &crtc_drv);
 	}
 	current_task->tty = min;
 	return 0;
@@ -35,27 +35,27 @@ int tty_close(int min)
 
 void tty_putch(struct vterm *con, int ch)
 {
-	if(!con->rend.putch)
+	if(!con->rend->putch)
 		return;
 	if(con->term.c_oflag & OPOST) {
 		if((con->term.c_oflag & ONLCR || con->tty==0) && ch == '\n' 
 				&& !(con->term.c_oflag & ONOCR))
-			con->rend.putch(con, '\r');
+			con->rend->putch(con, '\r');
 		if((con->term.c_oflag & OCRNL && con->tty) && ch == '\r')
 			ch = '\n';
 		if(con->term.c_oflag & ONOCR && ch == '\r' && con->x==0)
 			return;
 	}
-	con->rend.putch(con, ch);
+	con->rend->putch(con, ch);
 }
 
 void __tty_found_task_raise_action(task_t *t, int arg)
 {
 	if(t->flags & TF_BGROUND) return;
 	t->sigd = arg;
-	raise_task_flag(t, TF_SCHED);
+	tm_process_raise_flag(t, TF_SCHED);
 	if(t->blocklist)
-		task_unblock(t->blocklist, t);
+		tm_remove_from_blocklist(t->blocklist, t);
 }
 
 int tty_raise_action(int min, int sig)
@@ -64,7 +64,7 @@ int tty_raise_action(int min, int sig)
 		return 0;
 	if((kernel_state_flags & KSF_SHUTDOWN))
 		return 0;
-	if(search_tqueue(primary_queue, TSEARCH_FINDALL | TSEARCH_TTY, min, __tty_found_task_raise_action, sig, 0))
+	if(tm_search_tqueue(primary_queue, TSEARCH_FINDALL | TSEARCH_TTY, min, __tty_found_task_raise_action, sig, 0))
 		consoles[min].inpos=0;
 	return 0;
 }
@@ -85,13 +85,13 @@ int tty_read(int min, char *buf, size_t len)
 	volatile int cb = !(con->term.c_lflag & ICANON);
 	int x = con->x;
 	while(1) {
-		if(con->rend.update_cursor)
-			con->rend.update_cursor(con);
+		if(con->rend->update_cursor)
+			con->rend->update_cursor(con);
 		mutex_acquire(&con->inlock);
 		while(!con->inpos) {
 			mutex_release(&con->inlock);
-			task_block(&con->input_block, (task_t *)current_task);
-			if(got_signal(current_task))
+			tm_add_to_blocklist_and_block(&con->input_block, (task_t *)current_task);
+			if(tm_process_got_signal(current_task))
 				return -EINTR;
 			mutex_acquire(&con->inlock);
 		}
@@ -100,8 +100,8 @@ int tty_read(int min, char *buf, size_t len)
 		if(con->inpos)
 			memmove(con->input, con->input+1, con->inpos+1);
 		mutex_release(&con->inlock);
-		if(con->rend.update_cursor)
-			con->rend.update_cursor(con);
+		if(con->rend->update_cursor)
+			con->rend->update_cursor(con);
 		if(t == '\b' && !cb && count)
 		{
 			buf[--count]=0;
@@ -140,7 +140,7 @@ int tty_write(int min, char *buf, size_t len)
 	/* putch handles printable characters and control characters. 
 	 * We handle escape codes */
 	while(i<len) {
-		if(got_signal(current_task)) {
+		if(tm_process_got_signal(current_task)) {
 			mutex_release(&con->wlock);
 			return -EINTR;
 		}
@@ -148,9 +148,9 @@ int tty_write(int min, char *buf, size_t len)
 			if(*buf == 27)
 			{
 				/* Escape! */
-				if(con->rend.clear_cursor)
-					con->rend.clear_cursor(con);
-				int l = read_escape_seq(con, buf);
+				if(con->rend->clear_cursor)
+					con->rend->clear_cursor(con);
+				int l = tty_read_escape_seq(con, buf);
 				if(l == -1)
 					goto out;
 				else if(l == 0)
@@ -165,8 +165,8 @@ int tty_write(int min, char *buf, size_t len)
 		i++;
 	}
 	out:
-	if(con->rend.update_cursor)
-		con->rend.update_cursor(con);
+	if(con->rend->update_cursor)
+		con->rend->update_cursor(con);
 	mutex_release(&con->wlock);
 	return len;
 }
@@ -184,7 +184,7 @@ int ttyx_ioctl(int min, int cmd, long arg)
 	switch(cmd)
 	{
 		case 0:
-			if(con->rend.clear) con->rend.clear(con);
+			if(con->rend->clear) con->rend->clear(con);
 			break;
 		case 1:
 			con->f = arg % 16;
@@ -194,18 +194,18 @@ int ttyx_ioctl(int min, int cmd, long arg)
 			current_task->tty = min;
 			break;
 		case 3:
-			if(con->rend.clear_cursor)
-				con->rend.clear_cursor(con);
+			if(con->rend->clear_cursor)
+				con->rend->clear_cursor(con);
 			con->x = arg;
-			if(con->rend.update_cursor)
-				con->rend.update_cursor(con);
+			if(con->rend->update_cursor)
+				con->rend->update_cursor(con);
 			break;
 		case 4:
-			if(con->rend.clear_cursor)
-				con->rend.clear_cursor(con);
+			if(con->rend->clear_cursor)
+				con->rend->clear_cursor(con);
 			con->y = arg;
-			if(con->rend.update_cursor)
-				con->rend.update_cursor(con);
+			if(con->rend->update_cursor)
+				con->rend->update_cursor(con);
 			break;
 		case 5:
 			return con->inpos;
@@ -248,7 +248,7 @@ int ttyx_ioctl(int min, int cmd, long arg)
 				con->input[con->inpos] = (char)arg;
 				con->inpos++;
 			}
-			task_unblock_all(&con->input_block);
+			tm_remove_all_from_blocklist(&con->input_block);
 			mutex_release(&con->inlock);
 			if(!(con->term.c_lflag & ECHO) && arg != '\b' && arg != '\n')
 				break;
@@ -258,8 +258,8 @@ int ttyx_ioctl(int min, int cmd, long arg)
 				break;
 			
 			tty_putch(con, arg);
-			if(con->rend.update_cursor)
-				con->rend.update_cursor(con);
+			if(con->rend->update_cursor)
+				con->rend->update_cursor(con);
 			
 			break;
 		case 18:
@@ -278,7 +278,7 @@ int ttyx_ioctl(int min, int cmd, long arg)
 				*(unsigned *)arg = con->scrollb;
 			return con->scrollt;
 		case 22:
-			create_console(con);
+			console_create(con);
 			break;
 		case 23:
 			if(!arg)
@@ -287,7 +287,7 @@ int ttyx_ioctl(int min, int cmd, long arg)
 				con->term.c_oflag |= OCRNL;
 			break;
 		case 27:
-			switch_console(con);
+			console_switch(con);
 			break;
 		case 0x5413:
 			s = (struct winsize *)arg;
@@ -390,21 +390,21 @@ void tty_init(struct vterm **k)
 
 void console_init_stage2()
 {
-	create_console(&consoles[1]);
-	create_console(&consoles[9]);
-	init_console(&consoles[1], &crtc_drv);
-	init_console(&consoles[9], &crtc_drv);
+	console_create(&consoles[1]);
+	console_create(&consoles[9]);
+	console_initialize_vterm(&consoles[1], &crtc_drv);
+	console_initialize_vterm(&consoles[9], &crtc_drv);
 	memcpy(consoles[1].vmem, consoles[0].cur_mem, 80*25*2);
 	consoles[1].x=consoles[0].x;
 	consoles[1].y=consoles[0].y;
-	switch_console(&consoles[1]);
+	console_switch(&consoles[1]);
 	log_console = &consoles[9];
 #if CONFIG_MODULES
-	add_kernel_symbol(ttyx_ioctl);
-	add_kernel_symbol(init_console);
-	add_kernel_symbol(create_console);
-	add_kernel_symbol(destroy_console);
-	add_kernel_symbol(switch_console);
-	_add_kernel_symbol((addr_t)(unsigned *)&curcons, "curcons");
+	loader_add_kernel_symbol(ttyx_ioctl);
+	loader_add_kernel_symbol(console_initialize_vterm);
+	loader_add_kernel_symbol(console_create);
+	loader_add_kernel_symbol(console_destroy);
+	loader_add_kernel_symbol(console_switch);
+	loader_do_add_kernel_symbol((addr_t)(unsigned *)&curcons, "curcons");
 #endif
 }

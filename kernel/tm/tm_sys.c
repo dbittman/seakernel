@@ -29,7 +29,7 @@ int sys_sbrk(long inc)
 	addr_t end = current_task->heap_end;
 	assert(end);
 	if(end + inc >= TOP_TASK_MEM)
-		send_signal(current_task->pid, SIGSEGV);
+		tm_send_signal(current_task->pid, SIGSEGV);
 	current_task->heap_end += inc;
 	current_task->he_red = end + inc;
 	addr_t page = end & PAGE_MASK;
@@ -40,7 +40,7 @@ int sys_sbrk(long inc)
 
 int sys_isstate(int pid, int state)
 {
-	task_t *task = get_task_pid(pid);
+	task_t *task = tm_get_process_by_pid(pid);
 	if(!task) return -ESRCH;
 	return (task->state == state) ? 1 : 0;
 }
@@ -77,7 +77,7 @@ int sys_nice(int which, int who, int val, int flags)
 	task_t *t = (task_t *)kernel_task;
 	int c=0;
 	if(which == PRIO_USER)
-		search_tqueue(primary_queue, TSEARCH_UID | TSEARCH_EUID | TSEARCH_FINDALL | TSEARCH_EXCLUSIVE, who, __sys_nice_search_action, val, &c);
+		tm_search_tqueue(primary_queue, TSEARCH_UID | TSEARCH_EUID | TSEARCH_FINDALL | TSEARCH_EXCLUSIVE, who, __sys_nice_search_action, val, &c);
 	return c ? 0 : -ESRCH;
 }
 
@@ -151,7 +151,7 @@ void do_task_stat(struct task_stat *s, task_t *t)
 int task_pstat(unsigned int pid, struct task_stat *s)
 {
 	if(!s) return -EINVAL;
-	task_t *t=get_task_pid(pid);
+	task_t *t=tm_get_process_by_pid(pid);
 	if(!t)
 		return -ESRCH;
 	do_task_stat(s, t);
@@ -161,7 +161,7 @@ int task_pstat(unsigned int pid, struct task_stat *s)
 int task_stat(unsigned int num, struct task_stat *s)
 {
 	if(!s) return -EINVAL;
-	task_t *t = search_tqueue(primary_queue, TSEARCH_ENUM, num, 0, 0, 0);
+	task_t *t = tm_search_tqueue(primary_queue, TSEARCH_ENUM, num, 0, 0, 0);
 	if(!t) 
 		return -ESRCH;
 	do_task_stat(s, t);

@@ -5,7 +5,7 @@
 #include <char.h>
 #include <console.h>
 mutex_t cd_search_lock;
-int zero_rw(int rw, int m, char *buf, size_t c)
+static int zero_rw(int rw, int m, char *buf, size_t c)
 {
 	m=0;
 	if(rw == READ)
@@ -15,7 +15,7 @@ int zero_rw(int rw, int m, char *buf, size_t c)
 	return c;
 }
 
-int null_rw(int rw, int m, char *buf, size_t c)
+static int null_rw(int rw, int m, char *buf, size_t c)
 {
 	if((m=rw) == READ)
 		return 0;
@@ -32,7 +32,7 @@ int null_rw(int rw, int m, char *buf, size_t c)
 	6 - 9 -> reserved
 */
 
-chardevice_t *set_chardevice(int maj, int (*f)(int, int, char*, size_t), 
+chardevice_t *dm_set_char_device(int maj, int (*f)(int, int, char*, size_t), 
 	int (*c)(int, int, long), int (*s)(int, int))
 {
 	printk(1, "[dev]: Setting char device %d (%x, %x)\n", maj, f, c);
@@ -40,19 +40,19 @@ chardevice_t *set_chardevice(int maj, int (*f)(int, int, char*, size_t),
 	dev->func = f;
 	dev->ioctl=c;
 	dev->select=s;
-	add_device(DT_CHAR, maj, dev);
+	dm_add_device(DT_CHAR, maj, dev);
 	return dev;
 }
 
-int set_availablecd(int (*f)(int, int, char*, size_t), 
+int dm_set_available_char_device(int (*f)(int, int, char*, size_t), 
 	int (*c)(int, int, long), int (*s)(int, int))
 {
 	int i=10; /* first 10 character devices are reserved */
 	mutex_acquire(&cd_search_lock);
 	while(i>0) {
-		if(!get_device(DT_CHAR, i))
+		if(!dm_get_device(DT_CHAR, i))
 		{
-			set_chardevice(i, f, c, s);
+			dm_set_char_device(i, f, c, s);
 			break;
 		}
 		i++;
@@ -63,20 +63,20 @@ int set_availablecd(int (*f)(int, int, char*, size_t),
 	return i;
 }
 
-void init_char_devs()
+void dm_init_char_devices()
 {
 	/* These devices are all built into the kernel. We must initialize them now */
-	set_chardevice(0, null_rw, 0, 0);
-	set_chardevice(1, zero_rw, 0, 0);
-	set_chardevice(3, ttyx_rw, ttyx_ioctl, ttyx_select);
-	set_chardevice(4, tty_rw, tty_ioctl, tty_select);
-	set_chardevice(5, serial_rw, 0, 0);
+	dm_set_char_device(0, null_rw, 0, 0);
+	dm_set_char_device(1, zero_rw, 0, 0);
+	dm_set_char_device(3, ttyx_rw, ttyx_ioctl, ttyx_select);
+	dm_set_char_device(4, tty_rw, tty_ioctl, tty_select);
+	dm_set_char_device(5, serial_rw, 0, 0);
 	mutex_create(&cd_search_lock, 0);
 }
 
-int char_rw(int rw, dev_t dev, char *buf, size_t len)
+int dm_char_rw(int rw, dev_t dev, char *buf, size_t len)
 {
-	device_t *dt = get_device(DT_CHAR, MAJOR(dev));
+	device_t *dt = dm_get_device(DT_CHAR, MAJOR(dev));
 	if(!dt)
 		return -ENXIO;
 	chardevice_t *cd = (chardevice_t *)dt->ptr;
@@ -88,25 +88,25 @@ int char_rw(int rw, dev_t dev, char *buf, size_t len)
 	return 0;
 }
 
-void unregister_char_device(int n)
+void dm_unregister_char_device(int n)
 {
 	printk(1, "[dev]: Unregistering char device %d\n", n);
 	mutex_acquire(&cd_search_lock);
-	device_t *dev = get_device(DT_CHAR, n);
+	device_t *dev = dm_get_device(DT_CHAR, n);
 	if(!dev) {
 		mutex_release(&cd_search_lock);
 		return;
 	}
 	void *fr = dev->ptr;
 	dev->ptr=0;
-	remove_device(DT_CHAR, n);
+	dm_remove_device(DT_CHAR, n);
 	mutex_release(&cd_search_lock);
 	kfree(fr);
 }
 
-int char_ioctl(dev_t dev, int cmd, long arg)
+int dm_char_ioctl(dev_t dev, int cmd, long arg)
 {
-	device_t *dt = get_device(DT_CHAR, MAJOR(dev));
+	device_t *dt = dm_get_device(DT_CHAR, MAJOR(dev));
 	if(!dt)
 		return -ENXIO;
 	chardevice_t *cd = (chardevice_t *)dt->ptr;
@@ -118,10 +118,10 @@ int char_ioctl(dev_t dev, int cmd, long arg)
 	return 0;
 }
 
-int chardev_select(struct inode *in, int rw)
+int dm_chardev_select(struct inode *in, int rw)
 {
 	int dev = in->dev;
-	device_t *dt = get_device(DT_CHAR, MAJOR(dev));
+	device_t *dt = dm_get_device(DT_CHAR, MAJOR(dev));
 	if(!dt)
 		return 1;
 	chardevice_t *cd = (chardevice_t *)dt->ptr;
@@ -130,18 +130,18 @@ int chardev_select(struct inode *in, int rw)
 	return 1;
 }
 
-void send_sync_char()
+void dm_send_sync_char()
 {
 	int i=0;
 	while(i>=0) {
-		device_t *d = get_n_device(DT_CHAR, i);
+		device_t *d = dm_get_enumerated_device(DT_CHAR, i);
 		if(!d) break;
 		assert(d->ptr);
 		chardevice_t *cd = (chardevice_t *)d->ptr;
 		if(cd->ioctl)
 			cd->ioctl(0, -1, 0);
 		i++;
-		if(got_signal(current_task))
+		if(tm_process_got_signal(current_task))
 			return;
 	}
 }

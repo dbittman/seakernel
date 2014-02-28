@@ -1,6 +1,8 @@
 #include <kernel.h>
 #include <module.h>
 #include <modules/ahci.h>
+#include <sea/tm/schedule.h>
+#include <sea/tm/process.h>
 
 uint32_t ahci_flush_commands(struct hba_port *port)
 {
@@ -39,15 +41,15 @@ void ahci_reset_device(struct hba_memory *abar, struct hba_port *port, struct ah
 	port->command |= 2;
 	port->command |= 4;
 	ahci_flush_commands(port);
-	delay_sleep(1);
+	tm_delay_sleep(1);
 	/* initialize state */
 	port->interrupt_status = ~0; /* clear pending interrupts */
 	port->interrupt_enable = AHCI_DEFAULT_INT; /* we want some interrupts */
 	port->command &= ~((1 << 27) | (1 << 26)); /* clear some bits */
 	port->sata_control |= 1;
-	delay_sleep(10);
+	tm_delay_sleep(10);
 	port->sata_control |= (~1);
-	delay_sleep(10);
+	tm_delay_sleep(10);
 	port->interrupt_status = ~0; /* clear pending interrupts */
 	port->interrupt_enable = AHCI_DEFAULT_INT; /* we want some interrupts */
 	ahci_start_port_command_engine(port);
@@ -72,16 +74,16 @@ int ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev)
 	port->command |= 2;
 	port->command |= 4;
 	ahci_flush_commands(port);
-	delay_sleep(1);
+	tm_delay_sleep(1);
 	/* initialize state */
 	port->interrupt_status = ~0; /* clear pending interrupts */
 	port->interrupt_enable = AHCI_DEFAULT_INT; /* we want some interrupts */
 	port->command |= (1 << 28); /* set interface to active */
 	port->command &= ~((1 << 27) | (1 << 26)); /* clear some bits */
 	port->sata_control |= 1;
-	delay_sleep(10);
+	tm_delay_sleep(10);
 	port->sata_control |= (~1);
-	delay_sleep(10);
+	tm_delay_sleep(10);
 	port->interrupt_status = ~0; /* clear pending interrupts */
 	port->interrupt_enable = AHCI_DEFAULT_INT; /* we want some interrupts */
 	/* map memory */
@@ -167,6 +169,6 @@ void ahci_init_hba(struct hba_memory *abar)
 	/* enable the AHCI and interrupts */
 	abar->global_host_control |= HBA_GHC_AHCI_ENABLE;
 	abar->global_host_control |= HBA_GHC_INTERRUPT_ENABLE;
-	delay_sleep(10);
+	tm_delay_sleep(10);
 	printk(KERN_DEBUG, "[ahci]: caps and ver: %x %x v %x\n", abar->capability, abar->ext_capabilities, abar->version);
 }

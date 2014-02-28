@@ -16,7 +16,7 @@ int atapi_pio_rw(struct ata_controller *cont, struct ata_device *dev, int rw,
 	int size;
 	/* Select drive (only the slave-bit is set) */
 	outb (cont->port_cmd_base+REG_DEVICE, dev->id & (1 << 4));      
-	ATA_DELAY (cont);       /* 400ns delay */
+	ATA_DELAY (cont);       /* 400ns tm_delay */
 	outb (cont->port_cmd_base+REG_FEATURES, 0x0);       /* PIO mode */
 	outb (cont->port_cmd_base+4, 2048 & 0xFF);
 	outb (cont->port_cmd_base+5, 2048 >> 8);
@@ -39,7 +39,7 @@ int atapi_pio_rw(struct ata_controller *cont, struct ata_device *dev, int rw,
 	outsw (cont->port_cmd_base+REG_DATA, (uint16 *) read_cmd, 6);
 	/* Wait for IRQ that says the data is ready. */
 	// schedule ();
-	delay_sleep(6);
+	tm_delay_sleep(6);
 	
 	/* Read actual size */
 	size =
@@ -56,7 +56,7 @@ int atapi_pio_rw(struct ata_controller *cont, struct ata_device *dev, int rw,
 	/* The controller will send another IRQ even though we've read all
 	* the data we want.  Wait for it -- so it doesn't interfere with
 	* subsequent operations: */
-	delay_sleep(6);
+	tm_delay_sleep(6);
 	/* Wait for BSY and DRQ to clear, indicating Command Finished */
 	while((status = inb (cont->port_cmd_base+REG_STATUS)) & 0x88) 
 		;

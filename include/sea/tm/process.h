@@ -3,12 +3,10 @@
 
 #include <types.h>
 #include <ll.h>
-#include <sea/fs/inode.h>
 #include <sea/fs/file.h>
 #include <sea/cpu/registers.h>
 #include <sea/tm/signal.h>
 #include <sea/mm/context.h>
-
 #define KERN_STACK_SIZE 0x16000
 
 /* exit reasons */
@@ -150,11 +148,11 @@ extern volatile task_t *kernel_task, *tokill;
 extern volatile task_t *alarm_list_start;
 extern mutex_t *alarm_mutex;
 
-#define raise_task_flag(t,f) or_atomic(&(t->flags), f)
-#define lower_task_flag(t,f) and_atomic(&(t->flags), ~f)
+#define tm_process_raise_flag(t,f) or_atomic(&(t->flags), f)
+#define tm_process_lower_flag(t,f) and_atomic(&(t->flags), ~f)
 
-#define raise_flag(f) or_atomic(&(current_task->flags), f)
-#define lower_flag(f) and_atomic(&(current_task->flags), ~f)
+#define tm_raise_flag(f) or_atomic(&(current_task->flags), f)
+#define tm_lower_flag(f) and_atomic(&(current_task->flags), ~f)
 
 #define WNOHANG 1
 
@@ -166,8 +164,35 @@ extern volatile unsigned next_pid;
 extern unsigned init_pid;
 extern unsigned running_processes;
 
+void tm_process_pause(task_t *t);
+void tm_process_resume(task_t *t);
 void tm_process_enter_system(int sys);
 void tm_process_exit_system();
 int tm_do_fork(unsigned flags);
+void tm_engage_idle();
+task_t *tm_get_process_by_pid(int);
+
+void tm_add_to_blocklist_and_block(struct llist *list, task_t *task);
+void tm_add_to_blocklist(struct llist *list, task_t *task);
+void tm_remove_from_blocklist(struct llist *list, task_t *t);
+void tm_remove_all_from_blocklist(struct llist *list);
+
+int tm_process_got_signal(task_t *t);
+int tm_signal_will_be_fatal(task_t *t, int sig);
+void tm_set_signal(int sig, addr_t hand);
+int sys_get_timer_th(int *t);
+void tm_process_suicide();
+void tm_kill_process(unsigned int pid);
+int tm_process_wait(unsigned pid, int state);
+
+void tm_exit(int code);
+void tm_delay(int t);
+void tm_delay_sleep(int t);
+
+task_t *tm_task_create();
+struct thread_shared_data *tm_thread_data_create();
+
+/* provided by arch-dep code */
+extern void arch_do_switch_to_user_mode();
 
 #endif

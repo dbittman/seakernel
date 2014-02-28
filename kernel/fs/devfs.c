@@ -59,8 +59,8 @@ void init_dev_fs()
 	/* Mount the filesystem */
 	add_inode(current_task->thread->root, devfs_root);
 #if CONFIG_MODULES
-	add_kernel_symbol(devfs_add);
-	add_kernel_symbol(devfs_remove);
+	loader_add_kernel_symbol(devfs_add);
+	loader_add_kernel_symbol(devfs_remove);
 #endif
 }
 

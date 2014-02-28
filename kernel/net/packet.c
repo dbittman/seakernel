@@ -13,10 +13,10 @@ void net_init()
 {
 	net_list = ll_create(0);
 #if CONFIG_MODULES
-	add_kernel_symbol(net_add_device);
-	add_kernel_symbol(net_notify_packet_ready);
-	add_kernel_symbol(net_block_for_packets);
-	add_kernel_symbol(net_receive_packet);
+	loader_add_kernel_symbol(net_add_device);
+	loader_add_kernel_symbol(net_notify_packet_ready);
+	loader_add_kernel_symbol(net_block_for_packets);
+	loader_add_kernel_symbol(net_receive_packet);
 #endif
 }
 

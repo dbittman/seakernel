@@ -1,3 +1,7 @@
+#include <sea/subsystem.h>
+#define SUBSYSTEM _SUBSYSTEM_MM
+#include <sea/mm/_mm.h>
+#include <sea/mm/init.h>
 #include <kernel.h>
 #include <memory.h>
 #include <multiboot.h>
@@ -8,8 +12,7 @@
 #include <atomic.h>
 #include <pmap.h>
 
-void slab_stat(struct mem_stat *s);
-void process_memorymap(struct multiboot *mboot)
+static void process_memorymap(struct multiboot *mboot)
 {
 	addr_t i = mboot->mmap_addr;
 	unsigned int num_pages=0;
@@ -43,7 +46,7 @@ void process_memorymap(struct multiboot *mboot)
 	int gbs=0;
 	int mbs = ((num_pages * PAGE_SIZE)/1024)/1024;
 	if(mbs < 4){
-		puts("\n");
+		console_kernel_puts("\n");
 		panic(PANIC_MEM | PANIC_NOSYNC, "Not enough memory, system wont work (%d MB, %d pages)", mbs, num_pages);
 	}
 	gbs = mbs/1024;
@@ -60,13 +63,13 @@ void process_memorymap(struct multiboot *mboot)
 	pm_used_pages=0;
 }
 
-void init_memory(struct multiboot *m)
+void mm_init(struct multiboot *m)
 {
 	printk(KERN_DEBUG, "[mm]: Setting up Memory Management...\n");
 	mutex_create(&pm_mutex, 0);
 	vm_init(pm_location);
 	process_memorymap(m);
- 	install_kmalloc(KMALLOC_NAME, KMALLOC_INIT, KMALLOC_ALLOC, KMALLOC_FREE);
+ 	kmalloc_create(KMALLOC_NAME, KMALLOC_INIT, KMALLOC_ALLOC, KMALLOC_FREE);
 	vm_init_2();
 	primary_cpu->flags |= CPU_PAGING;
 	set_ksf(KSF_MMU);
@@ -74,33 +77,32 @@ void init_memory(struct multiboot *m)
 	init_swap();
 #endif
 #if CONFIG_MODULES
-	add_kernel_symbol(kernel_dir);
-	add_kernel_symbol(__kmalloc);
-	add_kernel_symbol(__kmalloc_ap);
-	add_kernel_symbol(__kmalloc_a);
-	add_kernel_symbol(__kmalloc_p);
-	add_kernel_symbol(kfree);
-	add_kernel_symbol(vm_map);
-	add_kernel_symbol(vm_do_unmap);
-	add_kernel_symbol(vm_do_unmap_only);
-	add_kernel_symbol(pmap_get_mapping);
-	add_kernel_symbol(pmap_create);
-	add_kernel_symbol(pmap_destroy);
-	add_kernel_symbol(__pm_alloc_page);
-	add_kernel_symbol(vm_do_getmap);
-	add_kernel_symbol(vm_do_getattrib);
-	add_kernel_symbol(vm_setattrib);
-	add_kernel_symbol(pm_free_page);
+	loader_add_kernel_symbol(kernel_dir);
+	loader_add_kernel_symbol(__kmalloc);
+	loader_add_kernel_symbol(__kmalloc_ap);
+	loader_add_kernel_symbol(__kmalloc_a);
+	loader_add_kernel_symbol(__kmalloc_p);
+	loader_add_kernel_symbol(kfree);
+	loader_add_kernel_symbol(vm_map);
+	loader_add_kernel_symbol(vm_do_unmap);
+	loader_add_kernel_symbol(vm_do_unmap_only);
+	loader_add_kernel_symbol(pmap_get_mapping);
+	loader_add_kernel_symbol(pmap_create);
+	loader_add_kernel_symbol(pmap_destroy);
+	loader_add_kernel_symbol(__pm_alloc_page);
+	loader_add_kernel_symbol(vm_do_getmap);
+	loader_add_kernel_symbol(vm_do_getattrib);
+	loader_add_kernel_symbol(vm_setattrib);
+	loader_add_kernel_symbol(pm_free_page);
 #endif
 }
 
-int pm_stat_mem(struct mem_stat *s)
+int mm_stat_mem(struct mem_stat *s)
 {
 	if(!s) return -1;
 	s->total = pm_num_pages * PAGE_SIZE;
 	s->free = (pm_num_pages-pm_used_pages)*PAGE_SIZE;
 	s->used = pm_used_pages*PAGE_SIZE;
 	s->perc = ((float)pm_used_pages*100) / ((float)pm_num_pages);
-	slab_stat(s);
 	return 0;
 }

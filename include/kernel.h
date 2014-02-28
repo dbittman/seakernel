@@ -13,6 +13,7 @@
 #include <time.h>
 #include <sys/fcntl.h>
 #include <errno.h>
+#include <sea/fs/inode.h>
 #include <mutex.h>
 
 #define KSF_MMU            0x1
@@ -52,6 +53,7 @@ static inline void get_kernel_version(char *b)
 	sprintf(b, "%d.%d%c%c%d", MAJ_VER, MIN_VER, t ? '-' : 0, t, p);
 }
 
+struct inode *kt_set_as_kernel_task(char *name);
 void print_trace(unsigned int);
 void panic(int flags, char *fmt, ...);
 void serial_puts(int, char *);

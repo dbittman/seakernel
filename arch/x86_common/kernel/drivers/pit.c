@@ -6,11 +6,11 @@
 #include <task.h>
 #include <atomic.h>
 void do_tick();
-void timer_handler(registers_t *);
+
 void install_timer(int hz)
 {
 	current_hz=hz;
-	register_interrupt_handler(IRQ0, &timer_handler, 0);
+	register_interrupt_handler(IRQ0, &tm_timer_handler, 0);
 	u32int divisor = 1193180 / hz;
 	outb(0x43, 0x36);
 	u8int l = (u8int)(divisor & 0xFF);

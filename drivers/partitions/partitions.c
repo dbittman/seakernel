@@ -21,7 +21,7 @@ int parse_extended_partitions(int num, int dev, struct partition *ext,
 	unsigned char buf[512];
 	printk(0, "[partition]: Reading extended partition at %d\n", 
 		(ext->start_lba + prev_lba));
-	do_block_rw(READ, dev, (ext->start_lba + prev_lba)*512, (char *)buf, 0);
+	dm_do_block_rw(READ, dev, (ext->start_lba + prev_lba)*512, (char *)buf, 0);
 	/* Only two entries */
 	struct partition ptable[2];
 	memcpy(ptable, buf+0x1BE, 32);
@@ -50,7 +50,7 @@ int parse_extended_partitions(int num, int dev, struct partition *ext,
 int enumerate_partitions(int num, int dev, struct partition *part)
 {
 	unsigned char buf[512];
-	do_block_rw(READ, dev, 0, (char *)buf, 0);
+	dm_do_block_rw(READ, dev, 0, (char *)buf, 0);
 	struct partition ptable[4];
 	memcpy(ptable, buf+0x1BE, 64);
 	int i;
@@ -91,20 +91,20 @@ int part_get_partition(dev_t dev, struct part_info *part, int n)
 
 int module_install()
 {
-	add_kernel_symbol(enumerate_partitions);
+	loader_add_kernel_symbol(enumerate_partitions);
 #if CONFIG_MODULE_PSM
-	add_kernel_symbol(part_get_partition);
+	loader_add_kernel_symbol(part_get_partition);
 #endif
 	printk(1, "[partitions]: Telling any HD drivers to reload their partition information\n");
-	block_ioctl(3, 1, 0);
+	dm_block_ioctl(3, 1, 0);
 	return 0;
 }
 
-int module_exit()
+int module_tm_exit()
 {
-	remove_kernel_symbol("enumerate_partitions");
+	loader_remove_kernel_symbol("enumerate_partitions");
 #if CONFIG_MODULE_PSM
-	remove_kernel_symbol("part_get_partition");
+	loader_remove_kernel_symbol("part_get_partition");
 #endif
 	return 0;
 }

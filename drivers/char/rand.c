@@ -69,7 +69,7 @@ int module_install()
 {
 	df=0;
 	rand_maj=0;
-	rand_maj = set_availablecd(rand_rw, rand_ioctl, 0);
+	rand_maj = dm_set_available_char_device(rand_rw, rand_ioctl, 0);
 	if(rand_maj == -1)
 		return EINVAL;
 	df = devfs_add(devfs_root, "random", S_IFCHR, rand_maj, 0);
@@ -78,11 +78,11 @@ int module_install()
 	return 0;
 }
 
-int module_exit()
+int module_tm_exit()
 {
 	if(df)
 		devfs_remove(df);
-	if(rand_maj > 0) unregister_char_device(rand_maj);
+	if(rand_maj > 0) dm_unregister_char_device(rand_maj);
 	return 0;
 }
 

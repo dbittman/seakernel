@@ -266,7 +266,7 @@ __asm__  ("iret");
 * all the cpu regs in the registers array, munges the stack a bit,
 * and invokes an exception handler (remcom_handler).
 *
-* stack on entry:                       stack on exit:
+* stack on entry:                       stack on tm_exit:
 *   old eflags                          vector number
 *   old cs (zero-filled to 32 bits)
 *   old eip

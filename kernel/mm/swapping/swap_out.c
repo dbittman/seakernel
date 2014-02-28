@@ -46,7 +46,7 @@ int swap_page_to_device(task_t *t, swapdev_t *s, unsigned addr /* includes attri
 	/* Ok, now write out the data */
 	unsigned ss = 0x1000 / s->blocksize;
 	for(i=0;i<ss;i++)
-		do_block_rw(WRITE, s->dev, (unsigned)(pi->slot * ss) + i, 
+		dm_do_block_rw(WRITE, s->dev, (unsigned)(pi->slot * ss) + i, 
 			(char *)((addr & PAGE_MASK) + i*s->blocksize), 0);
 	s->bytes_used += 0x1000;
 	s->uslots += 1;

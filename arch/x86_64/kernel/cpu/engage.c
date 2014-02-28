@@ -48,7 +48,7 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	cpu->kd = new_pml4;
 	
 	/* initialize tasking for this CPU */
-	task_t *task = task_create();
+	task_t *task = tm_task_create();
 	arch_specific_set_current_task(new_pml4, (addr_t)task);
 	task->pd = (page_dir_t *)cpu->kd;
 	task->stack_end=STACK_LOCATION;
@@ -58,7 +58,7 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	task->cpu = cpu;
 	mutex_create(&cpu->lock, MT_NOSCHED);
 	cpu->numtasks=1;
-	task->thread = thread_data_create();
+	task->thread = tm_thread_data_create();
 	set_kernel_stack(&cpu->tss, task->kernel_stack + (KERN_STACK_SIZE - STACK_ELEMENT_SIZE));
 	add_atomic(&running_processes, 1);
 	cpu->flags |= CPU_RUNNING;
@@ -123,20 +123,20 @@ int boot_cpu(unsigned id, unsigned apic_ver)
 	accept_status = LAPIC_READ(LAPIC_ESR);
 	/* assert INIT IPI */
 	send_ipi(LAPIC_ICR_SHORT_DEST, apicid, LAPIC_ICR_TM_LEVEL | LAPIC_ICR_LEVELASSERT | LAPIC_ICR_DM_INIT);
-	delay_sleep(10);
+	tm_delay_sleep(10);
 	/* de-assert INIT IPI */
 	send_ipi(LAPIC_ICR_SHORT_DEST, apicid, LAPIC_ICR_TM_LEVEL | LAPIC_ICR_DM_INIT);
-	delay_sleep(10);
+	tm_delay_sleep(10);
 	if (apic_ver >= APIC_VER_NEW) {
 		int i;
 		for (i = 1; i <= 2; i++) {
 			send_ipi(LAPIC_ICR_SHORT_DEST, apicid, LAPIC_ICR_DM_SIPI | ((bootaddr >> 12) & 0xFF));
-			delay_sleep(1);
+			tm_delay_sleep(1);
 		}
 	}
 	to = 0;
 	while ((get_boot_flag() != 0xFFFFFFFF) && to++ < 100)
-		delay_sleep(10);
+		tm_delay_sleep(10);
 	/* cpu didn't boot up...:( */
 	if (to >= 100)
 		success = 0;

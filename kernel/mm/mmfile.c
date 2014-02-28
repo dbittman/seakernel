@@ -228,10 +228,10 @@ int pfault_mmf_check(unsigned err, unsigned addr)
 	return 0;
 }
 
-void clear_mmfiles(task_t *t, int exiting)
+void clear_mmfiles(task_t *t, int tm_exiting)
 {
 	#if 0
-	/* If we are exiting, we decrease the count of shared MMFs
+	/* If we are tm_exiting, we decrease the count of shared MMFs
 	 * and we always remove private MMFs */
 	/* Then free the mmf_*_space */
 	mmf_t *mf = t->mm_files;

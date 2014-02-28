@@ -9,13 +9,13 @@ struct inode *create_sea_inode(iso_fs_t *fs, struct iso9660DirRecord *in, char *
 int iso_read_block(iso_fs_t *fs, unsigned block, unsigned char *buf)
 {
 	int off = block * 2048 + fs->block*2048;
-	return block_device_rw(READ, fs->dev, off, (char *)buf, 2048);
+	return dm_block_device_rw(READ, fs->dev, off, (char *)buf, 2048);
 }
 
 int iso_read_off(iso_fs_t *fs, unsigned off, unsigned char *buf, unsigned len)
 {
 	off += fs->block*2048;
-	return block_device_rw(READ, fs->dev, off, (char *)buf, len);
+	return dm_block_device_rw(READ, fs->dev, off, (char *)buf, len);
 }
 
 struct inode *wrap_iso_readdir(struct inode *in, unsigned  num)
@@ -253,7 +253,7 @@ int module_install()
 	return 0;
 }
 
-int module_exit()
+int module_tm_exit()
 {
 	int i=0;
 	for(i=0;i<MAX_ISO;i++)

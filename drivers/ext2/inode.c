@@ -617,8 +617,8 @@ void force_sync(ext2_fs_t *fs, unsigned b)
 {
 	int off = b*2 + fs->block;
 #if CONFIG_BLOCK_CACHE
-	write_block_cache(fs->dev, off);
-	write_block_cache(fs->dev, off+1);
+	dm_write_block_cache(fs->dev, off);
+	dm_write_block_cache(fs->dev, off+1);
 #endif
 }
 

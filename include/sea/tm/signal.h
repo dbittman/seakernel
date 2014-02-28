@@ -87,7 +87,7 @@ int sys_sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict os
 int sys_sigact(int sig, const struct sigaction *act, struct sigaction *oact);
 int sys_alarm(int a);
 void set_signal(int sig, addr_t hand);
-int send_signal(int p, int s);
-int do_send_signal(int pid, int __sig, int p);
+int tm_send_signal(int p, int s);
+int tm_do_send_signal(int pid, int __sig, int p);
 
 #endif

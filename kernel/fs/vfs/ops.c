@@ -68,7 +68,7 @@ int free_inode(struct inode *i, int recur)
 	assert(recur || !i->children.head);
 	destroy_flocks(i);
 	if(i->pipe)
-		free_pipe(i);
+		dm_free_pipe(i);
 	if(i->start)
 		kfree((void *)i->start);
 	rwlock_release(&i->rwl, RWL_WRITER);

@@ -3,12 +3,13 @@
 #include <console.h>
 #include <asm/system.h>
 #include <task.h>
+#include <sea/tty/terminal.h>
 #define VIDEO_MEMORY 0xb8000
 
 static char crtc_first_init=0;
 void crtc_init_console(struct vterm *con);
 void crtc_putchar(char *mem, char c, char attr, int x, int y, int w);
-console_driver_t crtc_drv = {
+struct console_driver crtc_drv = {
 	crtc_init_console,
 	"crtc"
 };
@@ -67,7 +68,7 @@ void crtc_console_put(struct vterm *con, char c)
 			con->x=0;
 			con->y++;
 		}
-		if(con->y >= con->scrollb && con->rend.scroll)
+		if(con->y >= con->scrollb && con->rend->scroll)
 			crtc_scrolldown(con);
 	}
 }
@@ -145,6 +146,7 @@ void crtc_init_console(struct vterm *con)
 	else
 		con->cur_mem = con->video;
 	con->vmem=vmem;
-	memcpy(&con->rend, &crtc_renderer, sizeof(crtc_renderer));
+	//memcpy(&con->rend, &crtc_renderer, sizeof(crtc_renderer));
+	con->rend = &crtc_renderer;
 	crtc_clear(con);
 }

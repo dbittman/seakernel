@@ -8,7 +8,7 @@
 
 unsigned running_processes = 0;
 
-static void copy_thread_data(task_t *task, task_t *parent)
+static void copy_thfs_read_file_data(task_t *task, task_t *parent)
 {
 	assert(parent->thread->magic == THREAD_MAGIC);
 	if(parent->thread->root) {
@@ -28,15 +28,15 @@ static void copy_thread_data(task_t *task, task_t *parent)
 	task->thread->global_sig_mask = parent->thread->global_sig_mask;
 }
 
-static void copy_task_struct(task_t *task, task_t *parent, char share_thread_data)
+static void copy_task_struct(task_t *task, task_t *parent, char share_thfs_read_file_data)
 {
 	task->parent = parent;
 	task->pid = add_atomic(&next_pid, 1)-1;
 	/* copy over the data if we're a new process. If this is going to be a thread, 
 	 * then add to the count and set the pointer */
-	if(!share_thread_data) {
+	if(!share_thfs_read_file_data) {
 		task->thread = tm_thread_data_create();
-		copy_thread_data(task, parent);
+		copy_thfs_read_file_data(task, parent);
 	} else {
 		add_atomic(&parent->thread->count, 1);
 		task->thread = parent->thread;

@@ -9,7 +9,7 @@
 #include <rwlock.h>
 #include <mount.h>
 
-struct inode *init_tmpfs();
+struct inode *fs_init_tmpfs();
 
 int do_mount(struct inode *i, struct inode *p)
 {
@@ -80,7 +80,7 @@ int sys_mount2(char *node, char *to, char *name, char *opts, int flags)
 			return mount(to, procfs_root);
 		}
 		if(!strcmp(name, "tmpfs"))
-			return mount(to, init_tmpfs());
+			return mount(to, fs_init_tmpfs());
 		return -EINVAL;
 	}
 	if(!node)

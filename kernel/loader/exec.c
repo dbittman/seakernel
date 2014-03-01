@@ -9,6 +9,7 @@
 #include <cpu.h>
 #include <elf.h>
 #include <file.h>
+#include <sea/fs/file.h>
 
 /* Prepares a process to recieve a new executable. Desc is the descriptor of 
  * the executable. We keep it open through here so that we dont have to 
@@ -55,7 +56,7 @@ static int do_exec(task_t *t, char *path, char **argv, char **env)
 		printk(0, "[%d]: Checking executable file (%s)\n", t->pid, path);
 	struct file *efil;
 	int err_open, num;
-	efil=d_sys_open(path, O_RDONLY, 0, &err_open, &num);
+	efil=fs_do_sys_open(path, O_RDONLY, 0, &err_open, &num);
 	if(efil)
 		desc = num;
 	else
@@ -75,7 +76,7 @@ static int do_exec(task_t *t, char *path, char **argv, char **env)
 	header_size = sizeof(elf32_header_t);
 #endif
 	char mem[header_size];
-	read_data(desc, mem, 0, header_size);
+	fs_read_file_data(desc, mem, 0, header_size);
 	int other_bitsize=0;
 #if CONFIG_ARCH == TYPE_ARCH_X86_64
 	if(is_valid_elf32_otherarch(mem, 2))

@@ -10,7 +10,7 @@
 #include <block.h>
 #include <file.h>
 
-int do_sys_read_flags(struct file *f, off_t off, char *buf, size_t count)
+int fs_do_sys_read_flags(struct file *f, off_t off, char *buf, size_t count)
 {
 	if(!f || !buf)
 		return -EINVAL;
@@ -31,9 +31,9 @@ int do_sys_read_flags(struct file *f, off_t off, char *buf, size_t count)
 	return -EINVAL;
 }
 
-int do_sys_read(struct file *f, off_t off, char *buf, size_t count)
+int fs_do_sys_read(struct file *f, off_t off, char *buf, size_t count)
 {
-	int ret = do_sys_read_flags(f, off, buf, count);
+	int ret = fs_do_sys_read_flags(f, off, buf, count);
 	if(ret < 0) return ret;
 	f->pos = off+ret;
 	return ret;
@@ -42,7 +42,7 @@ int do_sys_read(struct file *f, off_t off, char *buf, size_t count)
 int sys_read(int fp, off_t off, char *buf, size_t count)
 {
 	struct file *f = fs_get_file_pointer((task_t *)current_task, fp);
-	int ret = do_sys_read(f, off, buf, count);
+	int ret = fs_do_sys_read(f, off, buf, count);
 	if(f) fs_fput((task_t *)current_task, fp, 0);
 	return ret;
 }
@@ -58,12 +58,12 @@ int sys_readpos(int fp, char *buf, size_t count)
 		fs_fput((task_t *)current_task, fp, 0);
 		return -EACCES;
 	}
-	int ret = do_sys_read(f, f->pos, buf, count);
+	int ret = fs_do_sys_read(f, f->pos, buf, count);
 	fs_fput((task_t *)current_task, fp, 0);
 	return ret;
 }
 
-int do_sys_write_flags(struct file *f, off_t off, char *buf, size_t count)
+int fs_do_sys_write_flags(struct file *f, off_t off, char *buf, size_t count)
 {
 	if(!f || !buf)
 		return -EINVAL;
@@ -81,9 +81,9 @@ int do_sys_write_flags(struct file *f, off_t off, char *buf, size_t count)
 	return -EINVAL;
 }
 
-int do_sys_write(struct file *f, off_t off, char *buf, size_t count)
+int fs_do_sys_write(struct file *f, off_t off, char *buf, size_t count)
 {
-	return do_sys_write_flags(f, off, buf, count);
+	return fs_do_sys_write_flags(f, off, buf, count);
 }
 
 int sys_writepos(int fp, char *buf, size_t count)
@@ -100,7 +100,7 @@ int sys_writepos(int fp, char *buf, size_t count)
 		return -EACCES;
 	}
 	assert(f->inode);
-	int ret=do_sys_write(f, f->flags & _FAPPEND ? f->inode->len : f->pos, buf, count);
+	int ret=fs_do_sys_write(f, f->flags & _FAPPEND ? f->inode->len : f->pos, buf, count);
 	if(ret > 0)
 		f->pos += ret;
 	fs_fput((task_t *)current_task, fp, 0);
@@ -112,16 +112,16 @@ int sys_write(int fp, off_t off, char *buf, size_t count)
 	struct file *f = fs_get_file_pointer((task_t *)current_task, fp);
 	if(!f)
 		return -EBADF;
-	int ret = do_sys_write(f, off, buf, count);
+	int ret = fs_do_sys_write(f, off, buf, count);
 	fs_fput((task_t *)current_task, fp, 0);
 	return ret;
 }
 
-int read_data(int fp, char *buf, off_t off, size_t length)
+int fs_read_file_data(int fp, char *buf, off_t off, size_t length)
 {
 	struct file *f = fs_get_file_pointer((task_t *)current_task, fp);
 	if(!f) return -EBADF;
-	int ret = do_sys_read_flags(f, off, buf, length);
+	int ret = fs_do_sys_read_flags(f, off, buf, length);
 	fs_fput(current_task, fp, 0);
 	return ret;
 }

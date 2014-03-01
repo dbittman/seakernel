@@ -132,8 +132,7 @@ void init_proc_fs();
 void init_dev_fs();
 struct inode *init_ramfs();
 struct inode *rfs_create(struct inode *__p, char *name, mode_t mode);
-int rfs_read(struct inode *i, off_t off, size_t len, char *b);
-int rfs_write(struct inode *i, off_t off, size_t len, char *b);
+
 extern struct inode *devfs_root, *procfs_root;
 extern struct inode *procfs_kprocdir;
 extern struct inode *ramfs_root;

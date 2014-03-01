@@ -12,7 +12,7 @@
 #include <atomic.h>
 #include <file.h>
 
-struct file *d_sys_open(char *name, int flags, mode_t _mode, int *error, int *num)
+struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int *num)
 {
 	if(!name) {
 		*error = -EINVAL;
@@ -75,7 +75,7 @@ struct file *d_sys_open(char *name, int flags, mode_t _mode, int *error, int *nu
 int sys_open_posix(char *name, int flags, mode_t mode)
 {
 	int error=0, num;
-	struct file *f = d_sys_open(name, flags, mode, &error, &num);
+	struct file *f = fs_do_sys_open(name, flags, mode, &error, &num);
 	if(!f)
 		return error;
 	return num;
@@ -86,7 +86,7 @@ int sys_open(char *name, int flags)
 	return sys_open_posix(name, flags, 0);
 }
 
-int duplicate(task_t *t, int fp, int n)
+static int duplicate(task_t *t, int fp, int n)
 {
 	struct file *f = fs_get_file_pointer(t, fp);
 	if(!f)

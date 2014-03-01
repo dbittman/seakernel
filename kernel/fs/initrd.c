@@ -3,6 +3,7 @@
 #include <initrd.h>
 #include <fs.h>
 #include <multiboot.h>
+#include <sea/fs/ramfs.h>
 int initrd_version=0;
 addr_t initrd_location=0;
 initrd_header_t *initrd_header;
@@ -36,7 +37,7 @@ void fs_initrd_parse()
 {
 	unsigned int i;
 	printk(5, "[vfs]: Processing initrd...");
-	struct inode *node = init_ramfs();
+	struct inode *node = fs_init_ramfs();
 	addr_t location = initrd_location;
 	initrd_header = (initrd_header_t *)location;
 	file_headers = (initrd_file_header_t *) (location+sizeof(initrd_header_t));
@@ -54,7 +55,7 @@ void fs_initrd_parse()
 		char name[128];
 		sprintf(name, "/%s", (char *)&file_headers[i].name);
 		q = cget_idir(name, 0, 0x1FF);
-		rfs_write(q, 0, file_headers[i].length, (char *)((addr_t)file_headers[i].offset));
+		fs_ramfs_write(q, 0, file_headers[i].length, (char *)((addr_t)file_headers[i].offset));
 		count++;
 		size += file_headers[i].length / 1024;
 	}

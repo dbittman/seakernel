@@ -3,6 +3,7 @@
 #include <task.h>
 #include <fs.h>
 #include <atomic.h>
+#include <sea/fs/ramfs.h>
 struct inode *ramfs_root;
 int ramfs_sane(struct inode *i);
 unsigned int ramfs_node_num=0;
@@ -19,8 +20,8 @@ int ramfs_unlink(struct inode *i)
 }
 
 struct inode_operations rfs_inode_ops = {
- rfs_read,
- rfs_write,
+ fs_ramfs_read,
+ fs_ramfs_write,
  (void *)ramfs_op_dummy,
  rfs_create,
  (void *)ramfs_op_dummy,
@@ -35,7 +36,7 @@ struct inode_operations rfs_inode_ops = {
  (void *)ramfs_op_dummy,
 };
 
-struct inode *init_ramfs()
+struct inode *fs_init_ramfs()
 {
 	struct inode *i = (struct inode *)kmalloc(sizeof(struct inode));
 	i->mode = S_IFDIR | 0x1FF;
@@ -46,7 +47,7 @@ struct inode *init_ramfs()
 	return i;
 }
 
-struct inode *init_tmpfs()
+struct inode *fs_init_tmpfs()
 {
 	struct inode *i = (struct inode *)kmalloc(sizeof(struct inode));
 	i->mode = S_IFDIR | 0x1FF;
@@ -56,7 +57,7 @@ struct inode *init_tmpfs()
 	return i;
 }
 
-int rfs_read(struct inode *i, off_t off, size_t len, char *b)
+int fs_ramfs_read(struct inode *i, off_t off, size_t len, char *b)
 {
 	size_t pl = len;
 	if(off >= i->len)
@@ -83,7 +84,7 @@ static void rfs_resize(struct inode *i, off_t s)
 	i->len = s;
 }
 
-int rfs_write(struct inode *i, off_t off, size_t len, char *b)
+int fs_ramfs_write(struct inode *i, off_t off, size_t len, char *b)
 {
 	if(!len)
 		return -EINVAL;

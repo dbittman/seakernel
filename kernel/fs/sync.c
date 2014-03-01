@@ -4,6 +4,7 @@
 #include <fs.h>
 #include <cache.h>
 #include <sea/dm/dev.h>
+#include <sea/fs/mount.h>
 
 /* This syncs things in order. That is, the block level cache syncs before 
  * the devices do because the block cache may modify the device cache */

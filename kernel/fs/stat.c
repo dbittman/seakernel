@@ -78,7 +78,7 @@ int sys_dirstat(char *dir, unsigned num, char *namebuf, struct stat *statbuf)
 	if(i->dynamic) 
 	{
 		rwlock_acquire(&i->rwl, RWL_WRITER);
-		free_inode(i, 0);
+		vfs_free_inode(i, 0);
 	}
 	return 0;
 }
@@ -98,7 +98,7 @@ int sys_dirstat_fd(int fd, unsigned num, char *namebuf, struct stat *statbuf)
 	if(i->dynamic) 
 	{
 		rwlock_acquire(&i->rwl, RWL_WRITER);
-		free_inode(i, 0);
+		vfs_free_inode(i, 0);
 	}
 	return 0;
 }

@@ -6,7 +6,7 @@
 #include <fs.h>
 #include <sea/fs/inode.h>
 
-int write_fs(struct inode *i, off_t off, size_t len, char *b)
+int vfs_write_inode(struct inode *i, off_t off, size_t len, char *b)
 {
 	if(!i || !b)
 		return -EINVAL;
@@ -17,7 +17,7 @@ int write_fs(struct inode *i, off_t off, size_t len, char *b)
 	return vfs_callback_write(i, off, len, b);
 }
 
-int read_fs(struct inode *i, off_t off, size_t  len, char *b)
+int vfs_read_inode(struct inode *i, off_t off, size_t  len, char *b)
 {
 	if(!i || !b)
 		return -EINVAL;

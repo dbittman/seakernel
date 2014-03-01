@@ -53,7 +53,7 @@ void fs_init()
 {
 	fs_init_superblock_table();
 #if CONFIG_MODULES
-	loader_add_kernel_symbol(do_iremove);
+	loader_add_kernel_symbol(vfs_do_iremove);
 	loader_add_kernel_symbol(pfs_cn_node);
 	loader_add_kernel_symbol(pfs_cn);
 	loader_add_kernel_symbol(sys_open);
@@ -61,8 +61,8 @@ void fs_init()
 	loader_add_kernel_symbol(kt_set_as_kernel_task);
 	loader_add_kernel_symbol(sys_write);
 	loader_add_kernel_symbol(sys_close);
-	loader_add_kernel_symbol(read_fs);
-	loader_add_kernel_symbol(write_fs);
+	loader_add_kernel_symbol(vfs_read_inode);
+	loader_add_kernel_symbol(vfs_write_inode);
 	loader_add_kernel_symbol(sys_ioctl);
 	loader_add_kernel_symbol(proc_append_buffer);
 	loader_add_kernel_symbol(sys_stat);
@@ -307,7 +307,7 @@ int sys_readlink(char *_link, char *buf, int nr)
 	struct inode *i = vfs_lget_idir(_link, 0);
 	if(!i)
 		return -ENOENT;
-	int ret = read_fs(i, 0, nr, buf);
+	int ret = vfs_read_inode(i, 0, nr, buf);
 	iput(i);
 	return ret;
 }
@@ -334,7 +334,7 @@ int sys_symlink(char *p2, char *p1)
 		iput(inode);
 		return ret;
 	}
-	if((ret=write_fs(inode, 0, strlen(p2), p2)) < 0) {
+	if((ret=vfs_write_inode(inode, 0, strlen(p2), p2)) < 0) {
 		iput(inode);
 		return ret;
 	}

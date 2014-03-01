@@ -77,10 +77,10 @@ struct inode_operations {
 	int (*update)(struct inode *);
 };
 
-#define iremove_recur(i)  do_iremove(i, 2, 0)
-#define iremove(i)        do_iremove(i, 0, 0)
-#define iremove_nofree(i) do_iremove(i, 3, 0)
-#define iremove_force(i)  do_iremove(i, 1, 0)
+#define iremove_recur(i)  vfs_do_iremove(i, 2, 0)
+#define iremove(i)        vfs_do_iremove(i, 0, 0)
+#define iremove_nofree(i) vfs_do_iremove(i, 3, 0)
+#define iremove_force(i)  vfs_do_iremove(i, 1, 0)
 
 #define vfs_get_idir(path,in_st)         vfs_do_get_idir(path, in_st, 0, 0, 0)
 #define vfs_lget_idir(path,in_st)        vfs_do_get_idir(path, in_st, 1, 0, 0)
@@ -104,5 +104,10 @@ int vfs_inode_is_directory(struct inode *i);
 int vfs_inode_get_ref_count(struct inode *i);
 int vfs_inode_get_check_permissions(struct inode *i, mode_t flag);
 int vfs_do_add_inode(struct inode *b, struct inode *i, int locked);
+int vfs_do_iremove(struct inode *i, int flag, int locked);
+int vfs_free_inode(struct inode *i, int recur);
+
+int vfs_read_inode(struct inode *i, off_t off, size_t  len, char *b);
+int vfs_write_inode(struct inode *i, off_t off, size_t len, char *b);
 
 #endif

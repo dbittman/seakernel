@@ -26,7 +26,7 @@ int fs_do_sys_read_flags(struct file *f, off_t off, char *buf, size_t count)
 	 * where we have the inode for the link we probably want to read the link 
 	 * itself */
 	else if(S_ISDIR(mode) || S_ISREG(mode) || S_ISLNK(mode))
-		return read_fs(inode, off, count, buf);
+		return vfs_read_inode(inode, off, count, buf);
 	printk(1, "sys_read (%s): invalid mode %x\n", inode->name, inode->mode);
 	return -EINVAL;
 }
@@ -76,7 +76,7 @@ int fs_do_sys_write_flags(struct file *f, off_t off, char *buf, size_t count)
 		return (dm_block_device_rw(WRITE, inode->dev, off, buf, count));
 	/* Again, we want to write to the link because we have that node */
 	else if(S_ISDIR(inode->mode) || S_ISREG(inode->mode) || S_ISLNK(inode->mode))
-		return write_fs(inode, off, count, buf);
+		return vfs_write_inode(inode, off, count, buf);
 	printk(1, "sys_write (%s): invalid mode %x\n", inode->name, inode->mode);
 	return -EINVAL;
 }

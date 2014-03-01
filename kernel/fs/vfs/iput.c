@@ -27,7 +27,7 @@ int iput(struct inode *i)
 	}
 	if(i->count || i->mount || inode_has_children(i) || i->mount_parent || i->f_count)
 		panic(0, "attempting to free an inode with references! (%s:%d,%d,%d)", i->name, i->count, inode_has_children(i), i->f_count);
-	do_iremove(i, 0, 1);
+	vfs_do_iremove(i, 0, 1);
 	if(parent) rwlock_release(&parent->rwl, RWL_WRITER);
 	/* and we don't release the lock on i because it was destroyed in
 	 * iremove */

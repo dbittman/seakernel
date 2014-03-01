@@ -92,7 +92,7 @@ static struct inode *lookup(struct inode *i, char *path)
 		/* The link's actual contents contain the path to the linked file */
 		char li[ret->len + 1];
 		memset(li, 0, ret->len+1);
-		read_fs(ret, 0, ret->len, li);
+		vfs_read_inode(ret, 0, ret->len, li);
 		struct inode *linked = vfs_get_idir(li, i);
 		iput(ret);
 		return linked;
@@ -187,7 +187,7 @@ struct inode *vfs_do_get_idir(char *p_path, struct inode *b, int use_link,
 			/* The link's actual contents contain the path to the linked file */
 			char li[ret->len + 1];
 			memset(li, 0, ret->len+1);
-			read_fs(ret, 0, ret->len, li);
+			vfs_read_inode(ret, 0, ret->len, li);
 			struct inode *linked = vfs_get_idir(li, prev);
 			if(!linked) {
 				if(prev) {

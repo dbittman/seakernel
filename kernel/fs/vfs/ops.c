@@ -63,7 +63,7 @@ int vfs_do_add_inode(struct inode *b, struct inode *i, int locked)
 	return 0;
 }
 
-int free_inode(struct inode *i, int recur)
+int vfs_free_inode(struct inode *i, int recur)
 {
 	assert(i && !i->parent);
 	assert(recur || !i->children.head);
@@ -83,7 +83,7 @@ int free_inode(struct inode *i, int recur)
 			ll_remove(&i->children, cur);
 			c->node=0;
 			c->parent=0;
-			free_inode(c, 1);
+			vfs_free_inode(c, 1);
 		}
 	}
 	ll_destroy(&i->children);
@@ -91,7 +91,7 @@ int free_inode(struct inode *i, int recur)
 	return 0;
 }
 
-int do_iremove(struct inode *i, int flag, int locked)
+int vfs_do_iremove(struct inode *i, int flag, int locked)
 {
 	assert(i);
 	struct inode *parent = i->parent;
@@ -111,6 +111,6 @@ int do_iremove(struct inode *i, int flag, int locked)
 			sub_atomic(&parent->count, 1);
 	}
 	if(flag != 3)
-		free_inode(i, (flag == 2) ? 1 : 0);
+		vfs_free_inode(i, (flag == 2) ? 1 : 0);
 	return 0;
 }

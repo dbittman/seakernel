@@ -96,7 +96,6 @@ int get_ref_count(struct inode *i);
 //int do_mount(struct inode *i, struct inode *p);
 int is_directory(struct inode *i);
 int get_ref_count(struct inode *i);
-int free_inode(struct inode *i, int);
 int remove_inode(struct inode *b, char *name);
 //struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, int *);
 //struct inode *lookup(struct inode *i, char *path);

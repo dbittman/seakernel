@@ -56,9 +56,9 @@ int loop_rw(int rw, int minor, u64 block, char *buf)
 	if((block * 512 + loop->offset + 512) > loop->limit && loop->limit)
 		return 0;
 	if(rw == READ)
-		ret = read_fs(loop->node, block*512 + loop->offset, 512, buf);
+		ret = vfs_read_inode(loop->node, block*512 + loop->offset, 512, buf);
 	else if(rw == WRITE)
-		ret = write_fs(loop->node, block*512 + loop->offset, 512, buf);
+		ret = vfs_write_inode(loop->node, block*512 + loop->offset, 512, buf);
 	return ret;
 }
 

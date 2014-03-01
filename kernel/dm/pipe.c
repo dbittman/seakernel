@@ -47,18 +47,18 @@ int sys_pipe(int *files)
 	f->flags = _FREAD;
 	f->pos=0;
 	f->count=1;
-	int read = add_file_pointer((task_t *)current_task, f);
+	int read = fs_add_file_pointer((task_t *)current_task, f);
 	/* this is the writing descriptor */
 	f = (struct file *)kmalloc(sizeof(struct file));
 	f->inode = inode;
 	f->flags = _FREAD | _FWRITE;
 	f->count=1;
 	f->pos=0;
-	int write = add_file_pointer((task_t *)current_task, f);
+	int write = fs_add_file_pointer((task_t *)current_task, f);
 	files[0]=read;
 	files[1]=write;
-	fput((task_t *)current_task, read, 0);
-	fput((task_t *)current_task, write, 0);
+	fs_fput((task_t *)current_task, read, 0);
+	fs_fput((task_t *)current_task, write, 0);
 	return 0;
 }
 

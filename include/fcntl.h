@@ -4,10 +4,7 @@
 #include <fs.h>
 #include <sys/fcntl.h>
 
-struct flock *create_flock(int type, int whence, off_t start, size_t len);
-int can_flock(struct inode *file, struct flock *l);
-int disengage_flock(struct inode *file, struct flock *l);
-int engage_flock(struct inode *file, struct flock *l, int);
+//struct flock *create_flock(int type, int whence, off_t start, size_t len);
 int can_access_file(struct inode *file, int access);
 int fcntl_getlk(struct file *f, long arg);
 int fcntl_setlk(struct file *f, long arg);

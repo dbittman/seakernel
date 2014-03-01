@@ -36,7 +36,7 @@ int devfs_fsstat(struct inode *i, struct posix_statfs *fs)
 	return 0;
 }
 
-void init_dev_fs()
+void devfs_init()
 {
 	devfs_root = (struct inode*)kmalloc(sizeof(struct inode));
 	_strcpy(devfs_root->name, "dev");

@@ -4,15 +4,16 @@
 #include <fs.h>
 #include <atomic.h>
 #include <file.h>
+#include <sea/tm/process.h>
 
-struct file_ptr *get_file_handle(task_t *t, int n)
+static struct file_ptr *get_file_handle(task_t *t, int n)
 {
 	if(n >= FILP_HASH_LEN) return 0;
 	struct file_ptr *f = t->thread->filp[n];
 	return f;
 }
 
-struct file *get_file_pointer(task_t *t, int n)
+struct file *fs_get_file_pointer(task_t *t, int n)
 {
 	mutex_acquire(&t->thread->files_lock);
 	struct file_ptr *fp = get_file_handle(t, n);
@@ -27,7 +28,7 @@ struct file *get_file_pointer(task_t *t, int n)
 	return ret;
 }
 
-void remove_file_pointer(task_t *t, int n)
+static void remove_file_pointer(task_t *t, int n)
 {
 	if(n > FILP_HASH_LEN) return;
 	if(!t || !t->thread->filp)
@@ -42,7 +43,7 @@ void remove_file_pointer(task_t *t, int n)
 	kfree(f);
 }
 
-void fput(task_t *t, int fd, char flags)
+void fs_fput(task_t *t, int fd, char flags)
 {
 	mutex_acquire(&t->thread->files_lock);
 	struct file_ptr *fp = get_file_handle(t, fd);
@@ -57,7 +58,7 @@ void fput(task_t *t, int fd, char flags)
  * list being sorted, and since this is the only function that adds to it, 
  * we can assume it is. This allows for relatively efficient determining of 
  * a filedes without limit. */
-int add_file_pointer_do(task_t *t, struct file_ptr *f, int after)
+int fs_add_file_pointer_do(task_t *t, struct file_ptr *f, int after)
 {
 	assert(t && f);
 	while(after < FILP_HASH_LEN && t->thread->filp[after])
@@ -72,31 +73,31 @@ int add_file_pointer_do(task_t *t, struct file_ptr *f, int after)
 	return after;
 }
 
-int add_file_pointer(task_t *t, struct file *f)
+int fs_add_file_pointer(task_t *t, struct file *f)
 {
 	struct file_ptr *fp = (struct file_ptr *)kmalloc(sizeof(struct file_ptr));
 	mutex_acquire(&t->thread->files_lock);
 	fp->fi = f;
-	int r = add_file_pointer_do(t, fp, 0);
+	int r = fs_add_file_pointer_do(t, fp, 0);
 	fp->num = r;
 	fp->count = 2; /* once for being open, once for being used by the function that calls this */
 	mutex_release(&t->thread->files_lock);
 	return r;
 }
 
-int add_file_pointer_after(task_t *t, struct file *f, int x)
+int fs_add_file_pointer_after(task_t *t, struct file *f, int x)
 {
 	struct file_ptr *fp = (struct file_ptr *)kmalloc(sizeof(struct file_ptr));
 	mutex_acquire(&t->thread->files_lock);
 	fp->fi = f;
-	int r = add_file_pointer_do(t, fp, x);
+	int r = fs_add_file_pointer_do(t, fp, x);
 	fp->num = r;
 	fp->count = 2; /* once for being open, once for being used by the function that calls this */
 	mutex_release(&t->thread->files_lock);
 	return r;
 }
 
-void copy_file_handles(task_t *p, task_t *n)
+void fs_copy_file_handles(task_t *p, task_t *n)
 {
 	if(!p || !n)
 		return;
@@ -125,7 +126,7 @@ void copy_file_handles(task_t *p, task_t *n)
 	}
 }
 
-void close_all_files(task_t *t)
+void fs_close_all_files(task_t *t)
 {
 	int q=0;
 	for(;q<FILP_HASH_LEN;q++)

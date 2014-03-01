@@ -53,7 +53,7 @@ static void copy_task_struct(task_t *task, task_t *parent, char share_thread_dat
 	task->cmask = parent->cmask;
 	task->path_loc_start = parent->path_loc_start;
 
-	copy_file_handles(parent, task);
+	fs_copy_file_handles(parent, task);
 	/* this flag gets cleared on the first scheduling of this task */
 	task->flags = TF_FORK;
 	task->phys_mem_usage = parent->phys_mem_usage;

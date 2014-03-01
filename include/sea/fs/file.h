@@ -6,8 +6,9 @@
 #define SEEK_END (2)
 
 #include <types.h>
+#include <sea/tm/process.h>
 
-#define FILP_HASH_LEN 512
+
 
 struct file {
 	unsigned int flags, fd_flags, count;
@@ -20,5 +21,12 @@ struct file_ptr {
 	struct file *fi;
 };
 
+struct file *fs_get_file_pointer(task_t *t, int n);
+void fs_fput(task_t *t, int fd, char flags);
+int fs_add_file_pointer(task_t *t, struct file *f);
+int fs_add_file_pointer_after(task_t *t, struct file *f, int x);
+void fs_copy_file_handles(task_t *p, task_t *n);
+void fs_close_all_files(task_t *t);
 
 #endif
+

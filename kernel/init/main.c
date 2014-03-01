@@ -15,6 +15,7 @@
 #include <cpu.h>
 #include <sea/mm/init.h>
 #include <sea/dm/dev.h>
+#include <sea/fs/initrd.h>
 
 struct multiboot *mtboot;
 addr_t i_stack=0;
@@ -123,7 +124,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	loader_init_modules();
 #endif
 	init_syscalls();
-	load_initrd(mtboot);
+	fs_initrd_load(mtboot);
 	install_timer(1000);
 	pm_init(placement, mtboot);
 	init_main_cpu_1();
@@ -140,7 +141,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	init_vfs();
 	net_init();
 	/* Load the rest... */
-	process_initrd();
+	fs_initrd_parse();
 	kt_init_kernel_tasking();
 	get_timed(&kernel_start_time);
 	printk(KERN_MILE, "[kernel]: Kernel is setup (%2.2d:%2.2d:%2.2d, kv=%d, ts=%d bytes, bits=%d: ok)\n", 

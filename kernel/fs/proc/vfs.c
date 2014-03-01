@@ -6,6 +6,7 @@
 #include <dev.h>
 #include <swap.h>
 #include <cpu.h>
+#include <sea/fs/mount.h>
 
 int proc_read_int(char *buf, int off, int len);
 int proc_read_mutex(char *buf, int off, int len);
@@ -36,7 +37,7 @@ int proc_vfs(char rw, struct inode *n, int m, char *buf, int off, int len)
 	{
 		struct inode *i;
 		int c=0;
-		while((i=get_sb_table(c++)))
+		while((i=fs_get_filesystem(c++)))
 		{
 			if(!strcmp(i->mount_parent->name, "dev"))
 				continue;
@@ -92,7 +93,7 @@ int proc_vfs(char rw, struct inode *n, int m, char *buf, int off, int len)
 	{
 		struct inode *i;
 		int c=0;
-		while((i=get_sb_table(c++)))
+		while((i=fs_get_filesystem(c++)))
 		{
 			char *dev, *mountp="", *fsname, *mtopts;
 			char tmp[1024];

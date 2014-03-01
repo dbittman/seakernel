@@ -196,13 +196,13 @@ int module_install()
 	int i;
 	for(i=0;i<MAX_VOLS;i++)
 		vols[i].vid=-1;
-	register_sbt("fat", 1, (int (*)(int,int,char*))fat_mount);
+	fs_register_filesystemt("fat", 1, (int (*)(int,int,char*))fat_mount);
 	return 0;
 }
 
 int module_tm_exit()
 {
-	unregister_sbt("ext2");
+	unfs_register_filesystemt("ext2");
 	return 0;
 }
 int module_deps(char *b)

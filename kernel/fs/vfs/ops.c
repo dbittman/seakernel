@@ -66,7 +66,7 @@ int free_inode(struct inode *i, int recur)
 {
 	assert(i && !i->parent);
 	assert(recur || !i->children.head);
-	destroy_flocks(i);
+	vfs_destroy_flocks(i);
 	if(i->pipe)
 		dm_free_pipe(i);
 	if(i->start)

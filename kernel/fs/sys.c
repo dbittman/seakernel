@@ -12,6 +12,8 @@
 #include <mount.h>
 #include <file.h>
 #include <sea/dm/block.h>
+#include <sea/fs/devfs.h>
+#include <sea/fs/mount.h>
 
 int system_setup=0;
 /* This function is called once at the start of the init process initialization.
@@ -33,7 +35,7 @@ int sys_setup(int a)
 	}
 	printk(KERN_MILE, "[kernel]: Setting up environment...");
 	current_task->thread->pwd = current_task->thread->root = ramfs_root;
-	init_dev_fs();
+	devfs_init();
 	init_proc_fs();
 	add_inode(procfs_root, kproclist);
 	dm_char_rw(OPEN, GETDEV(3, 1), 0, 0);
@@ -48,7 +50,7 @@ int sys_setup(int a)
 
 void init_vfs()
 {
-	load_superblocktable();
+	fs_init_superblock_table();
 #if CONFIG_MODULES
 	loader_add_kernel_symbol(do_iremove);
 	loader_add_kernel_symbol(pfs_cn_node);
@@ -64,8 +66,8 @@ void init_vfs()
 	loader_add_kernel_symbol(proc_append_buffer);
 	loader_add_kernel_symbol(sys_stat);
 	loader_add_kernel_symbol(sys_fstat);
-	loader_add_kernel_symbol(register_sbt);
-	loader_add_kernel_symbol(unregister_sbt);
+	loader_add_kernel_symbol(fs_register_filesystemt);
+	loader_add_kernel_symbol(fs_unregister_filesystem);
 	loader_add_kernel_symbol(iput);
 	loader_do_add_kernel_symbol((addr_t)(struct inode **)&devfs_root, "devfs_root");
 	loader_add_kernel_symbol(do_get_idir);
@@ -76,30 +78,30 @@ void init_vfs()
 
 int sys_seek(int fp, off_t pos, unsigned whence)
 {
-	struct file *f = get_file_pointer((task_t *)current_task, fp);
+	struct file *f = fs_get_file_pointer((task_t *)current_task, fp);
 	if(!f) return -EBADF;
 	if(S_ISCHR(f->inode->mode) || S_ISFIFO(f->inode->mode)) {
-		fput((task_t *)current_task, fp, 0);
+		fs_fput((task_t *)current_task, fp, 0);
 		return 0;
 	}
 	if(whence)
 		f->pos = ((whence == SEEK_END) ? f->inode->len+pos : f->pos+pos);
 	else
 		f->pos=pos;
-	fput((task_t *)current_task, fp, 0);
+	fs_fput((task_t *)current_task, fp, 0);
 	return f->pos;
 }
 
 int sys_fsync(int f)
 {
-	struct file *file = get_file_pointer((task_t *)current_task, f);
+	struct file *file = fs_get_file_pointer((task_t *)current_task, f);
 	if(!file)
 		return -EBADF;
 	/* We don't actually do any buffering of the files themselves
 	 * but we can write out the inode data in case it has changed */
 	if(file->inode)
 		sync_inode_tofs(file->inode);
-	fput((task_t *)current_task, f, 0);
+	fs_fput((task_t *)current_task, f, 0);
 	return 0;
 }
 
@@ -109,14 +111,14 @@ int sys_chdir(char *n, int fd)
 	if(!n)
 	{
 		/* ok, we're comin' from a fchdir. This should be easy... */
-		struct file *file = get_file_pointer((task_t *)current_task, fd);
+		struct file *file = fs_get_file_pointer((task_t *)current_task, fd);
 		if(!file)
 			return -EBADF;
 		/* we don't need to lock this because we own the inode - we know
 		 * it wont get freed. An atomic operation will do. */
 		add_atomic(&file->inode->count, 1);
 		ret = ichdir(file->inode);
-		fput((task_t *)current_task, fd, 0);
+		fs_fput((task_t *)current_task, fd, 0);
 	} else
 		ret = chdir(n);
 	return ret;
@@ -138,7 +140,7 @@ int sys_umask(mode_t mode)
 
 int sys_getdepth(int fd)
 {
-	struct file *file = get_file_pointer((task_t *)current_task, fd);
+	struct file *file = fs_get_file_pointer((task_t *)current_task, fd);
 	if(!file)
 		return -EBADF;
 	struct inode *i = file->inode;
@@ -150,7 +152,7 @@ int sys_getdepth(int fd)
 		else
 			i = i->parent;
 	}
-	fput((task_t *)current_task, fd, 0);
+	fs_fput((task_t *)current_task, fd, 0);
 	return x;
 }
 
@@ -182,11 +184,11 @@ int sys_chmod(char *path, int fd, mode_t mode)
 	if(path)
 		i = get_idir(path, 0);
 	else {
-		struct file *file = get_file_pointer((task_t *)current_task, fd);
+		struct file *file = fs_get_file_pointer((task_t *)current_task, fd);
 		if(!file)
 			return -EBADF;
 		i = file->inode;
-		fput((task_t *)current_task, fd, 0);
+		fs_fput((task_t *)current_task, fd, 0);
 	}
 	if(!i) return -ENOENT;
 	if(i->uid != current_task->thread->uid && current_task->thread->uid)
@@ -210,11 +212,11 @@ int sys_chown(char *path, int fd, uid_t uid, gid_t gid)
 	if(path)
 		i = get_idir(path, 0);
 	else {
-		struct file *file = get_file_pointer((task_t *)current_task, fd);
+		struct file *file = fs_get_file_pointer((task_t *)current_task, fd);
 		if(!file)
 			return -EBADF;
 		i = file->inode;
-		fput((task_t *)current_task, fd, 0);
+		fs_fput((task_t *)current_task, fd, 0);
 	}
 	if(!i)
 		return -ENOENT;
@@ -263,16 +265,16 @@ int sys_getnodestr(char *path, char *node)
 
 int sys_ftruncate(int f, off_t length)
 {
-	struct file *file = get_file_pointer((task_t *)current_task, f);
+	struct file *file = fs_get_file_pointer((task_t *)current_task, f);
 	if(!file)
 		return -EBADF;
 	if(!permissions(file->inode, MAY_WRITE)) {
-		fput((task_t *)current_task, f, 0);
+		fs_fput((task_t *)current_task, f, 0);
 		return -EACCES;
 	}
 	file->inode->len = length;
 	sync_inode_tofs(file->inode);
-	fput((task_t *)current_task, f, 0);
+	fs_fput((task_t *)current_task, f, 0);
 	return 0;
 }
 
@@ -367,7 +369,7 @@ int sys_access(char *path, mode_t mode)
 int select_filedes(int i, int rw)
 {
 	int ready = 1;
-	struct file *file = get_file_pointer((task_t *)current_task, i);
+	struct file *file = fs_get_file_pointer((task_t *)current_task, i);
 	if(!file)
 		return -EBADF;
 	struct inode *in = file->inode;
@@ -379,7 +381,7 @@ int select_filedes(int i, int rw)
 		ready = dm_blockdev_select(in, rw);
 	else if(S_ISFIFO(in->mode))
 		ready = dm_pipedev_select(in, rw);
-	fput((task_t *)current_task, i, 0);
+	fs_fput((task_t *)current_task, i, 0);
 	return ready;
 }
 

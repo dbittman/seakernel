@@ -48,11 +48,11 @@ int sys_getppid();
 void release_task(task_t *p);
 int wait_task(unsigned pid, int state);
 void delay(int);
-struct file *get_file_pointer(task_t *t, int n);
-void remove_file_pointer(task_t *t, int n);
-int add_file_pointer(task_t *t, struct file *f);
-int add_file_pointer_after(task_t *, struct file *f, int after);
-void copy_file_handles(task_t *p, task_t *n);
+//struct file *get_file_pointer(task_t *t, int n);
+//void remove_file_pointer(task_t *t, int n);
+//int add_file_pointer(task_t *t, struct file *f);
+//int add_file_pointer_after(task_t *, struct file *f, int after);
+//void copy_file_handles(task_t *p, task_t *n);
 int sys_alarm(int a);
 int get_mem_usage();
 void take_issue_with_current_task();
@@ -60,7 +60,14 @@ task_t *get_task_pid(int pid);
 void kill_all_tasks();
 void task_unlock_mutexes(task_t *t);
 void do_force_nolock(task_t *t);
-void close_all_files(task_t *);
+
+
+
+//void close_all_files(task_t *);
+
+
+
+
 int sys_gsetpriority(int set, int which, int id, int val);
 int sys_waitagain();
 void force_nolock(task_t *);

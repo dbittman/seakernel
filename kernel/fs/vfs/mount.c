@@ -52,9 +52,9 @@ int s_mount(char *name, int dev, u64 block, char *fsname, char *no)
 {
 	struct inode *i=0;
 	if(!fsname || !*fsname)
-		i=sb_check_all(dev, block, no);
+		i=fs_filesystem_check_all(dev, block, no);
 	else
-		i=sb_callback(fsname, dev, block, no);
+		i=fs_filesystem_callback(fsname, dev, block, no);
 	if(!i)
 		return -EIO;
 	i->count=1;
@@ -119,7 +119,7 @@ int do_unmount(struct inode *i, int flags)
 	vfs_callback_unmount(m, m->sb_idx);
 	rwlock_release(&i->rwl, RWL_WRITER);
 	m->mount_parent=0;
-	struct mountlst *lst = get_mount(m);
+	struct mountlst *lst = fs_get_mount(m);
 	ll_remove(mountlist, lst->node);
 	kfree(lst);
 	if(m != devfs_root && m != procfs_root)

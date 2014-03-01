@@ -13,6 +13,7 @@
 #include <uname.h>
 #include <mount.h>
 #include <sea/tty/terminal.h>
+#include <sea/fs/stat.h>
 
 unsigned int num_syscalls=0;
 //#define SC_DEBUG 1

@@ -7,7 +7,7 @@ int initrd_version=0;
 addr_t initrd_location=0;
 initrd_header_t *initrd_header;
 initrd_file_header_t *file_headers;
-void load_initrd(struct multiboot *mb)
+void fs_initrd_load(struct multiboot *mb)
 {
 	addr_t initrd_end;
 	if(mb->mods_count > 0)
@@ -32,7 +32,7 @@ void load_initrd(struct multiboot *mb)
 	panic(0, "no initrd");
 }
 
-void process_initrd()
+void fs_initrd_parse()
 {
 	unsigned int i;
 	printk(5, "[vfs]: Processing initrd...");

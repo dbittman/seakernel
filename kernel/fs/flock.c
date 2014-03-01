@@ -7,13 +7,13 @@
 #include <fcntl.h>
 #include <file.h>
 #define LSTART(a) (a->l_start + a->l_pos)
-void init_flocks(struct inode *i)
+void vfs_init_inode_flocks(struct inode *i)
 {
 	if(!i->flm)
 		i->flm = mutex_create(0, 0);
 }
 
-struct flock *create_flock(int type, int whence, off_t start, size_t len)
+static struct flock *create_flock(int type, int whence, off_t start, size_t len)
 {
 	struct flock *fl = (struct flock *)kmalloc(sizeof(struct flock));
 	fl->l_type = type;
@@ -32,7 +32,7 @@ static int is_overlap(struct flock *a, struct flock *b)
 	return 0;
 }
 
-struct flock *get_flock_blocker(struct inode *file, struct flock *l, int pos)
+static struct flock *get_flock_blocker(struct inode *file, struct flock *l, int pos)
 {
 	if(!file || !l) return 0;
 	switch(l->l_whence)
@@ -62,7 +62,7 @@ struct flock *get_flock_blocker(struct inode *file, struct flock *l, int pos)
 	return 0;
 }
 
-int can_flock(struct inode *file, struct flock *l)
+static int can_flock(struct inode *file, struct flock *l)
 {
 	if(!file || !l) return 0;
 	
@@ -78,7 +78,7 @@ int can_flock(struct inode *file, struct flock *l)
 	return 1;
 }
 
-int disengage_flock(struct inode *file, struct flock *l)
+static int disengage_flock(struct inode *file, struct flock *l)
 {
 	if(!file || !l) return -EINVAL;
 	if(l->prev)
@@ -91,7 +91,7 @@ int disengage_flock(struct inode *file, struct flock *l)
 	return 0;
 }
 
-int engage_flock(struct inode *inode, struct flock *l, int pos)
+static int engage_flock(struct inode *inode, struct flock *l, int pos)
 {
 	if(!inode || !l) return -EINVAL;
 	
@@ -126,7 +126,7 @@ int engage_flock(struct inode *inode, struct flock *l, int pos)
 	return 0;
 }
 
-struct flock *find_flock(struct inode *f, struct flock *l)
+static struct flock *find_flock(struct inode *f, struct flock *l)
 {
 	assert(f && l);
 	struct flock *c = f->flocks;
@@ -141,12 +141,12 @@ struct flock *find_flock(struct inode *f, struct flock *l)
 	return 0;
 }
 
-int fcntl_setlk(struct file *file, long arg)
+int fs_fcntl_setlk(struct file *file, long arg)
 {
 	assert(file);
 	printk(1, "[untested]: Flock - setlk\n");
 	if(!arg || !file) return -EINVAL;
-	init_flocks(file->inode);
+	vfs_init_inode_flocks(file->inode);
 	struct inode *f = file->inode;
 	struct flock *p = (struct flock *)arg;
 	mutex_acquire(f->flm);
@@ -170,12 +170,12 @@ int fcntl_setlk(struct file *file, long arg)
 	return ret;
 }
 
-int fcntl_getlk(struct file *file, long arg)
+int fs_fcntl_getlk(struct file *file, long arg)
 {
 	assert(file);
 	printk(1, "[untested]: Flock - getlk\n");
 	struct inode *f = file->inode;
-	init_flocks(f);
+	vfs_init_inode_flocks(f);
 	if(!arg) return -EINVAL;
 	mutex_acquire(f->flm);
 	struct flock *l = get_flock_blocker(f, (struct flock *)arg, file->pos);
@@ -187,15 +187,15 @@ int fcntl_getlk(struct file *file, long arg)
 	return 0;
 }
 
-int fcntl_setlkw(struct file *file, long arg)
+int fs_fcntl_setlkw(struct file *file, long arg)
 {
 	assert(file);
-	init_flocks(file->inode);
+	vfs_init_inode_flocks(file->inode);
 	printk(1, "[untested]: Flock - setlkw\n");
 	struct inode *f = file->inode;
 	int ret;
 	while(1) {
-		if(!(ret=fcntl_setlk(file, arg)))
+		if(!(ret=fs_fcntl_setlk(file, arg)))
 			return 0;
 		if(ret != -EAGAIN)
 			return -EACCES;
@@ -205,7 +205,7 @@ int fcntl_setlkw(struct file *file, long arg)
 	}
 }
 
-void destroy_flocks(struct inode *f)
+void vfs_destroy_flocks(struct inode *f)
 {
 	if(!f)
 		return;

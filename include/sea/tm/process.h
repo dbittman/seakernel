@@ -3,11 +3,12 @@
 
 #include <types.h>
 #include <ll.h>
-#include <sea/fs/file.h>
 #include <sea/cpu/registers.h>
 #include <sea/tm/signal.h>
 #include <sea/mm/context.h>
 #define KERN_STACK_SIZE 0x16000
+
+#define FILP_HASH_LEN 512
 
 /* exit reasons */
 #define __EXIT     0

@@ -7,7 +7,7 @@
 
 struct llist *mountlist, *sblist;
 
-struct inode *get_sb_table(int _n)
+struct inode *fs_get_filesystem(int _n)
 {
 	int n=_n;
 	struct mountlst *m=0;
@@ -27,7 +27,7 @@ struct inode *get_sb_table(int _n)
 	return m ? m->i : 0;
 }
 
-struct mountlst *get_mount(struct inode *i)
+struct mountlst *fs_get_mount(struct inode *i)
 {
 	struct mountlst *m=0;
 	struct llistnode *cur;
@@ -40,14 +40,14 @@ struct mountlst *get_mount(struct inode *i)
 	return (m && (m->i == i)) ? m : 0;
 }
 
-int load_superblocktable()
+int fs_init_superblock_table()
 {
 	mountlist = ll_create(0);
 	sblist = ll_create(0);
 	return 0;
 }
 
-void unmount_all()
+void fs_unmount_all()
 {
 	struct mountlst *m;
 	struct llistnode *cur, *next;
@@ -58,7 +58,7 @@ void unmount_all()
 	}
 }
 
-void do_sync_of_mounted()
+void fs_do_sync_of_mounted()
 {
 	rwlock_acquire(&mountlist->rwl, RWL_READER);
 	struct mountlst *m;
@@ -70,7 +70,7 @@ void do_sync_of_mounted()
 	rwlock_release(&mountlist->rwl, RWL_READER);
 }
 
-int register_sbt(char *name, int ver, int (*sbl)(dev_t,u64,char *))
+int fs_register_filesystemt(char *name, int ver, int (*sbl)(dev_t,u64,char *))
 {
 	struct sblktbl *sb = (struct sblktbl *)kmalloc(sizeof(struct sblktbl));
 	sb->version = (char)ver;
@@ -80,7 +80,7 @@ int register_sbt(char *name, int ver, int (*sbl)(dev_t,u64,char *))
 	return 0;
 }
 
-struct inode *sb_callback(char *fsn, dev_t dev, u64 block, char *n)
+struct inode *fs_filesystem_callback(char *fsn, dev_t dev, u64 block, char *n)
 {
 	struct llistnode *cur;
 	struct sblktbl *s;
@@ -98,7 +98,7 @@ struct inode *sb_callback(char *fsn, dev_t dev, u64 block, char *n)
 	return 0;
 }
 
-struct inode *sb_check_all(dev_t dev, u64 block, char *n)
+struct inode *fs_filesystem_check_all(dev_t dev, u64 block, char *n)
 {
 	struct llistnode *cur;
 	struct sblktbl *s;
@@ -115,7 +115,7 @@ struct inode *sb_check_all(dev_t dev, u64 block, char *n)
 	return 0;
 }
 
-int unregister_sbt(char *name)
+int fs_unregister_filesystem(char *name)
 {
 	struct llistnode *cur;
 	struct sblktbl *s;

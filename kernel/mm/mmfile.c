@@ -14,15 +14,15 @@ unsigned sys_mmap(void *addr, void *str, int prot, int flags, int fildes)
 	} *blk = str;
 	if(flags & MAP_ANON || (addr && flags&MAP_FIXED))
 		return ENOTSUP;
-	struct file *fil = get_file_pointer((task_t *)current_task, fildes);
+	struct file *fil = fs_get_file_pointer((task_t *)current_task, fildes);
 	if(!fil)
 		return EBADF;
 	if(!(fil->flags & _FREAD)) {
-		fput((task_t *)current_task, fildes, 0);
+		fs_fput((task_t *)current_task, fildes, 0);
 		return EACCES;
 	}
 	if(flags&PROT_WRITE && !(fil->flags&_FWRITE)) {
-		fput((task_t *)current_task, fildes, 0);
+		fs_fput((task_t *)current_task, fildes, 0);
 		return EACCES;
 	}
 	/* Ok, we can attempt to allocate the area */
@@ -44,7 +44,7 @@ unsigned sys_mmap(void *addr, void *str, int prot, int flags, int fildes)
 	int np = blk->len/PAGE_SIZE + 1;
 	vnode_t *node = insert_vmem_area(*v, np);
 	if(!node) {
-		fput((task_t *)current_task, fildes, 0);
+		fs_fput((task_t *)current_task, fildes, 0);
 		return ENOMEM;
 	}
 	int i=0;
@@ -65,7 +65,7 @@ unsigned sys_mmap(void *addr, void *str, int prot, int flags, int fildes)
 	*mf->count=1;
 	mf->fd = fildes;
 	add_mmf((task_t *)current_task, mf);
-	fput((task_t *)current_task, fildes, 0);
+	fs_fput((task_t *)current_task, fildes, 0);
 	return node->addr;
 #endif
 	return 0;
@@ -85,7 +85,7 @@ mmf_t *find_mmf(task_t *t, vnode_t *n)
 void flush_mmf(mmf_t *m, int un_map, unsigned off, unsigned addr, unsigned end)
 {
 #if 0
-	struct file *fil = get_file_pointer((task_t *)current_task, m->fd);
+	struct file *fil = fs_get_file_pointer((task_t *)current_task, m->fd);
 	if(!fil)
 		return;
 	int sz = end-addr;
@@ -104,7 +104,7 @@ void flush_mmf(mmf_t *m, int un_map, unsigned off, unsigned addr, unsigned end)
 		i += PAGE_SIZE;
 		addr += PAGE_SIZE;
 	}
-	fput((task_t *)current_task, m->fd, 0);
+	fs_fput((task_t *)current_task, m->fd, 0);
 #endif
 }
 
@@ -218,7 +218,7 @@ int pfault_mmf_check(unsigned err, unsigned addr)
 		attr |= PAGE_WRITE;
 	vm_map(addr & PAGE_MASK, p, attr, MAP_CRIT);
 	memset((void *)(addr & PAGE_MASK), 0, PAGE_SIZE);
-	struct file *fil = get_file_pointer((task_t *)current_task, mf->fd);
+	struct file *fil = fs_get_file_pointer((task_t *)current_task, mf->fd);
 	if(!fil)
 		return 1;
 	int off = (addr&PAGE_MASK) - n->addr;

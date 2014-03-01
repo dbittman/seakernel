@@ -10,25 +10,25 @@
 
 int sys_isatty(int f)
 {
-	struct file *file = get_file_pointer((task_t *) current_task, f);
+	struct file *file = fs_get_file_pointer((task_t *) current_task, f);
 	if(!file) return -EBADF;
 	struct inode *inode = file->inode;
 	if(S_ISCHR(inode->mode) && (MAJOR(inode->dev) == 3 || MAJOR(inode->dev) == 4)) {
-		fput((task_t *)current_task, f, 0);
+		fs_fput((task_t *)current_task, f, 0);
 		return 1;
 	}
-	fput((task_t *)current_task, f, 0);
+	fs_fput((task_t *)current_task, f, 0);
 	return 0;
 }
 
 int sys_getpath(int f, char *b, int len)
 {
 	if(!b) return -EINVAL;
-	struct file *file = get_file_pointer((task_t *) current_task, f);
+	struct file *file = fs_get_file_pointer((task_t *) current_task, f);
 	if(!file)
 		return -EBADF;
 	int ret = get_path_string(file->inode, b, len);
-	fput((task_t *)current_task, f, 0);
+	fs_fput((task_t *)current_task, f, 0);
 	return ret;
 }
 
@@ -86,10 +86,10 @@ int sys_dirstat_fd(int fd, unsigned num, char *namebuf, struct stat *statbuf)
 {
 	if(!namebuf || !statbuf)
 		return -EINVAL;
-	struct file *f = get_file_pointer((task_t *)current_task, fd);
+	struct file *f = fs_get_file_pointer((task_t *)current_task, fd);
 	if(!f) return -EBADF;
 	struct inode *i = read_idir(f->inode, num);
-	fput((task_t *)current_task, fd, 0);
+	fs_fput((task_t *)current_task, fd, 0);
 	if(!i)
 		return -ESRCH;
 	do_stat(i, statbuf);
@@ -106,19 +106,19 @@ int sys_fstat(int fp, struct stat *sb)
 {
 	if(!sb)
 		return -EINVAL;
-	struct file *f = get_file_pointer((task_t *)current_task, fp);
+	struct file *f = fs_get_file_pointer((task_t *)current_task, fp);
 	if(!f) return -EBADF;
 	do_stat(f->inode, sb);
-	fput((task_t *)current_task, fp, 0);
+	fs_fput((task_t *)current_task, fp, 0);
 	return 0;
 }
 
 int sys_posix_fsstat(int fd, struct posix_statfs *sb)
 {
-	struct file *f = get_file_pointer((task_t *)current_task, fd);
+	struct file *f = fs_get_file_pointer((task_t *)current_task, fd);
 	if(!f) return -EBADF;
 	struct inode *i = f->inode;
-	fput((task_t *)current_task, fd, 0);
+	fs_fput((task_t *)current_task, fd, 0);
 	if(!i) return -EBADF;
 	return vfs_callback_fsstat(i, sb);
 }

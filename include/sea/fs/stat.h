@@ -78,4 +78,6 @@ struct posix_statfs
 	unsigned f_spare[4];
 };
 
+int sys_posix_fsstat(int fd, struct posix_statfs *sb);
+
 #endif

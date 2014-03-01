@@ -33,16 +33,14 @@ extern cache_t caches[NUM_CACHES];
 #define cache_object(c,id,key,sz,buf) do_cache_object(c, id, key, sz, buf, 1)
 #define cache_object_clean(c,id,key,sz,buf) do_cache_object(c, id, key, sz, buf, 0)
 
-int destroy_all_id(cache_t *c, uint64_t);
+int cache_destroy_all_id(cache_t *c, uint64_t);
 int do_cache_object(cache_t *, uint64_t id, uint64_t key, int sz, char *buf, int dirty);
-cache_t * get_empty_cache(int (*)(struct ce_t *), char *);
-struct ce_t *find_cache_element(cache_t *, uint64_t id, uint64_t key);
-void sync_cache(cache_t *);
-int destroy_cache(cache_t *);
-int sync_element(cache_t *, struct ce_t *e);
-void remove_element(cache_t *, struct ce_t *o, int);
-void do_sync_of_mounted();
-int kernel_cache_sync();
-int do_sync_element(cache_t *c, struct ce_t *e, int locked);
-void sync_dm();
+cache_t * cache_create(int (*)(struct ce_t *), char *);
+struct ce_t *cache_find_element(cache_t *, uint64_t id, uint64_t key);
+void cache_sync(cache_t *);
+int cache_destroy(cache_t *);
+int cache_sync_element(cache_t *, struct ce_t *e);
+void cache_remove_element(cache_t *, struct ce_t *o, int);
+int cache_sync_all();
+
 #endif

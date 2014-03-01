@@ -54,7 +54,7 @@ struct file *d_sys_open(char *name, int flags, mode_t _mode, int *error, int *nu
 	f->count=1;
 	f->fd_flags &= ~FD_CLOEXEC;
 	add_atomic(&inode->f_count, 1);
-	ret = add_file_pointer((task_t *)current_task, f);
+	ret = fs_add_file_pointer((task_t *)current_task, f);
 	if(num) *num = ret;
 	if(S_ISCHR(inode->mode) && !(flags & _FNOCTTY))
 		dm_char_rw(OPEN, inode->dev, 0, 0);
@@ -68,7 +68,7 @@ struct file *d_sys_open(char *name, int flags, mode_t _mode, int *error, int *nu
 		add_atomic(&inode->pipe->count, 1);
 		mutex_release(inode->pipe->lock);
 	}
-	fput((task_t *)current_task, ret, 0);
+	fs_fput((task_t *)current_task, ret, 0);
 	return f;
 }
 
@@ -88,7 +88,7 @@ int sys_open(char *name, int flags)
 
 int duplicate(task_t *t, int fp, int n)
 {
-	struct file *f = get_file_pointer(t, fp);
+	struct file *f = fs_get_file_pointer(t, fp);
 	if(!f)
 		return -EBADF;
 	struct file *new=(struct file *)kmalloc(sizeof(struct file));
@@ -109,11 +109,11 @@ int duplicate(task_t *t, int fp, int n)
 	}
 	int ret = 0;
 	if(n)
-		ret = add_file_pointer_after(t, new, n);
+		ret = fs_add_file_pointer_after(t, new, n);
 	else
-		ret = add_file_pointer(t, new);
-	fput((task_t *)t, fp, 0);
-	fput((task_t *)t, ret, 0);
+		ret = fs_add_file_pointer(t, new);
+	fs_fput((task_t *)t, fp, 0);
+	fs_fput((task_t *)t, ret, 0);
 	return ret;
 }
 

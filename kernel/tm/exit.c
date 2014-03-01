@@ -116,7 +116,7 @@ void tm_exit(int code)
 	if(!sub_atomic(&t->thread->count, 1))
 	{
 		/* we're the last thread to share this data. Clean it up */
-		close_all_files(t);
+		fs_close_all_files(t);
 		if(t->thread->root)iput(t->thread->root);
 		if(t->thread->pwd) iput(t->thread->pwd);
 		mutex_destroy(&t->thread->files_lock);

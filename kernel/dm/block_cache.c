@@ -20,12 +20,12 @@ int dm_block_cache_sync(struct ce_t *c)
 
 int dm_disconnect_block_cache(int dev)
 {
-	return destroy_all_id(blk_cache, dev);
+	return cache_destroy_all_id(blk_cache, dev);
 }
 
 int dm_write_block_cache(int dev, u64 blk)
 {
-	struct ce_t *c = find_cache_element(blk_cache, dev, blk);
+	struct ce_t *c = cache_find_element(blk_cache, dev, blk);
 	dm_block_cache_sync(c);
 	return 1;
 }
@@ -39,7 +39,7 @@ void dm_block_cache_init()
 #endif
 #endif
 	
-	blk_cache = get_empty_cache(dm_block_cache_sync, "block");
+	blk_cache = cache_create(dm_block_cache_sync, "block");
 }
 
 int dm_cache_block(int dev, u64 blk, int sz, char *buf)
@@ -50,7 +50,7 @@ int dm_cache_block(int dev, u64 blk, int sz, char *buf)
 
 int dm_get_block_cache(int dev, u64 blk, char *buf)
 {
-	struct ce_t *c = find_cache_element(blk_cache, dev, blk);
+	struct ce_t *c = cache_find_element(blk_cache, dev, blk);
 	if(!c)
 		return 0;
 	memcpy(buf, c->data, c->length);

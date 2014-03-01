@@ -12,7 +12,7 @@
 #include <file.h>
 int sys_close(int fp)
 {
-	struct file *f = get_file_pointer((task_t *) current_task, fp);
+	struct file *f = fs_get_file_pointer((task_t *) current_task, fp);
 	if(!f)
 		return -EBADF;
 	assert(f->inode && f->inode->f_count);
@@ -47,6 +47,6 @@ int sys_close(int fp)
 		do_unlink(f->inode);
 	else
 		iput(f->inode);
-	fput((task_t *)current_task, fp, FPUT_CLOSE);
+	fs_fput((task_t *)current_task, fp, FPUT_CLOSE);
 	return 0;
 }

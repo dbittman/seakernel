@@ -26,7 +26,7 @@ ext2_fs_t *get_new_fsvol()
 	mutex_create(&fs->ac_lock, 0);
 	char tm[32];
 	sprintf(tm, "ext2-%d", fs_num);
-	fs->cache = get_empty_cache(0, tm);
+	fs->cache = cache_create(0, tm);
 	fs->llnode = ll_insert(fslist, fs);
 	return fs;
 }
@@ -60,7 +60,7 @@ void release_fsvol(ext2_fs_t *fs)
 	mutex_destroy(&fs->ac_lock);
 	mutex_destroy(&fs->bg_lock);
 	mutex_destroy(&fs->fs_lock);
-	destroy_cache(fs->cache);
+	cache_destroy(fs->cache);
 	kfree(fs);
 }
 
@@ -149,7 +149,7 @@ int module_install()
 {
 	printk(1, "[ext2]: Registering filesystem\n");
 	fslist = ll_create(0);
-	register_sbt("ext2", 2, (int (*)(dev_t,u64,char*))ext2_mount);
+	fs_register_filesystemt("ext2", 2, (int (*)(dev_t,u64,char*))ext2_mount);
 	return 0;
 }
 
@@ -157,7 +157,7 @@ int module_tm_exit()
 {
 	printk(1, "[ext2]: Unmounting all ext2 filesystems\n");
 	int i=0;
-	unregister_sbt("ext2");
+	fs_unregister_filesystem("ext2");
 	if(ll_is_active(fslist)) 
 	{
 		struct llistnode *cur, *next;

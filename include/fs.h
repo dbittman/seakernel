@@ -110,7 +110,10 @@ int recur_total_refs(struct inode *i);
 int permissions(struct inode *, mode_t);
 struct inode *create_m(char *, mode_t);
 int change_icount(struct inode *i, int c);
+
 void init_flocks(struct inode *i);
+
+
 struct inode *read_idir(struct inode *i, int num);
 int read_data(int fp, char *buf, off_t off, size_t length);
 

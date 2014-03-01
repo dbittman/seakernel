@@ -249,7 +249,7 @@ int module_install()
 	int i=0;
 	for(i=0;i<MAX_ISO;i++)
 		vols[i].flag=-1;
-	register_sbt("iso9660", 1, (int (*)(int,int,char*))iso9660_mount);
+	fs_register_filesystemt("iso9660", 1, (int (*)(int,int,char*))iso9660_mount);
 	return 0;
 }
 

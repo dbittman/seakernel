@@ -13,13 +13,13 @@
 struct llist *cache_list;
 int disconnect_block_cache(int dev);
 int write_block_cache(int dev, u64 blk);
-void accessed_cache(cache_t *c)
+static void accessed_cache(cache_t *c)
 {
 	c->slow=100;
 	c->acc=1000;
 }
 
-int should_element_be_added(cache_t *c)
+static int should_element_be_added(cache_t *c)
 {
 	if(c->count > 100000)
 		return 0;
@@ -31,32 +31,32 @@ int should_element_be_added(cache_t *c)
 int init_cache()
 {
 #if CONFIG_MODULES
-	loader_add_kernel_symbol(get_empty_cache);
-	loader_add_kernel_symbol(find_cache_element);
+	loader_add_kernel_symbol(cache_create);
+	loader_add_kernel_symbol(cache_find_element);
 	loader_add_kernel_symbol(do_cache_object);
-	loader_add_kernel_symbol(remove_element);
-	loader_add_kernel_symbol(sync_element);
-	loader_add_kernel_symbol(destroy_cache);
-	loader_add_kernel_symbol(sync_cache);
-	loader_add_kernel_symbol(destroy_all_id);
-	loader_add_kernel_symbol(kernel_cache_sync);
+	loader_add_kernel_symbol(cache_remove_element);
+	loader_add_kernel_symbol(cache_sync_element);
+	loader_add_kernel_symbol(cache_destroy);
+	loader_add_kernel_symbol(cache_sync);
+	loader_add_kernel_symbol(cache_destroy_all_id);
+	loader_add_kernel_symbol(cache_sync_all);
 #endif
 	cache_list = ll_create(0);
 	return 0;
 }
 
 /* Add and remove items from the list of dirty items */
-void add_dlist(cache_t *c, struct ce_t *e)
+static void add_dlist(cache_t *c, struct ce_t *e)
 {
 	e->dirty_node = ll_insert(&c->dirty_ll, e);
 }
 
-void remove_dlist(cache_t *c, struct ce_t *e)
+static void remove_dlist(cache_t *c, struct ce_t *e)
 {
 	ll_remove(&c->dirty_ll, e->dirty_node);
 }
 
-int set_dirty(cache_t *c, struct ce_t *e, int dirty)
+static int set_dirty(cache_t *c, struct ce_t *e, int dirty)
 {
 	int old = e->dirty;
 	e->dirty=dirty;
@@ -76,8 +76,8 @@ int set_dirty(cache_t *c, struct ce_t *e, int dirty)
 	}
 	return old;
 }
-
-cache_t *get_empty_cache(int (*sync)(struct ce_t *), char *name)
+#warning "make this more like other kernel objects"
+cache_t *cache_create(int (*sync)(struct ce_t *), char *name)
 {
 	cache_t *c = (void *)kmalloc(sizeof(cache_t));
 	c->sync = sync;
@@ -98,7 +98,7 @@ cache_t *get_empty_cache(int (*sync)(struct ce_t *), char *name)
 	return c;
 }
 
-int cache_add_element(cache_t *c, struct ce_t *obj, int locked)
+static int cache_add_element(cache_t *c, struct ce_t *obj, int locked)
 {
 	accessed_cache(c);
 	if(!locked) rwlock_acquire(c->rwl, RWL_WRITER);
@@ -114,7 +114,7 @@ int cache_add_element(cache_t *c, struct ce_t *obj, int locked)
 	return 0;
 }
 
-struct ce_t *find_cache_element(cache_t *c, u64 id, u64 key)
+struct ce_t *cache_find_element(cache_t *c, u64 id, u64 key)
 {
 	accessed_cache(c);
 	rwlock_acquire(c->rwl, RWL_READER);
@@ -126,6 +126,17 @@ struct ce_t *find_cache_element(cache_t *c, u64 id, u64 key)
 	if(hash_table_get_entry(c->hash, key_arr, sizeof(uint64_t), 2, (void **)&ret) != 0)
 		ret = 0;
 	rwlock_release(c->rwl, RWL_READER);
+	return ret;
+}
+
+static int do_cache_sync_element(cache_t *c, struct ce_t *e, int locked)
+{
+	int ret=0;
+	if(!locked) rwlock_acquire(c->rwl, RWL_WRITER);
+	if(c->sync)
+		ret = c->sync(e);
+	set_dirty(c, e, 0);
+	if(!locked) rwlock_release(c->rwl, RWL_WRITER);
 	return ret;
 }
 
@@ -153,8 +164,8 @@ int do_cache_object(cache_t *c, u64 id, u64 key, int sz, char *buf, int dirty)
 		
 		if(hash_table_enumerate_entries(c->hash, 0, 0, 0, 0, (void **)&q) == 0) {
 			if(q->dirty)
-				do_sync_element(c, q, 1);
-			remove_element(c, q, 1);
+				do_cache_sync_element(c, q, 1);
+			cache_remove_element(c, q, 1);
 		}
 	}
 	obj = (struct ce_t *)kmalloc(sizeof(struct ce_t));
@@ -171,7 +182,7 @@ int do_cache_object(cache_t *c, u64 id, u64 key, int sz, char *buf, int dirty)
 }
 
 /* WARNING: This does not sync!!! */
-void remove_element(cache_t *c, struct ce_t *o, int locked)
+void cache_remove_element(cache_t *c, struct ce_t *o, int locked)
 {
 	if(!o) return;
 	if(o->dirty)
@@ -197,23 +208,12 @@ void remove_element(cache_t *c, struct ce_t *o, int locked)
 	if(!locked) rwlock_release(c->rwl, RWL_WRITER);
 }
 
-int do_sync_element(cache_t *c, struct ce_t *e, int locked)
+int cache_sync_element(cache_t *c, struct ce_t *e)
 {
-	int ret=0;
-	if(!locked) rwlock_acquire(c->rwl, RWL_WRITER);
-	if(c->sync)
-		ret = c->sync(e);
-	set_dirty(c, e, 0);
-	if(!locked) rwlock_release(c->rwl, RWL_WRITER);
-	return ret;
+	return do_cache_sync_element(c, e, 0);
 }
 
-int sync_element(cache_t *c, struct ce_t *e)
-{
-	return do_sync_element(c, e, 0);
-}
-
-void sync_cache(cache_t *c)
+void cache_sync(cache_t *c)
 {
 	if(!c->dirty || !c->sync) return;
 	accessed_cache(c);
@@ -238,7 +238,7 @@ void sync_cache(cache_t *c)
 		printk((kernel_state_flags & KSF_SHUTDOWN) ? 4 : 0, "\r[cache]: Syncing '%s': %d/%d (%d.%d%%)...   "
 				,c->name, i, num, (i*100)/num, ((i*1000)/num) % 10);
 		
-		do_sync_element(c, obj, 1);
+		do_cache_sync_element(c, obj, 1);
 		rwlock_release(c->rwl, RWL_WRITER);
 		
 		if(tm_process_got_signal(current_task))
@@ -252,7 +252,7 @@ void sync_cache(cache_t *c)
 	printk(0, "[cache]: Cache '%s' has sunk\n", c->name);
 }
 
-int destroy_all_id(cache_t *c, u64 id)
+int cache_destroy_all_id(cache_t *c, u64 id)
 {
 	rwlock_acquire(c->rwl, RWL_WRITER);
 	struct llistnode *curnode, *next;
@@ -262,28 +262,28 @@ int destroy_all_id(cache_t *c, u64 id)
 		if(obj->id == id)
 		{
 			if(obj->dirty)
-				do_sync_element(c, obj, 1);
-			remove_element(c, obj, 1);
+				do_cache_sync_element(c, obj, 1);
+			cache_remove_element(c, obj, 1);
 		}
 	}
 	rwlock_release(c->rwl, RWL_WRITER);
 	return 0;
 }
 
-int destroy_cache(cache_t *c)
+int cache_destroy(cache_t *c)
 {
 	printk(1, "[cache]: Destroying cache '%s'...\n", c->name);
 	rwlock_acquire(c->rwl, RWL_WRITER);
 	struct hash_table *h = c->hash;
 	c->hash = 0;
-	sync_cache(c);
+	cache_sync(c);
 	hash_table_destroy(h);
 	
 	struct llistnode *curnode, *next;
 	struct ce_t *obj;
 	ll_for_each_entry_safe(&c->primary_ll, curnode, next, struct ce_t *, obj)
 	{
-		remove_element(c, obj, 1);
+		cache_remove_element(c, obj, 1);
 	}
 	ll_destroy(&c->dirty_ll);
 	ll_destroy(&c->primary_ll);
@@ -294,14 +294,14 @@ int destroy_cache(cache_t *c)
 	return 1;
 }
 
-int kernel_cache_sync()
+int cache_sync_all()
 {
 	struct llistnode *cur;
 	cache_t *ent;
 	rwlock_acquire(&cache_list->rwl, RWL_READER);
 	ll_for_each_entry(cache_list, cur, cache_t *, ent)
 	{
-		sync_cache(ent);
+		cache_sync(ent);
 	}
 	rwlock_release(&cache_list->rwl, RWL_READER);
 	return 0;

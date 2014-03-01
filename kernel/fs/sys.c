@@ -48,7 +48,7 @@ int sys_setup(int a)
 	return 12;
 }
 
-void init_vfs()
+void fs_init()
 {
 	fs_init_superblock_table();
 #if CONFIG_MODULES
@@ -366,7 +366,7 @@ int sys_access(char *path, mode_t mode)
 	return (fail ? -EACCES : 0);
 }
 
-int select_filedes(int i, int rw)
+static int select_filedes(int i, int rw)
 {
 	int ready = 1;
 	struct file *file = fs_get_file_pointer((task_t *)current_task, i);

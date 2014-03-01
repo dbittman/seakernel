@@ -138,7 +138,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	init_multitasking();
 	init_cache();
 	dm_init();
-	init_vfs();
+	fs_init();
 	net_init();
 	/* Load the rest... */
 	fs_initrd_parse();

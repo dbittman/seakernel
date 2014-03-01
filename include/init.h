@@ -27,7 +27,7 @@ void get_timed(struct tm *now);
 extern void enter_system();
 void kernel_task_freer();
 int kt_kernel_idle_task();
-void init_vfs();
+void fs_init();
 int init_cache();
 int kt_init_kernel_tasking();
 void init_serial();

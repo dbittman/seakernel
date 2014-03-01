@@ -32,7 +32,7 @@ int sys_getpath(int f, char *b, int len)
 	return ret;
 }
 
-void do_stat(struct inode * inode, struct stat * tmp)
+static void do_stat(struct inode * inode, struct stat * tmp)
 {
 	assert(inode && tmp);
 	tmp->st_dev = inode->dev;

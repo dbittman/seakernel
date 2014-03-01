@@ -119,8 +119,8 @@ void devfs_remove(struct inode *i);
 int proc_get_major();
 int pfs_write(struct inode *i, off_t pos, size_t len, char *buffer);
 int pfs_read(struct inode *i, off_t pos, size_t len, char *buffer);
-struct inode *pfs_cn(char *name, mode_t mode, int major, int minor);
-struct inode *pfs_cn_node(struct inode *to, char *name, mode_t mode, int major, int minor);
+//struct inode *pfs_cn(char *name, mode_t mode, int major, int minor);
+//struct inode *pfs_cn_node(struct inode *to, char *name, mode_t mode, int major, int minor);
 int proc_append_buffer(char *buffer, char *data, int off, int len, 
 	int req_off, int req_len);
 void init_proc_fs();

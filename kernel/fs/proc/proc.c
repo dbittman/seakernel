@@ -70,7 +70,7 @@ int proc_set_callback(int major, int( *callback)(char rw, struct inode *inode,
 	return 0;
 }
 
-struct inode *pfs_cn(char *name, mode_t  mode, int major, int minor)
+static struct inode *pfs_cn(char *name, mode_t  mode, int major, int minor)
 {
 	if(!name) return 0;
 	struct inode *i;

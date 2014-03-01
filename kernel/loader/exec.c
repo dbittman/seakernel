@@ -63,7 +63,7 @@ static int do_exec(task_t *t, char *path, char **argv, char **env)
 		desc = err_open;
 	if(desc < 0 || !efil)
 		return -ENOENT;
-	if(!permissions(efil->inode, MAY_EXEC))
+	if(!vfs_inode_get_check_permissions(efil->inode, MAY_EXEC))
 	{
 		sys_close(desc);
 		return -EACCES;

@@ -81,7 +81,7 @@ struct inode *pfs_cn(char *name, mode_t  mode, int major, int minor)
 	i->mode = mode | 0xFFF;
 	i->dev = GETDEV(major, minor);
 	rwlock_create(&i->rwl);
-	add_inode(procfs_root, i);
+	vfs_add_inode(procfs_root, i);
 	return i;
 }
 
@@ -96,7 +96,7 @@ struct inode *pfs_cn_node(struct inode *to, char *name, mode_t mode, int major, 
 	i->mode = mode | 0x1FF;
 	i->dev = GETDEV(major, minor);
 	rwlock_create(&i->rwl);
-	add_inode(to, i);
+	vfs_add_inode(to, i);
 	
 	return i;
 }
@@ -148,7 +148,7 @@ void init_proc_fs()
 	pfs_cn("mounts", S_IFREG, 2, 2);
 	pfs_cn("seaos", S_IFREG, 3, 2);
 	/* Mount the filesystem */
-	add_inode(current_task->thread->root, procfs_root);
+	vfs_add_inode(current_task->thread->root, procfs_root);
 }
 
 int pfs_read(struct inode *i, off_t off, size_t len, char *buffer)

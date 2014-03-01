@@ -72,7 +72,7 @@ struct inode *ext2_mount(dev_t dev, u64 block, char *node)
 		release_fsvol(fs);
 		return 0;
 	}
-	struct inode *in = get_idir(node, 0);
+	struct inode *in = vfs_get_idir(node, 0);
 	if(in && dev == -1)
 		dev = in->dev;
 	if(in && (int)in->dev != dev)

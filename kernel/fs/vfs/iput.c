@@ -6,6 +6,7 @@
 #include <fs.h>
 #include <rwlock.h>
 #include <atomic.h>
+#include <sea/fs/inode.h>
 
 int iput(struct inode *i)
 {

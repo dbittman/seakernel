@@ -115,7 +115,7 @@ int sys_swapon(char *node, unsigned size /*0 for all */)
 	if(size)
 		panic(PANIC_MEM | PANIC_NOSYNC, "swapon got a non-zero value for size");
 	unsigned dev=0;
-	struct inode *in = get_idir(node, 0);
+	struct inode *in = vfs_get_idir(node, 0);
 	if(in)
 		dev = in->dev;
 	if(!dev)
@@ -171,7 +171,7 @@ int sys_swapoff(char *node, unsigned flags)
 		return -1;
 	}
 	unsigned dev=0;
-	struct inode *in = get_idir(node, 0);
+	struct inode *in = vfs_get_idir(node, 0);
 	if(in) {
 		iput(in);
 		dev = in->dev;

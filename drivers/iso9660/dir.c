@@ -83,7 +83,7 @@ int search_dir_rec(iso_fs_t *fs, struct iso9660DirRecord *dir, char *name, struc
 	return -1;
 }
 
-int read_dir_rec(iso_fs_t *fs, struct iso9660DirRecord *dir, 
+int vfs_read_dir_rec(iso_fs_t *fs, struct iso9660DirRecord *dir, 
 	int n, struct iso9660DirRecord *ret, char *name)
 {
 	char buf[2048];

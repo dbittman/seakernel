@@ -5,7 +5,8 @@
 #include <dev.h>
 #include <fs.h>
 #include <atomic.h>
-int do_get_path_string(struct inode *p, char *path, int max)
+#include <sea/fs/dir.h>
+static int do_get_path_string(struct inode *p, char *path, int max)
 {
 	if(!p)
 		return -EINVAL;
@@ -47,51 +48,51 @@ int do_get_path_string(struct inode *p, char *path, int max)
 	return 0;
 }
 
-int get_path_string(struct inode *p, char *buf, int len)
+int vfs_get_path_string(struct inode *p, char *buf, int len)
 {
 	if(!p || !buf || !len)
 		return -EINVAL;
 	return do_get_path_string(p, buf, len);
 }
 
-int get_pwd(char *buf, int sz)
+int sys_get_pwd(char *buf, int sz)
 {
 	if(!buf) 
 		return -EINVAL;
 	return do_get_path_string(current_task->thread->pwd, buf, sz == 0 ? -1 : sz);
 }
 
-int chroot(char *n)
+int vfs_chroot(char *n)
 {
 	if(!n) 
 		return -EINVAL;
 	struct inode *i, *old = current_task->thread->root;
 	if(current_task->thread->uid != 0)
 		return -EPERM;
-	i = get_idir(n, 0);
+	i = vfs_get_idir(n, 0);
 	if(!i)
 		return -ENOENT;
-	if(!is_directory(i)) {
+	if(!vfs_inode_is_directory(i)) {
 		iput(i);
 		return -ENOTDIR;
 	}
 	current_task->thread->root = i;
 	add_atomic(&i->count, 1);
-	ichdir(i);
+	vfs_ichdir(i);
 	iput(old);
 	return 0;
 }
 
-int ichdir(struct inode *i)
+int vfs_ichdir(struct inode *i)
 {
 	if(!i)
 		return -EINVAL;
 	struct inode *old=current_task->thread->pwd;
-	if(!is_directory(i)) {
+	if(!vfs_inode_is_directory(i)) {
 		iput(i);
 		return -ENOTDIR;
 	}
-	if(!permissions(i, MAY_EXEC)) {
+	if(!vfs_inode_get_check_permissions(i, MAY_EXEC)) {
 		iput(i);
 		return -EACCES;
 	}
@@ -100,21 +101,21 @@ int ichdir(struct inode *i)
 	return 0;
 }
 
-int chdir(char *path)
+int vfs_chdir(char *path)
 {
 	if(!path) return -EINVAL;
-	struct inode *i = get_idir(path, 0);
+	struct inode *i = vfs_get_idir(path, 0);
 	if(!i) return -ENOENT;
-	return ichdir(i);
+	return vfs_ichdir(i);
 }
 
-struct inode *do_readdir(struct inode *i, int num)
+static struct inode *do_readdir(struct inode *i, int num)
 {
 	assert(i);
 	int n = num;
-	if(!is_directory(i))
+	if(!vfs_inode_is_directory(i))
 		return 0;
-	if(!permissions(i, MAY_READ))
+	if(!vfs_inode_get_check_permissions(i, MAY_READ))
 		return 0;
 	struct inode *c=0;
 	if(!i->dynamic) {
@@ -133,14 +134,14 @@ struct inode *do_readdir(struct inode *i, int num)
 	return c;
 }
 
-struct inode *read_dir(char *n, int num)
+struct inode *vfs_read_dir(char *n, int num)
 {
 	if(!n) return 0;
 	struct inode *i=0;
-	i = get_idir(n, 0);
+	i = vfs_get_idir(n, 0);
 	if(!i)
 		return 0;
-	if(!permissions(i, MAY_READ)) {
+	if(!vfs_inode_get_check_permissions(i, MAY_READ)) {
 		iput(i);
 		return 0;
 	}
@@ -149,11 +150,11 @@ struct inode *read_dir(char *n, int num)
 	return ret;
 }
 
-struct inode *read_idir(struct inode *i, int num)
+struct inode *vfs_read_idir(struct inode *i, int num)
 {
 	if(!i)
 		return 0;
-	if(!permissions(i, MAY_READ))
+	if(!vfs_inode_get_check_permissions(i, MAY_READ))
 		return 0;
 	return do_readdir(i, num);
 }

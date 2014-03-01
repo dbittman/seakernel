@@ -70,7 +70,7 @@ int loop_up(int num, char *name)
 	if(loop->node) 
 		return -EBUSY;
 	
-	struct inode *i = get_idir(name, 0);
+	struct inode *i = vfs_get_idir(name, 0);
 	if(!i)
 		return -ENOENT;
 	loop->offset = loop->limit = loop->ro = 0;
@@ -141,7 +141,7 @@ int ioctl_main(int min, int cmd, long arg)
 			if(loop) return -EEXIST;
 			char tmp[128];
 			sprintf(tmp, "loop%d", arg);
-			struct inode *i = get_idir(tmp, devfs_root);
+			struct inode *i = vfs_get_idir(tmp, devfs_root);
 			if(i) {
 				iput(i);
 				return -EEXIST;

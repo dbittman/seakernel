@@ -4,14 +4,15 @@
 #include <asm/system.h>
 #include <dev.h>
 #include <fs.h>
+#include <sea/fs/inode.h>
 
 int write_fs(struct inode *i, off_t off, size_t len, char *b)
 {
 	if(!i || !b)
 		return -EINVAL;
-	if(is_directory(i))
+	if(vfs_inode_is_directory(i))
 		return -EISDIR;
-	if(!permissions(i, MAY_WRITE))
+	if(!vfs_inode_get_check_permissions(i, MAY_WRITE))
 		return -EACCES;
 	return vfs_callback_write(i, off, len, b);
 }
@@ -20,7 +21,7 @@ int read_fs(struct inode *i, off_t off, size_t  len, char *b)
 {
 	if(!i || !b)
 		return -EINVAL;
-	if(!permissions(i, MAY_READ))
+	if(!vfs_inode_get_check_permissions(i, MAY_READ))
 		return -EACCES;
 	return vfs_callback_read(i, off, len, b);
 }

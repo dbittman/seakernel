@@ -84,7 +84,7 @@ int tm_do_send_signal(int pid, int __sig, int p)
 	if(task != current_task) {
 		if(!p && pid != 0 && (current_task->thread->uid) && !current_task->system)
 			panic(PANIC_NOSYNC, "Priority signal sent by an illegal task!");
-		/* Check for permissions */
+		/* Check for vfs_inode_get_check_permissions */
 		if(!__sig || (__sig < 32 && current_task->thread->uid > task->thread->uid && !p))
 			return -EACCES;
 		if(task->state == TASK_DEAD || task->state == TASK_SUICIDAL)

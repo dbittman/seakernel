@@ -6,24 +6,9 @@
 #include <fs.h>
 #include <atomic.h>
 #include <rwlock.h>
+#include <sea/fs/inode.h>
 
-int link(char *old, char *new)
-{
-	if(!old || !new)
-		return -EINVAL;
-	struct inode *i;
-	if((i = get_idir(new, 0)))
-		do_unlink(i);
-	i = get_idir(old, 0);
-	if(!i)
-		return -ENOENT;
-	int ret = vfs_callback_link(i, new);
-	iput(i);
-	if(!ret) sys_utime(new, 0, 0);
-	return ret;
-}
-
-int do_unlink(struct inode *i)
+int vfs_do_unlink(struct inode *i)
 {
 	int err = 0;
 	if(current_task->thread->uid && (i->parent->mode & S_ISVTX) 
@@ -31,7 +16,7 @@ int do_unlink(struct inode *i)
 		err = -EACCES;
 	if(S_ISDIR(i->mode))
 		err = -EISDIR;
-	if(!permissions(i->parent, MAY_WRITE))
+	if(!vfs_inode_get_check_permissions(i->parent, MAY_WRITE))
 		err = -EACCES;
 	rwlock_acquire(&i->rwl, RWL_WRITER);
 	if(i->f_count) {
@@ -56,32 +41,48 @@ int do_unlink(struct inode *i)
 	return err ? err : ret;
 }
 
-int unlink(char *f)
+int vfs_link(char *old, char *new)
+{
+	if(!old || !new)
+		return -EINVAL;
+	struct inode *i;
+	if((i = vfs_get_idir(new, 0)))
+		vfs_do_unlink(i);
+	i = vfs_get_idir(old, 0);
+	if(!i)
+		return -ENOENT;
+	int ret = vfs_callback_link(i, new);
+	iput(i);
+	if(!ret) sys_utime(new, 0, 0);
+	return ret;
+}
+
+int vfs_unlink(char *f)
 {
 	if(!f) return -EINVAL;
 	struct inode *i;
 	if(strchr(f, '*')) 
 		return -ENOENT;
-	i = lget_idir(f, 0);
+	i = vfs_lget_idir(f, 0);
 	if(!i)
 		return -ENOENT;
-	return do_unlink(i);
+	return vfs_do_unlink(i);
 }
 
-int rmdir(char *f)
+int vfs_rmdir(char *f)
 {
 	if(!f) return -EINVAL;
 	struct inode *i;
 	if(strchr(f, '*'))
 		return -ENOENT;
-	i = lget_idir(f, 0);
+	i = vfs_lget_idir(f, 0);
 	if(!i)
 		return -ENOENT;
 	int err = 0;
 	rwlock_acquire(&i->rwl, RWL_WRITER);
 	if(inode_has_children(i))
 		err = -ENOTEMPTY;
-	if(!permissions(i->parent, MAY_WRITE))
+	if(!vfs_inode_get_check_permissions(i->parent, MAY_WRITE))
 		err = -EACCES;
 	if(i->f_count) {
 		rwlock_release(&i->rwl, RWL_WRITER);

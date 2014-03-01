@@ -30,7 +30,7 @@ struct inode *wrap_iso_readdir(struct inode *in, unsigned  num)
 	struct iso9660DirRecord find;
 	char name[128];
 	memset(name, 0, 128);
-	int res = read_dir_rec(fs, file, num, &find, name);
+	int res = vfs_read_dir_rec(fs, file, num, &find, name);
 	if(res == -1)
 		return 0;
 	struct inode *ret = create_sea_inode(fs, &find, name);

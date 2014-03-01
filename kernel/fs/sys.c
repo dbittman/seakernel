@@ -14,6 +14,7 @@
 #include <sea/dm/block.h>
 #include <sea/fs/devfs.h>
 #include <sea/fs/mount.h>
+#include <sea/fs/dir.h>
 
 int system_setup=0;
 /* This function is called once at the start of the init process initialization.
@@ -37,7 +38,7 @@ int sys_setup(int a)
 	current_task->thread->pwd = current_task->thread->root = ramfs_root;
 	devfs_init();
 	init_proc_fs();
-	add_inode(procfs_root, kproclist);
+	vfs_add_inode(procfs_root, kproclist);
 	dm_char_rw(OPEN, GETDEV(3, 1), 0, 0);
 	sys_open("/dev/tty1", O_RDWR);   /* stdin  */
 	sys_open("/dev/tty1", O_WRONLY); /* stdout */
@@ -70,7 +71,7 @@ void fs_init()
 	loader_add_kernel_symbol(fs_unregister_filesystem);
 	loader_add_kernel_symbol(iput);
 	loader_do_add_kernel_symbol((addr_t)(struct inode **)&devfs_root, "devfs_root");
-	loader_add_kernel_symbol(do_get_idir);
+	loader_add_kernel_symbol(vfs_do_get_idir);
 	loader_add_kernel_symbol(proc_set_callback);
 	loader_add_kernel_symbol(proc_get_major);
 #endif
@@ -117,10 +118,10 @@ int sys_chdir(char *n, int fd)
 		/* we don't need to lock this because we own the inode - we know
 		 * it wont get freed. An atomic operation will do. */
 		add_atomic(&file->inode->count, 1);
-		ret = ichdir(file->inode);
+		ret = vfs_ichdir(file->inode);
 		fs_fput((task_t *)current_task, fd, 0);
 	} else
-		ret = chdir(n);
+		ret = vfs_chdir(n);
 	return ret;
 }
 
@@ -128,7 +129,7 @@ int sys_link(char *s, char *d)
 {
 	if(!s || !d) 
 		return -EINVAL;
-	return link(s, d);
+	return vfs_link(s, d);
 }
 
 int sys_umask(mode_t mode)
@@ -182,7 +183,7 @@ int sys_chmod(char *path, int fd, mode_t mode)
 	if(!path && fd == -1) return -EINVAL;
 	struct inode *i;
 	if(path)
-		i = get_idir(path, 0);
+		i = vfs_get_idir(path, 0);
 	else {
 		struct file *file = fs_get_file_pointer((task_t *)current_task, fd);
 		if(!file)
@@ -210,7 +211,7 @@ int sys_chown(char *path, int fd, uid_t uid, gid_t gid)
 		return -EINVAL;
 	struct inode *i;
 	if(path)
-		i = get_idir(path, 0);
+		i = vfs_get_idir(path, 0);
 	else {
 		struct file *file = fs_get_file_pointer((task_t *)current_task, fd);
 		if(!file)
@@ -237,7 +238,7 @@ int sys_utime(char *path, time_t a, time_t m)
 {
 	if(!path)
 		return -EINVAL;
-	struct inode *i = get_idir(path, 0);
+	struct inode *i = vfs_get_idir(path, 0);
 	if(!i)
 		return -ENOENT;
 	if(current_task->thread->uid && current_task->thread->uid != i->uid) {
@@ -255,7 +256,7 @@ int sys_getnodestr(char *path, char *node)
 {
 	if(!path || !node)
 		return -EINVAL;
-	struct inode *i = get_idir(path, 0);
+	struct inode *i = vfs_get_idir(path, 0);
 	if(!i)
 		return -ENOENT;
 	strncpy(node, i->node_str, 128);
@@ -268,7 +269,7 @@ int sys_ftruncate(int f, off_t length)
 	struct file *file = fs_get_file_pointer((task_t *)current_task, f);
 	if(!file)
 		return -EBADF;
-	if(!permissions(file->inode, MAY_WRITE)) {
+	if(!vfs_inode_get_check_permissions(file->inode, MAY_WRITE)) {
 		fs_fput((task_t *)current_task, f, 0);
 		return -EACCES;
 	}
@@ -281,12 +282,12 @@ int sys_ftruncate(int f, off_t length)
 int sys_mknod(char *path, mode_t mode, dev_t dev)
 {
 	if(!path) return -EINVAL;
-	struct inode *i = lget_idir(path, 0);
+	struct inode *i = vfs_lget_idir(path, 0);
 	if(i) {
 		iput(i);
 		return -EEXIST;
 	}
-	i = cget_idir(path, 0, mode);
+	i = vfs_cget_idir(path, 0, mode);
 	if(!i) return -EACCES;
 	i->dev = dev;
 	i->mode = (mode & ~0xFFF) | ((mode&0xFFF) & (~current_task->cmask&0xFFF));
@@ -303,7 +304,7 @@ int sys_readlink(char *_link, char *buf, int nr)
 {
 	if(!_link || !buf)
 		return -EINVAL;
-	struct inode *i = lget_idir(_link, 0);
+	struct inode *i = vfs_lget_idir(_link, 0);
 	if(!i)
 		return -ENOENT;
 	int ret = read_fs(i, 0, nr, buf);
@@ -315,14 +316,14 @@ int sys_symlink(char *p2, char *p1)
 {
 	if(!p2 || !p1)
 		return -EINVAL;
-	struct inode *inode = get_idir(p1, 0);
-	if(!inode) inode = lget_idir(p1, 0);
+	struct inode *inode = vfs_get_idir(p1, 0);
+	if(!inode) inode = vfs_lget_idir(p1, 0);
 	if(inode)
 	{
 		iput(inode);
 		return -EEXIST;
 	}
-	inode = cget_idir(p1, 0, 0x1FF);
+	inode = vfs_cget_idir(p1, 0, 0x1FF);
 	if(!inode)
 		return -EACCES;
 	inode->mode &= 0x1FF;
@@ -348,7 +349,7 @@ int sys_access(char *path, mode_t mode)
 {
 	if(!path)
 		return -EINVAL;
-	struct inode *i = get_idir(path, 0);
+	struct inode *i = vfs_get_idir(path, 0);
 	if(!i)
 		return -ENOENT;
 	if(current_task->thread->uid == 0) {
@@ -357,11 +358,11 @@ int sys_access(char *path, mode_t mode)
 	}
 	int fail=0;
 	if(mode & R_OK)
-		fail += (permissions(i, MAY_READ) ? 0 : 1);
+		fail += (vfs_inode_get_check_permissions(i, MAY_READ) ? 0 : 1);
 	if(mode & W_OK)
-		fail += (permissions(i, MAY_WRITE) ? 0 : 1);
+		fail += (vfs_inode_get_check_permissions(i, MAY_WRITE) ? 0 : 1);
 	if(mode & X_OK)
-		fail += (permissions(i, MAY_EXEC) ? 0 : 1);
+		fail += (vfs_inode_get_check_permissions(i, MAY_EXEC) ? 0 : 1);
 	iput(i);
 	return (fail ? -EACCES : 0);
 }

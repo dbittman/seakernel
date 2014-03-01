@@ -17,5 +17,5 @@ int sync_inode_tofs(struct inode *i)
 
 struct inode *sys_create(char *path)
 {
-	return cget_idir(path, 0, 0x1FF);
+	return vfs_cget_idir(path, 0, 0x1FF);
 }

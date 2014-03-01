@@ -7,18 +7,19 @@
 #include <fcntl.h>
 #include <atomic.h>
 #include <rwlock.h>
+#include <sea/fs/inode.h>
 
-int is_directory(struct inode *i)
+int vfs_inode_is_directory(struct inode *i)
 {
 	return i ? S_ISDIR(i->mode) : 0;
 }
 
-int get_ref_count(struct inode *i)
+int vfs_inode_get_ref_count(struct inode *i)
 {
 	return i->count;
 }
 
-int permissions(struct inode *i, mode_t flag)
+int vfs_inode_get_check_permissions(struct inode *i, mode_t flag)
 {
 	if(!i)
 		return 0;
@@ -33,16 +34,16 @@ int permissions(struct inode *i, mode_t flag)
 	return flag & i->mode;
 }
 
-int actually_do_add_inode(struct inode *b, struct inode *i)
+static int actually_vfs_do_vfs_add_inode(struct inode *b, struct inode *i)
 {
-	if(!is_directory(b))
+	if(!vfs_inode_is_directory(b))
 		panic(0, "tried to add an inode to a file");
 	i->parent = b;
 	i->node=ll_insert(&b->children, i);
 	return 0;
 }
 
-int do_add_inode(struct inode *b, struct inode *i, int locked)
+int vfs_do_add_inode(struct inode *b, struct inode *i, int locked)
 {
 	assert(b && i);
 	/* we can get away with a read lock here, since the only critical
@@ -57,7 +58,7 @@ int do_add_inode(struct inode *b, struct inode *i, int locked)
 	 * create this structure for each one. */
 	if(!ll_is_active((&b->children))) 
 		ll_create(&b->children);
-	actually_do_add_inode(b, i);
+	actually_vfs_do_vfs_add_inode(b, i);
 	if(!locked) rwlock_release(&b->rwl, RWL_READER);
 	return 0;
 }

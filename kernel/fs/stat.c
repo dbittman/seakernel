@@ -7,6 +7,7 @@
 #include <dev.h>
 #include <sys/fcntl.h>
 #include <file.h>
+#include <sea/fs/dir.h>
 
 int sys_isatty(int f)
 {
@@ -27,7 +28,7 @@ int sys_getpath(int f, char *b, int len)
 	struct file *file = fs_get_file_pointer((task_t *) current_task, f);
 	if(!file)
 		return -EBADF;
-	int ret = get_path_string(file->inode, b, len);
+	int ret = vfs_get_path_string(file->inode, b, len);
 	fs_fput((task_t *)current_task, f, 0);
 	return ret;
 }
@@ -57,7 +58,7 @@ int sys_stat(char *f, struct stat *statbuf, int lin)
 {
 	if(!f || !statbuf) return -EINVAL;
 	struct inode *i;
-	i = (struct inode *) (lin ? lget_idir(f, 0) : get_idir(f, 0));
+	i = (struct inode *) (lin ? vfs_lget_idir(f, 0) : vfs_get_idir(f, 0));
 	if(!i)
 		return -ENOENT;
 	do_stat(i, statbuf);
@@ -69,7 +70,7 @@ int sys_dirstat(char *dir, unsigned num, char *namebuf, struct stat *statbuf)
 {
 	if(!namebuf || !statbuf || !dir)
 		return -EINVAL;
-	struct inode *i = read_dir(dir, num);
+	struct inode *i = vfs_read_dir(dir, num);
 	if(!i)
 		return -ESRCH;
 	do_stat(i, statbuf);
@@ -88,7 +89,7 @@ int sys_dirstat_fd(int fd, unsigned num, char *namebuf, struct stat *statbuf)
 		return -EINVAL;
 	struct file *f = fs_get_file_pointer((task_t *)current_task, fd);
 	if(!f) return -EBADF;
-	struct inode *i = read_idir(f->inode, num);
+	struct inode *i = vfs_read_idir(f->inode, num);
 	fs_fput((task_t *)current_task, fd, 0);
 	if(!i)
 		return -ESRCH;

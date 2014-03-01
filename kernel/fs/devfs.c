@@ -57,7 +57,7 @@ void devfs_init()
 	devfs_add(devfs_root, "zero", S_IFCHR, 1, 0);
 	devfs_add(devfs_root, "com0", S_IFCHR, 5, 0);
 	/* Mount the filesystem */
-	add_inode(current_task->thread->root, devfs_root);
+	vfs_add_inode(current_task->thread->root, devfs_root);
 #if CONFIG_MODULES
 	loader_add_kernel_symbol(devfs_add);
 	loader_add_kernel_symbol(devfs_remove);
@@ -81,7 +81,7 @@ struct inode *devfs_create(struct inode *base, char *name, mode_t mode)
 	i->mode = mode | 0x1FF;
 	i->num = add_atomic(&devfs_nodescount, 1);
 	rwlock_create(&i->rwl);
-	add_inode(base, i);
+	vfs_add_inode(base, i);
 	return i;
 }
 

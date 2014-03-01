@@ -82,13 +82,27 @@ struct inode_operations {
 #define iremove_nofree(i) do_iremove(i, 3, 0)
 #define iremove_force(i)  do_iremove(i, 1, 0)
 
-#define get_idir(path,in_st)         do_get_idir(path, in_st, 0, 0, 0)
-#define lget_idir(path,in_st)        do_get_idir(path, in_st, 1, 0, 0)
-#define clget_idir(path,in_st,x)     do_get_idir(path, in_st, 1, x, 0)
-#define cget_idir(path,in_st,x)      do_get_idir(path, in_st, 1, x, 0)
-#define ctget_idir(path,in_st,x,res) do_get_idir(path, in_st, 1, x, res)
+#define vfs_get_idir(path,in_st)         vfs_do_get_idir(path, in_st, 0, 0, 0)
+#define vfs_lget_idir(path,in_st)        vfs_do_get_idir(path, in_st, 1, 0, 0)
+#define vfs_clget_idir(path,in_st,x)     vfs_do_get_idir(path, in_st, 1, x, 0)
+#define vfs_cget_idir(path,in_st,x)      vfs_do_get_idir(path, in_st, 1, x, 0)
+#define vfs_ctget_idir(path,in_st,x,res) vfs_do_get_idir(path, in_st, 1, x, res)
 
-#define add_inode(a,b) do_add_inode(a, b, 0)
+#define vfs_add_inode(a,b) vfs_do_add_inode(a, b, 0)
 
+struct inode *vfs_do_get_idir(char *p_path, struct inode *b, int use_link, 
+	int create, int *did_create);
+
+int vfs_sync_inode_tofs(struct inode *i);
+struct inode *sys_create(char *path);
+int vfs_link(char *old, char *);
+int vfs_unlink(char *f);
+int vfs_do_unlink(struct inode *i);
+int vfs_rmdir(char *f);
+
+int vfs_inode_is_directory(struct inode *i);
+int vfs_inode_get_ref_count(struct inode *i);
+int vfs_inode_get_check_permissions(struct inode *i, mode_t flag);
+int vfs_do_add_inode(struct inode *b, struct inode *i, int locked);
 
 #endif

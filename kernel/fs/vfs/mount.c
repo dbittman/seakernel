@@ -8,18 +8,19 @@
 #include <atomic.h>
 #include <rwlock.h>
 #include <mount.h>
+#include <sea/fs/inode.h>
 
 struct inode *fs_init_tmpfs();
 
-int do_mount(struct inode *i, struct inode *p)
+static int do_mount(struct inode *i, struct inode *p)
 {
 	if(current_task->thread->uid)
 		return -EACCES;
 	if(i == current_task->thread->root)
 		return -EINVAL;
-	if(!is_directory(i))
+	if(!vfs_inode_is_directory(i))
 		return -ENOTDIR;
-	if(!is_directory(p))
+	if(!vfs_inode_is_directory(p))
 		return -EIO;
 	rwlock_acquire(&i->rwl, RWL_WRITER);
 	if(i->mount) {
@@ -38,17 +39,17 @@ int do_mount(struct inode *i, struct inode *p)
 	return 0;
 }
 
-int mount(char *d, struct inode *p)
+static int mount(char *d, struct inode *p)
 {
 	if(!p)
 		return -EINVAL;
-	struct inode *i = get_idir(d, 0);
+	struct inode *i = vfs_get_idir(d, 0);
 	if(!i)
 		return -ENOENT;
 	return do_mount(i, p);
 }
 
-int s_mount(char *name, int dev, u64 block, char *fsname, char *no)
+static int s_mount(char *name, int dev, u64 block, char *fsname, char *no)
 {
 	struct inode *i=0;
 	if(!fsname || !*fsname)
@@ -86,7 +87,7 @@ int sys_mount2(char *node, char *to, char *name, char *opts, int flags)
 	if(!node)
 		return -EINVAL;
 	struct inode *i=0;
-	i = get_idir(node, 0);
+	i = vfs_get_idir(node, 0);
 	if(!i)
 		return -ENOENT;
 	int dev = i->dev;
@@ -99,13 +100,13 @@ int sys_mount(char *node, char *to)
 	return sys_mount2(node, to, 0, 0, 0);
 }
 
-int do_unmount(struct inode *i, int flags)
+int vfs_do_unmount(struct inode *i, int flags)
 {
 	if(!i || !i->mount)
 		return -EINVAL;
 	if(current_task->thread->uid)
 		return -EACCES;
-	if(!is_directory(i))
+	if(!vfs_inode_is_directory(i))
 		return -ENOTDIR;
 	struct inode *m = i->mount->root;
 	rwlock_acquire(&m->rwl, RWL_WRITER);
@@ -130,18 +131,18 @@ int do_unmount(struct inode *i, int flags)
 	return 0;
 }
 
-int unmount(char *n, int flags)
+int vfs_unmount(char *n, int flags)
 {
 	if(!n) return -EINVAL;
 	struct inode *i=0;
-	i = get_idir(n, 0);
+	i = vfs_get_idir(n, 0);
 	if(!i)
 		return -ENOENT;
 	if(!i->mount_parent)
 		return -ENOENT;
 	iput(i);
 	i = i->mount_parent;
-	int ret = do_unmount(i, flags);
+	int ret = vfs_do_unmount(i, flags);
 	if(!ret)
 		iput(i);
 	return ret;

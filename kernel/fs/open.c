@@ -24,8 +24,8 @@ struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int
 	mode_t mode = (_mode & ~0xFFF) | ((_mode&0xFFF) & (~(current_task->cmask&0xFFF)));
 	int did_create=0;
 	inode = (flags & _FCREAT) ? 
-				ctget_idir(name, 0, mode, &did_create) 
-				: get_idir(name, 0);
+				vfs_ctget_idir(name, 0, mode, &did_create) 
+				: vfs_get_idir(name, 0);
 	if(!inode) {
 		*error = (flags & _FCREAT) ? -EACCES : -ENOENT;
 		return 0;
@@ -36,12 +36,12 @@ struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int
 		*error = -EEXIST;
 		return 0;
 	}
-	if(flags & _FREAD && !permissions(inode, MAY_READ)) {
+	if(flags & _FREAD && !vfs_inode_get_check_permissions(inode, MAY_READ)) {
 		iput(inode);
 		*error = -EACCES;
 		return 0;
 	}
-	if(flags & _FWRITE && !permissions(inode, MAY_WRITE)) {
+	if(flags & _FWRITE && !vfs_inode_get_check_permissions(inode, MAY_WRITE)) {
 		iput(inode);
 		*error = -EACCES;
 		return 0;

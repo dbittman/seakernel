@@ -7,7 +7,7 @@
 #include <swap.h>
 #include <cpu.h>
 #include <sea/fs/mount.h>
-
+#include <sea/fs/dir.h>
 int proc_read_int(char *buf, int off, int len);
 int proc_read_mutex(char *buf, int off, int len);
 int proc_read_bcache(char *buf, int off, int len);
@@ -110,7 +110,7 @@ int proc_vfs(char rw, struct inode *n, int m, char *buf, int off, int len)
 				if(i->mount_parent == current_task->thread->root || i == current_task->thread->root)
 					mountp = "/";
 				else {
-					get_path_string(i->mount_parent, tmp, 1024);
+					vfs_get_path_string(i->mount_parent, tmp, 1024);
 					kprintf("-> %s\n", tmp);
 					mountp = tmp;
 				}

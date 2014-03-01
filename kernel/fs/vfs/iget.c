@@ -6,8 +6,9 @@
 #include <fs.h>
 #include <atomic.h>
 #include <rwlock.h>
+#include <sea/fs/inode.h>
 
-struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, int *req)
+static struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, int *req)
 {
 	if(!i || !path || !*path)
 		return 0;
@@ -37,9 +38,9 @@ struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, int *req)
 		}
 	}
 	/* Access? */
-	if(!is_directory(i))
+	if(!vfs_inode_is_directory(i))
 		return 0;
-	if(!permissions(i, MAY_EXEC))
+	if(!vfs_inode_get_check_permissions(i, MAY_EXEC))
 		return 0;
 	if(ll_is_active(&i->children)) {
 		struct llistnode *cur;
@@ -72,14 +73,14 @@ struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, int *req)
 		if(!temp)
 			return 0;
 		temp->count=1;
-		do_add_inode(i, temp, 1);
+		vfs_do_add_inode(i, temp, 1);
 		return temp;
 	}
 	return 0;
 }
 
 /* auto-magically resolves links by calling iget again */
-struct inode *lookup(struct inode *i, char *path)
+static struct inode *lookup(struct inode *i, char *path)
 {
 	int req=0;
 	char unlock;
@@ -92,7 +93,7 @@ struct inode *lookup(struct inode *i, char *path)
 		char li[ret->len + 1];
 		memset(li, 0, ret->len+1);
 		read_fs(ret, 0, ret->len, li);
-		struct inode *linked = get_idir(li, i);
+		struct inode *linked = vfs_get_idir(li, i);
 		iput(ret);
 		return linked;
 	}
@@ -100,7 +101,7 @@ struct inode *lookup(struct inode *i, char *path)
 }
 
 /* Returns a link if is the path specified */
-struct inode *llookup(struct inode *i, char *path)
+static struct inode *llookup(struct inode *i, char *path)
 {
 	int req=0;
 	rwlock_acquire(&i->rwl, RWL_READER);
@@ -109,12 +110,12 @@ struct inode *llookup(struct inode *i, char *path)
 	return ret;
 }
 
-struct inode *do_add_dirent(struct inode *p, char *name, int mode)
+static struct inode *do_add_dirent(struct inode *p, char *name, int mode)
 {
-	if(!is_directory(p))
+	if(!vfs_inode_is_directory(p))
 		return 0;
 	if(p->mount) p = p->mount->root;
-	if(!permissions(p, MAY_WRITE))
+	if(!vfs_inode_get_check_permissions(p, MAY_WRITE))
 		return 0;
 	if(p->parent == current_task->thread->root && !strcmp(p->name, "tmp"))
 		mode |= 0x1FF;
@@ -126,7 +127,7 @@ struct inode *do_add_dirent(struct inode *p, char *name, int mode)
 		ret->mtime = get_epoch_time();
 		ret->uid = current_task->thread->uid;
 		ret->gid = current_task->thread->gid;
-		add_inode(p, ret);
+		vfs_add_inode(p, ret);
 		sync_inode_tofs(ret);
 	}
 	return ret;
@@ -135,7 +136,7 @@ struct inode *do_add_dirent(struct inode *p, char *name, int mode)
 /* This function is the master path parser for the VFS. It will traverse
  * the given path and return an inode, or fail. Don't call this directly,
  * use the wrapper functions */
-struct inode *do_get_idir(char *p_path, struct inode *b, int use_link, 
+struct inode *vfs_do_get_idir(char *p_path, struct inode *b, int use_link, 
 	int create, int *did_create)
 {
 	if(did_create)
@@ -187,7 +188,7 @@ struct inode *do_get_idir(char *p_path, struct inode *b, int use_link,
 			char li[ret->len + 1];
 			memset(li, 0, ret->len+1);
 			read_fs(ret, 0, ret->len, li);
-			struct inode *linked = get_idir(li, prev);
+			struct inode *linked = vfs_get_idir(li, prev);
 			if(!linked) {
 				if(prev) {
 					rwlock_acquire(&prev->rwl, RWL_WRITER);

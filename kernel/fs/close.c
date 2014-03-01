@@ -44,7 +44,7 @@ int sys_close(int fp)
 	else if(S_ISBLK(f->inode->mode) && !fp)
 		dm_block_device_rw(CLOSE, f->inode->dev, 0, 0, 0);
 	if(!sub_atomic(&f->inode->f_count, 1) && f->inode->marked_for_deletion)
-		do_unlink(f->inode);
+		vfs_do_unlink(f->inode);
 	else
 		iput(f->inode);
 	fs_fput((task_t *)current_task, fp, FPUT_CLOSE);

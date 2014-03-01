@@ -14,6 +14,7 @@
 #include <mount.h>
 #include <sea/tty/terminal.h>
 #include <sea/fs/stat.h>
+#include <sea/fs/dir.h>
 
 unsigned int num_syscalls=0;
 //#define SC_DEBUG 1
@@ -76,13 +77,13 @@ void *syscall_table[129] = {
 	
 	SC get_pid,        SC /**32*/sys_getppid,
 	
-	SC sys_link,       SC unlink,         SC get_ref_count, SC get_pwd, 
-	SC sys_getpath,    SC sys_null,       SC chroot,        SC chdir,
-	SC sys_mount,      SC unmount,        SC read_dir,      SC sys_null, 
+	SC sys_link,       SC vfs_unlink,         SC vfs_inode_get_ref_count, SC sys_get_pwd, 
+	SC sys_getpath,    SC sys_null,       SC vfs_chroot,    SC vfs_chdir,
+	SC sys_mount,      SC vfs_unmount,        SC vfs_read_dir,      SC sys_null, 
 	SC console_create, SC console_switch, SC sys_null,      SC sys_null,
 	
 	SC sys_null,       SC sys_mmap,       SC sys_munmap,    SC sys_sync, 
-	SC rmdir,          SC sys_fsync,      SC sys_alarm,     SC sys_select,
+	SC vfs_rmdir,          SC sys_fsync,      SC sys_alarm,     SC sys_select,
 	SC sys_null,       SC sys_null,       SC sys_sysconf,   SC sys_setsid, 
 	SC sys_setpgid, 
 	

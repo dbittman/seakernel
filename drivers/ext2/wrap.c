@@ -192,10 +192,10 @@ int do_wrap_ext2_link(struct inode *i, char *path)
 	struct inode *dir=0;
 	/* Check if its in the same directory. If so, its easy */
 	if(!p) {
-		dir = get_idir(".", 0);
+		dir = vfs_get_idir(".", 0);
 	} else {
 		*p=0;
-		dir = get_idir(path, 0);
+		dir = vfs_get_idir(path, 0);
 	}
 	/* Now, loc has the directory to link it into, and p contains 
 	 * the name of the entry */

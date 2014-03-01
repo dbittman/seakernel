@@ -28,7 +28,7 @@
 #include <fs.h>
 #include <dev.h>
 #include <symbol.h>
-
+#include <sea/fs/proc.h>
 #define PCI_LOGLEVEL 1
 
 struct inode *proc_pci;
@@ -203,7 +203,7 @@ void pci_scan()
 					int min=0;
 					min = 256*bus + dev*8 + func;
 					sprintf(name, "%x.%x.%x", bus, dev, func);
-					if(proc_pci_maj) (new->node=pfs_cn_node(proc_pci, 
+					if(proc_pci_maj) (new->node=proc_create_node(proc_pci, 
 						name, S_IFREG, proc_pci_maj, min));
 					if(new->node)
 						new->node->len=sizeof(struct pci_device);
@@ -320,7 +320,7 @@ int module_install()
 	pci_list=0;
 	pci_mutex = mutex_create(0, 0);
 	proc_pci_maj = proc_get_major();
-	proc_pci=pfs_cn("pci", S_IFDIR, proc_pci_maj, 0);
+	proc_pci=proc_create_node_at_root("pci", S_IFDIR, proc_pci_maj, 0);
 	proc_set_callback(proc_pci_maj, pci_proc_call);
 	printk(1, "[pci]: Scanning pci bus\n");
 	pci_scan();

@@ -6,13 +6,14 @@
 #include <dev.h>
 #include <swap.h>
 #include <cpu.h>
+#include <sea/fs/proc.h>
 struct inode *procfs_root, *procfs_kprocdir;
 int proc_read_int(char *buf, int off, int len);
 int proc_read_mutex(char *buf, int off, int len);
 int proc_read_bcache(char *buf, int off, int len);
 struct inode_operations procfs_inode_ops = {
- pfs_read,
- pfs_write,
+ proc_read,
+ proc_write,
  0,
  0,
  0,
@@ -70,7 +71,7 @@ int proc_set_callback(int major, int( *callback)(char rw, struct inode *inode,
 	return 0;
 }
 
-static struct inode *pfs_cn(char *name, mode_t  mode, int major, int minor)
+struct inode *proc_create_node_at_root(char *name, mode_t  mode, int major, int minor)
 {
 	if(!name) return 0;
 	struct inode *i;
@@ -85,7 +86,7 @@ static struct inode *pfs_cn(char *name, mode_t  mode, int major, int minor)
 	return i;
 }
 
-struct inode *pfs_cn_node(struct inode *to, char *name, mode_t mode, int major, int minor)
+struct inode *proc_create_node(struct inode *to, char *name, mode_t mode, int major, int minor)
 {
 	if(!name) return 0;
 	struct inode *i;
@@ -124,7 +125,7 @@ int proc_append_buffer(char *buffer, char *data, int off, int len, int req_off, 
 	return len;
 }
 
-void init_proc_fs()
+void proc_init()
 {
 	procfs_root = (struct inode*)kmalloc(sizeof(struct inode));
 	_strcpy(procfs_root->name, "proc");
@@ -134,24 +135,24 @@ void init_proc_fs()
 	procfs_root->num = -1;
 	rwlock_create(&procfs_root->rwl);
 	/* Create proc nodes */
-	pfs_cn("mem", S_IFREG, 0, 0);
-	struct inode *si = pfs_cn("sched", S_IFDIR, 1, 0);
-	pfs_cn_node(si, "pri_tty", S_IFREG, 1, 1);
-	pfs_cn("vfs", S_IFREG, 2, 0);
-	pfs_cn("kernel", S_IFREG, 3, 0);
-	pfs_cn("klogfile", S_IFREG, 3, 1);
-	pfs_cn("version", S_IFREG, 3, 2);
-	pfs_cn("swap", S_IFREG, 3, 3);
-	pfs_cn("isr", S_IFREG, 3, 4);
-	pfs_cn("bcache", S_IFREG, 3, 6);
-	pfs_cn("modules", S_IFREG, 4, 0);
-	pfs_cn("mounts", S_IFREG, 2, 2);
-	pfs_cn("seaos", S_IFREG, 3, 2);
+	proc_create_node_at_root("mem", S_IFREG, 0, 0);
+	struct inode *si = proc_create_node_at_root("sched", S_IFDIR, 1, 0);
+	proc_create_node(si, "pri_tty", S_IFREG, 1, 1);
+	proc_create_node_at_root("vfs", S_IFREG, 2, 0);
+	proc_create_node_at_root("kernel", S_IFREG, 3, 0);
+	proc_create_node_at_root("klogfile", S_IFREG, 3, 1);
+	proc_create_node_at_root("version", S_IFREG, 3, 2);
+	proc_create_node_at_root("swap", S_IFREG, 3, 3);
+	proc_create_node_at_root("isr", S_IFREG, 3, 4);
+	proc_create_node_at_root("bcache", S_IFREG, 3, 6);
+	proc_create_node_at_root("modules", S_IFREG, 4, 0);
+	proc_create_node_at_root("mounts", S_IFREG, 2, 2);
+	proc_create_node_at_root("seaos", S_IFREG, 3, 2);
 	/* Mount the filesystem */
 	vfs_add_inode(current_task->thread->root, procfs_root);
 }
 
-int pfs_read(struct inode *i, off_t off, size_t len, char *buffer)
+int proc_read(struct inode *i, off_t off, size_t len, char *buffer)
 {
 	if(!i || !buffer) return -EINVAL;
 	int maj = MAJOR(i->dev);
@@ -163,7 +164,7 @@ int pfs_read(struct inode *i, off_t off, size_t len, char *buffer)
 	return callback(READ, i, min, buffer, off, len);
 }
 
-int pfs_write(struct inode *i, off_t pos, size_t len, char *buffer)
+int proc_write(struct inode *i, off_t pos, size_t len, char *buffer)
 {
 	if(!i || !buffer) return -EINVAL;
 	int maj = MAJOR(i->dev);

@@ -15,6 +15,7 @@
 #include <sea/fs/devfs.h>
 #include <sea/fs/mount.h>
 #include <sea/fs/dir.h>
+#include <sea/fs/proc.h>
 
 int system_setup=0;
 /* This function is called once at the start of the init process initialization.
@@ -37,7 +38,7 @@ int sys_setup(int a)
 	printk(KERN_MILE, "[kernel]: Setting up environment...");
 	current_task->thread->pwd = current_task->thread->root = ramfs_root;
 	devfs_init();
-	init_proc_fs();
+	proc_init();
 	vfs_add_inode(procfs_root, kproclist);
 	dm_char_rw(OPEN, GETDEV(3, 1), 0, 0);
 	sys_open("/dev/tty1", O_RDWR);   /* stdin  */
@@ -54,8 +55,8 @@ void fs_init()
 	fs_init_superblock_table();
 #if CONFIG_MODULES
 	loader_add_kernel_symbol(vfs_do_iremove);
-	loader_add_kernel_symbol(pfs_cn_node);
-	loader_add_kernel_symbol(pfs_cn);
+	loader_add_kernel_symbol(proc_create_node);
+	loader_add_kernel_symbol(proc_create_node_at_root);
 	loader_add_kernel_symbol(sys_open);
 	loader_add_kernel_symbol(sys_read);
 	loader_add_kernel_symbol(kt_set_as_kernel_task);

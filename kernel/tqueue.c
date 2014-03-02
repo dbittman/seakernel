@@ -38,7 +38,7 @@ void tqueue_destroy(tqueue_t *tq)
 
 struct llistnode *tqueue_insert(tqueue_t *tq, void *item, struct llistnode *node)
 {
-	int old = set_int(0);
+	int old = interrupt_set(0);
 	mutex_acquire(&tq->lock);
 	assert(tq->magic == TQ_MAGIC);
 	ll_do_insert(&tq->tql, node, item);
@@ -46,20 +46,20 @@ struct llistnode *tqueue_insert(tqueue_t *tq, void *item, struct llistnode *node
 		tq->current = tq->tql.head;
 	add_atomic(&tq->num, 1);
 	mutex_release(&tq->lock);
-	assert(!set_int(old));
+	assert(!interrupt_set(old));
 	return node;
 }
 
 void tqueue_remove(tqueue_t *tq, struct llistnode *node)
 {
-	int old = set_int(0);
+	int old = interrupt_set(0);
 	mutex_acquire(&tq->lock);
 	assert(tq->magic == TQ_MAGIC);
 	if(tq->current == node) tq->current=0;
 	ll_do_remove(&tq->tql, node, 0);
 	sub_atomic(&tq->num, 1);
 	mutex_release(&tq->lock);
-	assert(!set_int(old));
+	assert(!interrupt_set(old));
 }
 
 /* tsearch may occasionally need to remove tasks from the queue
@@ -75,7 +75,7 @@ void tqueue_remove_nolock(tqueue_t *tq, struct llistnode *i)
 /* this function may return null if there are no tasks in the queue */
 void *tqueue_next(tqueue_t *tq)
 {
-	int old = set_int(0);
+	int old = interrupt_set(0);
 	mutex_acquire(&tq->lock);
 	assert(tq->magic == TQ_MAGIC);
 	assert(tq->num > 0);
@@ -87,6 +87,6 @@ void *tqueue_next(tqueue_t *tq)
 	void *ret = tq->current->entry;
 	assert(ret);
 	mutex_release(&tq->lock);
-	assert(!set_int(old));
+	assert(!interrupt_set(old));
 	return ret;
 }

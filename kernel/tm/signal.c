@@ -5,6 +5,7 @@
 #include <isr.h>
 #include <task.h>
 #include <init.h>
+#include <sea/cpu/interrupt.h>
 
 int arch_userspace_signal_initializer(task_t *t, struct sigaction *sa);
 void __tm_handle_signal(task_t *t)
@@ -130,7 +131,7 @@ int sys_alarm(int a)
 		if(!(current_task->flags & TF_ALARM)) {
 			/* need to clear interrupts here, because
 			 * we access this inside the scheduler... */
-			int old = set_int(0);
+			int old = interrupt_set(0);
 			mutex_acquire(alarm_mutex);
 			task_t *t = alarm_list_start, *p = 0;
 			while(t && t->alarm_end < current_task->alarm_end) p = t, t = t->alarm_next;
@@ -145,20 +146,20 @@ int sys_alarm(int a)
 			}
 			tm_raise_flag(TF_ALARM);
 			mutex_release(alarm_mutex);
-			set_int(old);
+			interrupt_set(old);
 		} else
 			return old_value < 0 ? 0 : old_value;
 	} else {
 		task_t *t = current_task;
 		if((t->flags & TF_ALARM)) {
 			tm_lower_flag(TF_ALARM);
-			int old = set_int(0);
+			int old = interrupt_set(0);
 			mutex_acquire(alarm_mutex);
 			if(current_task->alarm_prev) current_task->alarm_prev->alarm_next = current_task->alarm_next;
 			if(current_task->alarm_next) current_task->alarm_next->alarm_prev = current_task->alarm_prev;
 			current_task->alarm_next = current_task->alarm_prev = 0;
 			mutex_release(alarm_mutex);
-			set_int(old);
+			interrupt_set(old);
 		}
 	}
 	return 0;

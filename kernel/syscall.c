@@ -216,7 +216,7 @@ int syscall_handler(volatile registers_t *regs)
 	tm_process_enter_system(SYSCALL_NUM_AND_RET);
 	/* most syscalls are pre-emptible, so we enable interrupts and
 	 * expect handlers to disable them if needed */
-	set_int(1);
+	interrupt_set(1);
 	/* start accounting information! */
 	current_task->freed = current_task->allocated=0;
 	
@@ -234,7 +234,7 @@ int syscall_handler(volatile registers_t *regs)
 			   current_task->pid, current_task->system, ret, ticks - or_t);
 	#endif
 		
-	set_int(0);
+	interrupt_set(0);
 	tm_process_exit_system();
 	tm_engage_idle();
 	/* if we need to reschedule, or we have overused our timeslice

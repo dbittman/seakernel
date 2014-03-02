@@ -147,7 +147,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	printk(KERN_MILE, "[kernel]: Kernel is setup (%2.2d:%2.2d:%2.2d, kv=%d, ts=%d bytes, bits=%d: ok)\n", 
 	       kernel_start_time.tm_hour, kernel_start_time.tm_min, 
 	       kernel_start_time.tm_sec, KVERSION, sizeof(task_t), BITS_PER_LONG);
-	assert(!set_int(1));
+	assert(!interrupt_set(1));
 	if(!tm_fork())
 		init();
 	sys_setsid();

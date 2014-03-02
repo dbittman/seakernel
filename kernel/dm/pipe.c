@@ -4,6 +4,7 @@
 #include <pipe.h>
 #include <task.h>
 #include <file.h>
+#include <sea/cpu/interrupt.h>
 pipe_t *dm_create_pipe()
 {
 	pipe_t *pipe = (pipe_t *)kmalloc(sizeof(pipe_t));
@@ -90,11 +91,11 @@ int dm_read_pipe(struct inode *ino, char *buffer, size_t length)
 	mutex_acquire(pipe->lock);
 	while(!pipe->pending && (pipe->count > 1 && pipe->type != PIPE_NAMED 
 			&& pipe->wrcount>0)) {
-		int old = set_int(0);
+		int old = interrupt_set(0);
 		tm_add_to_blocklist(pipe->read_blocked, (task_t *)current_task);
 		mutex_release(pipe->lock);
 		while(!tm_schedule());
-		assert(!set_int(old));
+		assert(!interrupt_set(old));
 		if(tm_process_got_signal(current_task))
 			return -EINTR;
 		mutex_acquire(pipe->lock);
@@ -137,11 +138,11 @@ int dm_write_pipe(struct inode *ino, char *buffer, size_t length)
 	}
 	/* IO block until we can write to it */
 	while((pipe->write_pos+length)>=PIPE_SIZE) {
-		int old = set_int(0);
+		int old = interrupt_set(0);
 		tm_add_to_blocklist(pipe->write_blocked, (task_t *)current_task);
 		mutex_release(pipe->lock);
 		while(!tm_schedule());
-		assert(!set_int(old));
+		assert(!interrupt_set(old));
 		if(tm_process_got_signal(current_task))
 			return -EINTR;
 		mutex_acquire(pipe->lock);

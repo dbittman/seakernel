@@ -181,7 +181,7 @@ void arch_interrupt_ipi_handler(volatile registers_t regs)
 #if CONFIG_ARCH == TYPE_ARCH_X86_64
 	assert(((regs.ds&(~0x7)) == 0x10 || (regs.ds&(~0x7)) == 0x20) && ((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));
 #endif
-	int previous_interrupt_flag = set_int(0);
+	int previous_interrupt_flag = interrupt_set(0);
 	add_atomic(&int_count[regs.int_no], 1);
 #if CONFIG_SMP
 	/* delegate to the proper handler, in ipi.c */
@@ -204,7 +204,7 @@ void arch_interrupt_ipi_handler(volatile registers_t regs)
 			panic(PANIC_NOSYNC, "invalid interprocessor interrupt number: %d", regs.int_no);
 	}
 #endif
-	assert(!set_int(0));
+	assert(!interrupt_set(0));
 	set_cpu_interrupt_flag(previous_interrupt_flag); /* assembly code will issue sti */
 #if CONFIG_SMP
 	lapic_eoi();
@@ -220,7 +220,7 @@ void arch_interrupt_syscall_handler(volatile registers_t regs)
 #if CONFIG_ARCH == TYPE_ARCH_X86_64
 	assert(regs.int_no == 0x80 && ((regs.ds&(~0x7)) == 0x10 || (regs.ds&(~0x7)) == 0x20) && ((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));
 #endif
-	set_int(0);
+	interrupt_set(0);
 	add_atomic(&int_count[0x80], 1);
 	if(current_task->flags & TF_IN_INT)
 		panic(0, "attempted to enter syscall while handling an interrupt");
@@ -268,7 +268,7 @@ void arch_interrupt_syscall_handler(volatile registers_t regs)
 		}
 		assert(!get_cpu_interrupt_flag());
 	}
-	assert(!set_int(0));
+	assert(!interrupt_set(0));
 	current_task->sysregs=0;
 	current_task->regs=0;
 	/* we don't need worry about this being wrong, since we'll always be returning to
@@ -290,7 +290,7 @@ void arch_interrupt_isr_handler(volatile registers_t regs)
 	assert(((regs.ds&(~0x7)) == 0x10 || (regs.ds&(~0x7)) == 0x20));
 #endif
 	/* this is explained in the IRQ handler */
-	int previous_interrupt_flag = set_int(0);
+	int previous_interrupt_flag = interrupt_set(0);
 	add_atomic(&int_count[regs.int_no], 1);
 	/* check if we're interrupting kernel code, and set the interrupt
 	 * handling flag */
@@ -322,7 +322,7 @@ void arch_interrupt_isr_handler(volatile registers_t regs)
 	}
 	/* clean up... Also, we don't handle stage 2 in ISR handling, since this
 	 can occur from within a stage2 handler */
-	assert(!set_int(0));
+	assert(!interrupt_set(0));
 	/* if it went unhandled, kill the process or panic */
 	if(!called)
 		faulted(regs.int_no, !already_in_interrupt, regs.eip);
@@ -343,11 +343,11 @@ void arch_interrupt_irq_handler(volatile registers_t regs)
 #endif
 	/* ok, so the assembly entry function clears interrupts in the cpu, 
 	 * but the kernel doesn't know that yet. So we clear the interrupt
-	 * flag in the cpu structure as part of the normal set_int call, but
+	 * flag in the cpu structure as part of the normal interrupt_set call, but
 	 * it returns the interrupts-enabled flag from BEFORE the interrupt
 	 * was recieved! Fuckin' brilliant! Back up that flag, so we can
 	 * properly restore the flag later. */
-	int previous_interrupt_flag = set_int(0);
+	int previous_interrupt_flag = interrupt_set(0);
 	add_atomic(&int_count[regs.int_no], 1);
 	/* save the registers so we can screw with iret later if we need to */
 	char clear_regs=0;
@@ -407,7 +407,7 @@ void arch_interrupt_irq_handler(volatile registers_t regs)
 		assert(!get_cpu_interrupt_flag());
 	}
 	/* ok, now lets clean up */
-	assert(!set_int(0));
+	assert(!interrupt_set(0));
 	/* clear the registers if we saved the ones from this interrupt */
 	if(current_task && clear_regs)
 		current_task->regs=0;
@@ -435,7 +435,7 @@ void __KT_try_handle_stage2_interrupts()
 {
 	if(maybe_handle_stage_2)
 	{
-		int old = set_int(0);
+		int old = interrupt_set(0);
 		maybe_handle_stage_2 = 0;
 		/* handle the stage2 handlers. NOTE: this may change to only 
 		 * handling one interrupt, one function. For now, this works. */
@@ -453,7 +453,7 @@ void __KT_try_handle_stage2_interrupts()
 			}
 		}
 		mutex_release(&s2_lock);
-		set_int(old);
+		interrupt_set(old);
 	}
 }
 

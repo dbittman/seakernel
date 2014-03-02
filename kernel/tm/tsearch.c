@@ -5,6 +5,7 @@
 #include <kernel.h>
 #include <task.h>
 #include <tqueue.h>
+#include <sea/cpu/interrupt.h>
 
 #define FOUND_ACTION \
 	if(action) \
@@ -18,7 +19,7 @@
  */
 task_t *tm_search_tqueue(tqueue_t *tq, unsigned flags, unsigned long value, void (*action)(task_t *, int), int arg, int *count)
 {
-	int old = set_int(0);
+	int old = interrupt_set(0);
 	mutex_acquire(&tq->lock);
 	struct llistnode *cur, *next;
 	task_t *tmp, *t=0;
@@ -83,6 +84,6 @@ task_t *tm_search_tqueue(tqueue_t *tq, unsigned flags, unsigned long value, void
 		__tm_move_task_to_kill_queue(current_task, 1);
 	}
 	mutex_release(&tq->lock);
-	set_int(old);
+	interrupt_set(old);
 	return t;
 }

@@ -15,7 +15,7 @@ volatile unsigned kernel_state_flags=0;
 
 void kernel_shutdown()
 {
-	set_int(0);
+	interrupt_set(0);
 #if CONFIG_SMP
 	printk(0, "[smp]: shutting down application processors\n");
 	send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_SHUTDOWN);
@@ -46,7 +46,7 @@ void kernel_poweroff()
 	if(current_task->thread->uid)
 		return;
 	kernel_shutdown();
-	set_int(0);
+	interrupt_set(0);
 	kprintf("\nYou can now turn off your computer.\n");
 	for(;;) 
 		asm("nop");

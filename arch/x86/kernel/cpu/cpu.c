@@ -42,7 +42,7 @@ void init_main_cpu_1()
 	load_tables_ap(primary_cpu);
 #endif
 	assert(primary_cpu);
-	set_int(0);
+	interrupt_set(0);
 	primary_cpu->flags = CPU_UP;
 	printk(KERN_MSG, "Initializing CPU...\n");
 	parse_cpuid(primary_cpu);
@@ -53,7 +53,7 @@ void init_main_cpu_1()
 	mutex_create((mutex_t *)&primary_cpu->lock, MT_NOSCHED);
 #if CONFIG_MODULES
 	loader_do_add_kernel_symbol((unsigned)(cpu_t *)primary_cpu, "primary_cpu");
-	loader_add_kernel_symbol(set_int);
+	loader_add_kernel_symbol(interrupt_set);
 #if CONFIG_SMP
 	loader_add_kernel_symbol(get_cpu);
 	loader_add_kernel_symbol((addr_t)&cpu_array_num);

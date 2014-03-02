@@ -79,7 +79,7 @@ __attribute__((always_inline)) static inline void post_context_switch()
 		 * syscalls */
 		assert(!(current_task->flags & TF_IN_INT) || current_task->sysregs);
 		tm_lower_flag(TF_SETINT);
-		assert(!set_int(1));
+		assert(!interrupt_set(1));
 	}
 }
 
@@ -97,7 +97,7 @@ int tm_schedule()
 	if(current_task->thread) assert(current_task->thread->magic == THREAD_MAGIC);
 	/* make sure to re-enable interrupts when we come back to this
 	 * task if we entered schedule with them enabled */
-	if(set_int(0)) {
+	if(interrupt_set(0)) {
 		assert(!(current_task->flags & TF_SETINT));
 		tm_raise_flag(TF_SETINT);
 	} else
@@ -140,7 +140,7 @@ int tm_schedule()
 		return 1;
 	}
 	tm_process_lower_flag(current_task, TF_FORK);
-	set_int(1);
+	interrupt_set(1);
 	asm("jmp *%0"::"r"(current_task->eip));
 	/* we never get here, but lets keep gcc happy */
 	return 1;

@@ -18,7 +18,7 @@ static inline void _set_lowercase(char *b)
 
 void panic(int flags, char *fmt, ...)
 {
-	set_int(0);
+	interrupt_set(0);
 #if CONFIG_SMP
 	/* tell the other processors to halt */
 	send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_PANIC);

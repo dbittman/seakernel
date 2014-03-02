@@ -15,6 +15,7 @@
 #endif
 
 #include <sea/cpu/processor.h>
+#include <sea/cpu/interrupt.h>
 
 void load_tables_ap(cpu_t *cpu);
 cpu_t *add_cpu(cpu_t *c);
@@ -26,7 +27,7 @@ void parse_cpuid(cpu_t *);
 void init_sse(cpu_t *);
 void setup_fpu(cpu_t *);
 void set_cpu_interrupt_flag(int flag);
-int set_int(unsigned);
+
 int get_cpu_interrupt_flag();
 void init_pic();
 unsigned char readCMOS(unsigned char addr);

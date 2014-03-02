@@ -96,7 +96,7 @@ cpu_t *add_cpu(cpu_t *c)
 int probe_smp();
 #endif
 
-int set_int(unsigned _new)
+int interrupt_set(unsigned _new)
 {
 	/* need to make sure we don't get interrupted... */
 	arch_interrupt_disable();

@@ -3,7 +3,7 @@
 #include <task.h>
 #include <modules/pci.h>
 #include <modules/ata.h>
-
+#include <sea/cpu/interrupt.h>
 typedef struct {
 	unsigned addr;
 	unsigned short size;
@@ -123,7 +123,7 @@ int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw,
 	cmdReg |= 0x1 | (rw == READ ? 8 : 0);
 	cont->irqwait=0;
 	int ret = size * count;
-	set_int(1);
+	interrupt_set(1);
 	outb(cont->port_bmr_base + BMR_COMMAND, cmdReg);
 	timeout=1000000;
 	while((ret && timeout--)) {

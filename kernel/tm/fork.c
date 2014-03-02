@@ -116,7 +116,7 @@ int tm_do_fork(unsigned flags)
 	cpu = fork_choose_cpu(current_task);
 #endif
 	/* Copy the stack */
-	set_int(0);
+	interrupt_set(0);
 	engage_new_stack(task, current_task);
 	/* Here we read the EIP of this exact location. The parent then sets the
 	 * eip of the child to this. On the reschedule for the child, it will 

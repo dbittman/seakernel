@@ -90,7 +90,7 @@ void tm_delay(int t)
 	long end = ticks + t + 1;
 	if(!current_task || current_task->pid == 0)
 	{
-		set_int(1);
+		interrupt_set(1);
 		while(ticks < end)
 			tm_schedule();
 		return;
@@ -103,16 +103,16 @@ void tm_delay(int t)
 void tm_delay_sleep(int t)
 {
 	long end = ticks+t+1;
-	int old = set_int(1);
+	int old = interrupt_set(1);
 	int to=100000;
 	long start = ticks;
 	while(ticks < end) {
 		asm("pause");
-		set_int(1);
+		interrupt_set(1);
 		if(!--to && start == ticks) {
 			printk(4, "[tm]: tm_delay_sleep reached timeout!\n");
 			break;
 		}
 	}
-	set_int(old);
+	interrupt_set(old);
 }

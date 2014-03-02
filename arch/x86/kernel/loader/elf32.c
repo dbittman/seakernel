@@ -13,15 +13,15 @@
 #include <multiboot.h>
 #include <symbol.h>
 #include <file.h>
-int process_elf32_phdr(char *mem, int fp, addr_t *start, addr_t *end);
+int arch_loader_process_elf32_phdr(char *mem, int fp, addr_t *start, addr_t *end);
 int process_elf(char *mem, int fp, unsigned *start, unsigned *end)
 {
-	return process_elf32_phdr(mem, fp, start, end);
+	return arch_loader_process_elf32_phdr(mem, fp, start, end);
 }
 
 #if (CONFIG_MODULES)
 
-int arch_specific_parse_elf_module(uint8_t * buf, addr_t *entry, addr_t *tm_exiter, addr_t *deps)
+int arch_loader_loader_parse_elf_module(uint8_t * buf, addr_t *entry, addr_t *tm_exiter, addr_t *deps)
 {
 	uint32_t i, x;
 	uint32_t module_entry=0, reloc_addr, mem_addr, module_exiter=0, module_deps=0;

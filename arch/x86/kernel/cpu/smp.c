@@ -7,6 +7,7 @@
 #include <memory.h>
 #include <atomic.h>
 #include <imps-x86.h>
+#include <sea/cpu/cmos-x86_common.h>
 
 unsigned num_cpus=0, num_booted_cpus=0, num_failed_cpus=0;
 int imps_scan_mptables(unsigned addr, unsigned len);

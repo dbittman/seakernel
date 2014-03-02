@@ -48,9 +48,9 @@ int vm_do_unmap_only(addr_t virt, unsigned locked)
 	#if CONFIG_SMP
 	if(kernel_task && (virt&PAGE_MASK) != PDIR_DATA) {
 		if(IS_KERN_MEM(virt))
-			send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
+			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
 		else if((IS_THREAD_SHARED_MEM(virt) && pd_cur_data->count > 1))
-			send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
+			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
 	}
 	#endif
 	if(kernel_task && (virt&PAGE_MASK) != PDIR_DATA && !locked)
@@ -95,9 +95,9 @@ int vm_do_unmap(addr_t virt, unsigned locked)
 	#if CONFIG_SMP
 	if(kernel_task && (virt&PAGE_MASK) != PDIR_DATA) {
 		if(IS_KERN_MEM(virt))
-			send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
+			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
 		else if((IS_THREAD_SHARED_MEM(virt) && pd_cur_data->count > 1))
-			send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
+			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
 	}
 	#endif
 	if(kernel_task && (virt&PAGE_MASK) != PDIR_DATA && !locked)

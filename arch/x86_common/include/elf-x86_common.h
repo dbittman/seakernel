@@ -110,7 +110,8 @@ typedef struct
 #define ELF_ST_TYPE(i) ((i)&0xf)
 
 const char *elf32_lookup_symbol (uint32_t addr, elf32_t *elf);
-elf32_t parse_kernel_elf(struct multiboot *mb, elf32_t *);
+elf32_t arch_loader_parse_kernel_elf(struct multiboot *mb, elf32_t *elf);
+int arch_loader_process_elf32_phdr(char *mem, int fp, addr_t *start, addr_t *end);
 int process_elf(char *mem, int fp, addr_t *start, addr_t *end);
 extern elf32_t kernel_elf;
 

@@ -17,4 +17,11 @@ void arch_interrupt_init();
 #define arch_interrupt_enable()  asm("sti")
 #define arch_interrupt_disable() asm("cli")
 
+void x86_cpu_handle_ipi_cpu_halt(volatile registers_t regs);
+void x86_cpu_handle_ipi_reschedule(volatile registers_t regs);
+void x86_cpu_handle_ipi_tlb(volatile registers_t regs);
+void x86_cpu_handle_ipi_tlb_ack(volatile registers_t regs);
+int x86_cpu_send_ipi(unsigned char dest_shorthand, unsigned int dst, unsigned int v);
+void arch_cpu_timer_install(int hz);
+
 #endif

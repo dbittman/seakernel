@@ -48,10 +48,10 @@ int process_elf(char *mem, int fp, addr_t *start, addr_t *end)
 {
 	return process_elf64_phdr(mem, fp, start, end);
 }
-int process_elf32_phdr(char *mem, int fp, addr_t *start, addr_t *end);
+int arch_loader_process_elf32_phdr(char *mem, int fp, addr_t *start, addr_t *end);
 int process_elf_other(char *mem, int fp, addr_t *start, addr_t *end)
 {
-	return process_elf32_phdr(mem, fp, start, end);
+	return arch_loader_process_elf32_phdr(mem, fp, start, end);
 }
 
 #if (CONFIG_MODULES)
@@ -69,7 +69,7 @@ void elf64_write_field(int type, addr_t mem_addr, addr_t reloc_addr)
 	}
 }
 
-int arch_specific_parse_elf_module(uint8_t * buf, addr_t *entry, addr_t *tm_exiter, addr_t *deps)
+int arch_loader_loader_parse_elf_module(uint8_t * buf, addr_t *entry, addr_t *tm_exiter, addr_t *deps)
 {
 	uint32_t i, x;
 	uint64_t module_entry=0, reloc_addr, mem_addr, module_exiter=0, module_deps=0;

@@ -174,7 +174,7 @@ static int load_module(char *path, char *args, int flags)
 		return -EINVAL;
 	}
 	/* Call the elf parser */
-	int res = parse_elf_module(tmp, (unsigned char *)mem+4, path, flags & 1);
+	int res = loader_parse_elf_module(tmp, (unsigned char *)mem+4, path, flags & 1);
 	if(res == _MOD_FAIL || res == _MOD_AGAIN)
 	{
 		kfree(mem);

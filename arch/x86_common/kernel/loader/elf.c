@@ -6,7 +6,7 @@
 #include <sea/loader/module.h>
 #include <sea/tm/schedule.h>
 
-int process_elf32_phdr(char *mem, int fp, addr_t *start, addr_t *end)
+int arch_loader_process_elf32_phdr(char *mem, int fp, addr_t *start, addr_t *end)
 {
 	uint32_t i, x;
 	addr_t entry;
@@ -47,7 +47,7 @@ int process_elf32_phdr(char *mem, int fp, addr_t *start, addr_t *end)
 	return 1;
 }
 
-elf32_t parse_kernel_elf(struct multiboot *mb, elf32_t *elf)
+elf32_t arch_loader_parse_kernel_elf(struct multiboot *mb, elf32_t *elf)
 {
 	unsigned int i;
 	elf32_section_header_t *sh = (elf32_section_header_t*)(addr_t)mb->addr;
@@ -73,8 +73,8 @@ elf32_t parse_kernel_elf(struct multiboot *mb, elf32_t *elf)
 }
 
 #if (CONFIG_MODULES)
-int arch_specific_parse_elf_module(uint8_t * buf, addr_t *entry, addr_t *exiter, addr_t *deps);
-int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int force)
+int arch_loader_loader_parse_elf_module(uint8_t * buf, addr_t *entry, addr_t *exiter, addr_t *deps);
+int loader_parse_elf_module(module_t *mod, uint8_t * buf, char *name, int force)
 {
 	int error=0;
 	addr_t module_entry=0, module_exiter=0, module_deps=0;
@@ -83,7 +83,7 @@ int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int force)
 	if(!is_valid_elf((char *)buf, 1))
 		return _MOD_FAIL;
 	
-	error = arch_specific_parse_elf_module(buf, &module_entry, &module_exiter, &module_deps);
+	error = arch_loader_loader_parse_elf_module(buf, &module_entry, &module_exiter, &module_deps);
 	
 	if(module_deps)
 	{

@@ -108,7 +108,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	kernel_state_flags=0;
 	mtboot = mboot_header;
 	i_stack = initial_stack;
-	parse_kernel_elf(mboot_header, &kernel_elf);
+	arch_loader_parse_kernel_elf(mboot_header, &kernel_elf);
 #if CONFIG_MODULES
 	loader_init_kernel_symbols();
 #endif
@@ -125,7 +125,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 #endif
 	init_syscalls();
 	fs_initrd_load(mtboot);
-	install_timer(1000);
+	arch_cpu_timer_install(1000);
 	pm_init(placement, mtboot);
 	init_main_cpu_1();
 

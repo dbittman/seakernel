@@ -135,7 +135,7 @@ page_dir_t *vm_copy(page_dir_t *pd)
 	/* if pd_cur_data could be accessed by multiple CPUs, we need to
 	 * flush them */
 	if(kernel_task && pd_cur_data->count > 2)
-		send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
+		x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
 #endif
 	/* link as much as we can (flag & 1) */
 	vm_copy_dir(pd, new, 1);

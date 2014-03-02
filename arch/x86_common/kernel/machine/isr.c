@@ -190,16 +190,16 @@ void arch_interrupt_ipi_handler(volatile registers_t regs)
 		case IPI_DEBUG:
 		case IPI_SHUTDOWN:
 		case IPI_PANIC:
-			handle_ipi_cpu_halt(regs);
+			x86_cpu_handle_ipi_cpu_halt(regs);
 			break;
 		case IPI_SCHED:
-			handle_ipi_reschedule(regs);
+			x86_cpu_handle_ipi_reschedule(regs);
 			break;
 		case IPI_TLB:
-			handle_ipi_tlb(regs);
+			x86_cpu_handle_ipi_tlb(regs);
 			break;
 		case IPI_TLB_ACK:
-			handle_ipi_tlb_ack(regs);
+			x86_cpu_handle_ipi_tlb_ack(regs);
 			break;
 		default:
 			panic(PANIC_NOSYNC, "invalid interprocessor interrupt number: %d", regs.int_no);

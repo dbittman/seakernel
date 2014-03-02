@@ -18,7 +18,7 @@
 #include <atomic.h>
 
 mutex_t ipi_mutex;
-int send_ipi(unsigned char dest_shorthand, unsigned int dst, unsigned int v)
+int x86_cpu_send_ipi(unsigned char dest_shorthand, unsigned int dst, unsigned int v)
 {
 	assert((v & LAPIC_ICR_DM_INIT) || (v & LAPIC_ICR_LEVELASSERT));
 	/* if we've initialized SMP, but we've disabled it, don't send any IPIs */
@@ -44,7 +44,7 @@ int send_ipi(unsigned char dest_shorthand, unsigned int dst, unsigned int v)
 	return (to < 1000);
 }
 
-void handle_ipi_cpu_halt(volatile registers_t regs)
+void x86_cpu_handle_ipi_cpu_halt(volatile registers_t regs)
 {
 	interrupt_set(0);
 	/* No interrupts */
@@ -54,18 +54,18 @@ void handle_ipi_cpu_halt(volatile registers_t regs)
 	while(1) asm("hlt");
 }
 
-void handle_ipi_reschedule(volatile registers_t regs)
+void x86_cpu_handle_ipi_reschedule(volatile registers_t regs)
 {
 	tm_schedule();
 }
 
-void handle_ipi_tlb(volatile registers_t regs)
+void x86_cpu_handle_ipi_tlb(volatile registers_t regs)
 {
 	/* flush the TLB */
 	flush_pd();
 }
 
-void handle_ipi_tlb_ack(volatile registers_t regs)
+void x86_cpu_handle_ipi_tlb_ack(volatile registers_t regs)
 {
 	
 }

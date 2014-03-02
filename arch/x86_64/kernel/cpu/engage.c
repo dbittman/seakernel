@@ -122,15 +122,15 @@ int boot_cpu(unsigned id, unsigned apic_ver)
 	LAPIC_WRITE(LAPIC_ESR, 0);
 	accept_status = LAPIC_READ(LAPIC_ESR);
 	/* assert INIT IPI */
-	send_ipi(LAPIC_ICR_SHORT_DEST, apicid, LAPIC_ICR_TM_LEVEL | LAPIC_ICR_LEVELASSERT | LAPIC_ICR_DM_INIT);
+	x86_cpu_send_ipi(LAPIC_ICR_SHORT_DEST, apicid, LAPIC_ICR_TM_LEVEL | LAPIC_ICR_LEVELASSERT | LAPIC_ICR_DM_INIT);
 	tm_delay_sleep(10);
 	/* de-assert INIT IPI */
-	send_ipi(LAPIC_ICR_SHORT_DEST, apicid, LAPIC_ICR_TM_LEVEL | LAPIC_ICR_DM_INIT);
+	x86_cpu_send_ipi(LAPIC_ICR_SHORT_DEST, apicid, LAPIC_ICR_TM_LEVEL | LAPIC_ICR_DM_INIT);
 	tm_delay_sleep(10);
 	if (apic_ver >= APIC_VER_NEW) {
 		int i;
 		for (i = 1; i <= 2; i++) {
-			send_ipi(LAPIC_ICR_SHORT_DEST, apicid, LAPIC_ICR_DM_SIPI | ((bootaddr >> 12) & 0xFF));
+			x86_cpu_send_ipi(LAPIC_ICR_SHORT_DEST, apicid, LAPIC_ICR_DM_SIPI | ((bootaddr >> 12) & 0xFF));
 			tm_delay_sleep(1);
 		}
 	}

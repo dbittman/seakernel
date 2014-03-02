@@ -8,7 +8,7 @@
 #include <sea/cpu/interrupt.h>
 void do_tick();
 
-void install_timer(int hz)
+void arch_cpu_timer_install(int hz)
 {
 	current_hz=hz;
 	arch_interrupt_register_handler(IRQ0, &tm_timer_handler, 0);

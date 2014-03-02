@@ -3,6 +3,7 @@
 #include <isr.h>
 #include <tss-x86.h>
 #include <cpu.h>
+#include <sea/cpu/interrupt.h>
 static void init_idt();
 gdt_entry_t gdt_entries[NUM_GDT_ENTRIES];
 gdt_ptr_t   gdt_ptr;
@@ -210,7 +211,7 @@ void load_tables()
 	init_gdt(gdt_entries, &gdt_ptr);
 	init_idt();
 	init_pic();
-	int_sys_init();
+	arch_interrupt_init();
 }
 
 void exceptionHandler(int a, void *p)

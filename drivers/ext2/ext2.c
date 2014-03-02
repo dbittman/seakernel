@@ -125,7 +125,7 @@ struct inode *ext2_mount(dev_t dev, u64 block, char *node)
 	strncpy(fs->root->node_str, node, 128);
 	if(fs->sb->mount_count > fs->sb->max_mount_count)
 		fs->sb->mount_count=0;
-	fs->sb->mount_time = get_epoch_time();
+	fs->sb->mount_time = arch_time_get_epoch();
 	ext2_sb_update(fs, fs->sb);
 	
 	printk(0, "[ext2]: Optional features flags are %x\n", fs->sb->features_opt);
@@ -176,7 +176,7 @@ int ext2_sb_update(ext2_fs_t *fs, ext2_superblock_t *sb)
 {
 	int old = sb->block_size;
 	fs->sb->block_size=0;
-	sb->write_time = get_epoch_time();
+	sb->write_time = arch_time_get_epoch();
 	ext2_write_block(fs, 1, (unsigned char *)sb);
 	fs->sb = sb;
 	sb->block_size = old;

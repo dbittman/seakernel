@@ -124,7 +124,7 @@ static struct inode *do_add_dirent(struct inode *p, char *name, int mode)
 	if(ret) ret->count=1;
 	rwlock_release(&p->rwl, RWL_WRITER);
 	if(ret) {
-		ret->mtime = get_epoch_time();
+		ret->mtime = arch_time_get_epoch();
 		ret->uid = current_task->thread->uid;
 		ret->gid = current_task->thread->gid;
 		vfs_add_inode(p, ret);

@@ -46,4 +46,6 @@ typedef struct __cpu_t__ {
 	struct __cpu_t__ *next, *prev;
 } cpu_t;
 
+void cpu_smp_task_idle(task_t *me);
+
 #endif

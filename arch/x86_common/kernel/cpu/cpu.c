@@ -1,9 +1,9 @@
 #include <kernel.h>
 #include <cpu.h>
-
+#include <sea/cpu/interrupt.h>
 int probe_smp();
 
-void cpuid_get_features(cpuid_t *cpuid)
+static void cpuid_get_features(cpuid_t *cpuid)
 {
 	int eax, ebx, ecx, edx;
 	eax = 0x01;
@@ -24,7 +24,7 @@ void cpuid_get_features(cpuid_t *cpuid)
 	cpuid->ext_features_ecx = ecx;
 } 
 
-void cpuid_get_cpu_brand(cpuid_t *cpuid)
+static void cpuid_get_cpu_brand(cpuid_t *cpuid)
 {
 	int eax, ebx, ecx, edx;
 	eax = 0x80000002;
@@ -99,14 +99,14 @@ int probe_smp();
 int set_int(unsigned _new)
 {
 	/* need to make sure we don't get interrupted... */
-	asm("cli");
+	arch_interrupt_disable();
 	cpu_t *cpu = current_task ? current_task->cpu : 0;
 	unsigned old = cpu ? cpu->flags&CPU_INTER : 0;
 	if(!_new) {
-		asm("cli");
+		arch_interrupt_disable();
 		if(cpu) cpu->flags &= ~CPU_INTER;
 	} else if(!cpu || cpu->flags&CPU_RUNNING) {
-		asm("sti");
+		arch_interrupt_enable();
 		if(cpu) cpu->flags |= CPU_INTER;
 	}
 	return old;

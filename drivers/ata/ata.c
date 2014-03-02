@@ -6,6 +6,7 @@
 #include <sys/fcntl.h>
 #include <module.h>
 #include <modules/psm.h>
+#include <sea/cpu/interrupt.h>
 struct ata_controller *primary, *secondary;
 struct pci_device *ata_pci;
 int api=0;
@@ -83,8 +84,8 @@ int module_install()
 		kfree(nodes);
 		return EEXIST;
 	}
-	irq1 = register_interrupt_handler(32 + ATA_PRIMARY_IRQ, &ata_irq_handler, 0);
-	irq2 = register_interrupt_handler(32 + ATA_SECONDARY_IRQ, &ata_irq_handler, 0);
+	irq1 = arch_interrupt_register_handler(32 + ATA_PRIMARY_IRQ, &ata_irq_handler, 0);
+	irq2 = arch_interrupt_register_handler(32 + ATA_SECONDARY_IRQ, &ata_irq_handler, 0);
 	api = dm_set_available_block_device(atapi_rw_main, 2048, ioctl_atapi, atapi_rw_main_multiple, 0);
 	dm_set_block_device(3, ata_rw_main, 512, ioctl_ata, ata_rw_multiple, 0);
 	primary->wait   = mutex_create(0, 0);
@@ -124,8 +125,8 @@ int module_tm_exit()
 		ata_pci->flags = 0;
 		mutex_destroy(primary->wait);
 		mutex_destroy(secondary->wait);
-		unregister_interrupt_handler(32 + ATA_PRIMARY_IRQ, irq1);
-		unregister_interrupt_handler(32 + ATA_SECONDARY_IRQ, irq2);
+		arch_interrupt_unregister_handler(32 + ATA_PRIMARY_IRQ, irq1);
+		arch_interrupt_unregister_handler(32 + ATA_SECONDARY_IRQ, irq2);
 	}
 	kfree(primary);
 	kfree(secondary);

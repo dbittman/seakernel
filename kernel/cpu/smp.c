@@ -3,7 +3,7 @@
 #include <task.h>
 #include <cpu.h>
 
-void smp_cpu_task_idle(task_t *me)
+void cpu_smp_task_idle(task_t *me)
 {
 	cpu_t *cpu = me->cpu;
 	cpu->flags |= CPU_TASK;

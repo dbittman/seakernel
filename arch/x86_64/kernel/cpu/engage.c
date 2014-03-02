@@ -26,7 +26,7 @@ static inline  unsigned get_boot_flag()
 
 void cpu_k_task_entry(task_t *me)
 {
-	smp_cpu_task_idle(me);
+	cpu_smp_task_idle(me);
 }
 
 /* it's important that this doesn't get inlined... */

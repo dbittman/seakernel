@@ -16,4 +16,7 @@
 #define MAP_CRIT      0x1
 #define MAP_NORM      0x0
 
+#include <sea/cpu/registers.h>
+void arch_mm_page_fault(registers_t *regs);
+
 #endif

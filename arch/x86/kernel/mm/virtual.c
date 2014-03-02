@@ -5,6 +5,7 @@
 #include <task.h>
 #include <cpu.h>
 #include <atomic.h>
+#include <sea/cpu/interrupt.h>
 #if CONFIG_SMP
 #include <imps-x86.h>
 #endif
@@ -91,7 +92,7 @@ void vm_init(addr_t id_map_to)
 {
 	id_mapped_location=id_map_to;
 	/* Register some stuff... */
-	register_interrupt_handler (14, (isr_t)&page_fault, 0);
+	arch_interrupt_register_handler (14, (isr_t)&arch_mm_page_fault, 0);
 	
 	page_dir_t *pd = (page_dir_t *)vm_init_directory(id_map_to);
 	minimal_directory = pd;

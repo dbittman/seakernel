@@ -80,10 +80,10 @@
 
 align 4
 ; In isr.c
-extern isr_handler
-extern irq_handler
-extern entry_syscall_handler
-extern ipi_handler
+extern arch_interrupt_isr_handler
+extern arch_interrupt_irq_handler
+extern arch_interrupt_syscall_handler
+extern arch_interrupt_ipi_handler
 
 ISR_NOERRCODE 0
 ISR_NOERRCODE 1
@@ -156,7 +156,7 @@ isr_ignore:
 	iretd
 
 ; the asm entry handlers
-INT_ENTRY_CODE isr, isr_handler
-INT_ENTRY_CODE irq, irq_handler
-INT_ENTRY_CODE ipi, ipi_handler
-INT_ENTRY_CODE syscall, entry_syscall_handler
+INT_ENTRY_CODE isr, arch_interrupt_isr_handler
+INT_ENTRY_CODE irq, arch_interrupt_irq_handler
+INT_ENTRY_CODE ipi, arch_interrupt_ipi_handler
+INT_ENTRY_CODE syscall, arch_interrupt_syscall_handler

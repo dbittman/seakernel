@@ -104,7 +104,7 @@ void *syscall_table[129] = {
 	
 	SC sys_null,       SC sys_null,       SC sys_pipe,      SC tm_set_signal, 
 	SC sys_null,       SC sys_null,       SC sys_null,      SC sys_null,
-	SC get_time,       SC sys_get_timer_th,   SC sys_isstate,   SC sys_wait3, 
+	SC arch_time_get,       SC sys_get_timer_th,   SC sys_isstate,   SC sys_wait3, 
 	SC sys_null,       SC sys_null,       SC sys_getcwdlen, 
 	
 	#if CONFIG_SWAP

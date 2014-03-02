@@ -230,7 +230,7 @@ int ext2_inode_free(ext2_inode_t* inode)
 	int i;
 	mutex_acquire(fs->m_node);
 	// dtime muss fuer geloeschte Inodes != 0 sein
-	inode->deletion_time = get_epoch_time();
+	inode->deletion_time = arch_time_get_epoch();
 	// Inodebitmap anpassen
 	uint32_t bgnum = inode_int / fs->sb->inodes_per_group;
 	uint32_t num = inode_int % fs->sb->inodes_per_group;

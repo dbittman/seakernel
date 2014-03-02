@@ -9,6 +9,7 @@ initialization */
 #include <memory.h>
 #include <atomic.h>
 #include <imps-x86.h>
+#include <sea/cpu/cmos-x86_common.h>
 
 void load_tables_ap();
 void set_lapic_timer(unsigned tmp);
@@ -33,7 +34,7 @@ void cpu_k_task_entry(task_t *me)
 	/* final part: set the current_task pointer to 'me', and set the 
 	 * task flags that allow the cpu to start executing */
 	page_directory[PAGE_DIR_IDX(SMP_CUR_TASK / PAGE_SIZE)] = (unsigned)me;
-	smp_cpu_task_idle(me);
+	cpu_smp_task_idle(me);
 }
 
 /* it's important that this doesn't get inlined... */

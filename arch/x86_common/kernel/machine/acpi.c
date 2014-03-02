@@ -11,7 +11,7 @@ int __acpi_enable = 0;
 int acpi_rsdt_pt_sz;
 struct acpi_dt_header *acpi_rsdt;
 
-int rsdp_validate_checksum(struct acpi_rsdp *rsdp)
+static int rsdp_validate_checksum(struct acpi_rsdp *rsdp)
 {
 	unsigned char *tmp = (unsigned char *)rsdp;
 	unsigned sum=0;
@@ -37,7 +37,7 @@ int rsdp_validate_checksum(struct acpi_rsdp *rsdp)
 	return 1;
 }
 
-struct acpi_rsdp *apci_get_RSDP()
+static struct acpi_rsdp *apci_get_RSDP()
 {
 	/* The root structure may in the first KB of EBDA or from 0xE0000 to 0xFFFFF */
 	addr_t ebda_bottom = *(uint16_t *)(0x40e) << 4;
@@ -61,7 +61,7 @@ struct acpi_rsdp *apci_get_RSDP()
 	return 0;
 }
 
-int acpi_validate_dt(struct acpi_dt_header *sdt, const char *sig)
+static int acpi_validate_dt(struct acpi_dt_header *sdt, const char *sig)
 {
 	if(strncmp(sdt->sig, sig, 4))
 		return 0;
@@ -76,7 +76,7 @@ int acpi_validate_dt(struct acpi_dt_header *sdt, const char *sig)
 }
 
 /* for RSDT pointer_size is 4, for XSDT pointer_size is 8 */
-addr_t find_RSDT_entry(struct acpi_dt_header *rsdt, int pointer_size, const char *sig)
+static addr_t find_RSDT_entry(struct acpi_dt_header *rsdt, int pointer_size, const char *sig)
 {
 	if(!__acpi_enable) return 0;
 	addr_t tmp = (addr_t)(rsdt+1);
@@ -106,7 +106,7 @@ void *acpi_get_table_data(const char *sig, int *length)
 	return (dt+1);
 }
 
-void init_acpi()
+void acpi_init()
 {
 	pmap_create(&acpi_pmap, 0);
 	struct acpi_rsdp *rsdp = apci_get_RSDP();

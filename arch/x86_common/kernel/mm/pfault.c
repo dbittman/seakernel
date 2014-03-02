@@ -4,7 +4,7 @@
 #include <task.h>
 #include <swap.h>
 #include <elf.h>
-void print_pfe(int x, registers_t *regs, addr_t cr2)
+static void print_pfe(int x, registers_t *regs, addr_t cr2)
 {
 	assert(regs);
 	printk (x, "Woah! Page Fault at 0x%x, faulting address %x\n", regs->eip, cr2);
@@ -30,7 +30,7 @@ void print_pfe(int x, registers_t *regs, addr_t cr2)
 }
 #define USER_TASK (err_code & 0x4)
 
-int do_map_page(addr_t addr, unsigned attr)
+static int do_map_page(addr_t addr, unsigned attr)
 {
 	addr &= PAGE_MASK;
 	if(!vm_do_getmap(addr, 0, 1))
@@ -38,7 +38,7 @@ int do_map_page(addr_t addr, unsigned attr)
 	return 1;
 }
 
-int map_in_page(unsigned long cr2, unsigned err_code)
+static int map_in_page(unsigned long cr2, unsigned err_code)
 {
 	if(cr2 >= current_task->heap_start && cr2 <= current_task->heap_end) {
 		do_map_page(cr2, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
@@ -50,7 +50,7 @@ int map_in_page(unsigned long cr2, unsigned err_code)
 	return 0;
 }
 
-void page_fault(registers_t *regs)
+void arch_mm_page_fault(registers_t *regs)
 {
 	current_task->regs=0;
 	addr_t cr2, err_code = regs->err_code;

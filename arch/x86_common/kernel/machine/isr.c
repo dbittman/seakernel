@@ -75,7 +75,7 @@ volatile char maybe_handle_stage_2=0;
  *         stage handler right away.
  */
 
-int register_interrupt_handler(u8int num, isr_t stage1_handler, isr_t stage2_handler)
+int arch_interrupt_register_handler(u8int num, isr_t stage1_handler, isr_t stage2_handler)
 {
 	mutex_acquire(&isr_lock);
 	int i;
@@ -93,7 +93,7 @@ int register_interrupt_handler(u8int num, isr_t stage1_handler, isr_t stage2_han
 	return i;
 }
 
-void unregister_interrupt_handler(u8int n, int id)
+void arch_interrupt_unregister_handler(u8int n, int id)
 {
 	mutex_acquire(&isr_lock);
 	if(!interrupt_handlers[n][id][0] && !interrupt_handlers[n][id][1])
@@ -102,7 +102,7 @@ void unregister_interrupt_handler(u8int n, int id)
 	mutex_release(&isr_lock);
 }
 
-void kernel_fault(int fuckoff, addr_t ip)
+static void kernel_fault(int fuckoff, addr_t ip)
 {
 	kprintf("Kernel Exception #%d: ", fuckoff);
 	if(kernel_task)
@@ -112,7 +112,7 @@ void kernel_fault(int fuckoff, addr_t ip)
 	panic(PANIC_NOSYNC | (fuckoff == 3 ? PANIC_VERBOSE : 0), exception_messages[fuckoff]);
 }
 
-const char *special_names(int i)
+static const char *special_names(int i)
 {
 	if(i == 0x80)
 		return "(syscall)";
@@ -133,7 +133,7 @@ const char *special_names(int i)
 	return "\t";
 }
 
-void faulted(int fuckoff, int userspace, addr_t ip)
+static void faulted(int fuckoff, int userspace, addr_t ip)
 {
 	if(current_task == kernel_task || !current_task || current_task->system || !userspace)
 	{
@@ -166,7 +166,7 @@ void faulted(int fuckoff, int userspace, addr_t ip)
 
 /* don't need to worry about other processors getting in the way here, since
  * this is only used if SMP is disabled or unavailable */
-void ack_pic(int n)
+static void ack_pic(int n)
 {
 	assert(interrupt_controller == IOINT_PIC);
 	if(n >= IRQ0 && n < IRQ15) {
@@ -176,7 +176,7 @@ void ack_pic(int n)
 	}
 }
 
-void ipi_handler(volatile registers_t regs)
+void arch_interrupt_ipi_handler(volatile registers_t regs)
 {
 #if CONFIG_ARCH == TYPE_ARCH_X86_64
 	assert(((regs.ds&(~0x7)) == 0x10 || (regs.ds&(~0x7)) == 0x20) && ((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));
@@ -214,7 +214,7 @@ void ipi_handler(volatile registers_t regs)
 /* this should NEVER enter from an interrupt handler, 
  * and only from kernel code in the one case of calling
  * sys_setup() */
-void entry_syscall_handler(volatile registers_t regs)
+void arch_interrupt_syscall_handler(volatile registers_t regs)
 {
 	/* don't need to save the flag here, since it will always be true */
 #if CONFIG_ARCH == TYPE_ARCH_X86_64
@@ -283,7 +283,7 @@ void entry_syscall_handler(volatile registers_t regs)
 }
 
 /* This gets called from our ASM interrupt handler stub. */
-void isr_handler(volatile registers_t regs)
+void arch_interrupt_isr_handler(volatile registers_t regs)
 {
 #if CONFIG_ARCH == TYPE_ARCH_X86_64
 	assert(((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));
@@ -336,7 +336,7 @@ void isr_handler(volatile registers_t regs)
 #endif
 }
 
-void irq_handler(volatile registers_t regs)
+void arch_interrupt_irq_handler(volatile registers_t regs)
 {
 #if CONFIG_ARCH == TYPE_ARCH_X86_64
 	assert(((regs.ds&(~0x7)) == 0x10 || (regs.ds&(~0x7)) == 0x20) && ((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));
@@ -425,7 +425,7 @@ void irq_handler(volatile registers_t regs)
 #endif
 }
 
-void reset_timer_state()
+void arch_interrupt_reset_timer_state()
 {
 	if(interrupt_controller == IOINT_PIC) ack_pic(32);
 }
@@ -457,7 +457,7 @@ void __KT_try_handle_stage2_interrupts()
 	}
 }
 
-void int_sys_init()
+void arch_interrupt_init()
 {
 	for(int i=0;i<MAX_INTERRUPTS;i++)
 	{
@@ -472,8 +472,8 @@ void int_sys_init()
 	mutex_create(&isr_lock, 0);
 	mutex_create(&s2_lock, 0);
 #if CONFIG_MODULES
-	loader_add_kernel_symbol(register_interrupt_handler);
-	loader_add_kernel_symbol(unregister_interrupt_handler);
+	loader_add_kernel_symbol(arch_interrupt_register_handler);
+	loader_add_kernel_symbol(arch_interrupt_unregister_handler);
 	loader_do_add_kernel_symbol((addr_t)interrupt_handlers, "interrupt_handlers");
 #endif
 }

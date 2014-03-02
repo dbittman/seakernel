@@ -17,7 +17,7 @@ int rand_rw(int rw, int min, char *buf, size_t count)
 	{
 		for(i=0;i<count;i++)
 		{
-			unsigned t = (unsigned)get_rand()*get_epoch_time();
+			unsigned t = (unsigned)get_rand()*arch_time_get_epoch();
 			buf[i] = (char)(t);
 		}
 	}
@@ -73,7 +73,7 @@ int module_install()
 	if(rand_maj == -1)
 		return EINVAL;
 	df = devfs_add(devfs_root, "random", S_IFCHR, rand_maj, 0);
-	seed=get_epoch_time();
+	seed=arch_time_get_epoch();
 	a1=seed;
 	return 0;
 }

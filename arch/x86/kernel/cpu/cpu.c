@@ -71,5 +71,5 @@ void init_main_cpu_1()
 
 void init_main_cpu_2()
 {
-	init_acpi();
+	acpi_init();
 }

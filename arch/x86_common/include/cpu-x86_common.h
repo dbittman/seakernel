@@ -66,8 +66,8 @@
 #define	CMOS_RESET_JUMP			0xa
 #define CMOS_BASE_MEMORY		0x15
 
-#define CMOS_WRITE_BYTE(x,y) writeCMOS(x,y)
-#define CMOS_READ_BYTE(x)    readCMOS(x)
+#define CMOS_WRITE_BYTE(x,y) cmos_write(x,y)
+#define CMOS_READ_BYTE(x)    cmos_read(x)
 
 #define CR0_EM          (1 << 2)
 #define CR0_MP          (1 << 1)

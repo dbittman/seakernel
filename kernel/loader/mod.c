@@ -51,7 +51,7 @@ void loader_init_kernel_symbols(void)
 	loader_add_kernel_symbol(rwlock_destroy);
 	
 	/* these systems export these, but have no initialization function */
-	loader_add_kernel_symbol(get_epoch_time);
+	loader_add_kernel_symbol(arch_time_get_epoch);
 	loader_add_kernel_symbol(allocate_dma_buffer);
 }
 

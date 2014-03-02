@@ -7,6 +7,7 @@
 #include <mutex.h>
 #include <sea/tm/process.h>
 #include <atomic.h>
+#include <sea/cpu/interrupt.h>
 
 int i350_int;
 struct pmap i350_pmap;
@@ -357,7 +358,7 @@ int module_install()
 	pmap_create(&i350_pmap, 0);
 	struct i350_device *dev = kmalloc(sizeof(struct i350_device));
 	dev->pci = i350;
-	irq1=register_interrupt_handler(i350_int, i350_interrupt, i350_interrupt_lvl2);
+	irq1=arch_interrupt_register_handler(i350_int, i350_interrupt, i350_interrupt_lvl2);
 	i350_dev = dev;
 	dev->tx_queue_lock[0] = mutex_create(0, 0);
 	dev->rx_queue_lock[0] = mutex_create(0, 0);

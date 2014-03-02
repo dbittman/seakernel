@@ -6,6 +6,7 @@
 #include <sig.h>
 #include <task.h>
 #include <symbol.h>
+#include <sea/cpu/interrupt.h>
 
 int is_ctrl=0, is_alt=0, is_shift=0, is_altgr=0;
 int capslock, slock;
@@ -365,7 +366,7 @@ int module_install()
 	_keymap_callback=0;
 	loader_add_kernel_symbol(set_keymap_callback);
 	loader_add_kernel_symbol(get_keymap_callback);
-	irqk = register_interrupt_handler(IRQ1, (isr_t)&keyboard_int_stage1, (isr_t)&keyboard_int_stage2);
+	irqk = arch_interrupt_register_handler(IRQ1, (isr_t)&keyboard_int_stage1, (isr_t)&keyboard_int_stage2);
 	flush_port();
 	printk(1, "[keyboard]: initialized keyboard\n");
 	return 0;
@@ -375,7 +376,7 @@ int module_tm_exit()
 {
 	flush_port();
 	printk(1, "[keyboard]: Restoring old handler\n");
-	unregister_interrupt_handler(IRQ1, irqk);
+	arch_interrupt_unregister_handler(IRQ1, irqk);
 	return 0;
 }
 

@@ -246,8 +246,8 @@ int sys_utime(char *path, time_t a, time_t m)
 		iput(i);
 		return -EPERM;
 	}
-	i->mtime = m ? m : (time_t)get_epoch_time();
-	i->atime = a ? a : (time_t)get_epoch_time();
+	i->mtime = m ? m : (time_t)arch_time_get_epoch();
+	i->atime = a ? a : (time_t)arch_time_get_epoch();
 	sync_inode_tofs(i);
 	iput(i);
 	return 0;

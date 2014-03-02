@@ -45,7 +45,7 @@ void init_main_cpu_1()
 
 void init_main_cpu_2()
 {
-	init_acpi();
+	acpi_init();
 #if CONFIG_SMP
 	mutex_create(&ipi_mutex, MT_NOSCHED);
 	memset(cpu_array, 0, sizeof(cpu_t) * CONFIG_MAX_CPUS);

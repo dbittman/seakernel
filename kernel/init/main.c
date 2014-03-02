@@ -181,7 +181,7 @@ void init()
 	int ret=0;
 	int pid;
 	init_pid = current_task->pid+1;
-	set_cpu_interrupt_flag(1);
+	interrupt_set_flag(1);
 	switch_to_user_mode();
 	/* We have to be careful now. If we try to call any kernel functions
 	 * without doing a system call, the processor will generate a GPF (or 

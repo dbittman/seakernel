@@ -87,7 +87,7 @@ void init_multitasking()
 	loader_add_kernel_symbol(tm_process_resume);
 	loader_add_kernel_symbol(tm_process_got_signal);
  #if CONFIG_SMP
-	loader_add_kernel_symbol(get_cpu);
+	loader_add_kernel_symbol(cpu_get);
  #endif
 	loader_do_add_kernel_symbol((addr_t)(task_t **)&kernel_task, "kernel_task");
 #endif

@@ -24,7 +24,7 @@ static void cpuid_get_features(cpuid_t *cpuid)
 	cpuid->ext_features_ecx = ecx;
 } 
 
-static void cpuid_get_cpu_brand(cpuid_t *cpuid)
+static void cpuid_cpu_get_brand(cpuid_t *cpuid)
 {
 	int eax, ebx, ecx, edx;
 	eax = 0x80000002;
@@ -70,12 +70,12 @@ void parse_cpuid(cpu_t *me)
 	asm("cpuid" : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx) : "a"(eax));
 	cpuid.max_ext_input_val = eax; 
 	if((unsigned int)cpuid.max_ext_input_val >= 0x80000004)
-		cpuid_get_cpu_brand(&cpuid);
+		cpuid_cpu_get_brand(&cpuid);
 	memcpy(&(me->cpuid), &cpuid, sizeof(me->cpuid));
 }
 #if CONFIG_SMP
 
-cpu_t *get_cpu(int id)
+cpu_t *cpu_get(int id)
 {
 	for(unsigned int i=0;i<cpu_array_num;i++)
 	{
@@ -84,7 +84,7 @@ cpu_t *get_cpu(int id)
 	return 0;
 }
 
-cpu_t *add_cpu(cpu_t *c)
+cpu_t *cpu_add(cpu_t *c)
 {
 	if(cpu_array_num >= CONFIG_MAX_CPUS)
 		return 0;
@@ -93,7 +93,6 @@ cpu_t *add_cpu(cpu_t *c)
 	return &cpu_array[cpu_array_num++];
 }
 
-int probe_smp();
 #endif
 
 int interrupt_set(unsigned _new)
@@ -112,7 +111,7 @@ int interrupt_set(unsigned _new)
 	return old;
 }
 
-void set_cpu_interrupt_flag(int flag)
+void interrupt_set_flag(int flag)
 {
 	cpu_t *cpu = current_task ? current_task->cpu : 0;
 	if(!cpu) return;
@@ -122,7 +121,7 @@ void set_cpu_interrupt_flag(int flag)
 		cpu->flags &= ~CPU_INTER;
 }
 
-int get_cpu_interrupt_flag()
+int interrupt_get_flag()
 {
 	cpu_t *cpu = current_task ? current_task->cpu : 0;
 	return (cpu ? (cpu->flags&CPU_INTER) : 0);

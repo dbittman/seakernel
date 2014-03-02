@@ -8,6 +8,7 @@
 #include <task.h>
 #include <cpu.h>
 #include <context.h>
+#include <sea/cpu/interrupt.h>
 
 static __attribute__((always_inline)) inline void update_task(task_t *t)
 {
@@ -73,7 +74,7 @@ __attribute__((always_inline)) static inline void post_context_switch()
 		current_task->state = TASK_RUNNING;
 	}
 	assert(!(kernel_state_flags & KSF_SHUTDOWN) || current_task->flags & TF_SHUTDOWN);
-	assert(!get_cpu_interrupt_flag());
+	assert(!interrupt_get_flag());
 	if(current_task->flags & TF_SETINT) {
 		/* should never enable interrupts inside an interrupt, except for
 		 * syscalls */

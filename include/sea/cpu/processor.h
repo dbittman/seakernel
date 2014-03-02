@@ -48,4 +48,11 @@ typedef struct __cpu_t__ {
 
 void cpu_smp_task_idle(task_t *me);
 
+#if CONFIG_SMP
+
+cpu_t *cpu_get(int id);
+cpu_t *cpu_add(cpu_t *c);
+
+#endif
+
 #endif

@@ -6,6 +6,7 @@
 #include <cpu.h>
 #include <symbol.h>
 #include <atomic.h>
+#include <sea/cpu/interrupt.h>
 
 char *exception_messages[] =
 {
@@ -205,7 +206,7 @@ void arch_interrupt_ipi_handler(volatile registers_t regs)
 	}
 #endif
 	assert(!interrupt_set(0));
-	set_cpu_interrupt_flag(previous_interrupt_flag); /* assembly code will issue sti */
+	interrupt_set_flag(previous_interrupt_flag); /* assembly code will issue sti */
 #if CONFIG_SMP
 	lapic_eoi();
 #endif
@@ -247,7 +248,7 @@ void arch_interrupt_syscall_handler(volatile registers_t regs)
 		current_task->regs = &regs;
 		current_task->sysregs = &regs;
 		syscall_handler(&regs);
-		assert(!get_cpu_interrupt_flag());
+		assert(!interrupt_get_flag());
 		/* handle stage2's here...*/
 		if(maybe_handle_stage_2) {
 			maybe_handle_stage_2 = 0;
@@ -266,14 +267,14 @@ void arch_interrupt_syscall_handler(volatile registers_t regs)
 			}
 			mutex_release(&s2_lock);
 		}
-		assert(!get_cpu_interrupt_flag());
+		assert(!interrupt_get_flag());
 	}
 	assert(!interrupt_set(0));
 	current_task->sysregs=0;
 	current_task->regs=0;
 	/* we don't need worry about this being wrong, since we'll always be returning to
 	 * user-space code */
-	set_cpu_interrupt_flag(1);
+	interrupt_set_flag(1);
 	/* we're never returning to an interrupt, so we can
 	 * safely reset this flag */
 	tm_lower_flag(TF_IN_INT);
@@ -327,7 +328,7 @@ void arch_interrupt_isr_handler(volatile registers_t regs)
 	if(!called)
 		faulted(regs.int_no, !already_in_interrupt, regs.eip);
 	/* restore previous interrupt state */
-	set_cpu_interrupt_flag(previous_interrupt_flag);
+	interrupt_set_flag(previous_interrupt_flag);
 	if(!already_in_interrupt)
 		tm_lower_flag(TF_IN_INT);
 	/* send out the EOI... */
@@ -381,7 +382,7 @@ void arch_interrupt_irq_handler(volatile registers_t regs)
 		add_atomic(&stage2_count[regs.int_no], 1);
 		maybe_handle_stage_2 = 1;
 	}
-	assert(!get_cpu_interrupt_flag());
+	assert(!interrupt_get_flag());
 	/* ok, now are we allowed to handle stage2's right here? */
 	if(!already_in_interrupt && (maybe_handle_stage_2||need_second_stage))
 	{
@@ -404,7 +405,7 @@ void arch_interrupt_irq_handler(volatile registers_t regs)
 			}
 		}
 		mutex_release(&s2_lock);
-		assert(!get_cpu_interrupt_flag());
+		assert(!interrupt_get_flag());
 	}
 	/* ok, now lets clean up */
 	assert(!interrupt_set(0));
@@ -414,7 +415,7 @@ void arch_interrupt_irq_handler(volatile registers_t regs)
 	/* restore the flag in the cpu struct. The assembly routine will
 	 * call iret, which will also restore the EFLAG state to what
 	 * it was before, including the interrupts-enabled bit in eflags */
-	set_cpu_interrupt_flag(previous_interrupt_flag);
+	interrupt_set_flag(previous_interrupt_flag);
 	/* and clear the state flag if this is going to return to user-space code */
 	if(!already_in_interrupt)
 		tm_lower_flag(TF_IN_INT);

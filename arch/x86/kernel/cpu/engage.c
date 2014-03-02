@@ -10,6 +10,7 @@ initialization */
 #include <atomic.h>
 #include <imps-x86.h>
 #include <sea/cpu/cmos-x86_common.h>
+#include <sea/cpu/features-x86_common.h>
 
 void load_tables_ap();
 void set_lapic_timer(unsigned tmp);
@@ -41,12 +42,12 @@ void cpu_k_task_entry(task_t *me)
 __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 {
 	/* get the cpu again... */
-	cpu_t *cpu = get_cpu(apicid);
+	cpu_t *cpu = cpu_get(apicid);
 	cpu->flags |= CPU_UP;
 	/* call the CPU features init code */
 	parse_cpuid(cpu);
-	setup_fpu(cpu);
-	init_sse(cpu);
+	x86_cpu_init_fpu(cpu);
+	x86_cpu_init_sse(cpu);
 	cpu->flags |= CPU_RUNNING;
 	set_boot_flag(0xFFFFFFFF);
 	while(!(kernel_state_flags & KSF_SMP_ENABLE)) asm("cli; pause");
@@ -106,7 +107,7 @@ void cpu_entry(void)
 {
 	/* get the ID and the cpu struct so we can set a private stack */
 	int apicid = get_boot_flag();
-	cpu_t *cpu = get_cpu(apicid);
+	cpu_t *cpu = cpu_get(apicid);
 	/* load up the pmode gdt, tss, and idt */
 	load_tables_ap(cpu);
 	/* set up our private temporary tack */

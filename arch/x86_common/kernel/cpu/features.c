@@ -1,7 +1,7 @@
 #include <kernel.h>
 #include <cpu.h>
 
-void setup_fpu(cpu_t *me)
+void x86_cpu_init_fpu(cpu_t *me)
 {
 	if(me->cpuid.features_edx & 0x01)
 	{
@@ -15,7 +15,7 @@ void setup_fpu(cpu_t *me)
 	}
 }
 
-void init_sse(cpu_t *me)
+void x86_cpu_init_sse(cpu_t *me)
 {
 	unsigned long cr0, cr4;
 	if(me->cpuid.features_edx & 0x06000001) /* test for SSE2, SSE, and FPU */

@@ -22,7 +22,7 @@ void acpi_madt_parse_processor(void *ent, int boot)
 	memset(&new_cpu, 0, sizeof(cpu_t));
 	new_cpu.apicid = proc->apicid;
 	new_cpu.flags=0;
-	cpu_t *cp = add_cpu(&new_cpu);
+	cpu_t *cp = cpu_add(&new_cpu);
 	if(boot) {
 		primary_cpu = cp;
 		return;

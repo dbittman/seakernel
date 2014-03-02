@@ -7,6 +7,7 @@
 #include <atomic.h>
 #include <symbol.h>
 #include <acpi.h>
+#include <sea/cpu/features-x86_common.h>
 cpu_t *primary_cpu=0;
 #if CONFIG_SMP
 cpu_t cpu_array[CONFIG_MAX_CPUS];
@@ -46,8 +47,8 @@ void init_main_cpu_1()
 	primary_cpu->flags = CPU_UP;
 	printk(KERN_MSG, "Initializing CPU...\n");
 	parse_cpuid(primary_cpu);
-	setup_fpu(primary_cpu);
-	init_sse(primary_cpu);
+	x86_cpu_init_fpu(primary_cpu);
+	x86_cpu_init_sse(primary_cpu);
 	primary_cpu->flags |= CPU_RUNNING;
 	printk(KERN_EVERY, "done\n");
 	mutex_create((mutex_t *)&primary_cpu->lock, MT_NOSCHED);
@@ -55,7 +56,7 @@ void init_main_cpu_1()
 	loader_do_add_kernel_symbol((unsigned)(cpu_t *)primary_cpu, "primary_cpu");
 	loader_add_kernel_symbol(interrupt_set);
 #if CONFIG_SMP
-	loader_add_kernel_symbol(get_cpu);
+	loader_add_kernel_symbol(cpu_get);
 	loader_add_kernel_symbol((addr_t)&cpu_array_num);
 	loader_add_kernel_symbol((addr_t)&num_booted_cpus);
 #endif

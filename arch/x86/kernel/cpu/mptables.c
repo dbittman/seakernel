@@ -29,7 +29,7 @@ static void imps_add_processor(struct imps_processor *proc)
 	memset(&new_cpu, 0, sizeof(cpu_t));
 	new_cpu.apicid = apicid;
 	new_cpu.flags=0;
-	cpu_t *cp = add_cpu(&new_cpu);
+	cpu_t *cp = cpu_add(&new_cpu);
 	if (proc->flags & (IMPS_CPUFLAG_BOOT)) {
 		primary_cpu = cp;
 		return;

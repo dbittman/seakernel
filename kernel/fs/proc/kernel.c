@@ -20,7 +20,7 @@ int proc_cpu(char rw, struct inode *inode, int m, char *buf, int off, int len)
 {
 	int total_len=0;
 	if(rw == READ) {
-		cpu_t *c = get_cpu(m);
+		cpu_t *c = cpu_get(m);
 		cpuid_t *cpuid = &c->cpuid;
 		char tmp[256];
 		sprintf(tmp, "cpu: %d\n", c->apicid, c->flags);

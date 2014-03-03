@@ -15,4 +15,5 @@ tools/mkird
 .kdev*
 *.1
 initrd-*
+documentation/built
 drivers/built/

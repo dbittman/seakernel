@@ -5,7 +5,7 @@
 
 #define SIGSTACK (STACK_LOCATION - (STACK_SIZE + PAGE_SIZE + 8))
 
-int arch_userspace_signal_initializer(task_t *t, struct sigaction *sa)
+int arch_tm_userspace_signal_initializer(task_t *t, struct sigaction *sa)
 {
 	volatile registers_t *iret = t->regs;
 	if(!iret) return 0;

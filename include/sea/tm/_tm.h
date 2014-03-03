@@ -16,5 +16,6 @@ int __tm_process_is_runable(task_t *task);
 /* exit.c */
 void __tm_move_task_to_kill_queue(task_t *t, int locked);
 void __tm_handle_signal(task_t *);
+int arch_tm_userspace_signal_initializer(task_t *t, struct sigaction *sa);
 
 #endif

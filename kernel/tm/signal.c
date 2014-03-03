@@ -1,13 +1,15 @@
 /* Functions for signaling tasks (IPC)
  * signal.c: Copyright (c) 2010 Daniel Bittman
  */
+#include <sea/subsystem.h>
+#define SUBSYSTEM _SUBSYSTEM_TM
+#include <sea/tm/_tm.h>
 #include <kernel.h>
 #include <isr.h>
 #include <task.h>
 #include <init.h>
 #include <sea/cpu/interrupt.h>
 
-int arch_userspace_signal_initializer(task_t *t, struct sigaction *sa);
 void __tm_handle_signal(task_t *t)
 {
 	t->exit_reason.sig=0;
@@ -17,7 +19,7 @@ void __tm_handle_signal(task_t *t)
 	if(!(sa->sa_flags & SA_NODEFER))
 		t->sig_mask |= (1 << t->sigd);
 	/* tricky short-circuit evaluation */
-	if(sa->_sa_func._sa_handler && t->sigd != SIGKILL && arch_userspace_signal_initializer(t, sa));
+	if(sa->_sa_func._sa_handler && t->sigd != SIGKILL && arch_tm_userspace_signal_initializer(t, sa));
 	else if(!sa->_sa_func._sa_handler && !t->system)
 	{
 		/* Default Handlers */

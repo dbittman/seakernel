@@ -7,7 +7,7 @@
 #include <cpu.h>
 
 /* Accepts virtual, returns virtual */
-int vm_do_copy_table(int i, page_dir_t *new, page_dir_t *from, char cow)
+static int vm_do_copy_table(int i, page_dir_t *new, page_dir_t *from, char cow)
 {
 	addr_t *table;
 	addr_t table_phys;
@@ -37,7 +37,7 @@ int vm_do_copy_table(int i, page_dir_t *new, page_dir_t *from, char cow)
 
 /* If is it normal task memory or the stack, we copy the tables. Otherwise we simply link them.
  */
-int vm_copy_dir(page_dir_t *from, page_dir_t *new, char flags)
+static int vm_copy_dir(page_dir_t *from, page_dir_t *new, char flags)
 {
 	int i=0;
 	int D = PAGE_DIR_IDX(TOP_TASK_MEM/PAGE_SIZE);

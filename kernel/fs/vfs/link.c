@@ -51,6 +51,10 @@ int vfs_link(char *old, char *new)
 	i = vfs_get_idir(old, 0);
 	if(!i)
 		return -ENOENT;
+	if(vfs_inode_is_directory(i) && current_task->thread->effective_uid) {
+		iput(i);
+		return -EPERM;
+	}
 	int ret = vfs_callback_link(i, new);
 	iput(i);
 	if(!ret) sys_utime(new, 0, 0);
@@ -61,6 +65,7 @@ int vfs_unlink(char *f)
 {
 	if(!f) return -EINVAL;
 	struct inode *i;
+	/* Hacks! */
 	if(strchr(f, '*')) 
 		return -ENOENT;
 	i = vfs_lget_idir(f, 0);
@@ -83,6 +88,9 @@ int vfs_rmdir(char *f)
 	if(inode_has_children(i))
 		err = -ENOTEMPTY;
 	if(!vfs_inode_get_check_permissions(i->parent, MAY_WRITE, 0))
+		err = -EACCES;
+	if(current_task->thread->effective_uid && (i->parent->mode & S_ISVTX) 
+		&& (i->uid != current_task->thread->effective_uid))
 		err = -EACCES;
 	if(i->f_count) {
 		rwlock_release(&i->rwl, RWL_WRITER);

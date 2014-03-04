@@ -35,10 +35,8 @@ void __tm_handle_signal(task_t *t)
 				tm_kill_process(t->pid);
 				break;
 			case SIGUSLEEP:
-				if(t->thread->effective_uid >= t->thread->effective_uid) {
-					t->state = TASK_USLEEP;
-					t->tick=0;
-				}
+				t->state = TASK_USLEEP;
+				t->tick=0;
 				break;
 			case SIGSTOP: 
 				if(!(sa->sa_flags & SA_NOCLDSTOP))
@@ -46,10 +44,8 @@ void __tm_handle_signal(task_t *t)
 				t->exit_reason.cause=__STOPSIG;
 				t->exit_reason.sig=t->sigd; /* Fall through */
 			case SIGISLEEP:
-				if(t->thread->effective_uid >= t->thread->effective_uid) {
-					t->state = TASK_ISLEEP; 
-					t->tick=0;
-				}
+				t->state = TASK_ISLEEP; 
+				t->tick=0;
 				break;
 			default:
 				t->flags &= ~TF_SCHED;
@@ -62,6 +58,22 @@ void __tm_handle_signal(task_t *t)
 		t->sig_mask = t->old_mask;
 		tm_process_lower_flag(t, TF_INSIG);
 		tm_process_raise_flag(t, TF_SCHED);
+	}
+}
+
+static int __can_send_signal(task_t *from, task_t *to)
+{
+	if(from->thread->real_uid && from->thread->effective_uid)
+	{
+		if(from->thread->real_uid == to->thread->real_uid
+			|| from->thread->real_uid == to->thread->saved_uid
+			|| from->thread->effective_uid == to->thread->real_uid
+			|| from->thread->effective_uid == to->thread->saved_uid)
+			return 1;
+		else
+			return 0;
+	} else {
+		return 1;
 	}
 }
 
@@ -88,7 +100,7 @@ int tm_do_send_signal(int pid, int __sig, int p)
 		if(!p && pid != 0 && (current_task->thread->effective_uid) && !current_task->system)
 			panic(PANIC_NOSYNC, "Priority signal sent by an illegal task!");
 		/* Check for vfs_inode_get_check_permissions */
-		if(!__sig || (__sig < 32 && current_task->thread->effective_uid > task->thread->effective_uid && !p))
+		if(!__sig || (__sig < 32 && __can_send_signal(current_task, task) && !p))
 			return -EACCES;
 		if(task->state == TASK_DEAD || task->state == TASK_SUICIDAL)
 			return -EINVAL;

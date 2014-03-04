@@ -358,6 +358,7 @@ int sys_access(char *path, mode_t mode)
 		return 0;
 	}
 	int fail=0;
+	/* access uses the REAL UID to check permissions... */
 	if(mode & R_OK)
 		fail += (vfs_inode_get_check_permissions(i, MAY_READ, 1) ? 0 : 1);
 	if(mode & W_OK)

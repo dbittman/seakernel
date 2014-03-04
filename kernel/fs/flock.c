@@ -95,7 +95,7 @@ static int engage_flock(struct inode *inode, struct flock *l, int pos)
 {
 	if(!inode || !l) return -EINVAL;
 	
-	if(!vfs_inode_get_check_permissions(inode, (l->l_type == F_WRLCK) ? MAY_WRITE : MAY_READ))
+	if(!vfs_inode_get_check_permissions(inode, (l->l_type == F_WRLCK) ? MAY_WRITE : MAY_READ, 0))
 		return -EACCES;
 	
 	if(!can_flock(inode, l))

@@ -35,7 +35,7 @@ void __tm_handle_signal(task_t *t)
 				tm_kill_process(t->pid);
 				break;
 			case SIGUSLEEP:
-				if(t->thread->uid >= t->thread->uid) {
+				if(t->thread->effective_uid >= t->thread->effective_uid) {
 					t->state = TASK_USLEEP;
 					t->tick=0;
 				}
@@ -46,7 +46,7 @@ void __tm_handle_signal(task_t *t)
 				t->exit_reason.cause=__STOPSIG;
 				t->exit_reason.sig=t->sigd; /* Fall through */
 			case SIGISLEEP:
-				if(t->thread->uid >= t->thread->uid) {
+				if(t->thread->effective_uid >= t->thread->effective_uid) {
 					t->state = TASK_ISLEEP; 
 					t->tick=0;
 				}
@@ -74,7 +74,7 @@ int tm_do_send_signal(int pid, int __sig, int p)
 		return -ESRCH;
 	}
 	
-	if(!pid && !p && current_task->thread->uid && current_task->pid)
+	if(!pid && !p && current_task->thread->effective_uid && current_task->pid)
 		return -EPERM;
 	task_t *task = tm_get_process_by_pid(pid);
 	if(!task) return -ESRCH;
@@ -85,10 +85,10 @@ int tm_do_send_signal(int pid, int __sig, int p)
 	if(__sig > 32) return -EINVAL;
 	/* We may always signal ourselves */
 	if(task != current_task) {
-		if(!p && pid != 0 && (current_task->thread->uid) && !current_task->system)
+		if(!p && pid != 0 && (current_task->thread->effective_uid) && !current_task->system)
 			panic(PANIC_NOSYNC, "Priority signal sent by an illegal task!");
 		/* Check for vfs_inode_get_check_permissions */
-		if(!__sig || (__sig < 32 && current_task->thread->uid > task->thread->uid && !p))
+		if(!__sig || (__sig < 32 && current_task->thread->effective_uid > task->thread->effective_uid && !p))
 			return -EACCES;
 		if(task->state == TASK_DEAD || task->state == TASK_SUICIDAL)
 			return -EINVAL;

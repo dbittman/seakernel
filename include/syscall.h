@@ -107,14 +107,15 @@ int sys_setup();
 #define SYS_TPSTAT  		 79
 #define SYS_MOUNT2  		 80
 
-#define SYS_UNUSED9		 81
-#define SYS_UNUSED21		 82
+#define SYS_SETEUID		 81
+#define SYS_SETEGID		 82
 
 #define SYS_PIPE  		 83
 #define SYS_SETSIG		 84
 
-#define SYS_UNUSED11 		 85
-#define SYS_UNUSED12		 86
+#define SYS_GETEUID 		 85
+#define SYS_GETEGID		 86
+
 #define SYS_UNUSED13  		 87
 #define SYS_UNUSED14  		 88
 

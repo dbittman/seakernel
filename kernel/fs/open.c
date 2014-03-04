@@ -36,12 +36,12 @@ struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int
 		*error = -EEXIST;
 		return 0;
 	}
-	if(flags & _FREAD && !vfs_inode_get_check_permissions(inode, MAY_READ)) {
+	if(flags & _FREAD && !vfs_inode_get_check_permissions(inode, MAY_READ, 0)) {
 		iput(inode);
 		*error = -EACCES;
 		return 0;
 	}
-	if(flags & _FWRITE && !vfs_inode_get_check_permissions(inode, MAY_WRITE)) {
+	if(flags & _FWRITE && !vfs_inode_get_check_permissions(inode, MAY_WRITE, 0)) {
 		iput(inode);
 		*error = -EACCES;
 		return 0;

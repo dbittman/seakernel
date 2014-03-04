@@ -12,7 +12,7 @@ int vfs_write_inode(struct inode *i, off_t off, size_t len, char *b)
 		return -EINVAL;
 	if(vfs_inode_is_directory(i))
 		return -EISDIR;
-	if(!vfs_inode_get_check_permissions(i, MAY_WRITE))
+	if(!vfs_inode_get_check_permissions(i, MAY_WRITE, 0))
 		return -EACCES;
 	return vfs_callback_write(i, off, len, b);
 }
@@ -21,7 +21,7 @@ int vfs_read_inode(struct inode *i, off_t off, size_t  len, char *b)
 {
 	if(!i || !b)
 		return -EINVAL;
-	if(!vfs_inode_get_check_permissions(i, MAY_READ))
+	if(!vfs_inode_get_check_permissions(i, MAY_READ, 0))
 		return -EACCES;
 	return vfs_callback_read(i, off, len, b);
 }

@@ -99,11 +99,11 @@ void *syscall_table[129] = {
 	
 	SC sys_null,       SC sys_null,       SC sys_null,      SC task_stat, 
 	SC sys_null,       SC sys_null,       SC tm_delay,         SC kernel_reset,
-	SC kernel_poweroff,SC get_uid,        SC get_gid,       SC set_uid, 
-	SC set_gid,        SC sys_null,    SC task_pstat,    SC sys_mount2,
+	SC kernel_poweroff,SC tm_get_uid,        SC tm_get_gid,       SC tm_set_uid, 
+	SC tm_set_gid,        SC sys_null,    SC task_pstat,    SC sys_mount2,
 	
-	SC sys_null,       SC sys_null,       SC sys_pipe,      SC tm_set_signal, 
-	SC sys_null,       SC sys_null,       SC sys_null,      SC sys_null,
+	SC tm_set_euid,       SC tm_set_egid,       SC sys_pipe,      SC tm_set_signal, 
+	SC tm_get_euid,       SC tm_get_egid,       SC sys_null,      SC sys_null,
 	SC arch_time_get,       SC sys_get_timer_th,   SC sys_isstate,   SC sys_wait3, 
 	SC sys_null,       SC sys_null,       SC sys_getcwdlen, 
 	

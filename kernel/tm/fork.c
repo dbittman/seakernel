@@ -21,10 +21,10 @@ static void copy_thfs_read_file_data(task_t *task, task_t *parent)
 	}
 	memcpy((void *)task->thread->signal_act, (void *)parent->thread->signal_act, 128 * 
 		sizeof(struct sigaction));
-	task->thread->gid = parent->thread->gid;
-	task->thread->uid = parent->thread->uid;
-	task->thread->_uid = parent->thread->_uid;
-	task->thread->_gid = parent->thread->_gid;
+	task->thread->effective_gid = parent->thread->effective_gid;
+	task->thread->effective_uid = parent->thread->effective_uid;
+	task->thread->real_uid = parent->thread->real_uid;
+	task->thread->real_gid = parent->thread->real_gid;
 	task->thread->global_sig_mask = parent->thread->global_sig_mask;
 }
 

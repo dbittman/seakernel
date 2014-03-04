@@ -67,7 +67,7 @@ int vfs_chroot(char *n)
 	if(!n) 
 		return -EINVAL;
 	struct inode *i, *old = current_task->thread->root;
-	if(current_task->thread->uid != 0)
+	if(current_task->thread->effective_uid != 0)
 		return -EPERM;
 	i = vfs_get_idir(n, 0);
 	if(!i)
@@ -92,7 +92,7 @@ int vfs_ichdir(struct inode *i)
 		iput(i);
 		return -ENOTDIR;
 	}
-	if(!vfs_inode_get_check_permissions(i, MAY_EXEC)) {
+	if(!vfs_inode_get_check_permissions(i, MAY_EXEC, 0)) {
 		iput(i);
 		return -EACCES;
 	}
@@ -115,7 +115,7 @@ static struct inode *do_readdir(struct inode *i, int num)
 	int n = num;
 	if(!vfs_inode_is_directory(i))
 		return 0;
-	if(!vfs_inode_get_check_permissions(i, MAY_READ))
+	if(!vfs_inode_get_check_permissions(i, MAY_READ, 0))
 		return 0;
 	struct inode *c=0;
 	if(!i->dynamic) {
@@ -141,7 +141,7 @@ struct inode *vfs_read_dir(char *n, int num)
 	i = vfs_get_idir(n, 0);
 	if(!i)
 		return 0;
-	if(!vfs_inode_get_check_permissions(i, MAY_READ)) {
+	if(!vfs_inode_get_check_permissions(i, MAY_READ, 0)) {
 		iput(i);
 		return 0;
 	}
@@ -154,7 +154,7 @@ struct inode *vfs_read_idir(struct inode *i, int num)
 {
 	if(!i)
 		return 0;
-	if(!vfs_inode_get_check_permissions(i, MAY_READ))
+	if(!vfs_inode_get_check_permissions(i, MAY_READ, 0))
 		return 0;
 	return do_readdir(i, num);
 }

@@ -63,7 +63,7 @@ int sys_nice(int which, int who, int val, int flags)
 	{
 		if(who && (unsigned)who != current_task->pid)
 			return -ENOTSUP;
-		if(!flags && val < 0 && current_task->thread->uid != 0)
+		if(!flags && val < 0 && current_task->thread->effective_uid != 0)
 			return -EPERM;
 		/* Yes, this is correct */
 		if(!flags)
@@ -105,28 +105,74 @@ int sys_getppid()
 	return current_task->parent->pid;
 }
 
-int set_gid(int n)
+int tm_set_gid(int n)
 {
-	current_task->thread->_gid = current_task->thread->gid;
-	current_task->thread->gid = n;
+	if(current_task->thread->real_gid && current_task->thread->effective_gid) {
+		if(n == current_task->thread->real_gid || n == current_task->thread->saved_gid)
+			current_task->thread->effective_gid = n;
+		else
+			return -EPERM;
+	} else {
+		current_task->thread->effective_gid = current_task->thread->real_gid = current_task->thread->saved_gid = n;
+	}
 	return 0;
 }
 
-int set_uid(int n)
+int tm_set_uid(int n)
 {
-	current_task->thread->_uid = current_task->thread->uid;
-	current_task->thread->uid = n;
+	if(current_task->thread->real_uid && current_task->thread->effective_uid) {
+		if(n == current_task->thread->real_uid || n == current_task->thread->saved_uid)
+			current_task->thread->effective_uid = n;
+		else
+			return -EPERM;
+	} else {
+		current_task->thread->effective_uid = current_task->thread->real_uid = current_task->thread->saved_uid = n;
+	}
 	return 0;
 }
 
-int get_gid()
+int tm_set_euid(int n)
 {
-	return current_task->thread->gid;
+	if(!current_task->thread->real_uid 
+		|| !current_task->thread->effective_uid
+		|| (n == current_task->thread->real_uid)
+		|| (n == current_task->thread->saved_uid)) {
+		current_task->thread->effective_uid = n;
+	} else
+		return -EPERM;
+	return 0;
 }
 
-int get_uid()
+int tm_set_egid(int n)
 {
-	return current_task->thread->uid;
+	if(!current_task->thread->real_gid 
+		|| !current_task->thread->effective_gid
+		|| (n == current_task->thread->real_gid)
+		|| (n == current_task->thread->saved_gid)) {
+		current_task->thread->effective_gid = n;
+	} else
+		return -EPERM;
+	return 0;
+}
+
+int tm_get_gid()
+{
+	return current_task->thread->real_gid;
+}
+
+int tm_get_uid()
+{
+	return current_task->thread->real_uid;
+}
+
+int tm_get_egid()
+{
+	return current_task->thread->effective_gid;
+}
+
+int tm_get_euid()
+{
+	return current_task->thread->effective_uid;
 }
 
 void do_task_stat(struct task_stat *s, task_t *t)
@@ -136,8 +182,8 @@ void do_task_stat(struct task_stat *s, task_t *t)
 	s->utime = t->utime;
 	s->state = t->state;
 	if(s->state != TASK_DEAD) {
-		s->uid = t->thread->uid;
-		s->gid = t->thread->gid;
+		s->uid = t->thread->real_uid;
+		s->gid = t->thread->real_gid;
 	}
 	if(t->parent) s->ppid = t->parent->pid;
 	s->system = t->system;

@@ -63,7 +63,7 @@ static int do_exec(task_t *t, char *path, char **argv, char **env)
 		desc = err_open;
 	if(desc < 0 || !efil)
 		return -ENOENT;
-	if(!vfs_inode_get_check_permissions(efil->inode, MAY_EXEC))
+	if(!vfs_inode_get_check_permissions(efil->inode, MAY_EXEC, 0))
 	{
 		sys_close(desc);
 		return -EACCES;
@@ -132,10 +132,10 @@ static int do_exec(task_t *t, char *path, char **argv, char **env)
 	
 	/* do setuid and setgid */
 	if(efil->inode->mode & S_ISUID) {
-		t->thread->uid = t->thread->_uid = efil->inode->uid;
+		t->thread->effective_uid = efil->inode->uid;
 	}
 	if(efil->inode->mode & S_ISGID) {
-		t->thread->gid = t->thread->_gid = efil->inode->gid;
+		t->thread->effective_gid = efil->inode->gid;
 	}
 	
 	sys_close(desc);

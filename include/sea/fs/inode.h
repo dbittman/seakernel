@@ -102,7 +102,7 @@ int vfs_rmdir(char *f);
 
 int vfs_inode_is_directory(struct inode *i);
 int vfs_inode_get_ref_count(struct inode *i);
-int vfs_inode_get_check_permissions(struct inode *i, mode_t flag);
+int vfs_inode_get_check_permissions(struct inode *i, mode_t flag, int use_real_id);
 int vfs_do_add_inode(struct inode *b, struct inode *i, int locked);
 int vfs_do_iremove(struct inode *i, int flag, int locked);
 int vfs_free_inode(struct inode *i, int recur);

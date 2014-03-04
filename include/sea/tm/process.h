@@ -73,8 +73,8 @@ struct thread_shared_data {
 	unsigned count;
 	mutex_t files_lock;
 	struct inode *root, *pwd;
-	uid_t uid, _uid;
-	gid_t gid, _gid;
+	uid_t real_uid, effective_uid, saved_uid;
+	gid_t real_gid, effective_gid, saved_gid;
 	struct sigaction signal_act[128];
 	volatile sigset_t global_sig_mask;
 	struct file_ptr *filp[FILP_HASH_LEN];
@@ -189,6 +189,16 @@ int tm_process_wait(unsigned pid, int state);
 void tm_exit(int code);
 void tm_delay(int t);
 void tm_delay_sleep(int t);
+
+int tm_set_gid(int n);
+int tm_set_uid(int n);
+int tm_set_euid(int n);
+int tm_set_egid(int n);
+int tm_get_gid();
+int tm_get_uid();
+int tm_get_egid();
+int tm_get_euid();
+
 
 task_t *tm_task_create();
 struct thread_shared_data *tm_thread_data_create();

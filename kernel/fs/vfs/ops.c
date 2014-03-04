@@ -19,16 +19,22 @@ int vfs_inode_get_ref_count(struct inode *i)
 	return i->count;
 }
 
-int vfs_inode_get_check_permissions(struct inode *i, mode_t flag)
+int vfs_inode_get_check_permissions(struct inode *i, mode_t flag, int real_id)
 {
 	if(!i)
 		return 0;
-	if(current_task->thread->uid == 0)
+	uid_t uid = current_task->thread->effective_uid;
+	gid_t gid = current_task->thread->effective_gid;
+	if(real_id) {
+		uid = current_task->thread->real_uid;
+		gid = current_task->thread->real_gid;
+	}
+	if(uid == 0)
 		return 1;
-	if(current_task->thread->uid == i->uid && (flag & i->mode))
+	if(uid == i->uid && (flag & i->mode))
 		return 1;
 	flag = flag >> 3;
-	if(current_task->thread->gid == i->gid && (flag & i->mode))
+	if(gid == i->gid && (flag & i->mode))
 		return 1;
 	flag = flag >> 3;
 	return flag & i->mode;

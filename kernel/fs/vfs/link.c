@@ -11,12 +11,12 @@
 int vfs_do_unlink(struct inode *i)
 {
 	int err = 0;
-	if(current_task->thread->uid && (i->parent->mode & S_ISVTX) 
-		&& (i->uid != current_task->thread->uid))
+	if(current_task->thread->effective_uid && (i->parent->mode & S_ISVTX) 
+		&& (i->uid != current_task->thread->effective_uid))
 		err = -EACCES;
 	if(S_ISDIR(i->mode))
 		err = -EISDIR;
-	if(!vfs_inode_get_check_permissions(i->parent, MAY_WRITE))
+	if(!vfs_inode_get_check_permissions(i->parent, MAY_WRITE, 0))
 		err = -EACCES;
 	rwlock_acquire(&i->rwl, RWL_WRITER);
 	if(i->f_count) {
@@ -82,7 +82,7 @@ int vfs_rmdir(char *f)
 	rwlock_acquire(&i->rwl, RWL_WRITER);
 	if(inode_has_children(i))
 		err = -ENOTEMPTY;
-	if(!vfs_inode_get_check_permissions(i->parent, MAY_WRITE))
+	if(!vfs_inode_get_check_permissions(i->parent, MAY_WRITE, 0))
 		err = -EACCES;
 	if(i->f_count) {
 		rwlock_release(&i->rwl, RWL_WRITER);

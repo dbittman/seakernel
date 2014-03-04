@@ -40,7 +40,7 @@ static struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, in
 	/* Access? */
 	if(!vfs_inode_is_directory(i))
 		return 0;
-	if(!vfs_inode_get_check_permissions(i, MAY_EXEC))
+	if(!vfs_inode_get_check_permissions(i, MAY_EXEC, 0))
 		return 0;
 	if(ll_is_active(&i->children)) {
 		struct llistnode *cur;
@@ -115,7 +115,7 @@ static struct inode *do_add_dirent(struct inode *p, char *name, int mode)
 	if(!vfs_inode_is_directory(p))
 		return 0;
 	if(p->mount) p = p->mount->root;
-	if(!vfs_inode_get_check_permissions(p, MAY_WRITE))
+	if(!vfs_inode_get_check_permissions(p, MAY_WRITE, 0))
 		return 0;
 	if(p->parent == current_task->thread->root && !strcmp(p->name, "tmp"))
 		mode |= 0x1FF;
@@ -125,8 +125,8 @@ static struct inode *do_add_dirent(struct inode *p, char *name, int mode)
 	rwlock_release(&p->rwl, RWL_WRITER);
 	if(ret) {
 		ret->mtime = arch_time_get_epoch();
-		ret->uid = current_task->thread->uid;
-		ret->gid = current_task->thread->gid;
+		ret->uid = current_task->thread->effective_uid;
+		ret->gid = current_task->thread->effective_gid;
 		vfs_add_inode(p, ret);
 		sync_inode_tofs(ret);
 	}

@@ -245,8 +245,8 @@ struct inode *do_wrap_ext2_create(struct inode *i, char *name, mode_t mode)
 		return 0;
 	new.deletion_time = 0;
 	new.mode = mode;
-	new.uid = current_task->thread->uid;
-	new.gid = current_task->thread->gid;
+	new.uid = current_task->thread->effective_uid;
+	new.gid = current_task->thread->effective_gid;
 	if(!ext2_dir_link(&inode, &new, name)) 
 		return 0;
 	new.change_time = arch_time_get_epoch();

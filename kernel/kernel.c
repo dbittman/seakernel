@@ -21,7 +21,7 @@ void kernel_shutdown()
 	x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_SHUTDOWN);
 	while(num_halted_cpus < num_booted_cpus) asm("pause");
 #endif
-	current_task->thread->uid=0;
+	current_task->thread->effective_uid=current_task->thread->real_uid=0;
 	tm_raise_flag(TF_SHUTDOWN);
 	set_ksf(KSF_SHUTDOWN);
 	sys_sync(PRINT_LEVEL);
@@ -34,7 +34,7 @@ void kernel_shutdown()
 
 void kernel_reset()
 {
-	if(current_task->thread->uid)
+	if(current_task->thread->effective_uid)
 		return;
 	kernel_shutdown();
 	kprintf("Rebooting system...\n");
@@ -43,7 +43,7 @@ void kernel_reset()
 
 void kernel_poweroff()
 {
-	if(current_task->thread->uid)
+	if(current_task->thread->effective_uid)
 		return;
 	kernel_shutdown();
 	interrupt_set(0);

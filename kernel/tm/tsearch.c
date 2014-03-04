@@ -29,19 +29,15 @@ task_t *tm_search_tqueue(tqueue_t *tq, unsigned flags, unsigned long value, void
 		{
 			FOUND_ACTION
 		}
-		if(flags & TSEARCH_UID && (unsigned long)tmp->thread->uid == value)
+		if(flags & TSEARCH_UID && (unsigned long)tmp->thread->real_uid == value)
 		{
 			FOUND_ACTION
 		}
-		if(flags & TSEARCH_EUID && (unsigned long)tmp->thread->_uid == value)
+		if(flags & TSEARCH_EUID && (unsigned long)tmp->thread->effective_uid == value)
 		{
 			FOUND_ACTION
 		}
 		if(flags & TSEARCH_TTY && (unsigned long)tmp->tty == value)
-		{
-			FOUND_ACTION
-		}
-		if(flags & TSEARCH_EUID && (unsigned long)tmp->thread->_uid == value)
 		{
 			FOUND_ACTION
 		}

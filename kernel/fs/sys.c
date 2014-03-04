@@ -193,7 +193,7 @@ int sys_chmod(char *path, int fd, mode_t mode)
 		fs_fput((task_t *)current_task, fd, 0);
 	}
 	if(!i) return -ENOENT;
-	if(i->uid != current_task->thread->uid && current_task->thread->uid)
+	if(i->uid != current_task->thread->effective_uid && current_task->thread->effective_uid)
 	{
 		if(path)
 			iput(i);
@@ -222,7 +222,7 @@ int sys_chown(char *path, int fd, uid_t uid, gid_t gid)
 	}
 	if(!i)
 		return -ENOENT;
-	if(current_task->thread->uid && current_task->thread->uid != i->uid) {
+	if(current_task->thread->effective_uid && current_task->thread->effective_uid != i->uid) {
 		if(path)
 			iput(i);
 		return -EPERM;
@@ -242,7 +242,7 @@ int sys_utime(char *path, time_t a, time_t m)
 	struct inode *i = vfs_get_idir(path, 0);
 	if(!i)
 		return -ENOENT;
-	if(current_task->thread->uid && current_task->thread->uid != i->uid) {
+	if(current_task->thread->effective_uid && current_task->thread->effective_uid != i->uid) {
 		iput(i);
 		return -EPERM;
 	}
@@ -270,7 +270,7 @@ int sys_ftruncate(int f, off_t length)
 	struct file *file = fs_get_file_pointer((task_t *)current_task, f);
 	if(!file)
 		return -EBADF;
-	if(!vfs_inode_get_check_permissions(file->inode, MAY_WRITE)) {
+	if(!vfs_inode_get_check_permissions(file->inode, MAY_WRITE, 0)) {
 		fs_fput((task_t *)current_task, f, 0);
 		return -EACCES;
 	}
@@ -353,17 +353,17 @@ int sys_access(char *path, mode_t mode)
 	struct inode *i = vfs_get_idir(path, 0);
 	if(!i)
 		return -ENOENT;
-	if(current_task->thread->uid == 0) {
+	if(current_task->thread->effective_uid == 0) {
 		iput(i);
 		return 0;
 	}
 	int fail=0;
 	if(mode & R_OK)
-		fail += (vfs_inode_get_check_permissions(i, MAY_READ) ? 0 : 1);
+		fail += (vfs_inode_get_check_permissions(i, MAY_READ, 1) ? 0 : 1);
 	if(mode & W_OK)
-		fail += (vfs_inode_get_check_permissions(i, MAY_WRITE) ? 0 : 1);
+		fail += (vfs_inode_get_check_permissions(i, MAY_WRITE, 1) ? 0 : 1);
 	if(mode & X_OK)
-		fail += (vfs_inode_get_check_permissions(i, MAY_EXEC) ? 0 : 1);
+		fail += (vfs_inode_get_check_permissions(i, MAY_EXEC, 1) ? 0 : 1);
 	iput(i);
 	return (fail ? -EACCES : 0);
 }

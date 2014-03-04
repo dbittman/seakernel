@@ -129,6 +129,15 @@ static int do_exec(task_t *t, char *path, char **argv, char **env)
 #endif
 	} else if(!process_elf(mem, desc, &eip, &end))
 		eip=0;
+	
+	/* do setuid and setgid */
+	if(efil->inode->mode & S_ISUID) {
+		t->thread->uid = t->thread->_uid = efil->inode->uid;
+	}
+	if(efil->inode->mode & S_ISGID) {
+		t->thread->gid = t->thread->_gid = efil->inode->gid;
+	}
+	
 	sys_close(desc);
 	if(!eip) {
 		printk(5, "[exec]: Tried to execute an invalid ELF file!\n");

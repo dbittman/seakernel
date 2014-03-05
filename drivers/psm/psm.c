@@ -18,7 +18,8 @@ char *disk_prefixes[MAX_PREFIXES] = {
 	"i",
 	"a",
 	"s",
-	"u"
+	"u",
+	"crypt"
 };
 
 void generate_name(int id, dev_t dev, char *name, int part)
@@ -101,10 +102,12 @@ int psm_do_rw_multiple(int multiple, int rw, int min, u64 blk, char *out_buffer,
 		end_blk = part_len + part_off;
 	}
 	blk += part_off;
-	if(blk >= end_blk)
-		return 0;
-	if((blk+count) > end_blk)
-		count = end_blk - blk;
+	if(end_blk > 0) {
+		if(blk >= end_blk)
+			return 0;
+		if((blk+count) > end_blk)
+			count = end_blk - blk;
+	}
 	if(!count)
 		return 0;
 	return multiple ? dm_do_block_rw_multiple(rw, d.dev, blk, out_buffer, count, 0) : dm_do_block_rw(rw, d.dev, blk, out_buffer, 0);

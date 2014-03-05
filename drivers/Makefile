@@ -45,6 +45,7 @@ export CC
 export LD
 
 MODULES-$(CONFIG_MODULE_LOOP)       += block/loop.m
+MODULES-$(CONFIG_MODULE_CRYPTO_PART)       += block/crypto-part.m
 MODULES-$(CONFIG_MODULE_PCI)        += bus/pci.m
 MODULES-$(CONFIG_MODULE_KEYBOARD)   += char/keyboard.m
 MODULES-$(CONFIG_MODULE_RAND)	    += char/rand.m

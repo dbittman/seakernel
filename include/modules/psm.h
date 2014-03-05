@@ -31,6 +31,7 @@ struct psm_device {
 	dev_t dev;
 };
 
+#define PSM_CRYPTO_PART_ID 4
 #define PSM_AHCI_ID 1
 #define PSM_ATA_ID  0
 

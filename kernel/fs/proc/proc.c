@@ -79,7 +79,7 @@ struct inode *proc_create_node_at_root(char *name, mode_t  mode, int major, int 
 	strncpy(i->name, name, INAME_LEN);
 	i->i_ops = &procfs_inode_ops;
 	i->parent = procfs_root;
-	i->mode = mode | 0xFFF;
+	i->mode = mode | 0664;
 	i->dev = GETDEV(major, minor);
 	rwlock_create(&i->rwl);
 	vfs_add_inode(procfs_root, i);
@@ -94,7 +94,7 @@ struct inode *proc_create_node(struct inode *to, char *name, mode_t mode, int ma
 	strncpy(i->name, name, INAME_LEN);
 	i->i_ops = &procfs_inode_ops;
 	i->parent = procfs_root;
-	i->mode = mode | 0x1FF;
+	i->mode = mode | 0664;
 	i->dev = GETDEV(major, minor);
 	rwlock_create(&i->rwl);
 	vfs_add_inode(to, i);
@@ -131,7 +131,7 @@ void proc_init()
 	_strcpy(procfs_root->name, "proc");
 	procfs_root->i_ops = &procfs_inode_ops;
 	procfs_root->parent = current_task->thread->root;
-	procfs_root->mode = S_IFDIR | 0x1FF;
+	procfs_root->mode = S_IFDIR | 0774;
 	procfs_root->num = -1;
 	rwlock_create(&procfs_root->rwl);
 	/* Create proc nodes */

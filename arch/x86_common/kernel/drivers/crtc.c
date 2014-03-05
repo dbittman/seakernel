@@ -125,9 +125,6 @@ void crtc_init_console(struct vterm *con)
 	if(!crtc_first_init) {
 		crtc_first_init=1;
 		memset((void *)VIDEO_MEMORY, 0, 80*25*2);
-		/* Change harware cursor size */
-		outb(0x3D4, 0xA);
-		outb(0x3D5, 0x0);
 	}
 	con->video = (char *)VIDEO_MEMORY;
 	con->bd = 2;

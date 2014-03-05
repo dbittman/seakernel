@@ -42,7 +42,7 @@ void devfs_init()
 	_strcpy(devfs_root->name, "dev");
 	devfs_root->i_ops = &devfs_inode_ops;
 	devfs_root->parent = current_task->thread->root;
-	devfs_root->mode = S_IFDIR | 0x1FF;
+	devfs_root->mode = S_IFDIR | 0774;
 	devfs_root->num = -1;
 	rwlock_create(&devfs_root->rwl);
 	/* Create device nodes */
@@ -78,7 +78,7 @@ struct inode *devfs_create(struct inode *base, char *name, mode_t mode)
 	strncpy(i->name, name, INAME_LEN);
 	i->i_ops = &devfs_inode_ops;
 	i->parent = devfs_root;
-	i->mode = mode | 0x1FF;
+	i->mode = mode | 0664;
 	i->num = add_atomic(&devfs_nodescount, 1);
 	rwlock_create(&i->rwl);
 	vfs_add_inode(base, i);

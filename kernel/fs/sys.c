@@ -407,7 +407,7 @@ int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 		total_set=0;
 		for(i=0;i<nfds;++i)
 		{
-			if(FD_ISSET(i, readfds))
+			if(readfds && FD_ISSET(i, readfds))
 			{
 				if(select_filedes(i, READ)) {
 					++is_ok;
@@ -415,7 +415,7 @@ int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 				} else
 					FD_CLR(i, readfds);
 			}
-			if(FD_ISSET(i, writefds))
+			if(writefds && FD_ISSET(i, writefds))
 			{
 				if(select_filedes(i, WRITE)) {
 					++is_ok;
@@ -423,7 +423,7 @@ int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 				} else
 					FD_CLR(i, writefds);
 			}
-			if(FD_ISSET(i, errorfds))
+			if(errorfds && FD_ISSET(i, errorfds))
 			{
 				if(select_filedes(i, OTHER)) {
 					++is_ok;

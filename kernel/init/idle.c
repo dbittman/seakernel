@@ -46,6 +46,7 @@ struct inode *kt_set_as_kernel_task(char *name)
 {
 	struct inode *i = (struct inode *)kmalloc(sizeof(struct inode));
 	rwlock_create(&i->rwl);
+	i->mode = S_IFREG | 0664;
 	strncpy(i->name, name, INAME_LEN);
 	vfs_add_inode(kproclist, i);
 	tm_raise_flag(TF_KTASK);
@@ -58,7 +59,7 @@ int kt_init_kernel_tasking()
 {
 	kproclist = (struct inode *)kmalloc(sizeof(struct inode));
 	_strcpy(kproclist->name, "kproclist");
-	kproclist->mode = S_IFDIR | 0xFFF;
+	kproclist->mode = S_IFDIR | 0664;
 	kproclist->count=1;
 	kproclist->dev = GETDEV(3, 0);
 	rwlock_create(&kproclist->rwl);

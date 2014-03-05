@@ -181,7 +181,7 @@ static slab_t *create_slab(slab_cache_t *sc, int num_pages, unsigned short flags
 	addr_t j;
 	for(j=addr;j<(addr + num_pages*PAGE_SIZE);j+=PAGE_SIZE) {
 		if(!vm_getmap(j, 0))
-			vm_map(j, pm_alloc_page(), PAGE_PRESENT | PAGE_USER, MAP_CRIT);
+			vm_map(j, pm_alloc_page(), PAGE_PRESENT, MAP_CRIT);
 	}
 	slab_t *slab = (slab_t *)addr;
 	assert(slab->magic != SLAB_MAGIC);

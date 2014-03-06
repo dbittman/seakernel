@@ -2,14 +2,52 @@
 #include <fs.h>
 #include <dev.h>
 #include <char.h>
+#include <sea/cpu/processor.h>
 
 int rand_maj=-1;
 int seed=0;
+unsigned int use_rdrand=0;
 int get_rand(void);
 struct inode *df;
 int rand1(unsigned int lim);
 int rand2(unsigned int lim);
 int rand3(unsigned int lim);
+
+void do_xor(unsigned char *data, unsigned char *xor_vals, int length)
+{
+	int i;
+	for(i=0;i<length;i++)
+		data[i] ^= xor_vals[i];
+}
+
+#define RD_RAND_RETRY_LOOPS 10
+int rdrand32(uint32_t *v)
+{
+	uint32_t rand_val;
+	int done=0;
+	int i=0;
+	while(done == 0 && i < RD_RAND_RETRY_LOOPS) {
+		/* derived from intel's published code for RDRAND */
+		asm("rdrand %%eax;\
+		     mov $1,%%edx;\
+		     cmovae %%eax,%%edx;\
+		     mov %%edx,%1;\
+		     mov %%eax,%0;":"=r"(rand_val),"=r"(done)::"%eax","%edx");
+		*v = rand_val;
+		i++;
+	}
+	return i;
+}
+
+void get_rdrand_data(uint32_t *buf, int length)
+{
+	/* function is only called if rdrand exists */
+	int i;
+	for(i=0;i<length;i++) {
+		rdrand32(&buf[i]);
+	}
+}
+
 int rand_rw(int rw, int min, char *buf, size_t count)
 {
 	size_t i;
@@ -20,6 +58,13 @@ int rand_rw(int rw, int min, char *buf, size_t count)
 			unsigned t = (unsigned)get_rand()*arch_time_get_epoch();
 			buf[i] = (char)(t);
 		}
+#if CONFIG_ARCH == TYPE_ARCH_X86 || CONFIG_ARCH == TYPE_ARCH_X86_64
+		if(use_rdrand) {
+			unsigned char rdb[count];
+			get_rdrand_data((uint32_t *)rdb, count / sizeof(uint32_t));
+			do_xor((unsigned char *)buf, rdb, count);
+		}
+#endif
 	}
 	return count;
 }
@@ -75,6 +120,13 @@ int module_install()
 	df = devfs_add(devfs_root, "random", S_IFCHR, rand_maj, 0);
 	seed=arch_time_get_epoch();
 	a1=seed;
+	/* check for rdrand */
+#if CONFIG_ARCH == TYPE_ARCH_X86 || CONFIG_ARCH == TYPE_ARCH_X86_64
+	use_rdrand = primary_cpu->cpuid.features_ecx & (1 << 30) ? 1 : 0;
+	if(use_rdrand)
+		printk(0, "[rand]: cpu supports rdrand instruction\n");
+#endif
+	
 	return 0;
 }
 

@@ -55,4 +55,6 @@ cpu_t *cpu_add(cpu_t *c);
 
 #endif
 
+extern cpu_t *primary_cpu;
+
 #endif

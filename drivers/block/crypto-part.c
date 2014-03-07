@@ -4,22 +4,25 @@
 #include <sea/fs/inode.h>
 #include <modules/psm.h>
 #include <ll.h>
+#include <modules/aes.h>
 
 #define MAX_CRYPTO 32
 int cp_major;
-struct crypt_part {
-	int psm_minor;
-	int used;
-	dev_t dev;
-};
 struct cp_ioctl_arg {
 	char *devname;
 	int keylength;
 	unsigned char *key;
 };
+struct crypt_part {
+	int psm_minor;
+	int used;
+	dev_t dev;
+	struct cp_ioctl_arg kd;
+};
+
 struct crypt_part list[MAX_CRYPTO];
 
-struct crypt_part *crypto_create_dev(dev_t dev)
+struct crypt_part *crypto_create_dev(dev_t dev, struct cp_ioctl_arg *ia)
 {
 	int i;
 	for(i=0;i<MAX_CRYPTO;i++)
@@ -40,15 +43,32 @@ struct crypt_part *crypto_create_dev(dev_t dev)
 	int psm_minor = psm_register_disk_device(PSM_CRYPTO_PART_ID, GETDEV(cp_major, i), &di);
 	list[i].psm_minor = psm_minor;
 	list[i].dev = dev;
+	if(ia) memcpy(&(list[i].kd), ia, sizeof(struct cp_ioctl_arg));
 	return &list[i];
 }
 
 int cp_rw_multiple(int rw, int min, u64 blk, char *buf, int count)
 {
 	int i, total=0;
+	unsigned char tmp[512];
+	if(!min) return 0;
 	for(i=0;i<count;i++) {
 		/* BUG/TODO: Handle non 512 sector sizes */
-		int r = dm_do_block_rw(rw, list[min].dev, blk+i, buf+i*512, 0);
+		if(rw == WRITE) {
+			unsigned char rk[176];
+			int n = aes_setup_encrypt(list[min].kd.key, rk, list[min].kd.keylength*8);
+			int j;
+			for(j=0;j<512;j+=16)
+				aes_encrypt_block(rk, n, (unsigned char*)buf+i*512 + j, tmp+j);
+		}
+		int r = dm_do_block_rw(rw, list[min].dev, blk+i, (char *)tmp, 0);
+		if(rw == READ) {
+			unsigned char rk[176];
+			int n = aes_setup_decrypt(list[min].kd.key, rk, list[min].kd.keylength*8);
+			int j;
+			for(j=0;j<512;j+=16)
+				aes_decrypt_block(rk, n, tmp+j, (unsigned char*)buf+i*512 + j);
+		}
 		if(r <= 0) return r;
 		total+=r;
 	}
@@ -57,7 +77,7 @@ int cp_rw_multiple(int rw, int min, u64 blk, char *buf, int count)
 
 int cp_rw_single(int rw, int min, u64 blk, char *buf)
 {
-	return dm_do_block_rw(rw, list[min].dev, blk, buf, 0);
+	return cp_rw_multiple(rw, min, blk, buf, 1);
 }
 
 int cp_ioctl(int min, int cmd, long arg)
@@ -67,17 +87,23 @@ int cp_ioctl(int min, int cmd, long arg)
 		struct inode *node = vfs_get_idir(ia->devname, 0);
 		if(!node) return -ENOENT;
 		printk(1, "[crypt-part]: creating crypto device for %s (dev=%x)\n", ia->devname, node->dev);
-		if(crypto_create_dev(node->dev))
+		if(crypto_create_dev(node->dev, ia))
 			return 0;
 	}
 	return -EINVAL;
+}
+
+int module_deps(char *b)
+{
+	write_deps(b, "aes,:");
+	return KVERSION;
 }
 
 int module_install()
 {
 	memset(list, 0, sizeof(list));
 	cp_major = dm_set_available_block_device(cp_rw_single, 512, cp_ioctl, cp_rw_multiple, 0);
-	crypto_create_dev(0);
+	crypto_create_dev(0, 0);
 	return 0;
 }
 

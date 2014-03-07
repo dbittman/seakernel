@@ -22,8 +22,10 @@ void rijndaelDecrypt(const uint32_t *rk, int nrounds,
   const unsigned char ciphertext[16], unsigned char plaintext[16]);
 
 #define KEYLENGTH(keybits) ((keybits)/8)
-#define RKLENGTH(keybits)  ((keybits)/8+28)
+//#define RKLENGTH(keybits)  ((keybits)/8+28)
 #define NROUNDS(keybits)   ((keybits)/32+6)
+
+#define RKBYTES(bits) (((bits)/8+28) * 4)
 
 #endif
 

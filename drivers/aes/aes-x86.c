@@ -4,6 +4,8 @@
 
 #if CONFIG_ARCH == TYPE_ARCH_X86_64
 
+/* we can just use 'asm' safely, since that's defined to be asm volatile earlier in the headers */
+
 void aes_x86_128_encrypt_block(unsigned char *plaintext, unsigned char *ciphertext, unsigned char *round_keys)
 {
 	/* load the data */

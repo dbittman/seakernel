@@ -33,7 +33,6 @@ void init_main_cpu_1()
 	printk(KERN_EVERY, "done\n");
 	mutex_create((mutex_t *)&primary_cpu->lock, MT_NOSCHED);
 #if CONFIG_MODULES
-	loader_do_add_kernel_symbol((addr_t)(cpu_t *)primary_cpu, "primary_cpu");
 	loader_add_kernel_symbol(interrupt_set);
 #if CONFIG_SMP
 	loader_add_kernel_symbol(cpu_get);
@@ -78,4 +77,7 @@ void init_main_cpu_2()
 	primary_cpu->flags |= CPU_RUNNING;
 	printk(KERN_EVERY, "done\n");
 	mutex_create((mutex_t *)&primary_cpu->lock, MT_NOSCHED);
+#if CONFIG_MODULES
+	loader_do_add_kernel_symbol((addr_t)(cpu_t *)&primary_cpu, "primary_cpu");
+#endif
 }

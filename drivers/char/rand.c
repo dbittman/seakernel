@@ -39,13 +39,15 @@ int rdrand32(uint32_t *v)
 	return i;
 }
 
-void get_rdrand_data(uint32_t *buf, int length)
+int get_rdrand_data(uint32_t *buf, int length)
 {
 	/* function is only called if rdrand exists */
-	int i;
+	int i, flag=0;
 	for(i=0;i<length;i++) {
-		rdrand32(&buf[i]);
+		if(rdrand32(&buf[i]) >= RD_RAND_RETRY_LOOPS)
+			flag=1;
 	}
+	return flag;
 }
 
 int rand_rw(int rw, int min, char *buf, size_t count)
@@ -61,7 +63,9 @@ int rand_rw(int rw, int min, char *buf, size_t count)
 #if CONFIG_ARCH == TYPE_ARCH_X86 || CONFIG_ARCH == TYPE_ARCH_X86_64
 		if(use_rdrand) {
 			unsigned char rdb[count];
-			get_rdrand_data((uint32_t *)rdb, count / sizeof(uint32_t));
+			int r = get_rdrand_data((uint32_t *)rdb, count / sizeof(uint32_t));
+			if(r)
+				printk(0, "[rand]: warning - rdrand failed\n");
 			do_xor((unsigned char *)buf, rdb, count);
 		}
 #endif
@@ -73,7 +77,7 @@ int rand_ioctl(int min, int cmd, long arg)
 {
 	return 0;
 }
- 
+
 int get_rand(void)
 {
 	int k, rnd1, rnd2, rnd3, sum1, sum2, sum3;

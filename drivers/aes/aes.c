@@ -76,35 +76,6 @@ int module_install()
 	loader_add_kernel_symbol(aes_setup_encrypt);
 	loader_add_kernel_symbol(aes_decrypt_block);
 	loader_add_kernel_symbol(aes_encrypt_block);
-		
-	/*
-	unsigned char rk[RKBYTES(128)];
-	unsigned char key[KEYLENGTH(128)];
-	unsigned char dec_rk[RKBYTES(128)];
-	unsigned char plain[16];
-	unsigned char ciph[16];
-	unsigned char dec[16];
-	
-	memset(key, 0, 16);
-	key[0]=1;
-	memset(plain, 0, 16);
-	plain[0] = 2;
-	
-	int en = aes_setup_encrypt(key, rk, 128);
-	int dn = aes_setup_decrypt(key, dec_rk, 128);
-	
-	aes_encrypt_block(rk, en, plain, ciph);
-	aes_decrypt_block(dec_rk, dn, ciph, dec);
-	
-	int i;
-	
-	kprintf("\nplaintext : "); for(i=0;i<16;i++) kprintf("%02x", plain[i]);
-	kprintf("\nciphertext: "); for(i=0;i<16;i++) kprintf("%02x", ciph[i]);
-	kprintf("\ndecrypted : "); for(i=0;i<16;i++) kprintf("%02x", dec[i]);
-	kprintf("\n");
-	
-	for(;;);
-	*/
 	return 0;
 }
 

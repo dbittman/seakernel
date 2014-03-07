@@ -7,6 +7,7 @@
  * Minor changes made by:
  * Ethan L. Miller (elm@cs.ucsc.edu)
  *
+ * Adapted for use in SeaOS by Daniel Bittman
  *
  */
 
@@ -14,8 +15,6 @@
 
 #include "rijndael.h"
 #include <types.h>
-
-static char rcsid[] = "$Id: rijndael.c,v 1.1 2003/04/15 00:22:49 elm Exp elm $";
 
 typedef uint32_t u32;
 typedef uint8_t u8;

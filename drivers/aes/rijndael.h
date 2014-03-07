@@ -6,6 +6,8 @@
  *
  * Minor changes made by:
  * Ethan L. Miller (elm@cs.ucsc.edu)
+ * 
+ * Adapted for use in SeaOS by Daniel Bittman
  */
 #ifndef H__RIJNDAEL
 #define H__RIJNDAEL

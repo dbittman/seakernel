@@ -37,13 +37,15 @@ void tty_putch(struct vterm *con, int ch)
 {
 	if(!con->rend->putch)
 		return;
+	
 	if(con->term.c_oflag & OPOST) {
-		if((con->term.c_oflag & ONLCR || con->tty==0) && ch == '\n' 
-				&& !(con->term.c_oflag & ONOCR))
+		if(((con->term.c_oflag & ONLCR) || con->tty==0) && ch == '\n' 
+				&& !(con->term.c_oflag & ONOCR)) {
 			con->rend->putch(con, '\r');
-		if((con->term.c_oflag & OCRNL && con->tty) && ch == '\r')
+		}
+		if(((con->term.c_oflag & OCRNL) && con->tty) && ch == '\r')
 			ch = '\n';
-		if(con->term.c_oflag & ONOCR && ch == '\r' && con->x==0)
+		if(((con->term.c_oflag & ONOCR) && ch == '\r') || (con->x==0 && ch == '\r'))
 			return;
 	}
 	con->rend->putch(con, ch);

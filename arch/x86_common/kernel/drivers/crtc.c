@@ -20,9 +20,9 @@ void crtc_scrolldown(struct vterm *con)
 	if(!con || con == kernel_console)
 		con=curcons;
 	// Get a space character with the default colour attributes.
-	short blank = 0x20 /* space */ | (((con->b << 4) | (con->f & 0x0F)) << 8);
-	short *video_memory = (short *)con->cur_mem + con->w*con->scrollt;
-	memcpy((char *)video_memory, ((char *)video_memory + con->w*2), 
+	unsigned short blank = 0x20 /* space */ | (((con->b << 4) | (con->f & 0x0F)) << 8);
+	unsigned short *video_memory = (unsigned short *)con->cur_mem + con->w*con->scrollt;
+	memmove((char *)video_memory, ((char *)video_memory + con->w*2), 
 			((con->scrollb)-1)*con->w*2);
 	int i = (con->scrollb-1)*con->w;
 	for (i = (con->scrollb-1)*con->w; i < con->scrollb*con->w; i++)
@@ -68,9 +68,9 @@ void crtc_console_put(struct vterm *con, char c)
 			con->x=0;
 			con->y++;
 		}
-		if(con->y >= con->scrollb && con->rend->scroll)
-			crtc_scrolldown(con);
 	}
+	if(con->y >= con->scrollb && con->rend->scroll)
+		crtc_scrolldown(con);
 }
 
 void crtc_putchar(char *mem, char c, char attr, int x, int y, int w)
@@ -80,8 +80,8 @@ void crtc_putchar(char *mem, char c, char attr, int x, int y, int w)
 		*(char *)((char *)mem + offset*2+1) = c;
 		*(char *)((char *)mem + offset*2) = attr;
 	} else {
-		*(char *)((char *)mem + offset*2) = c;
-		*(char *)((char *)mem + offset*2 + 1) = attr;
+		*(unsigned char *)((unsigned char *)mem + offset*2) = c;
+		*(unsigned char *)((unsigned char *)mem + offset*2 + 1) = attr;
 	}
 }
 
@@ -143,7 +143,6 @@ void crtc_init_console(struct vterm *con)
 	else
 		con->cur_mem = con->video;
 	con->vmem=vmem;
-	//memcpy(&con->rend, &crtc_renderer, sizeof(crtc_renderer));
 	con->rend = &crtc_renderer;
 	crtc_clear(con);
 }

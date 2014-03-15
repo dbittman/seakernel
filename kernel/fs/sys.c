@@ -229,6 +229,12 @@ int sys_chown(char *path, int fd, uid_t uid, gid_t gid)
 	}
 	if(uid != -1) i->uid = uid;
 	if(gid != -1) i->gid = gid;
+	if(current_task->thread->real_uid && current_task->thread->effective_uid)
+	{
+		/* if we're not root, we must clear these bits */
+		i->mode &= ~S_ISUID;
+		i->mode &= ~S_ISGID;
+	}
 	sync_inode_tofs(i);
 	if(path) 
 		iput(i);

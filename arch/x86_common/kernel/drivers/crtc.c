@@ -19,7 +19,7 @@ void crtc_scrolldown(struct vterm *con)
 {
 	if(!con || con == kernel_console)
 		con=curcons;
-	// Get a space character with the default colour attributes.
+	/* Get a space character with the default colour attributes. */
 	unsigned short blank = 0x20 /* space */ | (((con->b << 4) | (con->f & 0x0F)) << 8);
 	unsigned short *video_memory = (unsigned short *)con->cur_mem + con->w*con->scrollt;
 	memmove((char *)video_memory, ((char *)video_memory + con->w*2), 

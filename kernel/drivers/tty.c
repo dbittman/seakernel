@@ -258,11 +258,11 @@ int ttyx_ioctl(int min, int cmd, long arg)
 				break;
 			if(!(con->term.c_lflag & ECHONL) && arg == '\n')
 				break;
-			
+			mutex_acquire(&con->wlock);
 			tty_putch(con, arg);
 			if(con->rend->update_cursor)
 				con->rend->update_cursor(con);
-			
+			mutex_release(&con->wlock);
 			break;
 		case 18:
 			return con->term.c_oflag;

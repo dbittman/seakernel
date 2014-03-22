@@ -10,6 +10,7 @@
 #include <elf.h>
 #include <file.h>
 #include <sea/fs/file.h>
+#include <sea/mm/vmm.h>
 
 /* Prepares a process to recieve a new executable. Desc is the descriptor of 
  * the executable. We keep it open through here so that we dont have to 
@@ -20,7 +21,7 @@ static task_t *preexec(task_t *t, int desc)
 {
 	if(t->magic != TASK_MAGIC)
 		panic(0, "Invalid task in exec (%d)", t->pid);
-	free_thread_shared_directory();
+	mm_free_thread_shared_directory();
 	t->sigd=0;
 	memset((void *)t->thread->signal_act, 0, sizeof(struct sigaction) * 128);
 	return 0;

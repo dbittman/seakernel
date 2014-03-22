@@ -33,8 +33,8 @@ static void print_pfe(int x, registers_t *regs, addr_t cr2)
 static int do_map_page(addr_t addr, unsigned attr)
 {
 	addr &= PAGE_MASK;
-	if(!vm_do_getmap(addr, 0, 1))
-		vm_map(addr, pm_alloc_page(), attr, MAP_CRIT | MAP_PDLOCKED);
+	if(!mm_vm_get_map(addr, 0, 1))
+		mm_vm_map(addr, mm_alloc_physical_page(), attr, MAP_CRIT | MAP_PDLOCKED);
 	return 1;
 }
 

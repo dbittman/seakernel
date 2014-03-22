@@ -17,12 +17,12 @@ int memory_has_been_mapped=0;
 volatile addr_t placement;
 mutex_t pm_mutex;
 
-void pm_init(addr_t start, struct multiboot *mboot)
+void arch_mm_pm_init(addr_t start, struct multiboot *mboot)
 {
 	pm_location = (start + PAGE_SIZE) & PAGE_MASK;
 }
 
-addr_t __pm_alloc_page(char *file, int line)
+addr_t arch_mm_alloc_physical_page()
 {
 	if(!pm_location)
 		panic(PANIC_MEM | PANIC_NOSYNC, "Physical memory allocation before initilization");
@@ -81,9 +81,9 @@ addr_t __pm_alloc_page(char *file, int line)
 	return ret;
 }
 
-addr_t pm_alloc_page_zero()
+addr_t arch_mm_alloc_physical_page_zero()
 {
-	addr_t ret = pm_alloc_page();
+	addr_t ret = mm_alloc_physical_page();
 	if(kernel_state_flags & KSF_PAGING)
 		memset((void *)(ret + PHYS_PAGE_MAP), 0, 0x1000);
 	else
@@ -91,7 +91,7 @@ addr_t pm_alloc_page_zero()
 	return ret;
 }
 
-void pm_free_page(addr_t addr)
+void arch_mm_free_physical_page(addr_t addr)
 {
 	if(!(kernel_state_flags & KSF_PAGING))
 		panic(PANIC_MEM | PANIC_NOSYNC, "Called free page without paging environment");
@@ -109,9 +109,9 @@ void pm_free_page(addr_t addr)
 	if(pm_stack_max <= pm_stack)
 	{
 		if(!memory_has_been_mapped)
-			vm_map(pm_stack_max, pm_alloc_page(), PAGE_PRESENT | PAGE_WRITE, 0);
+			mm_vm_map(pm_stack_max, mm_alloc_physical_page(), PAGE_PRESENT | PAGE_WRITE, 0);
 		else
-			vm_map(pm_stack_max, addr, PAGE_PRESENT | PAGE_WRITE, 0);
+			mm_vm_map(pm_stack_max, addr, PAGE_PRESENT | PAGE_WRITE, 0);
 		memset((void *)pm_stack_max, 0, PAGE_SIZE);
 		pm_stack_max += PAGE_SIZE;
 		if(!memory_has_been_mapped) goto add;

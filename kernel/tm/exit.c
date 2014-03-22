@@ -6,6 +6,7 @@
 #include <task.h>
 #include <cpu.h>
 #include <atomic.h>
+#include <sea/mm/vmm.h>
 
 static __attribute__((always_inline)) inline void set_as_dead(task_t *t)
 {
@@ -29,7 +30,7 @@ void __tm_move_task_to_kill_queue(task_t *t, int locked)
 
 static void release_process(task_t *p)
 {
-	destroy_task_page_directory(p);
+	mm_destroy_task_page_directory(p);
 	kfree(p->listnode);
 	kfree(p->activenode);
 	kfree(p->blocknode);
@@ -109,7 +110,7 @@ void tm_exit(int code)
 	t->exit_reason.ret = code;
 	t->exit_reason.pid = t->pid;
 	/* Clear out system resources */
-	free_thread_specific_directory();
+	mm_free_thread_specific_directory();
 	/* tell our parent that we're dead */
 	if(t->parent)
 		tm_do_send_signal(t->parent->pid, SIGCHILD, 1);
@@ -134,8 +135,8 @@ void tm_exit(int code)
 	flag_last_page_dir_task = (sub_atomic(&pd_cur_data->count, 1) == 0) ? 1 : 0;
 	if(flag_last_page_dir_task) {
 		/* no one else is referencing this directory. Clean it up... */
-		free_thread_shared_directory();
-		vm_unmap(PDIR_DATA);
+		mm_free_thread_shared_directory();
+		mm_vm_unmap(PDIR_DATA, 0);
 		tm_raise_flag(TF_LAST_PDIR);
 	}
 	set_as_dead(t);

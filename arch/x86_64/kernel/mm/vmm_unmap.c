@@ -14,7 +14,7 @@
  *  - BUT NOT if we are unmapping the pd_cur_data page
  */
 
-int vm_do_unmap_only(addr_t virt, unsigned locked)
+int arch_mm_vm_unmap_only(addr_t virt, unsigned locked)
 {
 	#if CONFIG_SWAP
 	if(current_task && num_swapdev && current_task->num_swapped)
@@ -34,13 +34,13 @@ int vm_do_unmap_only(addr_t virt, unsigned locked)
 	
 	pml4 = (pml4_t *)((kernel_task && current_task) ? current_task->pd : kernel_dir);
 	if(!pml4[vp4])
-		pml4[vp4] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+		pml4[vp4] = mm_alloc_physical_page() | PAGE_PRESENT | PAGE_WRITE;
 	pdpt = (addr_t *)((pml4[vp4]&PAGE_MASK) + PHYS_PAGE_MAP);
 	if(!pdpt[vpdpt])
-		pdpt[vpdpt] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+		pdpt[vpdpt] = mm_alloc_physical_page() | PAGE_PRESENT | PAGE_WRITE;
 	pd = (addr_t *)((pdpt[vpdpt]&PAGE_MASK) + PHYS_PAGE_MAP);
 	if(!pd[vdir])
-		pd[vdir] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+		pd[vdir] = mm_alloc_physical_page() | PAGE_PRESENT | PAGE_WRITE;
 	pt = (addr_t *)((pd[vdir]&PAGE_MASK) + PHYS_PAGE_MAP);
 	
 	pt[vtbl] = 0;
@@ -58,7 +58,7 @@ int vm_do_unmap_only(addr_t virt, unsigned locked)
 	return 0;
 }
 
-int vm_do_unmap(addr_t virt, unsigned locked)
+int arch_mm_vm_unmap(addr_t virt, unsigned locked)
 {
 	/* This gives the virtual address of the table needed, and sets
 	 * the correct place as zero */
@@ -80,13 +80,13 @@ int vm_do_unmap(addr_t virt, unsigned locked)
 	
 	pml4 = (pml4_t *)((kernel_task && current_task) ? current_task->pd : kernel_dir);
 	if(!pml4[vp4])
-		pml4[vp4] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+		pml4[vp4] = mm_alloc_physical_page() | PAGE_PRESENT | PAGE_WRITE;
 	pdpt = (addr_t *)((pml4[vp4]&PAGE_MASK) + PHYS_PAGE_MAP);
 	if(!pdpt[vpdpt])
-		pdpt[vpdpt] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+		pdpt[vpdpt] = mm_alloc_physical_page() | PAGE_PRESENT | PAGE_WRITE;
 	pd = (addr_t *)((pdpt[vpdpt]&PAGE_MASK) + PHYS_PAGE_MAP);
 	if(!pd[vdir])
-		pd[vdir] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+		pd[vdir] = mm_alloc_physical_page() | PAGE_PRESENT | PAGE_WRITE;
 	pt = (addr_t *)((pd[vdir]&PAGE_MASK) + PHYS_PAGE_MAP);
 	
 	addr_t p = pt[vtbl];
@@ -103,6 +103,6 @@ int vm_do_unmap(addr_t virt, unsigned locked)
 	if(kernel_task && (virt&PAGE_MASK) != PDIR_DATA && !locked)
 		mutex_release(&pd_cur_data->lock);
 	if(p && !(p & PAGE_COW))
-		pm_free_page(p & PAGE_MASK);
+		mm_free_physical_page(p & PAGE_MASK);
 	return 0;
 }

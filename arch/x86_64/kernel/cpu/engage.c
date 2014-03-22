@@ -43,8 +43,8 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	/* set up a real paging structure */
 	pml4_t *initial_pml4 = (pml4_t *)kernel_dir_phys;
 	asm("mov %0, %%cr3" :: "r"(initial_pml4));
-	pml4_t *new_pml4 = vm_clone((addr_t *)kernel_dir, 0);
-	vm_switch(new_pml4);
+	pml4_t *new_pml4 = mm_vm_clone((addr_t *)kernel_dir, 0);
+	arch_mm_vm_switch_context(new_pml4);
 	cpu->kd = new_pml4;
 	
 	/* initialize tasking for this CPU */

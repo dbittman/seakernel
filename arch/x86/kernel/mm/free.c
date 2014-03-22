@@ -10,12 +10,12 @@ __attribute__ ((noinline)) static void self_free_table(int t)
 	for(i=0;i<1024;++i)
 	{
 		if(page_tables[(virt&PAGE_MASK)/PAGE_SIZE])
-			vm_unmap(virt);
+			mm_vm_unmap(virt, 0);
 		virt += PAGE_SIZE;
 	}
 }
 
-void free_thread_shared_directory()
+void arch_mm_free_thread_shared_directory()
 {
 	unsigned int *pd = (unsigned *)current_task->pd;
 	int D = PAGE_DIR_IDX(TOP_TASK_MEM_EXEC/PAGE_SIZE);
@@ -30,23 +30,23 @@ void free_thread_shared_directory()
 		if(i >= A && i < B && !(current_task->flags & TF_EXITING))
 			continue;
 		self_free_table(i);
-		pm_free_page(pd[i]&PAGE_MASK);
+		mm_free_physical_page(pd[i]&PAGE_MASK);
 		pd[i]=0;
 	}
 }
 
-void destroy_task_page_directory(task_t *p)
+void arch_mm_destroy_task_page_directory(task_t *p)
 {
 	if(p->flags & TF_LAST_PDIR) {
 		/* Free the accounting page table */
-		pm_free_page(p->pd[PAGE_DIR_IDX(PDIR_DATA/PAGE_SIZE)] & PAGE_MASK);
+		mm_free_physical_page(p->pd[PAGE_DIR_IDX(PDIR_DATA/PAGE_SIZE)] & PAGE_MASK);
 	}
 	/* Free the self-ref'ing page table */
-	pm_free_page(p->pd[1022] & PAGE_MASK);
+	mm_free_physical_page(p->pd[1022] & PAGE_MASK);
 	kfree(p->pd);
 }
 
-void free_thread_specific_directory()
+void arch_mm_free_thread_specific_directory()
 {
 	unsigned int *pd = (unsigned *)current_task->pd;
 	int T = PAGE_DIR_IDX(TOP_TASK_MEM/PAGE_SIZE);
@@ -57,7 +57,7 @@ void free_thread_specific_directory()
 		if(!pd[i])
 			continue;
 		self_free_table(i);
-		pm_free_page(pd[i]&PAGE_MASK);
+		mm_free_physical_page(pd[i]&PAGE_MASK);
 		pd[i]=0;
 	}
 }

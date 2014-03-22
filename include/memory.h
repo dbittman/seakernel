@@ -7,6 +7,8 @@
 #include <slab.h>
 #include <config.h>
 #include <sea/cpu/registers.h>
+#include <sea/mm/pmm.h>
+#include <sea/mm/vmm.h>
 #if CONFIG_ARCH == TYPE_ARCH_X86
 #include <memory-x86.h>
 #elif CONFIG_ARCH == TYPE_ARCH_X86_64
@@ -34,11 +36,6 @@ extern mutex_t pm_mutex;
 extern volatile page_dir_t *kernel_dir, *current_dir;
 extern int id_tables;
 
-#define vm_unmap(x) vm_do_unmap(x, 0)
-#define vm_unmap_only(x) vm_do_unmap_only(x, 0)
-#define vm_getattrib(a, b) vm_do_getattrib(a, b, 0)
-#define vm_getmap(a, b) vm_do_getmap(a, b, 0)
-#define pm_alloc_page() __pm_alloc_page(__FILE__, __LINE__)
 
 void free_thread_shared_directory();
 void free_thread_specific_directory();
@@ -90,34 +87,34 @@ void copy_update_stack(addr_t old, addr_t new, unsigned length);
 int __is_valid_user_ptr(int num, void *p, char flags);
 static void map_if_not_mapped(addr_t loc)
 {
-	if(!vm_getmap(loc & PAGE_MASK, 0))
-		vm_map(loc & PAGE_MASK, __pm_alloc_page("map_if_not_mapped", 0), 
+	if(!mm_vm_get_map(loc & PAGE_MASK, 0, 0))
+		mm_vm_map(loc & PAGE_MASK, mm_alloc_physical_page(), 
 		       PAGE_PRESENT | PAGE_WRITE, MAP_CRIT);
 }
 
 static void map_if_not_mapped_noclear(addr_t loc)
 {
-	if(!vm_getmap(loc & PAGE_MASK, 0))
-		vm_map(loc & PAGE_MASK, __pm_alloc_page("map_if_not_mapped", 0), 
+	if(!mm_vm_get_map(loc & PAGE_MASK, 0, 0))
+		mm_vm_map(loc & PAGE_MASK, mm_alloc_physical_page(), 
 		       PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_NOCLEAR);
 }
 
 static void user_map_if_not_mapped(addr_t loc)
 {
-	if(!vm_getmap(loc & PAGE_MASK, 0))
-		vm_map(loc & PAGE_MASK, __pm_alloc_page("map_if_not_mapped", 0), 
+	if(!mm_vm_get_map(loc & PAGE_MASK, 0, 0))
+		mm_vm_map(loc & PAGE_MASK, mm_alloc_physical_page(), 
 		       PAGE_PRESENT | PAGE_WRITE | PAGE_USER, MAP_CRIT);
 	else
-		vm_setattrib(loc & PAGE_MASK, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
+		mm_vm_set_attrib(loc & PAGE_MASK, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
 }
 
 static void user_map_if_not_mapped_noclear(addr_t loc)
 {
-	if(!vm_getmap(loc & PAGE_MASK, 0))
-		vm_map(loc & PAGE_MASK, __pm_alloc_page("map_if_not_mapped", 0), 
+	if(!mm_vm_get_map(loc & PAGE_MASK, 0, 0))
+		mm_vm_map(loc & PAGE_MASK, mm_alloc_physical_page(), 
 		       PAGE_PRESENT | PAGE_WRITE | PAGE_USER, MAP_CRIT | MAP_NOCLEAR);
 	else
-		vm_setattrib(loc & PAGE_MASK, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
+		mm_vm_set_attrib(loc & PAGE_MASK, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
 }
 
 #endif

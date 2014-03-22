@@ -11,6 +11,8 @@
 #include <symbol.h>
 #include <atomic.h>
 #include <pmap.h>
+#include <sea/mm/pmm.h>
+#include <sea/mm/vmm.h>
 
 static void process_memorymap(struct multiboot *mboot)
 {
@@ -33,7 +35,7 @@ static void process_memorymap(struct multiboot *mboot)
 					if(j > highest_page)
 						highest_page=j;
 					if(j >= pm_location)
-						pm_free_page(j);
+						mm_free_physical_page(j);
 					num_pages++;
 				}
 			}
@@ -67,10 +69,10 @@ void mm_init(struct multiboot *m)
 {
 	printk(KERN_DEBUG, "[mm]: Setting up Memory Management...\n");
 	mutex_create(&pm_mutex, 0);
-	vm_init(pm_location);
+	mm_vm_init(pm_location);
 	process_memorymap(m);
  	kmalloc_create(KMALLOC_NAME, KMALLOC_INIT, KMALLOC_ALLOC, KMALLOC_FREE);
-	vm_init_2();
+	mm_vm_init_2();
 	primary_cpu->flags |= CPU_PAGING;
 	set_ksf(KSF_MMU);
 #if CONFIG_SWAP
@@ -83,17 +85,17 @@ void mm_init(struct multiboot *m)
 	loader_add_kernel_symbol(__kmalloc_a);
 	loader_add_kernel_symbol(__kmalloc_p);
 	loader_add_kernel_symbol(kfree);
-	loader_add_kernel_symbol(vm_map);
-	loader_add_kernel_symbol(vm_do_unmap);
-	loader_add_kernel_symbol(vm_do_unmap_only);
+	loader_add_kernel_symbol(mm_vm_map);
+	loader_add_kernel_symbol(mm_vm_unmap);
+	loader_add_kernel_symbol(mm_vm_unmap_only);
 	loader_add_kernel_symbol(pmap_get_mapping);
 	loader_add_kernel_symbol(pmap_create);
 	loader_add_kernel_symbol(pmap_destroy);
-	loader_add_kernel_symbol(__pm_alloc_page);
-	loader_add_kernel_symbol(vm_do_getmap);
-	loader_add_kernel_symbol(vm_do_getattrib);
-	loader_add_kernel_symbol(vm_setattrib);
-	loader_add_kernel_symbol(pm_free_page);
+	loader_add_kernel_symbol(mm_alloc_physical_page);
+	loader_add_kernel_symbol(mm_vm_get_map);
+	loader_add_kernel_symbol(mm_vm_get_attrib);
+	loader_add_kernel_symbol(mm_vm_set_attrib);
+	loader_add_kernel_symbol(mm_free_physical_page);
 #endif
 }
 

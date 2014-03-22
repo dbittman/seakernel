@@ -4,7 +4,8 @@
 #include <isr.h>
 #include <task.h>
 #include <cpu.h>
-int vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned opt)
+#include <sea/mm/pmm.h>
+int arch_mm_vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned opt)
 {
 	unsigned vpage = (virt&PAGE_MASK)/0x1000;
 	unsigned vdir = PAGE_DIR_IDX(vpage);
@@ -14,8 +15,8 @@ int vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned opt)
 		mutex_acquire(&pd_cur_data->lock);
 	if(!pd[vdir])
 	{
-		p = pm_alloc_page();
-		zero_page_physical(p);
+		p = mm_alloc_physical_page();
+		mm_zero_page_physical(p);
 		pd[vdir] = p | PAGE_WRITE | PAGE_PRESENT | (attr & PAGE_USER);
 		flush_pd();
 	}

@@ -9,6 +9,7 @@
 #if CONFIG_SMP
 #include <imps-x86.h>
 #endif
+#include <sea/mm/vmm.h>
 volatile page_dir_t *kernel_dir=0, *minimal_directory=0;
 unsigned int cr0temp;
 int id_tables=0;
@@ -16,14 +17,14 @@ struct pd_data *pd_cur_data = (struct pd_data *)PDIR_DATA;
 
 addr_t id_mapped_location;
 
-addr_t vm_init_directory(addr_t id_map_to)
+static addr_t vm_init_directory(addr_t id_map_to)
 {
 	/* Create kernel directory. 
 	 * This includes looping upon itself for self-reference */
 	page_dir_t *pd;
-	pd = (page_dir_t *)pm_alloc_page();
+	pd = (page_dir_t *)mm_alloc_physical_page();
 	memset(pd, 0, 0x1000);
-	pd[1022] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+	pd[1022] = mm_alloc_physical_page() | PAGE_PRESENT | PAGE_WRITE;
 	unsigned int *pt = (unsigned int *)(pd[1022] & PAGE_MASK);
 	memset(pt, 0, 0x1000);
 	pt[1023] = (unsigned int) pd | PAGE_PRESENT | PAGE_WRITE;
@@ -33,7 +34,7 @@ addr_t vm_init_directory(addr_t id_map_to)
 	/* Identity map the kernel */
 	unsigned mapper=0, i;
 	while(mapper <= PAGE_DIR_IDX(((id_map_to&PAGE_MASK)+0x1000)/0x1000)) {
-		pd[mapper] = pm_alloc_page() | PAGE_PRESENT | PAGE_USER;
+		pd[mapper] = mm_alloc_physical_page() | PAGE_PRESENT | PAGE_USER;
 		pt = (unsigned int *)(pd[mapper] & PAGE_MASK);
 		memset(pt, 0, 0x1000);
 		/* we map as user for now, since the init() function runs in
@@ -54,16 +55,16 @@ addr_t vm_init_directory(addr_t id_map_to)
 	unsigned sig_pdi = PAGE_DIR_IDX(SIGNAL_INJECT / PAGE_SIZE);
 	unsigned sig_tbi = PAGE_TABLE_IDX(SIGNAL_INJECT / PAGE_SIZE);
 	assert(!pd[sig_pdi]);
-	pd[sig_pdi] = ((unsigned)(pt=(unsigned *)pm_alloc_page()) | PAGE_PRESENT | PAGE_USER);
+	pd[sig_pdi] = ((unsigned)(pt=(unsigned *)mm_alloc_physical_page()) | PAGE_PRESENT | PAGE_USER);
 	memset(pt, 0, 0x1000);
-	pt[sig_tbi] = (unsigned)pm_alloc_page() | PAGE_PRESENT | PAGE_USER;
+	pt[sig_tbi] = (unsigned)mm_alloc_physical_page() | PAGE_PRESENT | PAGE_USER;
 	memcpy((void *)(pt[sig_tbi] & PAGE_MASK), (void *)signal_return_injector, SIGNAL_INJECT_SIZE);
 	/* premap the tables of stuff so that cloning directories works properly */
 	/* Pre-map the heap's tables */
 	unsigned heap_pd_idx = PAGE_DIR_IDX(KMALLOC_ADDR_START / 0x1000);
 	for(i=heap_pd_idx;i<(int)PAGE_DIR_IDX(KMALLOC_ADDR_END / 0x1000);i++)
 	{
-		pd[i] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+		pd[i] = mm_alloc_physical_page() | PAGE_PRESENT | PAGE_WRITE;
 		pt = (unsigned int *)(pd[i] & PAGE_MASK);
 		memset(pt, 0, 0x1000);
 	}
@@ -71,7 +72,7 @@ addr_t vm_init_directory(addr_t id_map_to)
 	unsigned pm_pd_idx = PAGE_DIR_IDX(PM_STACK_ADDR / 0x1000);
 	for(i=pm_pd_idx;i<(int)PAGE_DIR_IDX(PM_STACK_ADDR_TOP / 0x1000);i++)
 	{
-		pd[i] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+		pd[i] = mm_alloc_physical_page() | PAGE_PRESENT | PAGE_WRITE;
 		pt = (unsigned int *)(pd[i] & PAGE_MASK);
 		memset(pt, 0, 0x1000);
 	}
@@ -79,7 +80,7 @@ addr_t vm_init_directory(addr_t id_map_to)
 	pm_pd_idx = PAGE_DIR_IDX(DEVICE_MAP_START / 0x1000);
 	for(i=pm_pd_idx;i<(int)PAGE_DIR_IDX(DEVICE_MAP_END / 0x1000);i++)
 	{
-		pd[i] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+		pd[i] = mm_alloc_physical_page() | PAGE_PRESENT | PAGE_WRITE;
 		pt = (unsigned int *)(pd[i] & PAGE_MASK);
 		memset(pt, 0, 0x1000);
 	}
@@ -88,7 +89,7 @@ addr_t vm_init_directory(addr_t id_map_to)
 
 /* This function will setup a paging environment with a basic page dir, 
  * enough to process the memory map passed by grub */
-void vm_init(addr_t id_map_to)
+void arch_mm_vm_init(addr_t id_map_to)
 {
 	id_mapped_location=id_map_to;
 	/* Register some stuff... */
@@ -107,11 +108,11 @@ void vm_init(addr_t id_map_to)
 
 /* This relocates the stack to a safe place which is copied 
  * upon clone, and creates a new directory that is...well, complete */
-void vm_init_2()
+void arch_mm_vm_init_2()
 {
 	setup_kernelstack(id_tables);
 	printk(0, "[mm]: cloning directory for boot processor\n");
-	primary_cpu->kd = vm_clone(page_directory, 0);
+	primary_cpu->kd = mm_vm_clone(page_directory, 0);
 	primary_cpu->kd_phys = primary_cpu->kd[1023] & PAGE_MASK;
 	printk(0, "[mm]: cloned\n");
 	kernel_dir = primary_cpu->kd;
@@ -123,13 +124,13 @@ void vm_init_2()
 	printk(0, "[mm]: switched\n");
 }
 
-void vm_switch(page_dir_t *n/*VIRTUAL ADDRESS*/)
+void arch_mm_vm_switch_context(page_dir_t *n/*VIRTUAL ADDRESS*/)
 {
 	/* n[1023] is the mapped bit that loops to itself */
  	asm ("mov %0, %%cr3" :: "r" ((addr_t)n[1023] & PAGE_MASK));
 }
 
-addr_t vm_do_getmap(addr_t v, addr_t *p, unsigned locked)
+addr_t arch_mm_vm_get_map(addr_t v, addr_t *p, unsigned locked)
 {
 	unsigned *pd = page_directory;
 	unsigned int vp = (v&PAGE_MASK) / 0x1000;
@@ -146,13 +147,13 @@ addr_t vm_do_getmap(addr_t v, addr_t *p, unsigned locked)
 	return ret;
 }
 
-unsigned int vm_setattrib(addr_t v, short attr)
+void arch_mm_vm_set_attrib(addr_t v, short attr)
 {
 	unsigned *pd = page_directory;
 	unsigned int vp = (v&PAGE_MASK) / 0x1000;
 	unsigned int pt_idx = PAGE_DIR_IDX(vp);
 	if(!pd[pt_idx])
-		return 0;
+		return;
 	if(kernel_task)
 		mutex_acquire(&pd_cur_data->lock);
 	(page_tables[vp] &= PAGE_MASK);
@@ -168,10 +169,9 @@ unsigned int vm_setattrib(addr_t v, short attr)
 #endif
 	if(kernel_task)
 		mutex_release(&pd_cur_data->lock);
-	return 0;
 }
 
-unsigned int vm_do_getattrib(addr_t v, unsigned *p, unsigned locked)
+unsigned int arch_mm_vm_get_attrib(addr_t v, unsigned *p, unsigned locked)
 {
 	unsigned *pd = page_directory;
 	unsigned int vp = (v&PAGE_MASK) / 0x1000;

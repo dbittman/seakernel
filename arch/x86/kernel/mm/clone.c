@@ -12,8 +12,8 @@ static int vm_do_copy_table(int i, page_dir_t *new, page_dir_t *from, char cow)
 	addr_t *table;
 	addr_t table_phys;
 	table = (addr_t *)VIRT_TEMP;
-	table_phys = pm_alloc_page();
-	vm_map((addr_t)table, table_phys, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_PDLOCKED);
+	table_phys = mm_alloc_physical_page();
+	mm_vm_map((addr_t)table, table_phys, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_PDLOCKED);
 	flush_pd();
 	memset((void *)table, 0, PAGE_SIZE);
 	addr_t virt = i*PAGE_SIZE*1024;
@@ -22,16 +22,16 @@ static int vm_do_copy_table(int i, page_dir_t *new, page_dir_t *from, char cow)
 	int q;
 	for(q=0;virt<((addr_t)((i+1)*PAGE_SIZE*1024));virt+=PAGE_SIZE, ++q)
 	{
-		if(vm_do_getmap(virt, &phyz, 1) && vm_do_getattrib(virt, &attrib, 1))
+		if(mm_vm_get_map(virt, &phyz, 1) && mm_vm_get_attrib(virt, &attrib, 1))
 		{
 			/* OK, this page exists, we have the physical address of it too */
-			addr_t page = pm_alloc_page();
-			copy_page_physical((addr_t)phyz /* Source */, (addr_t)page /* Destination*/);
+			addr_t page = mm_alloc_physical_page();
+			mm_copy_page_physical((addr_t)phyz /* Source */, (addr_t)page /* Destination*/);
 			table[q] = (addr_t)(page | attrib);
 		}
 	}
 	new[i] = table_phys | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
-	vm_do_unmap_only((addr_t)table, 1);
+	mm_vm_unmap_only((addr_t)table, 1);
 	return 0;
 }
 
@@ -62,7 +62,7 @@ static int vm_copy_dir(page_dir_t *from, page_dir_t *new, char flags)
 }
 
 /* Accepts virtual, returns virtual */
-page_dir_t *vm_clone(page_dir_t *pd, char cow)
+page_dir_t *arch_mm_vm_clone(page_dir_t *pd, char cow)
 {
 	/* Create new directory and copy it */
 #if CONFIG_SWAP
@@ -77,13 +77,13 @@ page_dir_t *vm_clone(page_dir_t *pd, char cow)
 	/* Now set the self refs (DIR_PHYS, TBL_PHYS) */
 	new[1023] = new_p | PAGE_PRESENT | PAGE_WRITE;
 	addr_t *tmp = (addr_t *)VIRT_TEMP;
-	addr_t tmp_p = pm_alloc_page();
-	vm_map((unsigned)tmp, tmp_p, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_PDLOCKED);
+	addr_t tmp_p = mm_alloc_physical_page();
+	mm_vm_map((unsigned)tmp, tmp_p, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_PDLOCKED);
 	flush_pd();
 	memset(tmp, 0, PAGE_SIZE);
 	tmp[1023] = new_p | PAGE_PRESENT | PAGE_WRITE;
 	new[1022] = tmp_p | PAGE_PRESENT | PAGE_WRITE;
-	vm_do_unmap_only((unsigned)tmp, 1);
+	mm_vm_unmap_only((unsigned)tmp, 1);
 	
 #if CONFIG_SMP
 	/* we can link since all page directories have this table set up
@@ -93,12 +93,12 @@ page_dir_t *vm_clone(page_dir_t *pd, char cow)
 #endif
 	
 	/* map in a page for accounting */
-	tmp_p = pm_alloc_page();
-	vm_map((addr_t)tmp, tmp_p, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_PDLOCKED);
+	tmp_p = mm_alloc_physical_page();
+	mm_vm_map((addr_t)tmp, tmp_p, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_PDLOCKED);
 	flush_pd();
-	unsigned pda = tmp[0] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
-	vm_do_unmap_only((addr_t)tmp, 1);
-	vm_map((addr_t)tmp, pda, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_PDLOCKED);
+	unsigned pda = tmp[0] = mm_alloc_physical_page() | PAGE_PRESENT | PAGE_WRITE;
+	mm_vm_unmap_only((addr_t)tmp, 1);
+	mm_vm_map((addr_t)tmp, pda, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_PDLOCKED);
 	memset(tmp, 0, PAGE_SIZE);
 	struct pd_data *info = (struct pd_data *)tmp;
 	info->count=1;
@@ -108,7 +108,7 @@ page_dir_t *vm_clone(page_dir_t *pd, char cow)
 	 * calling tm_schedule() may be problematic inside code that is locked by
 	 * this, but it may not be an issue. We'll see. */
 	mutex_create(&info->lock, MT_NOSCHED);
-	vm_do_unmap_only((unsigned)tmp, 1);
+	mm_vm_unmap_only((unsigned)tmp, 1);
 	new[PAGE_DIR_IDX(PDIR_DATA/PAGE_SIZE)] = tmp_p | PAGE_PRESENT | PAGE_WRITE;
 	if(kernel_task)
 		mutex_release(&pd_cur_data->lock);
@@ -120,7 +120,7 @@ page_dir_t *vm_clone(page_dir_t *pd, char cow)
  * the directory is just linked to the parent directory. The count
  * on the directory usage is increased, and the accounting page is 
  * linked so it can be accessed by both threads */
-page_dir_t *vm_copy(page_dir_t *pd)
+page_dir_t *arch_mm_vm_copy(page_dir_t *pd)
 {
 #if CONFIG_SWAP
 	if(current_task && current_task->num_swapped)
@@ -142,12 +142,12 @@ page_dir_t *vm_copy(page_dir_t *pd)
 	/* Now set the self refs (DIR_PHYS, TBL_PHYS) */
 	new[1023] = new_p | PAGE_PRESENT | PAGE_WRITE;
 	addr_t *tmp = (addr_t *)VIRT_TEMP;
-	addr_t tmp_p = pm_alloc_page();
-	vm_map((addr_t)tmp, tmp_p, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_PDLOCKED);
+	addr_t tmp_p = mm_alloc_physical_page();
+	mm_vm_map((addr_t)tmp, tmp_p, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_PDLOCKED);
 	flush_pd();
 	tmp[1023] = new_p | PAGE_PRESENT | PAGE_WRITE;
 	new[1022] = tmp_p | PAGE_PRESENT | PAGE_WRITE;
-	vm_do_unmap_only((addr_t)tmp, 1);
+	mm_vm_unmap_only((addr_t)tmp, 1);
 
 #if CONFIG_SMP
 	/* we can link since all page directories have this table set up

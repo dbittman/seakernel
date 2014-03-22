@@ -58,8 +58,8 @@ static void free_slab(slab_t *slab)
 	addr_t j;
 	addr_t addr = (addr_t)slab;
 	for(j=addr;j<(addr + num_pages*PAGE_SIZE);j+=PAGE_SIZE) {
-		if(vm_getmap(j, 0))
-			vm_unmap(j);
+		if(mm_vm_get_map(j, 0, 0))
+			mm_vm_unmap(j, 0);
 	}
 	vmem_remove_node(&slab_area_alloc, t);
 	sub_atomic(&num_slab, 1);
@@ -180,8 +180,8 @@ static slab_t *create_slab(slab_cache_t *sc, int num_pages, unsigned short flags
 	unsigned i;
 	addr_t j;
 	for(j=addr;j<(addr + num_pages*PAGE_SIZE);j+=PAGE_SIZE) {
-		if(!vm_getmap(j, 0))
-			vm_map(j, pm_alloc_page(), PAGE_PRESENT, MAP_CRIT);
+		if(!mm_vm_get_map(j, 0, 0))
+			mm_vm_map(j, mm_alloc_physical_page(), PAGE_PRESENT, MAP_CRIT);
 	}
 	slab_t *slab = (slab_t *)addr;
 	assert(slab->magic != SLAB_MAGIC);

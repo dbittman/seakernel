@@ -8,7 +8,7 @@ void move_stack(void *start, unsigned int sz)
 {
 	unsigned i;
 	for(i=(unsigned int)start+sz; i >= (unsigned int)start - sz*2;i -= 0x1000) {
-		vm_map(i, pm_alloc_page(), PAGE_PRESENT | PAGE_WRITE | PAGE_USER, MAP_CRIT);
+		mm_vm_map(i, mm_alloc_physical_page(), PAGE_PRESENT | PAGE_WRITE | PAGE_USER, MAP_CRIT);
 		memset((void *)i, 0, 0x1000);
 	}
 	unsigned pd_addr;
@@ -50,7 +50,7 @@ void print_trace(unsigned int MaxFrames)
 	unsigned int * ebp = &MaxFrames - 2;
 	for(unsigned int frame = 0; frame < MaxFrames; ++frame)
 	{
-		if((kernel_state_flags&KSF_MMU) && !vm_do_getmap((addr_t)ebp, 0, 1)) break;
+		if((kernel_state_flags&KSF_MMU) && !mm_vm_get_map((addr_t)ebp, 0, 1)) break;
 		unsigned int eip = ebp[1];
 		if(eip == 0)
 			break;

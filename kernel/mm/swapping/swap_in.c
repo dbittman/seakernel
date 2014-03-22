@@ -45,8 +45,8 @@ int do_swap_in_page(task_t *t, unsigned addr, page_index_t *pi, swapdev_t *s)
 		return -1;
 	}
 	mutex_on(s->lock);
-	unsigned page = pm_alloc_page();
-	vm_map(addr & PAGE_MASK, page, pi->page & ATTRIB_MASK, 0);
+	unsigned page = mm_alloc_physical_page();
+	mm_vm_map(addr & PAGE_MASK, page, pi->page & ATTRIB_MASK, 0);
 	int ss = 0x1000 / s->blocksize;
 	int i;
 	for(i=0;i<ss;i++)

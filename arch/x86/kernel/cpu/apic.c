@@ -149,7 +149,7 @@ void id_map_apic(page_dir_t *pd)
 	if(!lapic_addr) return;
 	int a = PAGE_DIR_IDX(lapic_addr / 0x1000);
 	int t = PAGE_TABLE_IDX(lapic_addr / 0x1000);
-	pd[a] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+	pd[a] = mm_alloc_physical_page() | PAGE_PRESENT | PAGE_WRITE;
 	unsigned int *pt = (unsigned int *)(pd[a] & PAGE_MASK);
 	pt[t] = (lapic_addr&PAGE_MASK) | PAGE_PRESENT | PAGE_WRITE | PAGE_NOCACHE;
 }

@@ -6,12 +6,12 @@
 #include <swap.h>
 #include <cpu.h>
 
-void copy_pde(page_dir_t *pd, page_dir_t *parent_pd, int idx)
+static void copy_pde(page_dir_t *pd, page_dir_t *parent_pd, int idx)
 {
 	if(!parent_pd[idx])
 		return;
 	page_table_t *parent = (addr_t *)((parent_pd[idx] & PAGE_MASK) + PHYS_PAGE_MAP);
-	page_table_t table = pm_alloc_page(), *entries;
+	page_table_t table = mm_alloc_physical_page(), *entries;
 	entries = (addr_t *)(table+PHYS_PAGE_MAP);
 	int i;
 	for(i=0;i<512;i++)
@@ -19,7 +19,7 @@ void copy_pde(page_dir_t *pd, page_dir_t *parent_pd, int idx)
 		if(parent[i])
 		{
 			unsigned attr = parent[i] & ATTRIB_MASK;
-			addr_t new_page = pm_alloc_page();
+			addr_t new_page = mm_alloc_physical_page();
 			addr_t parent_page = parent[i] & PAGE_MASK;
 			memcpy((void *)(new_page + PHYS_PAGE_MAP), (void *)(parent_page + PHYS_PAGE_MAP), PAGE_SIZE);
 			entries[i] = new_page | attr;
@@ -35,7 +35,7 @@ void copy_pdpte(pdpt_t *pdpt, pdpt_t *parent_pdpt, int idx)
 	if(!parent_pdpt[idx])
 		return;
 	page_dir_t *parent_pd = (addr_t *)((parent_pdpt[idx] & PAGE_MASK) + PHYS_PAGE_MAP);
-	page_dir_t pd = pm_alloc_page();
+	page_dir_t pd = mm_alloc_physical_page();
 	memset((void *)(pd + PHYS_PAGE_MAP), 0, PAGE_SIZE);
 	int i;
 	for(i=0;i<512;i++)
@@ -49,7 +49,7 @@ void copy_pml4e(pml4_t *pml4, pml4_t *parent_pml4, int idx)
 	if(!parent_pml4[idx])
 		return;
 	pdpt_t *parent_pdpt = (addr_t *)((parent_pml4[idx] & PAGE_MASK) + PHYS_PAGE_MAP);
-	pdpt_t pdpt = pm_alloc_page();
+	pdpt_t pdpt = mm_alloc_physical_page();
 	memset((void *)(pdpt + PHYS_PAGE_MAP), 0, PAGE_SIZE);
 	int i;
 	for(i=0;i<512;i++)
@@ -59,7 +59,7 @@ void copy_pml4e(pml4_t *pml4, pml4_t *parent_pml4, int idx)
 }
 
 /* Accepts virtual, returns virtual */
-pml4_t *vm_clone(pml4_t *parent_pml4, char cow)
+pml4_t *arch_mm_vm_clone(pml4_t *parent_pml4, char cow)
 {
 #if CONFIG_SWAP
 	if(current_task && current_task->num_swapped)
@@ -72,7 +72,7 @@ pml4_t *vm_clone(pml4_t *parent_pml4, char cow)
 		mutex_acquire(&pd_cur_data->lock);
 	unsigned int i;
 	/* manually set up the pml4e #0 */
-	pml4[0] = pm_alloc_page_zero() | PAGE_PRESENT | PAGE_USER | PAGE_WRITE;
+	pml4[0] = arch_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_USER | PAGE_WRITE;
 	pdpt_t *pdpt = (addr_t *)((pml4[0] & PAGE_MASK) + PHYS_PAGE_MAP);
 	memset(pdpt, 0, 0x1000);
 	pdpt_t *parent_pdpt = (addr_t *)((parent_pml4[0] & PAGE_MASK) + PHYS_PAGE_MAP);
@@ -117,7 +117,7 @@ pml4_t *vm_clone(pml4_t *parent_pml4, char cow)
  * the directory is just linked to the parent directory. The count
  * on the directory usage is increased, and the accounting page is 
  * linked so it can be accessed by both threads */
-pml4_t *vm_copy(pml4_t *parent_pml4)
+pml4_t *arch_mm_vm_copy(pml4_t *parent_pml4)
 {
 #if CONFIG_SWAP
 	if(current_task && current_task->num_swapped)

@@ -16,11 +16,11 @@ void free_pde(page_dir_t *pd, unsigned idx)
 		{
 			addr_t tmp = table[i];
 			table[i]=0;
-			pm_free_page(tmp & PAGE_MASK);
+			mm_free_physical_page(tmp & PAGE_MASK);
 		}
 	}
 	pd[idx]=0;
-	pm_free_page(physical);
+	mm_free_physical_page(physical);
 }
 
 void free_pdpte(pdpt_t *pdpt, unsigned idx)
@@ -33,7 +33,7 @@ void free_pdpte(pdpt_t *pdpt, unsigned idx)
 	for(unsigned i=0;i<512;i++)
 		free_pde(pd, i);
 	pdpt[idx]=0;
-	pm_free_page(physical);
+	mm_free_physical_page(physical);
 }
 
 void free_pml4e(pml4_t *pml4, unsigned idx)
@@ -45,10 +45,10 @@ void free_pml4e(pml4_t *pml4, unsigned idx)
 	for(unsigned i=0;i<512;i++)
 		free_pdpte(pdpt, i);
 	pml4[idx]=0;
-	pm_free_page(physical);
+	mm_free_physical_page(physical);
 }
 
-void free_thread_shared_directory()
+void arch_mm_free_thread_shared_directory()
 {
 	/* don't free all of the first pml4e, only the stuff above 0x40000000 */
 	unsigned int S = 1;
@@ -62,7 +62,7 @@ void free_thread_shared_directory()
 }
 
 /* free the pml4, not the entries */
-void destroy_task_page_directory(task_t *p)
+void arch_mm_destroy_task_page_directory(task_t *p)
 {
 	assert(p->magic == TASK_MAGIC);
 	addr_t *tmp;
@@ -80,9 +80,9 @@ void destroy_task_page_directory(task_t *p)
 		p->pd[PML4_IDX(PDIR_DATA/0x1000)]=0;
 		/* this page was already unmapped, but the tables are still there */
 		for(int i=0;i<3;i++)
-			pm_free_page(phys[i]);
+			mm_free_physical_page(phys[i]);
 		
-		pm_free_page(p->pd[0] & PAGE_MASK);
+		mm_free_physical_page(p->pd[0] & PAGE_MASK);
 	}
 	
 	phys[0] = p->pd[PML4_IDX(CURRENT_TASK_POINTER/0x1000)] & PAGE_MASK;
@@ -99,13 +99,13 @@ void destroy_task_page_directory(task_t *p)
 	p->pd[PML4_IDX(CURRENT_TASK_POINTER/0x1000)]=0;
 	
 	for(int i=0;i<4;i++)
-		pm_free_page(phys[i]);
+		mm_free_physical_page(phys[i]);
 	
 	kfree(p->pd);
 }
 
 /* basically frees the stack */
-void free_thread_specific_directory()
+void arch_mm_free_thread_specific_directory()
 {
 	unsigned int S = PML4_IDX(TOP_TASK_MEM_EXEC/0x1000);
 	unsigned int E = PML4_IDX((TOP_TASK_MEM+1)/0x1000);

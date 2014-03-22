@@ -96,7 +96,7 @@ int kt_kernel_idle_task()
 		 * ring0 code may always access memory. As long as the PAGE_USER
 		 * flag isn't set... */
 		if(!(SIGNAL_INJECT >= addr && SIGNAL_INJECT < (addr + PAGE_SIZE_LOWER_KERNEL)))
-			vm_setattrib(addr, PAGE_PRESENT | PAGE_WRITE);
+			mm_vm_set_attrib(addr, PAGE_PRESENT | PAGE_WRITE);
 		addr += PAGE_SIZE_LOWER_KERNEL;
 	}
 	interrupt_set(1);

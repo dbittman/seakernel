@@ -5,6 +5,7 @@
 #include <atomic.h>
 #include <cpu.h>
 #include <context.h>
+#include <sea/mm/vmm.h>
 
 unsigned running_processes = 0;
 
@@ -90,9 +91,9 @@ int tm_do_fork(unsigned flags)
 	task_t *task = tm_task_create();
 	page_dir_t *newspace;
 	if(flags & FORK_SHAREDIR)
-		newspace = vm_copy(current_task->pd);
+		newspace = mm_vm_copy(current_task->pd);
 	else
-		newspace = vm_clone(current_task->pd, 0);
+		newspace = mm_vm_clone(current_task->pd, 0);
 	if(!newspace)
 	{
 		kfree((void *)task);

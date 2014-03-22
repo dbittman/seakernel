@@ -1,5 +1,5 @@
-[GLOBAL copy_page_physical]
-copy_page_physical:
+[GLOBAL arch_mm_copy_page_physical]
+arch_mm_copy_page_physical:
 	push ebx              ; According to __cdecl, we must preserve the contents of EBX.
 	pushf                 ; push EFLAGS, so we can pop it and reenable interrupts
 			; later, if they were enabled anyway.
@@ -28,8 +28,8 @@ copy_page_physical:
 	ret
 
 
-[GLOBAL zero_page_physical]
-zero_page_physical:
+[GLOBAL arch_mm_zero_page_physical]
+arch_mm_zero_page_physical:
 	push ebx              ; According to __cdecl, we must preserve the contents of EBX.
 	pushf                 ; push EFLAGS, so we can pop it and reenable interrupts
 			; later, if they were enabled anyway.

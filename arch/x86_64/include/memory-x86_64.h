@@ -66,7 +66,7 @@
 __asm__ __volatile__("mov %%cr3,%%rax\n\tmov %%rax,%%cr3": : :"ax", "eax", "rax")
 
 #define current_task ((volatile task_t *)(kernel_task ? ((volatile task_t *)(*((volatile addr_t *)CURRENT_TASK_POINTER))) : 0))
-addr_t pm_alloc_page_zero();
+addr_t arch_mm_alloc_physical_page_zero();
 addr_t get_next_mm_device_page();
 int vm_early_map(addr_t *, addr_t virt, addr_t phys, unsigned attr, unsigned opt);
 extern addr_t *kernel_dir_phys;

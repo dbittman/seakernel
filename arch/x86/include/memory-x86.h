@@ -72,5 +72,5 @@
  __asm__ __volatile__("movl %%cr3,%%eax\n\tmovl %%eax,%%cr3": : :"ax", "eax")
 
 #define current_task ((kernel_state_flags&KSF_MMU) ? ((task_t *)page_directory[PAGE_DIR_IDX(SMP_CUR_TASK/PAGE_SIZE)]) : 0)
-addr_t vm_init_directory(addr_t id_map_to);
+
 #endif

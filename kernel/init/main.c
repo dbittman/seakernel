@@ -126,7 +126,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	init_syscalls();
 	fs_initrd_load(mtboot);
 	arch_cpu_timer_install(1000);
-	pm_init(placement, mtboot);
+	mm_pm_init(placement, mtboot);
 	init_main_cpu_1();
 
 	/* Now get the management stuff going */

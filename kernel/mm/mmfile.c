@@ -36,7 +36,7 @@ unsigned sys_mmap(void *addr, void *str, int prot, int flags, int fildes)
 					: MMF_PRIV_END, A_NI);
 		unsigned a = (*v)->addr, e = (*v)->addr + A_NI*PAGE_SIZE;
 		while(a < e) {
-			vm_map(a, pm_alloc_page(), PAGE_PRESENT | PAGE_USER | PAGE_WRITE
+			mm_vm_map(a, mm_alloc_physical_page(), PAGE_PRESENT | PAGE_USER | PAGE_WRITE
 																, MAP_CRIT);
 			a += PAGE_SIZE;
 		}
@@ -50,7 +50,7 @@ unsigned sys_mmap(void *addr, void *str, int prot, int flags, int fildes)
 	int i=0;
 	/* Make sure that nothing is mapped there */
 	while(i < np) {
-		if(vm_getmap(node->addr + i*PAGE_SIZE, 0))
+		if(mm_vm_get_map(node->addr + i*PAGE_SIZE, 0))
 			vm_unmap(node->addr + i*PAGE_SIZE);
 		i++;
 	}
@@ -92,7 +92,7 @@ void flush_mmf(mmf_t *m, int un_map, unsigned off, unsigned addr, unsigned end)
 	int i=0;
 	while(addr < end)
 	{
-		if(vm_getmap(addr, 0))
+		if(mm_vm_get_map(addr, 0))
 		{
 			int length = sz-i;
 			if(length > PAGE_SIZE)
@@ -212,11 +212,11 @@ int pfault_mmf_check(unsigned err, unsigned addr)
 	/* If its already present */
 	if(err & 0x1)
 		return 0;
-	unsigned p = pm_alloc_page();
+	unsigned p = mm_alloc_physical_page();
 	unsigned attr = PAGE_PRESENT | PAGE_USER;
 	if(mf->prot & PROT_WRITE)
 		attr |= PAGE_WRITE;
-	vm_map(addr & PAGE_MASK, p, attr, MAP_CRIT);
+	mm_vm_map(addr & PAGE_MASK, p, attr, MAP_CRIT);
 	memset((void *)(addr & PAGE_MASK), 0, PAGE_SIZE);
 	struct file *fil = fs_get_file_pointer((task_t *)current_task, mf->fd);
 	if(!fil)
@@ -253,7 +253,7 @@ void clear_mmfiles(task_t *t, int tm_exiting)
 		if(!q && pd[i])
 		{
 			//self_free_table(i);
-			pm_free_page(pd[i]&PAGE_MASK);
+			mm_free_physical_page(pd[i]&PAGE_MASK);
 		}
 		pd[i]=0;
 	}

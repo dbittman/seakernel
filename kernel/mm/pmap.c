@@ -21,7 +21,7 @@ static addr_t get_virtual_address_page(struct pmap *m, addr_t p)
 	m->phys[m->idx] = masked;
 	addr_t ret;
 	m->virt[m->idx] = ret = get_next_mm_device_page();
-	vm_map(ret, masked, PAGE_PRESENT | PAGE_WRITE, MAP_NOCLEAR);
+	mm_vm_map(ret, masked, PAGE_PRESENT | PAGE_WRITE, MAP_NOCLEAR);
 	m->idx++;
 	return ret;
 }

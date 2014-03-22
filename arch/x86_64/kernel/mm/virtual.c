@@ -13,35 +13,35 @@ struct pd_data *pd_cur_data = (struct pd_data *)PDIR_DATA;
 
 /* This function will setup a paging environment with a basic page dir, 
  * enough to process the memory map passed by grub */
-void early_vm_map(pml4_t *pml4, addr_t addr, addr_t map)
+static void early_mm_vm_map(pml4_t *pml4, addr_t addr, addr_t map)
 {
 	pdpt_t *pdpt;
 	page_dir_t *pd;
 	page_table_t *pt;
 	
 	if(!pml4[PML4_IDX(addr/0x1000)])
-		pml4[PML4_IDX(addr/0x1000)] = pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE;
+		pml4[PML4_IDX(addr/0x1000)] = arch_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_WRITE;
 	pdpt = (addr_t *)(pml4[PML4_IDX(addr/0x1000)] & PAGE_MASK);
 	if(!pdpt[PDPT_IDX(addr/0x1000)])
-		pdpt[PDPT_IDX(addr/0x1000)] = pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE;
+		pdpt[PDPT_IDX(addr/0x1000)] = arch_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_WRITE;
 	pd = (addr_t *)(pdpt[PDPT_IDX(addr/0x1000)] & PAGE_MASK);
 	if(!pd[PAGE_DIR_IDX(addr/0x1000)])
-		pd[PAGE_DIR_IDX(addr/0x1000)] = pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE;
+		pd[PAGE_DIR_IDX(addr/0x1000)] = arch_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_WRITE;
 	/* passing map as zero allows us to map in all the tables, but leave the
 	 * true mapping null. This is handy for the page stack and heap */
 	pt = (addr_t *)(pd[PAGE_DIR_IDX(addr/0x1000)] & PAGE_MASK);
 	pt[PAGE_TABLE_IDX(addr/0x1000)] = map;
 }
 
-pml4_t *create_initial_directory()
+static pml4_t *create_initial_directory()
 {
 	/* Create kernel directory */
-	pml4_t *pml4 = (addr_t *)pm_alloc_page_zero();
+	pml4_t *pml4 = (addr_t *)arch_mm_alloc_physical_page_zero();
 	memset(pml4, 0, 0x1000);
 	/* Identity map the kernel */
-	pml4[0] = pm_alloc_page_zero() | PAGE_PRESENT | PAGE_USER;
+	pml4[0] = arch_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_USER;
 	pdpt_t *pdpt = (addr_t *)(pml4[0] & PAGE_MASK);
-	pdpt[0] = pm_alloc_page_zero() | PAGE_PRESENT | PAGE_USER;
+	pdpt[0] = arch_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_USER;
 	page_dir_t *pd = (addr_t *)(pdpt[0] & PAGE_MASK);
 	
 	addr_t address = 0;
@@ -54,13 +54,13 @@ pml4_t *create_initial_directory()
 	/* map in all possible physical memory, up to 512 GB. This way we can
 	 * access any physical page by simple accessing virtual memory (phys + PHYS_PAGE_MAP).
 	 * This should make mapping memory a LOT easier */
-	pml4[PML4_IDX(PHYS_PAGE_MAP/0x1000)] = pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE;
+	pml4[PML4_IDX(PHYS_PAGE_MAP/0x1000)] = arch_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_WRITE;
 	pdpt = (addr_t *)(pml4[PML4_IDX(PHYS_PAGE_MAP/0x1000)] & PAGE_MASK);
 
 	address = 0;
 	for(int i = 0; i < 512; i++)
 	{
-		pdpt[i] = pm_alloc_page() | PAGE_PRESENT | PAGE_WRITE;
+		pdpt[i] = mm_alloc_physical_page() | PAGE_PRESENT | PAGE_WRITE;
 		pd = (addr_t *)(pdpt[i] & PAGE_MASK);
 		for(int j = 0; j < 512; j++) {
 			pd[j] = address | PAGE_PRESENT | PAGE_WRITE | (1 << 7);
@@ -69,8 +69,8 @@ pml4_t *create_initial_directory()
 	}
 	/* map in the signal return inject code. we need to do this, because
 	 * user code may not run the the kernel area of the page directory */
-	early_vm_map(pml4, SIGNAL_INJECT, pm_alloc_page_zero() | PAGE_PRESENT | PAGE_USER);
-	early_vm_map(pml4, PDIR_DATA, pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE);
+	early_mm_vm_map(pml4, SIGNAL_INJECT, arch_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_USER);
+	early_mm_vm_map(pml4, PDIR_DATA, arch_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_WRITE);
 	
 	/* CR3 requires the physical address, so we directly 
 	 * set it because we have the physical address */
@@ -79,7 +79,7 @@ pml4_t *create_initial_directory()
 	return pml4;
 }
 
-void vm_init(addr_t id_map_to)
+void arch_mm_vm_init(addr_t id_map_to)
 {
 	/* Register some stuff... */
 	arch_interrupt_register_handler (14, (isr_t)&arch_mm_page_fault, 0);
@@ -92,23 +92,23 @@ void vm_init(addr_t id_map_to)
 
 /* This relocates the stack to a safe place which is copied 
  * upon clone, and creates a new directory that is...well, complete */
-void vm_init_2()
+void arch_mm_vm_init_2()
 {
 	setup_kernelstack(id_tables);
 	printk(0, "[mm]: cloning directory for primary cpu\n");
-	primary_cpu->kd = vm_clone((addr_t *)kernel_dir, 0);
+	primary_cpu->kd = mm_vm_clone((addr_t *)kernel_dir, 0);
 	primary_cpu->kd_phys = primary_cpu->kd[PML4_IDX(PHYSICAL_PML4_INDEX/0x1000)] & PAGE_MASK;
 	kernel_dir_phys = (pml4_t *)primary_cpu->kd_phys;
 	kernel_dir = primary_cpu->kd;
 	asm ("mov %0, %%cr3" : : "r" (kernel_dir[PML4_IDX((PHYSICAL_PML4_INDEX/0x1000))]));
 }
 
-void vm_switch(addr_t *n/*VIRTUAL ADDRESS*/)
+void arch_mm_vm_switch_context(addr_t *n/*VIRTUAL ADDRESS*/)
 {
 	asm ("mov %0, %%cr3" : : "r" (n[PML4_IDX((PHYSICAL_PML4_INDEX/0x1000))]));
 }
 
-addr_t vm_do_getmap(addr_t v, addr_t *p, unsigned locked)
+addr_t arch_mm_vm_get_map(addr_t v, addr_t *p, unsigned locked)
 {
 	addr_t vpage = (v&PAGE_MASK)/0x1000;
 	unsigned vp4 = PML4_IDX(vpage);
@@ -152,7 +152,7 @@ addr_t vm_do_getmap(addr_t v, addr_t *p, unsigned locked)
 	return ret;
 }
 
-unsigned int vm_setattrib(addr_t v, short attr)
+void arch_mm_vm_set_attrib(addr_t v, short attr)
 {
 	addr_t vpage = (v&PAGE_MASK)/0x1000;
 	unsigned vp4 = PML4_IDX(vpage);
@@ -168,7 +168,7 @@ unsigned int vm_setattrib(addr_t v, short attr)
 	
 	pml4 = (pml4_t *)((kernel_task && current_task) ? current_task->pd : kernel_dir);
 	if(!pml4[vp4])
-		pml4[vp4] = pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
+		pml4[vp4] = arch_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
 	pdpt = (addr_t *)((pml4[vp4]&PAGE_MASK) + PHYS_PAGE_MAP);
 	if(pdpt[vpdpt] & PAGE_LARGE)
 	{
@@ -177,7 +177,7 @@ unsigned int vm_setattrib(addr_t v, short attr)
 		goto out;
 	}
 	if(!pdpt[vpdpt])
-		pdpt[vpdpt] = pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
+		pdpt[vpdpt] = arch_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
 	pd = (addr_t *)((pdpt[vpdpt]&PAGE_MASK) + PHYS_PAGE_MAP);
 	if(pd[vdir] & PAGE_LARGE)
 	{
@@ -186,7 +186,7 @@ unsigned int vm_setattrib(addr_t v, short attr)
 		goto out;
 	}
 	if(!pd[vdir])
-		pd[vdir] = pm_alloc_page_zero() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
+		pd[vdir] = arch_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
 	pt = (addr_t *)((pd[vdir]&PAGE_MASK) + PHYS_PAGE_MAP);
 	
 	pt[vtbl] &= PAGE_MASK;
@@ -206,7 +206,7 @@ unsigned int vm_setattrib(addr_t v, short attr)
 	return 0;
 }
 
-unsigned int vm_do_getattrib(addr_t v, unsigned *p, unsigned locked)
+unsigned int arch_mm_vm_get_attrib(addr_t v, unsigned *p, unsigned locked)
 {
 	addr_t vpage = (v&PAGE_MASK)/0x1000;
 	unsigned vp4 = PML4_IDX(vpage);

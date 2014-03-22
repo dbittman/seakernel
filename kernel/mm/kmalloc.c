@@ -45,7 +45,7 @@ void *__kmalloc_a(size_t s, char *file, int line)
 void *__kmalloc_p(size_t s, addr_t *p, char *file, int line)
 {
 	addr_t ret = do_kmalloc(s, 0, file, line);
-	vm_getmap(ret, p);
+	mm_vm_get_map(ret, p, 0);
 	*p += ret%PAGE_SIZE;
 	return (void *)ret;
 }
@@ -53,7 +53,7 @@ void *__kmalloc_p(size_t s, addr_t *p, char *file, int line)
 void *__kmalloc_ap(size_t s, addr_t *p, char *file, int line)
 {
 	addr_t ret = do_kmalloc(s, 1, file, line);
-	vm_getmap(ret, p);
+	mm_vm_get_map(ret, p, 0);
 	*p += ret%PAGE_SIZE;
 	return (void *)ret;
 }

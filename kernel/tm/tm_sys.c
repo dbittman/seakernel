@@ -16,8 +16,8 @@ int sys_sbrk(long inc)
 		addr_t free_start = (new_end&PAGE_MASK) + PAGE_SIZE;
 		addr_t free_end = old_end&PAGE_MASK;
 		while(free_start <= free_end) {
-			if(vm_getmap(free_start, 0))
-				vm_unmap(free_start);
+			if(mm_vm_get_map(free_start, 0, 0))
+				mm_vm_unmap(free_start, 0);
 			free_start += PAGE_SIZE;
 		}
 		current_task->heap_end = new_end;

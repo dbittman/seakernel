@@ -11,6 +11,7 @@ initialization */
 #include <imps-x86.h>
 #include <sea/cpu/cmos-x86_common.h>
 #include <sea/cpu/features-x86_common.h>
+#include <sea/mm/vmm.h>
 
 void load_tables_ap();
 void set_lapic_timer(unsigned tmp);
@@ -65,7 +66,7 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	
 	mutex_acquire(&cpu_stage1_lock);
 	printk(0, "[mm]: cloning directory for processor %d\n", apicid);
-	cpu->kd = vm_clone(page_directory, 0);
+	cpu->kd = mm_vm_clone(page_directory, 0);
 	cpu->kd_phys = cpu->kd[1023] & PAGE_MASK;
 	asm ("mov %0, %%cr3; nop; nop" :: "r" ((addr_t)cpu->kd[1023] & PAGE_MASK));
 	flush_pd();

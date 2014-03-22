@@ -243,7 +243,7 @@ int do_page_out_task_addr(task_t *t, unsigned addr)
 	}
 	/* Map it in where it was in theirs */
 	unsigned p = tmp_page;
-	vm_map(addr, p, attr, 0);
+	mm_vm_map(addr, p, attr, 0);
 	memcpy((void *)addr, tmp, 0x1000);
 	/* And swap out the page */
 	if(!swap_page_out(t, addr)) {

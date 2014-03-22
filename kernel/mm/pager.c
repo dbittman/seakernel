@@ -4,7 +4,7 @@
 addr_t tmp_page;
 void __KT_pager()
 {
-	tmp_page = pm_alloc_page();
+	tmp_page = mm_alloc_physical_page();
 	for(;;) {
 #if CONFIG_SWAP
 		__KT_swapper();

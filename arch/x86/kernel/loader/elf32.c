@@ -3,7 +3,7 @@
 #include <dev.h>
 #include <memory.h>
 #include <fs.h>
-#include <elf-x86.h>
+#include <elf.h>
 #include <block.h>
 #include <char.h>
 #include <multiboot.h>
@@ -20,6 +20,24 @@ int process_elf(char *mem, int fp, unsigned *start, unsigned *end)
 }
 
 #if (CONFIG_MODULES)
+
+static size_t arch_loader_calculate_allocation_size(elf32_header_t *header)
+{
+	int i, x;
+	size_t total=0;
+	elf32_section_header_t *sh;
+	for(i = 0; i < header->shnum; i++)
+	{  
+		sh = (elf32_section_header_t*)((uint8_t *)header + header->shoff + (i * header->shsize));
+		total += sh->sect_size;
+	}
+	return total;
+}
+
+static void arch_loader_copy_sections(elf32_header_t *header, uint8_t *loaded_buf)
+{
+	
+}
 
 int arch_loader_loader_parse_elf_module(uint8_t * buf, addr_t *entry, addr_t *tm_exiter, addr_t *deps)
 {

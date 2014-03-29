@@ -1,6 +1,6 @@
 #include <kernel.h>
 #include <module.h>
-#include <elf.h>
+#include <sea/loader/elf.h>
 #include <symbol.h>
 #include <file.h>
 static int process_elf64_phdr(char *mem, int fp, addr_t *start, addr_t *end)

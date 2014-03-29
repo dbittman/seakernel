@@ -11,7 +11,7 @@
 #include <init.h>
 #include <cache.h>
 #include <symbol.h>
-#include <elf.h>
+#include <sea/loader/elf.h>
 #include <cpu.h>
 #include <sea/mm/init.h>
 #include <sea/dm/dev.h>

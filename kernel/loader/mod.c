@@ -5,7 +5,7 @@
 #include <task.h>
 #include <memory.h>
 #include <module.h>
-#include <elf.h>
+#include <sea/loader/elf.h>
 #include <symbol.h>
 #include <sea/loader/module.h>
 

@@ -3,7 +3,7 @@
 #include <dev.h>
 #include <memory.h>
 #include <fs.h>
-#include <elf.h>
+#include <sea/loader/elf.h>
 #include <block.h>
 #include <char.h>
 #include <multiboot.h>
@@ -13,7 +13,6 @@
 #include <multiboot.h>
 #include <symbol.h>
 #include <file.h>
-#include <elf-x86_common.h>
 
 static int process_elf32_phdr(char *mem, int fp, addr_t *start, addr_t *end)
 {

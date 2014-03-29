@@ -7,7 +7,7 @@
 #include <init.h>
 #include <sys/fcntl.h>
 #include <cpu.h>
-#include <elf.h>
+#include <sea/loader/elf.h>
 #include <file.h>
 #include <sea/fs/file.h>
 #include <sea/mm/vmm.h>

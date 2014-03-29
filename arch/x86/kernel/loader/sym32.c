@@ -5,7 +5,7 @@
 #include <dev.h>
 #include <memory.h>
 #include <fs.h>
-#include <elf.h>
+#include <sea/loader/elf.h>
 #include <block.h>
 #include <char.h>
 #include <multiboot.h>

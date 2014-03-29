@@ -3,7 +3,7 @@
 #include <mmfile.h>
 #include <task.h>
 #include <swap.h>
-#include <elf.h>
+#include <sea/loader/elf.h>
 static void print_pfe(int x, registers_t *regs, addr_t cr2)
 {
 	assert(regs);

@@ -69,7 +69,6 @@ int proc_mods(char rw, struct inode *n, int min, char *buf, int off, int len)
 			total_mem += mq->length;
 			sprintf(tmp, "%-16s %6d KB ", mq->name, mq->length/1024);
 			total_len += proc_append_buffer(buf, tmp, total_len, -1, off, len);
-			total_len += proc_append_buffer(buf, mq->deps, total_len, -1, off, len);
 			total_len += proc_append_buffer(buf, "\n", total_len, -1, off, len);
 			mq=mq->next;
 		}

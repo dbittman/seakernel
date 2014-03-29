@@ -43,7 +43,7 @@ int sys_setup();
 #define SYS_EXECVE		 26
 #define SYS_LMOD  		 27
 #define SYS_ULMOD 		 28
-#define SYS_CANUNLOAD	 29
+#define SYS_UNUSED26	 29
 #define SYS_ULALLMODS	 30
 #define SYS_GETPID 		 31
 #define SYS_GETPPID		 32

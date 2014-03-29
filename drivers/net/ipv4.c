@@ -20,9 +20,3 @@ int module_tm_exit()
 	reload_eth_routing_table();
 	return 0;
 }
-
-int module_deps(char *b)
-{
-	write_deps(b, "ethernet,:");
-	return KVERSION;
-}

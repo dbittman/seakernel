@@ -14,20 +14,8 @@ typedef struct module_s {
 	addr_t exiter;
 	char name[128];
 	char path[128];
-	char deps[256];
 	struct module_s *next;
 } module_t;
-
-static inline void write_deps(char *b, char *str)
-{
-	int i=0;
-	while(b && str && *(str+i))
-	{
-		*(b+i) = *(str+i);
-		i++;
-	}
-	*(b+i)=0;
-}
 
 void loader_unload_all_modules();
 void loader_init_modules();

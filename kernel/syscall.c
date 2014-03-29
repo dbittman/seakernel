@@ -66,7 +66,7 @@ void *syscall_table[129] = {
 	#if CONFIG_MODULES
 	SC sys_load_module, 
 	SC sys_unload_module, 
-	SC loader_module_free_to_unload, 
+	SC sys_null, 
 	SC loader_unload_all_modules, 
 	#else
 	SC sys_null,

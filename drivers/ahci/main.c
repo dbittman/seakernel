@@ -182,12 +182,6 @@ int module_install()
 	return 0;
 }
 
-int module_deps(char *b)
-{
-	write_deps(b, "pci,:");
-	return KVERSION;
-}
-
 int module_tm_exit()
 {
 	int i;

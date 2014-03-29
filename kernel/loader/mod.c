@@ -162,9 +162,7 @@ static int load_module(char *path, char *args, int flags)
 	sys_read(desc, 0, mem, len);
 	sys_close(desc);
 	/* Fill out the slot info */
-	tmp->length=len;
 	tmp->exiter=0;
-	tmp->deps[0]=0;
 	/* Time to decode the module header */
 	if(!(*mem == 'M' && *(mem + 1) == 'O' && *(mem+2) == 'D'))
 	{
@@ -173,14 +171,11 @@ static int load_module(char *path, char *args, int flags)
 		return -EINVAL;
 	}
 	/* Call the elf parser */
-	int res = loader_parse_elf_module(tmp, (unsigned char *)mem+4, path, flags & 1);
+	void *res = loader_parse_elf_module(tmp, (unsigned char *)mem+4);
 	kfree(mem);
-	if(res == _MOD_FAIL || res == _MOD_AGAIN)
+	if(!res)
 	{
 		kfree(tmp);
-		/* try again? Maybe we loaded a dependency and need to retry */
-		if(res == _MOD_AGAIN)
-			return load_module(path, args, flags);
 		return -ENOEXEC;
 	}
 	mutex_acquire(&mod_mutex);
@@ -190,43 +185,6 @@ static int load_module(char *path, char *args, int flags)
 	mutex_release(&mod_mutex);
 	printk(0, "[mod]: loaded module '%s' @[%x - %x]\n", path, tmp->base, tmp->base + len);
 	return ((int (*)(char *))tmp->entry)(args);
-}
-
-/* This checks if module 'm' depends on module 'yo' */
-static int do_it_depend_on(module_t *yo, module_t *m)
-{
-	char *d = m->deps;
-	if(!*d) return 0;
-	char *mnext, *current;
-	current = d;
-	int count=0;
-	while(current)
-	{
-		mnext = strchr(current, ',');
-		if(mnext)
-		{
-			*mnext=0;
-			mnext++;
-		}
-		if(*current == ':')
-			break;
-		if(!strcmp(yo->name, current))
-			return 1;
-		current = mnext;
-	}
-	return 0;
-}
-
-/* This makes sure module 'i' can unload and not break dependencies */
-module_t *loader_module_free_to_unload(module_t *i)
-{
-	module_t *mq = modules;
-	while(mq) {
-		if(mq != i && do_it_depend_on(i, mq))
-			return mq;
-		mq=mq->next;
-	}
-	return 0;
 }
 
 static int do_unload_module(char *name, int flags)
@@ -245,11 +203,6 @@ static int do_unload_module(char *name, int flags)
 		return -ENOENT;
 	}
 	/* Determine if are being depended upon or if we can unload */
-	module_t *mo;
-	if(!(flags & 1) && (mo = loader_module_free_to_unload(mq))) {
-		mutex_release(&mod_mutex);
-		return -EINVAL;
-	}
 	mutex_release(&mod_mutex);
 	/* Call the unloader */
 	printk(KERN_INFO, "[mod]: Unloading Module '%s'\n", name);

@@ -93,12 +93,6 @@ int cp_ioctl(int min, int cmd, long arg)
 	return -EINVAL;
 }
 
-int module_deps(char *b)
-{
-	write_deps(b, "aes,:");
-	return KVERSION;
-}
-
 int module_install()
 {
 	memset(list, 0, sizeof(list));

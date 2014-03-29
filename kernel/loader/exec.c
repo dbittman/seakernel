@@ -79,10 +79,6 @@ static int do_exec(task_t *t, char *path, char **argv, char **env)
 	char mem[header_size];
 	fs_read_file_data(desc, mem, 0, header_size);
 	int other_bitsize=0;
-#if CONFIG_ARCH == TYPE_ARCH_X86_64
-	if(is_valid_elf32_otherarch(mem, 2))
-		other_bitsize = 1;
-#endif
 	if(!is_valid_elf(mem, 2) && !other_bitsize) {
 		sys_close(desc);
 		return -ENOEXEC;
@@ -124,11 +120,7 @@ static int do_exec(task_t *t, char *path, char **argv, char **env)
 	strncpy((char *)t->command, path, 128);
 	if(other_bitsize)
 	{
-#if CONFIG_ARCH == TYPE_ARCH_X86_64
-		if(!process_elf_other(mem, desc, &eip, &end))
-			eip=0;
-#endif
-	} else if(!process_elf(mem, desc, &eip, &end))
+	} else if(!loader_parse_elf_executable(mem, desc, &eip, &end))
 		eip=0;
 	
 	/* do setuid and setgid */

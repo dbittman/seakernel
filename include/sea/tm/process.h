@@ -6,6 +6,8 @@
 #include <sea/cpu/registers.h>
 #include <sea/tm/signal.h>
 #include <sea/mm/context.h>
+#include <sys/stat.h>
+
 #define KERN_STACK_SIZE 0x16000
 
 #define FILP_HASH_LEN 512
@@ -177,6 +179,7 @@ void tm_add_to_blocklist_and_block(struct llist *list, task_t *task);
 void tm_add_to_blocklist(struct llist *list, task_t *task);
 void tm_remove_from_blocklist(struct llist *list, task_t *t);
 void tm_remove_all_from_blocklist(struct llist *list);
+void tm_switch_to_user_mode();
 
 int tm_process_got_signal(task_t *t);
 int tm_signal_will_be_fatal(task_t *t, int sig);
@@ -185,6 +188,9 @@ int sys_get_timer_th(int *t);
 void tm_process_suicide();
 void tm_kill_process(unsigned int pid);
 int tm_process_wait(unsigned pid, int state);
+int sys_get_pid();
+int sys_task_pstat(unsigned int pid, struct task_stat *s);
+int sys_task_stat(unsigned int num, struct task_stat *s);
 
 void tm_exit(int code);
 void tm_delay(int t);
@@ -205,5 +211,6 @@ struct thread_shared_data *tm_thread_data_create();
 
 /* provided by arch-dep code */
 extern void arch_do_switch_to_user_mode();
+void arch_tm_set_current_task_marker(addr_t *space, addr_t task);
 
 #endif

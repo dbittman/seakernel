@@ -73,7 +73,7 @@ elf32_t arch_loader_parse_kernel_elf(struct multiboot *mb, elf32_t *elf)
 }
 
 #if (CONFIG_MODULES)
-int arch_loader_loader_parse_elf_module(uint8_t * buf, addr_t *entry, addr_t *exiter, addr_t *deps);
+int arch_loader_loader_parse_elf_module(uint8_t * buf, addr_t *entry, addr_t *exiter, addr_t *deps, void **);
 int loader_parse_elf_module(module_t *mod, uint8_t * buf, char *name, int force)
 {
 	int error=0;
@@ -82,9 +82,9 @@ int loader_parse_elf_module(module_t *mod, uint8_t * buf, char *name, int force)
 	/* now actually do some error checking... */
 	if(!is_valid_elf((char *)buf, 1))
 		return _MOD_FAIL;
-	
-	error = arch_loader_loader_parse_elf_module(buf, &module_entry, &module_exiter, &module_deps);
-	
+	void *load;
+	error = arch_loader_loader_parse_elf_module(buf, &module_entry, &module_exiter, &module_deps, &load);
+	mod->base = load;
 	if(module_deps)
 	{
 		/* Load more deps */
@@ -93,6 +93,7 @@ int loader_parse_elf_module(module_t *mod, uint8_t * buf, char *name, int force)
 		unsigned kver = ((int (*)(char *))module_deps)(deps_str);
 		if(kver != KVERSION && !force)
 		{
+			if(!error) kfree(load);
 			printk(3, "[mod]: Module '%s' was compiled for a different kernel version!\n", 
 					mod->name);
 			return _MOD_FAIL;
@@ -106,6 +107,7 @@ int loader_parse_elf_module(module_t *mod, uint8_t * buf, char *name, int force)
 			*n=0;
 			n++;
 			if(!loader_module_is_loaded(cur)) {
+				if(!error) kfree(load);
 				printk(3, "[mod]: Module '%s' has missing dependency '%s'\n", mod->name, cur);
 				return _MOD_FAIL;
 			}

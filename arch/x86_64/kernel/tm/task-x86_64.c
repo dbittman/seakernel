@@ -1,7 +1,7 @@
 #include <kernel.h>
 #include <task.h>
 
-void arch_specific_set_current_task(pml4_t *pml4, addr_t task)
+void arch_tm_set_current_task_marker(pml4_t *pml4, addr_t task)
 {
 	addr_t addr = CURRENT_TASK_POINTER, page, virt;
 	pdpt_t *pdpt;

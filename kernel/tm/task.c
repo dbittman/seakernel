@@ -40,7 +40,7 @@ struct thread_shared_data *tm_thread_data_create()
 	return thread;
 }
 
-void init_multitasking()
+void tm_init_multitasking()
 {
 	printk(KERN_DEBUG, "[sched]: Starting multitasking system...\n");
 	/* make the kernel task */
@@ -66,7 +66,7 @@ void init_multitasking()
 	primary_cpu->numtasks=1;
 	/* make this the "current_task" by assigning a specific location
 	 * in the page directory as the pointer to the task. */
-	arch_specific_set_current_task((addr_t *)kernel_dir, (addr_t)task);
+	arch_tm_set_current_task_marker((addr_t *)kernel_dir, (addr_t)task);
 	kernel_task = task;
 	/* this is the final thing to allow the system to begin scheduling
 	 * once interrupts are enabled */
@@ -93,12 +93,17 @@ void init_multitasking()
 #endif
 }
 
-void switch_to_user_mode()
+void tm_set_current_task_marker(page_dir_t *space, addr_t task)
+{
+	arch_tm_set_current_task_marker(space, task);
+}
+
+void tm_switch_to_user_mode()
 {
 #warning "clean up"
 	/* set up the kernel stack first...*/
 	set_kernel_stack(current_tss, current_task->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
-	arch_do_switch_to_user_mode();
+	arch_tm_switch_to_user_mode();
 }
 
 task_t *tm_get_process_by_pid(int pid)

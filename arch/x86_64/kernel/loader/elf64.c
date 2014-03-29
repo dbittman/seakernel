@@ -69,7 +69,50 @@ void elf64_write_field(int type, addr_t mem_addr, addr_t reloc_addr)
 	}
 }
 
-int arch_loader_loader_parse_elf_module(uint8_t * buf, addr_t *entry, addr_t *tm_exiter, addr_t *deps)
+#define MAX_SECTIONS 32
+
+struct section_data {
+	addr_t vbase[MAX_SECTIONS];
+	elf64_section_header_t *sects[MAX_SECTIONS];
+	int num;
+};
+
+static size_t arch_loader_calculate_allocation_size(elf64_header_t *header)
+{
+	int i;
+	size_t total=0;
+	elf64_section_header_t *sh;
+	for(i = 0; i < header->shnum; i++)
+	{  
+		sh = (elf64_section_header_t*)((uint8_t *)header + header->shoff + (i * header->shsize));
+		total += sh->size;
+	}
+	return total;
+}
+
+static void arch_loader_copy_sections(elf64_header_t *header, uint8_t *loaded_buf, struct section_data *sd)
+{
+	int i;
+	elf64_section_header_t *sh;
+	addr_t address=(addr_t)loaded_buf;
+	for(i = 0; i < header->shnum; i++)
+	{  
+		sh = (elf64_section_header_t*)((uint8_t *)header + header->shoff + (i * header->shsize));
+		
+		if(sh->type == SHT_NOBITS) {
+			memset((void *)address, 0, sh->size);
+		} else {
+			void *src = (void *)((addr_t)header + sh->offset);
+			memcpy((void *)address, src, sh->size);
+		}
+		sd->vbase[i] = address;
+		sd->sects[i] = sh;
+		address += sh->size;
+	}
+	sd->num = header->shnum;
+}
+
+int arch_loader_loader_parse_elf_module(uint8_t * buf, addr_t *entry, addr_t *tm_exiter, addr_t *deps, void **loaded_location)
 {
 	uint32_t i, x;
 	uint64_t module_entry=0, reloc_addr, mem_addr, module_exiter=0, module_deps=0;
@@ -80,6 +123,14 @@ int arch_loader_loader_parse_elf_module(uint8_t * buf, addr_t *entry, addr_t *tm
 	elf64_symtab_entry_t * symtab;
 	int error=0;
 	eh = (elf_header_t *)buf;
+	
+	void *load_address;
+	size_t load_size;
+	struct section_data sd;
+	
+	load_size = arch_loader_calculate_allocation_size(eh);
+	load_address = kmalloc(load_size);
+	arch_loader_copy_sections(eh, load_address, &sd);
 	
 	/* grab the functions we'll need */
 	for(i = 0; i < eh->shnum; i++)
@@ -92,16 +143,13 @@ int arch_loader_loader_parse_elf_module(uint8_t * buf, addr_t *entry, addr_t *tm
 				symtab = (elf64_symtab_entry_t*)(buf + sh->offset + x);
 				if(!memcmp((uint8_t*)get_symbol_string(buf, symtab->name), 
 						(uint8_t*)"module_install", 14))
-					module_entry = get_section_offset(buf, symtab->shndx) + 
-						symtab->address + (uint64_t)buf;
+					module_entry = sd.vbase[symtab->shndx] + symtab->address;
 				if(!memcmp((uint8_t*)get_symbol_string(buf, symtab->name), 
 						(uint8_t*)"module_tm_exit", 11))
-					module_exiter = get_section_offset(buf, symtab->shndx) + 
-						symtab->address + (uint64_t)buf;
+					module_exiter = sd.vbase[symtab->shndx] + symtab->address;
 				if(!memcmp((uint8_t*)get_symbol_string(buf, symtab->name), 
 						(uint8_t*)"module_deps", 11))
-					module_deps = get_section_offset(buf, symtab->shndx) + 
-						symtab->address + (uint64_t)buf;
+					module_deps = sd.vbase[symtab->shndx] + symtab->address;
 			}
 		}
 	}
@@ -109,6 +157,7 @@ int arch_loader_loader_parse_elf_module(uint8_t * buf, addr_t *entry, addr_t *tm
 	if(!module_entry)
 	{
 		printk(KERN_INFO, "[mod]: module_install() entry point was not found\n");
+		kfree(load_address);
 		return 1;
 	}
 	
@@ -118,7 +167,7 @@ int arch_loader_loader_parse_elf_module(uint8_t * buf, addr_t *entry, addr_t *tm
 	
 	/* fix up the relocation entries */
 	for(i = 0; i < eh->shnum; i++)
-	{  
+	{
 		sh = (elf64_section_header_t*)(buf + eh->shoff + (i * eh->shsize));
 		/* 64-bit ELF only deals in rela relocation sections */
 		if(sh->type == 4) {
@@ -126,11 +175,10 @@ int arch_loader_loader_parse_elf_module(uint8_t * buf, addr_t *entry, addr_t *tm
 			{
 				rela = (elf64_rela_t*)(buf + sh->offset + x);
 				symtab = fill_symbol_struct(buf, GET_RELOC_SYM(rela->info));
-				mem_addr = (uint64_t)buf + rela->offset;
-				mem_addr += get_section_offset(buf, sh->info);
 				
-				reloc_addr = (uint64_t)buf + symtab->address;
-				reloc_addr += get_section_offset(buf, symtab->shndx);
+				mem_addr = sd.vbase[sh->info] + rela->offset;
+				reloc_addr = sd.vbase[symtab->shndx] + symtab->address;
+				
 				if(symtab->shndx == 0)
 				{
 					reloc_addr = loader_find_kernel_function(get_symbol_string(buf, symtab->name));
@@ -156,6 +204,10 @@ int arch_loader_loader_parse_elf_module(uint8_t * buf, addr_t *entry, addr_t *tm
 			}
 		}
 	}
+	if(error)
+		kfree(load_address);
+	else
+		*loaded_location = load_address;
 	return error;
 }
 #endif

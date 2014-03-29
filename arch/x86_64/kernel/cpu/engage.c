@@ -49,7 +49,7 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	
 	/* initialize tasking for this CPU */
 	task_t *task = tm_task_create();
-	arch_specific_set_current_task(new_pml4, (addr_t)task);
+	arch_tm_set_current_task_marker(new_pml4, (addr_t)task);
 	task->pd = (page_dir_t *)cpu->kd;
 	task->stack_end=STACK_LOCATION;
 	task->priority = 1;

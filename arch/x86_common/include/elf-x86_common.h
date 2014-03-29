@@ -90,6 +90,7 @@ typedef struct
 #define PH_DYNAMIC 2
 #define PH_INTERP  3
 
+#define SHT_NOBITS 8
 
 #define EDT_NEEDED   1
 #define EDT_PLTRELSZ 2

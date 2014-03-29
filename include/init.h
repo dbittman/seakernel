@@ -32,6 +32,7 @@ int init_cache();
 int kt_init_kernel_tasking();
 void init_serial();
 void net_init();
+void tm_init_multitasking();
 /* Adds an env var to the init_env array */
 #define add_init_env(x) init_env[count_ie++] = x;init_env[count_ie]=0
 

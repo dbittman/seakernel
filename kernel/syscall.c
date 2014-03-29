@@ -75,7 +75,7 @@ void *syscall_table[129] = {
 	SC sys_null,
 	#endif
 	
-	SC get_pid,        SC /**32*/sys_getppid,
+	SC sys_get_pid,        SC /**32*/sys_getppid,
 	
 	SC sys_link,       SC vfs_unlink,         SC vfs_inode_get_ref_count, SC sys_get_pwd, 
 	SC sys_getpath,    SC sys_null,       SC vfs_chroot,    SC vfs_chdir,
@@ -97,10 +97,10 @@ void *syscall_table[129] = {
 	
 	SC /**64*/sys_nice,
 	
-	SC sys_null,       SC sys_null,       SC sys_null,      SC task_stat, 
+	SC sys_null,       SC sys_null,       SC sys_null,      SC sys_task_stat, 
 	SC sys_null,       SC sys_null,       SC tm_delay,         SC kernel_reset,
 	SC kernel_poweroff,SC tm_get_uid,        SC tm_get_gid,       SC tm_set_uid, 
-	SC tm_set_gid,        SC sys_null,    SC task_pstat,    SC sys_mount2,
+	SC tm_set_gid,        SC sys_null,    SC sys_task_pstat,    SC sys_mount2,
 	
 	SC tm_set_euid,       SC tm_set_egid,       SC sys_pipe,      SC tm_set_signal, 
 	SC tm_get_euid,       SC tm_get_egid,       SC sys_null,      SC sys_null,

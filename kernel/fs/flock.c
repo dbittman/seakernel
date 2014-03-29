@@ -152,7 +152,7 @@ int fs_fcntl_setlk(struct file *file, long arg)
 	mutex_acquire(f->flm);
 	if(p->l_type == F_UNLCK)
 	{
-		p->l_pid = get_pid();
+		p->l_pid = sys_get_pid();
 		p = find_flock(f, p);
 		if(!p) {
 			mutex_release(f->flm);

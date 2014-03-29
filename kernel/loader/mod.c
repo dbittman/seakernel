@@ -162,7 +162,6 @@ static int load_module(char *path, char *args, int flags)
 	sys_read(desc, 0, mem, len);
 	sys_close(desc);
 	/* Fill out the slot info */
-	tmp->base=mem;
 	tmp->length=len;
 	tmp->exiter=0;
 	tmp->deps[0]=0;
@@ -175,9 +174,9 @@ static int load_module(char *path, char *args, int flags)
 	}
 	/* Call the elf parser */
 	int res = loader_parse_elf_module(tmp, (unsigned char *)mem+4, path, flags & 1);
+	kfree(mem);
 	if(res == _MOD_FAIL || res == _MOD_AGAIN)
 	{
-		kfree(mem);
 		kfree(tmp);
 		/* try again? Maybe we loaded a dependency and need to retry */
 		if(res == _MOD_AGAIN)

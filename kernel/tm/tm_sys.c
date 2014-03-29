@@ -95,7 +95,7 @@ int sys_setpgid(int a, int b)
 	return -ENOSYS;
 }
 
-int get_pid()
+int sys_get_pid()
 {
 	return current_task->pid;
 }
@@ -175,7 +175,7 @@ int tm_get_euid()
 	return current_task->thread->effective_uid;
 }
 
-void do_task_stat(struct task_stat *s, task_t *t)
+static void do_sys_task_stat(struct task_stat *s, task_t *t)
 {
 	assert(s && t);
 	s->stime = t->stime;
@@ -194,22 +194,22 @@ void do_task_stat(struct task_stat *s, task_t *t)
 	s->mem_usage = t->pid ? t->phys_mem_usage * 4 : 0;
 }
 
-int task_pstat(unsigned int pid, struct task_stat *s)
+int sys_task_pstat(unsigned int pid, struct task_stat *s)
 {
 	if(!s) return -EINVAL;
 	task_t *t=tm_get_process_by_pid(pid);
 	if(!t)
 		return -ESRCH;
-	do_task_stat(s, t);
+	do_sys_task_stat(s, t);
 	return 0;
 }
 
-int task_stat(unsigned int num, struct task_stat *s)
+int sys_task_stat(unsigned int num, struct task_stat *s)
 {
 	if(!s) return -EINVAL;
 	task_t *t = tm_search_tqueue(primary_queue, TSEARCH_ENUM, num, 0, 0, 0);
 	if(!t) 
 		return -ESRCH;
-	do_task_stat(s, t);
+	do_sys_task_stat(s, t);
 	return 0;
 }

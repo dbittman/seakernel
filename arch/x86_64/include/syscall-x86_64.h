@@ -1,7 +1,7 @@
 #ifndef _SYSCALL_X86_64_H
 #define _SYSCALL_X86_64_H
 #define SC (long (*)(long, long, long, long, long))
-#include <asm/system.h>
+#include <sea/asm/system.h>
 static long dosyscall(int num, long a, long b, long c, long d, long e)
 {
 	long x;

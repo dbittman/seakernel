@@ -1,7 +1,7 @@
 /* Privides functions for interrupt handling. */
 #include <sea/kernel.h>
 #include <sea/cpu/interrupt.h>
-#include <asm/system.h>
+#include <sea/asm/system.h>
 #include <sea/tm/process.h>
 #include <sea/cpu/processor.h>
 #include <sea/loader/symbol.h>

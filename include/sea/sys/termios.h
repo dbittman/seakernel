@@ -8,8 +8,8 @@
  * New architectures should not provide their own version.
  */
 
-#include <sys/termbits.h>
-#include <sys/ioctls.h>
+#include <sea/sys/termbits.h>
+#include <sea/sys/ioctls.h>
 
 struct winsize {
 	unsigned short ws_row;

@@ -1,7 +1,7 @@
 /* Simple driver for the CRT controller */
 #include <sea/kernel.h>
 #include <sea/tty/terminal.h>
-#include <asm/system.h>
+#include <sea/asm/system.h>
 #include <sea/tm/process.h>
 #include <sea/tty/terminal.h>
 #define VIDEO_MEMORY 0xb8000

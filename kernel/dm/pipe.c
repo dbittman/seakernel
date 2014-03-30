@@ -6,7 +6,7 @@
 #include <sea/fs/file.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/tm/schedule.h>
-#include <sys/fcntl.h>
+#include <sea/sys/fcntl.h>
 pipe_t *dm_create_pipe()
 {
 	pipe_t *pipe = (pipe_t *)kmalloc(sizeof(pipe_t));

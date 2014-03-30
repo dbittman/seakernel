@@ -5,7 +5,7 @@
 #include <sea/dm/block.h>
 #include <sea/fs/inode.h>
 #include <sea/mm/swap.h>
-#include <sys/stat.h>
+#include <sea/sys/stat.h>
 #include <mod.h>
 mutex_t *sl_mutex;
 swapdev_t *swaplist=0;

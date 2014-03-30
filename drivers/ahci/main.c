@@ -6,7 +6,7 @@
 #include <sea/types.h>
 #include <modules/ahci.h>
 #include <modules/pci.h>
-#include <asm/system.h>
+#include <sea/asm/system.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/dm/block.h>
 #include <sea/loader/symbol.h>

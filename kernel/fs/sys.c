@@ -4,7 +4,7 @@
 #include <sea/tm/process.h>
 #include <sea/dm/dev.h>
 #include <sea/fs/inode.h>
-#include <sys/stat.h>
+#include <sea/sys/stat.h>
 #include <sea/dm/char.h>
 #include <sea/cpu/atomic.h>
 #include <sea/rwlock.h>
@@ -20,7 +20,7 @@
 #include <sea/fs/ramfs.h>
 #include <sea/dm/pipe.h>
 #include <sea/tm/schedule.h>
-#include <sys/fcntl.h>
+#include <sea/sys/fcntl.h>
 int system_setup=0;
 /* This function is called once at the start of the init process initialization.
  * It sets the task fs values to possible and useful things, allowing VFS access.

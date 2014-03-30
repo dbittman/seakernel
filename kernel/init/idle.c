@@ -9,7 +9,7 @@
 #include <sea/boot/multiboot.h>
 #include <sea/tty/terminal.h>
 #include <sea/mm/vmm.h>
-#include <asm/system.h>
+#include <sea/asm/system.h>
 #include <sea/tm/process.h>
 #include <sea/dm/dev.h>
 #include <sea/fs/inode.h>

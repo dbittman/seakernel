@@ -1,7 +1,7 @@
 #ifndef _SYSCALL_X86_H
 #define _SYSCALL_X86_H
 #define SC (int (*)(int, int, int, int, int))
-#include <asm/system.h>
+#include <sea/asm/system.h>
 static int dosyscall(int num, int a, int b, int c, int d, int e)
 {
 	int x;

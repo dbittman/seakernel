@@ -4,7 +4,7 @@
 #include <sea/fs/inode.h>
 
 #include <sea/types.h>
-#include <sys/stat.h>
+#include <sea/sys/stat.h>
 
 struct sblktbl {
 	int version;

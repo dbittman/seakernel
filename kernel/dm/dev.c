@@ -2,7 +2,7 @@
 #include <sea/dm/char.h>
 #include <sea/dm/dev.h>
 #include <sea/fs/inode.h>
-#include <sys/stat.h>
+#include <sea/sys/stat.h>
 #include <sea/dm/block.h>
 #include <sea/loader/symbol.h>
 struct devhash_s devhash[NUM_DT];

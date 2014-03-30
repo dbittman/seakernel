@@ -1,6 +1,6 @@
 #include <sea/kernel.h>
 #include <sea/fs/inode.h>
-#include <sys/stat.h>
+#include <sea/sys/stat.h>
 #include "iso9660.h"
 
 struct iso9660DirRecord *get_root_dir(iso_fs_t *fs)

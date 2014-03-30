@@ -4,7 +4,7 @@
 #include <sea/ll.h>
 #include <sea/tm/process.h>
 #include <sea/loader/symbol.h>
-#include <asm/system.h>
+#include <sea/asm/system.h>
 #include <sea/net/ethernet.h>
 #include <sea/tm/schedule.h>
 struct llist *net_list;

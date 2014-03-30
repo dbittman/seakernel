@@ -7,7 +7,7 @@
 #include <sea/tm/process.h>
 #include <sea/dm/char.h>
 #include <sea/tty/terminal.h>
-#include <asm/system.h>
+#include <sea/asm/system.h>
 #include <sea/tty/termios.h>
 #include <sea/loader/symbol.h>
 #include <sea/tm/tqueue.h>

@@ -5,7 +5,7 @@
 #include <sea/fs/inode.h>
 #include <sea/dm/dev.h>
 #include <sea/boot/init.h>
-#include <sys/fcntl.h>
+#include <sea/sys/fcntl.h>
 #include <sea/cpu/processor.h>
 #include <sea/loader/elf.h>
 #include <sea/fs/file.h>

@@ -1,7 +1,7 @@
 #include <sea/kernel.h>
 #include <sea/mm/vmm.h>
 #include <sea/tm/process.h>
-#include <asm/system.h>
+#include <sea/asm/system.h>
 #include <sea/dm/dev.h>
 #include <sea/fs/inode.h>
 #include <sea/fs/inode.h>

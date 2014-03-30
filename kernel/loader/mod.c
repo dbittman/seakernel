@@ -9,7 +9,7 @@
 #include <sea/loader/elf.h>
 #include <sea/loader/symbol.h>
 #include <sea/loader/module.h>
-#include <sys/fcntl.h>
+#include <sea/sys/fcntl.h>
 module_t *modules=0;
 int load_deps(char *);
 mutex_t mod_mutex;

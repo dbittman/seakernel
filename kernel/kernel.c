@@ -1,7 +1,7 @@
 /* kernel.c: Copyright (c) 2010 Daniel Bittman
  * Provides some fairly standard functions for the kernel */
 #include <sea/kernel.h>
-#include <asm/system.h>
+#include <sea/asm/system.h>
 #include <sea/loader/module.h>
 #include <sea/tm/process.h>
 #include <sea/cpu/processor.h>

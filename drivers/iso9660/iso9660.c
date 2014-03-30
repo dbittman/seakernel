@@ -1,6 +1,6 @@
 #include <sea/kernel.h>
 #include <sea/fs/inode.h>
-#include <sys/stat.h>
+#include <sea/sys/stat.h>
 #include "iso9660.h"
 int iso9660_unmount(struct inode *, unsigned  v);
 iso_fs_t *get_fs(int v);

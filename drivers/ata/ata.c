@@ -3,7 +3,7 @@
 #include <modules/pci.h>
 #include <modules/ata.h>
 #include <sea/dm/block.h>
-#include <sys/fcntl.h>
+#include <sea/sys/fcntl.h>
 #include <sea/loader/module.h>
 #include <modules/psm.h>
 #include <sea/cpu/interrupt.h>

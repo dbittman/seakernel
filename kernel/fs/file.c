@@ -6,7 +6,7 @@
 #include <sea/fs/file.h>
 #include <sea/tm/process.h>
 #include <sea/dm/pipe.h>
-#include <sys/fcntl.h>
+#include <sea/sys/fcntl.h>
 static struct file_ptr *get_file_handle(task_t *t, int n)
 {
 	if(n >= FILP_HASH_LEN) return 0;

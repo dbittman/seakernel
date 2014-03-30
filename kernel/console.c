@@ -2,7 +2,7 @@
  * Provides functions for the virtual aspect of terminals. 
  */
 #include <sea/kernel.h>
-#include <asm/system.h>
+#include <sea/asm/system.h>
 #include <sea/mutex.h>
 #include <sea/tty/terminal.h>
 #include <sea/tty/terminal.h>

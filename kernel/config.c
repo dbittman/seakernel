@@ -4,8 +4,8 @@
 #include <sea/tm/process.h>
 #include <sea/dm/dev.h>
 #include <sea/fs/inode.h>
-#include <sys/stat.h>
-#include <sys/sysconf.h>
+#include <sea/sys/stat.h>
+#include <sea/sys/sysconf.h>
 #include <sea/cpu/processor.h>
 #include <sea/uname.h>
 #include <sea/tm/schedule.h>

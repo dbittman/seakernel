@@ -2,7 +2,7 @@
  * Functions for kernel crashes and exceptions */
 #include <sea/kernel.h>
 #include <sea/stdarg.h>
-#include <asm/system.h>
+#include <sea/asm/system.h>
 #include <sea/tm/process.h>
 #include <sea/cpu/processor.h>
 #include <sea/cpu/atomic.h>

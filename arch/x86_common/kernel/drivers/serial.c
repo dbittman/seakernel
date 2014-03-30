@@ -2,7 +2,7 @@
  * output to the first serial port. For better access, you'll need a
  * module of some sort */
 #include <sea/kernel.h>
-#include <asm/system.h>
+#include <sea/asm/system.h>
 #include <sea/dm/char.h>
 #include <sea/mutex.h>
 #include <sea/loader/symbol.h>

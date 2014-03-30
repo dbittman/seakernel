@@ -3,7 +3,7 @@
 #include <sea/net/ethernet.h>
 #include <sea/net/arp.h>
 #include <sea/net/ipv4.h>
-#include <asm/system.h>
+#include <sea/asm/system.h>
 
 void ethernet_construct_header(struct ethernet_header *head, uint8_t src_mac[6], uint8_t dest_mac[6], uint16_t ethertype)
 {

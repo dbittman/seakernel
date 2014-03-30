@@ -2,7 +2,7 @@
 #include <sea/kernel.h>
 #include <sea/fs/inode.h>
 #include <sea/tm/process.h>
-#include <sys/stat.h>
+#include <sea/sys/stat.h>
 #include <sea/dm/dev.h>
 #include <sea/mm/swap.h>
 #include <sea/cpu/processor.h>

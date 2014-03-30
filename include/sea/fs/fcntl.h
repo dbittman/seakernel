@@ -2,7 +2,7 @@
 #define _FCNTL_H
 #include <sea/types.h>
 #include <sea/fs/inode.h>
-#include <sys/fcntl.h>
+#include <sea/sys/fcntl.h>
 
 //struct flock *create_flock(int type, int whence, off_t start, size_t len);
 int can_access_file(struct inode *file, int access);

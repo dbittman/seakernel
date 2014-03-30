@@ -8,12 +8,8 @@
 #include <sea/mm/swap.h>
 #include <sea/cpu/processor.h>
 #include <sea/dm/block.h>
-
+#include <sea/fs/proc.h>
 int proc_read_int(char *buf, int off, int len);
-int proc_read_mutex(char *buf, int off, int len);
-int proc_read_bcache(char *buf, int off, int len);
-int proc_append_buffer(char *buffer, char *data, int off, int len, 
-		int req_off, int req_len);
 
 #if CONFIG_SMP
 int proc_cpu(char rw, struct inode *inode, int m, char *buf, int off, int len)

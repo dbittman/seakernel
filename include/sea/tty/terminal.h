@@ -59,7 +59,7 @@ void console_init_stage2();
 int tty_read_escape_seq(struct vterm *con, char *seq);
 
 extern struct vterm consoles[];
-extern struct vterm *curcons, *kernel_console, *log_console;
+extern struct vterm *current_console, *kernel_console, *log_console;
 
 void console_puts(struct vterm *c, char *s);
 int tty_write(int min, char *buf, size_t len);

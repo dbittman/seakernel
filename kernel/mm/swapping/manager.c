@@ -332,7 +332,7 @@ void __KT_swapper()
 				task_t *t = kernel_task->next;
 				while(t)
 				{
-					if((t->tty != curcons->tty || 
+					if((t->tty != current_console->tty || 
 							(((pm_used_pages * 100) / pm_num_pages) > 80)) || 
 							t->state != TASK_RUNNING) {
 						if(t->tty) swap_task(t);

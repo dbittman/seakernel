@@ -3,7 +3,6 @@
 #include <sea/kernel.h>
 #include <sea/fs/inode.h>
 
-
 #define CALLBACK_NOFUNC_ERROR -ENOTSUP
 
 int vfs_callback_read (struct inode *i, off_t a, size_t b, char *d)

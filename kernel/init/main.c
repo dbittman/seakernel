@@ -18,21 +18,22 @@
 #include <sea/fs/initrd.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/atomic.h>
+
 struct multiboot *mtboot;
 addr_t i_stack=0;
-
-char init_path[128] = "*";
-char root_device[64] = "/";
 char *stuff_to_pass[128];
 int argc_STP=3;
-int count_ie=0;
-char *init_env[12];
-char cleared_args=0;
 unsigned init_pid=0;
-char kernel_name[128];
 elf32_t kernel_elf;
 int april_fools=0;
-struct tm kernel_start_time;
+
+static char init_path[128] = "*";
+static char root_device[64] = "/";
+static int count_ie=0;
+static char *init_env[12];
+static char cleared_args=0;
+static char kernel_name[128];
+static struct tm kernel_start_time;
 
 void parse_kernel_cmd(char *buf)
 {

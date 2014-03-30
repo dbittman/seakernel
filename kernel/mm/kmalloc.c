@@ -4,10 +4,12 @@
 #include <sea/kernel.h>
 #include <sea/mm/vmm.h>
 #include <sea/tm/process.h>
-addr_t (*do_kmalloc_wrap)(size_t, char)=0;
-void (*do_kfree_wrap)(void *)=0;
-char kmalloc_name[128];
-mutex_t km_m;
+
+static addr_t (*do_kmalloc_wrap)(size_t, char)=0;
+static void (*do_kfree_wrap)(void *)=0;
+
+static char kmalloc_name[128];
+static mutex_t km_m;
 void kmalloc_create(char *name, unsigned (*init)(addr_t, addr_t), 
 	addr_t (*alloc)(size_t, char), void (*free)(void *))
 {

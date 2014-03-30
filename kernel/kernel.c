@@ -13,8 +13,7 @@
 #else
 #include <sea/cpu/cpu-x86_64.h>
 #endif
-int sys_sync(int);
-void acpiPowerOff(void);
+
 int PRINT_LEVEL = DEF_PRINT_LEVEL;
 volatile unsigned kernel_state_flags=0;
 
@@ -24,7 +23,7 @@ void kernel_shutdown()
 #if CONFIG_SMP
 	printk(0, "[smp]: shutting down application processors\n");
 	cpu_send_ipi(CPU_IPI_DEST_OTHERS, IPI_SHUTDOWN, 0);
-	while(num_halted_cpus < num_booted_cpus) asm("pause");
+	while(cpu_get_num_halted_processors() < cpu_get_num_secondary_processors()) asm("pause");
 #endif
 	current_task->thread->effective_uid=current_task->thread->real_uid=0;
 	tm_raise_flag(TF_SHUTDOWN);

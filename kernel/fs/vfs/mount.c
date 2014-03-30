@@ -12,7 +12,7 @@
 #include <sea/fs/callback.h>
 #include <sea/fs/devfs.h>
 #include <sea/fs/proc.h>
-struct inode *fs_init_tmpfs();
+#include <sea/fs/ramfs.h>
 
 static int do_mount(struct inode *i, struct inode *p)
 {

@@ -57,6 +57,8 @@ typedef struct __cpu_t__ {
 
 void cpu_smp_task_idle(task_t *me);
 int cpu_get_num_running_processors();
+int cpu_get_num_halted_processors();
+int cpu_get_num_secondary_processors();
 #if CONFIG_SMP
 
 cpu_t *cpu_get(int id);

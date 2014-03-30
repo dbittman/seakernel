@@ -14,7 +14,7 @@
 static __attribute__((always_inline)) inline void update_task(task_t *t)
 {
 	/* task's tm_delay ran out */
-	if((t->state == TASK_USLEEP || t->state == TASK_ISLEEP) && t->tick <= ticks && t->tick)
+	if((t->state == TASK_USLEEP || t->state == TASK_ISLEEP) && t->tick <= tm_get_ticks() && t->tick)
 		t->state = TASK_RUNNING;
 }
 /* This here is the basic scheduler - It does nothing 
@@ -122,7 +122,7 @@ int tm_schedule()
 	assert(next_task);
 	assert(cpu == next_task->cpu);
 	restore_context(next_task);
-	next_task->slice = ticks;
+	next_task->slice = tm_get_ticks();
 	((cpu_t *)next_task->cpu)->cur = next_task;
 	
 	/* we need to call this after restore_context because in restore_context
@@ -154,7 +154,7 @@ void __tm_check_alarms()
 	/* interrupts will be disabled here. Thus, we can aquire 
 	 * a mutex safely */
 	mutex_acquire(alarm_mutex);
-	if((unsigned)ticks > alarm_list_start->alarm_end)
+	if((unsigned)tm_get_ticks() > alarm_list_start->alarm_end)
 	{
 		tm_process_lower_flag(alarm_list_start, TF_ALARM);
 		alarm_list_start->sigd = SIGALRM;

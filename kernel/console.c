@@ -6,7 +6,7 @@
 #include <sea/mutex.h>
 #include <sea/tty/terminal.h>
 #include <sea/tty/terminal.h>
-struct vterm *curcons=0;
+struct vterm *current_console=0;
 struct vterm *kernel_console, *log_console=0;
 extern struct console_driver crtc_drv;
 #define VIDEO_MEMORY 0xb8000
@@ -28,8 +28,8 @@ void console_kernel_puts(char *s)
 
 void console_destroy(struct vterm *con)
 {
-	if(con == curcons)
-		curcons = kernel_console;
+	if(con == current_console)
+		current_console = kernel_console;
 	kfree(con->vmem);
 	mutex_destroy(&con->wlock);
 	mutex_destroy(&con->inlock);
@@ -59,18 +59,18 @@ void console_initialize_vterm(struct vterm *con, struct console_driver *driver)
 void console_switch(struct vterm *n)
 {
 	/* Copy screen to old console */
-	struct vterm *old = curcons;
+	struct vterm *old = current_console;
 	mutex_acquire(&old->wlock);
-	memcpy(curcons->vmem, (char *)curcons->video, 
-				curcons->h*curcons->w*curcons->bd);
-	curcons->cur_mem = curcons->vmem;
-	curcons = n;
-	curcons->cur_mem = (char *)curcons->video;
-	if(curcons->rend->switch_in)
-		curcons->rend->switch_in(curcons);
-	memcpy(curcons->cur_mem, curcons->vmem, curcons->w*curcons->h*curcons->bd);
-	if(curcons->rend->update_cursor)
-		curcons->rend->update_cursor(curcons);
+	memcpy(current_console->vmem, (char *)current_console->video, 
+				current_console->h*current_console->w*current_console->bd);
+	current_console->cur_mem = current_console->vmem;
+	current_console = n;
+	current_console->cur_mem = (char *)current_console->video;
+	if(current_console->rend->switch_in)
+		current_console->rend->switch_in(current_console);
+	memcpy(current_console->cur_mem, current_console->vmem, current_console->w*current_console->h*current_console->bd);
+	if(current_console->rend->update_cursor)
+		current_console->rend->update_cursor(current_console);
 	mutex_release(&old->wlock);
 }
 
@@ -80,8 +80,8 @@ void console_init_stage1()
 	console_create(kernel_console);
 	kernel_console->vmem=kernel_console->cur_mem
 						=kernel_console->video=(char *)VIDEO_MEMORY;
-	curcons = kernel_console;
+	current_console = kernel_console;
 	console_initialize_vterm(kernel_console, &crtc_drv);
-	curcons->rend->clear(curcons);
+	current_console->rend->clear(current_console);
 	printk(0, "[console]: Video output ready\n");
 }

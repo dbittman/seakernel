@@ -15,6 +15,7 @@ void cpu_smp_task_idle(task_t *me)
 		tm_schedule();
 }
 extern int num_booted_cpus;
+extern int num_halted_cpus;
 #endif
 
 int cpu_get_num_running_processors()
@@ -24,4 +25,18 @@ int cpu_get_num_running_processors()
 #else
 	return 1;
 #endif
+}
+
+int cpu_get_num_halted_processors()
+{
+#if CONFIG_SMP
+	return num_halted_cpus;
+#else
+	return 0;
+#endif
+}
+
+int cpu_get_num_secondary_processors()
+{
+	return cpu_get_num_running_processors()-1;
 }

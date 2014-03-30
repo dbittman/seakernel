@@ -6,10 +6,10 @@
 #include <sea/cpu/acpi.h>
 #include <sea/loader/symbol.h>
 #include <sea/mm/pmap.h>
-struct pmap acpi_pmap;
-int __acpi_enable = 0;
-int acpi_rsdt_pt_sz;
-struct acpi_dt_header *acpi_rsdt;
+static struct pmap acpi_pmap;
+static int __acpi_enable = 0;
+static int acpi_rsdt_pt_sz;
+static struct acpi_dt_header *acpi_rsdt;
 
 static int rsdp_validate_checksum(struct acpi_rsdp *rsdp)
 {

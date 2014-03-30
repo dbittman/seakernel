@@ -28,22 +28,22 @@ void flush_port()
 
 void enqueue_char(char c)
 {
-	if(c == 3 && (curcons->term.c_lflag & ICANON))
+	if(c == 3 && (current_console->term.c_lflag & ICANON))
 	{
-		ttyx_ioctl(curcons->tty, 19, SIGINT);
+		ttyx_ioctl(current_console->tty, 19, SIGINT);
 		return;
 	}
-	if(c == 26 && (curcons->term.c_lflag & ICANON))
+	if(c == 26 && (current_console->term.c_lflag & ICANON))
 	{
-		ttyx_ioctl(curcons->tty, 19, SIGTSTP);
+		ttyx_ioctl(current_console->tty, 19, SIGTSTP);
 		return;
 	}
-	if(c == 28 && (curcons->term.c_lflag & ICANON))
+	if(c == 28 && (current_console->term.c_lflag & ICANON))
 	{
-		ttyx_ioctl(curcons->tty, 19, SIGQUIT);
+		ttyx_ioctl(current_console->tty, 19, SIGQUIT);
 		return;
 	}
-	ttyx_ioctl(curcons->tty, 17, c);
+	ttyx_ioctl(current_console->tty, 17, c);
 }
 
 void enqueue_string(char *c)

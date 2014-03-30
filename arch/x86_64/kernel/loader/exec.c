@@ -1,5 +1,5 @@
 #include <sea/tm/process.h>
-void arch_specific_exec_initializer(task_t *t, unsigned argc, addr_t eip)
+void arch_loader_exec_initializer(task_t *t, unsigned argc, addr_t eip)
 {
 	/* don't ya just love iret? */
 	t->sysregs->rdi = argc;

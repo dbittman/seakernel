@@ -7,7 +7,8 @@
 #include <sea/dm/block.h>
 #include <sea/lib/cache.h>
 #include <sea/loader/symbol.h>
-cache_t *blk_cache=0;
+
+static cache_t *blk_cache=0;
 
 int dm_block_cache_sync(struct ce_t *c)
 {

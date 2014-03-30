@@ -122,7 +122,7 @@ int sys_times(struct tms *buf)
 		buf->tms_cstime = current_task->t_cstime;
 		buf->tms_cutime = current_task->t_cutime;
 	}
-	return ticks;
+	return tm_get_ticks();
 }
 
 /* we set interrupts to zero here so that we may use rwlocks in

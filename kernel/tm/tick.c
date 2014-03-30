@@ -9,8 +9,25 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/atomic.h>
 #include <sea/tm/schedule.h>
-int current_hz=1000;
-volatile long ticks=0;
+
+static int current_hz=1000;
+static volatile long ticks=0;
+
+int tm_get_current_frequency()
+{
+	return current_hz;
+}
+
+void tm_set_current_frequency_indicator(int hz)
+{
+	current_hz = hz;
+}
+
+long tm_get_ticks()
+{
+	return ticks;
+}
+
 int sys_get_timer_th(int *t)
 {
 	if(t)
@@ -23,7 +40,7 @@ static int GET_MAX_TS(task_t *t)
 	if(t->flags & TF_EXITING)
 		return 1;
 	int x = t->priority;
-	if(t->tty == curcons->tty)
+	if(t->tty == current_console->tty)
 		x += sched_tty;
 	return x;
 }

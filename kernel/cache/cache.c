@@ -10,9 +10,9 @@
 #include <sea/cpu/atomic.h>
 #include <sea/loader/symbol.h>
 #include <sea/lib/hash.h>
+
 struct llist *cache_list;
-int disconnect_block_cache(int dev);
-int write_block_cache(int dev, u64 blk);
+
 static void accessed_cache(cache_t *c)
 {
 	c->slow=100;

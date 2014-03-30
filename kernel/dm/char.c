@@ -4,7 +4,9 @@
 #include <sea/tm/process.h>
 #include <sea/dm/char.h>
 #include <sea/tty/terminal.h>
-mutex_t cd_search_lock;
+
+static mutex_t cd_search_lock;
+
 static int zero_rw(int rw, int m, char *buf, size_t c)
 {
 	m=0;

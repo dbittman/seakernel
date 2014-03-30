@@ -18,7 +18,7 @@ long sys_sysconf(int cmd)
 			ret = PAGE_SIZE;
 			break;
 		case _SC_CLK_TCK:
-			ret = current_hz;
+			ret = tm_get_current_frequency();
 			break;
 		case _SC_PHYS_PAGES:
 			ret = pm_num_pages;

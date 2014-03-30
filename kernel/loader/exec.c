@@ -16,8 +16,8 @@
 /* Prepares a process to recieve a new executable. Desc is the descriptor of 
  * the executable. We keep it open through here so that we dont have to 
  * re-open it. */
-void arch_specific_exec_initializer(task_t *t, unsigned argc, addr_t eip);
-int process_elf_other(char *mem, int fp, addr_t *start, addr_t *end);
+void arch_loader_exec_initializer(task_t *t, unsigned argc, addr_t eip);
+
 static task_t *preexec(task_t *t, int desc)
 {
 	if(t->magic != TASK_MAGIC)
@@ -221,7 +221,7 @@ static int do_exec(task_t *t, char *path, char **argv, char **env)
 	tm_process_lower_flag(t, TF_SCHED);
 	if(!(kernel_state_flags & KSF_HAVEEXECED))
 		set_ksf(KSF_HAVEEXECED);
-	arch_specific_exec_initializer(t, argc, eip);
+	arch_loader_exec_initializer(t, argc, eip);
 	return 0;
 }
 

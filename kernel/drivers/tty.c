@@ -12,8 +12,9 @@
 #include <sea/loader/symbol.h>
 #include <sea/tm/tqueue.h>
 #include <sea/cpu/atomic.h>
+
 struct vterm consoles[MAX_CONSOLES];
-unsigned *tty_calltable = 0;
+static unsigned *tty_calltable = 0;
 extern struct console_driver crtc_drv;
 /* Create a terminal if needed, and set as current */
 int tty_open(int min)
@@ -407,6 +408,6 @@ void console_init_stage2()
 	loader_add_kernel_symbol(console_create);
 	loader_add_kernel_symbol(console_destroy);
 	loader_add_kernel_symbol(console_switch);
-	loader_do_add_kernel_symbol((addr_t)(unsigned *)&curcons, "curcons");
+	loader_do_add_kernel_symbol((addr_t)(unsigned *)&current_console, "current_console");
 #endif
 }

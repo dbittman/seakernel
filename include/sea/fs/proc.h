@@ -15,7 +15,8 @@ int pfs_write(struct inode *i, off_t pos, size_t len, char *buffer);
 int pfs_read(struct inode *i, off_t pos, size_t len, char *buffer);
 int proc_append_buffer(char *buffer, char *data, int off, int len, 
 	int req_off, int req_len);
-
+int proc_set_callback(int major, int( *callback)(char rw, struct inode *inode, 
+	int m, char *buf, int, int));
 extern struct inode *procfs_root;
 extern struct inode *procfs_kprocdir;
 extern struct inode *kproclist;

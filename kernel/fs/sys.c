@@ -21,7 +21,7 @@
 #include <sea/dm/pipe.h>
 #include <sea/tm/schedule.h>
 #include <sea/sys/fcntl.h>
-int system_setup=0;
+static int system_setup=0;
 /* This function is called once at the start of the init process initialization.
  * It sets the task fs values to possible and useful things, allowing VFS access.
  * It then starts the device and proc filesystems, and opens up /dev/tty1 on
@@ -30,8 +30,6 @@ int system_setup=0;
  * Beyond that, it can be called by any task at anytime after the first call as
  * a yield call.
  */
-int proc_set_callback(int major, int( *callback)(char rw, struct inode *inode, 
-	int m, char *buf, int, int));
 int sys_setup(int a)
 {
 	if(system_setup)
@@ -352,6 +350,7 @@ int sys_symlink(char *p2, char *p1)
 	vfs_iput(inode);
 	return 0;
 }
+
 #define	F_OK	0
 #define	R_OK	4
 #define	W_OK	2
@@ -409,10 +408,10 @@ int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 	int i;
 	if(timeout)
 		wait = timeout->tv_sec * 1000 + (timeout->tv_usec/1000);
-	long end = wait+ticks;
+	long end = wait+tm_get_ticks();
 	int total_set=0, is_ok=0;
 	int ret=0;
-	while((ticks <= end || !wait || !timeout) && !ret)
+	while((tm_get_ticks() <= end || !wait || !timeout) && !ret)
 	{
 		total_set=0;
 		for(i=0;i<nfds;++i)
@@ -452,9 +451,9 @@ int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 	}
 	if(timeout)
 	{
-		timeout->tv_sec = (end-ticks)/1000;
-		timeout->tv_usec = ((end-ticks)%1000)*1000;
-		if(ticks >= end) {
+		timeout->tv_sec = (end-tm_get_ticks())/1000;
+		timeout->tv_usec = ((end-tm_get_ticks())%1000)*1000;
+		if(tm_get_ticks() >= end) {
 			timeout->tv_sec = 0;
 			timeout->tv_usec = 0;
 			return 0;

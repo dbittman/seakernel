@@ -8,12 +8,7 @@
 #include <sea/cpu/processor.h>
 #include <sea/fs/mount.h>
 #include <sea/fs/dir.h>
-int proc_read_int(char *buf, int off, int len);
-int proc_read_mutex(char *buf, int off, int len);
-int proc_read_bcache(char *buf, int off, int len);
-int proc_append_buffer(char *buffer, char *data, int off, int len, int req_off, 
-	int req_len);
-struct inode *get_sb_table(int n);
+#include <sea/fs/proc.h>
 
 struct mnttab {
 	char	*mt_special;

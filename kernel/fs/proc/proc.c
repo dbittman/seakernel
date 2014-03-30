@@ -8,9 +8,7 @@
 #include <sea/cpu/processor.h>
 #include <sea/fs/proc.h>
 struct inode *procfs_root, *procfs_kprocdir;
-int proc_read_int(char *buf, int off, int len);
-int proc_read_mutex(char *buf, int off, int len);
-int proc_read_bcache(char *buf, int off, int len);
+
 struct inode_operations procfs_inode_ops = {
  proc_read,
  proc_write,
@@ -27,6 +25,7 @@ struct inode_operations procfs_inode_ops = {
  0,
  0
 };
+
 int proc_mods(char rw, struct inode *n, int min, char *buf, int off, int len);
 int proc_cpu(char rw, struct inode *inode, int m, char *buf, int off, int len);
 int proc_vfs(char rw, struct inode *n, int m, char *buf, int off, int len);

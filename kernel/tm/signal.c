@@ -141,8 +141,8 @@ int sys_alarm(int a)
 {
 	if(a)
 	{
-		int old_value = current_task->alarm_end - ticks;
-		current_task->alarm_end = a * current_hz + ticks;
+		int old_value = current_task->alarm_end - tm_get_ticks();
+		current_task->alarm_end = a * tm_get_current_frequency() + tm_get_ticks();
 		if(!(current_task->flags & TF_ALARM)) {
 			/* need to clear interrupts here, because
 			 * we access this inside the scheduler... */

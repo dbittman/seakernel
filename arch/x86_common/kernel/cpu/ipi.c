@@ -23,7 +23,9 @@
 #else
 #include <sea/cpu/cpu-x86_64.h>
 #endif
+
 mutex_t ipi_mutex;
+
 int x86_cpu_send_ipi(unsigned char dest_shorthand, unsigned int dst, unsigned int v)
 {
 	assert((v & LAPIC_ICR_DM_INIT) || (v & LAPIC_ICR_LEVELASSERT));

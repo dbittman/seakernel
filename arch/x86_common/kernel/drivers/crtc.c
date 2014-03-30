@@ -18,7 +18,7 @@ struct console_driver crtc_drv = {
 void crtc_scrolldown(struct vterm *con)
 {
 	if(!con || con == kernel_console)
-		con=curcons;
+		con=current_console;
 	/* Get a space character with the default colour attributes. */
 	unsigned short blank = 0x20 /* space */ | (((con->b << 4) | (con->f & 0x0F)) << 8);
 	unsigned short *video_memory = (unsigned short *)con->cur_mem + con->w*con->scrollt;
@@ -33,8 +33,8 @@ void crtc_scrolldown(struct vterm *con)
 void crtc_update_cursor(struct vterm *con)
 {
 	if(!con || con == kernel_console)
-		con = curcons;
-	if(con != curcons)
+		con = current_console;
+	if(con != current_console)
 		return;
 	volatile unsigned short position = (con->y * con->w + con->x);
 	outb(0x3D4, 0x0F);
@@ -46,7 +46,7 @@ void crtc_update_cursor(struct vterm *con)
 void crtc_console_put(struct vterm *con, char c)
 {
 	if(!con || con == kernel_console)
-		con=curcons;
+		con=current_console;
 	if(c == 0x08) {
 		if(con->x)
 			con->x--;
@@ -100,8 +100,8 @@ void crtc_clear(struct vterm *con)
 void crtc_clear_cursor(struct vterm *c)
 {
 	if(!c || c == kernel_console)
-		c=curcons;
-	if(c!=curcons)
+		c=current_console;
+	if(c!=current_console)
 		return;
 	volatile unsigned short position = (25 * 80 + 80);
 	outb(0x3D4, 0x0F);
@@ -138,7 +138,7 @@ void crtc_init_console(struct vterm *con)
 		vmem = (char *)kmalloc(80*25*2+4);
 	if(!vmem)
 		panic(0, "Couldn't allocate virtual video memory (mmu is needed)");
-	if(con != curcons)
+	if(con != current_console)
 		con->cur_mem=vmem;
 	else
 		con->cur_mem = con->video;

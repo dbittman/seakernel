@@ -6,7 +6,9 @@
 #include <sea/dm/block.h>
 #include <sea/lib/cache.h>
 #undef DT_CHAR
-mutex_t bd_search_lock;
+
+static mutex_t bd_search_lock;
+
 int ioctl_stub(int a, int b, long c)
 {
 	return -1;

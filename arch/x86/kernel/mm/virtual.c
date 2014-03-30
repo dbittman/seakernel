@@ -12,7 +12,7 @@
 #include <sea/mm/vmm.h>
 #include <sea/cpu/cpu-x86.h>
 volatile page_dir_t *kernel_dir=0, *minimal_directory=0;
-unsigned int cr0temp;
+static unsigned int cr0temp;
 int id_tables=0;
 struct pd_data *pd_cur_data = (struct pd_data *)PDIR_DATA;
 

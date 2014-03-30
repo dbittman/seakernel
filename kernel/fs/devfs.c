@@ -10,8 +10,8 @@
 #include <sea/fs/devfs.h>
 
 struct inode *devfs_root;
-int devfs_nodescount=1;
-int devfs_fsstat(struct inode *i, struct posix_statfs *fs);
+static int devfs_nodescount=1;
+
 struct inode_operations devfs_inode_ops = {
  0,
  0,

@@ -9,6 +9,7 @@
 #include <sea/cpu/acpi.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/features-x86_common.h>
+
 cpu_t *primary_cpu=0;
 #if CONFIG_SMP
 cpu_t cpu_array[CONFIG_MAX_CPUS];

@@ -5,8 +5,9 @@
 #include <sea/cpu/atomic.h>
 #include <sea/fs/ramfs.h>
 struct inode *ramfs_root;
-int ramfs_sane(struct inode *i);
-unsigned int ramfs_node_num=0;
+
+static unsigned int ramfs_node_num=0;
+
 int ramfs_op_dummy()
 {
 	return 0;

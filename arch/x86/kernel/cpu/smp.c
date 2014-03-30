@@ -10,9 +10,11 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/cmos-x86_common.h>
 #include <sea/cpu/cpu-x86.h>
+
 unsigned num_cpus=0, num_booted_cpus=0, num_failed_cpus=0;
 int imps_scan_mptables(unsigned addr, unsigned len);
 volatile unsigned num_halted_cpus=0;
+
 int probe_smp_mptables()
 {
 	unsigned long long lapic_msr = read_msr(0x1b);

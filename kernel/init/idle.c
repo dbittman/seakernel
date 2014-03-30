@@ -21,7 +21,6 @@
 #include <sea/cpu/atomic.h>
 #include <sea/tm/schedule.h>
 
-void get_timed(struct tm *now);
 int __KT_try_releasing_tasks();
 void __KT_try_handle_stage2_interrupts();
 

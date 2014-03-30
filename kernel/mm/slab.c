@@ -20,14 +20,17 @@
 #include <sea/mm/slab.h>
 #include <sea/mm/vmem.h>
 
-slab_cache_t *scache_list[NUM_SCACHES];
+#define SLAB_NUM_INDEX 120
+
 addr_t slab_start=0, slab_end=0;
 vma_t slab_area_alloc;
-unsigned pages_used=0;
-#define SLAB_NUM_INDEX 120
-unsigned num_slab=0, num_scache=0;
+
+static slab_cache_t *scache_list[NUM_SCACHES];
+static unsigned pages_used=0;
+
+static unsigned num_slab=0, num_scache=0;
 static void release_slab(slab_t *slab);
-mutex_t scache_lock;
+static mutex_t scache_lock;
 //#define SLAB_DEBUG 1
 #ifdef SLAB_DEBUG
 unsigned total=0;

@@ -5,10 +5,12 @@
 #include <sea/fs/inode.h>
 #include <sea/boot/multiboot.h>
 #include <sea/fs/ramfs.h>
-int initrd_version=0;
+
+static int initrd_version=0;
 addr_t initrd_location=0;
-initrd_header_t *initrd_header;
-initrd_file_header_t *file_headers;
+static initrd_header_t *initrd_header;
+static initrd_file_header_t *file_headers;
+
 void fs_initrd_load(struct multiboot *mb)
 {
 	addr_t initrd_end;

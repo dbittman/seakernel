@@ -20,7 +20,7 @@
 #include <sea/dm/pipe.h>
 #include <sea/loader/exec.h>
 #include <sea/cpu/atomic.h>
-unsigned int num_syscalls=0;
+static unsigned int num_syscalls=0;
 //#define SC_DEBUG 1
 int sys_null(long a, long b, long c, long d, long e)
 {
@@ -225,14 +225,14 @@ int syscall_handler(volatile registers_t *regs)
 	current_task->freed = current_task->allocated=0;
 	
 	#ifdef SC_DEBUG
-	if(current_task->tty == curcons->tty) 
+	if(current_task->tty == current_console->tty) 
 		printk(SC_DEBUG, "syscall %d (from: %x): enter %d\n", current_task->pid, current_task->sysregs->eip, SYSCALL_NUM_AND_RET);
 	int or_t = ticks;
 	#endif
 	__do_syscall_jump(ret, syscall_table[SYSCALL_NUM_AND_RET], _E_, _D_, 
 					  _C_, _B_, _A_);
 	#ifdef SC_DEBUG
-	if(current_task->tty == curcons->tty && (ticks - or_t >= 10 || 1) 
+	if(current_task->tty == current_console->tty && (ticks - or_t >= 10 || 1) 
 		&& (ret < 0 || 1) && (ret == -EINTR || 1))
 		printk(SC_DEBUG, "syscall %d: %d ret %d, took %d ticks\n", 
 			   current_task->pid, current_task->system, ret, ticks - or_t);
@@ -246,7 +246,7 @@ int syscall_handler(volatile registers_t *regs)
 	 * to write() from starving the resources of other tasks. syscall_count resets
 	 * on each call to tm_tm_schedule() */
 	if(current_task->flags & TF_SCHED 
-		|| (unsigned)(ticks-current_task->slice) > (unsigned)current_task->cur_ts
+		|| (unsigned)(tm_get_ticks() -current_task->slice) > (unsigned)current_task->cur_ts
 		|| ++current_task->syscall_count > 2)
 	{
 		/* clear out the flag. Either way in the if statement, we've rescheduled. */

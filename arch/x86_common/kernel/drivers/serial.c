@@ -8,8 +8,8 @@
 #include <sea/loader/symbol.h>
 #include <sea/tm/process.h>
 #include <sea/tm/process.h>
-mutex_t serial_m;
-char serial_initialized=0;
+static mutex_t serial_m;
+static char serial_initialized=0;
 
 #define serial_received(x) (inb(x+5)&0x01)
 #define serial_transmit_empty(x) (inb(x+5)&0x20)
@@ -24,7 +24,7 @@ char serial_initialized=0;
 #define DS_RET if(serial_debug_port == 0) return
 #endif
 
-int serial_debug_port = 0;
+static int serial_debug_port = 0;
 
 void init_serial_port(int PORT) 
 {DS_RET;

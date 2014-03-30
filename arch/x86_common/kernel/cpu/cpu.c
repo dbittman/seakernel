@@ -6,7 +6,6 @@
 #else
 #include <sea/cpu/cpu-x86_64.h>
 #endif
-int probe_smp();
 
 static void cpuid_get_features(cpuid_t *cpuid)
 {

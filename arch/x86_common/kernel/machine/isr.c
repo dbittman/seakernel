@@ -9,7 +9,7 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/fs/proc.h>
 #include <sea/tm/schedule.h>
-char *exception_messages[] =
+static char *exception_messages[] =
 {
  "Division By Zero",
  "Debug",
@@ -52,15 +52,15 @@ char *exception_messages[] =
  * x86 processor interrupts. The second is all 255 of the allowed
  * handlers per interrupt. The third is the two stages of handlers
  * per interrupt handler. See below */
-isr_t interrupt_handlers[MAX_INTERRUPTS][MAX_HANDLERS][2];
-unsigned int stage2_count[256];
-volatile long int_count[256];
-mutex_t isr_lock, s2_lock;
+static isr_t interrupt_handlers[MAX_INTERRUPTS][MAX_HANDLERS][2];
+static unsigned int stage2_count[256];
+static volatile long int_count[256];
+static mutex_t isr_lock, s2_lock;
 char interrupt_controller=0;
 /* if this is set to true, there may be a stage2 handler waiting to
  * be run. This is not always true though, if for instance another
  * tasks handles the stage2s first. */
-volatile char maybe_handle_stage_2=0;
+static volatile char maybe_handle_stage_2=0;
 
 /* interrupt handlers come in two types:
  * stage1: executed immediately when the interrupt is handled.

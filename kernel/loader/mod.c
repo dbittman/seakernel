@@ -10,11 +10,12 @@
 #include <sea/loader/symbol.h>
 #include <sea/loader/module.h>
 #include <sea/sys/fcntl.h>
+
 module_t *modules=0;
-int load_deps(char *);
 mutex_t mod_mutex;
 mutex_t sym_mutex;
 kernel_symbol_t export_syms[MAX_SYMS];
+
 void loader_init_kernel_symbols(void)
 {
 	uint32_t i;

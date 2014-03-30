@@ -1,7 +1,7 @@
 #include <sea/kernel.h>
-#include <tables-x86.h>
+#include <sea/cpu/tables-x86.h>
 #include <sea/cpu/interrupt.h>
-#include <tss-x86.h>
+#include <sea/cpu/tss-x86.h>
 #include <sea/cpu/processor.h>
 #include <sea/cpu/interrupt.h>
 static void init_idt();

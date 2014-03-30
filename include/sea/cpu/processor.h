@@ -7,9 +7,9 @@
 #include <sea/mutex.h>
 #include <sea/config.h>
 #if CONFIG_ARCH == TYPE_ARCH_X86
-  #include <tables-x86.h>
+  #include <sea/cpu/tables-x86.h>
 #elif CONFIG_ARCH == TYPE_ARCH_X86_64
-  #include <tables-x86_64.h>
+  #include <sea/cpu/tables-x86_64.h>
 #endif
 #define CPU_STACK_TEMP_SIZE 1024
 

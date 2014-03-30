@@ -7,10 +7,10 @@
 #include <sea/cpu/atomic.h>
 #include <sea/cpu/interrupt.h>
 #if CONFIG_SMP
-#include <imps-x86.h>
+#include <sea/cpu/imps-x86.h>
 #endif
 #include <sea/mm/vmm.h>
-#include <cpu-x86.h>
+#include <sea/cpu/cpu-x86.h>
 volatile page_dir_t *kernel_dir=0, *minimal_directory=0;
 unsigned int cr0temp;
 int id_tables=0;

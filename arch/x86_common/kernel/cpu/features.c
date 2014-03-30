@@ -1,9 +1,9 @@
 #include <sea/kernel.h>
 #include <sea/cpu/processor.h>
 #if CONFIG_ARCH == TYPE_ARCH_X86
-#include <cpu-x86.h>
+#include <sea/cpu/cpu-x86.h>
 #else
-#include <cpu-x86_64.h>
+#include <sea/cpu/cpu-x86_64.h>
 #endif
 void x86_cpu_init_fpu(cpu_t *me)
 {

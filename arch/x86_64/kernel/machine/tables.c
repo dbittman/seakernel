@@ -1,7 +1,7 @@
 #include <sea/kernel.h>
-#include <tables-x86_64.h>
+#include <sea/cpu/tables-x86_64.h>
 #include <sea/cpu/interrupt.h>
-#include <tss-x86_64.h>
+#include <sea/cpu/tss-x86_64.h>
 #include <sea/cpu/processor.h>
 static void init_idt();
 gdt_entry_t gdt_entries[NUM_GDT_ENTRIES];

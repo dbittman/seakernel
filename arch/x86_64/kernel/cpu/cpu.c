@@ -1,7 +1,7 @@
 #include <sea/types.h>
 #include <sea/kernel.h>
 #include <sea/cpu/processor.h>
-#include <cpu-x86_64.h>
+#include <sea/cpu/cpu-x86_64.h>
 #include <sea/tm/process.h>
 #include <sea/mutex.h>
 #include <sea/cpu/atomic.h>

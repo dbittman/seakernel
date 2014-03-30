@@ -5,7 +5,7 @@
 #include <sea/cpu/processor.h>
 #include <sea/tm/process.h>
 #include <sea/mutex.h>
-#include <cpu-x86_64.h>
+#include <sea/cpu/cpu-x86_64.h>
 #include <sea/tm/schedule.h>
 #include <sea/dm/dev.h>
 #define MAX_IOAPIC 8

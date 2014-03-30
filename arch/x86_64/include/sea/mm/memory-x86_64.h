@@ -1,7 +1,7 @@
 #ifndef _MEMORY_X86_64_H
 #define _MEMORY_X86_64_H
 
-#include <memory-x86_common.h>
+#include <sea/mm/memory-x86_common.h>
 #include <sea/types.h>
 /* due the the odd way that we are forced to address memory...
  * 

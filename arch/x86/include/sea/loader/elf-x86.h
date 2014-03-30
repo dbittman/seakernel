@@ -3,7 +3,7 @@
 #include <sea/loader/module.h>
 #include <sea/types.h>
 extern void * kernel_start;
-#include <elf-x86_common.h>
+#include <sea/loader/elf-x86_common.h>
 
 static inline int is_valid_elf(char *buf, short type)
 {

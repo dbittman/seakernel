@@ -7,8 +7,8 @@
 #include <sea/mm/vmm.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/atomic.h>
-#include <imps-x86.h>
-#include <cpu-x86.h>
+#include <sea/cpu/imps-x86.h>
+#include <sea/cpu/cpu-x86.h>
 volatile int imps_release_cpus = 0;
 char imcr_present=0;
 

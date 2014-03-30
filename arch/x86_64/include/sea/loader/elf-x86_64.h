@@ -123,7 +123,7 @@ typedef struct
 #define R_X86_64_16			12	/* Direct 16 bit zero extended */
 #define R_X86_64_PC16		13	/* 16 bit sign extended pc relative */
 
-#include <elf-x86_common.h>
+#include <sea/loader/elf-x86_common.h>
 
 static inline int is_valid_elf32_otherarch(char *buf, short type)
 {

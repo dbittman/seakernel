@@ -1,7 +1,7 @@
 #ifndef _MEMORY_X86_H
 #define _MEMORY_X86_H
 
-#include <memory-x86_common.h>
+#include <sea/mm/memory-x86_common.h>
 #include <sea/types.h>
 #define TOP_TASK_MEM       0xB8000000
 #define TOP_TASK_MEM_EXEC  0xB0000000

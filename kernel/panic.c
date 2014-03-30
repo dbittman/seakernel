@@ -9,9 +9,9 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/fs/file.h>
 #if CONFIG_ARCH == TYPE_ARCH_X86
-#include <cpu-x86.h>
+#include <sea/cpu/cpu-x86.h>
 #else
-#include <cpu-x86_64.h>
+#include <sea/cpu/cpu-x86_64.h>
 #endif
 static inline void _set_lowercase(char *b)
 {

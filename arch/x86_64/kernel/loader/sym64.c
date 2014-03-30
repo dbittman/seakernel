@@ -1,5 +1,5 @@
 #include <sea/kernel.h>
-#include <elf-x86_64.h>
+#include <sea/loader/elf-x86_64.h>
 #include <sea/loader/symbol.h>
 
 const char *elf64_lookup_symbol (uint64_t addr, elf64_t *elf)

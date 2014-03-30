@@ -6,7 +6,7 @@
 #include <sea/mm/swap.h>
 #include <sea/cpu/processor.h>
 #include <sea/cpu/interrupt.h>
-#include <cpu-x86.h>
+#include <sea/cpu/cpu-x86.h>
 /* Accepts virtual, returns virtual */
 static int vm_do_copy_table(int i, page_dir_t *new, page_dir_t *from, char cow)
 {

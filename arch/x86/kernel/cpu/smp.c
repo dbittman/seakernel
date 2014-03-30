@@ -6,10 +6,10 @@
 #include <sea/cpu/processor.h>
 #include <sea/mm/vmm.h>
 #include <sea/cpu/atomic.h>
-#include <imps-x86.h>
+#include <sea/cpu/imps-x86.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/cmos-x86_common.h>
-#include <cpu-x86.h>
+#include <sea/cpu/cpu-x86.h>
 unsigned num_cpus=0, num_booted_cpus=0, num_failed_cpus=0;
 int imps_scan_mptables(unsigned addr, unsigned len);
 volatile unsigned num_halted_cpus=0;

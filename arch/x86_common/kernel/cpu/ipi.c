@@ -19,9 +19,9 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/tm/schedule.h>
 #if CONFIG_ARCH == TYPE_ARCH_X86
-#include <cpu-x86.h>
+#include <sea/cpu/cpu-x86.h>
 #else
-#include <cpu-x86_64.h>
+#include <sea/cpu/cpu-x86_64.h>
 #endif
 mutex_t ipi_mutex;
 int x86_cpu_send_ipi(unsigned char dest_shorthand, unsigned int dst, unsigned int v)

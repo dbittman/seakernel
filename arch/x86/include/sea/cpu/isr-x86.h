@@ -3,6 +3,6 @@
 #include <sea/types.h>
 #include <sea/cpu/registers-x86.h>
 
-#include <isr-x86_common.h>
+#include <sea/cpu/isr-x86_common.h>
 
 #endif

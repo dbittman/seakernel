@@ -8,7 +8,7 @@ initialization */
 #include <sea/cpu/processor.h>
 #include <sea/mm/vmm.h>
 #include <sea/cpu/atomic.h>
-#include <cpu-x86_64.h>
+#include <sea/cpu/cpu-x86_64.h>
 void load_tables_ap();
 void set_lapic_timer(unsigned tmp);
 void init_lapic(int);

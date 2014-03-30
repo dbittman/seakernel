@@ -5,9 +5,9 @@
 #include <sea/tm/process.h>
 #include <sea/mm/pmm.h>
 #if CONFIG_ARCH == TYPE_ARCH_X86
-#include <memory-x86.h>
+#include <sea/mm/memory-x86.h>
 #elif CONFIG_ARCH == TYPE_ARCH_X86_64
-#include <memory-x86_64.h>
+#include <sea/mm/memory-x86_64.h>
 #endif
 
 struct pd_data {

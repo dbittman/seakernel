@@ -66,4 +66,6 @@ cpu_t *cpu_add(cpu_t *c);
 
 extern cpu_t *primary_cpu;
 void copy_update_stack(addr_t old, addr_t, unsigned length);
+void arch_cpu_send_ipi(int dest, unsigned signal, unsigned flags);
+void cpu_send_ipi(int dest, unsigned signal, unsigned flags);
 #endif

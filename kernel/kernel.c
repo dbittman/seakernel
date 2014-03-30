@@ -23,7 +23,7 @@ void kernel_shutdown()
 	interrupt_set(0);
 #if CONFIG_SMP
 	printk(0, "[smp]: shutting down application processors\n");
-	x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_SHUTDOWN);
+	cpu_send_ipi(CPU_IPI_DEST_OTHERS, IPI_SHUTDOWN, 0);
 	while(num_halted_cpus < num_booted_cpus) asm("pause");
 #endif
 	current_task->thread->effective_uid=current_task->thread->real_uid=0;

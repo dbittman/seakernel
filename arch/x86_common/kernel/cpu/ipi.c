@@ -50,6 +50,11 @@ int x86_cpu_send_ipi(unsigned char dest_shorthand, unsigned int dst, unsigned in
 	return (to < 1000);
 }
 
+void arch_cpu_send_ipi(int dest, unsigned signal, unsigned flags)
+{
+	x86_cpu_send_ipi(dest, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | signal);
+}
+
 void x86_cpu_handle_ipi_cpu_halt(volatile registers_t regs)
 {
 	interrupt_set(0);

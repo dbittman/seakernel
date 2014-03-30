@@ -4,14 +4,14 @@
  */
 
 /* Adapted from linux 0.01 - */
-#include <types.h>
-#include <config.h>
-#include <stdarg.h>
-#include <kernel.h>
-#include <string.h>
-#include <console.h>
+#include <sea/types.h>
+#include <sea/config.h>
+#include <sea/stdarg.h>
+#include <sea/kernel.h>
+#include <sea/string.h>
+#include <sea/tty/terminal.h>
 #include <sea/vsprintf.h>
-#include <dev.h>
+#include <sea/dm/dev.h>
 #define LOGL_SERIAL 0
 #define LOGL_LOGTTY 1
 

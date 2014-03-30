@@ -1,12 +1,12 @@
 #include <modules/ext2.h>
 #include <sys/fcntl.h>
-#include <kernel.h>
-#include <fs.h>
-#include <dev.h>
+#include <sea/kernel.h>
+#include <sea/fs/inode.h>
+#include <sea/dm/dev.h>
 #include <sea/ll.h>
 #include <sea/rwlock.h>
 #include <sea/cpu/atomic.h>
-#include <types.h>
+#include <sea/types.h>
 #include <sea/fs/mount.h>
 
 struct llist *fslist;
@@ -77,7 +77,7 @@ struct inode *ext2_mount(dev_t dev, u64 block, char *node)
 		dev = in->dev;
 	if(in && (int)in->dev != dev)
 		printk(4, "[ext2]: Odd...node device is different from given device...\n");
-	iput(in);
+	vfs_iput(in);
 	fs->block = block;
 	fs->dev = dev;
 	fs->sb->block_size=0;

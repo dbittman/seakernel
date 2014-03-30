@@ -1,9 +1,9 @@
 /* functions for dealing with ACPI.
  * copyright (c) 2013 Daniel Bittman: This file is GPL'd.
  */
-#include <kernel.h>
-#include <memory.h>
-#include <acpi.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/cpu/acpi.h>
 #include <sea/loader/symbol.h>
 #include <sea/mm/pmap.h>
 struct pmap acpi_pmap;

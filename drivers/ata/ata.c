@@ -1,8 +1,8 @@
-#include <kernel.h>
-#include <dev.h>
+#include <sea/kernel.h>
+#include <sea/dm/dev.h>
 #include <modules/pci.h>
 #include <modules/ata.h>
-#include <block.h>
+#include <sea/dm/block.h>
 #include <sys/fcntl.h>
 #include <sea/loader/module.h>
 #include <modules/psm.h>

@@ -1,8 +1,8 @@
 #ifndef ATA_H
 #define ATA_H
-#include <config.h>
+#include <sea/config.h>
 #if CONFIG_MODULE_ATA
-#include <types.h>
+#include <sea/types.h>
 #include <modules/pci.h>
 
 /* Most of these definitions and support functions have been borrowed from CDI */

@@ -1,12 +1,12 @@
-#include <types.h>
-#include <kernel.h>
-#include <fs.h>
-#include <task.h>
+#include <sea/types.h>
+#include <sea/kernel.h>
+#include <sea/fs/inode.h>
+#include <sea/tm/process.h>
 #include <sys/stat.h>
-#include <dev.h>
+#include <sea/dm/dev.h>
 #include <sea/loader/module.h>
 #include <sea/mm/swap.h>
-#include <cpu.h>
+#include <sea/cpu/processor.h>
 #include <sea/dm/block.h>
 
 int proc_read_int(char *buf, int off, int len);

@@ -1,14 +1,14 @@
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
 #include <asm/system.h>
-#include <dev.h>
-#include <fs.h>
+#include <sea/dm/dev.h>
+#include <sea/fs/inode.h>
 #include <sea/rwlock.h>
 #include <sea/cpu/atomic.h>
 #include <sea/fs/inode.h>
-
-int iput(struct inode *i)
+#include <sea/dm/pipe.h>
+int vfs_iput(struct inode *i)
 {
 	assert(i);
 	rwlock_acquire(&i->rwl, RWL_WRITER);
@@ -16,7 +16,7 @@ int iput(struct inode *i)
 	if(parent == i) parent=0;
 	if(parent) rwlock_acquire(&parent->rwl, RWL_WRITER);
 	if(!i->count && i->dynamic && !(i->pipe && i->pipe->count))
-		panic(0, "iput with not ref count");
+		panic(0, "vfs_iput with not ref count");
 	if(i->count > 0)
 		sub_atomic(&i->count, 1);
 	/* check if there is something preventing us from deleting the inode. */

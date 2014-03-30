@@ -1,9 +1,9 @@
 #ifndef __MOD_AES_H
 #define __MOD_AES_H
-#include <config.h>
+#include <sea/config.h>
 #if CONFIG_MODULE_AES
 
-#include <types.h>
+#include <sea/types.h>
 
 #define KEYLENGTH(keybits) ((keybits)/8)
 #define RKBYTES(bits) (((bits)/8+28) * 4)

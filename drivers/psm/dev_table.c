@@ -1,7 +1,7 @@
-#include <kernel.h>
+#include <sea/kernel.h>
 #include <sea/loader/module.h>
 #include <sea/mutex.h>
-
+#include <sea/fs/devfs.h>
 #include <modules/psm.h>
 
 struct psm_device *table;

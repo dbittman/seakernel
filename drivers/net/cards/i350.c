@@ -1,4 +1,4 @@
-#include <kernel.h>
+#include <sea/kernel.h>
 #include <sea/loader/module.h>
 #include <modules/pci.h>
 #include <modules/i350.h>

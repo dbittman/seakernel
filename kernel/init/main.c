@@ -1,22 +1,23 @@
 /* init/main.c: Copyright (c) 2010 Daniel Bittman
  * Provides initialization functions for the kernel */
-#include <kernel.h>
+#include <sea/kernel.h>
 #include <sea/boot/multiboot.h>
-#include <console.h>
-#include <memory.h>
+#include <sea/tty/terminal.h>
+#include <sea/mm/vmm.h>
 #include <asm/system.h>
-#include <task.h>
-#include <dev.h>
-#include <fs.h>
+#include <sea/tm/process.h>
+#include <sea/dm/dev.h>
+#include <sea/fs/inode.h>
 #include <sea/boot/init.h>
-#include <cache.h>
+#include <sea/lib/cache.h>
 #include <sea/loader/symbol.h>
 #include <sea/loader/elf.h>
-#include <cpu.h>
+#include <sea/cpu/processor.h>
 #include <sea/mm/init.h>
 #include <sea/dm/dev.h>
 #include <sea/fs/initrd.h>
-
+#include <sea/cpu/interrupt.h>
+#include <sea/cpu/atomic.h>
 struct multiboot *mtboot;
 addr_t i_stack=0;
 

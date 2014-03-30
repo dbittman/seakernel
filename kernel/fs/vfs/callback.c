@@ -1,7 +1,8 @@
 /* Provides callbacks for VFS functions to drivers */
 
-#include <kernel.h>
-#include <fs.h>
+#include <sea/kernel.h>
+#include <sea/fs/inode.h>
+
 
 #define CALLBACK_NOFUNC_ERROR -ENOTSUP
 

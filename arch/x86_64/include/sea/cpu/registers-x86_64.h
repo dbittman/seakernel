@@ -1,7 +1,7 @@
 #ifndef __ARCH_SEA_CPU_REGISTERS_X86_64_H
 #define __ARCH_SEA_CPU_REGISTERS_X86_64_H
 
-#include <types.h>
+#include <sea/types.h>
 
 typedef volatile struct __attribute__((packed)) 
 {

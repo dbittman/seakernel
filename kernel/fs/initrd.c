@@ -1,7 +1,8 @@
-#include <task.h>
-#include <memory.h>
+#include <sea/kernel.h>
+#include <sea/tm/process.h>
+#include <sea/mm/vmm.h>
 #include <sea/fs/initrd.h>
-#include <fs.h>
+#include <sea/fs/inode.h>
 #include <sea/boot/multiboot.h>
 #include <sea/fs/ramfs.h>
 int initrd_version=0;

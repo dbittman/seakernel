@@ -1,9 +1,11 @@
-#include <kernel.h>
-#include <dev.h>
-#include <task.h>
+#include <sea/kernel.h>
+#include <sea/dm/dev.h>
+#include <sea/tm/process.h>
 #include <modules/pci.h>
 #include <modules/ata.h>
 #include <sea/cpu/interrupt.h>
+#include <sea/mm/dma.h>
+#include <sea/tm/schedule.h>
 typedef struct {
 	unsigned addr;
 	unsigned short size;

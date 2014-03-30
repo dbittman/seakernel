@@ -1,4 +1,4 @@
-#include <config.h>
+#include <sea/config.h>
 #if CONFIG_GDB_STUB
 /****************************************************************************
 
@@ -91,8 +91,8 @@ OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 *
 ****************************************************************************/
 
-#include <kernel.h>
-#include <string.h>
+#include <sea/kernel.h>
+#include <sea/string.h>
 
 /************************************************************************
 *

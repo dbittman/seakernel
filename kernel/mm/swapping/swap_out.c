@@ -1,9 +1,9 @@
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
-#include <fs.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
+#include <sea/fs/inode.h>
 #include <sea/mm/swap.h>
-#include <block.h>
+#include <sea/dm/block.h>
 int get_empty_slot(swapdev_t *s)
 {
 	unsigned i;

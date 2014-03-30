@@ -33,7 +33,7 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <string.h>
+#include <sea/string.h>
 #include <modules/ext2.h>
 
 int ext2_dir_getnum(ext2_inode_t* inode,

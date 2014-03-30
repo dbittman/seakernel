@@ -6,9 +6,10 @@
  */
 #include <sea/cpu/atomic.h>
 #include <sea/mutex.h>
-#include <kernel.h>
-#include <task.h>
-#include <cpu.h>
+#include <sea/kernel.h>
+#include <sea/tm/process.h>
+#include <sea/cpu/processor.h>
+#include <sea/tm/schedule.h>
 /* a task may relock a mutex if it is inside an interrupt handler, 
  * and has previously locked the same mutex outside of the interrupt
  * handler. this allows for a task to handle an event that requires

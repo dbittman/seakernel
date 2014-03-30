@@ -1,4 +1,4 @@
-#include <kernel.h>
+#include <sea/kernel.h>
 #include <elf-x86_64.h>
 #include <sea/loader/symbol.h>
 

@@ -1,7 +1,7 @@
-#include <kernel.h>
+#include <sea/kernel.h>
 #include <sea/loader/module.h>
 #include <sea/loader/elf.h>
-#include <task.h>
+#include <sea/tm/process.h>
 #include <sea/fs/file.h>
 #include <sea/loader/module.h>
 #include <sea/tm/schedule.h>

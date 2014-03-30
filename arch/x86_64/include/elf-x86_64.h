@@ -3,7 +3,7 @@
 #include <sea/loader/module.h>
 
 extern void * kernel_start;
-#include <types.h>
+#include <sea/types.h>
 typedef struct __attribute__((packed))
 {
 	uint8_t  id[16];

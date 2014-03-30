@@ -1,7 +1,7 @@
-#include <kernel.h>
-#include <dev.h>
-#include <fs.h>
-#include <block.h>
+#include <sea/kernel.h>
+#include <sea/dm/dev.h>
+#include <sea/fs/inode.h>
+#include <sea/dm/block.h>
 #include <sea/loader/symbol.h>
 #include <modules/psm.h>
 struct partition {

@@ -6,11 +6,11 @@
  *	memmove
  * 
  * ANSI_SYNOPSIS
- *	#include <string.h>
+ *	#include <sea/string.h>
  *	void *memmove(void *<[dst]>, const void *<[src]>, size_t <[length]>);
  * 
  * TRAD_SYNOPSIS
- *	#include <string.h>
+ *	#include <sea/string.h>
  *	void *memmove(<[dst]>, <[src]>, <[length]>)
  *	void *<[dst]>;
  *	void *<[src]>;
@@ -35,7 +35,7 @@
  *	memmove ansi pure
  */
 
-#include <string.h>
+#include <sea/string.h>
 #define _CONST const
 /* Nonzero if either X or Y is not aligned on a "long" boundary.  */
 #define UNALIGNED(X, Y) \

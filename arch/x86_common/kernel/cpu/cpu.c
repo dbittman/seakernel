@@ -1,6 +1,11 @@
-#include <kernel.h>
-#include <cpu.h>
+#include <sea/kernel.h>
+#include <sea/cpu/processor.h>
 #include <sea/cpu/interrupt.h>
+#if CONFIG_ARCH == TYPE_ARCH_X86
+#include <cpu-x86.h>
+#else
+#include <cpu-x86_64.h>
+#endif
 int probe_smp();
 
 static void cpuid_get_features(cpuid_t *cpuid)

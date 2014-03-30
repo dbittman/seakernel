@@ -6,11 +6,11 @@ INDEX
 	strrchr
 
 ANSI_SYNOPSIS
-	#include <string.h>
+	#include <sea/string.h>
 	char * strrchr(const char *<[string]>, int <[c]>);
 
 TRAD_SYNOPSIS
-	#include <string.h>
+	#include <sea/string.h>
 	char * strrchr(<[string]>, <[c]>);
 	char *<[string]>;
 	int *<[c]>;
@@ -33,7 +33,7 @@ QUICKREF
 	strrchr ansi pure
 */
 
-#include <string.h>
+#include <sea/string.h>
 
 char *strrchr(const char *s, int i)
 {

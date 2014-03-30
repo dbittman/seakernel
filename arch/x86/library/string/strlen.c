@@ -30,7 +30,7 @@
  *  -Erik
  */
 
-#include <string.h>
+#include <sea/string.h>
 
 /* Experimentally off - libc_hidden_proto(strlen) */
 size_t strlen(const char *s)

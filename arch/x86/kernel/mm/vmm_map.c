@@ -1,10 +1,12 @@
 /* Functions for mapping of addresses */
-#include <kernel.h>
-#include <memory.h>
-#include <isr.h>
-#include <task.h>
-#include <cpu.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/cpu/interrupt.h>
+#include <sea/tm/process.h>
+#include <sea/cpu/processor.h>
 #include <sea/mm/pmm.h>
+#include <sea/cpu/interrupt.h>
+#include <cpu-x86.h>
 int arch_mm_vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned opt)
 {
 	unsigned vpage = (virt&PAGE_MASK)/0x1000;

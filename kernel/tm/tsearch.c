@@ -2,8 +2,8 @@
 #include <sea/subsystem.h>
 #define SUBSYSTEM _SUBSYSTEM_TM
 #include <sea/tm/_tm.h>
-#include <kernel.h>
-#include <task.h>
+#include <sea/kernel.h>
+#include <sea/tm/process.h>
 #include <sea/tm/tqueue.h>
 #include <sea/cpu/interrupt.h>
 

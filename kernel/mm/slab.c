@@ -13,11 +13,11 @@
  *         ^---^----^----^----Area allocation index
  * 
  */ 
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
 #include <sea/cpu/atomic.h>
-
+#include <sea/mm/slab.h>
 #include <sea/mm/vmem.h>
 
 slab_cache_t *scache_list[NUM_SCACHES];

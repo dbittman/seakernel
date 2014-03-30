@@ -1,10 +1,10 @@
 #ifndef __MOD_PSM_H
 #define __MOD_PSM_H
-#include <config.h>
+#include <sea/config.h>
 #if CONFIG_MODULE_PSM
-#include <types.h>
-#include <dev.h>
-#include <fs.h>
+#include <sea/types.h>
+#include <sea/dm/dev.h>
+#include <sea/fs/inode.h>
 #define PSM_DEVICE_MAGIC 0xBEE51E55
 
 #define PSM_DISK_INFO_NOPART 1

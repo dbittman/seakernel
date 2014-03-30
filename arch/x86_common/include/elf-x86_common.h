@@ -1,6 +1,6 @@
 #ifndef __ELF_X86_COMMON_H
 #define __ELF_X86_COMMON_H
-#include <types.h>
+#include <sea/types.h>
 #include <sea/boot/multiboot.h>
 typedef struct __attribute__((packed))
 {

@@ -1,9 +1,9 @@
-#include <kernel.h>
-#include <fs.h>
-#include <dev.h>
-#include <char.h>
+#include <sea/kernel.h>
+#include <sea/fs/inode.h>
+#include <sea/dm/dev.h>
+#include <sea/dm/char.h>
 #include <sea/cpu/processor.h>
-
+#include <sea/fs/devfs.h>
 int rand_maj=-1;
 int seed=0;
 unsigned int use_rdrand=0;

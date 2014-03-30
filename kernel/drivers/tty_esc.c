@@ -1,5 +1,5 @@
-#include <kernel.h>
-#include <console.h>
+#include <sea/kernel.h>
+#include <sea/tty/terminal.h>
 int DEF_FG=15;
 int DEF_BG=0;
 static int reset_terconal(struct vterm *con)

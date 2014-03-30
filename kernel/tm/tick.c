@@ -2,11 +2,13 @@
 #define SUBSYSTEM _SUBSYSTEM_TM
 #include <sea/tm/_tm.h>
 #include <sea/tm/process.h>
-#include <kernel.h>
-#include <isr.h>
-#include <task.h>
-#include <cpu.h>
+#include <sea/kernel.h>
+#include <sea/cpu/interrupt.h>
+#include <sea/tm/process.h>
+#include <sea/cpu/processor.h>
+#include <sea/cpu/interrupt.h>
 #include <sea/cpu/atomic.h>
+#include <sea/tm/schedule.h>
 int current_hz=1000;
 volatile long ticks=0;
 int sys_get_timer_th(int *t)

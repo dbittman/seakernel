@@ -1,14 +1,15 @@
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
 #include <asm/system.h>
-#include <dev.h>
-#include <fs.h>
-#include <fcntl.h>
+#include <sea/dm/dev.h>
+#include <sea/fs/inode.h>
+#include <sea/fs/fcntl.h>
 #include <sea/cpu/atomic.h>
 #include <sea/rwlock.h>
 #include <sea/fs/inode.h>
-
+#include <sea/fs/callback.h>
+#include <sea/dm/pipe.h>
 int vfs_inode_is_directory(struct inode *i)
 {
 	return i ? S_ISDIR(i->mode) : 0;
@@ -112,7 +113,7 @@ int vfs_do_iremove(struct inode *i, int flag, int locked)
 		ll_remove(&parent->children, i->node);
 		if(!locked) {
 			rwlock_release(&parent->rwl, RWL_WRITER);
-			iput(parent);
+			vfs_iput(parent);
 		} else
 			sub_atomic(&parent->count, 1);
 	}

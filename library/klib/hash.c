@@ -1,7 +1,7 @@
-#include <kernel.h>
+#include <sea/kernel.h>
 #include <sea/lib/hash.h>
-#include <memory.h>
-#include <types.h>
+#include <sea/mm/vmm.h>
+#include <sea/types.h>
 #include <sea/rwlock.h>
 #include <sea/errno.h>
 

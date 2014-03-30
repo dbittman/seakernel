@@ -1,11 +1,11 @@
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
-#include <fs.h>
-
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
+#include <sea/fs/inode.h>
+#if 0
 unsigned sys_mmap(void *addr, void *str, int prot, int flags, int fildes)
 {
-#if 0
+
 	if(!str)
 		return EINVAL;
 	struct mmapblock {
@@ -67,7 +67,7 @@ unsigned sys_mmap(void *addr, void *str, int prot, int flags, int fildes)
 	add_mmf((task_t *)current_task, mf);
 	fs_fput((task_t *)current_task, fildes, 0);
 	return node->addr;
-#endif
+
 	return 0;
 }
 
@@ -274,3 +274,4 @@ void mmf_sync()
 {
 	
 }
+#endif

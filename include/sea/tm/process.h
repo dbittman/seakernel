@@ -1,7 +1,7 @@
 #ifndef _SEA_TM_PROCESS_H
 #define _SEA_TM_PROCESS_H
 
-#include <types.h>
+#include <sea/types.h>
 #include <sea/ll.h>
 #include <sea/cpu/registers.h>
 #include <sea/tm/signal.h>
@@ -205,6 +205,23 @@ int tm_get_uid();
 int tm_get_egid();
 int tm_get_euid();
 
+int sys_times(struct tms *buf);
+int sys_waitpid(int pid, int *st, int opt);
+int sys_wait3(int *, int, int *);
+
+int sys_getppid();
+int sys_alarm(int a);
+int sys_gsetpriority(int set, int which, int id, int val);
+int sys_waitagain();
+int sys_nice(int which, int who, int val, int flags);
+int sys_setsid();
+int sys_setpgid(int a, int b);
+int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds, 
+	struct timeval *timeout);
+int sys_sbrk(long inc);
+
+#define tm_read_eip arch_tm_read_eip
+addr_t arch_tm_read_eip();
 
 task_t *tm_task_create();
 struct thread_shared_data *tm_thread_data_create();
@@ -212,5 +229,7 @@ struct thread_shared_data *tm_thread_data_create();
 /* provided by arch-dep code */
 extern void arch_do_switch_to_user_mode();
 void arch_tm_set_current_task_marker(addr_t *space, addr_t task);
+
+#include <sea/mm/vmm.h>
 
 #endif

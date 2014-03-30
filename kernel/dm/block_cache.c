@@ -1,11 +1,11 @@
 /* Provides access layer to the kernel cache for block devices 
  * (write-through block cache. Speeds up writing */
-#include <config.h>
+#include <sea/config.h>
 #if CONFIG_BLOCK_CACHE
-#include <kernel.h>
-#include <dev.h>
-#include <block.h>
-#include <cache.h>
+#include <sea/kernel.h>
+#include <sea/dm/dev.h>
+#include <sea/dm/block.h>
+#include <sea/lib/cache.h>
 #include <sea/loader/symbol.h>
 cache_t *blk_cache=0;
 

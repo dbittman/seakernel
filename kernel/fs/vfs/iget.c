@@ -1,13 +1,14 @@
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
 #include <asm/system.h>
-#include <dev.h>
-#include <fs.h>
+#include <sea/dm/dev.h>
+#include <sea/fs/inode.h>
 #include <sea/cpu/atomic.h>
 #include <sea/rwlock.h>
 #include <sea/fs/inode.h>
-
+#include <sea/fs/callback.h>
+#include <sea/dm/pipe.h>
 static struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, int *req)
 {
 	if(!i || !path || !*path)
@@ -48,7 +49,7 @@ static struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, in
 		ll_for_each_entry((&i->children), cur, struct inode *, temp)
 		{
 			/* Check to see if an inode is valid. This is similar to checks in 
-			 * iput if it can be released If the validness fails, then the inode 
+			 * vfs_iput if it can be released If the validness fails, then the inode 
 			 * could very well be being released */
 			if(!strcmp(temp->name, path))
 			{
@@ -94,7 +95,7 @@ static struct inode *lookup(struct inode *i, char *path)
 		memset(li, 0, ret->len+1);
 		vfs_read_inode(ret, 0, ret->len, li);
 		struct inode *linked = vfs_get_idir(li, i);
-		iput(ret);
+		vfs_iput(ret);
 		return linked;
 	}
 	return ret;

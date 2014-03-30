@@ -2,7 +2,8 @@
 #define __CPU_X86_COMMON_H
 
 #include <sea/mutex.h>
-#include <types.h>
+#include <sea/types.h>
+#include <sea/cpu/processor.h>
 
 #define APIC_BCAST_ID			0xFF
 #define	APIC_VERSION(x)			((x) & 0xFF)
@@ -81,6 +82,18 @@ extern addr_t lapic_addr;
 extern unsigned lapic_timer_start;
 extern mutex_t ipi_mutex;
 
-#define current_tss (&((cpu_t *)current_task->cpu)->tss)
+void load_tables_ap(cpu_t *cpu);
+extern cpu_t cpu_array[CONFIG_MAX_CPUS];
+void parse_cpuid(cpu_t *);
+extern unsigned cpu_array_num;
+extern volatile unsigned num_halted_cpus;
+#if CONFIG_SMP
+/* The following definitions are taken from http://www.uruk.org/mps/ */
+extern unsigned num_cpus, num_booted_cpus, num_failed_cpus;
+int boot_cpu(unsigned id, unsigned apic_ver);
+void calibrate_lapic_timer(unsigned freq);
+extern unsigned bootstrap;
+void init_ioapic();
+#endif /* CONFIG_SMP */
 
 #endif

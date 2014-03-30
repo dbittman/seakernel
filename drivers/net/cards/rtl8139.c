@@ -1,8 +1,8 @@
-#include <kernel.h>
-#include <dev.h>
+#include <sea/kernel.h>
+#include <sea/dm/dev.h>
 #include <modules/pci.h>
 #include <sea/loader/symbol.h>
-#include <char.h>
+#include <sea/dm/char.h>
 #include <sea/loader/module.h>
 #include <sea/ll.h>
 

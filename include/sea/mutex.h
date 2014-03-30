@@ -1,7 +1,7 @@
 #ifndef NEW_MUTEX_H
 #define NEW_MUTEX_H
 
-#include <types.h>
+#include <sea/types.h>
 
 #define MUTEX_MAGIC 0xDEADBEEF
 #define MT_ALLOC 1

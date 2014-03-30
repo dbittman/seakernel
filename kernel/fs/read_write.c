@@ -1,15 +1,15 @@
 /* read_write.c: Copyright (c) 2010 Daniel Bittman
  * Functions for reading and writing files */
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
-#include <fs.h>
-#include <dev.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
+#include <sea/fs/inode.h>
+#include <sea/dm/dev.h>
 #include <sys/fcntl.h>
-#include <char.h>
-#include <block.h>
+#include <sea/dm/char.h>
+#include <sea/dm/block.h>
 #include <sea/fs/file.h>
-
+#include <sea/dm/pipe.h>
 int fs_do_sys_read_flags(struct file *f, off_t off, char *buf, size_t count)
 {
 	if(!f || !buf)

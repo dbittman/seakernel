@@ -2,15 +2,18 @@
 #define SUBSYSTEM _SUBSYSTEM_TM
 #include <sea/tm/_tm.h>
 #include <sea/tm/process.h>
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
 #include <sea/loader/symbol.h>
 #include <sea/tm/tqueue.h>
-#include <cpu.h>
+#include <sea/cpu/processor.h>
 #include <sea/ll.h>
 #include <sea/cpu/atomic.h>
-
+#include <sea/cpu/interrupt.h>
+#include <sea/tm/context.h>
+#include <sea/cpu/atomic.h>
+#include <sea/tm/schedule.h>
 volatile task_t *kernel_task=0, *alarm_list_start=0;
 mutex_t *alarm_mutex=0;
 volatile unsigned next_pid=0;

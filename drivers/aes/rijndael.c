@@ -14,7 +14,7 @@
 #define FULL_UNROLL
 
 #include "rijndael.h"
-#include <types.h>
+#include <sea/types.h>
 
 typedef uint32_t u32;
 typedef uint8_t u8;

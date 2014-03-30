@@ -1,7 +1,7 @@
 #ifndef __SEA_FS_STAT_H
 #define __SEA_FS_STAT_H
 
-#include <types.h>
+#include <sea/types.h>
 #include <sea/cpu/time.h>
 #define S_IFMT  00170000
 #define	S_IFSOCK 0140000	/* socket */
@@ -79,5 +79,7 @@ struct posix_statfs
 };
 
 int sys_posix_fsstat(int fd, struct posix_statfs *sb);
+int sys_fstat(int fp, struct stat *sb);
+int sys_stat(char *f, struct stat *statbuf, int);
 
 #endif

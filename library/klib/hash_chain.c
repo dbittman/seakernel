@@ -1,6 +1,6 @@
-#include <kernel.h>
+#include <sea/kernel.h>
 #include <sea/lib/hash.h>
-#include <types.h>
+#include <sea/types.h>
 
 
 int hash_chain_get(void **h, int (*fn)(int, void *, size_t, size_t, int), size_t size, void *key, size_t elem_sz, size_t len, void **value)

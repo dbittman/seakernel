@@ -1,13 +1,14 @@
 /* Privides functions for interrupt handling. */
-#include <kernel.h>
-#include <isr.h>
+#include <sea/kernel.h>
+#include <sea/cpu/interrupt.h>
 #include <asm/system.h>
-#include <task.h>
-#include <cpu.h>
+#include <sea/tm/process.h>
+#include <sea/cpu/processor.h>
 #include <sea/loader/symbol.h>
 #include <sea/cpu/atomic.h>
 #include <sea/cpu/interrupt.h>
-
+#include <sea/fs/proc.h>
+#include <sea/tm/schedule.h>
 char *exception_messages[] =
 {
  "Division By Zero",

@@ -1,6 +1,6 @@
 #ifndef MOD_KEYBOARD_H
 #define MOD_KEYBOARD_H
-#include <config.h>
+#include <sea/config.h>
 #ifdef CONFIG_MODULE_KEYBOARD
 #define K(n) n
 #define K_HOLE		K(0)

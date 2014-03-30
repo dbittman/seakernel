@@ -1,9 +1,9 @@
 #ifndef __MOD_SATA_H
 #define __MOD_SATA_H
-#include <config.h>
+#include <sea/config.h>
 #if CONFIG_MODULE_AHCI
-#include <types.h>
-#include <fs.h>
+#include <sea/types.h>
+#include <sea/fs/inode.h>
 typedef enum
 {
 	FIS_TYPE_REG_H2D	= 0x27,	// Register FIS - host to device

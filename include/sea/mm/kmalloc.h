@@ -1,7 +1,7 @@
 #ifndef __SEA_MM_KMALLOC_H
 #define __SEA_MM_KMALLOC_H
 
-#include <types.h>
+#include <sea/types.h>
 
 void kfree(void * pt);
 void *__kmalloc(size_t s, char *, int);

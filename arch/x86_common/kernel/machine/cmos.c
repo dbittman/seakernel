@@ -1,4 +1,4 @@
-#include <kernel.h>
+#include <sea/kernel.h>
 
 unsigned char cmos_read(unsigned char addr)
 {

@@ -1,11 +1,13 @@
 /* Defines functions to program the LAPIC and the IOAPIC (if present) */
-#include <config.h>
+#include <sea/config.h>
 #if CONFIG_SMP
-#include <kernel.h>
-#include <cpu.h>
-#include <task.h>
+#include <sea/kernel.h>
+#include <sea/cpu/processor.h>
+#include <sea/tm/process.h>
 #include <sea/mutex.h>
-
+#include <cpu-x86_64.h>
+#include <sea/tm/schedule.h>
+#include <sea/dm/dev.h>
 #define MAX_IOAPIC 8
 #define write_ioapic(l,o,v) ioapic_rw(l, WRITE, o, v)
 #define read_ioapic(l,o) ioapic_rw(l, READ, o, 0)

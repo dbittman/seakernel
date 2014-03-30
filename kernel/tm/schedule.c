@@ -3,13 +3,14 @@
 #include <sea/tm/_tm.h>
 #include <sea/tm/process.h>
 /* Functions for scheduling tasks */
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
-#include <cpu.h>
-#include <context.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
+#include <sea/cpu/processor.h>
+#include <sea/tm/context.h>
 #include <sea/cpu/interrupt.h>
-
+#include <sea/cpu/atomic.h>
+#include <sea/tm/schedule.h>
 static __attribute__((always_inline)) inline void update_task(task_t *t)
 {
 	/* task's tm_delay ran out */

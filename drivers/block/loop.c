@@ -1,10 +1,11 @@
-#include <kernel.h>
-#include <fs.h>
+#include <sea/kernel.h>
+#include <sea/fs/inode.h>
 #include <sys/stat.h>
-#include <dev.h>
-#include <cache.h>
-#include <block.h>
+#include <sea/dm/dev.h>
+#include <sea/lib/cache.h>
+#include <sea/dm/block.h>
 #include <sea/ll.h>
+#include <sea/fs/devfs.h>
 struct loop_device {
 	struct inode *node;
 	int min;
@@ -88,7 +89,7 @@ int loop_down(int num)
 		return -EINVAL;
 	struct inode *i = loop->node;
 	loop->node=0;
-	iput(i);
+	vfs_iput(i);
 	return 0;
 }
 
@@ -143,7 +144,7 @@ int ioctl_main(int min, int cmd, long arg)
 			sprintf(tmp, "loop%d", arg);
 			struct inode *i = vfs_get_idir(tmp, devfs_root);
 			if(i) {
-				iput(i);
+				vfs_iput(i);
 				return -EEXIST;
 			}
 			devfs_add(devfs_root, tmp, S_IFBLK, loop_maj, arg);

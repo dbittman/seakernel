@@ -1,13 +1,18 @@
 /* kernel.c: Copyright (c) 2010 Daniel Bittman
  * Provides some fairly standard functions for the kernel */
-#include <kernel.h>
+#include <sea/kernel.h>
 #include <asm/system.h>
 #include <sea/loader/module.h>
-#include <task.h>
-#include <cpu.h>
+#include <sea/tm/process.h>
+#include <sea/cpu/processor.h>
 #include <sea/cpu/atomic.h>
 #include <sea/fs/mount.h>
-
+#include <sea/cpu/interrupt.h>
+#if CONFIG_ARCH == TYPE_ARCH_X86
+#include <cpu-x86.h>
+#else
+#include <cpu-x86_64.h>
+#endif
 int sys_sync(int);
 void acpiPowerOff(void);
 int PRINT_LEVEL = DEF_PRINT_LEVEL;

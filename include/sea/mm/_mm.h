@@ -7,7 +7,7 @@
 #error "_mm.h included from a non-mm source file"
 #endif
 
-#include <types.h>
+#include <sea/types.h>
 #include <sea/tm/process.h>
 typedef addr_t page_dir_t, page_table_t, pml4_t, pdpt_t;
 unsigned __mm_slab_init(addr_t start, addr_t end);

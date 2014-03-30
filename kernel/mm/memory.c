@@ -2,12 +2,12 @@
 #define SUBSYSTEM _SUBSYSTEM_MM
 #include <sea/mm/_mm.h>
 #include <sea/mm/init.h>
-#include <kernel.h>
-#include <memory.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
 #include <sea/boot/multiboot.h>
-#include <task.h>
+#include <sea/tm/process.h>
 #include <sea/mm/swap.h>
-#include <cpu.h>
+#include <sea/cpu/processor.h>
 #include <sea/loader/symbol.h>
 #include <sea/cpu/atomic.h>
 #include <sea/mm/pmap.h>

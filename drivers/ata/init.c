@@ -1,11 +1,11 @@
-#include <kernel.h>
-#include <dev.h>
+#include <sea/kernel.h>
+#include <sea/dm/dev.h>
 #include <modules/pci.h>
 #include <modules/ata.h>
-#include <block.h>
+#include <sea/dm/block.h>
 #include <sea/loader/symbol.h>
 #include <modules/psm.h>
-
+#include <sea/mm/dma.h>
 int init_ata_device()
 {
 	struct pci_device *ata = pci_locate_class(0x1, 0x1);

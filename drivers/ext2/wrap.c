@@ -1,6 +1,7 @@
-#include <types.h>
-#include <fs.h>
-#include <task.h>
+#include <sea/types.h>
+#include <sea/fs/inode.h>
+#include <sea/tm/process.h>
+#include <sea/kernel.h>
 #include <sea/errno.h>
 #include <modules/ext2.h>
 
@@ -205,7 +206,7 @@ int do_wrap_ext2_link(struct inode *i, char *path)
 	if(dir->sb_idx != i->sb_idx)
 		return -EINVAL;
 	int ret = do_add_ent(dir, &inode, p ? p+1 : path);
-	iput(dir);
+	vfs_iput(dir);
 	return ret;
 }
 

@@ -6,11 +6,11 @@
  *	memchr
  * 
  * ANSI_SYNOPSIS
- *	#include <string.h>
+ *	#include <sea/string.h>
  *	void *memchr(const void *<[src]>, int <[c]>, size_t <[length]>);
  * 
  * TRAD_SYNOPSIS
- *	#include <string.h>
+ *	#include <sea/string.h>
  *	void *memchr(<[src]>, <[c]>, <[length]>)
  *	void *<[src]>;
  *	void *<[c]>;
@@ -36,8 +36,8 @@
  *	memchr ansi pure
  */
 
-#include <string.h>
-#include <limits.h>
+#include <sea/string.h>
+#include <sea/limits.h>
 #define _CONST const
 /* Nonzero if either X or Y is not aligned on a "long" boundary.  */
 #define UNALIGNED(X) ((long)X & (sizeof (long) - 1))

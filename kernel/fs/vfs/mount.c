@@ -1,15 +1,17 @@
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
 #include <asm/system.h>
-#include <dev.h>
-#include <fs.h>
+#include <sea/dm/dev.h>
+#include <sea/fs/inode.h>
 #include <sea/ll.h>
 #include <sea/cpu/atomic.h>
 #include <sea/rwlock.h>
 #include <sea/fs/mount.h>
 #include <sea/fs/inode.h>
-
+#include <sea/fs/callback.h>
+#include <sea/fs/devfs.h>
+#include <sea/fs/proc.h>
 struct inode *fs_init_tmpfs();
 
 static int do_mount(struct inode *i, struct inode *p)
@@ -64,7 +66,7 @@ static int s_mount(char *name, int dev, u64 block, char *fsname, char *no)
 	if(!ret) 
 		return 0;
 	vfs_callback_unmount(i, i->sb_idx);
-	iput(i);
+	vfs_iput(i);
 	return ret;
 }
 
@@ -91,7 +93,7 @@ int sys_mount2(char *node, char *to, char *name, char *opts, int flags)
 	if(!i)
 		return -ENOENT;
 	int dev = i->dev;
-	iput(i);
+	vfs_iput(i);
 	return s_mount(to, dev, 0, name, node);
 }
 
@@ -140,10 +142,10 @@ int vfs_unmount(char *n, int flags)
 		return -ENOENT;
 	if(!i->mount_parent)
 		return -ENOENT;
-	iput(i);
+	vfs_iput(i);
 	i = i->mount_parent;
 	int ret = vfs_do_unmount(i, flags);
 	if(!ret)
-		iput(i);
+		vfs_iput(i);
 	return ret;
 }

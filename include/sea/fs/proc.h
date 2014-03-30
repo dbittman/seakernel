@@ -10,4 +10,13 @@ int proc_write(struct inode *i, off_t pos, size_t len, char *buffer);
 int proc_append_buffer(char *buffer, char *data, int off, int len, int req_off, int req_len);
 void proc_init();
 
+int proc_get_major();
+int pfs_write(struct inode *i, off_t pos, size_t len, char *buffer);
+int pfs_read(struct inode *i, off_t pos, size_t len, char *buffer);
+int proc_append_buffer(char *buffer, char *data, int off, int len, 
+	int req_off, int req_len);
+
+extern struct inode *procfs_root;
+extern struct inode *procfs_kprocdir;
+extern struct inode *kproclist;
 #endif

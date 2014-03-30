@@ -6,11 +6,11 @@ INDEX
 	strncpy
 
 ANSI_SYNOPSIS
-	#include <string.h>
+	#include <sea/string.h>
 	char *strncpy(char *<[dst]>, const char *<[src]>, size_t <[length]>);
 
 TRAD_SYNOPSIS
-	#include <string.h>
+	#include <sea/string.h>
 	char *strncpy(<[dst]>, <[src]>, <[length]>)
 	char *<[dst]>;
 	char *<[src]>;
@@ -37,8 +37,8 @@ QUICKREF
 	strncpy ansi pure
 */
 
-#include <string.h>
-#include <limits.h>
+#include <sea/string.h>
+#include <sea/limits.h>
 /*SUPPRESS 560*/
 /*SUPPRESS 530*/
 #define _CONST const

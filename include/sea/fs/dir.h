@@ -12,4 +12,9 @@ struct inode *vfs_read_dir(char *n, int num);
 int vfs_ichdir(struct inode *i);
 struct inode *vfs_read_idir(struct inode *i, int num);
 
+int sys_chdir(char *n, int fd);
+int sys_dirstat(char *dir, unsigned num, char *namebuf, struct stat *statbuf);
+int sys_getpath(int f, char *b, int);
+int sys_dirstat_fd(int fd, unsigned num, char *namebuf, struct stat *statbuf);
+
 #endif

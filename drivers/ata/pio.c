@@ -1,10 +1,11 @@
-#include <kernel.h>
-#include <dev.h>
+#include <sea/kernel.h>
+#include <sea/dm/dev.h>
 #include <modules/pci.h>
 #include <modules/ata.h>
-#include <block.h>
-#include <task.h>
+#include <sea/dm/block.h>
+#include <sea/tm/process.h>
 #include <sea/cpu/interrupt.h>
+#include <sea/tm/schedule.h>
 int ata_pio_rw(struct ata_controller *cont, struct ata_device *dev, 
 	int rw, unsigned long long blk, unsigned char *buffer, unsigned count)
 {

@@ -6,11 +6,11 @@ INDEX
 	strnlen
 
 ANSI_SYNOPSIS
-	#include <string.h>
+	#include <sea/string.h>
 	size_t strnlen(const char *<[str]>, size_t <[n]>);
 
 TRAD_SYNOPSIS
-	#include <string.h>
+	#include <sea/string.h>
 	size_t strnlen(<[str]>, <[n]>)
 	char *<[src]>;
 	size_t <[n]>;
@@ -32,7 +32,7 @@ PORTABILITY
 */
 
 
-#include <string.h>
+#include <sea/string.h>
 #define _CONST const
 size_t strnlen(const char *str, size_t n)
 {

@@ -1,4 +1,4 @@
-#include <string.h>
+#include <sea/string.h>
 
 char* strtok(char *s, const char *delim)
 {

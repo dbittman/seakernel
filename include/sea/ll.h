@@ -1,6 +1,6 @@
 #ifndef K_LL_H
 #define K_LL_H
-#include <types.h>
+#include <sea/types.h>
 #include <sea/rwlock.h>
 
 #define LLISTNODE_MAGIC 0x77755533

@@ -1,4 +1,4 @@
-#include <string.h>
+#include <sea/string.h>
 
 int strtoint(char *s)
 {

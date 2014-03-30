@@ -3,13 +3,13 @@
  * devices nodes for partitions, translating partition R/Ws into
  * raw device R/Ws.
  */
-#include <kernel.h>
+#include <sea/kernel.h>
 #include <sea/loader/module.h>
-#include <block.h>
+#include <sea/dm/block.h>
 #include <sea/loader/symbol.h>
 #include <sea/dm/block.h>
 #include <modules/psm.h>
-
+#include <sea/fs/devfs.h>
 #define MAX_PREFIXES 64
 
 int psm_major;

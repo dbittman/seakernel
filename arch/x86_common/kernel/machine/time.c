@@ -1,4 +1,4 @@
-#include <kernel.h>
+#include <sea/kernel.h>
 #include <sea/cpu/time.h>
 #include <sea/cpu/cmos-x86_common.h>
 

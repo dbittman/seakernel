@@ -1,11 +1,11 @@
-#include <kernel.h>
+#include <sea/kernel.h>
 #include <sea/syscall.h>
-#include <isr.h>
-#include <task.h>
-#include <dev.h>
-#include <fs.h>
+#include <sea/cpu/interrupt.h>
+#include <sea/tm/process.h>
+#include <sea/dm/dev.h>
+#include <sea/fs/inode.h>
 #include <sys/stat.h>
-#include <char.h>
+#include <sea/dm/char.h>
 #include <sea/cpu/atomic.h>
 #include <sea/rwlock.h>
 #include <sea/loader/symbol.h>
@@ -16,7 +16,11 @@
 #include <sea/fs/mount.h>
 #include <sea/fs/dir.h>
 #include <sea/fs/proc.h>
-
+#include <sea/fs/callback.h>
+#include <sea/fs/ramfs.h>
+#include <sea/dm/pipe.h>
+#include <sea/tm/schedule.h>
+#include <sys/fcntl.h>
 int system_setup=0;
 /* This function is called once at the start of the init process initialization.
  * It sets the task fs values to possible and useful things, allowing VFS access.
@@ -70,7 +74,7 @@ void fs_init()
 	loader_add_kernel_symbol(sys_fstat);
 	loader_add_kernel_symbol(fs_register_filesystemt);
 	loader_add_kernel_symbol(fs_unregister_filesystem);
-	loader_add_kernel_symbol(iput);
+	loader_add_kernel_symbol(vfs_iput);
 	loader_do_add_kernel_symbol((addr_t)(struct inode **)&devfs_root, "devfs_root");
 	loader_add_kernel_symbol(vfs_do_get_idir);
 	loader_add_kernel_symbol(proc_set_callback);
@@ -196,13 +200,13 @@ int sys_chmod(char *path, int fd, mode_t mode)
 	if(i->uid != current_task->thread->effective_uid && current_task->thread->effective_uid)
 	{
 		if(path)
-			iput(i);
+			vfs_iput(i);
 		return -EPERM;
 	}
 	i->mode = (i->mode&~0xFFF) | mode;
 	sync_inode_tofs(i);
 	if(path)
-		iput(i);
+		vfs_iput(i);
 	return 0;
 }
 
@@ -224,7 +228,7 @@ int sys_chown(char *path, int fd, uid_t uid, gid_t gid)
 		return -ENOENT;
 	if(current_task->thread->effective_uid && current_task->thread->effective_uid != i->uid) {
 		if(path)
-			iput(i);
+			vfs_iput(i);
 		return -EPERM;
 	}
 	if(uid != -1) i->uid = uid;
@@ -237,7 +241,7 @@ int sys_chown(char *path, int fd, uid_t uid, gid_t gid)
 	}
 	sync_inode_tofs(i);
 	if(path) 
-		iput(i);
+		vfs_iput(i);
 	return 0;
 }
 
@@ -249,13 +253,13 @@ int sys_utime(char *path, time_t a, time_t m)
 	if(!i)
 		return -ENOENT;
 	if(current_task->thread->effective_uid && current_task->thread->effective_uid != i->uid) {
-		iput(i);
+		vfs_iput(i);
 		return -EPERM;
 	}
 	i->mtime = m ? m : (time_t)arch_time_get_epoch();
 	i->atime = a ? a : (time_t)arch_time_get_epoch();
 	sync_inode_tofs(i);
-	iput(i);
+	vfs_iput(i);
 	return 0;
 }
 
@@ -267,7 +271,7 @@ int sys_getnodestr(char *path, char *node)
 	if(!i)
 		return -ENOENT;
 	strncpy(node, i->node_str, 128);
-	iput(i);
+	vfs_iput(i);
 	return 0;
 }
 
@@ -291,7 +295,7 @@ int sys_mknod(char *path, mode_t mode, dev_t dev)
 	if(!path) return -EINVAL;
 	struct inode *i = vfs_lget_idir(path, 0);
 	if(i) {
-		iput(i);
+		vfs_iput(i);
 		return -EEXIST;
 	}
 	i = vfs_cget_idir(path, 0, mode);
@@ -303,7 +307,7 @@ int sys_mknod(char *path, mode_t mode, dev_t dev)
 		i->pipe = dm_create_pipe();
 		i->pipe->type = PIPE_NAMED;
 	}
-	iput(i);
+	vfs_iput(i);
 	return 0;
 }
 
@@ -315,7 +319,7 @@ int sys_readlink(char *_link, char *buf, int nr)
 	if(!i)
 		return -ENOENT;
 	int ret = vfs_read_inode(i, 0, nr, buf);
-	iput(i);
+	vfs_iput(i);
 	return ret;
 }
 
@@ -327,7 +331,7 @@ int sys_symlink(char *p2, char *p1)
 	if(!inode) inode = vfs_lget_idir(p1, 0);
 	if(inode)
 	{
-		iput(inode);
+		vfs_iput(inode);
 		return -EEXIST;
 	}
 	inode = vfs_cget_idir(p1, 0, 0x1FF);
@@ -338,14 +342,14 @@ int sys_symlink(char *p2, char *p1)
 	inode->len=0;
 	int ret=0;
 	if((ret=sync_inode_tofs(inode)) < 0) {
-		iput(inode);
+		vfs_iput(inode);
 		return ret;
 	}
 	if((ret=vfs_write_inode(inode, 0, strlen(p2), p2)) < 0) {
-		iput(inode);
+		vfs_iput(inode);
 		return ret;
 	}
-	iput(inode);
+	vfs_iput(inode);
 	return 0;
 }
 #define	F_OK	0
@@ -360,7 +364,7 @@ int sys_access(char *path, mode_t mode)
 	if(!i)
 		return -ENOENT;
 	if(current_task->thread->effective_uid == 0) {
-		iput(i);
+		vfs_iput(i);
 		return 0;
 	}
 	int fail=0;
@@ -371,7 +375,7 @@ int sys_access(char *path, mode_t mode)
 		fail += (vfs_inode_get_check_permissions(i, MAY_WRITE, 1) ? 0 : 1);
 	if(mode & X_OK)
 		fail += (vfs_inode_get_check_permissions(i, MAY_EXEC, 1) ? 0 : 1);
-	iput(i);
+	vfs_iput(i);
 	return (fail ? -EACCES : 0);
 }
 

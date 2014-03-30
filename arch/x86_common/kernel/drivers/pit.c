@@ -1,11 +1,12 @@
 /* pit.c: Copyright (c) 2010 Daniel Bittman
  * Functions for handling the PIT
  */
-#include <kernel.h>
-#include <isr.h>
-#include <task.h>
+#include <sea/kernel.h>
+#include <sea/cpu/interrupt.h>
+#include <sea/tm/process.h>
 #include <sea/cpu/atomic.h>
 #include <sea/cpu/interrupt.h>
+#include <sea/tm/schedule.h>
 void do_tick();
 
 void arch_cpu_timer_install(int hz)

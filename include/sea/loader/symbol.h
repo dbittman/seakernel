@@ -1,7 +1,7 @@
 #ifndef __SEA_LOADER_SYMBOL_H
 #define __SEA_LOADER_SYMBOL_H
 
-#include <types.h>
+#include <sea/types.h>
 #include <sea/mutex.h>
 
 #define MAX_SYMS 600

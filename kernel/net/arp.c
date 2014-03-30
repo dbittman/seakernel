@@ -1,4 +1,4 @@
-#include <kernel.h>
+#include <sea/kernel.h>
 #include <sea/net/net.h>
 #include <sea/net/ethernet.h>
 #include <sea/net/arp.h>

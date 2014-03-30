@@ -1,10 +1,10 @@
 /* Provides functions for read/write/ctl of block devices */
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
-#include <dev.h>
-#include <block.h>
-#include <cache.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
+#include <sea/dm/dev.h>
+#include <sea/dm/block.h>
+#include <sea/lib/cache.h>
 #undef DT_CHAR
 mutex_t bd_search_lock;
 int ioctl_stub(int a, int b, long c)

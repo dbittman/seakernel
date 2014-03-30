@@ -2,7 +2,7 @@
 #define NET_ARP_H
 
 #include <sea/net/net.h>
-#include <types.h>
+#include <sea/types.h>
 
 struct __attribute__((__packed__)) arp_packet {
 	uint16_t hw_type;

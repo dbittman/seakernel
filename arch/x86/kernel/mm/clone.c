@@ -1,11 +1,12 @@
 /* mm/clone.c: Copyright (c) 2010 Daniel Bittman
  * Handles cloning an address space */
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
 #include <sea/mm/swap.h>
-#include <cpu.h>
-
+#include <sea/cpu/processor.h>
+#include <sea/cpu/interrupt.h>
+#include <cpu-x86.h>
 /* Accepts virtual, returns virtual */
 static int vm_do_copy_table(int i, page_dir_t *new, page_dir_t *from, char cow)
 {

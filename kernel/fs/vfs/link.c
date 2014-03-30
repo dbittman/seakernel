@@ -1,13 +1,14 @@
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
 #include <asm/system.h>
-#include <dev.h>
-#include <fs.h>
+#include <sea/dm/dev.h>
+#include <sea/fs/inode.h>
 #include <sea/cpu/atomic.h>
 #include <sea/rwlock.h>
 #include <sea/fs/inode.h>
-
+#include <sea/fs/callback.h>
+#include <sea/dm/pipe.h>
 int vfs_do_unlink(struct inode *i)
 {
 	int err = 0;
@@ -26,7 +27,7 @@ int vfs_do_unlink(struct inode *i)
 		 * gets unlinked */
 		i->marked_for_deletion=1;
 		rwlock_release(&i->rwl, RWL_WRITER);
-		iput(i);
+		vfs_iput(i);
 		return 0;
 	}
 	if(i->count > 1 || (i->pipe && i->pipe->count))
@@ -34,7 +35,7 @@ int vfs_do_unlink(struct inode *i)
 	int ret = err ? 0 : vfs_callback_unlink(i);
 	if(err) {
 		rwlock_release(&i->rwl, RWL_WRITER);
-		iput(i);
+		vfs_iput(i);
 	}
 	else
 		iremove_force(i);
@@ -52,11 +53,11 @@ int vfs_link(char *old, char *new)
 	if(!i)
 		return -ENOENT;
 	if(vfs_inode_is_directory(i) && current_task->thread->effective_uid) {
-		iput(i);
+		vfs_iput(i);
 		return -EPERM;
 	}
 	int ret = vfs_callback_link(i, new);
-	iput(i);
+	vfs_iput(i);
 	if(!ret) sys_utime(new, 0, 0);
 	return ret;
 }
@@ -94,7 +95,7 @@ int vfs_rmdir(char *f)
 		err = -EACCES;
 	if(i->f_count) {
 		rwlock_release(&i->rwl, RWL_WRITER);
-		iput(i);
+		vfs_iput(i);
 		return 0;
 	}
 	if(i->count > 1)
@@ -102,7 +103,7 @@ int vfs_rmdir(char *f)
 	int ret = err ? 0 : vfs_callback_rmdir(i);
 	if(err) {
 		rwlock_release(&i->rwl, RWL_WRITER);
-		iput(i);
+		vfs_iput(i);
 	}
 	else
 		iremove_force(i);

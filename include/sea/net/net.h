@@ -1,7 +1,7 @@
 #ifndef __NET_NET_H
 #define __NET_NET_H
 
-#include <types.h>
+#include <sea/types.h>
 #include <sea/ll.h>
 
 #define ND_RX_POLLING 1

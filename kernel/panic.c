@@ -1,12 +1,18 @@
 /* panic.c: Copyright (c) 2010 Daniel Bittman
  * Functions for kernel crashes and exceptions */
-#include <kernel.h>
-#include <stdarg.h>
+#include <sea/kernel.h>
+#include <sea/stdarg.h>
 #include <asm/system.h>
-#include <task.h>
-#include <cpu.h>
+#include <sea/tm/process.h>
+#include <sea/cpu/processor.h>
 #include <sea/cpu/atomic.h>
-
+#include <sea/cpu/interrupt.h>
+#include <sea/fs/file.h>
+#if CONFIG_ARCH == TYPE_ARCH_X86
+#include <cpu-x86.h>
+#else
+#include <cpu-x86_64.h>
+#endif
 static inline void _set_lowercase(char *b)
 {
 	while(*b) {

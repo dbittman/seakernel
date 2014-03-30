@@ -1,15 +1,16 @@
 /* Closes an open file descriptor. If its a pipe, we shutdown the pipe too */
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
-#include <fs.h>
-#include <dev.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
+#include <sea/fs/inode.h>
+#include <sea/dm/dev.h>
 #include <sys/fcntl.h>
-#include <block.h>
-#include <char.h>
+#include <sea/dm/block.h>
+#include <sea/dm/char.h>
 #include <sea/rwlock.h>
 #include <sea/cpu/atomic.h>
 #include <sea/fs/file.h>
+#include <sea/dm/pipe.h>
 int sys_close(int fp)
 {
 	struct file *f = fs_get_file_pointer((task_t *) current_task, fp);
@@ -46,7 +47,7 @@ int sys_close(int fp)
 	if(!sub_atomic(&f->inode->f_count, 1) && f->inode->marked_for_deletion)
 		vfs_do_unlink(f->inode);
 	else
-		iput(f->inode);
+		vfs_iput(f->inode);
 	fs_fput((task_t *)current_task, fp, FPUT_CLOSE);
 	return 0;
 }

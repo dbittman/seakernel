@@ -2,7 +2,7 @@
 #define __SEA_FS_INITRD_H
 
 #include <sea/boot/multiboot.h>
-#include <types.h>
+#include <sea/types.h>
 
 typedef struct __attribute__((packed))
 {

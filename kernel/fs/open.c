@@ -1,16 +1,17 @@
 /* open.c: Copyright (c) 2010 Daniel Bittman
  * Functions for gaining access to a file (sys_open, sys_getidir, duplicate)
  */
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
-#include <fs.h>
-#include <dev.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
+#include <sea/fs/inode.h>
+#include <sea/dm/dev.h>
 #include <sys/fcntl.h>
-#include <char.h>
-#include <block.h>
+#include <sea/dm/char.h>
+#include <sea/dm/block.h>
 #include <sea/cpu/atomic.h>
 #include <sea/fs/file.h>
+#include <sea/dm/pipe.h>
 
 struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int *num)
 {
@@ -32,17 +33,17 @@ struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int
 	}
 	/* If CREAT and EXCL are set, and the file exists, return */
 	if(flags & _FCREAT && flags & _FEXCL && !did_create) {
-		iput(inode);
+		vfs_iput(inode);
 		*error = -EEXIST;
 		return 0;
 	}
 	if(flags & _FREAD && !vfs_inode_get_check_permissions(inode, MAY_READ, 0)) {
-		iput(inode);
+		vfs_iput(inode);
 		*error = -EACCES;
 		return 0;
 	}
 	if(flags & _FWRITE && !vfs_inode_get_check_permissions(inode, MAY_WRITE, 0)) {
-		iput(inode);
+		vfs_iput(inode);
 		*error = -EACCES;
 		return 0;
 	}

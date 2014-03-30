@@ -1,6 +1,6 @@
 #ifndef ACPI_H
 #define ACPI_H
-#include <config.h>
+#include <sea/config.h>
 #if CONFIG_ARCH == TYPE_ARCH_X86
 #include <acpi-x86_common.h>
 #elif CONFIG_ARCH == TYPE_ARCH_X86_64

@@ -2,9 +2,9 @@
 #define SUBSYSTEM _SUBSYSTEM_TM
 #include <sea/tm/_tm.h>
 #include <sea/tm/process.h>
-
-#include <task.h>
-
+#include <sea/kernel.h>
+#include <sea/tm/process.h>
+#include <sea/tm/schedule.h>
 void tm_process_enter_system(int sys)
 {
 	current_task->system=(!sys ? -1 : sys);

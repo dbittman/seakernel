@@ -1,10 +1,10 @@
 #ifndef __CONTEXT_X86_H
 #define __CONTEXT_X86_H
 /* Functions for scheduling tasks */
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
-#include <cpu.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
+#include <sea/cpu/processor.h>
 static void _overflow(char *type)
 {
 	printk(5, "%s overflow occurred in task %d (esp=%x, ebp=%x, heap_end=%x). Killing...\n", 

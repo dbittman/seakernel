@@ -1,15 +1,16 @@
 /* Defines functions for virtual memory management */
-#include <kernel.h>
-#include <memory.h>
-#include <isr.h>
-#include <task.h>
-#include <cpu.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/cpu/interrupt.h>
+#include <sea/tm/process.h>
+#include <sea/cpu/processor.h>
 #include <sea/cpu/atomic.h>
 #include <sea/cpu/interrupt.h>
 #if CONFIG_SMP
 #include <imps-x86.h>
 #endif
 #include <sea/mm/vmm.h>
+#include <cpu-x86.h>
 volatile page_dir_t *kernel_dir=0, *minimal_directory=0;
 unsigned int cr0temp;
 int id_tables=0;

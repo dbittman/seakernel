@@ -1,10 +1,11 @@
 /* defines functions for task queues */
-#include <kernel.h>
+#include <sea/kernel.h>
 #include <sea/tm/tqueue.h>
 #include <sea/mutex.h>
 #include <sea/ll.h>
-#include <cpu.h>
+#include <sea/cpu/processor.h>
 #include <sea/cpu/atomic.h>
+#include <sea/cpu/interrupt.h>
 /* the rules for tqueue's are simple:
  * 1) you MUST disable interrupts when accessing them. This makes
  *    it safe for single-cpu machines to use these.

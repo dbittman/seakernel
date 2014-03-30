@@ -1,11 +1,11 @@
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
 #include <asm/system.h>
-#include <dev.h>
-#include <fs.h>
+#include <sea/dm/dev.h>
 #include <sea/fs/inode.h>
-
+#include <sea/fs/inode.h>
+#include <sea/fs/callback.h>
 int vfs_write_inode(struct inode *i, off_t off, size_t len, char *b)
 {
 	if(!i || !b)

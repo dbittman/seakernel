@@ -1,4 +1,4 @@
-#include <string.h>
+#include <sea/string.h>
 
 int memcmp(const void* m1,
            const void* m2,

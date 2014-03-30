@@ -1,10 +1,11 @@
 /* Defines kernel-space side of functions for dealing with file locks. 
  * This should be compatible with POSIX (or, mostly so).
  */
-#include <kernel.h>
-#include <task.h>
-#include <fs.h>
-#include <fcntl.h>
+#include <sea/kernel.h>
+#include <sea/tm/process.h>
+#include <sea/fs/inode.h>
+#include <sea/fs/fcntl.h>
+#include <sea/tm/schedule.h>
 #include <sea/fs/file.h>
 #define LSTART(a) (a->l_start + a->l_pos)
 void vfs_init_inode_flocks(struct inode *i)

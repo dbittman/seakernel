@@ -1,8 +1,8 @@
-#include <kernel.h>
-#include <dev.h>
+#include <sea/kernel.h>
+#include <sea/dm/dev.h>
 #include <modules/pci.h>
 #include <modules/ata.h>
-#include <block.h>
+#include <sea/dm/block.h>
 #include <sea/cpu/atomic.h>
 
 int ata_disk_sync(struct ata_controller *cont)

@@ -1,9 +1,9 @@
 /* manager.c - Provide swapping management. Keeping track of devices, etc. */
-#include <kernel.h>
-#include <memory.h>
-#include <dev.h>
-#include <block.h>
-#include <fs.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/dm/dev.h>
+#include <sea/dm/block.h>
+#include <sea/fs/inode.h>
 #include <sea/mm/swap.h>
 #include <sys/stat.h>
 #include <mod.h>
@@ -120,7 +120,7 @@ int sys_swapon(char *node, unsigned size /*0 for all */)
 		dev = in->dev;
 	if(!dev)
 	{
-		if(in) iput(in);
+		if(in) vfs_iput(in);
 		printk(6, "[swap]: Could not open device %s\n", node);
 		return -1;
 	}
@@ -131,12 +131,12 @@ int sys_swapon(char *node, unsigned size /*0 for all */)
 		if((in == i) || (in->dev == i->dev))
 		{
 			printk(6, "[swap]: Device %s already mounted!\n", node);
-			iput(in);
+			vfs_iput(in);
 			return -1;
 		}
 		c++;
 	}
-	if(in) iput(in);
+	if(in) vfs_iput(in);
 	unsigned bs=0;
 	if(!size) {
 		size = dm_block_ioctl(dev, -7, (int)&bs);
@@ -173,7 +173,7 @@ int sys_swapoff(char *node, unsigned flags)
 	unsigned dev=0;
 	struct inode *in = vfs_get_idir(node, 0);
 	if(in) {
-		iput(in);
+		vfs_iput(in);
 		dev = in->dev;
 	}
 	if(!dev)

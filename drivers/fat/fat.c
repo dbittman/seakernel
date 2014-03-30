@@ -1,8 +1,8 @@
 /* fat - Provides access to fat[12/16/32] filesystems. */
-#include <kernel.h>
-#include <task.h>
-#include <dev.h>
-#include <fs.h>
+#include <sea/kernel.h>
+#include <sea/tm/process.h>
+#include <sea/dm/dev.h>
+#include <sea/fs/inode.h>
 #include "fat.h"
 
 struct file_operations fatfs_fops = {
@@ -116,7 +116,7 @@ struct inode *fat_mount(int dev, int block, char *node)
 		dev = in->dev;
 	if(in && (int)in->dev != dev)
 		printk(4, "[fat]: Odd...node device is different from given device...\n");
-	iput(in);
+	vfs_iput(in);
 	fs->block=block;
 	fs->dev=dev;
 	fs->bpb = (bpb_t *)kmalloc(512);

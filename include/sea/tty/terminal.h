@@ -58,4 +58,21 @@ void console_init_stage2();
 
 int tty_read_escape_seq(struct vterm *con, char *seq);
 
+extern struct vterm consoles[];
+extern struct vterm *curcons, *kernel_console, *log_console;
+
+void console_puts(struct vterm *c, char *s);
+int tty_write(int min, char *buf, size_t len);
+int tty_read(int min, char *buf, size_t len);
+int tty_close(int min);
+int tty_open(int min);
+void console_init_stage1();
+void console_init_stage2();
+int ttyx_rw(int rw, int min, char *buf, size_t count);
+int tty_rw(int rw, int m, char *buf, size_t c);
+int tty_ioctl(int min, int cmd, long arg);
+int ttyx_ioctl(int min, int cmd, long arg);
+void tty_init(struct vterm **);
+int serial_rw(int, int, char *, size_t);
+
 #endif

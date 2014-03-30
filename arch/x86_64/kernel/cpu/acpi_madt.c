@@ -1,9 +1,10 @@
-#include <config.h>
+#include <sea/config.h>
 #if CONFIG_SMP
-#include <kernel.h>
-#include <acpi.h>
-#include <cpu.h>
+#include <sea/kernel.h>
+#include <sea/cpu/acpi.h>
+#include <sea/cpu/processor.h>
 #include <sea/mm/pmap.h>
+#include <cpu-x86_64.h>
 struct pmap apic_pmap;
 
 void acpi_madt_parse_processor(void *ent, int boot)

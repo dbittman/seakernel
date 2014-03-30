@@ -4,12 +4,13 @@
 #include <sea/subsystem.h>
 #define SUBSYSTEM _SUBSYSTEM_TM
 #include <sea/tm/_tm.h>
-#include <kernel.h>
-#include <isr.h>
-#include <task.h>
+#include <sea/kernel.h>
+#include <sea/cpu/interrupt.h>
+#include <sea/tm/process.h>
 #include <sea/boot/init.h>
 #include <sea/cpu/interrupt.h>
-
+#include <sea/cpu/atomic.h>
+#include <sea/tm/schedule.h>
 void __tm_handle_signal(task_t *t)
 {
 	t->exit_reason.sig=0;

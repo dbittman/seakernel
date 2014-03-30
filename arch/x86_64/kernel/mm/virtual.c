@@ -1,9 +1,9 @@
 /* Defines functions for virtual memory management */
-#include <kernel.h>
-#include <memory.h>
-#include <isr.h>
-#include <task.h>
-#include <cpu.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/cpu/interrupt.h>
+#include <sea/tm/process.h>
+#include <sea/cpu/processor.h>
 #include <sea/cpu/atomic.h>
 #include <sea/cpu/interrupt.h>
 volatile addr_t *kernel_dir=0;

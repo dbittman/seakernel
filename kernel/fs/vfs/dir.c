@@ -1,11 +1,13 @@
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
 #include <asm/system.h>
-#include <dev.h>
-#include <fs.h>
+#include <sea/dm/dev.h>
+#include <sea/fs/inode.h>
 #include <sea/cpu/atomic.h>
 #include <sea/fs/dir.h>
+#include <sea/fs/callback.h>
+#include <sea/fs/proc.h>
 static int do_get_path_string(struct inode *p, char *path, int max)
 {
 	if(!p)
@@ -73,13 +75,13 @@ int vfs_chroot(char *n)
 	if(!i)
 		return -ENOENT;
 	if(!vfs_inode_is_directory(i)) {
-		iput(i);
+		vfs_iput(i);
 		return -ENOTDIR;
 	}
 	current_task->thread->root = i;
 	add_atomic(&i->count, 1);
 	vfs_ichdir(i);
-	iput(old);
+	vfs_iput(old);
 	return 0;
 }
 
@@ -89,15 +91,15 @@ int vfs_ichdir(struct inode *i)
 		return -EINVAL;
 	struct inode *old=current_task->thread->pwd;
 	if(!vfs_inode_is_directory(i)) {
-		iput(i);
+		vfs_iput(i);
 		return -ENOTDIR;
 	}
 	if(!vfs_inode_get_check_permissions(i, MAY_EXEC, 0)) {
-		iput(i);
+		vfs_iput(i);
 		return -EACCES;
 	}
 	current_task->thread->pwd = i;
-	iput(old);
+	vfs_iput(old);
 	return 0;
 }
 
@@ -142,11 +144,11 @@ struct inode *vfs_read_dir(char *n, int num)
 	if(!i)
 		return 0;
 	if(!vfs_inode_get_check_permissions(i, MAY_READ, 0)) {
-		iput(i);
+		vfs_iput(i);
 		return 0;
 	}
 	struct inode *ret = do_readdir(i, num);
-	iput(i);
+	vfs_iput(i);
 	return ret;
 }
 

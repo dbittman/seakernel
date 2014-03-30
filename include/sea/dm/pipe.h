@@ -3,7 +3,7 @@
 
 #include <sea/ll.h>
 #include <sea/mutex.h>
-#include <types.h>
+#include <sea/types.h>
 #include <sea/fs/inode.h>
 
 #define PIPE_NAMED 1

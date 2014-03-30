@@ -3,18 +3,14 @@
 
 #ifndef KERNEL_H
 #define KERNEL_H
-#include <config.h>
-#include <cpu-io.h>
-#include <string.h>
+
+#include <sea/cpu/cpu-io.h>
+#include <sea/string.h>
 #include <sea/vsprintf.h>
-#include <console.h>
-#include <memory.h>
+#include <sea/tty/terminal.h>
+#include <sea/mm/kmalloc.h>
 #include <sea/syscall.h>
-#include <sea/cpu/time.h>
-#include <sys/fcntl.h>
 #include <sea/errno.h>
-#include <sea/fs/inode.h>
-#include <sea/mutex.h>
 
 #define KSF_MMU            0x1
 #define KSF_SHUTDOWN       0x2

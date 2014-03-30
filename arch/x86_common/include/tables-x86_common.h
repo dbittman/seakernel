@@ -1,8 +1,8 @@
 #ifndef __TABLES_X86_COMMON_H
 #define __TABLES_X86_COMMON_H
 
-#include <types.h>
-#include <config.h>
+#include <sea/types.h>
+#include <sea/config.h>
 extern void isr0 ();
 extern void isr1 ();
 extern void isr2 ();

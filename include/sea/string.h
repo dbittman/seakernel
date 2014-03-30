@@ -1,6 +1,6 @@
 #ifndef STRING_H
 #define STRING_H
-#include <types.h>
+#include <sea/types.h>
 
 void *memchr(const void *cs, int c, size_t count);
 #define memcpy memmove

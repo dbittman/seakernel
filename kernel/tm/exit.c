@@ -1,13 +1,15 @@
 /* Functions for tm_exiting processes, killing processes, and cleaning up resources.
 * Copyright (c) 2012 Daniel Bittman
 */
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
-#include <cpu.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
+#include <sea/cpu/processor.h>
 #include <sea/cpu/atomic.h>
 #include <sea/mm/vmm.h>
-
+#include <sea/cpu/interrupt.h>
+#include <sea/fs/file.h>
+#include <sea/tm/schedule.h>
 static __attribute__((always_inline)) inline void set_as_dead(task_t *t)
 {
 	assert(t);
@@ -118,8 +120,8 @@ void tm_exit(int code)
 	{
 		/* we're the last thread to share this data. Clean it up */
 		fs_close_all_files(t);
-		if(t->thread->root)iput(t->thread->root);
-		if(t->thread->pwd) iput(t->thread->pwd);
+		if(t->thread->root)vfs_iput(t->thread->root);
+		if(t->thread->pwd) vfs_iput(t->thread->pwd);
 		mutex_destroy(&t->thread->files_lock);
 		void *addr = t->thread;
 		t->thread = 0;

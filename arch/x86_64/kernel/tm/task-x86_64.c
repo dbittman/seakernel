@@ -1,5 +1,5 @@
-#include <kernel.h>
-#include <task.h>
+#include <sea/kernel.h>
+#include <sea/tm/process.h>
 
 void arch_tm_set_current_task_marker(pml4_t *pml4, addr_t task)
 {

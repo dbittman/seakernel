@@ -1,12 +1,14 @@
-#include <config.h>
+#include <sea/config.h>
 #if CONFIG_SMP
-#include <kernel.h>
-#include <task.h>
+#include <sea/kernel.h>
+#include <sea/tm/process.h>
 #include <sea/mutex.h>
-#include <cpu.h>
-#include <memory.h>
+#include <sea/cpu/processor.h>
+#include <sea/mm/vmm.h>
+#include <sea/cpu/interrupt.h>
 #include <sea/cpu/atomic.h>
 #include <imps-x86.h>
+#include <cpu-x86.h>
 volatile int imps_release_cpus = 0;
 char imcr_present=0;
 

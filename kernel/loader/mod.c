@@ -1,14 +1,15 @@
 
-#include <kernel.h>
+#include <sea/kernel.h>
 #if (CONFIG_MODULES)
-#include <fs.h>
-#include <task.h>
-#include <memory.h>
+#include <sea/fs/inode.h>
+#include <sea/tm/process.h>
+#include <sea/mm/vmm.h>
+#include <sea/mm/dma.h>
 #include <sea/loader/module.h>
 #include <sea/loader/elf.h>
 #include <sea/loader/symbol.h>
 #include <sea/loader/module.h>
-
+#include <sys/fcntl.h>
 module_t *modules=0;
 int load_deps(char *);
 mutex_t mod_mutex;

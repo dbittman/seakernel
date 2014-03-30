@@ -6,11 +6,11 @@ INDEX
 	strncmp
 
 ANSI_SYNOPSIS
-	#include <string.h>
+	#include <sea/string.h>
 	int strncmp(const char *<[a]>, const char * <[b]>, size_t <[length]>);
 
 TRAD_SYNOPSIS
-	#include <string.h>
+	#include <sea/string.h>
 	int strncmp(<[a]>, <[b]>, <[length]>)
 	char *<[a]>;
 	char *<[b]>;
@@ -36,8 +36,8 @@ QUICKREF
 	strncmp ansi pure
 */
 
-#include <string.h>
-#include <limits.h>
+#include <sea/string.h>
+#include <sea/limits.h>
 #define _CONST const
 /* Nonzero if either X or Y is not aligned on a "long" boundary.  */
 #define UNALIGNED(X, Y) \

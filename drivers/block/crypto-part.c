@@ -1,4 +1,4 @@
-#include <kernel.h>
+#include <sea/kernel.h>
 #include <sea/dm/block.h>
 #include <sea/loader/module.h>
 #include <sea/fs/inode.h>

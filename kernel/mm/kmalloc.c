@@ -1,9 +1,9 @@
 /* kmalloc.c: Copyright (c) 2010 Daniel Bittman
  * Defines wrapper functions for kmalloc, kfree and friends
  */
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
 addr_t (*do_kmalloc_wrap)(size_t, char)=0;
 void (*do_kfree_wrap)(void *)=0;
 char kmalloc_name[128];

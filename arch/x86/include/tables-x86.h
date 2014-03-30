@@ -1,8 +1,8 @@
 #ifndef TABLES_x86_H
 #define TABLES_x86_H
-#include <types.h>
+#include <sea/types.h>
 #include <tss-x86.h>
-#include <config.h>
+#include <sea/config.h>
 #define NUM_GDT_ENTRIES 6
 struct gdt_entry_struct
 {

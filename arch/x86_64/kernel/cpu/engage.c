@@ -1,14 +1,14 @@
 /* c-entry point for application processors, and their subsequent
 initialization */
-#include <config.h>
+#include <sea/config.h>
 #if CONFIG_SMP
-#include <kernel.h>
-#include <task.h>
+#include <sea/kernel.h>
+#include <sea/tm/process.h>
 #include <sea/mutex.h>
-#include <cpu.h>
-#include <memory.h>
+#include <sea/cpu/processor.h>
+#include <sea/mm/vmm.h>
 #include <sea/cpu/atomic.h>
-
+#include <cpu-x86_64.h>
 void load_tables_ap();
 void set_lapic_timer(unsigned tmp);
 void init_lapic(int);

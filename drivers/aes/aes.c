@@ -1,4 +1,4 @@
-#include <kernel.h>
+#include <sea/kernel.h>
 #include <sea/loader/module.h>
 #include <sea/cpu/processor.h>
 #include <sea/loader/symbol.h>

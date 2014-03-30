@@ -1,8 +1,8 @@
 #ifndef __SEA_DM_CHAR_H
 #define __SEA_DM_CHAR_H
 
-#include <kernel.h>
-#include <dev.h>
+#include <sea/kernel.h>
+#include <sea/dm/dev.h>
 #include <sea/fs/inode.h>
 typedef struct chardevice_s {
 	int (*func)(int mode, int minor, char *buf, size_t count);
@@ -22,5 +22,8 @@ void dm_unregister_char_device(int n);
 int dm_char_ioctl(dev_t dev, int cmd, long arg);
 int dm_chardev_select(struct inode *in, int rw);
 void dm_send_sync_char();
-
+int ttyx_rw(int rw, int min, char *buf, size_t count);
+int tty_rw(int rw, int min, char *buf, size_t count);
+int tty_select(int, int);
+int ttyx_select(int, int);
 #endif

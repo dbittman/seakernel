@@ -1,7 +1,7 @@
 #include <sea/subsystem.h>
 #define SUBSYSTEM _SUBSYSTEM_MM
 #include <sea/mm/_mm.h>
-#include <config.h>
+#include <sea/config.h>
 #include <sea/mm/pmm.h>
 
 void mm_copy_page_physical(addr_t src, addr_t dest)

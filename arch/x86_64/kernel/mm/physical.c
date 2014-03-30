@@ -1,9 +1,10 @@
 /* Defines functions for physical memory */
-#include <kernel.h>
-#include <memory.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
 #include <sea/boot/multiboot.h>
-#include <task.h>
+#include <sea/tm/process.h>
 #include <sea/mm/swap.h>
+#include <sea/tm/schedule.h>
 
 volatile addr_t pm_location=0;
 volatile addr_t pm_stack = PM_STACK_ADDR;

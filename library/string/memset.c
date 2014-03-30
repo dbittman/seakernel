@@ -30,7 +30,7 @@
  *  -Erik
  */
 
-#include <string.h>
+#include <sea/string.h>
 
 /* Experimentally off - libc_hidden_proto(memset) */
 void *memset(void *m, int c, size_t n)

@@ -1,5 +1,5 @@
-#include <kernel.h>
-#include <dev.h>
+#include <sea/kernel.h>
+#include <sea/dm/dev.h>
 #include <sea/loader/symbol.h>
 #include <modules/crc32.h>
 intptr_t loader_find_kernel_function(char * unres);

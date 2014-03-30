@@ -1,21 +1,25 @@
-#include <kernel.h>
+#include <sea/kernel.h>
 #include <sea/syscall.h>
-#include <isr.h>
-#include <task.h>
-#include <dev.h>
-#include <fs.h>
+#include <sea/cpu/interrupt.h>
+#include <sea/tm/process.h>
+#include <sea/dm/dev.h>
+#include <sea/fs/inode.h>
 #include <sys/stat.h>
 #include <sea/loader/module.h>
 #include <sys/sysconf.h>
 #include <sea/mm/swap.h>
-#include <cpu.h>
+#include <sea/cpu/processor.h>
 #include <sea/syscall.h>
 #include <sea/uname.h>
 #include <sea/fs/mount.h>
 #include <sea/tty/terminal.h>
 #include <sea/fs/stat.h>
 #include <sea/fs/dir.h>
-
+#include <sea/tm/schedule.h>
+#include <sea/cpu/interrupt.h>
+#include <sea/dm/pipe.h>
+#include <sea/loader/exec.h>
+#include <sea/cpu/atomic.h>
 unsigned int num_syscalls=0;
 //#define SC_DEBUG 1
 int sys_null(long a, long b, long c, long d, long e)
@@ -82,7 +86,7 @@ void *syscall_table[129] = {
 	SC sys_mount,      SC vfs_unmount,        SC vfs_read_dir,      SC sys_null, 
 	SC console_create, SC console_switch, SC sys_null,      SC sys_null,
 	
-	SC sys_null,       SC sys_mmap,       SC sys_munmap,    SC sys_sync, 
+	SC sys_null,       SC sys_null,       SC sys_null,    SC sys_sync, 
 	SC vfs_rmdir,          SC sys_fsync,      SC sys_alarm,     SC sys_select,
 	SC sys_null,       SC sys_null,       SC sys_sysconf,   SC sys_setsid, 
 	SC sys_setpgid, 
@@ -129,7 +133,7 @@ void init_syscalls()
 	num_syscalls = sizeof(syscall_table)/sizeof(void *);
 }
 
-int __is_valid_user_ptr(int num, void *p, char flags)
+int mm_is_valid_user_pointer(int num, void *p, char flags)
 {
 	addr_t addr = (addr_t)p;
 	if(!addr && !flags) return 0;
@@ -162,39 +166,39 @@ int check_pointers(volatile registers_t *regs)
 		case SYS_READ: case SYS_FSTAT: case SYS_STAT: case SYS_GETPATH:
 		case SYS_READLINK: case SYS_GETNODESTR: 
 		case SYS_POSFSSTAT:
-			return __is_valid_user_ptr(SYSCALL_NUM_AND_RET, (void *)_B_, 0);
+			return mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_B_, 0);
 			
 		case SYS_TIMES: case SYS_GETPWD: case SYS_PIPE: 
 		case SYS_MEMSTAT: case SYS_GETTIME: case SYS_GETHOSTNAME:
 		case SYS_UNAME:
-			return __is_valid_user_ptr(SYSCALL_NUM_AND_RET, (void *)_A_, 0);
+			return mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_A_, 0);
 			
 		case SYS_SETSIG: case SYS_WAITPID:
-			return __is_valid_user_ptr(SYSCALL_NUM_AND_RET, (void *)_B_, 1);
+			return mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_B_, 1);
 			
 		case SYS_SELECT:
-			if(!__is_valid_user_ptr(SYSCALL_NUM_AND_RET, (void *)_B_, 1))
+			if(!mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_B_, 1))
 				return 0;
-			if(!__is_valid_user_ptr(SYSCALL_NUM_AND_RET, (void *)_C_, 1))
+			if(!mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_C_, 1))
 				return 0;
-			if(!__is_valid_user_ptr(SYSCALL_NUM_AND_RET, (void *)_D_, 1))
+			if(!mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_D_, 1))
 				return 0;
-			if(!__is_valid_user_ptr(SYSCALL_NUM_AND_RET, (void *)_E_, 1))
+			if(!mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_E_, 1))
 				return 0;
 			break;
 			
 		case SYS_DIRSTAT:
-			if(!__is_valid_user_ptr(SYSCALL_NUM_AND_RET, (void *)_C_, 0))
+			if(!mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_C_, 0))
 				return 0;
-			if(!__is_valid_user_ptr(SYSCALL_NUM_AND_RET, (void *)_D_, 0))
+			if(!mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_D_, 0))
 				return 0;
 			break;
 			
 		case SYS_SIGACT: case SYS_SIGPROCMASK:
-			return __is_valid_user_ptr(SYSCALL_NUM_AND_RET, (void *)_C_, 1);
+			return mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_C_, 1);
 			
 		case SYS_CHOWN: case SYS_CHMOD:
-			return __is_valid_user_ptr(SYSCALL_NUM_AND_RET, (void *)_A_, 1);
+			return mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_A_, 1);
 	}
 	return 1;
 }

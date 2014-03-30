@@ -1,5 +1,5 @@
 
-#include <kernel.h>
+#include <sea/kernel.h>
 #include <sea/loader/elf.h>
 
 int loader_parse_elf_executable(void *mem, int fp, addr_t *start, addr_t *end)

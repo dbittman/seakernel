@@ -1,9 +1,9 @@
-#include <kernel.h>
-#include <char.h>
-#include <dev.h>
-#include <fs.h>
+#include <sea/kernel.h>
+#include <sea/dm/char.h>
+#include <sea/dm/dev.h>
+#include <sea/fs/inode.h>
 #include <sys/stat.h>
-#include <block.h>
+#include <sea/dm/block.h>
 #include <sea/loader/symbol.h>
 struct devhash_s devhash[NUM_DT];
 

@@ -6,10 +6,11 @@
  * a writer has the lock, no readers may lock it. If a lock cannot be
  * acquired, it will go into sleep until the lock can be acquired
  */
-#include <kernel.h>
+#include <sea/kernel.h>
 #include <sea/cpu/atomic.h>
 #include <sea/rwlock.h>
-#include <task.h>
+#include <sea/tm/process.h>
+#include <sea/tm/schedule.h>
 #undef DEBUG
 #define DEBUG 0
 void __rwlock_acquire(rwlock_t *lock, unsigned flags, char *file, int line)

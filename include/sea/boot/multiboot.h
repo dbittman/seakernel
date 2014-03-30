@@ -2,7 +2,7 @@
 #define __SEA_BOOT_MULTIBOOT_H
 
 
-#include <types.h>
+#include <sea/types.h>
 #define MULTIBOOT_FLAG_MEM     0x001
 #define MULTIBOOT_FLAG_DEVICE  0x002
 #define MULTIBOOT_FLAG_CMDLINE 0x004

@@ -21,12 +21,12 @@
  * 
  * Each device obviously needs a min value...major and min...yeah. 
  * We just use bus*256+dev*8+func. */
-#include <kernel.h>
-#include <types.h>
+#include <sea/kernel.h>
+#include <sea/types.h>
 #include <modules/pci.h>
-#include <task.h>
-#include <fs.h>
-#include <dev.h>
+#include <sea/tm/process.h>
+#include <sea/fs/inode.h>
+#include <sea/dm/dev.h>
 #include <sea/loader/symbol.h>
 #include <sea/fs/proc.h>
 #define PCI_LOGLEVEL 1

@@ -1,13 +1,14 @@
-#include <kernel.h>
+#include <sea/kernel.h>
 #include <sea/syscall.h>
-#include <isr.h>
-#include <task.h>
-#include <dev.h>
-#include <fs.h>
+#include <sea/cpu/interrupt.h>
+#include <sea/tm/process.h>
+#include <sea/dm/dev.h>
+#include <sea/fs/inode.h>
 #include <sys/stat.h>
 #include <sys/sysconf.h>
-#include <cpu.h>
+#include <sea/cpu/processor.h>
 #include <sea/uname.h>
+#include <sea/tm/schedule.h>
 long sys_sysconf(int cmd)
 {
 	int ret = -EINVAL;
@@ -41,7 +42,7 @@ long sys_sysconf(int cmd)
 			break;
 		case _SC_NPROCESSORS_ONLN:
 #if CONFIG_SMP
-			return num_booted_cpus + 1;
+			return cpu_get_num_running_processors();
 #else
 			return 1; /* no SMP, thus only one processor */
 #endif

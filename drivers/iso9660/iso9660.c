@@ -1,5 +1,5 @@
-#include <kernel.h>
-#include <fs.h>
+#include <sea/kernel.h>
+#include <sea/fs/inode.h>
 #include <sys/stat.h>
 #include "iso9660.h"
 int iso9660_unmount(struct inode *, unsigned  v);

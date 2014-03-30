@@ -1,11 +1,12 @@
 /* Functions for unmapping addresses */
-#include <kernel.h>
-#include <memory.h>
-#include <isr.h>
-#include <task.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/cpu/interrupt.h>
+#include <sea/tm/process.h>
 #include <sea/mm/swap.h>
-#include <cpu.h>
-
+#include <sea/cpu/processor.h>
+#include <sea/cpu/interrupt.h>
+#include <cpu-x86.h>
 /* send the TBL shootdown to cpus if:
  *  - tasking is enabled
  *  - either:

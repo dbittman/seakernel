@@ -1,14 +1,14 @@
 /* kernel/fs/stat.c: Copyright (c) 2010 Daniel Bittman
  * Provides functions for gaining information about a file */
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
-#include <fs.h>
-#include <dev.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
+#include <sea/fs/inode.h>
+#include <sea/dm/dev.h>
 #include <sys/fcntl.h>
 #include <sea/fs/file.h>
 #include <sea/fs/dir.h>
-
+#include <sea/fs/callback.h>
 int sys_isatty(int f)
 {
 	struct file *file = fs_get_file_pointer((task_t *) current_task, f);
@@ -62,7 +62,7 @@ int sys_stat(char *f, struct stat *statbuf, int lin)
 	if(!i)
 		return -ENOENT;
 	do_stat(i, statbuf);
-	iput(i);
+	vfs_iput(i);
 	return 0;
 }
 

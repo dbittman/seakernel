@@ -1,4 +1,4 @@
-#include <kernel.h>
+#include <sea/kernel.h>
 #include <sea/loader/module.h>
 #include <modules/ahci.h>
 #include <sea/tm/schedule.h>

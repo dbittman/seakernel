@@ -1,10 +1,10 @@
 /* console.c: Copyright (c) 2010 Daniel Bittman
  * Provides functions for the virtual aspect of terminals. 
  */
-#include <kernel.h>
+#include <sea/kernel.h>
 #include <asm/system.h>
 #include <sea/mutex.h>
-#include <console.h>
+#include <sea/tty/terminal.h>
 #include <sea/tty/terminal.h>
 struct vterm *curcons=0;
 struct vterm *kernel_console, *log_console=0;

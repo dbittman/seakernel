@@ -1,7 +1,7 @@
 #ifndef __SEA_DM_DEV_H
 #define __SEA_DM_DEV_H
 
-#include <types.h>
+#include <sea/types.h>
 #include <sea/mutex.h>
 
 #define OPEN 0

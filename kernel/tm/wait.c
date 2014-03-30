@@ -2,11 +2,12 @@
 #define SUBSYSTEM _SUBSYSTEM_TM
 #include <sea/tm/_tm.h>
 
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
-#include <cpu.h>
-
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
+#include <sea/cpu/processor.h>
+#include <sea/cpu/atomic.h>
+#include <sea/tm/schedule.h>
 int tm_process_wait(unsigned pid, int state)
 {
 	if(!state) return 0;

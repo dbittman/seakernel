@@ -1,10 +1,12 @@
-#include <kernel.h>
-#include <dev.h>
-#include <fs.h>
+#include <sea/kernel.h>
+#include <sea/dm/dev.h>
+#include <sea/fs/inode.h>
 #include <sea/dm/pipe.h>
-#include <task.h>
+#include <sea/tm/process.h>
 #include <sea/fs/file.h>
 #include <sea/cpu/interrupt.h>
+#include <sea/tm/schedule.h>
+#include <sys/fcntl.h>
 pipe_t *dm_create_pipe()
 {
 	pipe_t *pipe = (pipe_t *)kmalloc(sizeof(pipe_t));

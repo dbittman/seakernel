@@ -1,13 +1,13 @@
-#include <kernel.h>
-#include <isr.h>
-#include <keymap.h>
+#include <sea/kernel.h>
+#include <sea/cpu/interrupt.h>
+#include <modules/keymap.h>
 #include <modules/keyboard.h>
-#include <console.h>
+#include <sea/tty/terminal.h>
 #include <sea/tm/signal.h>
-#include <task.h>
+#include <sea/tm/process.h>
 #include <sea/loader/symbol.h>
 #include <sea/cpu/interrupt.h>
-
+#include <sea/cpu/atomic.h>
 int is_ctrl=0, is_alt=0, is_shift=0, is_altgr=0;
 int capslock, slock;
 unsigned short *(*_keymap_callback)(int, int, int, int) = 0;

@@ -1,7 +1,6 @@
-#include <kernel.h>
-#include <memory.h>
-#include <mmfile.h>
-#include <task.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
 #include <sea/mm/swap.h>
 #include <sea/loader/elf.h>
 static void print_pfe(int x, registers_t *regs, addr_t cr2)
@@ -68,8 +67,8 @@ void arch_mm_page_fault(registers_t *regs)
 		}
 		#endif
 		
-		if(pfault_mmf_check(err_code, cr2))
-			return;
+		//if(pfault_mmf_check(err_code, cr2))
+		//	return;
 		print_pfe(0, regs, cr2);
 		mutex_acquire(&pd_cur_data->lock);
 		if(map_in_page(cr2, err_code)) {

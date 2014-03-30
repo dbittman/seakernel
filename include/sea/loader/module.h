@@ -1,7 +1,7 @@
 #ifndef __SEA_LOADER_MODULE_H
 #define __SEA_LOADER_MODULE_H
 
-#include <types.h>
+#include <sea/types.h>
 
 #define _MOD_FAIL  0
 #define _MOD_GO    1

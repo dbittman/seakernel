@@ -1,12 +1,13 @@
-#include <kernel.h>
-#include <task.h>
-#include <memory.h>
-#include <dev.h>
-#include <char.h>
-#include <block.h>
-#include <fs.h>
+#include <sea/kernel.h>
+#include <sea/tm/process.h>
+#include <sea/mm/vmm.h>
+#include <sea/dm/dev.h>
+#include <sea/dm/char.h>
+#include <sea/dm/block.h>
+#include <sea/fs/inode.h>
 #include <sea/loader/symbol.h>
 #include <sea/cpu/atomic.h>
+#include <sea/fs/devfs.h>
 
 struct inode *devfs_root;
 int devfs_nodescount=1;

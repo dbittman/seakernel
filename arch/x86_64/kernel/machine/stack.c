@@ -1,5 +1,5 @@
-#include <kernel.h>
-#include <memory.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
 #include <elf-x86_64.h>
 
 /* This function's design is based off of JamesM's tutorials. 

@@ -1,12 +1,12 @@
-#include <kernel.h>
+#include <sea/kernel.h>
 #include <sea/cpu/atomic.h>
 #include <sea/net/net.h>
 #include <sea/ll.h>
-#include <task.h>
+#include <sea/tm/process.h>
 #include <sea/loader/symbol.h>
 #include <asm/system.h>
 #include <sea/net/ethernet.h>
-
+#include <sea/tm/schedule.h>
 struct llist *net_list;
 
 void net_init()

@@ -6,11 +6,11 @@ INDEX
 	strlen
 
 ANSI_SYNOPSIS
-	#include <string.h>
+	#include <sea/string.h>
 	size_t strlen(const char *<[str]>);
 
 TRAD_SYNOPSIS
-	#include <string.h>
+	#include <sea/string.h>
 	size_t strlen(<[str]>)
 	char *<[src]>;
 
@@ -31,8 +31,8 @@ QUICKREF
 	strlen ansi pure
 */
 
-#include <string.h>
-#include <limits.h>
+#include <sea/string.h>
+#include <sea/limits.h>
 
 #define _CONST const
 

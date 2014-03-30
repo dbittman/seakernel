@@ -1,4 +1,4 @@
 /* defines the basic functions for socket handling */
-#include <kernel.h>
-#include <fs.h>
+#include <sea/kernel.h>
+#include <sea/fs/inode.h>
 #include <sys/socket.h>

@@ -1,4 +1,4 @@
-#include <kernel.h>
+#include <sea/kernel.h>
 
 /* This does the actual reset */
 void do_reset()

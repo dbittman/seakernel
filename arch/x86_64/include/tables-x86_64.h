@@ -1,8 +1,8 @@
 #ifndef TABLES_x86_64_H
 #define TABLES_x86_64_H
-#include <types.h>
+#include <sea/types.h>
 #include <tss-x86_64.h>
-#include <config.h>
+#include <sea/config.h>
 
 /* in 64 bit mode, the TSS takes up 16 bytes (so we need an extra descriptor) */
 #define NUM_GDT_ENTRIES 7

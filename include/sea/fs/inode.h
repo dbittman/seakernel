@@ -1,7 +1,7 @@
 #ifndef __SEA_FS_INODE_H
 #define __SEA_FS_INODE_H
 
-#include <types.h>
+#include <sea/types.h>
 #include <sea/mutex.h>
 #include <sea/rwlock.h>
 #include <sea/ll.h>
@@ -109,5 +109,10 @@ int vfs_free_inode(struct inode *i, int recur);
 
 int vfs_read_inode(struct inode *i, off_t off, size_t  len, char *b);
 int vfs_write_inode(struct inode *i, off_t off, size_t len, char *b);
+
+int sys_getdepth(int fd);
+int sys_getcwdlen();
+int sys_fcntl(int filedes, int cmd, long attr1, long attr2, long attr3);
+int sync_inode_tofs(struct inode *i);
 
 #endif

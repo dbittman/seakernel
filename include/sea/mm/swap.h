@@ -1,6 +1,6 @@
 #ifndef SEA_SWAP_H
 #define SEA_SWAP_H
-#include <memory.h>
+#include <sea/mm/vmm.h>
 #define SW_FORCE 1
 #define SW_EMPTY 2
 #define SW_ENABLE 4

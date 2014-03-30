@@ -1,7 +1,7 @@
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
-#include <fs.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
+#include <sea/fs/inode.h>
 #include <sea/cpu/atomic.h>
 #include <sea/fs/ramfs.h>
 struct inode *ramfs_root;

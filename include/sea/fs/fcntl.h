@@ -1,7 +1,7 @@
 #ifndef _FCNTL_H
 #define _FCNTL_H
-#include <types.h>
-#include <fs.h>
+#include <sea/types.h>
+#include <sea/fs/inode.h>
 #include <sys/fcntl.h>
 
 //struct flock *create_flock(int type, int whence, off_t start, size_t len);

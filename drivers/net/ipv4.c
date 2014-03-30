@@ -1,4 +1,4 @@
-#include <kernel.h>
+#include <sea/kernel.h>
 #include <sea/loader/symbol.h>
 #include <sea/loader/module.h>
 void reload_eth_routing_table();

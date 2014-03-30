@@ -5,11 +5,11 @@
  * WARNING - using the ll_for_each macros require a bit of extra work!
  * If using the 'safe' macros, and you remove a node from the list, you
  * may need to call ll_maybe_reset_loop before it reloops! */
-#include <kernel.h>
+#include <sea/kernel.h>
 #include <sea/ll.h>
 #include <sea/mutex.h>
-#include <task.h>
-
+#include <sea/tm/process.h>
+#include <sea/cpu/atomic.h>
 struct llistnode *ll_do_insert(struct llist *list, struct llistnode *n, void *entry)
 {
 	if(!(list->flags & LL_LOCKLESS)) 

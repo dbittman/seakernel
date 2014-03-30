@@ -5,19 +5,21 @@
  * cleanup code can run slowly and when theres
  * nothing else to do. So we reschedule often.
  */
-#include <kernel.h>
+#include <sea/kernel.h>
 #include <sea/boot/multiboot.h>
-#include <console.h>
-#include <memory.h>
+#include <sea/tty/terminal.h>
+#include <sea/mm/vmm.h>
 #include <asm/system.h>
-#include <task.h>
-#include <dev.h>
-#include <fs.h>
+#include <sea/tm/process.h>
+#include <sea/dm/dev.h>
+#include <sea/fs/inode.h>
 #include <sea/boot/init.h>
 #include <sea/loader/symbol.h>
-#include <cache.h>
+#include <sea/lib/cache.h>
 #include <sea/mm/swap.h>
 #include <sea/cpu/interrupt.h>
+#include <sea/cpu/atomic.h>
+#include <sea/tm/schedule.h>
 
 void get_timed(struct tm *now);
 int __KT_try_releasing_tasks();

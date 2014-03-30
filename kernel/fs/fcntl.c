@@ -1,12 +1,12 @@
 /* fcntl.c: Copyright (c) 2010 Daniel Bittman
  * Provides functions for controlling and sending commands to files 
  */
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
-#include <fs.h>
-#include <dev.h>
-#include <fcntl.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
+#include <sea/fs/inode.h>
+#include <sea/dm/dev.h>
+#include <sea/fs/fcntl.h>
 #include <sea/fs/file.h>
 
 int sys_ioctl(int fp, int cmd, long arg)

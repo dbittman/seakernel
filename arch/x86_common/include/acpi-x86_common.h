@@ -1,7 +1,7 @@
 #ifndef __X86_COMMON_ACPI_H
 #define __X86_COMMON_ACPI_H
 
-#include <types.h>
+#include <sea/types.h>
 
 __attribute__((packed)) struct acpi_rsdp {
 	char sig[8];

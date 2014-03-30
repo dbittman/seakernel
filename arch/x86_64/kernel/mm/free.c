@@ -1,8 +1,8 @@
 /* free.c: Copyright (c) 2010 Daniel Bittman
  * Handles freeing an address space */
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
 void free_pde(page_dir_t *pd, unsigned idx)
 {
 	if(!pd[idx]) 

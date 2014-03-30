@@ -1,8 +1,8 @@
 /* sync.c - Synchronization
  * copyright (c) Daniel Bittman 2012 */
-#include <kernel.h>
-#include <fs.h>
-#include <cache.h>
+#include <sea/kernel.h>
+#include <sea/fs/inode.h>
+#include <sea/lib/cache.h>
 #include <sea/dm/dev.h>
 #include <sea/fs/mount.h>
 

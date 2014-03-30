@@ -1,6 +1,6 @@
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
 addr_t tmp_page;
 void __KT_pager()
 {

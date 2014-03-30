@@ -1,9 +1,9 @@
 #ifndef _MODULE_EXT2_SB_H
 #define _MODULE_EXT2_SB_H
-#include <config.h>
+#include <sea/config.h>
 #if CONFIG_MODULE_EXT2
 
-#include <types.h>
+#include <sea/types.h>
 typedef int int32_t;
 typedef short int16_t;
 typedef char int8_t;

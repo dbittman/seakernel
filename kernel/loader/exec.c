@@ -1,17 +1,18 @@
 /* Contains functions for exec'ing files */
-#include <kernel.h>
-#include <task.h>
-#include <memory.h>
-#include <fs.h>
-#include <dev.h>
+#include <sea/kernel.h>
+#include <sea/tm/process.h>
+#include <sea/mm/vmm.h>
+#include <sea/fs/inode.h>
+#include <sea/dm/dev.h>
 #include <sea/boot/init.h>
 #include <sys/fcntl.h>
-#include <cpu.h>
+#include <sea/cpu/processor.h>
 #include <sea/loader/elf.h>
 #include <sea/fs/file.h>
 #include <sea/fs/file.h>
 #include <sea/mm/vmm.h>
-
+#include <sea/cpu/interrupt.h>
+#include <sea/cpu/atomic.h>
 /* Prepares a process to recieve a new executable. Desc is the descriptor of 
  * the executable. We keep it open through here so that we dont have to 
  * re-open it. */
@@ -88,16 +89,16 @@ static int do_exec(task_t *t, char *path, char **argv, char **env)
 		printk(0, "[%d]: Copy data\n", t->pid);
 	/* okay, lets back up argv and env so that we can
 	 * clear out the address space and not lose data..*/
-	if(__is_valid_user_ptr(SYS_EXECVE, argv, 0)) {
-		while(__is_valid_user_ptr(SYS_EXECVE, argv[argc], 0) && *argv[argc]) argc++;
+	if(mm_is_valid_user_pointer(SYS_EXECVE, argv, 0)) {
+		while(mm_is_valid_user_pointer(SYS_EXECVE, argv[argc], 0) && *argv[argc]) argc++;
 		backup_argv = (char **)kmalloc(sizeof(addr_t) * argc);
 		for(i=0;i<argc;i++) {
 			backup_argv[i] = (char *)kmalloc(strlen(argv[i]) + 1);
 			_strcpy(backup_argv[i], argv[i]);
 		}
 	}
-	if(__is_valid_user_ptr(SYS_EXECVE, env, 0)) {
-		while(__is_valid_user_ptr(SYS_EXECVE, env[envc], 0) && *env[envc]) envc++;
+	if(mm_is_valid_user_pointer(SYS_EXECVE, env, 0)) {
+		while(mm_is_valid_user_pointer(SYS_EXECVE, env[envc], 0) && *env[envc]) envc++;
 		backup_env = (char **)kmalloc(sizeof(addr_t) * envc);
 		for(i=0;i<envc;i++) {
 			backup_env[i] = (char *)kmalloc(strlen(env[i]) + 1);

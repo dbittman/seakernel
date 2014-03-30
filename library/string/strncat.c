@@ -6,11 +6,11 @@ INDEX
 	strncat
 
 ANSI_SYNOPSIS
-	#include <string.h>
+	#include <sea/string.h>
 	char *strncat(char *<[dst]>, const char *<[src]>, size_t <[length]>);
 
 TRAD_SYNOPSIS
-	#include <string.h>
+	#include <sea/string.h>
 	char *strncat(<[dst]>, <[src]>, <[length]>)
 	char *<[dst]>;
 	char *<[src]>;
@@ -41,8 +41,8 @@ QUICKREF
 	strncat ansi pure
 */
 
-#include <string.h>
-#include <limits.h>
+#include <sea/string.h>
+#include <sea/limits.h>
 #define _CONST const
 /* Nonzero if X is aligned on a "long" boundary.  */
 #define ALIGNED(X) \

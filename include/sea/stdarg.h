@@ -22,7 +22,7 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 <http://www.gnu.org/licenses/>.  */
 
 /*
- * ISO C Standard:  7.15  Variable arguments  <stdarg.h>
+ * ISO C Standard:  7.15  Variable arguments  <sea/stdarg.h>
  */
 
 #ifndef _STDARG_H

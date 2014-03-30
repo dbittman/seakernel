@@ -1,10 +1,11 @@
 #ifndef __CONTEXT_X86_64_H
 #define __CONTEXT_X86_64_H
 /* Functions for scheduling tasks */
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
-#include <cpu.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
+#include <sea/cpu/processor.h>
+#include <sea/cpu/atomic.h>
 
 static void _overflow(char *type)
 {

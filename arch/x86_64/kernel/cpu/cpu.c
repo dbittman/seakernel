@@ -1,12 +1,12 @@
-#include <types.h>
-#include <kernel.h>
-#include <cpu.h>
+#include <sea/types.h>
+#include <sea/kernel.h>
+#include <sea/cpu/processor.h>
 #include <cpu-x86_64.h>
-#include <task.h>
+#include <sea/tm/process.h>
 #include <sea/mutex.h>
 #include <sea/cpu/atomic.h>
 #include <sea/loader/symbol.h>
-#include <acpi.h>
+#include <sea/cpu/acpi.h>
 cpu_t *primary_cpu=0;
 #if CONFIG_SMP
 cpu_t cpu_array[CONFIG_MAX_CPUS];

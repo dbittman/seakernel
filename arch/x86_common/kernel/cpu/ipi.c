@@ -8,15 +8,21 @@
  *   5) kernel shutdown
  *   6) reshedule a new thread
  */
-#include <config.h>
+#include <sea/config.h>
 #if CONFIG_SMP
-#include <kernel.h>
-#include <task.h>
+#include <sea/kernel.h>
+#include <sea/tm/process.h>
 #include <sea/mutex.h>
-#include <cpu.h>
-#include <memory.h>
+#include <sea/cpu/processor.h>
+#include <sea/mm/vmm.h>
 #include <sea/cpu/atomic.h>
-
+#include <sea/cpu/interrupt.h>
+#include <sea/tm/schedule.h>
+#if CONFIG_ARCH == TYPE_ARCH_X86
+#include <cpu-x86.h>
+#else
+#include <cpu-x86_64.h>
+#endif
 mutex_t ipi_mutex;
 int x86_cpu_send_ipi(unsigned char dest_shorthand, unsigned int dst, unsigned int v)
 {

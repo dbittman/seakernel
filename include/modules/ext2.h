@@ -1,11 +1,11 @@
 #ifndef H_EXT2
 #define H_EXT2
-#include <config.h>
+#include <sea/config.h>
 #if CONFIG_MODULE_EXT2
 
-#include <types.h>
-#include <fs.h>
-#include <cache.h>
+#include <sea/types.h>
+#include <sea/fs/inode.h>
+#include <sea/lib/cache.h>
 #include <sea/cpu/time.h>
 #include <modules/ext2_sb.h>
 #include <sea/ll.h>

@@ -1,6 +1,6 @@
 #ifndef __MODULES_I350_H
 #define __MODULES_I350_H
-#include <types.h>
+#include <sea/types.h>
 #include <modules/pci.h>
 #include <sea/mutex.h>
 

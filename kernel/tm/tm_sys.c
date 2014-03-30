@@ -1,6 +1,6 @@
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
 #include <sea/tm/tqueue.h>
 
 /* Low-level memory allocator implementation */

@@ -1,9 +1,9 @@
 #ifndef PCI_H
 #define PCI_H
-#include <config.h>
+#include <sea/config.h>
 #ifdef CONFIG_MODULE_PCI
-#include <types.h>
-#include <fs.h>
+#include <sea/types.h>
+#include <sea/fs/inode.h>
 
 struct pci_config_space
 {

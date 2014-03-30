@@ -3,9 +3,9 @@
  * management of those allocations. Copyright (c) 2010 Daniel Bittman. 
  * Written to allow easier implementation of slab allocation. 
  */
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmem.h>
+#include <sea/tm/process.h>
 
 #define NUM_NODES(v) ((((v->num_ipages*PAGE_SIZE)/sizeof(vnode_t)) > \
 			MAX_NODES) ? MAX_NODES : ((v->num_ipages*PAGE_SIZE)/sizeof(vnode_t)))

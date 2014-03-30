@@ -4,7 +4,7 @@
 #define BCACHE_READ 1
 #define BCACHE_WRITE 2
 #include <sea/mutex.h>
-#include <types.h>
+#include <sea/types.h>
 #include <sea/fs/inode.h>
 
 typedef struct blockdevice_s {

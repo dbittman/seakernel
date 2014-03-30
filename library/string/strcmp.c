@@ -6,11 +6,11 @@ INDEX
 	strcmp
 
 ANSI_SYNOPSIS
-	#include <string.h>
+	#include <sea/string.h>
 	int strcmp(const char *<[a]>, const char *<[b]>);
 
 TRAD_SYNOPSIS
-	#include <string.h>
+	#include <sea/string.h>
 	int strcmp(<[a]>, <[b]>)
 	char *<[a]>;
 	char *<[b]>;
@@ -35,8 +35,8 @@ QUICKREF
 	strcmp ansi pure
 */
 
-#include <string.h>
-#include <limits.h>
+#include <sea/string.h>
+#include <sea/limits.h>
 
 #define _CONST const
 

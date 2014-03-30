@@ -1,6 +1,6 @@
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
 
 /* allocates a physically contiguous section of memory of length length, 
  * which does not cross a 64K boundary.

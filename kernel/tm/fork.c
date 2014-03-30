@@ -1,11 +1,14 @@
 /* Forking of processes. */
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
-#include <sea/cpu/atomic.h>
-#include <cpu.h>
-#include <context.h>
+#include <sea/kernel.h>
 #include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
+#include <sea/cpu/atomic.h>
+#include <sea/cpu/processor.h>
+#include <sea/tm/context.h>
+#include <sea/mm/vmm.h>
+#include <sea/cpu/interrupt.h>
+#include <sea/fs/inode.h>
+#include <sea/tm/schedule.h>
 
 unsigned running_processes = 0;
 
@@ -61,6 +64,8 @@ static void copy_task_struct(task_t *task, task_t *parent, char share_thread_dat
 }
 
 #if CONFIG_SMP
+extern cpu_t *cpu_array;
+extern int num_cpus;
 unsigned int __counter = 0;
 static cpu_t *fork_choose_cpu(task_t *parent)
 {
@@ -124,7 +129,7 @@ int tm_do_fork(unsigned flags)
 	 * start here as well. */
 	volatile task_t *parent = current_task;
 	store_context_fork(task);
-	eip = read_eip();
+	eip = tm_read_eip();
 	if(current_task == parent)
 	{
 		/* These last things allow full execution of the task */

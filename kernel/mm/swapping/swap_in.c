@@ -1,8 +1,8 @@
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
 #include <sea/mm/swap.h>
-#include <block.h>
+#include <sea/dm/block.h>
 
 swapdev_t *swap_find_page(unsigned addr, unsigned pid, page_index_t **ret)
 {

@@ -12,7 +12,7 @@
 #ifndef H__RIJNDAEL
 #define H__RIJNDAEL
 
-#include <types.h>
+#include <sea/types.h>
 
 int rijndaelSetupEncrypt(uint32_t *rk, const unsigned char *key,
   int keybits);

@@ -2,7 +2,7 @@
 #define _MEMORY_X86_64_H
 
 #include <memory-x86_common.h>
-#include <types.h>
+#include <sea/types.h>
 /* due the the odd way that we are forced to address memory...
  * 
  * You can't use all 64 bits of an address, only the least significant 48.

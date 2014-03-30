@@ -1,7 +1,7 @@
 #ifndef __SEA_MM_VMEM_H
 #define __SEA_MM_VMEM_H
 
-#include <types.h>
+#include <sea/types.h>
 #include <sea/mutex.h>
 
 #define MAX_NODES 4096*4

@@ -3,7 +3,7 @@
 
 #include <sea/mutex.h>
 #include <sea/ll.h>
-#include <task.h>
+#include <sea/tm/process.h>
 #define TQ_ALLOC 1
 
 #define TSEARCH_FINDALL           0x1
@@ -38,5 +38,5 @@ void tqueue_remove(tqueue_t *tq, struct llistnode *i);
 void *tqueue_next(tqueue_t *tq);
 task_t *tm_search_tqueue(tqueue_t *tq, unsigned flags, unsigned long value, void (*action)(task_t *, int), int arg, int *);
 extern tqueue_t *primary_queue;
-
+extern struct llist *kill_queue;
 #endif

@@ -30,7 +30,7 @@
  *  -Erik
  */
 
-#include <string.h>
+#include <sea/string.h>
 
 
 /* Experimentally off - libc_hidden_proto(strncmp) */

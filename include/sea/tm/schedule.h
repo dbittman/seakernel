@@ -13,4 +13,7 @@ int tm_schedule();
 void __tm_check_alarms();
 void tm_timer_handler(registers_t *);
 
+extern volatile long ticks;
+extern int current_hz;
+
 #endif

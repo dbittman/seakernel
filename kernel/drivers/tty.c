@@ -2,16 +2,16 @@
  * Provides basic access to terminals (read, write, ioctl)
  */
 
-#include <kernel.h>
-#include <memory.h>
-#include <task.h>
-#include <char.h>
-#include <console.h>
+#include <sea/kernel.h>
+#include <sea/mm/vmm.h>
+#include <sea/tm/process.h>
+#include <sea/dm/char.h>
+#include <sea/tty/terminal.h>
 #include <asm/system.h>
 #include <sea/tty/termios.h>
 #include <sea/loader/symbol.h>
 #include <sea/tm/tqueue.h>
-
+#include <sea/cpu/atomic.h>
 struct vterm consoles[MAX_CONSOLES];
 unsigned *tty_calltable = 0;
 extern struct console_driver crtc_drv;

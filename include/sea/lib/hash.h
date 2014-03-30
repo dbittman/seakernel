@@ -1,7 +1,7 @@
 #ifndef __SEA_LIB_HASH
 #define __SEA_LIB_HASH
 
-#include <types.h>
+#include <sea/types.h>
 #include <sea/rwlock.h>
 
 struct hash_table {

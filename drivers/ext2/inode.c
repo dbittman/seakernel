@@ -34,10 +34,10 @@
 */
 /* This code is adapted from the CDI project */
 
-#include <types.h>
-#include <string.h>
-#include <cache.h>
-#include <block.h>
+#include <sea/types.h>
+#include <sea/string.h>
+#include <sea/lib/cache.h>
+#include <sea/dm/block.h>
 #include <modules/ext2.h>
 static uint32_t block_free(ext2_fs_t* fs, uint32_t num);
 

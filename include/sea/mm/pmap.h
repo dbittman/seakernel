@@ -1,7 +1,7 @@
 #ifndef __PMAP_H
 #define __PMAP_H
 
-#include <types.h>
+#include <sea/types.h>
 #include <sea/mutex.h>
 
 struct pmap {

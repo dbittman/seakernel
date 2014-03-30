@@ -1,7 +1,7 @@
 #ifndef __ASM_GENERIC_TERMBITS_H
 #define __ASM_GENERIC_TERMBITS_H
 
-#include <types.h>
+#include <sea/types.h>
 
 typedef unsigned char	cc_t;
 typedef unsigned int	speed_t;

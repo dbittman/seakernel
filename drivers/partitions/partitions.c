@@ -2,7 +2,7 @@
 #include <dev.h>
 #include <fs.h>
 #include <block.h>
-#include <symbol.h>
+#include <sea/loader/symbol.h>
 #include <modules/psm.h>
 struct partition {
 	char flag;

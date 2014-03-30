@@ -3,7 +3,7 @@
 #include <kernel.h>
 #include <acpi.h>
 #include <cpu.h>
-#include <pmap.h>
+#include <sea/mm/pmap.h>
 struct pmap apic_pmap;
 
 void acpi_madt_parse_processor(void *ent, int boot)

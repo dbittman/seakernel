@@ -1,7 +1,7 @@
 #ifndef __ELF_X86_COMMON_H
 #define __ELF_X86_COMMON_H
 #include <types.h>
-#include <multiboot.h>
+#include <sea/boot/multiboot.h>
 typedef struct __attribute__((packed))
 {
 	uint8_t  id[16];

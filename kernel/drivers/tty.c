@@ -8,9 +8,9 @@
 #include <char.h>
 #include <console.h>
 #include <asm/system.h>
-#include <termios.h>
-#include <symbol.h>
-#include <tqueue.h>
+#include <sea/tty/termios.h>
+#include <sea/loader/symbol.h>
+#include <sea/tm/tqueue.h>
 
 struct vterm consoles[MAX_CONSOLES];
 unsigned *tty_calltable = 0;

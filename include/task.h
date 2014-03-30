@@ -5,12 +5,12 @@
 #include <memory.h>
 #include <fs.h>
 #include <sys/stat.h>
-#include <sig.h>
+#include <sea/tm/signal.h>
 #include <mmfile.h>
 #include <dev.h>
-#include <atomic.h>
+#include <sea/cpu/atomic.h>
 #include <config.h>
-#include <file.h>
+#include <sea/fs/file.h>
 
 #include <sea/tm/process.h>
 #include <sea/tm/signal.h>

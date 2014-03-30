@@ -1,7 +1,7 @@
 #include <kernel.h>
-#include <module.h>
-#include <pmap.h>
-#include <mutex.h>
+#include <sea/loader/module.h>
+#include <sea/mm/pmap.h>
+#include <sea/mutex.h>
 #include <memory.h>
 #include <types.h>
 #include <modules/ahci.h>
@@ -9,7 +9,7 @@
 #include <asm/system.h>
 #include <isr.h>
 #include <block.h>
-#include <symbol.h>
+#include <sea/loader/symbol.h>
 #include <modules/psm.h>
 #include <sea/tm/schedule.h>
 #include <sea/cpu/interrupt.h>

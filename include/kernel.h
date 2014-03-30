@@ -6,15 +6,15 @@
 #include <config.h>
 #include <cpu-io.h>
 #include <string.h>
-#include <vsprintf.h>
+#include <sea/vsprintf.h>
 #include <console.h>
 #include <memory.h>
-#include <syscall.h>
-#include <time.h>
+#include <sea/syscall.h>
+#include <sea/cpu/time.h>
 #include <sys/fcntl.h>
-#include <errno.h>
+#include <sea/errno.h>
 #include <sea/fs/inode.h>
-#include <mutex.h>
+#include <sea/mutex.h>
 
 #define KSF_MMU            0x1
 #define KSF_SHUTDOWN       0x2

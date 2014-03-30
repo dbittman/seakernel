@@ -4,11 +4,11 @@
 #include <memory.h>
 #include <fs.h>
 #include <dev.h>
-#include <init.h>
+#include <sea/boot/init.h>
 #include <sys/fcntl.h>
 #include <cpu.h>
 #include <sea/loader/elf.h>
-#include <file.h>
+#include <sea/fs/file.h>
 #include <sea/fs/file.h>
 #include <sea/mm/vmm.h>
 

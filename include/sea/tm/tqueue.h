@@ -1,8 +1,8 @@
 #ifndef _TQUEUE_H
 #define _TQUEUE_H
 
-#include <mutex.h>
-#include <ll.h>
+#include <sea/mutex.h>
+#include <sea/ll.h>
 #include <task.h>
 #define TQ_ALLOC 1
 

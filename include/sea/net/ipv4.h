@@ -1,7 +1,7 @@
 #ifndef __NET_IPV4_H
 #define __NET_IPV4_H
 
-#include <net/net.h>
+#include <sea/net/net.h>
 
 struct ipv4_packet {
 	

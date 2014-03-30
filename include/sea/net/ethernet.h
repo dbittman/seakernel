@@ -1,7 +1,7 @@
 #ifndef NET_ETHERNET_H
 #define NET_ETHERNET_H
 
-#include <net/net.h>
+#include <sea/net/net.h>
 
 struct ethernet_header {
 	uint8_t dest_mac[6];

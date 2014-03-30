@@ -3,7 +3,7 @@
 #include <kernel.h>
 #include <memory.h>
 #include <task.h>
-#include <swap.h>
+#include <sea/mm/swap.h>
 #include <cpu.h>
 
 static void copy_pde(page_dir_t *pd, page_dir_t *parent_pd, int idx)

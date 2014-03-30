@@ -1,6 +1,6 @@
 #include <kernel.h>
-#include <pmap.h>
-#include <mutex.h>
+#include <sea/mm/pmap.h>
+#include <sea/mutex.h>
 addr_t get_next_mm_device_page();
 static addr_t get_virtual_address_page(struct pmap *m, addr_t p)
 {

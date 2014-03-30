@@ -2,9 +2,9 @@
 #define MEMORY_H
 
 #include <isr.h>
-#include <multiboot.h>
+#include <sea/boot/multiboot.h>
 #include <sys/stat.h>
-#include <slab.h>
+#include <sea/mm/slab.h>
 #include <config.h>
 #include <sea/cpu/registers.h>
 #include <sea/mm/pmm.h>

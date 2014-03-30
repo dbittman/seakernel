@@ -2,7 +2,7 @@
 #define __SEA_DM_DEV_H
 
 #include <types.h>
-#include <mutex.h>
+#include <sea/mutex.h>
 
 #define OPEN 0
 #define CLOSE 1

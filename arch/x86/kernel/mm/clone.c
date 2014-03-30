@@ -3,7 +3,7 @@
 #include <kernel.h>
 #include <memory.h>
 #include <task.h>
-#include <swap.h>
+#include <sea/mm/swap.h>
 #include <cpu.h>
 
 /* Accepts virtual, returns virtual */

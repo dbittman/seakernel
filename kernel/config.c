@@ -1,5 +1,5 @@
 #include <kernel.h>
-#include <syscall.h>
+#include <sea/syscall.h>
 #include <isr.h>
 #include <task.h>
 #include <dev.h>
@@ -7,7 +7,7 @@
 #include <sys/stat.h>
 #include <sys/sysconf.h>
 #include <cpu.h>
-#include <uname.h>
+#include <sea/uname.h>
 long sys_sysconf(int cmd)
 {
 	int ret = -EINVAL;

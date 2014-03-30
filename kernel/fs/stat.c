@@ -6,7 +6,7 @@
 #include <fs.h>
 #include <dev.h>
 #include <sys/fcntl.h>
-#include <file.h>
+#include <sea/fs/file.h>
 #include <sea/fs/dir.h>
 
 int sys_isatty(int f)

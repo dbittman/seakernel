@@ -2,7 +2,7 @@
 #define __PMAP_H
 
 #include <types.h>
-#include <mutex.h>
+#include <sea/mutex.h>
 
 struct pmap {
 	uint32_t magic;

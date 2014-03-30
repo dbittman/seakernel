@@ -2,11 +2,11 @@
  * Provides some fairly standard functions for the kernel */
 #include <kernel.h>
 #include <asm/system.h>
-#include <module.h>
+#include <sea/loader/module.h>
 #include <task.h>
 #include <cpu.h>
-#include <atomic.h>
-#include <mount.h>
+#include <sea/cpu/atomic.h>
+#include <sea/fs/mount.h>
 
 int sys_sync(int);
 void acpiPowerOff(void);

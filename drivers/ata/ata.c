@@ -4,7 +4,7 @@
 #include <modules/ata.h>
 #include <block.h>
 #include <sys/fcntl.h>
-#include <module.h>
+#include <sea/loader/module.h>
 #include <modules/psm.h>
 #include <sea/cpu/interrupt.h>
 struct ata_controller *primary, *secondary;

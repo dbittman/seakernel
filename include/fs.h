@@ -2,10 +2,10 @@
 #define FS_H
 #include <types.h>
 #include <sys/stat.h>
-#include <pipe.h>
+#include <sea/dm/pipe.h>
 #include <sys/fcntl.h>
-#include <ll.h>
-#include <rwlock.h>
+#include <sea/ll.h>
+#include <sea/rwlock.h>
 
 
 #define FPUT_CLOSE 1

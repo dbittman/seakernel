@@ -4,8 +4,8 @@
 #include <task.h>
 #include <sys/stat.h>
 #include <dev.h>
-#include <module.h>
-#include <swap.h>
+#include <sea/loader/module.h>
+#include <sea/mm/swap.h>
 #include <cpu.h>
 #include <sea/dm/block.h>
 

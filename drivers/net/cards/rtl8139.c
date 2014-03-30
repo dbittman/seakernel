@@ -1,10 +1,10 @@
 #include <kernel.h>
 #include <dev.h>
 #include <modules/pci.h>
-#include <symbol.h>
+#include <sea/loader/symbol.h>
 #include <char.h>
-#include <module.h>
-#include <ll.h>
+#include <sea/loader/module.h>
+#include <sea/ll.h>
 
 int rtl8139_maj=-1, rtl8139_min=0;
 typedef struct rtl8139_dev_s

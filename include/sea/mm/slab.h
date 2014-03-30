@@ -1,7 +1,7 @@
 #ifndef SLAB_H
 #define SLAB_H
 #include <types.h>
-#include <area.h>
+#include <sea/mm/vmem.h>
 #include <config.h>
 #define SLAB_MAGIC 0x11235813
 #define S_ALIGN 1

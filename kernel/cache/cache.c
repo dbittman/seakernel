@@ -6,10 +6,10 @@
 #include <kernel.h>
 #include <cache.h>
 #include <task.h>
-#include <ll.h>
-#include <atomic.h>
-#include <symbol.h>
-#include <lib/hash.h>
+#include <sea/ll.h>
+#include <sea/cpu/atomic.h>
+#include <sea/loader/symbol.h>
+#include <sea/lib/hash.h>
 struct llist *cache_list;
 int disconnect_block_cache(int dev);
 int write_block_cache(int dev, u64 blk);

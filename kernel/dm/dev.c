@@ -4,7 +4,7 @@
 #include <fs.h>
 #include <sys/stat.h>
 #include <block.h>
-#include <symbol.h>
+#include <sea/loader/symbol.h>
 struct devhash_s devhash[NUM_DT];
 
 void dm_init()

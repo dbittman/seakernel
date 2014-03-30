@@ -8,12 +8,12 @@
 #include <sea/loader/elf.h>
 #include <block.h>
 #include <char.h>
-#include <multiboot.h>
-#include <symbol.h>
+#include <sea/boot/multiboot.h>
+#include <sea/loader/symbol.h>
 #include <cache.h>
 #include <cpu.h>
-#include <multiboot.h>
-#include <rwlock.h>
+#include <sea/boot/multiboot.h>
+#include <sea/rwlock.h>
 
 const char *elf32_lookup_symbol (uint32_t addr, elf32_t *elf)
 {

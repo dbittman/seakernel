@@ -1,7 +1,7 @@
 #ifndef K_LL_H
 #define K_LL_H
 #include <types.h>
-#include <rwlock.h>
+#include <sea/rwlock.h>
 
 #define LLISTNODE_MAGIC 0x77755533
 #define LLIST_MAGIC     0x33355577

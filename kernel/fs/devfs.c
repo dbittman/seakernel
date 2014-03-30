@@ -5,8 +5,8 @@
 #include <char.h>
 #include <block.h>
 #include <fs.h>
-#include <symbol.h>
-#include <atomic.h>
+#include <sea/loader/symbol.h>
+#include <sea/cpu/atomic.h>
 
 struct inode *devfs_root;
 int devfs_nodescount=1;

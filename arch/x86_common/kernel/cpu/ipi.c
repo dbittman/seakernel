@@ -12,10 +12,10 @@
 #if CONFIG_SMP
 #include <kernel.h>
 #include <task.h>
-#include <mutex.h>
+#include <sea/mutex.h>
 #include <cpu.h>
 #include <memory.h>
-#include <atomic.h>
+#include <sea/cpu/atomic.h>
 
 mutex_t ipi_mutex;
 int x86_cpu_send_ipi(unsigned char dest_shorthand, unsigned int dst, unsigned int v)

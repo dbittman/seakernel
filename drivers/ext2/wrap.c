@@ -1,7 +1,7 @@
 #include <types.h>
 #include <fs.h>
 #include <task.h>
-#include <errno.h>
+#include <sea/errno.h>
 #include <modules/ext2.h>
 
 int wrap_ext2_update(struct inode *i);

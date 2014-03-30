@@ -4,7 +4,7 @@
 #include <task.h>
 #include <sys/stat.h>
 #include <dev.h>
-#include <swap.h>
+#include <sea/mm/swap.h>
 #include <cpu.h>
 #include <sea/fs/mount.h>
 #include <sea/fs/dir.h>

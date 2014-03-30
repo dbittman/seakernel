@@ -1,9 +1,9 @@
 #ifndef CACHE_H
 #define CACHE_H
 
-#include <rwlock.h>
-#include <ll.h>
-#include <lib/hash.h>
+#include <sea/rwlock.h>
+#include <sea/ll.h>
+#include <sea/lib/hash.h>
 
 struct ce_t {
 	uint64_t id, key;

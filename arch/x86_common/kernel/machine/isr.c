@@ -4,8 +4,8 @@
 #include <asm/system.h>
 #include <task.h>
 #include <cpu.h>
-#include <symbol.h>
-#include <atomic.h>
+#include <sea/loader/symbol.h>
+#include <sea/cpu/atomic.h>
 #include <sea/cpu/interrupt.h>
 
 char *exception_messages[] =

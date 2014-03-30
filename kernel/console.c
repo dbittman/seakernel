@@ -3,7 +3,7 @@
  */
 #include <kernel.h>
 #include <asm/system.h>
-#include <mutex.h>
+#include <sea/mutex.h>
 #include <console.h>
 #include <sea/tty/terminal.h>
 struct vterm *curcons=0;

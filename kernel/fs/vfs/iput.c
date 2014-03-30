@@ -4,8 +4,8 @@
 #include <asm/system.h>
 #include <dev.h>
 #include <fs.h>
-#include <rwlock.h>
-#include <atomic.h>
+#include <sea/rwlock.h>
+#include <sea/cpu/atomic.h>
 #include <sea/fs/inode.h>
 
 int iput(struct inode *i)

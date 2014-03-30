@@ -16,7 +16,7 @@
 #include <kernel.h>
 #include <memory.h>
 #include <task.h>
-#include <atomic.h>
+#include <sea/cpu/atomic.h>
 
 #include <sea/mm/vmem.h>
 

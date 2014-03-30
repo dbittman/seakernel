@@ -4,7 +4,7 @@
 #include <kernel.h>
 #include <cpu.h>
 #include <task.h>
-#include <mutex.h>
+#include <sea/mutex.h>
 
 #define MAX_IOAPIC 8
 #define write_ioapic(l,o,v) ioapic_rw(l, WRITE, o, v)

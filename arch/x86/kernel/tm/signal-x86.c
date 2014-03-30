@@ -1,7 +1,7 @@
 #include <kernel.h>
 #include <isr.h>
 #include <task.h>
-#include <init.h>
+#include <sea/boot/init.h>
 
 #define SIGSTACK (STACK_LOCATION - (STACK_SIZE + PAGE_SIZE + 8))
 

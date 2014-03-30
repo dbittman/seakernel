@@ -6,13 +6,13 @@
 #include <sea/loader/elf.h>
 #include <block.h>
 #include <char.h>
-#include <multiboot.h>
-#include <symbol.h>
+#include <sea/boot/multiboot.h>
+#include <sea/loader/symbol.h>
 #include <cache.h>
 #include <cpu.h>
-#include <multiboot.h>
-#include <symbol.h>
-#include <file.h>
+#include <sea/boot/multiboot.h>
+#include <sea/loader/symbol.h>
+#include <sea/fs/file.h>
 
 static int process_elf32_phdr(char *mem, int fp, addr_t *start, addr_t *end)
 {

@@ -4,8 +4,8 @@
 #include <kernel.h>
 #include <asm/system.h>
 #include <char.h>
-#include <mutex.h>
-#include <symbol.h>
+#include <sea/mutex.h>
+#include <sea/loader/symbol.h>
 #include <task.h>
 mutex_t serial_m;
 char serial_initialized=0;

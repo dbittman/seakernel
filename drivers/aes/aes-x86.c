@@ -1,5 +1,5 @@
 #include <kernel.h>
-#include <module.h>
+#include <sea/loader/module.h>
 #include <config.h>
 
 #if CONFIG_ARCH == TYPE_ARCH_X86_64

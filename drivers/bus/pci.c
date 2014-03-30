@@ -27,7 +27,7 @@
 #include <task.h>
 #include <fs.h>
 #include <dev.h>
-#include <symbol.h>
+#include <sea/loader/symbol.h>
 #include <sea/fs/proc.h>
 #define PCI_LOGLEVEL 1
 

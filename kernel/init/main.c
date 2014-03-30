@@ -1,16 +1,16 @@
 /* init/main.c: Copyright (c) 2010 Daniel Bittman
  * Provides initialization functions for the kernel */
 #include <kernel.h>
-#include <multiboot.h>
+#include <sea/boot/multiboot.h>
 #include <console.h>
 #include <memory.h>
 #include <asm/system.h>
 #include <task.h>
 #include <dev.h>
 #include <fs.h>
-#include <init.h>
+#include <sea/boot/init.h>
 #include <cache.h>
-#include <symbol.h>
+#include <sea/loader/symbol.h>
 #include <sea/loader/elf.h>
 #include <cpu.h>
 #include <sea/mm/init.h>

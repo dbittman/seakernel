@@ -1,5 +1,5 @@
 #include <kernel.h>
-#include <time.h>
+#include <sea/cpu/time.h>
 #include <sea/cpu/cmos-x86_common.h>
 
 #define BCD2BIN(bcd) ((((bcd)&15) + ((bcd)>>4)*10))

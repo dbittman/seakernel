@@ -7,7 +7,7 @@
 #include <fs.h>
 #include <dev.h>
 #include <fcntl.h>
-#include <file.h>
+#include <sea/fs/file.h>
 
 int sys_ioctl(int fp, int cmd, long arg)
 {

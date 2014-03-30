@@ -7,8 +7,8 @@
  * acquired, it will go into sleep until the lock can be acquired
  */
 #include <kernel.h>
-#include <atomic.h>
-#include <rwlock.h>
+#include <sea/cpu/atomic.h>
+#include <sea/rwlock.h>
 #include <task.h>
 #undef DEBUG
 #define DEBUG 0

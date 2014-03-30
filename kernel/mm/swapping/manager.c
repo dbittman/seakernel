@@ -4,7 +4,7 @@
 #include <dev.h>
 #include <block.h>
 #include <fs.h>
-#include <swap.h>
+#include <sea/mm/swap.h>
 #include <sys/stat.h>
 #include <mod.h>
 mutex_t *sl_mutex;

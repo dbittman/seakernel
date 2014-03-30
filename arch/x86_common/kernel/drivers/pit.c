@@ -4,7 +4,7 @@
 #include <kernel.h>
 #include <isr.h>
 #include <task.h>
-#include <atomic.h>
+#include <sea/cpu/atomic.h>
 #include <sea/cpu/interrupt.h>
 void do_tick();
 

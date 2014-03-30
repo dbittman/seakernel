@@ -8,7 +8,7 @@
 #include <sys/fcntl.h>
 #include <char.h>
 #include <block.h>
-#include <file.h>
+#include <sea/fs/file.h>
 
 int fs_do_sys_read_flags(struct file *f, off_t off, char *buf, size_t count)
 {

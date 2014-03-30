@@ -4,8 +4,8 @@
 #include <asm/system.h>
 #include <dev.h>
 #include <fs.h>
-#include <atomic.h>
-#include <rwlock.h>
+#include <sea/cpu/atomic.h>
+#include <sea/rwlock.h>
 #include <sea/fs/inode.h>
 
 static struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, int *req)

@@ -1,5 +1,5 @@
 #include <kernel.h>
-#include <module.h>
+#include <sea/loader/module.h>
 #include <modules/ahci.h>
 #include <sea/tm/schedule.h>
 #include <sea/tm/process.h>

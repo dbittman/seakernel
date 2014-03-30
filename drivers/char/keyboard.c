@@ -3,9 +3,9 @@
 #include <keymap.h>
 #include <modules/keyboard.h>
 #include <console.h>
-#include <sig.h>
+#include <sea/tm/signal.h>
 #include <task.h>
-#include <symbol.h>
+#include <sea/loader/symbol.h>
 #include <sea/cpu/interrupt.h>
 
 int is_ctrl=0, is_alt=0, is_shift=0, is_altgr=0;

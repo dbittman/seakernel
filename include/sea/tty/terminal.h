@@ -2,8 +2,8 @@
 #define __SEA_TTY_TERMINAL_H
 
 #include <sea/tty/termios.h>
-#include <mutex.h>
-#include <ll.h>
+#include <sea/mutex.h>
+#include <sea/ll.h>
 #define TTY_IBLEN 256
 
 #define KERN_PANIC 8

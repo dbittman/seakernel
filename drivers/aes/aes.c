@@ -1,5 +1,5 @@
 #include <kernel.h>
-#include <module.h>
+#include <sea/loader/module.h>
 #include <sea/cpu/processor.h>
 #include <sea/loader/symbol.h>
 #include "rijndael.h"

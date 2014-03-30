@@ -1,8 +1,8 @@
 #include <kernel.h>
-#include <module.h>
+#include <sea/loader/module.h>
 #include <sea/loader/elf.h>
 #include <task.h>
-#include <file.h>
+#include <sea/fs/file.h>
 #include <sea/loader/module.h>
 #include <sea/tm/schedule.h>
 

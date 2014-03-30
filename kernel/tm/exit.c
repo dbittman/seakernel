@@ -5,7 +5,7 @@
 #include <memory.h>
 #include <task.h>
 #include <cpu.h>
-#include <atomic.h>
+#include <sea/cpu/atomic.h>
 #include <sea/mm/vmm.h>
 
 static __attribute__((always_inline)) inline void set_as_dead(task_t *t)

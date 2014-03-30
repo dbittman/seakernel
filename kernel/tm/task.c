@@ -5,11 +5,11 @@
 #include <kernel.h>
 #include <memory.h>
 #include <task.h>
-#include <symbol.h>
-#include <tqueue.h>
+#include <sea/loader/symbol.h>
+#include <sea/tm/tqueue.h>
 #include <cpu.h>
-#include <ll.h>
-#include <atomic.h>
+#include <sea/ll.h>
+#include <sea/cpu/atomic.h>
 
 volatile task_t *kernel_task=0, *alarm_list_start=0;
 mutex_t *alarm_mutex=0;

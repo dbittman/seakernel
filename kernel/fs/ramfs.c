@@ -2,7 +2,7 @@
 #include <memory.h>
 #include <task.h>
 #include <fs.h>
-#include <atomic.h>
+#include <sea/cpu/atomic.h>
 #include <sea/fs/ramfs.h>
 struct inode *ramfs_root;
 int ramfs_sane(struct inode *i);

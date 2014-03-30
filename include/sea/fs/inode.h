@@ -2,9 +2,9 @@
 #define __SEA_FS_INODE_H
 
 #include <types.h>
-#include <mutex.h>
-#include <rwlock.h>
-#include <ll.h>
+#include <sea/mutex.h>
+#include <sea/rwlock.h>
+#include <sea/ll.h>
 #include <sea/fs/flock.h>
 #include <sea/fs/stat.h>
 

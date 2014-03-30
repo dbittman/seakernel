@@ -1,9 +1,9 @@
 #include <kernel.h>
 #include <dev.h>
 #include <fs.h>
-#include <pipe.h>
+#include <sea/dm/pipe.h>
 #include <task.h>
-#include <file.h>
+#include <sea/fs/file.h>
 #include <sea/cpu/interrupt.h>
 pipe_t *dm_create_pipe()
 {

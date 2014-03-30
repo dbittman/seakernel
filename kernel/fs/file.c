@@ -2,8 +2,8 @@
 #include <kernel.h>
 #include <task.h>
 #include <fs.h>
-#include <atomic.h>
-#include <file.h>
+#include <sea/cpu/atomic.h>
+#include <sea/fs/file.h>
 #include <sea/tm/process.h>
 
 static struct file_ptr *get_file_handle(task_t *t, int n)

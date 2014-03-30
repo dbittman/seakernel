@@ -3,9 +3,9 @@
 #include <cpu.h>
 #include <cpu-x86.h>
 #include <task.h>
-#include <mutex.h>
-#include <atomic.h>
-#include <symbol.h>
+#include <sea/mutex.h>
+#include <sea/cpu/atomic.h>
+#include <sea/loader/symbol.h>
 #include <acpi.h>
 #include <sea/cpu/features-x86_common.h>
 cpu_t *primary_cpu=0;

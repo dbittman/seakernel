@@ -4,9 +4,9 @@
 #include <fs.h>
 #include <task.h>
 #include <memory.h>
-#include <module.h>
+#include <sea/loader/module.h>
 #include <sea/loader/elf.h>
-#include <symbol.h>
+#include <sea/loader/symbol.h>
 #include <sea/loader/module.h>
 
 module_t *modules=0;

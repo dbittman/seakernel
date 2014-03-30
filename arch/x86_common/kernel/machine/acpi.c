@@ -4,8 +4,8 @@
 #include <kernel.h>
 #include <memory.h>
 #include <acpi.h>
-#include <symbol.h>
-#include <pmap.h>
+#include <sea/loader/symbol.h>
+#include <sea/mm/pmap.h>
 struct pmap acpi_pmap;
 int __acpi_enable = 0;
 int acpi_rsdt_pt_sz;

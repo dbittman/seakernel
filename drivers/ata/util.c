@@ -3,7 +3,7 @@
 #include <modules/pci.h>
 #include <modules/ata.h>
 #include <block.h>
-#include <atomic.h>
+#include <sea/cpu/atomic.h>
 
 int ata_disk_sync(struct ata_controller *cont)
 {

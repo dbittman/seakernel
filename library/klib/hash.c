@@ -1,9 +1,9 @@
 #include <kernel.h>
-#include <lib/hash.h>
+#include <sea/lib/hash.h>
 #include <memory.h>
 #include <types.h>
-#include <rwlock.h>
-#include <errno.h>
+#include <sea/rwlock.h>
+#include <sea/errno.h>
 
 struct hash_collision_resolver *hash_collision_resolvers[NUM_HASH_COLLISION_RESOLVERS] = {
 	0,

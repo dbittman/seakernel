@@ -6,17 +6,17 @@
  * nothing else to do. So we reschedule often.
  */
 #include <kernel.h>
-#include <multiboot.h>
+#include <sea/boot/multiboot.h>
 #include <console.h>
 #include <memory.h>
 #include <asm/system.h>
 #include <task.h>
 #include <dev.h>
 #include <fs.h>
-#include <init.h>
-#include <symbol.h>
+#include <sea/boot/init.h>
+#include <sea/loader/symbol.h>
 #include <cache.h>
-#include <swap.h>
+#include <sea/mm/swap.h>
 #include <sea/cpu/interrupt.h>
 
 void get_timed(struct tm *now);

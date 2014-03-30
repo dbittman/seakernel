@@ -1,12 +1,12 @@
 #include <kernel.h>
-#include <module.h>
+#include <sea/loader/module.h>
 #include <modules/pci.h>
 #include <modules/i350.h>
-#include <pmap.h>
-#include <net/net.h>
-#include <mutex.h>
+#include <sea/mm/pmap.h>
+#include <sea/net/net.h>
+#include <sea/mutex.h>
 #include <sea/tm/process.h>
-#include <atomic.h>
+#include <sea/cpu/atomic.h>
 #include <sea/cpu/interrupt.h>
 
 int i350_int;

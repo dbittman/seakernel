@@ -2,7 +2,7 @@
 #define __MODULES_I350_H
 #include <types.h>
 #include <modules/pci.h>
-#include <mutex.h>
+#include <sea/mutex.h>
 
 struct i350_receive_descriptor {
 	uint64_t buffer;

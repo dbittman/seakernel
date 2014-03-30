@@ -4,7 +4,7 @@
 #include <isr.h>
 #include <task.h>
 #include <cpu.h>
-#include <atomic.h>
+#include <sea/cpu/atomic.h>
 #include <sea/cpu/interrupt.h>
 #if CONFIG_SMP
 #include <imps-x86.h>

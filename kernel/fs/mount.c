@@ -2,8 +2,8 @@
 #include <fs.h>
 #include <dev.h>
 #include <asm/system.h>
-#include <ll.h>
-#include <mount.h>
+#include <sea/ll.h>
+#include <sea/fs/mount.h>
 
 struct llist *mountlist, *sblist;
 

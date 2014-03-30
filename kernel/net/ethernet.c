@@ -1,8 +1,8 @@
 #include <kernel.h>
-#include <net/net.h>
-#include <net/ethernet.h>
-#include <net/arp.h>
-#include <net/ipv4.h>
+#include <sea/net/net.h>
+#include <sea/net/ethernet.h>
+#include <sea/net/arp.h>
+#include <sea/net/ipv4.h>
 #include <asm/system.h>
 
 void ethernet_construct_header(struct ethernet_header *head, uint8_t src_mac[6], uint8_t dest_mac[6], uint16_t ethertype)

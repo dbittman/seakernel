@@ -4,7 +4,7 @@
 #include <kernel.h>
 #include <cpu.h>
 #include <task.h>
-#include <mutex.h>
+#include <sea/mutex.h>
 #include <imps-x86.h>
 
 #define MAX_IOAPIC 8

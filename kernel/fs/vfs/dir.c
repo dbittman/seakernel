@@ -4,7 +4,7 @@
 #include <asm/system.h>
 #include <dev.h>
 #include <fs.h>
-#include <atomic.h>
+#include <sea/cpu/atomic.h>
 #include <sea/fs/dir.h>
 static int do_get_path_string(struct inode *p, char *path, int max)
 {

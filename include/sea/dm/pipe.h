@@ -1,8 +1,8 @@
 #ifndef __SEA_DM_PIPE_H
 #define __SEA_DM_PIPE_H
 
-#include <ll.h>
-#include <mutex.h>
+#include <sea/ll.h>
+#include <sea/mutex.h>
 #include <types.h>
 #include <sea/fs/inode.h>
 

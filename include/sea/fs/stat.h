@@ -2,7 +2,7 @@
 #define __SEA_FS_STAT_H
 
 #include <types.h>
-#include <time.h>
+#include <sea/cpu/time.h>
 #define S_IFMT  00170000
 #define	S_IFSOCK 0140000	/* socket */
 #define	S_IFLNK  0120000

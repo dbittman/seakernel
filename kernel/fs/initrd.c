@@ -1,8 +1,8 @@
 #include <task.h>
 #include <memory.h>
-#include <initrd.h>
+#include <sea/fs/initrd.h>
 #include <fs.h>
-#include <multiboot.h>
+#include <sea/boot/multiboot.h>
 #include <sea/fs/ramfs.h>
 int initrd_version=0;
 addr_t initrd_location=0;

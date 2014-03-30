@@ -2,9 +2,9 @@
 #define __SEA_CPU_PROCESSOR_H
 #include <types.h>
 #include <memory.h>
-#include <tqueue.h>
+#include <sea/tm/tqueue.h>
 #include <task.h>
-#include <mutex.h>
+#include <sea/mutex.h>
 #include <config.h>
 #if CONFIG_ARCH == TYPE_ARCH_X86
   #include <cpu-x86.h>

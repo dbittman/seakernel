@@ -1,9 +1,9 @@
 #include <kernel.h>
 #include <sea/dm/block.h>
-#include <module.h>
+#include <sea/loader/module.h>
 #include <sea/fs/inode.h>
 #include <modules/psm.h>
-#include <ll.h>
+#include <sea/ll.h>
 #include <modules/aes.h>
 
 #define MAX_CRYPTO 32

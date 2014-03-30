@@ -5,7 +5,7 @@
 #include <task.h>
 #include <fs.h>
 #include <fcntl.h>
-#include <file.h>
+#include <sea/fs/file.h>
 #define LSTART(a) (a->l_start + a->l_pos)
 void vfs_init_inode_flocks(struct inode *i)
 {

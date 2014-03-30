@@ -1,7 +1,7 @@
 #ifndef NET_ARP_H
 #define NET_ARP_H
 
-#include <net/net.h>
+#include <sea/net/net.h>
 #include <types.h>
 
 struct __attribute__((__packed__)) arp_packet {

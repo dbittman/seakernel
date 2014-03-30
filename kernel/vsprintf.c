@@ -10,7 +10,7 @@
 #include <kernel.h>
 #include <string.h>
 #include <console.h>
-#include <vsprintf.h>
+#include <sea/vsprintf.h>
 #include <dev.h>
 #define LOGL_SERIAL 0
 #define LOGL_LOGTTY 1

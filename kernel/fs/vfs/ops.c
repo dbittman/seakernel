@@ -5,8 +5,8 @@
 #include <dev.h>
 #include <fs.h>
 #include <fcntl.h>
-#include <atomic.h>
-#include <rwlock.h>
+#include <sea/cpu/atomic.h>
+#include <sea/rwlock.h>
 #include <sea/fs/inode.h>
 
 int vfs_inode_is_directory(struct inode *i)

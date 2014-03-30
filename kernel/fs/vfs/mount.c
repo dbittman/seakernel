@@ -4,10 +4,10 @@
 #include <asm/system.h>
 #include <dev.h>
 #include <fs.h>
-#include <ll.h>
-#include <atomic.h>
-#include <rwlock.h>
-#include <mount.h>
+#include <sea/ll.h>
+#include <sea/cpu/atomic.h>
+#include <sea/rwlock.h>
+#include <sea/fs/mount.h>
 #include <sea/fs/inode.h>
 
 struct inode *fs_init_tmpfs();

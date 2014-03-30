@@ -3,9 +3,9 @@
 #include <cpu.h>
 #include <cpu-x86_64.h>
 #include <task.h>
-#include <mutex.h>
-#include <atomic.h>
-#include <symbol.h>
+#include <sea/mutex.h>
+#include <sea/cpu/atomic.h>
+#include <sea/loader/symbol.h>
 #include <acpi.h>
 cpu_t *primary_cpu=0;
 #if CONFIG_SMP

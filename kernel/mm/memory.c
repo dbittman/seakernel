@@ -4,13 +4,13 @@
 #include <sea/mm/init.h>
 #include <kernel.h>
 #include <memory.h>
-#include <multiboot.h>
+#include <sea/boot/multiboot.h>
 #include <task.h>
-#include <swap.h>
+#include <sea/mm/swap.h>
 #include <cpu.h>
-#include <symbol.h>
-#include <atomic.h>
-#include <pmap.h>
+#include <sea/loader/symbol.h>
+#include <sea/cpu/atomic.h>
+#include <sea/mm/pmap.h>
 #include <sea/mm/pmm.h>
 #include <sea/mm/vmm.h>
 

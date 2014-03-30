@@ -1,5 +1,5 @@
 #include <kernel.h>
-#include <lib/hash.h>
+#include <sea/lib/hash.h>
 #include <types.h>
 
 

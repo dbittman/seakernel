@@ -1,7 +1,7 @@
 #ifndef INIT_H
 #define INIT_H
 
-#include <multiboot.h>
+#include <sea/boot/multiboot.h>
 
 void init();
 void setup_kernelstack();

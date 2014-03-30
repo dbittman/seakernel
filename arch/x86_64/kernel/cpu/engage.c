@@ -4,10 +4,10 @@ initialization */
 #if CONFIG_SMP
 #include <kernel.h>
 #include <task.h>
-#include <mutex.h>
+#include <sea/mutex.h>
 #include <cpu.h>
 #include <memory.h>
-#include <atomic.h>
+#include <sea/cpu/atomic.h>
 
 void load_tables_ap();
 void set_lapic_timer(unsigned tmp);

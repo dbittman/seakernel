@@ -2,10 +2,10 @@
 #if CONFIG_SMP
 #include <kernel.h>
 #include <task.h>
-#include <mutex.h>
+#include <sea/mutex.h>
 #include <cpu.h>
 #include <memory.h>
-#include <atomic.h>
+#include <sea/cpu/atomic.h>
 #include <imps-x86.h>
 volatile int imps_release_cpus = 0;
 char imcr_present=0;

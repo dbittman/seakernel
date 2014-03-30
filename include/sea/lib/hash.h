@@ -2,7 +2,7 @@
 #define __SEA_LIB_HASH
 
 #include <types.h>
-#include <rwlock.h>
+#include <sea/rwlock.h>
 
 struct hash_table {
 	unsigned flags;

@@ -6,7 +6,7 @@
 #include <isr.h>
 #include <task.h>
 #include <cpu.h>
-#include <atomic.h>
+#include <sea/cpu/atomic.h>
 int current_hz=1000;
 volatile long ticks=0;
 int sys_get_timer_th(int *t)

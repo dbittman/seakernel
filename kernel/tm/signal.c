@@ -7,7 +7,7 @@
 #include <kernel.h>
 #include <isr.h>
 #include <task.h>
-#include <init.h>
+#include <sea/boot/init.h>
 #include <sea/cpu/interrupt.h>
 
 void __tm_handle_signal(task_t *t)

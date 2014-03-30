@@ -3,7 +3,7 @@
 #include <modules/pci.h>
 #include <modules/ata.h>
 #include <block.h>
-#include <symbol.h>
+#include <sea/loader/symbol.h>
 #include <modules/psm.h>
 
 int init_ata_device()

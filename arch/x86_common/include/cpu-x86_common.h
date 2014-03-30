@@ -1,7 +1,7 @@
 #ifndef __CPU_X86_COMMON_H
 #define __CPU_X86_COMMON_H
 
-#include <mutex.h>
+#include <sea/mutex.h>
 #include <types.h>
 
 #define APIC_BCAST_ID			0xFF

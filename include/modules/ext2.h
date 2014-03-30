@@ -6,10 +6,10 @@
 #include <types.h>
 #include <fs.h>
 #include <cache.h>
-#include <time.h>
+#include <sea/cpu/time.h>
 #include <modules/ext2_sb.h>
-#include <ll.h>
-#include <mutex.h>
+#include <sea/ll.h>
+#include <sea/mutex.h>
 typedef struct e2_vol_data {
 	int flag;
 	unsigned long long dev, block;

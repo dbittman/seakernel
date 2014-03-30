@@ -1,9 +1,9 @@
 #include <kernel.h>
 #include <dev.h>
 #include <modules/pci.h>
-#include <symbol.h>
+#include <sea/loader/symbol.h>
 #include <char.h>
-#include <module.h>
+#include <sea/loader/module.h>
 #define NUM_RX_DESCRIPTORS	768
 #define NUM_TX_DESCRIPTORS	768
 

@@ -1,7 +1,7 @@
 #include <kernel.h>
-#include <net/net.h>
-#include <net/ethernet.h>
-#include <net/arp.h>
+#include <sea/net/net.h>
+#include <sea/net/ethernet.h>
+#include <sea/net/arp.h>
 #include <asm/system.h>
 
 void arp_get_mac(uint8_t *mac, uint16_t m1, uint16_t m2, uint16_t m3)

@@ -1,7 +1,7 @@
 #include <kernel.h>
 #include <memory.h>
 #include <task.h>
-#include <tqueue.h>
+#include <sea/tm/tqueue.h>
 
 /* Low-level memory allocator implementation */
 int sys_sbrk(long inc)

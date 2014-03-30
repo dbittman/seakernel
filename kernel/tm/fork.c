@@ -2,7 +2,7 @@
 #include <kernel.h>
 #include <memory.h>
 #include <task.h>
-#include <atomic.h>
+#include <sea/cpu/atomic.h>
 #include <cpu.h>
 #include <context.h>
 #include <sea/mm/vmm.h>

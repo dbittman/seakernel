@@ -1,7 +1,7 @@
 #include <kernel.h>
 #include <types.h>
-#include <net/net.h>
-#include <errno.h>
+#include <sea/net/net.h>
+#include <sea/errno.h>
 
 int net_callback_poll(struct net_dev *nd, struct net_packet *packets, int max)
 {

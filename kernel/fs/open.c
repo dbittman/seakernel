@@ -9,8 +9,8 @@
 #include <sys/fcntl.h>
 #include <char.h>
 #include <block.h>
-#include <atomic.h>
-#include <file.h>
+#include <sea/cpu/atomic.h>
+#include <sea/fs/file.h>
 
 struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int *num)
 {

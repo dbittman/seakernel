@@ -2,7 +2,7 @@
 #include <memory.h>
 #include <task.h>
 #include <fs.h>
-#include <swap.h>
+#include <sea/mm/swap.h>
 #include <block.h>
 int get_empty_slot(swapdev_t *s)
 {

@@ -1,11 +1,11 @@
 #include <kernel.h>
-#include <atomic.h>
-#include <net/net.h>
-#include <ll.h>
+#include <sea/cpu/atomic.h>
+#include <sea/net/net.h>
+#include <sea/ll.h>
 #include <task.h>
-#include <symbol.h>
+#include <sea/loader/symbol.h>
 #include <asm/system.h>
-#include <net/ethernet.h>
+#include <sea/net/ethernet.h>
 
 struct llist *net_list;
 

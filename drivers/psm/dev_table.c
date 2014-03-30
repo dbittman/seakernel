@@ -1,6 +1,6 @@
 #include <kernel.h>
-#include <module.h>
-#include <mutex.h>
+#include <sea/loader/module.h>
+#include <sea/mutex.h>
 
 #include <modules/psm.h>
 

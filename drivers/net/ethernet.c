@@ -1,6 +1,6 @@
 #include <kernel.h>
 #include <dev.h>
-#include <symbol.h>
+#include <sea/loader/symbol.h>
 #include <modules/crc32.h>
 intptr_t loader_find_kernel_function(char * unres);
 int (*process_packet_ipv4)(char *, int);

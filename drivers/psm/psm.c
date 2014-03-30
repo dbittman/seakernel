@@ -4,9 +4,9 @@
  * raw device R/Ws.
  */
 #include <kernel.h>
-#include <module.h>
+#include <sea/loader/module.h>
 #include <block.h>
-#include <symbol.h>
+#include <sea/loader/symbol.h>
 #include <sea/dm/block.h>
 #include <modules/psm.h>
 

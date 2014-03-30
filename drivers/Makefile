@@ -17,7 +17,7 @@ endif
 # this flag is needed if we want to access relocations
 # that require 64bit fields...
 MCFLAGS=        -std=gnu11 -fno-rename-registers \
-		-fno-regmove -D__KERNEL__ -mno-red-zone -nostdinc -ffreestanding \
+		-fno-regmove -D__KERNEL__ -mno-red-zone -ffreestanding \
 		-fno-common -nostdlib \
 		-I../arch/${ARCH}/include \
 		-Iarch/${ARCH}/include \

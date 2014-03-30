@@ -6,7 +6,7 @@
 /* Adapted from linux 0.01 - */
 #include <sea/types.h>
 #include <sea/config.h>
-#include <sea/stdarg.h>
+#include <stdarg.h>
 #include <sea/kernel.h>
 #include <sea/string.h>
 #include <sea/tty/terminal.h>

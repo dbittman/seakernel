@@ -23,7 +23,7 @@ export CC
 export LD
 export AR
 
-CFLAGS_NOARCH = -std=gnu11 -nostdlib -nostdinc -nodefaultlibs \
+CFLAGS_NOARCH = -std=gnu11 -nostdlib -nodefaultlibs \
                 -ffreestanding \
                 -mno-red-zone -fno-omit-frame-pointer \
                 -mpush-args -mno-accumulate-outgoing-args \

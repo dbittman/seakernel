@@ -6,7 +6,7 @@
 -include ../sea_defines.inc
 
 include ../arch/$(ARCH)/library/make.inc
-CFLAGS+=-I../arch/$(ARCH)/include -nostdinc
+CFLAGS+=-I../arch/$(ARCH)/include 
 KLIBO = klib/hash.o klib/hash_chain.o klib/ll.o \
 		klib/strtoint.o
 

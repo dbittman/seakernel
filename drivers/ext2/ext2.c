@@ -26,7 +26,7 @@ ext2_fs_t *get_new_fsvol()
 	mutex_create(&fs->ac_lock, 0);
 	char tm[32];
 	sprintf(tm, "ext2-%d", fs_num);
-	fs->cache = cache_create(0, tm);
+	fs->cache = cache_create(0, 0, tm, 0);
 	fs->llnode = ll_insert(fslist, fs);
 	return fs;
 }

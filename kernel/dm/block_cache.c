@@ -40,7 +40,7 @@ void dm_block_cache_init()
 #endif
 #endif
 	
-	blk_cache = cache_create(dm_block_cache_sync, "block");
+	blk_cache = cache_create(0, dm_block_cache_sync, "block", 0);
 }
 
 int dm_cache_block(int dev, u64 blk, int sz, char *buf)

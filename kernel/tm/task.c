@@ -1,5 +1,3 @@
-#include <sea/subsystem.h>
-#define SUBSYSTEM _SUBSYSTEM_TM
 #include <sea/tm/_tm.h>
 #include <sea/tm/process.h>
 #include <sea/kernel.h>
@@ -101,11 +99,15 @@ void tm_set_current_task_marker(page_dir_t *space, addr_t task)
 	arch_tm_set_current_task_marker(space, task);
 }
 
+void tm_set_kernel_stack(addr_t start, addr_t end)
+{
+	arch_tm_set_kernel_stack(start, end);
+}
+
 void tm_switch_to_user_mode()
 {
-#warning "clean up"
 	/* set up the kernel stack first...*/
-	set_kernel_stack(current_tss, current_task->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
+	tm_set_kernel_stack(current_task->kernel_stack, current_task->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
 	arch_tm_switch_to_user_mode();
 }
 

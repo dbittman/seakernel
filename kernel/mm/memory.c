@@ -1,5 +1,3 @@
-#include <sea/subsystem.h>
-#define SUBSYSTEM _SUBSYSTEM_MM
 #include <sea/mm/_mm.h>
 #include <sea/mm/init.h>
 #include <sea/kernel.h>

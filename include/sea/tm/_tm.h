@@ -1,12 +1,6 @@
 #ifndef _SEA_TM__TM_H
 #define _SEA_TM__TM_H
 
-#include <sea/subsystem.h>
-
-#if SUBSYSTEM != _SUBSYSTEM_TM
-#error "_tm.h included from a non-tm source file"
-#endif
-
 #include <sea/tm/process.h>
 
 /* process.c */

@@ -17,7 +17,7 @@ int id_tables=0;
 struct pd_data *pd_cur_data = (struct pd_data *)PDIR_DATA;
 
 addr_t id_mapped_location;
-
+void setup_kernelstack();
 static addr_t vm_init_directory(addr_t id_map_to)
 {
 	/* Create kernel directory. 

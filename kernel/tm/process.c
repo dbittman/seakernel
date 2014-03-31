@@ -1,5 +1,3 @@
-#include <sea/subsystem.h>
-#define SUBSYSTEM _SUBSYSTEM_TM
 #include <sea/tm/_tm.h>
 #include <sea/tm/process.h>
 #include <sea/kernel.h>

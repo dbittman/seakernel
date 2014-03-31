@@ -1,5 +1,6 @@
 #include <sea/kernel.h>
 #include <sea/tm/process.h>
+#include <sea/tm/context.h>
 
 void arch_tm_set_current_task_marker(pml4_t *pml4, addr_t task)
 {
@@ -28,4 +29,9 @@ void arch_tm_set_current_task_marker(pml4_t *pml4, addr_t task)
 	} else
 		virt = (pt[PAGE_TABLE_IDX(addr/0x1000)] & PAGE_MASK) + PHYS_PAGE_MAP;
 	*(addr_t *)(virt) = task;
+}
+
+void arch_tm_set_kernel_stack(addr_t start, addr_t end)
+{
+	set_kernel_stack(current_tss, end);
 }

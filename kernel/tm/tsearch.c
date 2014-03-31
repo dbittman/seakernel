@@ -1,6 +1,4 @@
 /* searches a task queue for a task with specific properties. */
-#include <sea/subsystem.h>
-#define SUBSYSTEM _SUBSYSTEM_TM
 #include <sea/tm/_tm.h>
 #include <sea/kernel.h>
 #include <sea/tm/process.h>

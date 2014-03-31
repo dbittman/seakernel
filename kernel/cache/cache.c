@@ -76,10 +76,15 @@ static int set_dirty(cache_t *c, struct ce_t *e, int dirty)
 	}
 	return old;
 }
-#warning "make this more like other kernel objects"
-cache_t *cache_create(int (*sync)(struct ce_t *), char *name)
+
+cache_t *cache_create(cache_t *c, int (*sync)(struct ce_t *), char *name, unsigned flags)
 {
-	cache_t *c = (void *)kmalloc(sizeof(cache_t));
+	if(!c) {
+		c = (void *)kmalloc(sizeof(cache_t));
+		c->flags = CF_ALLOC;
+	}
+	else
+		c->flags = 0;
 	c->sync = sync;
 	c->syncing=0;
 	c->dirty=0;
@@ -270,7 +275,7 @@ int cache_destroy_all_id(cache_t *c, u64 id)
 	return 0;
 }
 
-int cache_destroy(cache_t *c)
+void cache_destroy(cache_t *c)
 {
 	printk(1, "[cache]: Destroying cache '%s'...\n", c->name);
 	rwlock_acquire(c->rwl, RWL_WRITER);
@@ -290,8 +295,9 @@ int cache_destroy(cache_t *c)
 	ll_remove_entry(cache_list, c);
 	rwlock_release(c->rwl, RWL_WRITER);
 	rwlock_destroy(c->rwl);
+	if(c->flags & CF_ALLOC)
+		kfree(c);
 	printk(1, "[cache]: Cache '%s' destroyed\n", c->name);
-	return 1;
 }
 
 int cache_sync_all()

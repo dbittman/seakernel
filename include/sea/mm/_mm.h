@@ -1,12 +1,6 @@
 #ifndef _SEA_MM__MM_H
 #define _SEA_MM__MM_H
 
-#include <sea/subsystem.h>
-
-#if SUBSYSTEM != _SUBSYSTEM_MM
-#error "_mm.h included from a non-mm source file"
-#endif
-
 #include <sea/types.h>
 #include <sea/tm/process.h>
 typedef addr_t page_dir_t, page_table_t, pml4_t, pdpt_t;

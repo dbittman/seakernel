@@ -205,6 +205,9 @@ int tm_get_uid();
 int tm_get_egid();
 int tm_get_euid();
 
+void arch_tm_set_kernel_stack(addr_t, addr_t);
+void tm_set_kernel_stack(addr_t, addr_t);
+
 int sys_times(struct tms *buf);
 int sys_waitpid(int pid, int *st, int opt);
 int sys_wait3(int *, int, int *);

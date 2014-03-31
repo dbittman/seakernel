@@ -1,5 +1,3 @@
-#include <sea/subsystem.h>
-#define SUBSYSTEM _SUBSYSTEM_MM
 #include <sea/mm/_mm.h>
 #include <sea/mm/context.h>
 /* TODO: get rid of page_dir_t and friends */

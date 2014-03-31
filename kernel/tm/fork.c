@@ -66,7 +66,7 @@ static void copy_task_struct(task_t *task, task_t *parent, char share_thread_dat
 #if CONFIG_SMP
 extern cpu_t *cpu_array;
 extern int num_cpus;
-static unsigned int __counter = 0;
+static int __counter = 0;
 static cpu_t *fork_choose_cpu(task_t *parent)
 {
 	cpu_t *pc = parent->cpu;
@@ -77,7 +77,7 @@ static cpu_t *fork_choose_cpu(task_t *parent)
 	if(!(cpu->flags & CPU_TASK))
 		return pc;
 	if(cpu->active_queue->num < 2) return cpu;
-	for(unsigned int i=0;i<num_cpus;i++) {
+	for(int i=0;i<num_cpus;i++) {
 		cpu_t *tmp = &cpu_array[i];
 		if(tmp->active_queue->num < cpu->active_queue->num)
 			cpu = tmp;

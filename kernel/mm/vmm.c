@@ -1,12 +1,12 @@
 #include <sea/mm/_mm.h>
 #include <sea/mm/context.h>
-/* TODO: get rid of page_dir_t and friends */
-page_dir_t *mm_vm_clone(page_dir_t *pd, char cow)
+
+vmm_context_t *mm_vm_clone(vmm_context_t *pd, char cow)
 {
 	return arch_mm_vm_clone(pd, cow);
 }
 
-page_dir_t *mm_vm_copy(page_dir_t *pd)
+vmm_context_t *mm_vm_copy(vmm_context_t *pd)
 {
 	return arch_mm_vm_copy(pd);
 }
@@ -35,8 +35,8 @@ void mm_vm_init_2()
 {
 	return arch_mm_vm_init_2();
 }
-
-void mm_vm_switch_context(page_dir_t *n/*VIRTUAL ADDRESS*/)
+#warning "change addr_t* around, make pointers pointers, and non-pointers non-pointers"
+void mm_vm_switch_context(vmm_context_t *n/*VIRTUAL ADDRESS*/)
 {
 	arch_mm_vm_switch_context(n);
 }

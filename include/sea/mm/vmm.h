@@ -14,19 +14,22 @@ struct pd_data {
 	unsigned count;
 	mutex_t lock;
 };
+
 extern struct pd_data *pd_cur_data;
-typedef addr_t page_dir_t, page_table_t, pml4_t, pdpt_t;
-extern volatile page_dir_t *kernel_dir, *current_dir;
+
+
+
+extern volatile vmm_context_t *kernel_dir, *current_dir;
 extern int id_tables;
 extern addr_t i_stack;
-page_dir_t *mm_vm_clone(page_dir_t *pd, char cow);
-page_dir_t *mm_vm_copy(page_dir_t *pd);
+vmm_context_t *mm_vm_clone(vmm_context_t *pd, char cow);
+vmm_context_t *mm_vm_copy(vmm_context_t *pd);
 void mm_free_thread_shared_directory();
 void mm_destroy_task_page_directory(task_t *p);
 void mm_free_thread_specific_directory();
 void mm_vm_init(addr_t id_map_to);
 void mm_vm_init_2();
-void mm_vm_switch_context(page_dir_t *n/*VIRTUAL ADDRESS*/);
+void mm_vm_switch_context(vmm_context_t *n/*VIRTUAL ADDRESS*/);
 addr_t mm_vm_get_map(addr_t v, addr_t *p, unsigned locked);
 void mm_vm_set_attrib(addr_t v, short attr);
 unsigned int mm_vm_get_attrib(addr_t v, unsigned *p, unsigned locked);

@@ -17,8 +17,6 @@ struct pd_data {
 
 extern struct pd_data *pd_cur_data;
 
-
-
 extern volatile vmm_context_t *kernel_dir, *current_dir;
 extern int id_tables;
 extern addr_t i_stack;

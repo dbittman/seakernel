@@ -115,7 +115,7 @@ int i825xx_load_device_pci(struct pci_device *device)
 	device->flags |= PCI_ENGAGED;
 	device->flags |= PCI_DRIVEN;
 	dev->inter = device->pcs->interrupt_line;
-	arch_interrupt_register_handler(dev->inter, (isr_t)&i825xx_int);
+	interrupt_register_handler(dev->inter, (isr_t)&i825xx_int);
 	return 0;
 }
 
@@ -128,7 +128,7 @@ int i825xx_unload_device_pci(i825xxdev_t *dev)
 	device->flags &= ~PCI_ENGAGED;
 	device->flags &= ~PCI_DRIVEN;
 	iremove_force(dev->node);
-	arch_interrupt_unregister_handler(dev->inter, (isr_t)&i825xx_int);
+	interrupt_unregister_handler(dev->inter, (isr_t)&i825xx_int);
 	delete_device(dev);
 	return 0;
 }

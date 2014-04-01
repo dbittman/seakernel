@@ -366,7 +366,7 @@ int module_install()
 	_keymap_callback=0;
 	loader_add_kernel_symbol(set_keymap_callback);
 	loader_add_kernel_symbol(get_keymap_callback);
-	irqk = arch_interrupt_register_handler(IRQ1, (isr_t)&keyboard_int_stage1, (isr_t)&keyboard_int_stage2);
+	irqk = interrupt_register_handler(IRQ1, (isr_t)&keyboard_int_stage1, (isr_t)&keyboard_int_stage2);
 	flush_port();
 	printk(1, "[keyboard]: initialized keyboard\n");
 	return 0;
@@ -376,7 +376,7 @@ int module_tm_exit()
 {
 	flush_port();
 	printk(1, "[keyboard]: Restoring old handler\n");
-	arch_interrupt_unregister_handler(IRQ1, irqk);
+	interrupt_unregister_handler(IRQ1, irqk);
 	return 0;
 }
 

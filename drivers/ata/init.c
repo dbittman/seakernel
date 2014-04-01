@@ -65,7 +65,7 @@ void allocate_dma(struct ata_controller *cont)
 		cont->prdt_phys = p;
 	}
 	if(!cont->dma_buf_virt[0]) {
-		int ret = allocate_dma_buffer(64*1024, &buf, &p);
+		int ret = mm_allocate_dma_buffer(64*1024, &buf, &p);
 		if(ret == -1)
 		{
 			kprintf("[ata]: could not allocate DMA buffer\n");

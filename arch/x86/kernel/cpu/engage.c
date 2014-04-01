@@ -77,7 +77,7 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	/* initialize tasking for this CPU */
 	task_t *task = tm_task_create();
 	task->pid = add_atomic(&next_pid, 1)-1;
-	task->pd = (page_dir_t *)cpu->kd;
+	task->pd = (void *)cpu->kd;
 	task->stack_end=STACK_LOCATION;
 	task->priority = 1;
 	

@@ -211,7 +211,7 @@ void load_tables()
 	init_gdt(gdt_entries, &gdt_ptr);
 	init_idt();
 	init_pic();
-	arch_interrupt_init();
+	interrupt_init();
 }
 
 void exceptionHandler(int a, void *p)

@@ -1,6 +1,7 @@
 #include <sea/mm/_mm.h>
 #include <sea/config.h>
 #include <sea/mm/pmm.h>
+#include <sea/mm/dma.h>
 
 void mm_copy_page_physical(addr_t src, addr_t dest)
 {
@@ -33,4 +34,9 @@ void mm_free_physical_page(addr_t page)
 void mm_pm_init()
 {
 	arch_mm_pm_init();
+}
+
+int mm_allocate_dma_buffer(size_t length, addr_t *x, addr_t *physical)
+{
+	return arch_mm_allocate_dma_buffer(length, x, physical);
 }

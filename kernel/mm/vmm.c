@@ -35,7 +35,7 @@ void mm_vm_init_2()
 {
 	return arch_mm_vm_init_2();
 }
-#warning "change addr_t* around, make pointers pointers, and non-pointers non-pointers"
+
 void mm_vm_switch_context(vmm_context_t *n/*VIRTUAL ADDRESS*/)
 {
 	arch_mm_vm_switch_context(n);

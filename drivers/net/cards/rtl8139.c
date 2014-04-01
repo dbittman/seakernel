@@ -187,7 +187,7 @@ int rtl8139_load_device_pci(struct pci_device *device)
 	device->flags |= PCI_ENGAGED;
 	device->flags |= PCI_DRIVEN;
 	dev->inter = device->pcs->interrupt_line;
-	arch_interrupt_register_handler(dev->inter + IRQ0, (isr_t)&rtl8139_int);
+	interrupt_register_handler(dev->inter + IRQ0, (isr_t)&rtl8139_int);
 	printk(1, "[rtl8139]: registered interrupt line %d\n", dev->inter);
 	printk(1, "[rtl8139]: Success!\n");
 	return 0;
@@ -202,7 +202,7 @@ int rtl8139_unload_device_pci(rtl8139dev_t *dev)
 	device->flags &= ~PCI_ENGAGED;
 	device->flags &= ~PCI_DRIVEN;
 	devfs_remove(dev->node);
-	arch_interrupt_unregister_handler(dev->inter, (isr_t)&rtl8139_int);
+	interrupt_unregister_handler(dev->inter, (isr_t)&rtl8139_int);
 	return 0;
 }
 

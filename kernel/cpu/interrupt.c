@@ -1,3 +1,12 @@
+/* interrupt.c - architecture independent interrupt handling code.
+ * 
+ * These are a little different from normal arch-dependent interface functions, 
+ * since they are backwards: The arch-dependent code calls these, not the other
+ * way around. All functions in this file with names ending in _entry are entry
+ * points into the architecture independent kernel, from the arch-dependent
+ * interrupt handling code.
+ */
+
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/registers.h>
 #include <sea/tm/process.h>
@@ -7,6 +16,7 @@
 #include <sea/loader/symbol.h>
 #include <sea/fs/proc.h>
 
+/* okay, these aren't architecture independent exactly, but they're fine for now */
 static char *exception_messages[] =
 {
  "Division By Zero",

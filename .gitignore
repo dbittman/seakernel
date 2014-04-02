@@ -2,6 +2,7 @@
 *.o
 *.m
 *.deps
+!drivers/modules.deps
 *.stage1
 *.a
 .config.cfg

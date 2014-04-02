@@ -1,0 +1,4 @@
+ahci: pci psm
+ata:  pci psm
+crypto-part: psm
+psm: partitions

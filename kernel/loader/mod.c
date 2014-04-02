@@ -165,15 +165,8 @@ static int load_module(char *path, char *args, int flags)
 	sys_close(desc);
 	/* Fill out the slot info */
 	tmp->exiter=0;
-	/* Time to decode the module header */
-	if(!(*mem == 'M' && *(mem + 1) == 'O' && *(mem+2) == 'D'))
-	{
-		kfree(tmp);
-		kfree(mem);
-		return -EINVAL;
-	}
 	/* Call the elf parser */
-	void *res = loader_parse_elf_module(tmp, (unsigned char *)mem+4);
+	void *res = loader_parse_elf_module(tmp, (unsigned char *)mem);
 	kfree(mem);
 	if(!res)
 	{

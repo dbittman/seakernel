@@ -100,15 +100,13 @@ install: $(MODULES)
 	@-for i in "$(SUBDIRS)"; do \
 		cp -f built/$$i /sys/modules-${VERSION}/$$i ;\
 	done
+	@-cp modules.deps /sys/modules-${VERSION}/modules.deps
 
 %.m: %.c
 	echo -n -e "[CC] M \t$<                 \n"
-	$(CC) $(MCFLAGS) $< -c -o $@.0
+	$(CC) $(MCFLAGS) $< -c -o $@.o
 	echo -n -e "[LD] M \t$@                 \n"
-	$(CC) $(MCFLAGS) $(LDFLAGS_ARCH) $@.0 -o $@.1 -Wl,-r,-Tlink.ld ../library/klib.a -lgcc -static
-	rm $@.0
-	cat head $@.1 > $@
-
+	$(CC) $(MCFLAGS) $(LDFLAGS_ARCH) $@.o -o $@ -Wl,-r,-Tlink.ld ../library/klib.a -lgcc -static
 
 clean:
 	@-find -name "*.m" | xargs rm -f

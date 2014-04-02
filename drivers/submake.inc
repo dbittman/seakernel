@@ -9,8 +9,7 @@ all: make.deps $(OUTPUT)
 
 $(OUTPUT): $(OFILES)
 	echo -n -e "[LD] M\t$(NAME)/$@         \n"
-	$(CC) $(MCFLAGS) $(LDFLAGS_ARCH) $(OFILES) -o $(OUTPUT).stage1 -Wl,-r,-T../link.ld ../../library/klib.a -lgcc -static
-	cat ../head $(OUTPUT).stage1 > $(OUTPUT)
+	$(CC) $(MCFLAGS) $(LDFLAGS_ARCH) $(OFILES) -o $(OUTPUT) -Wl,-r,-T../link.ld ../../library/klib.a -lgcc -static
 
 clean:
 	@-rm -f *.o $(OUTPUT).stage1 $(OUTPUT) make.deps

@@ -91,6 +91,7 @@ all_s: make.deps $(MODULES)
 		cp -f $$i/$$i.m built/$$i ;\
 		fi ;\
 	done
+	@cp modules.deps built/
 
 install: $(MODULES)
 	@-for i in $(MODULES); do \

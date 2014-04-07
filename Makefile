@@ -25,9 +25,8 @@ export AR
 
 CFLAGS_NOARCH = -std=gnu11 -nostdlib -nodefaultlibs \
                 -ffreestanding \
-                -mno-red-zone -fno-omit-frame-pointer \
+                -mno-red-zone \
                 -mpush-args -mno-accumulate-outgoing-args \
-	        -fno-tree-loop-distribute-patterns -fno-tree-vectorize \
                 -Iarch/${ARCH}/include \
                 -I../include -Iinclude -I ../../include -I ../../../include \
                 -D__KERNEL__ \
@@ -35,7 +34,10 @@ CFLAGS_NOARCH = -std=gnu11 -nostdlib -nodefaultlibs \
 	        -Wno-strict-aliasing -Wshadow -Wpointer-arith -Wcast-align \
 	        -Wno-unused -Wnested-externs -Waddress -Winline \
 	        -Wno-long-long -Wno-unused-parameter -Wno-unused-but-set-parameter\
-	        -mno-mmx -mno-sse -mno-sse2 -mno-sse3 -mno-3dnow -fno-inline-functions
+	        -mno-mmx -mno-sse -mno-sse2 -mno-sse3 -mno-3dnow \
+	        -fno-omit-frame-pointer \
+	        -fno-tree-loop-distribute-patterns
+	        
 	        
 CFLAGS_NOARCH += -O$(CONFIG_OPTIMIZATION_LEVEL)
 

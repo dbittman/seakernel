@@ -1,6 +1,8 @@
 #ifndef __SEA_CPU_INTERRUPT_H
 #define __SEA_CPU_INTERRUPT_H
 
+#include <sea/config.h>
+
 #if CONFIG_ARCH == TYPE_ARCH_X86
 #include <sea/cpu/isr-x86.h>
 #elif CONFIG_ARCH == TYPE_ARCH_X86_64

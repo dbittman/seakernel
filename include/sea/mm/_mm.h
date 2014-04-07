@@ -20,7 +20,7 @@ void arch_mm_copy_page_physical(addr_t a, addr_t b);
 void arch_mm_zero_page_physical(addr_t a);
 
 void arch_mm_free_physical_page(addr_t addr);
-addr_t arch_mm_alloc_physical_page();
+//addr_t arch_mm_alloc_physical_page();
 void arch_mm_pm_init();
 
 void arch_mm_vm_init(addr_t id_map_to);

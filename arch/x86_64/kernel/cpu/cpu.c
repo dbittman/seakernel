@@ -21,7 +21,6 @@ void init_main_cpu_1()
 	primary_cpu = &primary_cpu_data;
 	memset(primary_cpu, 0, sizeof(cpu_t));
 	load_tables_ap(primary_cpu);
-	
 	assert(primary_cpu);
 	interrupt_set(0);
 	primary_cpu->flags = CPU_UP;

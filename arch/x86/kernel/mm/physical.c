@@ -24,7 +24,7 @@ void arch_mm_pm_init(addr_t start, struct multiboot *mboot)
 
 addr_t arch_mm_alloc_physical_page()
 {
-	if(!pm_location)
+	if(unlikely(!pm_location))
 		panic(PANIC_MEM | PANIC_NOSYNC, "Physical memory allocation before initilization");
 	addr_t ret;
 	unsigned flag=0;

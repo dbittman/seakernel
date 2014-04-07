@@ -35,8 +35,9 @@
 /* Experimentally off - libc_hidden_proto(memset) */
 void *memset(void *m, int c, size_t n)
 {
-	char *s = (char *) m;
-	while (n--)
-		*s++ = (char) c;
+	unsigned char *s = (unsigned char *) m;
+	while (n--) {
+		*s++ = (unsigned char) c;
+	}
 	return m;
 }

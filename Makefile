@@ -17,12 +17,6 @@ ifeq ($(CONFIG_ARCH), 1)
 	ARCH_TC=i586
 endif
 
-export ARCH_TC
-export ARCH
-export CC
-export LD
-export AR
-
 CFLAGS_NOARCH = -std=gnu11 -nostdlib -nodefaultlibs \
                 -ffreestanding \
                 -mno-red-zone \
@@ -36,7 +30,7 @@ CFLAGS_NOARCH = -std=gnu11 -nostdlib -nodefaultlibs \
 	        -Wno-long-long -Wno-unused-parameter -Wno-unused-but-set-parameter\
 	        -mno-mmx -mno-sse -mno-sse2 -mno-sse3 -mno-3dnow \
 	        -fno-omit-frame-pointer \
-	        -fno-tree-loop-distribute-patterns
+	        -fno-tree-loop-distribute-patterns 
 	        
 	        
 CFLAGS_NOARCH += -O$(CONFIG_OPTIMIZATION_LEVEL)
@@ -50,6 +44,12 @@ include make.inc
 ifneq ($(ARCH),__none__)
 include arch/${ARCH}/make.inc
 endif
+
+export ARCH_TC
+export ARCH
+export CC
+export LD
+export AR
 
 export CFLAGS  = ${CFLAGS_NOARCH} ${CFLAGS_ARCH}
 export LDFLAGS = ${LDFLAGS_ARCH}

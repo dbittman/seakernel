@@ -2,6 +2,7 @@
 #include <sea/config.h>
 #include <sea/mm/pmm.h>
 #include <sea/mm/dma.h>
+#include <sea/boot/multiboot.h>
 
 void mm_copy_page_physical(addr_t src, addr_t dest)
 {
@@ -31,9 +32,9 @@ void mm_free_physical_page(addr_t page)
 	arch_mm_free_physical_page(page);
 }
 
-void mm_pm_init()
+void mm_pm_init(addr_t start, struct multiboot *mboot)
 {
-	arch_mm_pm_init();
+	arch_mm_pm_init(start, mboot);
 }
 
 int mm_allocate_dma_buffer(size_t length, addr_t *x, addr_t *physical)

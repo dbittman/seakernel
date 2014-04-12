@@ -5,11 +5,9 @@
 #include <sea/asm/system.h>
 #include <sea/mutex.h>
 #include <sea/tty/terminal.h>
-#include <sea/tty/terminal.h>
+
 struct vterm *current_console=0;
 struct vterm *kernel_console, *log_console=0;
-extern struct console_driver crtc_drv;
-#define VIDEO_MEMORY 0xb8000
 
 /* Simple way to display messages before tty and vsprintf get working */
 void console_puts(struct vterm *c, char *s)
@@ -78,10 +76,8 @@ void console_init_stage1()
 {
 	tty_init(&kernel_console);
 	console_create(kernel_console);
-	kernel_console->vmem=kernel_console->cur_mem
-						=kernel_console->video=(char *)VIDEO_MEMORY;
+	arch_console_init_stage1();
 	current_console = kernel_console;
-	console_initialize_vterm(kernel_console, &crtc_drv);
 	current_console->rend->clear(current_console);
 	printk(0, "[console]: Video output ready\n");
 }

@@ -56,6 +56,8 @@ void console_switch(struct vterm *n);
 void console_init_stage1();
 void console_init_stage2();
 
+void arch_console_init_stage1();
+
 int tty_read_escape_seq(struct vterm *con, char *seq);
 
 extern struct vterm consoles[];

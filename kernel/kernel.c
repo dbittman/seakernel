@@ -8,6 +8,7 @@
 #include <sea/cpu/atomic.h>
 #include <sea/fs/mount.h>
 #include <sea/cpu/interrupt.h>
+#include <sea/asm/system.h>
 #if CONFIG_ARCH == TYPE_ARCH_X86
 #include <sea/cpu/cpu-x86.h>
 #else
@@ -53,5 +54,5 @@ void kernel_poweroff()
 	interrupt_set(0);
 	kprintf("\nYou can now turn off your computer.\n");
 	for(;;) 
-		asm("nop");
+		arch_cpu_halt();
 }

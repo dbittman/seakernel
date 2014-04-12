@@ -8,6 +8,7 @@
 #include <sea/cpu/atomic.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/fs/file.h>
+#include <sea/asm/system.h>
 #if CONFIG_ARCH == TYPE_ARCH_X86
 #include <sea/cpu/cpu-x86.h>
 #else
@@ -77,10 +78,9 @@ void panic(int flags, char *fmt, ...)
 	/* breakpoint so that GDB will catch us, allowing some better debugging */
 	asm("int $0x3");
 #endif
+	interrupt_set(0);
 	for(;;)
-	{
-		asm("cli; hlt;");
-	}
+		arch_cpu_halt();
 }
 
 void panic_assert(const char *file, u32int line, const char *desc)

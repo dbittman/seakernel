@@ -142,7 +142,7 @@ int tm_schedule()
 	}
 	tm_process_lower_flag(current_task, TF_FORK);
 	interrupt_set(1);
-	arch_cpu_jmp(current_task->eip);
+	arch_cpu_jump(current_task->eip);
 	/* we never get here, but lets keep gcc happy */
 	return 1;
 }

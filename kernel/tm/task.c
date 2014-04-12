@@ -12,6 +12,7 @@
 #include <sea/tm/context.h>
 #include <sea/cpu/atomic.h>
 #include <sea/tm/schedule.h>
+#include <sea/asm/system.h>
 volatile task_t *kernel_task=0, *alarm_list_start=0;
 mutex_t *alarm_mutex=0;
 volatile unsigned next_pid=0;
@@ -200,7 +201,7 @@ void tm_move_task_cpu(task_t *t, cpu_t *cpu)
 		if(oldcpu->cur != t)
 			break;
 		mutex_release(&oldcpu->lock);
-		asm("pause");
+		arch_cpu_pause();
 	}
 	/* ok, we have the lock and the task */
 	t->cpu = cpu;

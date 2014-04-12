@@ -7,7 +7,7 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/atomic.h>
 #include <sea/tm/schedule.h>
-
+#include <sea/asm/system.h>
 static int current_hz=1000;
 static volatile long ticks=0;
 
@@ -124,7 +124,7 @@ void tm_delay_sleep(int t)
 	int to=100000;
 	long start = ticks;
 	while(ticks < end) {
-		asm("pause");
+		arch_cpu_pause();
 		interrupt_set(1);
 		if(!--to && start == ticks) {
 			printk(4, "[tm]: tm_delay_sleep reached timeout!\n");

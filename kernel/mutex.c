@@ -10,6 +10,7 @@
 #include <sea/tm/process.h>
 #include <sea/cpu/processor.h>
 #include <sea/tm/schedule.h>
+#include <sea/asm/system.h>
 /* a task may relock a mutex if it is inside an interrupt handler, 
  * and has previously locked the same mutex outside of the interrupt
  * handler. this allows for a task to handle an event that requires
@@ -44,7 +45,7 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 		if(!(m->flags & MT_NOSCHED))
 			tm_schedule();
 		else
-			asm("pause"); /* the intel manuals suggest this */
+			arch_cpu_pause();
 #if DEBUG
 		if(!--t) panic(0, "mutex time out %s:%d\n", file, line);
 #endif

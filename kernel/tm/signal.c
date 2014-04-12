@@ -25,9 +25,9 @@ void __tm_handle_signal(task_t *t)
 		tm_process_raise_flag(t, TF_SCHED);
 		switch(t->sigd)
 		{
-			case SIGHUP : case SIGKILL: case SIGQUIT: case SIGPIPE: 
-			case SIGBUS : case SIGABRT: case SIGTRAP: case SIGSEGV: 
-			case SIGALRM: case SIGFPE : case SIGILL : case SIGPAGE: 
+			case SIGHUP : case SIGKILL: case SIGQUIT: case SIGPIPE:
+			case SIGBUS : case SIGABRT: case SIGTRAP: case SIGSEGV:
+			case SIGALRM: case SIGFPE : case SIGILL : case SIGPAGE:
 			case SIGINT : case SIGTERM: case SIGUSR1: case SIGUSR2:
 				t->exit_reason.cause=__EXITSIG;
 				t->exit_reason.sig=t->sigd;

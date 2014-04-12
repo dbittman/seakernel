@@ -13,6 +13,8 @@ static void write_msr(unsigned msr, unsigned lo, unsigned hi)
    asm ("wrmsr"::"a"(lo),"d"(hi),"c"(msr));
 }
 
+#define arch_cpu_jmp(x) asm("jmp *%0"::"r"(x));
+
 #define nop() __sync_synchronize();__asm__ __volatile__ ("nop")
 int set_int(unsigned new);
 extern char tables;

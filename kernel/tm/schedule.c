@@ -9,6 +9,7 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/atomic.h>
 #include <sea/tm/schedule.h>
+#include <sea/asm/system.h>
 static __attribute__((always_inline)) inline void update_task(task_t *t)
 {
 	/* task's tm_delay ran out */
@@ -141,7 +142,7 @@ int tm_schedule()
 	}
 	tm_process_lower_flag(current_task, TF_FORK);
 	interrupt_set(1);
-	asm("jmp *%0"::"r"(current_task->eip));
+	arch_cpu_jmp(current_task->eip);
 	/* we never get here, but lets keep gcc happy */
 	return 1;
 }

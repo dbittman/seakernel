@@ -1,5 +1,6 @@
-
 #include <sea/kernel.h>
+#include <sea/loader/elf.h>
+#include <sea/boot/multiboot.h>
 #include <sea/loader/elf.h>
 
 int loader_parse_elf_executable(void *mem, int fp, addr_t *start, addr_t *end)
@@ -10,4 +11,9 @@ int loader_parse_elf_executable(void *mem, int fp, addr_t *start, addr_t *end)
 void *loader_parse_elf_module(module_t *mod, void * buf)
 {
 	return arch_loader_parse_elf_module(mod, buf);
+}
+
+void loader_parse_kernel_elf(struct multiboot *mb, void *elf)
+{
+	arch_loader_parse_kernel_elf(mb, elf);
 }

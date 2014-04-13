@@ -110,13 +110,13 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	kernel_state_flags=0;
 	mtboot = mboot_header;
 	i_stack = initial_stack;
-	arch_loader_parse_kernel_elf(mboot_header, &kernel_elf);
+	loader_parse_kernel_elf(mboot_header, &kernel_elf);
 #if CONFIG_MODULES
 	loader_init_kernel_symbols();
 #endif
-	init_serial();
+	serial_init();
 	console_init_stage1();
-	load_tables();
+	cpu_early_init();
 	console_kernel_puts("~ SeaOS Version ");	
 	char ver[32];
 	get_kernel_version(ver);
@@ -127,14 +127,14 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 #endif
 	init_syscalls();
 	fs_initrd_load(mtboot);
-	arch_cpu_timer_install(1000);
+	cpu_timer_install(1000);
 	mm_pm_init(placement, mtboot);
-	init_main_cpu_1();
+	cpu_processor_init_1();
 
 	/* Now get the management stuff going */
 	printk(1, "[kernel]: Starting system management\n");
 	mm_init(mtboot);
-	init_main_cpu_2();
+	cpu_processor_init_2();
 	console_init_stage2();
 	parse_kernel_cmd((char *)(addr_t)mtboot->cmdline);
 	tm_init_multitasking();
@@ -149,7 +149,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	printk(KERN_MILE, "[kernel]: Kernel is setup (%2.2d:%2.2d:%2.2d, kv=%d, ts=%d bytes, bits=%d: ok)\n", 
 	       kernel_start_time.tm_hour, kernel_start_time.tm_min, 
 	       kernel_start_time.tm_sec, KVERSION, sizeof(task_t), BITS_PER_LONG);
-	assert(!interrupt_set(1));
+	assert(!cpu_interrupt_set(1));
 	if(!tm_fork())
 		init();
 	sys_setsid();
@@ -183,7 +183,7 @@ void init()
 	int ret=0;
 	int pid;
 	init_pid = current_task->pid+1;
-	interrupt_set_flag(1);
+	cpu_interrupt_set_flag(1);
 	tm_switch_to_user_mode();
 	/* We have to be careful now. If we try to call any kernel functions
 	 * without doing a system call, the processor will generate a GPF (or 

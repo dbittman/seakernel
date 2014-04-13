@@ -162,7 +162,7 @@ void init_ioapic()
 	if(!num_ioapic)
 		return;
 	unsigned i, num=0;
-	interrupt_set(0);
+	cpu_interrupt_set(0);
 	interrupt_controller = 0;
 	disable_pic();
 	/* enable all discovered ioapics */

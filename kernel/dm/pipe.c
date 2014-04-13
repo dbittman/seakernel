@@ -94,11 +94,11 @@ int dm_read_pipe(struct inode *ino, char *buffer, size_t length)
 	mutex_acquire(pipe->lock);
 	while(!pipe->pending && (pipe->count > 1 && pipe->type != PIPE_NAMED 
 			&& pipe->wrcount>0)) {
-		int old = interrupt_set(0);
+		int old = cpu_interrupt_set(0);
 		tm_add_to_blocklist(pipe->read_blocked, (task_t *)current_task);
 		mutex_release(pipe->lock);
 		while(!tm_schedule());
-		assert(!interrupt_set(old));
+		assert(!cpu_interrupt_set(old));
 		if(tm_process_got_signal(current_task))
 			return -EINTR;
 		mutex_acquire(pipe->lock);
@@ -141,11 +141,11 @@ int dm_write_pipe(struct inode *ino, char *buffer, size_t length)
 	}
 	/* IO block until we can write to it */
 	while((pipe->write_pos+length)>=PIPE_SIZE) {
-		int old = interrupt_set(0);
+		int old = cpu_interrupt_set(0);
 		tm_add_to_blocklist(pipe->write_blocked, (task_t *)current_task);
 		mutex_release(pipe->lock);
 		while(!tm_schedule());
-		assert(!interrupt_set(old));
+		assert(!cpu_interrupt_set(old));
 		if(tm_process_got_signal(current_task))
 			return -EINTR;
 		mutex_acquire(pipe->lock);

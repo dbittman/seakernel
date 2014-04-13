@@ -6,9 +6,10 @@
 #include <sea/loader/module.h>
 #include <sea/tm/schedule.h>
 
-elf32_t arch_loader_parse_kernel_elf(struct multiboot *mb, elf32_t *elf)
+void arch_loader_parse_kernel_elf(struct multiboot *mb, void *__elf)
 {
 	unsigned int i;
+	elf32_t *elf = __elf;
 	elf32_section_header_t *sh = (elf32_section_header_t*)(addr_t)mb->addr;
 	elf->lookable=0;
 	uint32_t shstrtab = sh[mb->shndx].address;
@@ -28,7 +29,6 @@ elf32_t arch_loader_parse_kernel_elf(struct multiboot *mb, elf32_t *elf)
 			elf->symtabsz = sh[i].size;
 		}
 	}
-	return *elf;
 }
 
 #if (CONFIG_MODULES)

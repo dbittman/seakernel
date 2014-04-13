@@ -100,7 +100,7 @@ int boot_cpu(unsigned id, unsigned apic_ver)
 	int apicid = id, success = 1, to;
 	addr_t bootaddr, accept_status;
 	addr_t bios_reset_vector = BIOS_RESET_VECTOR;
-	interrupt_set(0);
+	cpu_interrupt_set(0);
 	/* choose this as the bios reset vector */
 	bootaddr = 0x7000;
 	addr_t sz = (addr_t)trampoline_end - (addr_t)trampoline_start;
@@ -140,7 +140,7 @@ int boot_cpu(unsigned id, unsigned apic_ver)
 	/* cpu didn't boot up...:( */
 	if (to >= 100)
 		success = 0;
-	interrupt_set(0);
+	cpu_interrupt_set(0);
 	/* clear the APIC error register */
 	LAPIC_WRITE(LAPIC_ESR, 0);
 	accept_status = LAPIC_READ(LAPIC_ESR);

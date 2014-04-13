@@ -74,13 +74,13 @@ __attribute__((always_inline)) static inline void post_context_switch()
 		current_task->state = TASK_RUNNING;
 	}
 	assert(!(kernel_state_flags & KSF_SHUTDOWN) || current_task->flags & TF_SHUTDOWN);
-	assert(!interrupt_get_flag());
+	assert(!cpu_interrupt_get_flag());
 	if(current_task->flags & TF_SETINT) {
 		/* should never enable interrupts inside an interrupt, except for
 		 * syscalls */
 		assert(!(current_task->flags & TF_IN_INT) || current_task->sysregs);
 		tm_lower_flag(TF_SETINT);
-		assert(!interrupt_set(1));
+		assert(!cpu_interrupt_set(1));
 	}
 }
 
@@ -98,7 +98,7 @@ int tm_schedule()
 	if(current_task->thread) assert(current_task->thread->magic == THREAD_MAGIC);
 	/* make sure to re-enable interrupts when we come back to this
 	 * task if we entered schedule with them enabled */
-	if(interrupt_set(0)) {
+	if(cpu_interrupt_set(0)) {
 		assert(!(current_task->flags & TF_SETINT));
 		tm_raise_flag(TF_SETINT);
 	} else
@@ -141,7 +141,7 @@ int tm_schedule()
 		return 1;
 	}
 	tm_process_lower_flag(current_task, TF_FORK);
-	interrupt_set(1);
+	cpu_interrupt_set(1);
 	arch_cpu_jump(current_task->eip);
 	/* we never get here, but lets keep gcc happy */
 	return 1;

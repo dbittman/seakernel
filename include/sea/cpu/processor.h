@@ -70,4 +70,20 @@ extern cpu_t *primary_cpu;
 void copy_update_stack(addr_t old, addr_t, unsigned length);
 void arch_cpu_send_ipi(int dest, unsigned signal, unsigned flags);
 void cpu_send_ipi(int dest, unsigned signal, unsigned flags);
+
+void arch_cpu_reset();
+void cpu_reset();
+
+void cpu_print_stack_trace(int num);
+void arch_cpu_print_stack_trace(int num);
+
+void cpu_processor_init_1();
+void cpu_processor_init_2();
+
+void arch_cpu_processor_init_1();
+void arch_cpu_processor_init_2();
+
+void arch_cpu_early_init();
+void cpu_early_init();
+
 #endif

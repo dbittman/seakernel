@@ -9,6 +9,7 @@
 
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/registers.h>
+#include <sea/cpu/processor.h>
 #include <sea/tm/process.h>
 #include <sea/kernel.h>
 #include <sea/cpu/atomic.h>
@@ -176,7 +177,7 @@ static void faulted(int fuckoff, int userspace, addr_t ip)
 
 void cpu_interrupt_syscall_entry(registers_t *regs, int syscall_num)
 {
-	interrupt_set(0);
+	cpu_interrupt_set(0);
 	add_atomic(&int_count[0x80], 1);
 	if(current_task->flags & TF_IN_INT)
 		panic(0, "attempted to enter syscall while handling an interrupt");
@@ -199,7 +200,7 @@ void cpu_interrupt_syscall_entry(registers_t *regs, int syscall_num)
 		current_task->regs = regs;
 		current_task->sysregs = regs;
 		syscall_handler(regs);
-		assert(!interrupt_get_flag());
+		assert(!cpu_interrupt_get_flag());
 		/* handle stage2's here...*/
 		if(maybe_handle_stage_2) {
 			maybe_handle_stage_2 = 0;
@@ -218,14 +219,14 @@ void cpu_interrupt_syscall_entry(registers_t *regs, int syscall_num)
 			}
 			mutex_release(&s2_lock);
 		}
-		assert(!interrupt_get_flag());
+		assert(!cpu_interrupt_get_flag());
 	}
-	assert(!interrupt_set(0));
+	assert(!cpu_interrupt_set(0));
 	current_task->sysregs=0;
 	current_task->regs=0;
 	/* we don't need worry about this being wrong, since we'll always be returning to
 	 * user-space code */
-	interrupt_set_flag(1);
+	cpu_interrupt_set_flag(1);
 	/* we're never returning to an interrupt, so we can
 	 * safely reset this flag */
 	tm_lower_flag(TF_IN_INT);
@@ -234,7 +235,7 @@ void cpu_interrupt_syscall_entry(registers_t *regs, int syscall_num)
 void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_address)
 {
 	/* this is explained in the IRQ handler */
-	int previous_interrupt_flag = interrupt_set(0);
+	int previous_interrupt_flag = cpu_interrupt_set(0);
 	add_atomic(&int_count[int_no], 1);
 	/* check if we're interrupting kernel code, and set the interrupt
 	 * handling flag */
@@ -266,12 +267,12 @@ void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_addres
 	}
 	/* clean up... Also, we don't handle stage 2 in ISR handling, since this
 	 can occur from within a stage2 handler */
-	assert(!interrupt_set(0));
+	assert(!cpu_interrupt_set(0));
 	/* if it went unhandled, kill the process or panic */
 	if(!called)
 		faulted(int_no, !already_in_interrupt, return_address);
 	/* restore previous interrupt state */
-	interrupt_set_flag(previous_interrupt_flag);
+	cpu_interrupt_set_flag(previous_interrupt_flag);
 	if(!already_in_interrupt)
 		tm_lower_flag(TF_IN_INT);
 }
@@ -280,11 +281,11 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 {
 	/* ok, so the assembly entry function clears interrupts in the cpu, 
 	 * but the kernel doesn't know that yet. So we clear the interrupt
-	 * flag in the cpu structure as part of the normal interrupt_set call, but
+	 * flag in the cpu structure as part of the normal cpu_interrupt_set call, but
 	 * it returns the interrupts-enabled flag from BEFORE the interrupt
 	 * was recieved! Fuckin' brilliant! Back up that flag, so we can
 	 * properly restore the flag later. */
-	int previous_interrupt_flag = interrupt_set(0);
+	int previous_interrupt_flag = cpu_interrupt_set(0);
 	add_atomic(&int_count[int_no], 1);
 	/* save the registers so we can screw with iret later if we need to */
 	char clear_regs=0;
@@ -318,7 +319,7 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 		add_atomic(&stage2_count[int_no], 1);
 		maybe_handle_stage_2 = 1;
 	}
-	assert(!interrupt_get_flag());
+	assert(!cpu_interrupt_get_flag());
 	/* ok, now are we allowed to handle stage2's right here? */
 	if(!already_in_interrupt && (maybe_handle_stage_2||need_second_stage))
 	{
@@ -341,17 +342,17 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 			}
 		}
 		mutex_release(&s2_lock);
-		assert(!interrupt_get_flag());
+		assert(!cpu_interrupt_get_flag());
 	}
 	/* ok, now lets clean up */
-	assert(!interrupt_set(0));
+	assert(!cpu_interrupt_set(0));
 	/* clear the registers if we saved the ones from this interrupt */
 	if(current_task && clear_regs)
 		current_task->regs=0;
 	/* restore the flag in the cpu struct. The assembly routine will
 	 * call iret, which will also restore the EFLAG state to what
 	 * it was before, including the interrupts-enabled bit in eflags */
-	interrupt_set_flag(previous_interrupt_flag);
+	cpu_interrupt_set_flag(previous_interrupt_flag);
 	/* and clear the state flag if this is going to return to user-space code */
 	if(!already_in_interrupt)
 		tm_lower_flag(TF_IN_INT);
@@ -362,7 +363,7 @@ void __KT_try_handle_stage2_interrupts()
 {
 	if(maybe_handle_stage_2)
 	{
-		int old = interrupt_set(0);
+		int old = cpu_interrupt_set(0);
 		maybe_handle_stage_2 = 0;
 		/* handle the stage2 handlers. NOTE: this may change to only 
 		 * handling one interrupt, one function. For now, this works. */
@@ -380,7 +381,7 @@ void __KT_try_handle_stage2_interrupts()
 			}
 		}
 		mutex_release(&s2_lock);
-		interrupt_set(old);
+		cpu_interrupt_set(old);
 	}
 }
 
@@ -419,4 +420,37 @@ int proc_read_int(char *buf, int off, int len)
 		}
 	}
 	return total_len;
+}
+
+
+int cpu_interrupt_set(unsigned _new)
+{
+	/* need to make sure we don't get interrupted... */
+	arch_interrupt_disable();
+	cpu_t *cpu = current_task ? current_task->cpu : 0;
+	unsigned old = cpu ? cpu->flags&CPU_INTER : 0;
+	if(!_new) {
+		arch_interrupt_disable();
+		if(cpu) cpu->flags &= ~CPU_INTER;
+	} else if(!cpu || cpu->flags&CPU_RUNNING) {
+		arch_interrupt_enable();
+		if(cpu) cpu->flags |= CPU_INTER;
+	}
+	return old;
+}
+
+void cpu_interrupt_set_flag(int flag)
+{
+	cpu_t *cpu = current_task ? current_task->cpu : 0;
+	if(!cpu) return;
+	if(flag)
+		cpu->flags |= CPU_INTER;
+	else
+		cpu->flags &= ~CPU_INTER;
+}
+
+int cpu_interrupt_get_flag()
+{
+	cpu_t *cpu = current_task ? current_task->cpu : 0;
+	return (cpu ? (cpu->flags&CPU_INTER) : 0);
 }

@@ -86,9 +86,9 @@ int kt_kernel_idle_task()
 	while(!__KT_clear_args())
 	{
 		tm_schedule();
-		interrupt_set(1);
+		cpu_interrupt_set(1);
 	}
-	interrupt_set(0);
+	cpu_interrupt_set(0);
 	printk(1, "[kernel]: remapping lower memory with protection flags...\n");
 	addr_t addr = 0;
 	while(addr != TOP_LOWER_KERNEL)
@@ -100,13 +100,13 @@ int kt_kernel_idle_task()
 			mm_vm_set_attrib(addr, PAGE_PRESENT | PAGE_WRITE);
 		addr += PAGE_SIZE_LOWER_KERNEL;
 	}
-	interrupt_set(1);
+	cpu_interrupt_set(1);
 	/* Now enter the main idle loop, waiting to do periodic cleanup */
 	printk(0, "[idle]: entering background loop\n");
 	for(;;) {
 		task=__KT_try_releasing_tasks();
 		__KT_try_handle_stage2_interrupts();
 		tm_schedule();
-		interrupt_set(1);
+		cpu_interrupt_set(1);
 	}
 }

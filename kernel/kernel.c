@@ -20,7 +20,7 @@ volatile unsigned kernel_state_flags=0;
 
 void kernel_shutdown()
 {
-	interrupt_set(0);
+	cpu_interrupt_set(0);
 #if CONFIG_SMP
 	printk(0, "[smp]: shutting down application processors\n");
 	cpu_send_ipi(CPU_IPI_DEST_OTHERS, IPI_SHUTDOWN, 0);
@@ -43,7 +43,7 @@ void kernel_reset()
 		return;
 	kernel_shutdown();
 	kprintf("Rebooting system...\n");
-	do_reset();
+	cpu_reset();
 }
 
 void kernel_poweroff()
@@ -51,7 +51,7 @@ void kernel_poweroff()
 	if(current_task->thread->effective_uid)
 		return;
 	kernel_shutdown();
-	interrupt_set(0);
+	cpu_interrupt_set(0);
 	kprintf("\nYou can now turn off your computer.\n");
 	for(;;) 
 		arch_cpu_halt();

@@ -129,7 +129,7 @@ int boot_cpu(unsigned id, unsigned apic_ver)
 		mutex_create(&cpu_stage1_lock, MT_NOSCHED);
 	}
 	
-	interrupt_set(0);
+	cpu_interrupt_set(0);
 	/* choose this as the bios reset vector */
 	bootaddr = 0x7000;
 	unsigned sz = (unsigned)trampoline_end - (unsigned)trampoline_start;
@@ -169,7 +169,7 @@ int boot_cpu(unsigned id, unsigned apic_ver)
 	/* cpu didn't boot up...:( */
 	if (to >= 100)
 		success = 0;
-	interrupt_set(0);
+	cpu_interrupt_set(0);
 	/* clear the APIC error register */
 	LAPIC_WRITE(LAPIC_ESR, 0);
 	accept_status = LAPIC_READ(LAPIC_ESR);

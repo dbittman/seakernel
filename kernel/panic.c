@@ -25,7 +25,7 @@ static inline void _set_lowercase(char *b)
 
 void panic(int flags, char *fmt, ...)
 {
-	interrupt_set(0);
+	cpu_interrupt_set(0);
 #if CONFIG_SMP
 	/* tell the other processors to halt */
 	cpu_send_ipi(CPU_IPI_DEST_OTHERS, IPI_PANIC, 0);
@@ -52,7 +52,7 @@ void panic(int flags, char *fmt, ...)
 	if(t) 
 		printk_safe(9,"current_task=%x:%d, sys=%d, flags=%x, F=%x. Stack trace:\n", t, 
 				t->pid, t->system, t->flags, t->flag);
-	print_trace(10);
+	cpu_print_stack_trace(10);
 	if(pid && !(flags & PANIC_NOSYNC))
 	{
 		printk_safe(9,"[panic]: syncing...");
@@ -78,7 +78,7 @@ void panic(int flags, char *fmt, ...)
 	/* breakpoint so that GDB will catch us, allowing some better debugging */
 	asm("int $0x3");
 #endif
-	interrupt_set(0);
+	cpu_interrupt_set(0);
 	for(;;)
 		arch_cpu_halt();
 }

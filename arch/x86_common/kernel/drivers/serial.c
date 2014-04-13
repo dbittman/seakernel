@@ -105,7 +105,7 @@ int serial_rw(int rw, int min, char *b, size_t c)
 	return 0;
 }
 
-void init_serial()
+void serial_init()
 {
 #if ! DISABLE_SERIAL
 	mutex_create(&serial_m, 0);

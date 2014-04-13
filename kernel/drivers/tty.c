@@ -23,7 +23,7 @@ int tty_open(int min)
 		return -ENOENT;
 	if(!consoles[min].flag && min) {
 		console_create(&consoles[min]);
-		console_initialize_vterm(&consoles[min], &crtc_drv);
+		console_initialize_vterm(&consoles[min], consoles[0].driver);
 	}
 	current_task->tty = min;
 	return 0;
@@ -395,8 +395,8 @@ void console_init_stage2()
 {
 	console_create(&consoles[1]);
 	console_create(&consoles[9]);
-	console_initialize_vterm(&consoles[1], &crtc_drv);
-	console_initialize_vterm(&consoles[9], &crtc_drv);
+	console_initialize_vterm(&consoles[1], consoles[0].driver);
+	console_initialize_vterm(&consoles[9], consoles[0].driver);
 	memcpy(consoles[1].vmem, consoles[0].cur_mem, 80*25*2);
 	consoles[1].x=consoles[0].x;
 	consoles[1].y=consoles[0].y;

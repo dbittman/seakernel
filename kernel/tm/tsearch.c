@@ -17,7 +17,7 @@
  */
 task_t *tm_search_tqueue(tqueue_t *tq, unsigned flags, unsigned long value, void (*action)(task_t *, int), int arg, int *count)
 {
-	int old = interrupt_set(0);
+	int old = cpu_interrupt_set(0);
 	mutex_acquire(&tq->lock);
 	struct llistnode *cur, *next;
 	task_t *tmp, *t=0;
@@ -78,6 +78,6 @@ task_t *tm_search_tqueue(tqueue_t *tq, unsigned flags, unsigned long value, void
 		__tm_move_task_to_kill_queue(current_task, 1);
 	}
 	mutex_release(&tq->lock);
-	interrupt_set(old);
+	cpu_interrupt_set(old);
 	return t;
 }

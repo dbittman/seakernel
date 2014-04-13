@@ -132,38 +132,38 @@ int sys_times(struct tms *buf)
  * (potentially) an interrupt handler */
 void tm_add_to_blocklist_and_block(struct llist *list, task_t *task)
 {
-	int old = interrupt_set(0);
+	int old = cpu_interrupt_set(0);
 	task->blocklist = list;
 	ll_do_insert(list, task->blocknode, (void *)task);
 	tqueue_remove(((cpu_t *)task->cpu)->active_queue, task->activenode);
 	tm_process_pause(task);
-	assert(!interrupt_set(old));
+	assert(!cpu_interrupt_set(old));
 }
 
 void tm_add_to_blocklist(struct llist *list, task_t *task)
 {
-	int old = interrupt_set(0);
+	int old = cpu_interrupt_set(0);
 	task->blocklist = list;
 	ll_do_insert(list, task->blocknode, (void *)task);
 	tqueue_remove(((cpu_t *)task->cpu)->active_queue, task->activenode);
 	task->state = TASK_ISLEEP;
-	assert(!interrupt_set(old));
+	assert(!cpu_interrupt_set(old));
 }
 
 void tm_remove_from_blocklist(struct llist *list, task_t *t)
 {
-	int old = interrupt_set(0);
+	int old = cpu_interrupt_set(0);
 	tqueue_insert(((cpu_t *)t->cpu)->active_queue, (void *)t, t->activenode);
 	struct llistnode *bn = t->blocknode;
 	t->blocklist = 0;
 	ll_do_remove(list, bn, 0);
 	tm_process_resume(t);
-	assert(!interrupt_set(old));
+	assert(!cpu_interrupt_set(old));
 }
 
 void tm_remove_all_from_blocklist(struct llist *list)
 {
-	int old = interrupt_set(0);
+	int old = cpu_interrupt_set(0);
 	rwlock_acquire(&list->rwl, RWL_WRITER);
 	struct llistnode *cur, *next;
 	task_t *entry;
@@ -177,7 +177,7 @@ void tm_remove_all_from_blocklist(struct llist *list)
 	}
 	assert(!list->num);
 	rwlock_release(&list->rwl, RWL_WRITER);
-	assert(!interrupt_set(old));
+	assert(!cpu_interrupt_set(old));
 }
 
 void tm_move_task_cpu(task_t *t, cpu_t *cpu)

@@ -125,7 +125,7 @@ int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw,
 	cmdReg |= 0x1 | (rw == READ ? 8 : 0);
 	cont->irqwait=0;
 	int ret = size * count;
-	interrupt_set(1);
+	cpu_interrupt_set(1);
 	outb(cont->port_bmr_base + BMR_COMMAND, cmdReg);
 	timeout=1000000;
 	while((ret && timeout--)) {

@@ -7,22 +7,22 @@
 #include <sea/cpu/atomic.h>
 #include <sea/loader/symbol.h>
 #include <sea/cpu/acpi.h>
-cpu_t *primary_cpu=0;
+extern cpu_t *primary_cpu;
 #if CONFIG_SMP
-cpu_t cpu_array[CONFIG_MAX_CPUS];
-unsigned cpu_array_num=0;
+extern cpu_t cpu_array[CONFIG_MAX_CPUS];
+extern unsigned cpu_array_num;
 #endif
-cpu_t primary_cpu_data;
+extern cpu_t primary_cpu_data;
 void init_lapic(int extint);
 int probe_smp();
 void init_acpi();
-void init_main_cpu_1()
+void arch_cpu_processor_init_1()
 {
 	primary_cpu = &primary_cpu_data;
 	memset(primary_cpu, 0, sizeof(cpu_t));
 	load_tables_ap(primary_cpu);
 	assert(primary_cpu);
-	interrupt_set(0);
+	cpu_interrupt_set(0);
 	primary_cpu->flags = CPU_UP;
 	printk(KERN_MSG, "Initializing CPU...\n");
 	parse_cpuid(primary_cpu);
@@ -32,7 +32,7 @@ void init_main_cpu_1()
 	printk(KERN_EVERY, "done\n");
 	mutex_create((mutex_t *)&primary_cpu->lock, MT_NOSCHED);
 #if CONFIG_MODULES
-	loader_add_kernel_symbol(interrupt_set);
+	loader_add_kernel_symbol(cpu_interrupt_set);
 #if CONFIG_SMP
 	loader_add_kernel_symbol(cpu_get);
 	loader_add_kernel_symbol((addr_t)&cpu_array_num);
@@ -41,7 +41,7 @@ void init_main_cpu_1()
 #endif
 }
 
-void init_main_cpu_2()
+void arch_cpu_processor_init_2()
 {
 	acpi_init();
 #if CONFIG_SMP
@@ -67,7 +67,7 @@ void init_main_cpu_2()
 	load_tables_ap(primary_cpu);
 #endif
 	assert(primary_cpu);
-	interrupt_set(0);
+	cpu_interrupt_set(0);
 	primary_cpu->flags = CPU_UP;
 	printk(KERN_MSG, "Initializing CPU...\n");
 	parse_cpuid(primary_cpu);

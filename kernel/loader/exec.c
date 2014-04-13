@@ -217,7 +217,7 @@ static int do_exec(task_t *t, char *path, char **argv, char **env)
 	if(EXEC_LOG == 2) 
 		printk(0, "[%d]: Performing call\n", t->pid);
 	
-	interrupt_set(0);
+	cpu_interrupt_set(0);
 	tm_process_lower_flag(t, TF_SCHED);
 	if(!(kernel_state_flags & KSF_HAVEEXECED))
 		set_ksf(KSF_HAVEEXECED);

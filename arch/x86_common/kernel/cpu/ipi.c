@@ -33,7 +33,7 @@ int x86_cpu_send_ipi(unsigned char dest_shorthand, unsigned int dst, unsigned in
 	if(!(kernel_state_flags & KSF_SMP_ENABLE) && (kernel_state_flags & KSF_CPUS_RUNNING))
 		return 1;
 	int to, send_status;
-	int old = interrupt_set(0);
+	int old = cpu_interrupt_set(0);
 	mutex_acquire(&ipi_mutex);
 	/* Writing to the lower ICR register causes the interrupt
 	 * to get sent off (Intel 3A 10.6.1), so do the higher reg first */
@@ -48,7 +48,7 @@ int x86_cpu_send_ipi(unsigned char dest_shorthand, unsigned int dst, unsigned in
 		send_status = LAPIC_READ(LAPIC_ICR) & LAPIC_ICR_STATUS_PEND;
 	} while (send_status && (to++ < 1000));
 	mutex_release(&ipi_mutex);
-	interrupt_set(old);
+	cpu_interrupt_set(old);
 	return (to < 1000);
 }
 
@@ -59,7 +59,7 @@ void arch_cpu_send_ipi(int dest, unsigned signal, unsigned flags)
 
 void x86_cpu_handle_ipi_cpu_halt(volatile registers_t regs)
 {
-	interrupt_set(0);
+	cpu_interrupt_set(0);
 	/* No interrupts */
 	LAPIC_WRITE(LAPIC_TPR, 0xFFFFFFFF);
 	add_atomic(&num_halted_cpus, 1);

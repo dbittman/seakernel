@@ -44,7 +44,7 @@ void setup_kernelstack()
 	move_stack((void*)STACK_LOCATION, STACK_SIZE);
 }
 
-void print_trace(unsigned int MaxFrames)
+void arch_cpu_print_stack_trace(unsigned int MaxFrames)
 {
 	addr_t * ebp;
 	asm("mov %%rbp, %0" : "=r"(ebp));

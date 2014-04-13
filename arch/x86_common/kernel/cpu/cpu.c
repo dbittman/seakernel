@@ -77,56 +77,9 @@ void parse_cpuid(cpu_t *me)
 		cpuid_cpu_get_brand(&cpuid);
 	memcpy(&(me->cpuid), &cpuid, sizeof(me->cpuid));
 }
-#if CONFIG_SMP
 
-cpu_t *cpu_get(int id)
+extern void load_tables();
+void arch_cpu_early_init()
 {
-	for(unsigned int i=0;i<cpu_array_num;i++)
-	{
-		if(cpu_array[i].apicid == id) return &cpu_array[i];
-	}
-	return 0;
-}
-
-cpu_t *cpu_add(cpu_t *c)
-{
-	if(cpu_array_num >= CONFIG_MAX_CPUS)
-		return 0;
-	memcpy(&cpu_array[cpu_array_num], c, sizeof(cpu_t));
-	mutex_create((mutex_t *)&(cpu_array[cpu_array_num].lock), MT_NOSCHED);
-	return &cpu_array[cpu_array_num++];
-}
-
-#endif
-
-int interrupt_set(unsigned _new)
-{
-	/* need to make sure we don't get interrupted... */
-	arch_interrupt_disable();
-	cpu_t *cpu = current_task ? current_task->cpu : 0;
-	unsigned old = cpu ? cpu->flags&CPU_INTER : 0;
-	if(!_new) {
-		arch_interrupt_disable();
-		if(cpu) cpu->flags &= ~CPU_INTER;
-	} else if(!cpu || cpu->flags&CPU_RUNNING) {
-		arch_interrupt_enable();
-		if(cpu) cpu->flags |= CPU_INTER;
-	}
-	return old;
-}
-
-void interrupt_set_flag(int flag)
-{
-	cpu_t *cpu = current_task ? current_task->cpu : 0;
-	if(!cpu) return;
-	if(flag)
-		cpu->flags |= CPU_INTER;
-	else
-		cpu->flags &= ~CPU_INTER;
-}
-
-int interrupt_get_flag()
-{
-	cpu_t *cpu = current_task ? current_task->cpu : 0;
-	return (cpu ? (cpu->flags&CPU_INTER) : 0);
+	load_tables();
 }

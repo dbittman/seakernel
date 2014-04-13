@@ -1,7 +1,7 @@
 #include <sea/kernel.h>
 
 /* This does the actual reset */
-void do_reset()
+void arch_cpu_reset()
 {
 	/* flush the keyboard controller */
 	unsigned temp;

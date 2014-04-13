@@ -8,15 +8,6 @@
 #include <sea/loader/symbol.h>
 #include <sea/tm/process.h>
 #include <sea/tm/process.h>
-static mutex_t serial_m;
-static char serial_initialized=0;
-
-#define serial_received(x) (inb(x+5)&0x01)
-#define serial_transmit_empty(x) (inb(x+5)&0x20)
-
-#if ! CONFIG_SERIAL_DEBUG
-#define DISABLE_SERIAL 1
-#endif
 
 #if DISABLE_SERIAL
 #define DS_RET return
@@ -24,99 +15,63 @@ static char serial_initialized=0;
 #define DS_RET if(serial_debug_port == 0) return
 #endif
 
-static int serial_debug_port = 0;
+#define serial_received(x) (inb(x+5)&0x01)
+#define serial_transmit_empty(x) (inb(x+5)&0x20)
 
-void init_serial_port(int PORT) 
-{DS_RET;
+static unsigned short ports[4] = {
+	0x3F8,
+	0x2F8,
+	0x3E8,
+	0x2E8
+};
+
+char arch_serial_received(int minor)
+{
+	if(minor >= 4) return 0;
+	return inb(ports[minor] + 5) & 0x01;
+}
+
+static void init_serial_port(int PORT) 
+{
 	outb(PORT + 1, 0x00);    // Disable all interrupts
 	outb(PORT + 3, 0x80);    // Enable DLAB (set baud rate divisor)
-	outb(PORT + 0, 12);    // Set divisor to 12 (lo byte) 9600 baud
+	outb(PORT + 0, 12);      // Set divisor to 12 (lo byte) 9600 baud
 	outb(PORT + 1, 0x00);    //                  (hi byte)
 	outb(PORT + 3, 0x03);    // 8 bits, no parity, one stop bit
 	outb(PORT + 2, 0xC7);    // Enable FIFO, clear them, with 14-byte threshold
 	outb(PORT + 4, 0x0B);    // IRQs enabled, RTS/DSR set
 }
 
-void write_serial(int p, char a) 
-{DS_RET;
+void arch_serial_write(int minor, char a) 
+{
+	if(minor >= 4) return;
+	int p = ports[minor];
 	while (serial_transmit_empty(p) == 0);
 	outb(p,a);
 }
 
-char read_serial(int p)
-{DS_RET 0;
+char arch_serial_read(int minor)
+{
+	if(minor >= 4) return 0;
+	int p = ports[minor];
 	while (serial_received(p) == 0);
 	return inb(p);
 }
 
-void serial_console_puts(int port, char *s)
-{DS_RET;
-	if(!serial_initialized)
-		return;
-	mutex_acquire(&serial_m);
-	while(*s)
-	{
-		write_serial(serial_debug_port, *s);
-		s++;
-	}
-	mutex_release(&serial_m);
-}
-
-void serial_console_puts_nolock(int port, char *s)
-{DS_RET;
-	if(!serial_initialized)
-		return;
-	while(*s)
-	{
-		write_serial(serial_debug_port, *s);
-		s++;
-	}
-}
-
-int serial_rw(int rw, int min, char *b, size_t c)
-{DS_RET c;
-	if(!serial_initialized) 
-		return -EINVAL;
-	int i=c;
-	if(rw == WRITE)
-	{
-		mutex_acquire(&serial_m);
-		while(i)
-		{
-			write_serial(serial_debug_port, *(b++));
-			i--;
-		}
-		mutex_release(&serial_m);
-		return c;
-	} else if(rw == READ)
-	{
-		while(i--) {
-			while(serial_received(serial_debug_port) == 0)
-			{
-				if(tm_process_got_signal(current_task))
-					return -EINTR;
-			}
-			*(b) = inb(serial_debug_port);
-			kprintf("GOT: %x\n", *(b));
-			b++;
-		}
-		return c;
-	}
-	return 0;
-}
-
-void serial_init()
+void arch_serial_init(int *serial_debug_port_minor, int *serial_enable)
 {
-#if ! DISABLE_SERIAL
-	mutex_create(&serial_m, 0);
 	/* BIOS data area */
-	serial_debug_port = *(unsigned short *)(0x400);
-	init_serial_port(serial_debug_port);
-	serial_initialized = 1;
-	serial_console_puts_nolock(0, "[kernel]: started debug serial output\n");
-#endif
-#if CONFIG_MODULES
-	loader_add_kernel_symbol(serial_console_puts);
-	loader_add_kernel_symbol(serial_console_puts_nolock);
-#endif
+	int serial_debug_port = *(unsigned short *)(0x400);
+	if(serial_debug_port) {
+		init_serial_port(serial_debug_port);
+		int i;
+		for(i=0;i<4;i++) {
+			if(serial_debug_port == ports[i])
+				break;
+		}
+		*serial_debug_port_minor = i;
+		*serial_enable = 1;
+	} else {
+		*serial_debug_port_minor = *serial_enable = 0;
+	}
 }

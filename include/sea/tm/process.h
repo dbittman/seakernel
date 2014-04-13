@@ -7,6 +7,7 @@
 #include <sea/tm/signal.h>
 #include <sea/mm/context.h>
 #include <sea/sys/stat.h>
+#include <sea/kernel.h>
 
 #define KERN_STACK_SIZE 0x16000
 

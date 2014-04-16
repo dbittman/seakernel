@@ -4,25 +4,26 @@
 #include <sea/loader/symbol.h>
 #include <sea/dm/char.h>
 #include <sea/loader/module.h>
-#include <sea/ll.h>
+#include <sea/fs/devfs.h>
+#include <sea/mm/dma.h>
 
-int rtl8139_maj=-1, rtl8139_min=0;
+int rtl8139_maj=-1;
 typedef struct rtl8139_dev_s
 {
 	unsigned addr, inter, tx_o, rx_o;
+	addr_t rec_buf, rec_buf_virt;
+	int inter_id;
 	struct pci_device *device;
 	struct inode *node;
-	
-	char *rec_buf;
 } rtl8139dev_t;
-struct llist *rtl_cards;
+
+rtl8139dev_t *rtldev;
 
 rtl8139dev_t *create_new_device(unsigned addr, struct pci_device *device)
 {
 	rtl8139dev_t *d = (rtl8139dev_t *)kmalloc(sizeof(rtl8139dev_t));
 	d->addr = addr;
 	d->device = device;
-	ll_insert(rtl_cards, d);
 	return d;
 }
 
@@ -79,17 +80,20 @@ enum {
 	RTL_TXCFG_MDMA_2K = 0x700,  // 2K DMA Burst
 	RTL_TXCFG_RR_48 = 0x20,     // 48 (16 + 2 * 16) Tx Retry count
 };
-char rx_buf[0x2000 + 16];
-char tx_buf[0x1000];
+
 int rtl8139_init(rtl8139dev_t *dev)
 {
 	if(!rtl8139_reset(dev->addr))
 		return -1;
-	dev->rec_buf = rx_buf;
+	addr_t buf, p;
+	int ret = mm_allocate_dma_buffer(64*1024, &buf, &p);
+	if(ret == -1) {
+		printk(0, "[rtl8139]: failed to allocate dma buffer\n");
+		return -1;
+	}
+	dev->rec_buf = p;
+	dev->rec_buf_virt = buf;
 	outb(dev->addr+0x50, 0xC0);
-	
-	// enable Rx and Tx
-	outb(dev->addr+0x37, 0x08 | 0x04);
 	
 	// get the card out of low power mode
 	outb(dev->addr+0x52, 0);
@@ -131,26 +135,28 @@ int rtl8139_init(rtl8139dev_t *dev)
 int recieve(rtl8139dev_t *dev, unsigned short data)
 {
 	printk(1, "[rtl]: TRACE: Recieve packet\n");
-	outw(dev->addr + 0x3E, data);
+	
+	return 0;
+}
+
+
+int rtl8139_int_1(registers_t *regs)
+{
 	return 0;
 }
 
 int rtl8139_int(registers_t *regs)
 { 
-	rtl8139dev_t *t=0;
-	struct llistnode *cur;
-	rwlock_acquire(&rtl_cards->rwl, RWL_READER);
-	ll_for_each_entry(rtl_cards, cur, rtl8139dev_t *, t);
+	rtl8139dev_t *t=rtldev;
+	if((t->inter+IRQ0) == regs->int_no)
 	{
-		if((t->inter+IRQ0) == regs->int_no)
-		{
-			printk(1, "[rtl]: TRACE: Got irq (%d) %x\n", regs->int_no, t->addr);
-			unsigned short data = inw(t->addr + 0x3E);
-			if(data&0x01)
-				recieve(t, data);
-		}
+		printk(1, "[rtl]: TRACE: Got irq (%d) %x\n", regs->int_no, t->addr);
+		unsigned short data = inw(t->addr + 0x3E);
+		if(data&0x01)
+			recieve(t, data);
+		/* ACK */
+		outw(t->addr + 0x3E, data);
 	}
-	rwlock_release(&rtl_cards->rwl, RWL_READER);
 	return 0;
 }
 
@@ -163,6 +169,11 @@ int rtl8139_load_device_pci(struct pci_device *device)
 		device->flags |= PCI_ERROR;
 		return 1;
 	}
+	/* set PCI busmastering */
+	unsigned short cmd = device->pcs->command | 4;
+	device->pcs->command = cmd;
+	pci_write_dword(device->bus, device->dev, device->func, 4, cmd);
+	
 	rtl8139dev_t *dev = create_new_device(addr, device);
 	printk(1, "[rtl8139]: Initiating rtl8139 controller (%x.%x.%x)...\n", 
 		device->bus, device->dev, device->func);
@@ -170,26 +181,21 @@ int rtl8139_load_device_pci(struct pci_device *device)
 		ret++;
 	
 	if(ret){
-		kfree(dev->rec_buf);
-		ll_remove_entry(rtl_cards, dev);
 		kfree(dev);
 		printk(1, "[rtl8139]: Device error when trying to initialize\n");
 		device->flags |= PCI_ERROR;
 		return -1;
 	}
 	
-	//unsigned short cmd = device->pcs->command | 4;
-	//device->pcs->command = cmd;
-	//pci_write_dword(device->bus, device->dev, device->func, 4, cmd);
-	
-	struct inode *i = devfs_add(devfs_root, "rtl8139", S_IFCHR, rtl8139_maj, rtl8139_min++);
+	struct inode *i = devfs_add(devfs_root, "rtl8139", S_IFCHR, rtl8139_maj, 0);
 	dev->node = i;
 	device->flags |= PCI_ENGAGED;
 	device->flags |= PCI_DRIVEN;
 	dev->inter = device->pcs->interrupt_line;
-	interrupt_register_handler(dev->inter + IRQ0, (isr_t)&rtl8139_int);
+	dev->inter_id = interrupt_register_handler(dev->inter + IRQ0, (isr_t)rtl8139_int_1, (isr_t)&rtl8139_int);
 	printk(1, "[rtl8139]: registered interrupt line %d\n", dev->inter);
 	printk(1, "[rtl8139]: Success!\n");
+	rtldev = dev;
 	return 0;
 }
 
@@ -202,7 +208,7 @@ int rtl8139_unload_device_pci(rtl8139dev_t *dev)
 	device->flags &= ~PCI_ENGAGED;
 	device->flags &= ~PCI_DRIVEN;
 	devfs_remove(dev->node);
-	interrupt_unregister_handler(dev->inter, (isr_t)&rtl8139_int);
+	interrupt_unregister_handler(dev->inter, dev->inter_id);
 	return 0;
 }
 
@@ -211,15 +217,13 @@ int rtl8139_rw_main(int rw, int min, char *buf, unsigned int count)
 	return 0;
 }
 
-int ioctl_rtl8139(int min, int cmd, int arg)
+int ioctl_rtl8139(int min, int cmd, long int arg)
 {
 	return 0;
 }
 
 int module_install()
 {
-	rtl8139_min=0;
-	rtl_cards = ll_create(0);
 	rtl8139_maj = dm_set_available_char_device(rtl8139_rw_main, ioctl_rtl8139, 0);
 	int i=0;
 	printk(1, "[rtl8139]: Scanning PCI bus...\n");
@@ -233,30 +237,9 @@ int module_install()
 	return 0;
 }
 
-int module_deps(char *b)
-{
-	write_deps(b, "pci,ethernet,:");
-	return KVERSION;
-}
-
 int module_tm_exit()
 {
-	printk(1, "[rtl8139]: Shutting down all cards...\n");
-	unregister_char_device(rtl8139_maj);
-	if(ll_is_active(rtl_cards))
-	{
-		struct llistnode *cur, *next;
-		rtl8139dev_t *ent;
-		ll_for_each_entry_safe(rtl_cards, cur, next, rtl8139dev_t *, ent)
-		{
-			//rtl8139_unload_device_pci(ent);
-			ll_maybe_reset_loop(rtl_cards, cur, next);
-			ll_remove(rtl_cards, cur);
-			//kfree(ent->rec_buf);
-			//kfree(ent);
-			
-		}
-	}
-	ll_destroy(rtl_cards);
+	dm_unregister_char_device(rtl8139_maj);
+	rtl8139_unload_device_pci(rtldev);
 	return 0;
 }

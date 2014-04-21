@@ -158,7 +158,7 @@ int hash_table_delete_entry(struct hash_table *h, void *key, size_t key_element_
 
 int hash_table_enumerate_entries(struct hash_table *h, uint64_t num, void **key, size_t *key_element_size, size_t *key_len, void **value)
 {
-	if(!h || !key || !h->entries || h->magic != HASH_MAGIC) panic(0, "invalid hash table for hash_table_enumerate_entries");
+	if(!h || !h->entries || h->magic != HASH_MAGIC) panic(0, "invalid hash table for hash_table_enumerate_entries");
 	rwlock_acquire(&h->lock, RWL_READER);
 	int ret = __hash_table_enumerate(h, h->entries, h->size, num, key, key_element_size, key_len, value);
 	rwlock_release(&h->lock, RWL_READER);

@@ -44,9 +44,16 @@ int sys_close(int fp)
 		dm_char_rw(CLOSE, f->inode->dev, 0, 0);
 	else if(S_ISBLK(f->inode->mode) && !fp)
 		dm_block_device_rw(CLOSE, f->inode->dev, 0, 0, 0);
-	if(!sub_atomic(&f->inode->f_count, 1) && f->inode->marked_for_deletion)
-		vfs_do_unlink(f->inode);
-	else
+	int rem_ref = sub_atomic(&f->inode->f_count, 1);
+	int did_unlink = 0;
+	if(!rem_ref)
+	{
+		if(f->inode->marked_for_deletion) {
+			did_unlink = 1;
+			vfs_do_unlink(f->inode);
+		}
+	}
+	if(!did_unlink)
 		vfs_iput(f->inode);
 	fs_fput((task_t *)current_task, fp, FPUT_CLOSE);
 	return 0;

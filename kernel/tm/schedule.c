@@ -35,7 +35,7 @@ static __attribute__((always_inline)) inline task_t *get_next_task(task_t *prev,
 	assert(prev->cpu == cpu);
 	assert(cpu);
 	
-	if(current_task != kernel_task) {
+	if(prev != kernel_task) {
 		if(__tm_process_is_runable(prev) && prev->cur_ts>0 
 				&& --prev->cur_ts)
 		{
@@ -59,7 +59,7 @@ static __attribute__((always_inline)) inline task_t *get_next_task(task_t *prev,
 			return t;
 		t = tqueue_next(cpu->active_queue);
 		/* This way the kernel can sleep without being in danger of 
-		 * causing a lockup. Basically, if the kernel task is the only
+		 * causing a lockup. If the kernel task is the only
 		 * runnable task, it gets forced to run */
 		if(t && t == prev && !__tm_process_is_runable(t)) {
 			/* make sure to update the state in case it slept */
@@ -76,6 +76,18 @@ __attribute__((always_inline)) static inline void post_context_switch()
 {
 	if(unlikely(current_task->state == TASK_SUICIDAL) && !(current_task->flags & TF_EXITING))
 		tm_process_suicide();
+	
+	assert(!(kernel_state_flags & KSF_SHUTDOWN) || current_task->flags & TF_SHUTDOWN);
+	assert(!cpu_interrupt_get_flag());
+	int enable_interrupts = 0;
+	if(current_task->flags & TF_SETINT) {
+		/* should never enable interrupts inside an interrupt, except for
+		 * syscalls */
+		assert(!(current_task->flags & TF_IN_INT) || current_task->sysregs);
+		tm_lower_flag(TF_SETINT);
+		enable_interrupts = 1;
+	}
+	
 	/* We only process signals if we aren't in a system call.
 	 * this is because if a task is suddenly interrupted inside an
 	 * important syscall while doing something important the results
@@ -89,21 +101,14 @@ __attribute__((always_inline)) static inline void post_context_switch()
 	{
 		tm_raise_flag(TF_INSIG);
 		/* Jump to the signal handler */
-		__tm_handle_signal((task_t *)current_task);
+		int new_state = __tm_handle_signal((task_t *)current_task);
 		/* if we've gotten here, then we are interruptible or running.
-		 * set the state to running since interruptible tasks fully
-		 * wake up when signaled */
-		current_task->state = TASK_RUNNING;
+		 * set the state since interruptible tasks fully
+		 * wake up when signaled. */
+		current_task->state = new_state;
 	}
-	assert(!(kernel_state_flags & KSF_SHUTDOWN) || current_task->flags & TF_SHUTDOWN);
-	assert(!cpu_interrupt_get_flag());
-	if(current_task->flags & TF_SETINT) {
-		/* should never enable interrupts inside an interrupt, except for
-		 * syscalls */
-		assert(!(current_task->flags & TF_IN_INT) || current_task->sysregs);
-		tm_lower_flag(TF_SETINT);
+	if(enable_interrupts)
 		assert(!cpu_interrupt_set(1));
-	}
 }
 
 int tm_schedule()

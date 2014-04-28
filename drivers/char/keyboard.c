@@ -259,8 +259,8 @@ int try_console_switch(int code)
 	}
 	return 0;
 }
-#define BREAKER1 69
-#define BREAKER0 225
+#define BREAKER1 0xe1
+#define BREAKER0 0x1d
 unsigned char last_sc=0;
 unsigned char key_stack[64];
 int ks_idx=0;

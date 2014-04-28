@@ -9,8 +9,9 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/atomic.h>
 #include <sea/tm/schedule.h>
-void __tm_handle_signal(task_t *t)
+int __tm_handle_signal(task_t *t)
 {
+	int ret = TASK_RUNNING;
 	t->exit_reason.sig=0;
 	struct sigaction *sa = (struct sigaction *)&(t->thread->signal_act[t->sigd]);
 	t->old_mask = t->sig_mask;
@@ -34,7 +35,7 @@ void __tm_handle_signal(task_t *t)
 				tm_kill_process(t->pid);
 				break;
 			case SIGUSLEEP:
-				t->state = TASK_USLEEP;
+				ret = TASK_USLEEP;
 				t->tick=0;
 				break;
 			case SIGSTOP: 
@@ -43,7 +44,7 @@ void __tm_handle_signal(task_t *t)
 				t->exit_reason.cause=__STOPSIG;
 				t->exit_reason.sig=t->sigd; /* Fall through */
 			case SIGISLEEP:
-				t->state = TASK_ISLEEP; 
+				ret = TASK_ISLEEP; 
 				t->tick=0;
 				break;
 			default:
@@ -58,6 +59,7 @@ void __tm_handle_signal(task_t *t)
 		tm_process_lower_flag(t, TF_INSIG);
 		tm_process_raise_flag(t, TF_SCHED);
 	}
+	return ret;
 }
 
 static int __can_send_signal(task_t *from, task_t *to)

@@ -361,7 +361,7 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 /* make sure it eventually gets handled */
 void __KT_try_handle_stage2_interrupts()
 {
-	if(maybe_handle_stage_2)
+	if(maybe_handle_stage_2 || (current_task == kernel_task))
 	{
 		int old = cpu_interrupt_set(0);
 		maybe_handle_stage_2 = 0;

@@ -33,16 +33,6 @@ int sys_get_timer_th(int *t)
 	return current_hz;
 }
 
-static int GET_MAX_TS(task_t *t)
-{
-	if(t->flags & TF_EXITING)
-		return 1;
-	int x = t->priority;
-	if(t->tty == current_console->tty)
-		x += sched_tty;
-	return x;
-}
-
 /* Iterate through the parents of tasks and update their times */
 static void inc_parent_times(task_t *t, int u, int s)
 {
@@ -78,13 +68,6 @@ static void do_tick()
 			current_task->system ? __SYS : __USR);
 	}
 	__tm_check_alarms();
-	if(current_task != kernel_task) {
-		if(__tm_process_is_runable(current_task) && current_task->cur_ts>0 
-				&& --current_task->cur_ts)
-			return;
-		else if(current_task->cur_ts <= 0)
-			current_task->cur_ts = GET_MAX_TS(current_task);
-	}
 	do_run_scheduler();
 }
 

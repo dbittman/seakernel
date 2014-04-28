@@ -1,6 +1,5 @@
 #include <sea/tm/_tm.h>
 #include <sea/tm/process.h>
-/* Functions for scheduling tasks */
 #include <sea/kernel.h>
 #include <sea/mm/vmm.h>
 #include <sea/tm/process.h>
@@ -10,6 +9,18 @@
 #include <sea/cpu/atomic.h>
 #include <sea/tm/schedule.h>
 #include <sea/asm/system.h>
+
+static int GET_MAX_TS(task_t *t)
+{
+	if(t->flags & TF_EXITING)
+		return 1;
+	int x = t->priority;
+	/* process gets a boost if it's on the current console */
+	if(t->tty == current_console->tty)
+		x += sched_tty;
+	return x;
+}
+
 static __attribute__((always_inline)) inline void update_task(task_t *t)
 {
 	/* task's tm_delay ran out */
@@ -23,7 +34,18 @@ static __attribute__((always_inline)) inline task_t *get_next_task(task_t *prev,
 	assert(prev && kernel_task);
 	assert(prev->cpu == cpu);
 	assert(cpu);
-	cpu = prev->cpu;
+	
+	if(current_task != kernel_task) {
+		if(__tm_process_is_runable(prev) && prev->cur_ts>0 
+				&& --prev->cur_ts)
+		{
+			/* current task hasn't used up its time slice yet */
+			return prev;
+		}
+		else if(prev->cur_ts <= 0)
+			prev->cur_ts = GET_MAX_TS(prev);
+	}
+	
 	task_t *t = tqueue_next(cpu->active_queue);
 	while(t)
 	{
@@ -33,11 +55,11 @@ static __attribute__((always_inline)) inline task_t *get_next_task(task_t *prev,
 		/* this handles everything in the "active queue". This includes
 		 * running tasks, tasks that have timed blocks... */
 		update_task(t);
-		if(__tm_process_is_runable(t) && !(t->flags & TF_MOVECPU))
+		if(__tm_process_is_runable(t))
 			return t;
 		t = tqueue_next(cpu->active_queue);
 		/* This way the kernel can sleep without being in danger of 
-		 * causing a lockup. Basically, if the kernel is the only
+		 * causing a lockup. Basically, if the kernel task is the only
 		 * runnable task, it gets forced to run */
 		if(t && t == prev && !__tm_process_is_runable(t)) {
 			/* make sure to update the state in case it slept */
@@ -88,14 +110,15 @@ int tm_schedule()
 {
 	if(unlikely(!current_task || !kernel_task))
 		return 0;
-	if((((cpu_t *)current_task->cpu)->flags & CPU_LOCK))
+	if((current_task->cpu->flags & CPU_LOCK))
 		return 0;
-	if(!(((cpu_t *)current_task->cpu)->flags & CPU_TASK))
+	if(!(current_task->cpu->flags & CPU_TASK))
 		return 0;
 	assert(!(kernel_state_flags & KSF_SHUTDOWN) || current_task->flags & TF_SHUTDOWN);
 	if(kernel_state_flags & KSF_SHUTDOWN) return 1;
 	assert(current_task->magic == TASK_MAGIC);
 	if(current_task->thread) assert(current_task->thread->magic == THREAD_MAGIC);
+	
 	/* make sure to re-enable interrupts when we come back to this
 	 * task if we entered schedule with them enabled */
 	if(cpu_interrupt_set(0)) {
@@ -103,8 +126,18 @@ int tm_schedule()
 		tm_raise_flag(TF_SETINT);
 	} else
 		assert(!(current_task->flags & TF_SETINT));
+	
 	task_t *old = current_task;
-	cpu_t *cpu = (cpu_t *)old->cpu;
+	cpu_t *cpu = old->cpu;
+	task_t *next_task = (task_t *)get_next_task(old, cpu);
+	
+	if(old == next_task) {
+		/* if we've chose the current task to run again, no need for a full context switch. But we need to 
+		 * check signals, and (maybe) re-enable interrupts */
+		post_context_switch();
+		return 0;
+	}
+
 	assert(cpu && cpu->cur == old);
 	
 	mutex_acquire(&cpu->lock);
@@ -117,12 +150,12 @@ int tm_schedule()
 		tm_raise_flag(TF_BURIED);
 	}
 	old->syscall_count = 0;
-	task_t *next_task = (task_t *)get_next_task(old, cpu);
+	
 	assert(next_task);
 	assert(cpu == next_task->cpu);
 	restore_context(next_task);
 	next_task->slice = tm_get_ticks();
-	((cpu_t *)next_task->cpu)->cur = next_task;
+	next_task->cpu->cur = next_task;
 	
 	/* we need to call this after restore_context because in restore_context
 	 * we access new->cpu */

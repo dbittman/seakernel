@@ -83,6 +83,8 @@ struct thread_shared_data {
 	struct file_ptr *filp[FILP_HASH_LEN];
 };
 
+typedef struct __cpu_t__ cpu_t;
+
 struct task_struct
 {
 	volatile unsigned magic;
@@ -142,7 +144,7 @@ struct task_struct
 	unsigned alarm_end;
 	struct llistnode *listnode, *blocknode, *activenode;
 	struct llist *blocklist;
-	void *cpu;
+	cpu_t *cpu;
 	struct thread_shared_data *thread;
 	volatile struct task_struct *parent, *waiting, *alarm_next, *alarm_prev;
 };

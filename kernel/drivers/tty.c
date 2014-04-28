@@ -23,6 +23,8 @@ int tty_open(int min)
 		return -ENOENT;
 	if(!consoles[min].flag && min) {
 		console_create(&consoles[min]);
+		/* copy the driver pointer from the kernel's console. This
+		 * will probably need to be changed later */
 		console_initialize_vterm(&consoles[min], consoles[0].driver);
 	}
 	current_task->tty = min;

@@ -44,6 +44,8 @@ int __tm_process_is_runable(task_t *task)
 	assert(task);
 	if(task->state == TASK_DEAD)
 		return 0;
+	if(task->flags & TF_MOVECPU)
+		return 0;
 	return (int)(task->state == TASK_RUNNING 
 	|| task->state == TASK_SUICIDAL 
 	|| (task->state == TASK_ISLEEP && (task->sigd)));

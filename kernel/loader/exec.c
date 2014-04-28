@@ -45,10 +45,7 @@ static int do_exec(task_t *t, char *path, char **argv, char **env)
 	int desc;
 	char **backup_argv=0, **backup_env=0;
 	/* Sanity */
-	if(!t) panic(PANIC_NOSYNC, "Tried to execute with empty task");
-	if(t == kernel_task) panic(0, "Kernel is being executed at the gallows!");
-	if(t != current_task)
-		panic(0, "I don't know, was really drunk at the time");
+	assert(t && t!=kernel_task && t == current_task);
 	if(t->magic != TASK_MAGIC)
 		panic(0, "Invalid task in exec (%d)", t->pid);
 	if(!path || !*path)

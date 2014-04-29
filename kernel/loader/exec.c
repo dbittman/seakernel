@@ -116,9 +116,7 @@ static int do_exec(task_t *t, char *path, char **argv, char **env)
 		printk(0, "Executing (task %d, cpu %d, tty %d, cwd=%s): %s\n", t->pid, ((cpu_t *)t->cpu)->apicid, t->tty, current_task->thread->pwd->name, path);
 	preexec(t, desc);
 	strncpy((char *)t->command, path, 128);
-	if(other_bitsize)
-	{
-	} else if(!loader_parse_elf_executable(mem, desc, &eip, &end))
+	if(!loader_parse_elf_executable(mem, desc, &eip, &end))
 		eip=0;
 	
 	/* do setuid and setgid */

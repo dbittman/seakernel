@@ -226,16 +226,16 @@ int syscall_handler(volatile registers_t *regs)
 	
 	#ifdef SC_DEBUG
 	if(current_task->tty == current_console->tty) 
-		printk(SC_DEBUG, "syscall %d (from: %x): enter %d\n", current_task->pid, current_task->sysregs->eip, SYSCALL_NUM_AND_RET);
-	int or_t = ticks;
+		printk_safe(SC_DEBUG, "syscall %d (from: %x): enter %d\n", current_task->pid, current_task->sysregs->eip, SYSCALL_NUM_AND_RET);
+	int or_t = tm_get_ticks();
 	#endif
 	__do_syscall_jump(ret, syscall_table[SYSCALL_NUM_AND_RET], _E_, _D_, 
 					  _C_, _B_, _A_);
 	#ifdef SC_DEBUG
-	if(current_task->tty == current_console->tty && (ticks - or_t >= 10 || 1) 
+	if(current_task->tty == current_console->tty && (tm_get_ticks() - or_t >= 10 || 1) 
 		&& (ret < 0 || 1) && (ret == -EINTR || 1))
-		printk(SC_DEBUG, "syscall %d: %d ret %d, took %d ticks\n", 
-			   current_task->pid, current_task->system, ret, ticks - or_t);
+		printk_safe(SC_DEBUG, "syscall %d: %d ret %d, took %d ticks\n", 
+			   current_task->pid, current_task->system, ret, tm_get_ticks() - or_t);
 	#endif
 		
 	cpu_interrupt_set(0);

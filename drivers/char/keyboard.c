@@ -259,8 +259,10 @@ int try_console_switch(int code)
 	}
 	return 0;
 }
-#define BREAKER1 0xe1
-#define BREAKER0 0x1d
+#define BREAKER1 0x1d
+#define BREAKER0 0xe1
+//#define BREAKER1 29
+//#define BREAKER0 225
 unsigned char last_sc=0;
 unsigned char key_stack[64];
 int ks_idx=0;
@@ -273,6 +275,11 @@ int keyboard_int_stage1()
 		return 0;
 	}
 	key_stack[x] = scancode;
+	if(x && scancode == BREAKER1 && key_stack[x-1] == BREAKER0)
+	{
+		kprintf("BREAKPOINT TRIGGERED\n");
+		asm("int $0x3");
+	}
 	return 0;
 }
 
@@ -284,10 +291,6 @@ int keyboard_int_stage2()
 		return 0;
 	}
 	unsigned char scancode = key_stack[x];
-	if(scancode == BREAKER1 && last_sc == BREAKER0)
-	{
-		asm("int $0x3");
-	}
 	last_sc = scancode;
 	int release = (scancode > 127) ? 1 : 0;
 	if(release) scancode -= 128;

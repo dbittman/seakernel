@@ -72,22 +72,10 @@ static __attribute__((always_inline)) inline task_t *get_next_task(task_t *prev,
 	return (task_t *)0;
 }
 
-__attribute__((always_inline)) static inline void post_context_switch()
+__attribute__((always_inline)) static inline void check_signals()
 {
 	if(unlikely(current_task->state == TASK_SUICIDAL) && !(current_task->flags & TF_EXITING))
 		tm_process_suicide();
-	
-	assert(!(kernel_state_flags & KSF_SHUTDOWN) || current_task->flags & TF_SHUTDOWN);
-	assert(!cpu_interrupt_get_flag());
-	int enable_interrupts = 0;
-	if(current_task->flags & TF_SETINT) {
-		/* should never enable interrupts inside an interrupt, except for
-		 * syscalls */
-		assert(!(current_task->flags & TF_IN_INT) || current_task->sysregs);
-		tm_lower_flag(TF_SETINT);
-		enable_interrupts = 1;
-	}
-	
 	/* We only process signals if we aren't in a system call.
 	 * this is because if a task is suddenly interrupted inside an
 	 * important syscall while doing something important the results
@@ -107,8 +95,27 @@ __attribute__((always_inline)) static inline void post_context_switch()
 		 * wake up when signaled. */
 		current_task->state = new_state;
 	}
-	if(enable_interrupts)
+}
+
+__attribute__((always_inline)) static inline void post_context_switch()
+{
+	assert(!(kernel_state_flags & KSF_SHUTDOWN) || current_task->flags & TF_SHUTDOWN);
+	assert(!cpu_interrupt_get_flag());
+	int enable_interrupts = 0;
+	if(current_task->flags & TF_SETINT) {
+		/* should never enable interrupts inside an interrupt, except for
+		 * syscalls */
+		assert(!(current_task->flags & TF_IN_INT) || current_task->sysregs);
+		tm_lower_flag(TF_SETINT);
+		enable_interrupts = 1;
+	}
+	
+	check_signals();
+	
+	if(enable_interrupts) {
+		//printk_safe(0, "re-enable\n");
 		assert(!cpu_interrupt_set(1));
+	}
 }
 
 int tm_schedule()
@@ -126,23 +133,24 @@ int tm_schedule()
 	
 	/* make sure to re-enable interrupts when we come back to this
 	 * task if we entered schedule with them enabled */
-	if(cpu_interrupt_set(0)) {
-		assert(!(current_task->flags & TF_SETINT));
-		tm_raise_flag(TF_SETINT);
-	} else
-		assert(!(current_task->flags & TF_SETINT));
-	
 	task_t *old = current_task;
 	cpu_t *cpu = old->cpu;
 	task_t *next_task = (task_t *)get_next_task(old, cpu);
 	
 	if(old == next_task) {
 		/* if we've chose the current task to run again, no need for a full context switch. But we need to 
-		 * check signals, and (maybe) re-enable interrupts */
-		post_context_switch();
+		 * check signals. */
+		check_signals();
 		return 0;
 	}
 
+	if(cpu_interrupt_set(0)) {
+		assert(!(current_task->flags & TF_SETINT));
+		tm_raise_flag(TF_SETINT);
+	} else
+		assert(!(current_task->flags & TF_SETINT));
+	
+	//printk_safe(0, ":: %d, %d : %x\t\t(%s)\n", old->pid, next_task->pid, next_task->regs->eip, next_task->command);
 	assert(cpu && cpu->cur == old);
 	
 	mutex_acquire(&cpu->lock);

@@ -16,8 +16,8 @@ static int GET_MAX_TS(task_t *t)
 		return 1;
 	int x = t->priority;
 	/* process gets a boost if it's on the current console */
-	if(t->tty == current_console->tty)
-		x += sched_tty;
+	//if(t->tty == current_console->tty)
+		//x += sched_tty;
 	return x;
 }
 

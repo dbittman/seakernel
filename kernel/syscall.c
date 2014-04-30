@@ -21,7 +21,7 @@
 #include <sea/loader/exec.h>
 #include <sea/cpu/atomic.h>
 static unsigned int num_syscalls=0;
-//#define SC_DEBUG 1
+#define SC_DEBUG 1
 int sys_null(long a, long b, long c, long d, long e)
 {
 	#if DEBUG

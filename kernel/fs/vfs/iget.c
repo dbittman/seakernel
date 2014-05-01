@@ -70,11 +70,15 @@ static struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, in
 	/* Force Lookup */
 	if(i->dynamic && i->i_ops && i->i_ops->lookup && !ram)
 	{
+		rwlock_acquire(&i->rwl, RWL_READER);
 		temp = vfs_callback_lookup(i, path);
-		if(!temp)
+		if(!temp) {
+			rwlock_release(&i->rwl, RWL_READER);
 			return 0;
+		}
 		temp->count=1;
 		vfs_do_add_inode(i, temp, 1);
+		rwlock_release(&i->rwl, RWL_READER);
 		return temp;
 	}
 	return 0;
@@ -123,14 +127,15 @@ static struct inode *do_add_dirent(struct inode *p, char *name, int mode)
 	rwlock_acquire(&p->rwl, RWL_WRITER);
 	struct inode *ret = vfs_callback_create(p, name, mode);
 	if(ret) ret->count=1;
-	rwlock_release(&p->rwl, RWL_WRITER);
 	if(ret) {
 		ret->mtime = arch_time_get_epoch();
 		ret->uid = current_task->thread->effective_uid;
 		ret->gid = current_task->thread->effective_gid;
-		vfs_add_inode(p, ret);
+		vfs_do_add_inode(p, ret, 1);
+		rwlock_release(&p->rwl, RWL_WRITER);
 		sync_inode_tofs(ret);
-	}
+	} else
+		rwlock_release(&p->rwl, RWL_WRITER);
 	return ret;
 }
 

@@ -25,7 +25,7 @@ unsigned long long arch_time_get_epoch()
 	struct tm *tm, _t;tm = &_t;
 	get_timed(tm);
 	tm->tm_year += 30;
-	return ((((unsigned long)
+	return ((((unsigned long long)
 		  (tm->tm_year/4 - tm->tm_year/100 + 
 				tm->tm_year/400 + 367*tm->tm_mon/12 + tm->tm_mday) +
 				tm->tm_year*365

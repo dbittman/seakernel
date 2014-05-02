@@ -21,7 +21,7 @@
 #include <sea/loader/exec.h>
 #include <sea/cpu/atomic.h>
 static unsigned int num_syscalls=0;
-#define SC_DEBUG 1
+//#define SC_DEBUG 1
 int sys_null(long a, long b, long c, long d, long e)
 {
 	#if DEBUG
@@ -241,13 +241,13 @@ int syscall_handler(volatile registers_t *regs)
 	current_task->freed = current_task->allocated=0;
 
 	#ifdef SC_DEBUG
-	//if(1 || current_task->tty == current_console->tty) 
-	//	printk(SC_DEBUG, "syscall %d (from: %x): enter %d\n", current_task->pid, current_task->sysregs->eip, SYSCALL_NUM_AND_RET);
-	//int or_t = tm_get_ticks();
+	if(current_task->tty == current_console->tty) 
+		printk(SC_DEBUG, "syscall %d (from: %x): enter %d\n", current_task->pid, current_task->sysregs->eip, SYSCALL_NUM_AND_RET);
+	int or_t = tm_get_ticks();
 	#endif
 	__do_syscall_jump(ret, syscall_table[SYSCALL_NUM_AND_RET], _E_, _D_, 
 					  _C_, _B_, _A_);
-	#if 0
+	#ifdef SC_DEBUG
 	if(current_task->tty == current_console->tty && (tm_get_ticks() - or_t >= 10 || 1) 
 		&& (ret < 0 || 1) && (ret == -EINTR || 1))
 		printk_safe(SC_DEBUG, "syscall %d: %d ret %d, took %d ticks\n", 

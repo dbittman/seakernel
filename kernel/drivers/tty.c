@@ -221,8 +221,11 @@ int ttyx_ioctl(int min, int cmd, long arg)
 			if(arg) *(int *)arg = con->y;
 			return con->y;
 		case 8:
-			if(arg && arg != 1)
+			if(arg && arg != 1) {
+				if(!mm_is_valid_user_pointer(SYS_IOCTL, (void *)arg, 0))
+					 return -EINVAL;
 				*(int *)arg = min;
+			}
 			if(arg == 1)
 			{
 				char tmp[3];
@@ -233,12 +236,18 @@ int ttyx_ioctl(int min, int cmd, long arg)
 		case 9:
 			break;
 		case 10:
-			if(arg)
+			if(arg) {
+				if(!mm_is_valid_user_pointer(SYS_IOCTL, (void *)arg, 0))
+					 return -EINVAL;
 				*(int *)arg = con->fw+con->es;
+			}
 			return con->fh+con->es;
 		case 11:
-			if(arg)
+			if(arg) {
+				if(!mm_is_valid_user_pointer(SYS_IOCTL, (void *)arg, 0))
+					 return -EINVAL;
 				*(int *)arg = con->w/(con->fw+con->es);
+			}
 			return con->h/(con->fh+con->es);
 		case 14:
 			con->inpos=0;
@@ -298,6 +307,8 @@ int ttyx_ioctl(int min, int cmd, long arg)
 			s = (struct winsize *)arg;
 			if(!s)
 				return -EINVAL;
+			if(!mm_is_valid_user_pointer(SYS_IOCTL, (void *)arg, 0))
+					 return -EINVAL;
 			s->ws_row=con->h-1;
 			s->ws_col=con->w;
 			return 0;
@@ -306,7 +317,9 @@ int ttyx_ioctl(int min, int cmd, long arg)
 				memcpy(&(con->term), (void *)(addr_t)arg, sizeof(struct termios));
 			return 0;
 		case 0x5401:
-			if(arg) 
+			if(!mm_is_valid_user_pointer(SYS_IOCTL, (void *)arg, 0))
+				return -EINVAL;
+			if(arg)
 				memcpy((void *)(addr_t)arg, &(con->term), sizeof(struct termios));
 			return 0;
 		case 0x540F:

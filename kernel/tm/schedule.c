@@ -16,8 +16,9 @@ static int GET_MAX_TS(task_t *t)
 		return 1;
 	int x = t->priority;
 	/* process gets a boost if it's on the current console */
+#warning "TODO"
 	//if(t->tty == current_console->tty)
-		//x += sched_tty;
+	//	x += sched_tty;
 	return x;
 }
 
@@ -112,10 +113,8 @@ __attribute__((always_inline)) static inline void post_context_switch()
 	
 	check_signals();
 	
-	if(enable_interrupts) {
-		//printk_safe(0, "re-enable\n");
+	if(enable_interrupts)
 		assert(!cpu_interrupt_set(1));
-	}
 }
 
 int tm_schedule()
@@ -150,7 +149,6 @@ int tm_schedule()
 	} else
 		assert(!(current_task->flags & TF_SETINT));
 	
-	//printk_safe(0, ":: %d, %d : %x\t\t(%s)\n", old->pid, next_task->pid, next_task->regs->eip, next_task->command);
 	assert(cpu && cpu->cur == old);
 	
 	mutex_acquire(&cpu->lock);

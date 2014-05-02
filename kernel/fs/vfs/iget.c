@@ -92,7 +92,7 @@ static struct inode *lookup(struct inode *i, char *path)
 	rwlock_acquire(&i->rwl, RWL_READER);
 	struct inode *ret = do_lookup(i, path, 1, 0, &req);
 	rwlock_release(&i->rwl, RWL_READER);
-	if(ret && S_ISLNK(ret->mode))
+	if(ret && S_ISLNK(ret->mode) && ret->len < 255)
 	{
 		/* The link's actual contents contain the path to the linked file */
 		char li[ret->len + 1];
@@ -189,7 +189,7 @@ struct inode *vfs_do_get_idir(char *p_path, struct inode *b, int use_link,
 		}
 		if(!*current) break;
 		/* Make sure we lookup inside a directory that a link is pointing to */
-		if(use_link && S_ISLNK(ret->mode)) {
+		if(use_link && S_ISLNK(ret->mode) && ret->len < 255) {
 			/* The link's actual contents contain the path to the linked file */
 			char li[ret->len + 1];
 			memset(li, 0, ret->len+1);

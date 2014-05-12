@@ -21,7 +21,7 @@
 #include <sea/loader/exec.h>
 #include <sea/cpu/atomic.h>
 static unsigned int num_syscalls=0;
-#define SC_DEBUG 1
+//#define SC_DEBUG 1
 int sys_null(long a, long b, long c, long d, long e)
 {
 	#if DEBUG
@@ -165,7 +165,7 @@ int check_pointers(volatile registers_t *regs)
 	switch(SYSCALL_NUM_AND_RET) {
 		case SYS_READ: case SYS_FSTAT: case SYS_STAT: case SYS_GETPATH:
 		case SYS_READLINK: case SYS_GETNODESTR: 
-		case SYS_POSFSSTAT:
+		case SYS_POSFSSTAT: case SYS_WRITE:
 			return mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_B_, 0);
 			
 		case SYS_TIMES: case SYS_GETPWD: case SYS_PIPE: 
@@ -187,7 +187,11 @@ int check_pointers(volatile registers_t *regs)
 				return 0;
 			break;
 			
-		case SYS_DIRSTAT:
+		case SYS_DIRSTAT: 
+			if(!mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_A_, 0))
+				return 0;
+		/* fall through */
+		case SYS_DIRSTATFD:
 			if(!mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_C_, 0))
 				return 0;
 			if(!mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_D_, 0))
@@ -197,8 +201,20 @@ int check_pointers(volatile registers_t *regs)
 		case SYS_SIGACT: case SYS_SIGPROCMASK:
 			return mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_C_, 1);
 			
-		case SYS_CHOWN: case SYS_CHMOD:
+		case SYS_CHOWN: case SYS_CHMOD: case SYS_TIMERTH: case SYS_CHDIR: case SYS_CHROOT:
 			return mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_A_, 1);
+			
+		case SYS_LMOD:
+			if(!mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_B_, 1))
+				return 0;
+		/* fall through */
+		case SYS_ULMOD: case SYS_OPEN:
+			if(!mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_A_, 0))
+				return 0;
+			break;
+		
+		//default:
+		//	printk(0, ":: UNTESTED SYSCALL: %d\n", SYSCALL_NUM_AND_RET);
 	}
 	return 1;
 }
@@ -223,10 +239,10 @@ int syscall_handler(volatile registers_t *regs)
 	cpu_interrupt_set(1);
 	/* start accounting information! */
 	current_task->freed = current_task->allocated=0;
-	
+
 	#ifdef SC_DEBUG
 	if(current_task->tty == current_console->tty) 
-		printk_safe(SC_DEBUG, "syscall %d (from: %x): enter %d\n", current_task->pid, current_task->sysregs->eip, SYSCALL_NUM_AND_RET);
+		printk(SC_DEBUG, "syscall %d (from: %x): enter %d\n", current_task->pid, current_task->sysregs->eip, SYSCALL_NUM_AND_RET);
 	int or_t = tm_get_ticks();
 	#endif
 	__do_syscall_jump(ret, syscall_table[SYSCALL_NUM_AND_RET], _E_, _D_, 
@@ -237,7 +253,7 @@ int syscall_handler(volatile registers_t *regs)
 		printk_safe(SC_DEBUG, "syscall %d: %d ret %d, took %d ticks\n", 
 			   current_task->pid, current_task->system, ret, tm_get_ticks() - or_t);
 	#endif
-		
+	
 	cpu_interrupt_set(0);
 	tm_process_exit_system();
 	tm_engage_idle();

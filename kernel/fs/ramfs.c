@@ -15,8 +15,6 @@ int ramfs_op_dummy()
 
 int ramfs_unlink(struct inode *i)
 {
-	i->f_count=0;
-	i->count=1;
 	return 0;
 }
 

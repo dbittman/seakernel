@@ -2,11 +2,11 @@
 #include <sea/lib/hash.h>
 #include <sea/types.h>
 
-
 int hash_chain_get(void **h, int (*fn)(int, void *, size_t, size_t, int), size_t size, void *key, size_t elem_sz, size_t len, void **value)
 {
 	assert(fn && value);
-	int loc = fn(size, key, elem_sz, len, 0);
+	size_t loc = fn(size, key, elem_sz, len, 0);
+	assert(loc < size);
 	struct hash_table_chain_node *n = h[loc];
 	while(n && __hash_table_compare_keys(n->key, n->elem_sz, n->len, key, elem_sz, len))
 		n = n->next;
@@ -18,7 +18,8 @@ int hash_chain_get(void **h, int (*fn)(int, void *, size_t, size_t, int), size_t
 int hash_chain_set(void **h, int (*fn)(int, void *, size_t, size_t, int), size_t size, void *key, size_t elem_sz, size_t len, void *value)
 {
 	assert(fn && value);
-	int loc = fn(size, key, elem_sz, len, 0);
+	size_t loc = fn(size, key, elem_sz, len, 0);
+	assert(loc < size);
 	struct hash_table_chain_node *n = h[loc], *prev=0;
 	while(n) {
 		if(!__hash_table_compare_keys(n->key, n->elem_sz, n->len, key, elem_sz, len))
@@ -45,7 +46,8 @@ int hash_chain_set(void **h, int (*fn)(int, void *, size_t, size_t, int), size_t
 int hash_chain_del(void **h, int (*fn)(int, void *, size_t, size_t, int), size_t size, void *key, size_t elem_sz, size_t len)
 {
 	assert(fn);
-	int loc = fn(size, key, elem_sz, len, 0);
+	size_t loc = fn(size, key, elem_sz, len, 0);
+	assert(loc < size);
 	struct hash_table_chain_node *n = h[loc], *prev=0;
 	while(n && __hash_table_compare_keys(n->key, n->elem_sz, n->len, key, elem_sz, len)) {
 		prev = n;

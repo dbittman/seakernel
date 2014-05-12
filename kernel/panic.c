@@ -29,6 +29,8 @@ void panic(int flags, char *fmt, ...)
 #if CONFIG_SMP
 	/* tell the other processors to halt */
 	cpu_send_ipi(CPU_IPI_DEST_OTHERS, IPI_PANIC, 0);
+	int timeout = 100000;
+	while(cpu_get_num_halted_processors() < cpu_get_num_secondary_processors() && --timeout) asm("pause");
 #endif
 	if(kernel_state_flags & KSF_PANICING) {
 		for(;;) asm("cli; hlt");
@@ -52,7 +54,7 @@ void panic(int flags, char *fmt, ...)
 	if(t) 
 		printk_safe(9,"current_task=%x:%d, sys=%d, flags=%x, F=%x. Stack trace:\n", t, 
 				t->pid, t->system, t->flags, t->flag);
-	cpu_print_stack_trace(10);
+	cpu_print_stack_trace(64);
 	if(pid && !(flags & PANIC_NOSYNC))
 	{
 		printk_safe(9,"[panic]: syncing...");

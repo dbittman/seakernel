@@ -88,10 +88,6 @@ int fs_do_sys_write(struct file *f, off_t off, char *buf, size_t count)
 
 int sys_writepos(int fp, char *buf, size_t count)
 {
-	if(current_task->tty == current_console->tty)
-	{
-		printk(0, ":::: %d %x %d\n", fp, buf, count);
-	}
 	struct file *f = fs_get_file_pointer((task_t *)current_task, fp);
 	if(!f)
 		return -EBADF;

@@ -41,7 +41,7 @@ int vfs_inode_get_check_permissions(struct inode *i, mode_t flag, int real_id)
 	return flag & i->mode;
 }
 
-static int actually_vfs_do_vfs_add_inode(struct inode *b, struct inode *i)
+static int actually_vfs_do_add_inode(struct inode *b, struct inode *i)
 {
 	if(!vfs_inode_is_directory(b))
 		panic(0, "tried to add an inode to a file");
@@ -57,7 +57,6 @@ int vfs_do_add_inode(struct inode *b, struct inode *i, int locked)
 	 * counting functions that could cause problems decrease only, and
 	 * they use write locks. This will save time */
 	if(!locked) rwlock_acquire(&b->rwl, RWL_READER);
-	else assert((b->rwl.locks) >= 2);
 	/* one count per child. Tax deductions! */
 	add_atomic(&b->count, 1);
 	/* To save resources and time, we only create this LL if we need to.
@@ -65,7 +64,7 @@ int vfs_do_add_inode(struct inode *b, struct inode *i, int locked)
 	 * create this structure for each one. */
 	if(!ll_is_active((&b->children))) 
 		ll_create(&b->children);
-	actually_vfs_do_vfs_add_inode(b, i);
+	actually_vfs_do_add_inode(b, i);
 	if(!locked) rwlock_release(&b->rwl, RWL_READER);
 	return 0;
 }

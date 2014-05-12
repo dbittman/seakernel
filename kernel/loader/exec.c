@@ -118,7 +118,6 @@ static int do_exec(task_t *t, char *path, char **argv, char **env)
 	strncpy((char *)t->command, path, 128);
 	if(!loader_parse_elf_executable(mem, desc, &eip, &end))
 		eip=0;
-	
 	/* do setuid and setgid */
 	if(efil->inode->mode & S_ISUID) {
 		t->thread->effective_uid = efil->inode->uid;

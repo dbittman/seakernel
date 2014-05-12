@@ -265,6 +265,7 @@ static unsigned do_release_object(slab_t *slab, int obj)
 {
 	assert(slab && slab->magic == SLAB_MAGIC);
 	assert(slab->obj_used);
+	assert((unsigned)obj < slab->obj_num);
 	/* Push the object onto the stack */
 	*(slab->stack) = (unsigned short)obj;
 	slab->stack++;

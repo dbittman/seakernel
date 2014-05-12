@@ -359,7 +359,7 @@ int sys_access(char *path, mode_t mode)
 	struct inode *i = vfs_get_idir(path, 0);
 	if(!i)
 		return -ENOENT;
-	if(current_task->thread->effective_uid == 0) {
+	if(current_task->thread->real_uid == 0) {
 		vfs_iput(i);
 		return 0;
 	}

@@ -6,7 +6,7 @@
 #include <sea/loader/module.h>
 #include <sea/fs/devfs.h>
 #include <sea/mm/dma.h>
-
+#include <sea/net/net.h>
 int rtl8139_maj=-1;
 typedef struct rtl8139_dev_s
 {
@@ -18,6 +18,28 @@ typedef struct rtl8139_dev_s
 } rtl8139dev_t;
 
 rtl8139dev_t *rtldev;
+
+#define RX_BUF_SIZE 64 * 1024
+int rtl8139_receive_packet(struct net_dev *nd, struct net_packet *, int count);
+int rtl8139_get_mac(struct net_dev *nd, uint8_t mac[6])
+{
+	mac[0] = 1;
+	mac[1] = 2;
+	mac[2] = 3;
+	mac[3] = 5;
+	mac[4] = 4;
+	mac[5] = 6;
+	return 0;
+}
+
+struct net_dev_calls rtl8139_net_callbacks = {
+	rtl8139_receive_packet,
+	0,
+	rtl8139_get_mac,
+	0,0,0
+};
+
+struct net_dev *rtl8139_net_dev;
 
 rtl8139dev_t *create_new_device(unsigned addr, struct pci_device *device)
 {
@@ -86,7 +108,7 @@ int rtl8139_init(rtl8139dev_t *dev)
 	if(!rtl8139_reset(dev->addr))
 		return -1;
 	addr_t buf, p;
-	int ret = mm_allocate_dma_buffer(64*1024, &buf, &p);
+	int ret = mm_allocate_dma_buffer(RX_BUF_SIZE, &buf, &p);
 	if(ret == -1) {
 		printk(0, "[rtl8139]: failed to allocate dma buffer\n");
 		return -1;
@@ -132,30 +154,93 @@ int rtl8139_init(rtl8139dev_t *dev)
 	return 0;
 }
 
-int recieve(rtl8139dev_t *dev, unsigned short data)
+int rtl8139_receive_packet(struct net_dev *nd, struct net_packet *packets, int count)
 {
 	printk(1, "[rtl]: TRACE: Recieve packet\n");
+	rtl8139dev_t *dev = rtldev;
+	uint8_t *buffer;
+	uint16_t length, info;
+	int num=0;
+	while(1)
+	{
+		uint32_t cmd = inb(dev->addr + 0x37);
+		if(cmd & 1) {
+			printk(0, "[rtl8139]: buffer is empty\n");
+			break;
+		}
+		
+		buffer = (void *)(dev->rec_buf_virt + dev->rx_o);
+		info = *(uint16_t *)buffer;
+		buffer += 2;
+		
+		if(!(info & 1)) {
+			printk(0, "[rtl8139]: invalid packet\n");
+			break;
+		}
+		
+		length = *(uint16_t *)buffer;
+		buffer += 2;
+		dev->rx_o += 4;
+		
+		if(length >= 14) /* larger than ethernet frame header */
+		{
+			uint8_t *data = packets[0].data;
+			packets[0].length = length - 4;
+			packets[0].flags = 0;
+			
+			if((dev->rx_o + length - 4) >= RX_BUF_SIZE) {
+				memcpy(data, buffer, RX_BUF_SIZE - dev->rx_o);
+				memcpy(data + (RX_BUF_SIZE - dev->rx_o), (void *)dev->rec_buf_virt, (length - 4) - (RX_BUF_SIZE - dev->rx_o));
+			} else {
+				memcpy(data, buffer, length - 4);
+			}
+			
+			num = 1;
+			
+		}
+		
+		dev->rx_o += length;
+		dev->rx_o = (dev->rx_o + 3) & ~3;
+		dev->rx_o %= RX_BUF_SIZE;
+		
+		outw(dev->addr + 0x38, dev->rx_o - 0x10);
+		
+		/* TODO */
+		break;
+	}
 	
-	return 0;
+	
+	return num;
 }
 
 
 int rtl8139_int_1(registers_t *regs)
 {
+	rtl8139dev_t *t=rtldev;
+	if((t->inter+IRQ0) == regs->int_no)
+	{
+		unsigned short data = inw(t->addr + 0x3E);
+		outw(t->addr + 0x3E, data);
+	}
 	return 0;
+}
+
+void do_recieve(rtl8139dev_t *dev, unsigned short data)
+{
+	net_notify_packet_ready(rtl8139_net_dev);
 }
 
 int rtl8139_int(registers_t *regs)
 { 
+	kprintf("STAGE2 %d\n", regs->int_no);
 	rtl8139dev_t *t=rtldev;
 	if((t->inter+IRQ0) == regs->int_no)
 	{
 		printk(1, "[rtl]: TRACE: Got irq (%d) %x\n", regs->int_no, t->addr);
 		unsigned short data = inw(t->addr + 0x3E);
 		if(data&0x01)
-			recieve(t, data);
-		/* ACK */
-		outw(t->addr + 0x3E, data);
+			do_recieve(t, data);
+		
 	}
 	return 0;
 }
@@ -232,6 +317,7 @@ int module_install()
 		if(!dev)
 			break;
 		rtl8139_load_device_pci(dev);
+		rtl8139_net_dev = net_add_device(&rtl8139_net_callbacks, 0);
 		i++;
 	}
 	return 0;

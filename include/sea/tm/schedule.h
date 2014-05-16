@@ -11,7 +11,7 @@ static int sched_tty = 0;
 
 int tm_schedule();
 void __tm_check_alarms();
-void tm_timer_handler(registers_t *);
+void tm_timer_handler(registers_t *, int);
 
 int tm_get_current_frequency();
 long tm_get_ticks();

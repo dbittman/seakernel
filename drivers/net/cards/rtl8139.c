@@ -140,17 +140,17 @@ int recieve(rtl8139dev_t *dev, unsigned short data)
 }
 
 
-int rtl8139_int_1(registers_t *regs)
+int rtl8139_int_1(registers_t *regs, int int_no)
 {
 	return 0;
 }
 
-int rtl8139_int(registers_t *regs)
+int rtl8139_int(registers_t *regs, int int_no)
 { 
 	rtl8139dev_t *t=rtldev;
-	if((t->inter+IRQ0) == regs->int_no)
+	if((t->inter+IRQ0) == int_no)
 	{
-		printk(1, "[rtl]: TRACE: Got irq (%d) %x\n", regs->int_no, t->addr);
+		printk(1, "[rtl]: TRACE: Got irq (%d) %x\n", int_no, t->addr);
 		unsigned short data = inw(t->addr + 0x3E);
 		if(data&0x01)
 			recieve(t, data);

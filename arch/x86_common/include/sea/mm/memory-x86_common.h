@@ -17,6 +17,6 @@
 #define MAP_NORM      0x0
 
 #include <sea/cpu/registers.h>
-void arch_mm_page_fault(registers_t *regs);
+void arch_mm_page_fault(registers_t *regs, int);
 typedef addr_t page_dir_t, page_table_t, pml4_t, pdpt_t;
 #endif

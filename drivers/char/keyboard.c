@@ -266,7 +266,7 @@ int try_console_switch(int code)
 unsigned char last_sc=0;
 unsigned char key_stack[64];
 int ks_idx=0;
-int keyboard_int_stage1()
+int keyboard_int_stage1(registers_t *regs, int int_no)
 {
 	unsigned char scancode = inb(0x60);
 	int x = add_atomic(&ks_idx, 1)-1;
@@ -283,7 +283,7 @@ int keyboard_int_stage1()
 	return 0;
 }
 
-int keyboard_int_stage2()
+int keyboard_int_stage2(registers_t *regs, int int_no)
 {
 	int x = sub_atomic(&ks_idx, 1);
 	if(x < 0) {
@@ -339,12 +339,6 @@ int keyboard_int_stage2()
 			if(!release) printk(0, "[keyboard]: unknown scancode: %d-> %x\n", scancode, (unsigned)code);
 	}
 	return 0;
-}
-
-void do_keyboard_int()
-{
-	keyboard_int_stage2();
-	//flush_port();
 }
 
 void set_keymap_callback(addr_t ptr)

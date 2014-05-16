@@ -2,6 +2,7 @@
 void arch_loader_exec_initializer(task_t *t, unsigned argc, addr_t eip)
 {
 	/* don't ya just love iret? */
+	assert(t->sysregs);
 	t->sysregs->rdi = argc;
 	t->sysregs->rsi = (uint64_t)t->argv;
 	t->sysregs->rdx = (uint64_t)t->env;

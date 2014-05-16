@@ -40,7 +40,7 @@
 #define MAX_HANDLERS 256
 #define MAX_INTERRUPTS 256
 
-typedef void (*isr_t)(registers_t *);
+typedef void (*isr_t)(registers_t *, int);
 
 int register_interrupt_handler(u8int n, isr_t stage1_handler, isr_t stage2_handler);
 void unregister_interrupt_handler(u8int n, int id);

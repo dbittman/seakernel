@@ -212,7 +212,7 @@ void cpu_interrupt_syscall_entry(registers_t *regs, int syscall_num)
 					sub_atomic(&stage2_count[i], 1);
 					for(int j=0;j<MAX_HANDLERS;j++) {
 						if(interrupt_handlers[i][j][1]) {
-							(interrupt_handlers[i][j][1])(regs);
+							(interrupt_handlers[i][j][1])(0, i);
 						}
 					}
 				}
@@ -255,7 +255,7 @@ void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_addres
 			/* we're able to handle the error! */
 			called = 1;
 			if(interrupt_handlers[int_no][i][0])
-				(interrupt_handlers[int_no][i][0])(regs);
+				(interrupt_handlers[int_no][i][0])(regs, regs->int_no);
 			if(interrupt_handlers[int_no][i][1])
 				need_second_stage = 1;
 		}
@@ -308,7 +308,7 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 	for(int i=0;i<MAX_HANDLERS;i++)
 	{
 		if(interrupt_handlers[int_no][i][0])
-			(interrupt_handlers[int_no][i][0])(regs);
+			(interrupt_handlers[int_no][i][0])(regs, regs->int_no);
 		if(interrupt_handlers[int_no][i][1]) 
 			need_second_stage = 1;
 	}
@@ -336,7 +336,7 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 				sub_atomic(&stage2_count[i], 1);
 				for(int j=0;j<MAX_HANDLERS;j++) {
 					if(interrupt_handlers[i][j][1]) {
-						(interrupt_handlers[i][j][1])(regs);
+						(interrupt_handlers[i][j][1])(0, i);
 					}
 				}
 			}
@@ -375,7 +375,7 @@ void __KT_try_handle_stage2_interrupts()
 				sub_atomic(&stage2_count[i], 1);
 				for(int j=0;j<MAX_HANDLERS;j++) {
 					if(interrupt_handlers[i][j][1]) {
-						(interrupt_handlers[i][j][1])(current_task->regs);
+						(interrupt_handlers[i][j][1])(0, i);
 					}
 				}
 			}

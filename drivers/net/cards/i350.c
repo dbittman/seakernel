@@ -314,7 +314,7 @@ void i350_error_interrupt()
 	kprintf("[i350]: error - fatal error interrupt received\n");
 }
 
-void i350_interrupt()
+void i350_interrupt(registers_t *regs, int int_no)
 {
 	uint32_t t = i350_read32(i350_dev, E1000_ICR);
 	if(!(t & (1 << 31)))
@@ -335,7 +335,7 @@ void i350_interrupt()
 	i350_write32(i350_dev, E1000_ICR, t);
 }
 
-void i350_interrupt_lvl2()
+void i350_interrupt_lvl2(registers_t *regs, int int_no)
 {
 	if(i350_net_dev->rx_pending)
 	{

@@ -49,9 +49,11 @@ static int map_in_page(unsigned long cr2, unsigned err_code)
 	return 0;
 }
 
-void arch_mm_page_fault(registers_t *regs)
+void arch_mm_page_fault(registers_t *regs, int int_no)
 {
-	current_task->regs=0;
+#warning "needed?"
+	//current_task->regs=0;
+	assert(regs);
 	addr_t cr2, err_code = regs->err_code;
 	__asm__ volatile ("mov %%cr2, %0" : "=r" (cr2));
 	if(USER_TASK) {

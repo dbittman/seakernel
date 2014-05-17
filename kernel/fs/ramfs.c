@@ -78,9 +78,10 @@ static void rfs_resize(struct inode *i, off_t s)
 		memcpy((void *)new, (void *)i->start, s);
 	else
 		memcpy((void *)new, (void *)i->start, i->len);
-	kfree((void *)i->start);
+	void *old = (void *)i->start;
 	i->start = new;
 	i->len = s;
+	kfree(old);
 }
 
 int fs_ramfs_write(struct inode *i, off_t off, size_t len, char *b)

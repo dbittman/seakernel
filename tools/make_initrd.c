@@ -1,9 +1,8 @@
 /* From jamesM's tutorials */
 #include <stdio.h>
-#include <sea/string.h>
+#include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <sea/string.h>
 #include <libgen.h>
 struct initrd_header
 {

@@ -17,6 +17,7 @@ ifeq ($(CONFIG_ARCH), 1)
 	ARCH_TC=i586
 endif
 
+# TODO: That no-isolate-erroneous-paths-dereference should not be here
 CFLAGS_NOARCH = -std=gnu11 -nostdlib -nodefaultlibs \
                 -ffreestanding \
                 -mno-red-zone \

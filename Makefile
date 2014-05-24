@@ -30,7 +30,8 @@ CFLAGS_NOARCH = -std=gnu11 -nostdlib -nodefaultlibs \
 	        -Wno-long-long -Wno-unused-parameter -Wno-unused-but-set-parameter\
 	        -mno-mmx -mno-sse -mno-sse2 -mno-sse3 -mno-3dnow \
 	        -fno-omit-frame-pointer \
-	        -fno-tree-loop-distribute-patterns 
+	        -fno-tree-loop-distribute-patterns \
+			-fno-isolate-erroneous-paths-dereference
 	        
 	        
 CFLAGS_NOARCH += -O$(CONFIG_OPTIMIZATION_LEVEL)

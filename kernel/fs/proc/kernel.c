@@ -19,24 +19,24 @@ int proc_cpu(char rw, struct inode *inode, int m, char *buf, int off, int len)
 		cpu_t *c = cpu_get(m);
 		cpuid_t *cpuid = &c->cpuid;
 		char tmp[256];
-		sprintf(tmp, "cpu: %d\n", c->apicid, c->flags);
+		snprintf(tmp, 256, "cpu: %d\n", c->apicid, c->flags);
 		total_len += proc_append_buffer(buf, tmp, total_len, -1, off, len);
 		total_len += proc_append_buffer(buf, "\tCPUID: ", total_len, -1, off, len);
-		sprintf(tmp, "%s\n", cpuid->manufacturer_string);
+		snprintf(tmp, 256, "%s\n", cpuid->manufacturer_string);
 		total_len += proc_append_buffer(buf, tmp, total_len, -1, off, len);
-		sprintf(tmp, "\tFamily: 0x%X | Model: 0x%X | Stepping: 0x%X | Type: 0x%X \n",  
+		snprintf(tmp, 256, "\tFamily: 0x%X | Model: 0x%X | Stepping: 0x%X | Type: 0x%X \n",  
 			cpuid->family, 
 			cpuid->model, 
 			cpuid->stepping, 
 			cpuid->type);
 		total_len += proc_append_buffer(buf, tmp, total_len, -1, off, len);
-		sprintf(tmp, "\tCache Line Size: %u bytes | Local APIC ID: 0x%X \n", 
+		snprintf(tmp, 256, "\tCache Line Size: %u bytes | Local APIC ID: 0x%X \n", 
 			cpuid->cache_line_size, 
 			cpuid->lapic_id);
 		total_len += proc_append_buffer(buf, tmp, total_len, -1, off, len);
-		sprintf(tmp, "\tCPU Brand: %s \n", cpuid->cpu_brand);
+		snprintf(tmp, 256, "\tCPU Brand: %s \n", cpuid->cpu_brand);
 		total_len += proc_append_buffer(buf, tmp, total_len, -1, off, len);
-		sprintf(tmp,"\t%s %s %s %s %s %s\n", c->flags&CPU_UP ? "up" : "down", 
+		snprintf(tmp, 256, "\t%s %s %s %s %s %s\n", c->flags&CPU_UP ? "up" : "down", 
 			c->flags&CPU_RUNNING ? "running" : "frozen", 
 			c->flags&CPU_ERROR ? "ERROR" : "\b", 
 			c->flags&CPU_SSE ? "sse" : "\b", 
@@ -63,12 +63,12 @@ int proc_mods(char rw, struct inode *n, int min, char *buf, int off, int len)
 		while(mq) {
 			++total;
 			total_mem += mq->length;
-			sprintf(tmp, "%-16s %6d KB ", mq->name, mq->length/1024);
+			snprintf(tmp, 128, "%-16s %6d KB ", mq->name, mq->length/1024);
 			total_len += proc_append_buffer(buf, tmp, total_len, -1, off, len);
 			total_len += proc_append_buffer(buf, "\n", total_len, -1, off, len);
 			mq=mq->next;
 		}
-		sprintf(tmp, "TOTAL: %d modules, %d KB\n", total, total_mem/1024);
+		snprintf(tmp, 128, "TOTAL: %d modules, %d KB\n", total, total_mem/1024);
 		total_len += proc_append_buffer(buf, tmp, total_len, -1, off, len);
 		return total_len;
 	}
@@ -100,7 +100,7 @@ int proc_kern_rw(char rw, struct inode *inode, int m, char *buf, int off, int le
 				while(s)
 				{
 					char tmp[1024];
-					sprintf(tmp, "%s\t| %7d MB| %7d MB| %3d%%\n", 
+					snprintf(tmp, 1024, "%s\t| %7d MB| %7d MB| %3d%%\n", 
 						s->node, (s->bytes_used/1024)/1024, (s->size/1024)/1024
 						, (s->bytes_used * 100)/s->size);
 					total_len += proc_append_buffer(buf, tmp, total_len, -1, off, len);
@@ -125,7 +125,7 @@ int proc_rw_mem(char rw, struct inode *inode, int m, char *buf, int off, int len
 {
 	if(rw == READ) {
 		char tmp[1024];
-		sprintf(tmp, "    TOTAL | FREE\n%9d | %d [%d%% used]\n", (pm_num_pages * PAGE_SIZE) / 1024, ((pm_num_pages-pm_used_pages) * PAGE_SIZE) / 1024, (pm_used_pages * 100)/pm_num_pages);
+		snprintf(tmp, 1024, "    TOTAL | FREE\n%9d | %d [%d%% used]\n", (pm_num_pages * PAGE_SIZE) / 1024, ((pm_num_pages-pm_used_pages) * PAGE_SIZE) / 1024, (pm_used_pages * 100)/pm_num_pages);
 		return proc_append_buffer(buf, tmp, 0, -1, off, len);
 	}
 	return 0;

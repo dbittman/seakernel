@@ -46,7 +46,7 @@ static inline void get_kernel_version(char *b)
 		p = (PRE_VER % 4)+1;
 	else
 		p = (PRE_VER - 7);
-	sprintf(b, "%d.%d%c%c%d", MAJ_VER, MIN_VER, t ? '-' : 0, t, p);
+	snprintf(b, 32, "%d.%d%c%c%d", MAJ_VER, MIN_VER, t ? '-' : 0, t, p);
 }
 
 struct inode *kt_set_as_kernel_task(char *name);

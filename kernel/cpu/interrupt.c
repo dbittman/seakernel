@@ -415,7 +415,7 @@ int proc_read_int(char *buf, int off, int len)
 		if(int_count[i])
 		{
 			char t[128];
-			sprintf(t, "%3d %s\t| %16d\n", i, special_names(i), int_count[i]);
+			snprintf(t, 128, "%3d %s\t| %16d\n", i, special_names(i), int_count[i]);
 			total_len += proc_append_buffer(buf, t, total_len, -1, off, len);
 		}
 	}

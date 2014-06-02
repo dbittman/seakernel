@@ -50,7 +50,7 @@ void devfs_init()
 	char tty[6] = "tty";
 	int i;
 	for(i=1;i<10;i++) {
-		sprintf(tty, "tty%d", i);
+		snprintf(tty, 6, "tty%d", i);
 		devfs_add(devfs_root, tty, S_IFCHR, 3, i);
 	}
 	devfs_add(devfs_root, "tty", S_IFCHR, 4, 0);

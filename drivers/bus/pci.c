@@ -202,7 +202,7 @@ void pci_scan()
 					char name[64];
 					int min=0;
 					min = 256*bus + dev*8 + func;
-					sprintf(name, "%x.%x.%x", bus, dev, func);
+					snprintf(name, 64, "%x.%x.%x", bus, dev, func);
 					if(proc_pci_maj) (new->node=proc_create_node(proc_pci, 
 						name, S_IFREG, proc_pci_maj, min));
 					if(new->node)

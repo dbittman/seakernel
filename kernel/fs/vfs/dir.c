@@ -22,7 +22,7 @@ static int do_get_path_string(struct inode *p, char *path, int max)
 		return 0;
 	if(p->parent == kproclist)
 	{
-		sprintf(path, "%s", p->name);
+		snprintf(path, INAME_LEN, "%s", p->name);
 		return 0;
 	}
 	if(i != current_task->thread->root && i->mount_parent)
@@ -35,7 +35,7 @@ static int do_get_path_string(struct inode *p, char *path, int max)
 		if(i->mount_parent)
 			i = i->mount_parent;
 		strncpy(tmp, path, max * sizeof(char) +1);
-		sprintf(path, "%s/%s", i->name, tmp);
+		snprintf(path, INAME_LEN, "%s/%s", i->name, tmp);
 		i = i->parent;
 		if(i == current_task->thread->root)
 			break;

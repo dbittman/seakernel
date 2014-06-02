@@ -28,14 +28,14 @@ void generate_name(int id, dev_t dev, char *name, int part)
 	int minor = MINOR(dev);
 	if(minor > 25) {
 		if(part)
-			sprintf(name, "%sd%d_%d", disk_prefixes[id], minor, part);
+			snprintf(name, 16, "%sd%d_%d", disk_prefixes[id], minor, part);
 		else
-			sprintf(name, "%sd%d", disk_prefixes[id], minor);
+			snprintf(name, 16, "%sd%d", disk_prefixes[id], minor);
 	} else {
 		if(part)
-			sprintf(name, "%sd%c%d", disk_prefixes[id], 'a'+minor, part);
+			snprintf(name, 16, "%sd%c%d", disk_prefixes[id], 'a'+minor, part);
 		else
-			sprintf(name, "%sd%c", disk_prefixes[id], 'a'+minor);
+			snprintf(name, 16, "%sd%c", disk_prefixes[id], 'a'+minor);
 	}
 }
 

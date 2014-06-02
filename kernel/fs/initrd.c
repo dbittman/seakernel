@@ -56,7 +56,7 @@ void fs_initrd_parse()
 				(char *)&file_headers[i].name, file_headers[i].length);
 		file_headers[i].offset += location;
 		char name[128];
-		sprintf(name, "/%s", (char *)&file_headers[i].name);
+		snprintf(name, 128, "/%s", (char *)&file_headers[i].name);
 		q = vfs_cget_idir(name, 0, 0x1FF);
 		fs_ramfs_write(q, 0, file_headers[i].length, (char *)((addr_t)file_headers[i].offset));
 		count++;

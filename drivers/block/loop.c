@@ -141,7 +141,7 @@ int ioctl_main(int min, int cmd, long arg)
 			loop = get_loop(arg);
 			if(loop) return -EEXIST;
 			char tmp[128];
-			sprintf(tmp, "loop%d", arg);
+			snprintf(tmp, 128, "loop%d", arg);
 			struct inode *i = vfs_get_idir(tmp, devfs_root);
 			if(i) {
 				vfs_iput(i);

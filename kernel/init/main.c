@@ -96,7 +96,7 @@ void parse_kernel_cmd(char *buf)
 	stuff_to_pass[1] = (char *)kmalloc(9);
 	_strcpy(stuff_to_pass[1], "-c");
 	stuff_to_pass[2] = (char *)kmalloc(90);
-	sprintf(stuff_to_pass[2], "/preinit.sh %s", root_device);
+	snprintf(stuff_to_pass[2], 90, "/preinit.sh %s", root_device);
 	
 }
 void init_main_cpu_1();

@@ -229,7 +229,7 @@ int ttyx_ioctl(int min, int cmd, long arg)
 			if(arg == 1)
 			{
 				char tmp[3];
-				sprintf(tmp, "%d", min);
+				snprintf(tmp, 3, "%d", min);
 				tty_write(min, tmp, strlen(tmp));
 			}
 			return min;

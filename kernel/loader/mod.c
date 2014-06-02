@@ -32,7 +32,7 @@ void loader_init_kernel_symbols(void)
 	loader_do_add_kernel_symbol((addr_t)&kernel_state_flags, "kernel_state_flags");
 	loader_add_kernel_symbol(printk);
 	loader_add_kernel_symbol(kprintf);
-	loader_add_kernel_symbol(sprintf);
+	loader_add_kernel_symbol(snprintf);
 	loader_add_kernel_symbol(memset);
 	loader_add_kernel_symbol(memcpy);
 	loader_add_kernel_symbol(_strcpy);

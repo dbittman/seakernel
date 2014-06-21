@@ -17,6 +17,8 @@ struct console_driver crtc_drv = {
 
 void crtc_scrolldown(struct vterm *con)
 {
+	if(con->disable_scroll)
+		return;
 	if(!con || con == kernel_console)
 		con=current_console;
 	/* Get a space character with the default colour attributes. */

@@ -19,7 +19,6 @@ int __tm_handle_signal(task_t *t)
 	if(!(sa->sa_flags & SA_NODEFER))
 		t->sig_mask |= (1 << t->sigd);
 	/* tricky short-circuit evaluation */
-	printk(0, "signal %d (%s): %d\n", t->pid, t->command,   t->sigd);
 	if(sa->_sa_func._sa_handler && t->sigd != SIGKILL && arch_tm_userspace_signal_initializer(t, sa));
 	else if(!sa->_sa_func._sa_handler && !t->system)
 	{

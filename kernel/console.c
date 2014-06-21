@@ -81,3 +81,4 @@ void console_init_stage1()
 	current_console->rend->clear(current_console);
 	printk(0, "[console]: Video output ready\n");
 }
+

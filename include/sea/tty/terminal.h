@@ -25,7 +25,7 @@ struct vterm {
 	volatile int reading;
 	unsigned char *font;
 	int tty;
-	char no_wrap;
+	char no_wrap, disable_scroll;
 	mutex_t wlock, inlock;
 	struct llist input_block;
 	struct termios term;

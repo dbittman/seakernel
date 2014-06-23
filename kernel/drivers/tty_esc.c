@@ -65,7 +65,7 @@ static int scroll_display(struct vterm *con, int count)
 static int tty_Kclear(struct vterm *con, int d)
 {
 	addr_t a = (addr_t)con->rend->scroll;
-	con->rend->scroll=0;
+	con->disable_scroll=1;
 	int t=0;
 	con->no_wrap=1;
 	if(d == 0){
@@ -98,7 +98,7 @@ static int tty_Kclear(struct vterm *con, int d)
 		con->y=y;
 	}
 	con->no_wrap=0;
-	con->rend->scroll = (void (*)(struct vterm *))a;
+	con->disable_scroll = 1;
 	return 0;
 }
 
@@ -111,26 +111,29 @@ static int tty_Jclear(struct vterm *con, int d)
 	addr_t a = (addr_t)con->rend->scroll;
 	int x = con->x;
 	int y = con->y;
+	int o = con->no_wrap;
+	con->no_wrap=0;
+	con->disable_scroll = 1;
 	if(d == 2 || (d == 0 && con->y==0))
 		con->rend->clear(con);
 	else if(d == 0) {
-		con->rend->scroll=0;
 		con->x=0;
-		while(con->y < con->h)
+		while(con->y < con->h) 
+		{
 			con->rend->putch(con, ' ');
+		}
 		con->x=x;
 		con->y=y;
-		con->rend->scroll=(void*)a;
 	} else if(d == 1) {
-		con->rend->scroll=0;
 		con->x=0;
 		con->y=0;
 		while(con->y <= y)
 			con->rend->putch(con, ' ');
 		con->x=x;
 		con->y=y;
-		con->rend->scroll=(void*)a;
 	}
+	con->no_wrap = o;
+	con->disable_scroll =0;
 	return 0;
 }
 
@@ -193,7 +196,6 @@ static int read_brak_esc(struct vterm *con, char *seq)
 	if(con->rend->clear_cursor)
 		con->rend->clear_cursor(con);
 	int a, b, len;
-	//printk(0, ":: %c\n",command);
 	switch(command)
 	{
 		case 'm':

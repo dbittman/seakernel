@@ -4,16 +4,13 @@ Todo:
 
 Roadmap:
 0.2 B2
+	* Preliminary VT-x support
 	* bugfixes
 	* fix kernel symbol system
 	* fix filesystem reporting
 0.2 B3
 	* add chaining to file descriptors (and modify the return value for the sysconf entry)
-	* mmfiles
 	* limit cache size
-	* can compile GNU software
-	* port ruby
-	* system call conditions (like iptables)
 	* user-space io port access
 	* SA_RESTART
 	* better cache destroy
@@ -24,3 +21,16 @@ Roadmap:
 	* no clobbering of strings
 	* make sure all features listed in termcap are properly implemented
 	* fix memory leaks (sh <script> has a leak)
+
+0.3 B1
+	* Shared Libraries
+	* Shebangs
+	* Proper Threading
+	* CPU scheduling
+	* perf counters
+	* Better VT-x
+	* Networking
+
+0.3 B2
+	* Port ruby
+

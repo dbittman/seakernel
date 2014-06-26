@@ -15,39 +15,54 @@
 static void process_memorymap(struct multiboot *mboot)
 {
 	addr_t i = mboot->mmap_addr;
-	unsigned int num_pages=0;
-	addr_t j=0;
+	unsigned int num_pages=0, unusable=0;
+	uint64_t j=0, address, length;
 	while(i < (mboot->mmap_addr + mboot->mmap_length)){
 		mmap_entry_t *me = (mmap_entry_t *)(i);
-		//printk(1, "[mm]: Map %d: %x -> %x\n", me->type, me->base_addr_low, 
-		//		me->base_addr_low+me->length_low);
+		address = ((uint64_t)me->base_addr_high << 32) | (uint64_t)me->base_addr_low;
+		length = (((uint64_t)me->length_high<<32) | me->length_low);
 		if(me->type == 1)
 		{
-			for (j = me->base_addr_low; 
-				j < (me->base_addr_low+me->length_low); j += PAGE_SIZE)
+			for (j=address; 
+				j < (address+length); j += PAGE_SIZE)
 			{
-				/* HACK!!!! */
-				if(j < 0xC0000000) {
-					if(lowest_page > j)
-						lowest_page=j;
-					if(j > highest_page)
-						highest_page=j;
-					if(j >= pm_location)
-						mm_free_physical_page(j);
+				addr_t page;
+#if ADDR_BITS == 32
+				/* 32-bit can only handle the lower 32 bits of the address. If we're
+				 * considering an address above 0xFFFFFFFF, we have to ignore it */
+				page = (addr_t)(j & 0xFFFFFFFF);
+				if((j >> 32) != 0)
+					break;
+#else
+				page = j;
+#endif
+				//if(page < 0xC0000000) {
+					if(lowest_page > page)
+						lowest_page=page;
+					if(page > highest_page)
+						highest_page=page;
+					if(page >= pm_location)
+						mm_free_physical_page(page);
 					num_pages++;
-				}
+				//} else {
+				//	unusable++;
+				//}
 			}
 		}
 		i += me->size + sizeof (uint32_t);
 	}
 	printk(1, "[mm]: Highest page = %x, num_pages = %d               \n", highest_page, num_pages);
+	//if(unusable)
+	//	printk(1, "[mm]: warning: %d pages (%d MB) unusable!\n", unusable, (unusable/1024)*4);
 	if(!j)
 		panic(PANIC_MEM | PANIC_NOSYNC, "Memory map corrupted");
 	int gbs=0;
 	int mbs = ((num_pages * PAGE_SIZE)/1024)/1024;
 	if(mbs < 4){
 		console_kernel_puts("\n");
-		panic(PANIC_MEM | PANIC_NOSYNC, "Not enough memory, system wont work (%d MB, %d pages)", mbs, num_pages);
+		panic(PANIC_MEM | PANIC_NOSYNC, 
+				"Not enough memory, system wont work (%d MB, %d pages)", 
+				mbs, num_pages);
 	}
 	gbs = mbs/1024;
 	if(gbs > 0)

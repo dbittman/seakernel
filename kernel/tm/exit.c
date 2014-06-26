@@ -72,9 +72,10 @@ int __KT_try_releasing_tasks()
 	if(!ll_is_empty(kill_queue))
 		ret = 1;
 	rwlock_release(&kill_queue->rwl, RWL_WRITER);
+	int pid = t->pid;
 	release_process(t);
 	kfree(cur);
-	return ret;
+	return pid;
 }
 
 void tm_process_suicide()

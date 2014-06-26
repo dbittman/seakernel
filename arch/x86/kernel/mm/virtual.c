@@ -138,6 +138,7 @@ addr_t arch_mm_vm_get_map(addr_t v, addr_t *p, unsigned locked)
 	unsigned int pt_idx = PAGE_DIR_IDX(vp);
 	if(!pd[pt_idx])
 		return 0;
+#warning "this is in the wrong place"
 	if(kernel_task && !locked)
 		mutex_acquire(&pd_cur_data->lock);
 	unsigned ret = page_tables[vp] & PAGE_MASK;

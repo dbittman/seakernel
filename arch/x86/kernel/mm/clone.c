@@ -23,7 +23,7 @@ static int vm_do_copy_table(int i, page_dir_t *new, page_dir_t *from, char cow)
 	int q;
 	for(q=0;virt<((addr_t)((i+1)*PAGE_SIZE*1024));virt+=PAGE_SIZE, ++q)
 	{
-		if(mm_vm_get_map(virt, &phyz, 1) && mm_vm_get_attrib(virt, &attrib, 1))
+		if(mm_vm_get_map(virt, &phyz, 1) && mm_vm_get_attrib(virt, &attrib, 1) && virt != VIRT_TEMP)
 		{
 			/* OK, this page exists, we have the physical address of it too */
 			addr_t page = mm_alloc_physical_page();

@@ -489,9 +489,7 @@ addr_t __mm_do_kmalloc_slab(size_t sz, char align)
 		addr += sizeof(addr_t);
 	}
 #ifdef SLAB_DEBUG
-	char tmp[128];
-	sprintf(tmp, "-> %d\n", total);
-	//serial_console_kernel_puts_nolock(0, tmp);
+	printk(0, "A-> %d\n", total);
 #endif
 	if(!align)
 		assert((addr & PAGE_MASK) != addr);
@@ -525,6 +523,7 @@ void __mm_do_kfree_slab(void *ptr)
 	slab_cache_t *sc = (slab_cache_t *)slab->parent;
 #ifdef SLAB_DEBUG
 	total -= sc->obj_size;
+	printk(0, "R-> %d\n", total);
 #endif
 	unsigned obj;
 	obj = ((addr_t)ptr-FIRST_OBJ(slab)) / sc->obj_size;

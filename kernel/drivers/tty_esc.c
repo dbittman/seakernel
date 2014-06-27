@@ -64,14 +64,14 @@ static int scroll_display(struct vterm *con, int count)
  * 2: whole */
 static int tty_Kclear(struct vterm *con, int d)
 {
-	addr_t a = (addr_t)con->rend->scroll;
 	con->disable_scroll=1;
 	int t=0;
 	con->no_wrap=1;
 	if(d == 0){
 		int x = con->x;
 		int y = con->y;
-		while(con->y==y && (t++ < con->w))
+		volatile int *p = &con->x;
+		while(con->y==y && (*p < con->w))
 			con->rend->putch(con, ' ');
 		con->x=x;
 		con->y=y;
@@ -98,7 +98,7 @@ static int tty_Kclear(struct vterm *con, int d)
 		con->y=y;
 	}
 	con->no_wrap=0;
-	con->disable_scroll = 1;
+	con->disable_scroll = 0;
 	return 0;
 }
 
@@ -127,7 +127,8 @@ static int tty_Jclear(struct vterm *con, int d)
 	} else if(d == 1) {
 		con->x=0;
 		con->y=0;
-		while(con->y <= y)
+		int j=0;
+		while(con->y <= y) 
 			con->rend->putch(con, ' ');
 		con->x=x;
 		con->y=y;

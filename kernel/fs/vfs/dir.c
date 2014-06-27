@@ -127,11 +127,15 @@ static struct inode *do_readdir(struct inode *i, int num)
 		{
 			if(!n--) break;
 		}
+		if(c)
+			add_atomic(&c->count, 1);
 		rwlock_release(&i->rwl, RWL_READER);
 	}
 	else if(i->i_ops && i->i_ops->readdir) {
+		rwlock_acquire(&i->rwl, RWL_READER);
 		if((c = vfs_callback_readdir(i, num)))
 			c->count=1;
+		rwlock_release(&i->rwl, RWL_READER);
 	}
 	return c;
 }

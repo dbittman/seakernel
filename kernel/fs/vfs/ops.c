@@ -120,3 +120,4 @@ int vfs_do_iremove(struct inode *i, int flag, int locked)
 		vfs_free_inode(i, (flag == 2) ? 1 : 0);
 	return 0;
 }
+

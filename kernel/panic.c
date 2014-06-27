@@ -52,8 +52,8 @@ void panic(int flags, char *fmt, ...)
 	printk_safe(9," ***\n");
 	
 	if(t) 
-		printk_safe(9,"current_task=%x:%d, sys=%d, flags=%x, F=%x. Stack trace:\n", t, 
-				t->pid, t->system, t->flags, t->flag);
+		printk_safe(9,"current_task=%x:%d(%s), sys=%d, flags=%x, F=%x. Stack trace:\n", t, 
+				t->pid, t->command, t->system, t->flags, t->flag);
 	cpu_print_stack_trace(64);
 	if(pid && !(flags & PANIC_NOSYNC))
 	{

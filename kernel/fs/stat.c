@@ -75,11 +75,12 @@ int sys_dirstat(char *dir, unsigned num, char *namebuf, struct stat *statbuf)
 		return -ESRCH;
 	do_stat(i, statbuf);
 	strncpy(namebuf, i->name, 128);
-	if(i->dynamic) 
+	/*if(i->dynamic) 
 	{
 		rwlock_acquire(&i->rwl, RWL_WRITER);
 		vfs_free_inode(i, 0);
-	}
+	}*/
+	vfs_iput(i);
 	return 0;
 }
 
@@ -90,16 +91,19 @@ int sys_dirstat_fd(int fd, unsigned num, char *namebuf, struct stat *statbuf)
 	struct file *f = fs_get_file_pointer((task_t *)current_task, fd);
 	if(!f) return -EBADF;
 	struct inode *i = vfs_read_idir(f->inode, num);
-	fs_fput((task_t *)current_task, fd, 0);
-	if(!i)
+	if(!i) {
+		fs_fput((task_t *)current_task, fd, 0);
 		return -ESRCH;
+	}
 	do_stat(i, statbuf);
 	strncpy(namebuf, i->name, 128);
-	if(i->dynamic) 
+/*	if(i->dynamic) 
 	{
 		rwlock_acquire(&i->rwl, RWL_WRITER);
 		vfs_free_inode(i, 0);
-	}
+	}*/
+	vfs_iput(i);
+	fs_fput((task_t *)current_task, fd, 0);
 	return 0;
 }
 
@@ -123,3 +127,4 @@ int sys_posix_fsstat(int fd, struct posix_statfs *sb)
 	if(!i) return -EBADF;
 	return vfs_callback_fsstat(i, sb);
 }
+

@@ -64,7 +64,6 @@ static int scroll_display(struct vterm *con, int count)
  * 2: whole */
 static int tty_Kclear(struct vterm *con, int d)
 {
-	addr_t a = (addr_t)con->rend->scroll;
 	con->disable_scroll=1;
 	int t=0;
 	con->no_wrap=1;
@@ -108,7 +107,6 @@ static int tty_Kclear(struct vterm *con, int d)
  */
 static int tty_Jclear(struct vterm *con, int d)
 {
-	addr_t a = (addr_t)con->rend->scroll;
 	int x = con->x;
 	int y = con->y;
 	int o = con->no_wrap;

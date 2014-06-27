@@ -34,7 +34,9 @@ static struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, in
 			return i;
 		}
 		if(!strcmp(path, ".")) {
+			rwlock_acquire(&i->rwl, RWL_READER);
 			add_atomic(&i->count, 1);
+			rwlock_release(&i->rwl, RWL_READER);
 			return i;
 		}
 	}
@@ -235,3 +237,4 @@ struct inode *vfs_do_get_idir(char *p_path, struct inode *b, int use_link,
 	}
 	return ret;
 }
+

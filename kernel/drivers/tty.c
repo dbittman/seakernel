@@ -426,3 +426,4 @@ void console_init_stage2()
 	loader_do_add_kernel_symbol((addr_t)(unsigned *)&current_console, "current_console");
 #endif
 }
+

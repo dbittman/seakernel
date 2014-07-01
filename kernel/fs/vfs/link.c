@@ -68,6 +68,7 @@ int vfs_link(char *old, char *new)
 		vfs_iput(parent);
 		return -ENOENT;
 	}
+	/* check cross-filesystem link */
 	if(i->fs_idx != parent->fs_idx || i->sb_idx != parent->sb_idx)
 	{
 		vfs_iput(parent);

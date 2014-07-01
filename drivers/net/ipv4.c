@@ -14,7 +14,7 @@ int module_install()
 	return 0;
 }
 
-int module_tm_exit()
+int module_exit()
 {
 	loader_remove_kernel_symbol("process_packet_ipv4");
 	reload_eth_routing_table();

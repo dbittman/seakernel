@@ -200,7 +200,7 @@ int module_install()
 	return 0;
 }
 
-int module_tm_exit()
+int module_exit()
 {
 	unfs_register_filesystemt("ext2");
 	return 0;

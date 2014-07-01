@@ -127,7 +127,7 @@ int arch_loader_relocate_elf_module(void * buf, addr_t *entry, addr_t *tm_exiter
 						(uint8_t*)"module_install", 14))
 					module_entry = sd.vbase[symtab->shndx] + symtab->address;
 				if(!memcmp((uint8_t*)get_symbol_string(buf, symtab->name), 
-						(uint8_t*)"module_tm_exit", 11))
+						(uint8_t*)"module_exit", 11))
 					module_exiter = sd.vbase[symtab->shndx] + symtab->address;
 			}
 		}

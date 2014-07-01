@@ -166,7 +166,7 @@ int module_deps(char *b)
 	return KVERSION;
 }
 
-int module_tm_exit()
+int module_exit()
 {
 	printk(1, "[i825xx]: Shutting down all cards...\n");
 	while(cards) /* this call updates 'cards' within it. */

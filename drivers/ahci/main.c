@@ -182,7 +182,7 @@ int module_install()
 	return 0;
 }
 
-int module_tm_exit()
+int module_exit()
 {
 	int i;
 	dm_unregister_block_device(ahci_major);

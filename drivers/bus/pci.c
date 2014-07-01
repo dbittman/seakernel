@@ -334,7 +334,7 @@ int module_install()
 	return 0;
 }
 
-int module_tm_exit()
+int module_exit()
 {
 	pci_destroy_list();
 	rwlock_acquire(&proc_pci->rwl, RWL_WRITER);

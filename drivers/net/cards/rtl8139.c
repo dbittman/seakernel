@@ -324,7 +324,7 @@ int module_install()
 	return 0;
 }
 
-int module_tm_exit()
+int module_exit()
 {
 	dm_unregister_char_device(rtl8139_maj);
 	rtl8139_unload_device_pci(rtldev);

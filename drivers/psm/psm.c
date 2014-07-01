@@ -151,7 +151,7 @@ int module_install()
 	return 0;
 }
 
-int module_tm_exit()
+int module_exit()
 {
 	dm_unregister_block_device(psm_major);
 	loader_remove_kernel_symbol("psm_register_disk_device");

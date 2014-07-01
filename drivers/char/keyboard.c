@@ -369,7 +369,7 @@ int module_install()
 	return 0;
 }
 
-int module_tm_exit()
+int module_exit()
 {
 	flush_port();
 	printk(1, "[keyboard]: Restoring old handler\n");

@@ -8,7 +8,7 @@
 include ../arch/$(ARCH)/library/make.inc
 CFLAGS+=-I../arch/$(ARCH)/include 
 KLIBO = klib/hash.o klib/hash_chain.o klib/ll.o \
-		klib/strtoint.o
+		klibc/strtoint.o klibc/libgen.o
 
 -include arch/$(ARCH)/library/make.inc
 

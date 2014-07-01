@@ -10,7 +10,6 @@ Roadmap:
 	* better cache destroy
 	* All ported software works properly
 	* documentation
-	* link looks at directory permissions
 	* no clobbering of strings
 
 0.3 B1

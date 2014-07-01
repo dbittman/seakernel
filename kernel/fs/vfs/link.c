@@ -9,6 +9,8 @@
 #include <sea/fs/inode.h>
 #include <sea/fs/callback.h>
 #include <sea/dm/pipe.h>
+#include <sea/libgen.h>
+
 int vfs_do_unlink(struct inode *i)
 {
 	int err = 0;
@@ -49,6 +51,19 @@ int vfs_link(char *old, char *new)
 	if(!old || !new)
 		return -EINVAL;
 	struct inode *i;
+
+	/* check parent dir for new, and permissions */
+	char newdir[strlen(new)+1];
+	strncpy(newdir, new, strlen(new)+1);
+	i = vfs_get_idir(dirname(newdir), 0);
+	if(!i)
+		return -ENOENT;
+	if(!vfs_inode_get_check_permissions(i, MAY_WRITE, 0))
+	{
+		vfs_iput(i);
+		return -EACCES;
+	}
+
 	if((i = vfs_get_idir(new, 0)))
 		vfs_do_unlink(i);
 	i = vfs_get_idir(old, 0);

@@ -11,7 +11,7 @@
 
 struct llist *fslist;
 unsigned fs_num=0;
-
+unsigned int ext2_fs_idx;
 ext2_fs_t *get_new_fsvol()
 {
 	ext2_fs_t *fs = (ext2_fs_t *)kmalloc(sizeof(ext2_fs_t));
@@ -149,7 +149,7 @@ int module_install()
 {
 	printk(1, "[ext2]: Registering filesystem\n");
 	fslist = ll_create(0);
-	fs_register_filesystemt("ext2", 2, (int (*)(dev_t,u64,char*))ext2_mount);
+	ext2_fs_idx = fs_register_filesystem("ext2", 2, (int (*)(dev_t,u64,char*))ext2_mount);
 	return 0;
 }
 

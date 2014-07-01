@@ -67,7 +67,7 @@ void fs_init()
 	loader_add_kernel_symbol(proc_append_buffer);
 	loader_add_kernel_symbol(sys_stat);
 	loader_add_kernel_symbol(sys_fstat);
-	loader_add_kernel_symbol(fs_register_filesystemt);
+	loader_add_kernel_symbol(fs_register_filesystem);
 	loader_add_kernel_symbol(fs_unregister_filesystem);
 	loader_add_kernel_symbol(vfs_iput);
 	loader_do_add_kernel_symbol((addr_t)(struct inode **)&devfs_root, "devfs_root");

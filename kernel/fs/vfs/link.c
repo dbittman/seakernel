@@ -50,25 +50,35 @@ int vfs_link(char *old, char *new)
 {
 	if(!old || !new)
 		return -EINVAL;
-	struct inode *i;
+	struct inode *i, *o, *parent;
 
 	/* check parent dir for new, and permissions */
 	char newdir[strlen(new)+1];
 	strncpy(newdir, new, strlen(new)+1);
-	i = vfs_get_idir(dirname(newdir), 0);
-	if(!i)
+	parent = vfs_get_idir(dirname(newdir), 0);
+	if(!parent)
 		return -ENOENT;
-	if(!vfs_inode_get_check_permissions(i, MAY_WRITE, 0))
+	if(!vfs_inode_get_check_permissions(parent, MAY_WRITE, 0))
 	{
-		vfs_iput(i);
+		vfs_iput(parent);
 		return -EACCES;
 	}
-
-	if((i = vfs_get_idir(new, 0)))
-		vfs_do_unlink(i);
 	i = vfs_get_idir(old, 0);
-	if(!i)
+	if(!i) {
+		vfs_iput(parent);
 		return -ENOENT;
+	}
+	if(i->fs_idx != parent->fs_idx || i->sb_idx != parent->sb_idx)
+	{
+		vfs_iput(parent);
+		vfs_iput(i);
+		return -EXDEV;
+	}
+	vfs_iput(parent);
+
+	if((o = vfs_get_idir(new, 0)))
+		vfs_do_unlink(o);
+
 	if(vfs_inode_is_directory(i) && current_task->thread->effective_uid) {
 		vfs_iput(i);
 		return -EPERM;

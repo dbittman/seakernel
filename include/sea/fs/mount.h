@@ -28,7 +28,7 @@ struct mountlst *fs_get_mount(struct inode *i);
 int fs_init_superblock_table();
 void fs_unmount_all();
 void fs_do_sync_of_mounted();
-int fs_register_filesystemt(char *name, int ver, int (*sbl)(dev_t,u64,char *));
+unsigned int fs_register_filesystem(char *name, int ver, int (*sbl)(dev_t,u64,char *));
 struct inode *fs_filesystem_callback(char *fsn, dev_t dev, u64 block, char *n);
 struct inode *fs_filesystem_check_all(dev_t dev, u64 block, char *n);
 int fs_unregister_filesystem(char *name);

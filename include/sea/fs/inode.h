@@ -44,7 +44,7 @@ struct inode {
 	char name[INAME_LEN];
 	dev_t dev;
 	unsigned long num;
-	unsigned int sb_idx;
+	unsigned int sb_idx, fs_idx;
 	char node_str[INAME_LEN];
 	/* Pointers */
 	struct inode_operations *i_ops;

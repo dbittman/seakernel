@@ -5,6 +5,8 @@
 #include <sea/errno.h>
 #include <modules/ext2.h>
 
+extern unsigned int ext2_fs_idx;
+
 int wrap_ext2_update(struct inode *i);
 struct inode *wrap_ext2_lookup(struct inode *in, char *name);
 int wrap_ext2_readfile(struct inode *in, off_t off, size_t len, char *buf);
@@ -350,6 +352,7 @@ int update_sea_inode(struct inode *out, ext2_inode_t *in, char *name)
 	out->nlink = in->link_count;
 	out->num = in->number;
 	out->sb_idx = in->fs->flag;
+	out->fs_idx = ext2_fs_idx;
 	out->nblocks = in->sector_count;
 	out->dynamic=1;
 	out->i_ops = &e2fs_inode_ops;
@@ -374,6 +377,7 @@ struct inode *create_sea_inode(ext2_inode_t *in, char *name)
 	out->num = in->number;
 	out->nblocks = in->sector_count;
 	out->sb_idx = in->fs->flag;
+	out->fs_idx = ext2_fs_idx;
 	out->dynamic=1;
 	out->flm = mutex_create(0, 0);
 	out->i_ops = &e2fs_inode_ops;

@@ -5,7 +5,10 @@
 #include <sea/ll.h>
 #include <sea/fs/mount.h>
 #include <sea/fs/callback.h>
+#include <sea/cpu/atomic.h>
 struct llist *mountlist, *sblist;
+
+unsigned int fs_idx_counter=0;
 
 struct inode *fs_get_filesystem(int _n)
 {
@@ -70,14 +73,14 @@ void fs_do_sync_of_mounted()
 	rwlock_release(&mountlist->rwl, RWL_READER);
 }
 
-int fs_register_filesystemt(char *name, int ver, int (*sbl)(dev_t,u64,char *))
+unsigned int fs_register_filesystem(char *name, int ver, int (*sbl)(dev_t,u64,char *))
 {
 	struct sblktbl *sb = (struct sblktbl *)kmalloc(sizeof(struct sblktbl));
 	sb->version = (char)ver;
 	sb->sb_load = (struct inode * (*)(dev_t,u64,char*))sbl;
 	strncpy(sb->name, name, 16);
 	sb->node = ll_insert(sblist, sb);
-	return 0;
+	return add_atomic(&fs_idx_counter, 1);
 }
 
 struct inode *fs_filesystem_callback(char *fsn, dev_t dev, u64 block, char *n)

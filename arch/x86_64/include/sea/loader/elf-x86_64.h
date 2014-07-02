@@ -1,7 +1,7 @@
 #ifndef ELF_x86_64_H
 #define ELF_x86_64_H
 #include <sea/loader/module.h>
-
+#include <sea/mm/memory-x86_64.h>
 extern void * kernel_start;
 #include <sea/types.h>
 typedef struct __attribute__((packed))
@@ -81,7 +81,9 @@ static inline int is_valid_elf(char *buf, short type)
 	if(memcmp(eh->id + 1, (uint8_t*)"ELF", 3)
 		|| eh->machine != 62
 		|| eh->type != type
-		|| eh->id[4] != 2 /* 64 bit */)
+		|| eh->id[4] != 2 /* 64 bit */
+		|| ((eh->entry < EXEC_MINIMUM
+			|| eh->entry >= TOP_TASK_MEM_EXEC) && eh->entry))
 		return 0;
 	return 1;
 }
@@ -132,7 +134,9 @@ static inline int is_valid_elf32_otherarch(char *buf, short type)
 	if(memcmp(eh->id + 1, (uint8_t*)"ELF", 3)
 		|| eh->machine != 0x03
 		|| eh->type != type
-		|| eh->id[4] != 1 /* 32-bit */)
+		|| eh->id[4] != 1 /* 32-bit */
+		|| ((eh->entry < EXEC_MINIMUM
+			|| eh->entry >= TOP_TASK_MEM_EXEC) && eh->entry))
 		return 0;
 	return 1;
 }

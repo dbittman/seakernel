@@ -4,7 +4,7 @@
 #include <sea/types.h>
 extern void * kernel_start;
 #include <sea/loader/elf-x86_common.h>
-
+#include <sea/mm/memory-x86.h>
 static inline int is_valid_elf(char *buf, short type)
 {
 	elf32_header_t * eh;
@@ -12,7 +12,9 @@ static inline int is_valid_elf(char *buf, short type)
 	if(memcmp(eh->id + 1, (uint8_t*)"ELF", 3)
 		|| eh->machine != 0x03
 		|| eh->type != type
-		|| eh->id[4] != 1 /* 32-bit */)
+		|| eh->id[4] != 1 /* 32-bit */
+		|| ((eh->entry < EXEC_MINIMUM
+		    || eh->entry >= TOP_TASK_MEM_EXEC) && eh->entry))
 		return 0;
 	return 1;
 }

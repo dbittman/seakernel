@@ -15,6 +15,7 @@ clean:
 	@-rm -f *.o $(OUTPUT).stage1 $(OUTPUT) make.deps
 
 deps:
+	echo "[DP]    $(NAME) make.deps"
 	@$(CC) $(MCFLAGS) -MM -MP ${OFILES:.o=.c} | sed -e "s@^\(.*\)\.o:@\1.o:@" > make.deps
 
 make.deps:

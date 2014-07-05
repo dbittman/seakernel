@@ -164,7 +164,7 @@ void printf(const char *fmt, ...)
 	memset(printbuf, 0, 1024);
 	va_list args;
 	va_start(args, fmt);
-	vsprintf(printbuf, fmt, args);
+	vsnprintf(1024, printbuf, fmt, args);
 	u_write(1, printbuf);
 	va_end(args);
 }
@@ -199,3 +199,4 @@ void init()
 	printf("Failed to start the init process. Halting.\n");
 	u_exit(0);
 }
+

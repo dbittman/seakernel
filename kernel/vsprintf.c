@@ -4,6 +4,7 @@
  */
 
 /* Adapted from linux 0.01 - */
+/* Added support for length limiting: July 2014 - Daniel Bittman */
 #include <sea/types.h>
 #include <sea/config.h>
 #include <stdarg.h>
@@ -35,7 +36,7 @@ static int skip_atoi(const char **s)
 #define SPECIAL	32		/* 0x */
 #define SMALL	64		/* use 'abcdef' instead of 'ABCDEF' */
 
-static char * number(char * str, long num, int base, int size, int precision ,int type)
+static char * number(int allowed_length, char * str, long num, int base, int size, int precision ,int type)
 {
 	char c,sign,tmp[72];
 	const char *digits="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -66,35 +67,71 @@ static char * number(char * str, long num, int base, int size, int precision ,in
 	if (i>precision) precision=i;
 	size -= precision;
 	if (!(type&(ZEROPAD+LEFT)))
-		while(size-->0)
+		while(size-->0) {
+			if(allowed_length == 0)
+				return str;
 			*str++ = ' ';
-	if (sign)
+			allowed_length--;
+		}
+	if (sign) {
+		if(allowed_length == 0)
+			return str;
 		*str++ = sign;
+		allowed_length--;
+	}
 	if (type&SPECIAL) {
-		if (base==8)
+		if (base==8) {
+			if(allowed_length == 0)
+				return str;
 			*str++ = '0';
+			allowed_length--;
+		}
 		else if (base==16) {
+			if(allowed_length == 0)
+				return str;
 			*str++ = '0';
+			if(--allowed_length == 0)
+				return str;
 			*str++ = digits[33];
+			allowed_length--;
 		}
 	}
 	if (!(type&LEFT))
-		while(size-->0)
+		while(size-->0) {
+			if(allowed_length == 0)
+				return str;
 			*str++ = c;
-	while(i<precision--)
+			allowed_length--;
+		}
+	
+	while(i<precision--) {
+		if(allowed_length == 0)
+			return str;
 		*str++ = '0';
-	while(i-->0)
+		allowed_length--;
+	}
+
+	while(i-->0) {
+		if(allowed_length == 0)
+			return str;
 		*str++ = tmp[i];
-	while(size-->0)
+		allowed_length--;
+	}
+	
+	while(size-->0) {
+		if(allowed_length == 0)
+			return str;
 		*str++ = ' ';
+		allowed_length--;
+	}
 	return str;
 }
 
-int vsprintf(char *buf, const char *fmt, va_list args)
+int vsnprintf(int size, char *buf, const char *fmt, va_list args)
 {
 	int len;
 	int i;
-	char *str;
+	char *str, *newstr;
 	char *s;
 	int *ip;
 
@@ -105,9 +142,18 @@ int vsprintf(char *buf, const char *fmt, va_list args)
 				   number of chars for from string */
 	int qualifier;		/* 'h', 'l', or 'L' for integer fields */
 
+	int used_size=1; /* for null character */
+	
+	if(size == 0) return 0;
+	*buf=0;
+	if(size == 1) return 1;
+
 	for (str=buf ; *fmt ; ++fmt) {
 		if (*fmt != '%') {
+			if(used_size >= size)
+				break;
 			*str++ = *fmt;
+			used_size++;
 			continue;
 		}
 			
@@ -160,13 +206,24 @@ int vsprintf(char *buf, const char *fmt, va_list args)
 		switch (*fmt) {
 		case 'c':
 			if (!(flags & LEFT))
-				while (--field_width > 0)
+				while (--field_width > 0) {
+					if(used_size >= size)
+						goto exit_location;
 					*str++ = ' ';
+					used_size++;
+				}
+			
+			if(used_size >= size)
+				goto exit_location;
 			*str++ = (unsigned char) va_arg(args, int);
-			while (--field_width > 0)
+			used_size++;
+			while (--field_width > 0) {
+				if(used_size >= size)
+					goto exit_location;
 				*str++ = ' ';
+				used_size++;
+			}
 			break;
-
 		case 's':
 			s = va_arg(args, char *);
 			len = strlen(s);
@@ -176,17 +233,32 @@ int vsprintf(char *buf, const char *fmt, va_list args)
 				len = precision;
 
 			if (!(flags & LEFT))
-				while (len < field_width--)
+				while (len < field_width--) {
+					if(used_size >= size)
+						goto exit_location;
 					*str++ = ' ';
-			for (i = 0; i < len; ++i)
+					used_size++;
+				}
+			for (i = 0; i < len; ++i) {
+				if(used_size >= size)
+					goto exit_location;
 				*str++ = *s++;
-			while (len < field_width--)
+				used_size++;
+			}
+			while (len < field_width--) {
+				if(used_size >= size)
+					goto exit_location;
 				*str++ = ' ';
+				used_size++;
+			}
 			break;
 
 		case 'o':
-			str = number(str, va_arg(args, unsigned long), 8,
+			newstr = number(size-used_size, str, va_arg(args, unsigned long), 8,
 				field_width, precision, flags);
+			used_size += newstr - str; str = newstr;
+			if(used_size >= size)
+				goto exit_location;
 			break;
 
 		case 'p':
@@ -194,24 +266,33 @@ int vsprintf(char *buf, const char *fmt, va_list args)
 				field_width = 8;
 				flags |= ZEROPAD;
 			}
-			str = number(str,
+			newstr = number(size-used_size, str,
 				(unsigned long) va_arg(args, void *), 16,
 				field_width, precision, flags);
+			used_size += newstr - str; str = newstr;
+			if(used_size >= size)
+				goto exit_location;
 			break;
 
 		case 'x':
 			flags |= SMALL;
 		case 'X':
-			str = number(str, va_arg(args, unsigned long), 16,
+			newstr = number(size-used_size, str, va_arg(args, unsigned long), 16,
 				field_width, precision, flags);
+			used_size += newstr - str; str = newstr;
+			if(used_size >= size)
+				goto exit_location;
 			break;
 
 		case 'd':
 		case 'i':
 			flags |= SIGN;
 		case 'u':
-			str = number(str, va_arg(args, unsigned long), 10,
+			newstr = number(size-used_size, str, va_arg(args, unsigned long), 10,
 				field_width, precision, flags);
+			used_size += newstr - str; str = newstr;
+			if(used_size >= size)
+				goto exit_location;
 			break;
 
 		case 'n':
@@ -220,26 +301,35 @@ int vsprintf(char *buf, const char *fmt, va_list args)
 			break;
 
 		default:
-			if (*fmt != '%')
+			if (*fmt != '%') {
+				if(used_size >= size)
+					goto exit_location;
 				*str++ = '%';
-			if (*fmt)
+				used_size++;
+			}
+			if (*fmt) {
+				if(used_size >= size)
+					goto exit_location;
 				*str++ = *fmt;
+				used_size++;
+			}
 			else
 				--fmt;
 			break;
 		}
 	}
+exit_location:
 	*str=0;
-	return 1;
+	return used_size;
 }
-#warning "CHANGE VSPRINTF TO VSNPRINTF"
+
 int snprintf(char *buf, size_t size, const char *fmt, ...)
 { 
 	va_list args;
 	va_start(args, fmt);
-	vsprintf(buf, fmt, args);
+	int len = vsnprintf(size, buf, fmt, args);
 	va_end(args);
-	return strlen(buf);
+	return len;
 }
 void serial_console_puts_nolock(int port, char *s);
 void serial_console_puts(int port, char *s);
@@ -249,7 +339,7 @@ void kprintf(const char *fmt, ...)
 	char printbuf[2024];
 	va_list args;
 	va_start(args, fmt);
-	vsprintf(printbuf, fmt, args);
+	vsnprintf(2024, printbuf, fmt, args);
 	console_kernel_puts(printbuf);
 	if(kernel_state_flags & KSF_PANICING)
 		serial_console_puts_nolock(0, printbuf);
@@ -265,7 +355,7 @@ void printk(int l, const char *fmt, ...)
 	va_list args;
 	int i=0;
 	va_start(args, fmt);
-	vsprintf(printbuf, fmt, args);
+	vsnprintf(2024, printbuf, fmt, args);
 	if(l >= LOGL_SERIAL)
 		serial_console_puts(0, printbuf);
 	if(l >= LOGL_LOGTTY && log_console)
@@ -282,7 +372,7 @@ void printk_safe(int l, const char *fmt, ...)
 	va_list args;
 	int i=0;
 	va_start(args, fmt);
-	vsprintf(printbuf, fmt, args);
+	vsnprintf(2024, printbuf, fmt, args);
 	if(l >= LOGL_SERIAL)
 		serial_console_puts_nolock(0, printbuf);
 	if(l >= LOGL_LOGTTY && log_console)
@@ -291,3 +381,4 @@ void printk_safe(int l, const char *fmt, ...)
 		console_kernel_puts(printbuf);
 	va_end(args);
 }
+

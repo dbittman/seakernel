@@ -2,9 +2,12 @@ Todo:
 	* event system (register events, blocking for IO...)
 	  such that a high priority process will get automatically resched'd if it unblocks
 
+	* Networking
+	* VT-x
+	* perf counters
+
 Roadmap:
 0.2 RC1
-	* vsnprintf fix
 	* fix filesystem reporting
 	* limit cache size
 	* better cache destroy
@@ -14,16 +17,17 @@ Roadmap:
 
 0.3 B1
 	* Shared Libraries
+	* mmap
+	* memory <-> device mapping framework
+	* extend mm_devmap to exec
 	* Shebangs
-	* Proper Threading
-	* CPU scheduling
-	* perf counters
-	* VT-x
-	* Networking
-	* make sure all features listed in termcap are properly implemented
 
 0.3 B2
-	* SA_RESTART
-	* user-space io port access
+	* make sure all features listed in termcap are properly implemented
 	* add chaining to file descriptors (and modify the return value for the sysconf entry)
 
+0.4 
+	* Proper Threading
+	* CPU scheduling
+	* SA_RESTART
+	* user-space io port access

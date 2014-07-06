@@ -32,7 +32,7 @@ struct inode_operations devfs_inode_ops = {
 int devfs_fsstat(struct inode *i, struct posix_statfs *fs)
 {
 	memset(fs, 0, sizeof(*fs));
-	fs->f_type = 1;
+	fs->f_type = 0x1373;
 	fs->f_fsid = 4;
 	return 0;
 }

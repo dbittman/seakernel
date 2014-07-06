@@ -8,9 +8,6 @@ Todo:
 
 Roadmap:
 0.2 RC1
-	* fix filesystem reporting
-	* limit cache size
-	* better cache destroy
 	* All ported software works properly
 	* documentation
 	* no clobbering of strings

@@ -75,11 +75,6 @@ int sys_dirstat(char *dir, unsigned num, char *namebuf, struct stat *statbuf)
 		return -ESRCH;
 	do_stat(i, statbuf);
 	strncpy(namebuf, i->name, 128);
-	/*if(i->dynamic) 
-	{
-		rwlock_acquire(&i->rwl, RWL_WRITER);
-		vfs_free_inode(i, 0);
-	}*/
 	vfs_iput(i);
 	return 0;
 }
@@ -97,11 +92,6 @@ int sys_dirstat_fd(int fd, unsigned num, char *namebuf, struct stat *statbuf)
 	}
 	do_stat(i, statbuf);
 	strncpy(namebuf, i->name, 128);
-/*	if(i->dynamic) 
-	{
-		rwlock_acquire(&i->rwl, RWL_WRITER);
-		vfs_free_inode(i, 0);
-	}*/
 	vfs_iput(i);
 	fs_fput((task_t *)current_task, fd, 0);
 	return 0;

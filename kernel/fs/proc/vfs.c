@@ -106,7 +106,6 @@ int proc_vfs(char rw, struct inode *n, int m, char *buf, int off, int len)
 					mountp = "/";
 				else {
 					vfs_get_path_string(i->mount_parent, tmp, 1024);
-					kprintf("-> %s\n", tmp);
 					mountp = tmp;
 				}
 			}

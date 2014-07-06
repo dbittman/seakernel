@@ -7,7 +7,16 @@
 #include <sea/mm/swap.h>
 #include <sea/cpu/processor.h>
 #include <sea/fs/proc.h>
+#include <sea/sys/stat.h>
 struct inode *procfs_root, *procfs_kprocdir;
+
+int procfs_fsstat(struct inode *i, struct posix_statfs *s)
+{
+	memset(s, 0, sizeof(*s));
+	s->f_type = 0x9fa0;
+	s->f_fsid = 4;
+	return 0;
+}
 
 struct inode_operations procfs_inode_ops = {
  proc_read,
@@ -21,7 +30,7 @@ struct inode_operations procfs_inode_ops = {
  0,
  0,
  0,
- 0,
+ procfs_fsstat,
  0,
  0
 };

@@ -251,6 +251,7 @@ int sys_utime(char *path, time_t a, time_t m)
 		return -ENOENT;
 	if(current_task->thread->effective_uid && current_task->thread->effective_uid != i->uid) {
 		vfs_iput(i);
+		kprintf(":(\n");
 		return -EPERM;
 	}
 	i->mtime = m ? m : (time_t)arch_time_get_epoch();

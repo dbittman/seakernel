@@ -65,7 +65,7 @@
 
 #define MAJ_VER 0
 #define MIN_VER 2
-#define PRE_VER 8
+#define PRE_VER 10
 
 #define KVERSION (MAJ_VER * 200 + MIN_VER * 20 + PRE_VER)
 

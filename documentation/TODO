@@ -9,9 +9,7 @@ Todo:
 Roadmap:
 0.2 RC1
 	* documentation
-	* no clobbering of strings
 	* code review
-	* syscalls are all correct (chdir wasn't ...)
 
 0.3 B1
 	* Shared Libraries

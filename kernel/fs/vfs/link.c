@@ -10,6 +10,7 @@
 #include <sea/fs/callback.h>
 #include <sea/dm/pipe.h>
 #include <sea/libgen.h>
+#include <sea/fs/dir.h>
 
 int vfs_do_unlink(struct inode *i)
 {
@@ -117,9 +118,10 @@ int vfs_rmdir(char *f)
 	int err = 0;
 	i->mtime = arch_time_get_epoch();
 	sync_inode_tofs(i);
-	rwlock_acquire(&i->rwl, RWL_WRITER);
-	if(inode_has_children(i))
+	rwlock_acquire(&i->rwl, RWL_READER);
+	if(!vfs_directory_is_empty(i))
 		err = -ENOTEMPTY;
+	rwlock_escalate(&i->rwl, RWL_WRITER);
 	if(!vfs_inode_get_check_permissions(i->parent, MAY_WRITE, 0))
 		err = -EACCES;
 	if(current_task->thread->effective_uid && (i->parent->mode & S_ISVTX) 

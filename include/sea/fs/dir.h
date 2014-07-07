@@ -8,7 +8,7 @@ int vfs_get_path_string(struct inode *p, char *buf, int len);
 int vfs_chroot(char *n);
 int vfs_chdir(char *path);
 struct inode *vfs_read_dir(char *n, int num);
-
+int vfs_directory_is_empty(struct inode *i);
 int vfs_ichdir(struct inode *i);
 struct inode *vfs_read_idir(struct inode *i, int num);
 

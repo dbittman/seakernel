@@ -82,7 +82,7 @@ void *syscall_table[129] = {
 	SC sys_get_pid,        SC /**32*/sys_getppid,
 	
 	SC sys_link,       SC vfs_unlink,         SC vfs_inode_get_ref_count, SC sys_get_pwd, 
-	SC sys_getpath,    SC sys_null,       SC vfs_chroot,    SC vfs_chdir,
+	SC sys_getpath,    SC sys_null,       SC vfs_chroot,    SC sys_chdir,
 	SC sys_mount,      SC vfs_unmount,        SC vfs_read_dir,      SC sys_null, 
 	SC console_create, SC console_switch, SC sys_null,      SC sys_null,
 	

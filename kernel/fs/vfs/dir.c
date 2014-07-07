@@ -117,8 +117,6 @@ static struct inode *do_readdir(struct inode *i, int num)
 	int n = num;
 	if(!vfs_inode_is_directory(i))
 		return 0;
-	if(!vfs_inode_get_check_permissions(i, MAY_READ, 0))
-		return 0;
 	struct inode *c=0;
 	if(!i->dynamic) {
 		rwlock_acquire(&i->rwl, RWL_READER);
@@ -164,3 +162,14 @@ struct inode *vfs_read_idir(struct inode *i, int num)
 		return 0;
 	return do_readdir(i, num);
 }
+
+int vfs_directory_is_empty(struct inode *i)
+{
+	if(!i || !vfs_inode_is_directory(i))
+		return -EINVAL;
+	if(inode_has_children(i)) return 1;
+	struct inode *ret = do_readdir(i, 0);
+	if(ret) vfs_iput(ret);
+	return ret ? 0 : 1;
+}
+

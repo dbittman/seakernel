@@ -67,8 +67,9 @@ SUBDIRS-$(CONFIG_MODULE_EXT2)	    += ext2
 SUBDIRS-$(CONFIG_MODULE_ISO9660)    += iso9660
 SUBDIRS-$(CONFIG_MODULE_FAT)	    += fat
 SUBDIRS-$(CONFIG_MODULE_PSM)	    += psm
+SUBDIRS-$(CONFIG_MODULE_SHIV)	    += shiv
 SUBDIRS = "$(SUBDIRS-y)"
-ALLSUBDIRS = "aes ata ext2 iso9660 fat ahci psm"
+ALLSUBDIRS = "aes ata ext2 iso9660 fat ahci psm shiv"
 VERSION=${KERNEL_VERSION}
 
 all:

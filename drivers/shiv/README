@@ -1,0 +1,8 @@
+SHIV - SeaOS Hardware Implemented Virtualization
+
+Implements processor virtualization extensions, like VT-x on Intel, and
+provides an abstraction to userspace in order to provide hardware
+virtualized virtual machines.
+
+Currently only supported on x86_64.
+

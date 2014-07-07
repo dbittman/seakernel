@@ -1,6 +1,7 @@
 				SeaKernel
 A simple unix-like kernel designed for simplicity and speed. In it's 
-current iteration, it is a monolithic kernel with loadable module support.
+current iteration, it is a UNIX-like monolithic kernel with loadable module
+support.
 
 Features Overview
 -----------------
@@ -12,10 +13,13 @@ Some primary features include:
  * Loadable and unloadable modules
  * ATA hard drives
  * AHCI controller (incomplete)
- * ext4 file systems
+ * ext2 file systems
  * ELF binaries
  * user-mode protections
  * ix86 processors (32-bit and 64-bit)
+ * AES-NI
+ * RDRAND
+ * VT-100 like terminal
 
 History
 -------
@@ -28,8 +32,9 @@ Usage Instructions
 ------------------
 You need to have a cross compiler installed (typically i586-pc-seaos-gcc or
 x86_64-pc-seaos-gcc) to build the kernel. This is built automatically by the
-SeaOS userspace system, available on github (dbittman/sea). After initializing,
-The kernel will try to run a script in a ramdisk (sh /preinit.sh). The ramdisk should provide a minimum of a shell and the init script.
+SeaOS userspace system, available on github (dbittman/sea). After initializing
+the kernel will try to run a script in a ramdisk (sh /preinit.sh). The ramdisk
+should provide a minimum of a shell and the init script.
 
 Build Instructions
 ------------------
@@ -49,3 +54,8 @@ Building is handled via gmake (make). The available targets are:
 
 Generally, a good order for this would be: make config all
 
+Special Thanks
+--------------
+SSRC at UC Santa Cruz (http://www.ssrc.ucsc.edu/)
+#osdev on Freenode
+forums.osdev.org, and wiki.osdev.org

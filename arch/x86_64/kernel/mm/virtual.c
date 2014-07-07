@@ -6,6 +6,7 @@
 #include <sea/cpu/processor.h>
 #include <sea/cpu/atomic.h>
 #include <sea/cpu/interrupt.h>
+#include <sea/boot/init.h>
 volatile addr_t *kernel_dir=0;
 pml4_t *kernel_dir_phys=0;
 int id_tables=0;
@@ -203,7 +204,6 @@ void arch_mm_vm_set_attrib(addr_t v, short attr)
 #endif
 	if(kernel_task)
 		mutex_release(&pd_cur_data->lock);
-	return 0;
 }
 
 unsigned int arch_mm_vm_get_attrib(addr_t v, unsigned *p, unsigned locked)

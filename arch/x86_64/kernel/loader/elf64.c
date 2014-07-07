@@ -117,7 +117,7 @@ int arch_loader_relocate_elf_module(void * buf, addr_t *entry, addr_t *tm_exiter
 	/* grab the functions we'll need */
 	for(i = 0; i < eh->shnum; i++)
 	{  
-		sh = (elf64_section_header_t*)(buf + eh->shoff + (i * eh->shsize));
+		sh = (elf64_section_header_t*)((addr_t)buf + eh->shoff + (i * eh->shsize));
 		if(sh->type == 2)
 		{
 			for(x = 0; x < sh->size; x += sh->sect_size)

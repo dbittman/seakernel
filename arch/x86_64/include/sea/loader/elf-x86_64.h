@@ -135,8 +135,7 @@ static inline int is_valid_elf32_otherarch(char *buf, short type)
 		|| eh->machine != 0x03
 		|| eh->type != type
 		|| eh->id[4] != 1 /* 32-bit */
-		|| ((eh->entry < EXEC_MINIMUM
-			|| eh->entry >= TOP_TASK_MEM_EXEC) && eh->entry))
+		|| ((eh->entry < EXEC_MINIMUM) && eh->entry))
 		return 0;
 	return 1;
 }

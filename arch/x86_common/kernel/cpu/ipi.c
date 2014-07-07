@@ -59,6 +59,7 @@ void arch_cpu_send_ipi(int dest, unsigned signal, unsigned flags)
 
 void x86_cpu_handle_ipi_cpu_halt(volatile registers_t regs)
 {
+	/* TODO: processes may hold system locks on a halting processor */
 	cpu_interrupt_set(0);
 	/* No interrupts */
 	LAPIC_WRITE(LAPIC_TPR, 0xFFFFFFFF);
@@ -69,6 +70,8 @@ void x86_cpu_handle_ipi_cpu_halt(volatile registers_t regs)
 
 void x86_cpu_handle_ipi_reschedule(volatile registers_t regs)
 {
+	if(!cpu_interrupt_get_flag())
+		return;
 	tm_schedule();
 }
 

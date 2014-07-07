@@ -94,6 +94,8 @@ int dm_read_pipe(struct inode *ino, char *buffer, size_t length)
 	mutex_acquire(pipe->lock);
 	while(!pipe->pending && (pipe->count > 1 && pipe->type != PIPE_NAMED 
 			&& pipe->wrcount>0)) {
+		/* we need to block, but also release the lock. Disable interrupts
+		 * so we don't schedule before we want to */
 		int old = cpu_interrupt_set(0);
 		tm_add_to_blocklist(pipe->read_blocked, (task_t *)current_task);
 		mutex_release(pipe->lock);

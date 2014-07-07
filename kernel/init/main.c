@@ -99,9 +99,6 @@ void parse_kernel_cmd(char *buf)
 	snprintf(stuff_to_pass[2], 90, "/preinit.sh %s", root_device);
 	
 }
-void init_main_cpu_1();
-void init_main_cpu_2();
-void init_sound();
 /* This is the C kernel entry point */
 void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 {

@@ -1,3 +1,4 @@
+#include <sea/config.h>
 #include <sea/string.h>
 
 int strtoint(char *s)

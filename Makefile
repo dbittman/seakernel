@@ -128,6 +128,7 @@ config:
 	@tools/conf.rb config.cfg
 	@echo post-processing configuration...
 	@tools/config.rb .config.cfg
+	@echo "run make clean to remove old objects if architecture has changed"
 	
 defconfig:
 	@tools/conf.rb -d config.cfg

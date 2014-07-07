@@ -17,7 +17,7 @@ endif
 # this flag is needed if we want to access relocations
 # that require 64bit fields...
 MCFLAGS=        -std=gnu11 \
-		-D__KERNEL__ -mno-red-zone -ffreestanding \
+		-D__KERNEL__ -mno-red-zone -ffreestanding -include ../sea_defines.h\
 		-nostdlib \
 		-I../arch/${ARCH}/include \
 		-Iarch/${ARCH}/include \

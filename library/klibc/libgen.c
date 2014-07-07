@@ -1,3 +1,4 @@
+#include <sea/config.h>
 #include <sea/libgen.h>
 #include <sea/types.h>
 #include <sea/string.h>

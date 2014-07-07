@@ -51,8 +51,6 @@ static int map_in_page(unsigned long cr2, unsigned err_code)
 
 void arch_mm_page_fault(registers_t *regs, int int_no)
 {
-#warning "needed?"
-	//current_task->regs=0;
 	assert(regs);
 	addr_t cr2, err_code = regs->err_code;
 	__asm__ volatile ("mov %%cr2, %0" : "=r" (cr2));

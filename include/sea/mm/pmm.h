@@ -15,6 +15,11 @@ addr_t mm_alloc_physical_page();
 void mm_free_physical_page(addr_t page);
 void mm_pm_init();
 
+void mm_pmm_init_contiguous(addr_t start);
+void mm_pmm_register_contiguous_memory(addr_t region_start);
+void mm_free_contiguous_region(struct mm_physical_region *p);
+void mm_alloc_contiguous_region(struct mm_physical_region *p);
+
 extern volatile addr_t pm_location;
 extern volatile unsigned long pm_num_pages, pm_used_pages;
 extern volatile addr_t highest_page;

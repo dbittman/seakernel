@@ -14,6 +14,10 @@ volatile unsigned long pm_num_pages=0, pm_used_pages=0;
 volatile addr_t highest_page=0;
 volatile addr_t lowest_page=~0;
 
+addr_t pmm_contiguous_address_start;
+int pmm_contiguous_end_index, pmm_contiguous_max_index, pmm_contiguous_index_bytes, pmm_contiguous_start_index;
+uint8_t pmm_contiguous_index[4096];
+
 int memory_has_been_mapped=0;
 volatile addr_t placement;
 mutex_t pm_mutex;
@@ -38,24 +42,118 @@ void mm_zero_page_physical(addr_t page)
 
 static addr_t mm_reclaim_page_from_contiguous()
 {
+	assert(pm_mutex.lock);
+	printk(0, "[pmm]: reclaiming a page from contiguous region (%d)\n", pmm_contiguous_end_index);
+	/* test end index, if it's empty, mark it and return it. */
+	int i = pmm_contiguous_end_index;
+	if(i == pmm_contiguous_start_index) return 0;
+	if(pmm_contiguous_index[i/8] & (1 << (i % 8))) {
+		return 0;
+	}
+	pmm_contiguous_index[i/8] |= (1 << (i % 8));
+	pmm_contiguous_end_index--;
+	return i * PAGE_SIZE + pmm_contiguous_address_start;
 }
 
-static void mm_append_page_to_contiguous()
+static void mm_append_page_to_contiguous(addr_t ad)
 {
+	assert(pm_mutex.lock);
+	printk(0, "[pmm]: appending a page to contiguous region\n");
+	int index = (ad - pmm_contiguous_address_start) / PAGE_SIZE;
+	assert(ad >= pmm_contiguous_address_start);
+	assert(index == pmm_contiguous_end_index+1);
+	assert(index <= pmm_contiguous_max_index);
+	assert(pmm_contiguous_index[index / 8] & (1 << (index%8)));
+
+	pmm_contiguous_index[index/8] &= ~(1 << (index % 8));
+	pmm_contiguous_end_index++;
 }
 
-static void mm_should_page_append_to_contiguous()
+static int mm_should_page_append_to_contiguous(addr_t ad)
 {
+	assert(pm_mutex.lock);
+	if(ad < pmm_contiguous_address_start)
+		return 0;
+	if(ad > (pmm_contiguous_address_start + pmm_contiguous_max_index*PAGE_SIZE))
+		return 0;
+	int index = (ad - pmm_contiguous_address_start) / PAGE_SIZE;
+	if(index > pmm_contiguous_max_index || index != (pmm_contiguous_end_index+1))
+		return 0;
+	return 1;
+}
+
+void mm_pmm_register_contiguous_memory(addr_t region_start)
+{
+	memset(pmm_contiguous_index, 0, pmm_contiguous_index_bytes);
+	pmm_contiguous_address_start = region_start;
+	pmm_contiguous_index_bytes = ((CONFIG_CONTIGUOUS_MEMORY*1024*1024) / PAGE_SIZE) / 8;
+	pmm_contiguous_max_index = pmm_contiguous_end_index = pmm_contiguous_index_bytes*8 -1;
+	printk(0, "[pmm]: registered contiguous memory region of size %dMB (%d index bytes) at %x\n",
+			CONFIG_CONTIGUOUS_MEMORY, pmm_contiguous_index_bytes, region_start);
+}
+
+void mm_pmm_init_contiguous(addr_t start)
+{
+	if(start > pmm_contiguous_address_start)
+		pmm_contiguous_start_index = ((start - pmm_contiguous_address_start) / PAGE_SIZE);
+	else
+		pmm_contiguous_start_index = 0;
 }
 
 /* p must contain a size and specified alignment */
 void mm_alloc_contiguous_region(struct mm_physical_region *p)
 {
+	/* perform a linear scan for enough space */
+	int npages = ((p->size-1) / PAGE_SIZE) + 1;
+	int i, j;
+	int start=-1, end=-1;
+	uint8_t *ptr = pmm_contiguous_index;
+	p->address = 0;
+	mutex_acquire(&pm_mutex);
+	for(i=(pmm_contiguous_start_index/8);i<pmm_contiguous_index_bytes;i++) {
+		for(j=(i == (pmm_contiguous_start_index/8) ? pmm_contiguous_start_index % 8 : 0);j<8;j++) {
+			if((i*8 + j) >= pmm_contiguous_end_index)
+				goto out;
+			if((ptr[i] & (1 << j)) == 0)
+			{
+				if(start == -1)
+				{
+					start = i * 8 + j;
+				}
+				end = i * 8 + j + 1;
+				if(end - start == npages) {
+					/* found space */
+					for(i=start;i<end;i++) {
+						ptr[i/8] |= (1 << (i % 8));
+					}
+					p->address = start * PAGE_SIZE + pmm_contiguous_address_start;
+					goto out;
+				}
+			} else {
+				start = end = -1;
+			}
+		}
+	}
+out:
+	mutex_release(&pm_mutex);
 }
 
 /* p must contain a size and an address */
 void mm_free_contiguous_region(struct mm_physical_region *p)
 {
+	int npages = ((p->size-1) / PAGE_SIZE)+1;
+	int start = (p->address - pmm_contiguous_address_start) / PAGE_SIZE;
+	assert(start >= pmm_contiguous_start_index && start <= pmm_contiguous_end_index);
+	uint8_t *ptr = pmm_contiguous_index;
+	mutex_acquire(&pm_mutex);
+	p->address = 0;
+	int i;
+	for(i=start;i<(start+npages);i++)
+	{
+		assert((i/8) < pmm_contiguous_index_bytes);
+		ptr[i/8] &= ~(1 << (i % 8));
+	}
+	mutex_release(&pm_mutex);
 }
 
 addr_t mm_alloc_physical_page()
@@ -76,6 +174,13 @@ addr_t mm_alloc_physical_page()
 		/* out of physical memory!! */
 		if(pm_stack <= (PM_STACK_ADDR+sizeof(addr_t)*2)) {
 			oom:
+			/* try to reclaim from contiguous memory. If we're doing this, we're likely
+			 * nearly out of memory anyway... */
+			if((ret = mm_reclaim_page_from_contiguous()))
+			{
+				mutex_release(&pm_mutex);
+				goto found;
+			}
 			if(current_task == kernel_task || !current_task)
 				panic(PANIC_MEM | PANIC_NOSYNC, "Ran out of physical memory");
 			mutex_release(&pm_mutex);
@@ -107,6 +212,7 @@ addr_t mm_alloc_physical_page()
 		ret = pm_location;
 		pm_location+=PAGE_SIZE;
 	}
+found:
 	if(current_task)
 		current_task->num_pages++;
 	if(!ret)
@@ -132,7 +238,12 @@ void mm_free_physical_page(addr_t addr)
 		current_task->phys_mem_usage--;
 	}
 	mutex_acquire(&pm_mutex);
-	if(pm_stack_max <= pm_stack)
+	/* if we can put this back in contiguous memory, that's fine. */
+	if(mm_should_page_append_to_contiguous(addr))
+	{
+		mm_append_page_to_contiguous(addr);
+	}
+	else if(pm_stack_max <= pm_stack)
 	{
 		/* TODO: not sure if this is correct... */
 		if(!memory_has_been_mapped)

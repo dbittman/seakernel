@@ -17,11 +17,21 @@ static void process_memorymap(struct multiboot *mboot)
 	addr_t i = mboot->mmap_addr;
 	unsigned int num_pages=0, unusable=0;
 	uint64_t j=0, address, length;
+	int found_contiguous=0;
 	while(i < (mboot->mmap_addr + mboot->mmap_length)){
 		mmap_entry_t *me = (mmap_entry_t *)(i);
 		address = ((uint64_t)me->base_addr_high << 32) | (uint64_t)me->base_addr_low;
 		length = (((uint64_t)me->length_high<<32) | me->length_low);
-		if(me->type == 1)
+		if(lowest_page > address)
+			lowest_page = address;
+		if(address > highest_page)
+			highest_page = address;
+		if(length >= (1024*1024*CONFIG_CONTIGUOUS_MEMORY) && !found_contiguous++) {
+			mm_pmm_register_contiguous_memory(address);
+			length -= (1024*1024*CONFIG_CONTIGUOUS_MEMORY);
+			address += (1024*1024*CONFIG_CONTIGUOUS_MEMORY);
+		}
+		if(me->type == 1 && length > 0)
 		{
 			for (j=address; 
 				j < (address+length); j += PAGE_SIZE)
@@ -76,6 +86,7 @@ static void process_memorymap(struct multiboot *mboot)
 	pm_num_pages=num_pages;
 	memory_has_been_mapped=1;
 	pm_used_pages=0;
+	mm_pmm_init_contiguous(pm_location);
 }
 
 void mm_init(struct multiboot *m)
@@ -88,6 +99,7 @@ void mm_init(struct multiboot *m)
 	mm_vm_init_2();
 	primary_cpu->flags |= CPU_PAGING;
 	set_ksf(KSF_MMU);
+	/* hey, look at that, we have happy memory times! */
 #if CONFIG_SWAP
 	init_swap();
 #endif

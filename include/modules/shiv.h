@@ -9,5 +9,16 @@
 
 #include <sea/types.h>
 
+struct vmcs {
+	/* u32/64? */
+	int a, b;
+	char data[0];
+};
+
+struct vmachine {
+	int id;
+	struct vmcs *vmcs_phys;
+};
+
 #endif
 #endif

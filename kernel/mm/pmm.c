@@ -36,6 +36,28 @@ void mm_zero_page_physical(addr_t page)
 #endif
 }
 
+static addr_t mm_reclaim_page_from_contiguous()
+{
+}
+
+static void mm_append_page_to_contiguous()
+{
+}
+
+static void mm_should_page_append_to_contiguous()
+{
+}
+
+/* p must contain a size and specified alignment */
+void mm_alloc_contiguous_region(struct mm_physical_region *p)
+{
+}
+
+/* p must contain a size and an address */
+void mm_free_contiguous_region(struct mm_physical_region *p)
+{
+}
+
 addr_t mm_alloc_physical_page()
 {
 	if(!pm_location)
@@ -112,6 +134,7 @@ void mm_free_physical_page(addr_t addr)
 	mutex_acquire(&pm_mutex);
 	if(pm_stack_max <= pm_stack)
 	{
+		/* TODO: not sure if this is correct... */
 		if(!memory_has_been_mapped)
 			mm_vm_map(pm_stack_max, mm_alloc_physical_page(), PAGE_PRESENT | PAGE_WRITE, 0);
 		else

@@ -1,0 +1,77 @@
+ALLOCATING MEMORY
+=================
+
+There exist several ways to allocate memory. There are two types of memory
+that can be allocated, physical and malloc. Malloc memory allocation returns
+a region of virtual memory from a specific section of the address space that
+has physical memory backing it. There are also multiple ways to allocate
+physical memory directly.
+
+Physical
+--------
+Physical memory allocation works in granularity of pages. There are two
+primary allocation mechanisms: stack-based and map-based. 
+
+Stack-based allocation is done with two functions:
+
+addr_t mm_alloc_physical_page()
+void   mm_free_physical_page(addr_t)
+
+The allocation function returns exactly 1 page, or panics with an out of
+memory message. The free function takes exactly 1 page as an address. Each
+consecutive call to the allocation function will not necessarily return
+contiguous pages.
+
+Map-based allocation is done with two functions:
+
+void mm_alloc_contiguous_region(struct mm_physical_region *p)
+void mm_free_contiguous_region(struct mm_physical_region *p)
+
+struct mm_physical_region contains fields 'address', 'start' and 'alignment'.
+The allocation function expects size and alignment to be filled out, and will
+fill out the address field before the return of the function. If the
+allocation function is unable to allocate the requested size and alignment,
+it puts a zero in the address field. The free function expects the size and
+address field to be filled out. Though size may be any value, the allocation
+function operates in page size granularity. It allocates a section of
+physical memory of size 'size', at most CONFIG_CONTIGUOUS_MEMORY.
+
+Malloc
+------
+Physical memory cannot be easily directly accessed, so it is only useful to
+allocate for very specific reasons. Thus, a family of functions are defined
+to make allocating general purpose memory simple.
+
+void *kmalloc(size_t s)
+void *kmalloc_a(size_t s)
+void *kmalloc_p(size_t s, addr_t *p)
+void *kmalloc_ap(size_t s, addr_t *p)
+void kfree(void *)
+
+These functions return a void pointer to a section of memory that will be at
+least of size s. Code that performs the allocation may not directly access
+memory outside of the region bounded by the return value, and the return
+value + s. The varients (the functions with underscores) do specialized
+things. The 'a' ensures that the returned memory is page aligned. The 'p'
+adds an additional parameter which is a pointer. The value is filled out
+by the function call, and contains the physical address that the returned
+virtual address is mapped to. The kfree function takes in any address
+returned by kmalloc.
+
+Other Allocation Mechanisms
+---------------------------
+DMA buffers can be allocated from the kernel. This is an extension of the
+contiguous allocation system (map-based). The functions are:
+
+int mm_allocate_dma_buffer(struct dma_region *d)
+int mm_free_dma_buffer(struct dma_region *d)
+
+struct dma_region contains a struct mm_physical_region, and a field that
+contains a virtual address. The mm_physical_region must be filled out like
+calls to mm_allocate_contiguous_region. The virtual address field will be
+filled out during calls to the functions, and will map to a contiguous
+physical memory region.
+
+There is no way to allocate arbitrary virtual memory directly, without
+the use of the vmem code.
+

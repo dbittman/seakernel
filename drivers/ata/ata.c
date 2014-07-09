@@ -117,6 +117,13 @@ int module_exit()
 #endif
 		dm_unregister_block_device(api);
 		ata_pci->flags = 0;
+		int i;
+		for(i=0;i<512;i++) {
+			if(primary->dma_buffers[i].p.address) {
+				mm_free_dma_buffer(&primary->dma_buffers[i]);
+				mm_free_dma_buffer(&secondary->dma_buffers[i]);
+			}
+		}
 		mutex_destroy(primary->wait);
 		mutex_destroy(secondary->wait);
 		interrupt_unregister_handler(32 + ATA_PRIMARY_IRQ, irq1);

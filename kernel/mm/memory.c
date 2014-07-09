@@ -11,6 +11,7 @@
 #include <sea/mm/pmap.h>
 #include <sea/mm/pmm.h>
 #include <sea/mm/vmm.h>
+#include <sea/mm/dma.h>
 
 static void process_memorymap(struct multiboot *mboot)
 {
@@ -121,6 +122,10 @@ void mm_init(struct multiboot *m)
 	loader_add_kernel_symbol(mm_vm_get_attrib);
 	loader_add_kernel_symbol(mm_vm_set_attrib);
 	loader_add_kernel_symbol(mm_free_physical_page);
+	loader_add_kernel_symbol(mm_allocate_dma_buffer);
+	loader_add_kernel_symbol(mm_free_dma_buffer);
+	loader_add_kernel_symbol(mm_alloc_contiguous_region);
+	loader_add_kernel_symbol(mm_free_contiguous_region);
 #endif
 }
 

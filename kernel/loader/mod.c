@@ -54,7 +54,6 @@ void loader_init_kernel_symbols(void)
 	
 	/* these systems export these, but have no initialization function */
 	loader_add_kernel_symbol(arch_time_get_epoch);
-	loader_add_kernel_symbol(mm_allocate_dma_buffer);
 }
 
 void loader_do_add_kernel_symbol(const intptr_t func, const char * funcstr)

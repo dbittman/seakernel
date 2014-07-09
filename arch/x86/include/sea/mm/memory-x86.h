@@ -3,9 +3,9 @@
 
 #include <sea/mm/memory-x86_common.h>
 #include <sea/types.h>
-#define TOP_TASK_MEM       0xB8000000
-#define TOP_TASK_MEM_EXEC  0xB0000000
-#define TOP_USER_HEAP      0xA0000000
+#define TOP_TASK_MEM       0xA8000000
+#define TOP_TASK_MEM_EXEC  0xA0000000
+#define TOP_USER_HEAP      0x90000000
 #define TOP_LOWER_KERNEL   0x10000000
 
 #define EXEC_MINIMUM	   0x30000000
@@ -30,17 +30,18 @@
 #define DIR_PHYS           0xFFBFF000
 #define TBL_PHYS           0xFFC00000
 
-#define DEVICE_MAP_START   0xB8000000
-#define DEVICE_MAP_END     0xC0000000
-#define MMF_PRIV_START     0xA0000000
-#define MMF_PRIV_END       0xB0000000
+#define DEVICE_MAP_START   0xA8000000
+#define DEVICE_MAP_END     0xB0000000
+
+#define CONTIGUOUS_VIRT_START 0xB0000000
+#define CONTIGUOUS_VIRT_END   0xB8000000
 
 /* where the signal injector code goes */
-#define SIGNAL_INJECT      0xB0001000
+#define SIGNAL_INJECT      0xA0001000
 
-#define VIRT_TEMP (0xB0000000)
+#define VIRT_TEMP (0xA0000000)
 
-#define STACK_LOCATION (0xB0002000 + ((CONFIG_STACK_PAGES+1) * 0x1000)*2)
+#define STACK_LOCATION (0xA0002000 + ((CONFIG_STACK_PAGES+1) * 0x1000)*2)
 
 #define IS_KERN_MEM(x) (x < TOP_LOWER_KERNEL || (x >= DEVICE_MAP_START && x < PDIR_DATA))
 

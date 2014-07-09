@@ -4,7 +4,7 @@
 #if CONFIG_MODULE_ATA
 #include <sea/types.h>
 #include <modules/pci.h>
-
+#include <sea/mm/dma.h>
 /* Most of these definitions and support functions have been borrowed from CDI */
 #define PCI_CLASS_ATA           0x01
 #define PCI_SUBCLASS_ATA        0x01
@@ -114,8 +114,7 @@ struct ata_controller {
     volatile unsigned           irqwait;
     unsigned                    prdt_phys;
     uint64_t*                   prdt_virt;
-    addr_t                      dma_buf_phys[512];
-    addr_t                      dma_buf_virt[512];
+	struct dma_region           dma_buffers[512];
     struct ata_device           devices[2];
     mutex_t*                    wait;
     struct ata_device *         selected;

@@ -85,6 +85,14 @@ static addr_t vm_init_directory(addr_t id_map_to)
 		pt = (unsigned int *)(pd[i] & PAGE_MASK);
 		memset(pt, 0, 0x1000);
 	}
+	/* Pre-map the contiguous tables */
+	pm_pd_idx = PAGE_DIR_IDX(CONTIGUOUS_VIRT_START / 0x1000);
+	for(i=pm_pd_idx;i<(int)PAGE_DIR_IDX(CONTIGUOUS_VIRT_END / 0x1000);i++)
+	{
+		pd[i] = mm_alloc_physical_page() | PAGE_PRESENT | PAGE_WRITE;
+		pt = (unsigned int *)(pd[i] & PAGE_MASK);
+		memset(pt, 0, 0x1000);
+	}
 	return (addr_t)pd;
 }
 

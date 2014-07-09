@@ -64,18 +64,19 @@ void allocate_dma(struct ata_controller *cont)
 		cont->prdt_virt = (uint64_t *)buf;
 		cont->prdt_phys = p;
 	}
-	if(!cont->dma_buf_virt[0]) {
-		int ret = mm_allocate_dma_buffer(64*1024, &buf, &p);
-		if(ret == -1)
-		{
-			kprintf("[ata]: could not allocate DMA buffer\n");
-			cont->dma_use=0;
-			return;
-		}
-		cont->dma_buf_virt[0] = (unsigned)buf;
-		cont->dma_buf_phys[0] = (unsigned)p;
-		cont->dma_use=ATA_DMA_ENABLE;
+	for(int i=0;i<512;i++) {
+		cont->dma_buffers[i].p.size = 64 * 1024;
+		cont->dma_buffers[i].p.alignment = 0x1000;
+		cont->dma_buffers[i].p.address = 0;
 	}
+	int ret = mm_allocate_dma_buffer(&cont->dma_buffers[0]);
+	if(ret == -1)
+	{
+		kprintf("[ata]: could not allocate DMA buffer\n");
+		cont->dma_use=0;
+		return;
+	}
+	cont->dma_use=ATA_DMA_ENABLE;
 }
 
 int init_ata_controller(struct ata_controller *cont)

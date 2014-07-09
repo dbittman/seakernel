@@ -11,8 +11,8 @@ volatile addr_t pm_stack = PM_STACK_ADDR;
 volatile addr_t pm_stack_max = PM_STACK_ADDR;
 
 volatile unsigned long pm_num_pages=0, pm_used_pages=0;
-volatile addr_t highest_page=0;
-volatile addr_t lowest_page=~0;
+volatile uint64_t highest_page=0;
+volatile uint64_t lowest_page=~0;
 
 addr_t pmm_contiguous_address_start;
 int pmm_contiguous_end_index, pmm_contiguous_max_index, pmm_contiguous_index_bytes, pmm_contiguous_start_index;
@@ -42,7 +42,7 @@ void mm_zero_page_physical(addr_t page)
 
 static addr_t mm_reclaim_page_from_contiguous()
 {
-	assert(pm_mutex.lock);
+	assert(mutex_is_locked(&pm_mutex));
 	printk(0, "[pmm]: reclaiming a page from contiguous region (%d)\n", pmm_contiguous_end_index);
 	/* test end index, if it's empty, mark it and return it. */
 	int i = pmm_contiguous_end_index;
@@ -57,7 +57,7 @@ static addr_t mm_reclaim_page_from_contiguous()
 
 static void mm_append_page_to_contiguous(addr_t ad)
 {
-	assert(pm_mutex.lock);
+	assert(mutex_is_locked(&pm_mutex));
 	printk(0, "[pmm]: appending a page to contiguous region\n");
 	int index = (ad - pmm_contiguous_address_start) / PAGE_SIZE;
 	assert(ad >= pmm_contiguous_address_start);
@@ -71,7 +71,7 @@ static void mm_append_page_to_contiguous(addr_t ad)
 
 static int mm_should_page_append_to_contiguous(addr_t ad)
 {
-	assert(pm_mutex.lock);
+	assert(mutex_is_locked(&pm_mutex));
 	if(ad < pmm_contiguous_address_start)
 		return 0;
 	if(ad > (pmm_contiguous_address_start + pmm_contiguous_max_index*PAGE_SIZE))
@@ -217,9 +217,9 @@ found:
 		current_task->num_pages++;
 	if(!ret)
 		panic(PANIC_MEM | PANIC_NOSYNC, "found zero address in page stack (%x %x)\n", pm_stack, pm_stack_max);
-	if(((ret > (unsigned)highest_page) || ret < (unsigned)lowest_page) 
+	if(((ret > highest_page) || ret < lowest_page) 
 		&& memory_has_been_mapped)
-		panic(PANIC_MEM | PANIC_NOSYNC, "found invalid address in page stack: %x\n", ret);
+		panic(PANIC_MEM | PANIC_NOSYNC, "found invalid address in page stack: %x (H=%x, L=%x)\n", ret, highest_page, lowest_page);
 	return ret;
 }
 
@@ -270,7 +270,30 @@ void mm_pm_init(addr_t start, struct multiboot *mboot)
 	pm_location = (start + PAGE_SIZE) & PAGE_MASK;
 }
 
-int mm_allocate_dma_buffer(size_t length, addr_t *x, addr_t *physical)
+int mm_allocate_dma_buffer(struct dma_region *d)
 {
-	return arch_mm_allocate_dma_buffer(length, x, physical);
+	mm_alloc_contiguous_region(&d->p);
+	if(d->p.address == 0)
+		return -1;
+	addr_t offset = d->p.address - pmm_contiguous_address_start;
+	assert((offset&PAGE_MASK) == offset);
+
+	int npages = ((d->p.size-1) / PAGE_SIZE) + 1;
+	for(int i = 0;i<npages;i++)
+		mm_vm_map(CONTIGUOUS_VIRT_START + offset + i * PAGE_SIZE, d->p.address + i*PAGE_SIZE, PAGE_PRESENT | PAGE_WRITE, 0);
+	d->v = CONTIGUOUS_VIRT_START + offset;
+	return 0;
 }
+
+int mm_free_dma_buffer(struct dma_region *d)
+{
+	int npages = ((d->p.size-1) / PAGE_SIZE) + 1;
+	addr_t offset = d->p.address - pmm_contiguous_address_start;
+	assert((offset&PAGE_MASK) == offset);
+	for(int i=0;i<npages;i++)
+		mm_vm_unmap_only(CONTIGUOUS_VIRT_START + offset + i * PAGE_SIZE, 0);
+	mm_free_contiguous_region(&d->p);
+	d->p.address = d->v = 0;
+	return 0;
+}
+

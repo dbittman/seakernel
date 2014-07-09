@@ -2,7 +2,15 @@
 #define __SEA_MM_DMA_H
 
 #include <sea/types.h>
-int mm_allocate_dma_buffer(size_t length, addr_t *, addr_t *physical);
-int arch_mm_allocate_dma_buffer(size_t length, addr_t *, addr_t *physical);
+#include <sea/mm/pmm.h>
+
+struct dma_region {
+	struct mm_physical_region p;
+	addr_t v;
+};
+
+int mm_allocate_dma_buffer(struct dma_region *);
+int mm_free_dma_buffer(struct dma_region *);
 
 #endif
+

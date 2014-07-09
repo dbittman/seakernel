@@ -16,6 +16,14 @@
  * handler. this allows for a task to handle an event that requires
  * a mutex to be locked in the handler whilst having locked the mutex
  * previously */
+
+int mutex_is_locked(mutex_t *m)
+{
+	if(kernel_state_flags & KSF_SHUTDOWN)
+		return 1;
+	return m->lock;
+}
+
 void __mutex_acquire(mutex_t *m, char *file, int line)
 {
 	assert(m->magic == MUTEX_MAGIC);

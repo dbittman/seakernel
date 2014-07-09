@@ -27,4 +27,6 @@ void mutex_destroy(mutex_t *m);
 #define mutex_acquire(m) __mutex_acquire(m, __FILE__, __LINE__)
 #define mutex_release(m) __mutex_release(m, __FILE__, __LINE__)
 
+int mutex_is_locked(mutex_t *m);
+
 #endif

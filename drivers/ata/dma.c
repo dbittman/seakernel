@@ -21,19 +21,17 @@ int ata_dma_init(struct ata_controller *cont, struct ata_device *dev,
 	addr_t offset=0;
 	if(num_entries >= 512) return -1;
 	for(i=0;i<num_entries;i++) {
-		if(!(t->addr = cont->dma_buf_phys[i])) {
-			addr_t phys, virt;
-			if(mm_allocate_dma_buffer(64*1024, &virt, &phys) == -1)
+		if(!(t->addr = cont->dma_buffers[i].p.address)) {
+			if(mm_allocate_dma_buffer(&cont->dma_buffers[i]) == -1)
 				return -1;
-			t->addr = cont->dma_buf_phys[i] = phys;
-			cont->dma_buf_virt[i] = virt;
+			t->addr = cont->dma_buffers[i].p.address;
 		}
 		addr_t this_size = (size-offset);
 		if(this_size >= (64*1024)) this_size=0;
 		t->size = (unsigned short)this_size;
 		t->last = 0;
 		if (rw == WRITE)
-			memcpy((void *)cont->dma_buf_virt[i], buffer+offset, this_size);
+			memcpy((void *)cont->dma_buffers[i].v, buffer+offset, this_size);
 		offset += this_size ? this_size : (64*1024);
 		if((i+1) < num_entries) t++;
 	}
@@ -159,7 +157,7 @@ int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw,
 				sz = size*count;
 			else
 				sz = 64*1024;
-			memcpy(buf + i*64*1024, (void *)cont->dma_buf_virt[i], sz);
+			memcpy(buf + i*64*1024, (void *)cont->dma_buffers[i].v, sz);
 		}
 	}
 	if(!ret)

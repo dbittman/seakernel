@@ -81,6 +81,9 @@ struct thread_shared_data {
 	struct sigaction signal_act[128];
 	volatile sigset_t global_sig_mask;
 	struct file_ptr *filp[FILP_HASH_LEN];
+
+	struct llist mappings;
+	mutex_t map_lock;
 };
 
 typedef struct __cpu_t__ cpu_t;

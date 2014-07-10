@@ -39,6 +39,8 @@ struct thread_shared_data *tm_thread_data_create()
 	thread->magic = THREAD_MAGIC;
 	thread->count = 1;
 	mutex_create(&thread->files_lock, 0);
+	ll_create_lockless(&thread->mappings);
+	mutex_create(&thread->map_lock, 0);
 	return thread;
 }
 

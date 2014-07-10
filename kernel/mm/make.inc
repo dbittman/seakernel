@@ -4,6 +4,7 @@ SWAP-$(CONFIG_SWAP) =	kernel/mm/swapping/manager.o \
 
 KOBJS+= kernel/mm/area.o \
 		kernel/mm/kmalloc.o \
+		kernel/mm/map.o \
 		kernel/mm/memory.o \
 		kernel/mm/mmfile.o \
 		kernel/mm/pager.o \

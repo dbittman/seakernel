@@ -1,18 +1,25 @@
 #ifndef __ASM_SYSTEM_X86_64_H
 #define __ASM_SYSTEM_X86_64_H
 #define asm __sync_synchronize(); __asm__ __volatile__
-static unsigned read_msr(unsigned msr)
+#include <sea/types.h>
+static uint64_t read_msr(uint32_t msr)
 {
-	unsigned res;
-	asm("rdmsr":"=a"(res):"c"(msr));
-	return res;
+	uint32_t r1, r2;
+	asm("rdmsr":"=a"(r1), "=d"(r2):"c"(msr));
+	return (((uint64_t)r2) << 32) | r1;
 }
 
-static void write_msr(unsigned msr, unsigned lo, unsigned hi)
+static void write_msr(uint32_t msr, uint64_t value)
 {
-   asm ("wrmsr"::"a"(lo),"d"(hi),"c"(msr));
+   asm ("wrmsr"::"a"((uint32_t)(value & 0xFFFFFFFF)),"d"((uint32_t)(value >> 32)),"c"(msr));
 }
 
+#define MSR_IA32_FEATURE_CONTROL 0x3A
+
+#define MSR_IA32_PROCBASED_CTLS  0x482
+#define MSR_IA32_PROCBASED_CTLS2 0x48B
+#define MSR_IA32_VMX_EPT_VPID_CAP 0x48C
+#define MSR_IA32_VMX_BASIC 0x480
 #define arch_cpu_jump(x) asm("jmp *%0"::"r"(x))
 #define arch_cpu_pause() asm("pause")
 #define arch_cpu_halt() asm("hlt")

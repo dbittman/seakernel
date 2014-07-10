@@ -73,14 +73,6 @@ static pml4_t *create_initial_directory()
 	early_mm_vm_map(pml4, SIGNAL_INJECT, arch_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_USER);
 	early_mm_vm_map(pml4, PDIR_DATA, arch_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_WRITE);
 	
-#warning "is this needed?"
-	/* pre-map various sections */
-	addr_t start = CONTIGUOUS_VIRT_START;
-	for(;start < CONTIGUOUS_VIRT_END;start+=PAGE_SIZE)
-		early_mm_vm_map(pml4, start, 0);
-	start = DEVICE_MAP_START;
-	for(;start < DEVICE_MAP_END;start+=PAGE_SIZE)
-		early_mm_vm_map(pml4, start, 0);
 	/* CR3 requires the physical address, so we directly 
 	 * set it because we have the physical address */
 	asm("mov %0, %%cr3"::"r"(pml4));

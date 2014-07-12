@@ -4,6 +4,7 @@ kernel/fs/fcntl.o \
 kernel/fs/file.o \
 kernel/fs/flock.o \
 kernel/fs/initrd.o \
+kernel/fs/mminode.o \
 kernel/fs/mount.o \
 kernel/fs/open.o \
 kernel/fs/ramfs.o \

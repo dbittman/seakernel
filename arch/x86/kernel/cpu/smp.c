@@ -18,7 +18,7 @@ volatile unsigned num_halted_cpus=0;
 int probe_smp_mptables()
 {
 	unsigned long long lapic_msr = read_msr(0x1b);
-	write_msr(0x1b, (lapic_msr&0xFFFFF000) | 0x800, 0); //set global enable bit for lapic
+	write_msr(0x1b, (lapic_msr&0xFFFFF000) | 0x800); //set global enable bit for lapic
 	unsigned mem_lower = ((CMOS_READ_BYTE(CMOS_BASE_MEMORY+1) << 8) | CMOS_READ_BYTE(CMOS_BASE_MEMORY)) << 10;
 	int res=0;
 	if(mem_lower < 512*1024 || mem_lower > 640*1024)

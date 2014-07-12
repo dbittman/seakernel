@@ -7,7 +7,7 @@
 #include <sea/ll.h>
 #include <sea/fs/flock.h>
 #include <sea/fs/stat.h>
-
+#include <sea/lib/hash.h>
 
 #define MAY_EXEC      0100
 #define MAY_WRITE     0200
@@ -58,6 +58,10 @@ struct inode {
 	rwlock_t rwl;
 	struct flock *flocks;
 	mutex_t *flm;
+
+	/* shared mmappings */
+	struct hash_table *physicals;
+	mutex_t mappings_lock;
 };
 
 struct inode_operations {
@@ -114,5 +118,14 @@ int sys_getdepth(int fd);
 int sys_getcwdlen();
 int sys_fcntl(int filedes, int cmd, long attr1, long attr2, long attr3);
 int sync_inode_tofs(struct inode *i);
+
+#define FS_INODE_POPULATE 1
+addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt, 
+		size_t offset, int flags);
+
+void fs_inode_map_region(struct inode *node, size_t offset, size_t length);
+void fs_inode_sync_physical_page(struct inode *node, addr_t virt, size_t offset);
+void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_t length);
+void fs_inode_destroy_physicals(struct inode *node);
 
 #endif

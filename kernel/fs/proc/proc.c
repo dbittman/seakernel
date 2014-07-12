@@ -90,6 +90,7 @@ struct inode *proc_create_node_at_root(char *name, mode_t  mode, int major, int 
 	i->mode = mode | 0664;
 	i->dev = GETDEV(major, minor);
 	rwlock_create(&i->rwl);
+	mutex_create(&i->mappings_lock, 0);
 	vfs_add_inode(procfs_root, i);
 	return i;
 }
@@ -105,6 +106,7 @@ struct inode *proc_create_node(struct inode *to, char *name, mode_t mode, int ma
 	i->mode = mode | 0664;
 	i->dev = GETDEV(major, minor);
 	rwlock_create(&i->rwl);
+	mutex_create(&i->mappings_lock, 0);
 	vfs_add_inode(to, i);
 	
 	return i;
@@ -142,6 +144,7 @@ void proc_init()
 	procfs_root->mode = S_IFDIR | 0774;
 	procfs_root->num = -1;
 	rwlock_create(&procfs_root->rwl);
+	mutex_create(&procfs_root->mappings_lock, 0);
 	/* Create proc nodes */
 	proc_create_node_at_root("mem", S_IFREG, 0, 0);
 	struct inode *si = proc_create_node_at_root("sched", S_IFDIR, 1, 0);

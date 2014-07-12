@@ -383,6 +383,7 @@ struct inode *create_sea_inode(ext2_inode_t *in, char *name)
 	out->i_ops = &e2fs_inode_ops;
 	out->blksize = ext2_sb_blocksize(in->fs->sb);
 	rwlock_create(&out->rwl);
+	mutex_create(&out->mappings_lock, 0);
 	strncpy(out->name, name, 128);
 	return out;
 }

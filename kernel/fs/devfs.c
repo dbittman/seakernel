@@ -45,6 +45,7 @@ void devfs_init()
 	devfs_root->parent = current_task->thread->root;
 	devfs_root->mode = S_IFDIR | 0774;
 	devfs_root->num = -1;
+	mutex_create(&devfs_root->mappings_lock, 0);
 	rwlock_create(&devfs_root->rwl);
 	/* Create device nodes */
 	char tty[6] = "tty";
@@ -82,6 +83,7 @@ struct inode *devfs_create(struct inode *base, char *name, mode_t mode)
 	i->mode = mode | 0664;
 	i->num = add_atomic(&devfs_nodescount, 1);
 	rwlock_create(&i->rwl);
+	mutex_create(&i->mappings_lock, 0);
 	vfs_add_inode(base, i);
 	return i;
 }

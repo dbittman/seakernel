@@ -40,6 +40,7 @@ struct inode *fs_init_ramfs()
 	struct inode *i = (struct inode *)kmalloc(sizeof(struct inode));
 	i->mode = S_IFDIR | 0664;
 	rwlock_create(&i->rwl);
+	mutex_create(&i->mappings_lock, 0);
 	_strcpy(i->name, "rfs");
 	ramfs_root = i;
 	i->i_ops = &rfs_inode_ops;
@@ -51,6 +52,7 @@ struct inode *fs_init_tmpfs()
 	struct inode *i = (struct inode *)kmalloc(sizeof(struct inode));
 	i->mode = S_IFDIR | 0x664;
 	rwlock_create(&i->rwl);
+	mutex_create(&i->mappings_lock, 0);
 	_strcpy(i->name, "rfs");
 	i->i_ops = &rfs_inode_ops;
 	return i;
@@ -114,6 +116,7 @@ struct inode *rfs_create(struct inode *__p, char *name, mode_t mode)
 	node->start = (addr_t)kmalloc(1);
 	node->num = add_atomic(&ramfs_node_num, 1);
 	rwlock_create(&node->rwl);
+	mutex_create(&node->mappings_lock, 0);
 	if(!__p) vfs_add_inode(p, node);
 	return node;
 }

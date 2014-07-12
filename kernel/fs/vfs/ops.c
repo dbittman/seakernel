@@ -80,6 +80,7 @@ int vfs_free_inode(struct inode *i, int recur)
 		kfree((void *)i->start);
 	rwlock_release(&i->rwl, RWL_WRITER);
 	rwlock_destroy(&i->rwl);
+	fs_inode_destroy_physicals(i);
 	if(recur)
 	{
 		struct inode *c;

@@ -53,6 +53,7 @@ addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt,
 		int err;
 		if((err=vfs_read_inode(node, offset, PAGE_SIZE, (void *)virt) < 0))
 			printk(0, "[mminode]: read inode failed with %d\n", err);
+		add_atomic(&node->mapped_pages_count, 1);
 	}
 	addr_t ret = entry->page;
 	mutex_release(&entry->lock);
@@ -81,6 +82,7 @@ void fs_inode_map_region(struct inode *node, size_t offset, size_t length)
 		{
 			entry = __create_entry();
 			hash_table_set_entry(node->physicals, &i, sizeof(i), 1, entry);
+			add_atomic(&node->mapped_entries_count, 1);
 		}
 		else
 			entry = value;
@@ -121,10 +123,12 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 			{	
 				fs_inode_sync_physical_page(node, virt + (i - page_number)*PAGE_SIZE, i * PAGE_SIZE);
 				mm_free_physical_page(entry->page);
+				sub_atomic(&node->mapped_pages_count, 1);
 				entry->page = 0;
 				mutex_destroy(&entry->lock);
 				kfree(entry);
 				hash_table_delete_entry(node->physicals, &i, sizeof(i), 1);
+				sub_atomic(&node->mapped_entries_count, 1);
 			} else
 				mutex_release(&entry->lock);
 			mm_vm_unmap_only(virt + (i - page_number)*PAGE_SIZE, 0);

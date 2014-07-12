@@ -62,6 +62,7 @@ struct inode {
 	/* shared mmappings */
 	struct hash_table *physicals;
 	mutex_t mappings_lock;
+	int mapped_pages_count, mapped_entries_count;
 };
 
 struct inode_operations {

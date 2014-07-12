@@ -1,3 +1,8 @@
+/* mminode.c: handle shared memory mapping of files at the inode level. The inode
+ * keeps track of physical pages that get shared among mappings from different
+ * processes. It handles loading data from pagefaulting, etc.
+ */
+
 #include <sea/kernel.h>
 #include <sea/types.h>
 #include <sea/fs/inode.h>
@@ -30,6 +35,8 @@ static void __init_physicals(struct inode *node)
 addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt, 
 		size_t offset, int flags)
 {
+	assert(!(virt & ~PAGE_MASK));
+	assert(!(offset & ~PAGE_MASK));
 	/* test if we have any shared mappings... */
 	if(!node->physicals)
 		return 0;
@@ -51,6 +58,9 @@ addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt,
 			panic(0, "trying to remap mminode section");
 		mm_vm_map(virt, entry->page, PAGE_PRESENT | PAGE_WRITE | PAGE_USER, 0);
 		int err;
+		/* try to read the data. If this fails, we don't really have a good way 
+		 * of telling userspace this...eh.
+		 */
 		if((err=vfs_read_inode(node, offset, PAGE_SIZE, (void *)virt) < 0))
 			printk(0, "[mminode]: read inode failed with %d\n", err);
 		add_atomic(&node->mapped_pages_count, 1);
@@ -80,6 +90,7 @@ void fs_inode_map_region(struct inode *node, size_t offset, size_t length)
 		struct physical_page *entry;
 		if(hash_table_get_entry(node->physicals, &i, sizeof(i), 1, &value) == -ENOENT)
 		{
+			/* create the entry, and add it */
 			entry = __create_entry();
 			hash_table_set_entry(node->physicals, &i, sizeof(i), 1, entry);
 			add_atomic(&node->mapped_entries_count, 1);
@@ -91,6 +102,8 @@ void fs_inode_map_region(struct inode *node, size_t offset, size_t length)
 		mutex_acquire(&entry->lock);
 		add_atomic(&entry->count, 1);
 		mutex_release(&entry->lock);
+		/* NOTE: we're not actually allocating or mapping anything here, really. All we're doing
+		 * is indicating our intent to map a certain section, so we don't free pages. */
 	}
 	mutex_release(&node->mappings_lock);
 }
@@ -99,6 +112,7 @@ void fs_inode_sync_physical_page(struct inode *node, addr_t virt, size_t offset)
 {
 	assert(!(offset & ~PAGE_MASK));
 	assert(!(virt & ~PAGE_MASK));
+	/* again, no real good way to notify userspace of a failure */
 	if(vfs_write_inode(node, offset, PAGE_SIZE, (void *)virt) < 0)
 		printk(0, "[mminode]: warning: failed to writeback data\n");
 }
@@ -117,10 +131,16 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 		struct physical_page *entry;
 		if(hash_table_get_entry(node->physicals, &i, sizeof(i), 1, &value) == 0)
 		{
+			/* decrease the count. Because it's unlikely that a single file
+			 * is going to be mmapped my a lot of processes, we can just free
+			 * everything in good faith that it'll be a while before we need
+			 * to a page again
+			 */
 			entry = value;
 			mutex_acquire(&entry->lock);
 			if(!sub_atomic(&entry->count, 1))
-			{	
+			{
+				/* count is now zero. write back data, free the page, delete the entry, free the entry */
 				fs_inode_sync_physical_page(node, virt + (i - page_number)*PAGE_SIZE, i * PAGE_SIZE);
 				mm_free_physical_page(entry->page);
 				sub_atomic(&node->mapped_pages_count, 1);
@@ -131,6 +151,7 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 				sub_atomic(&node->mapped_entries_count, 1);
 			} else
 				mutex_release(&entry->lock);
+			/* we'll actually do the unmapping too */
 			mm_vm_unmap_only(virt + (i - page_number)*PAGE_SIZE, 0);
 		}
 		/* and if the entry isn't found, we're all good! */

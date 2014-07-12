@@ -50,5 +50,7 @@ struct memmap {
 #define MS_SYNC         4
 #define MS_INVALIDATE   2
 
+int mm_disestablish_mapping(struct memmap *map);
+
 #endif
 

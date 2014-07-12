@@ -41,6 +41,7 @@ struct thread_shared_data *tm_thread_data_create()
 	mutex_create(&thread->files_lock, 0);
 	ll_create_lockless(&thread->mappings);
 	mutex_create(&thread->map_lock, 0);
+	vmem_create(&thread->mmf_vmem, MMF_BEGIN, MMF_END, MMF_VMEM_NUM_INDEX_PAGES);
 	return thread;
 }
 

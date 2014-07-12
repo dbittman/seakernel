@@ -10,6 +10,9 @@
 
 #define EXEC_MINIMUM	   0x30000000
 
+#define MMF_BEGIN          0x30000000
+#define MMF_END            0x40000000
+
 #define SOLIB_RELOC_START  0x10000000
 #define SOLIB_RELOC_END    0x20000000
 

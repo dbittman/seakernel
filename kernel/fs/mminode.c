@@ -32,8 +32,27 @@ static void __init_physicals(struct inode *node)
 	}
 }
 
+addr_t fs_inode_map_private_physical_page(struct inode *node, addr_t virt,
+		size_t offset, int attrib)
+{
+	addr_t ph;
+	assert(!(virt & ~PAGE_MASK));
+	assert(!(offset & ~PAGE_MASK));
+	if(mm_vm_get_map(virt, 0, 0))
+		panic(0, "trying to remap mminode private section");
+	/* DON'T specify NOCLEAR, since read_inode may not fill up the whole page */
+	mm_vm_map(virt, (ph=mm_alloc_physical_page()), attrib, 0);
+	int err;
+	/* try to read the data. If this fails, we don't really have a good way 
+	 * of telling userspace this...eh.
+	 */
+	if((err=vfs_read_inode(node, offset, PAGE_SIZE, (void *)virt) < 0))
+		printk(0, "[mminode]: read inode failed with %d\n", err);
+	return ph;
+}
+
 addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt, 
-		size_t offset, int flags)
+		size_t offset, int flags, int attrib)
 {
 	assert(!(virt & ~PAGE_MASK));
 	assert(!(offset & ~PAGE_MASK));
@@ -55,8 +74,9 @@ addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt,
 		/* map a new page into virt, and load data into it */
 		entry->page = mm_alloc_physical_page();
 		if(mm_vm_get_map(virt, 0, 0))
-			panic(0, "trying to remap mminode section");
-		mm_vm_map(virt, entry->page, PAGE_PRESENT | PAGE_WRITE | PAGE_USER, 0);
+			panic(0, "trying to remap mminode shared section");
+		/* DON'T specify NOCLEAR, since read_inode may not fill up the whole page */
+		mm_vm_map(virt, entry->page, attrib, 0);
 		int err;
 		/* try to read the data. If this fails, we don't really have a good way 
 		 * of telling userspace this...eh.

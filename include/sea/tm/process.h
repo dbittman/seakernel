@@ -8,6 +8,7 @@
 #include <sea/mm/context.h>
 #include <sea/sys/stat.h>
 #include <sea/kernel.h>
+#include <sea/mm/vmem.h>
 
 #define KERN_STACK_SIZE 0x16000
 
@@ -84,6 +85,7 @@ struct thread_shared_data {
 
 	struct llist mappings;
 	mutex_t map_lock;
+	vma_t mmf_vmem;
 };
 
 typedef struct __cpu_t__ cpu_t;
@@ -240,5 +242,7 @@ extern void arch_do_switch_to_user_mode();
 void arch_tm_set_current_task_marker(addr_t *space, addr_t task);
 
 #include <sea/mm/vmm.h>
+
+#define MMF_VMEM_NUM_INDEX_PAGES 12
 
 #endif

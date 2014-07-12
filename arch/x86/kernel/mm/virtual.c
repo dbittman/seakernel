@@ -148,7 +148,8 @@ addr_t arch_mm_vm_get_map(addr_t v, addr_t *p, unsigned locked)
 		mutex_acquire(&pd_cur_data->lock);
 	if(!pd[pt_idx])
 	{
-		mutex_release(&pd_cur_data->lock);
+		if(kernel_task && !locked)
+			mutex_release(&pd_cur_data->lock);
 		return 0;
 	}
 	unsigned ret = page_tables[vp] & PAGE_MASK;
@@ -168,7 +169,8 @@ void arch_mm_vm_set_attrib(addr_t v, short attr)
 		mutex_acquire(&pd_cur_data->lock);
 	if(!pd[pt_idx])
 	{
-		mutex_release(&pd_cur_data->lock);
+		if(kernel_task)
+			mutex_release(&pd_cur_data->lock);
 		return;
 	}
 	unsigned ret = page_tables[vp] & PAGE_MASK;
@@ -196,7 +198,8 @@ unsigned int arch_mm_vm_get_attrib(addr_t v, unsigned *p, unsigned locked)
 		mutex_acquire(&pd_cur_data->lock);
 	if(!pd[pt_idx])
 	{
-		mutex_release(&pd_cur_data->lock);
+		if(kernel_task && !locked)
+			mutex_release(&pd_cur_data->lock);
 		return 0;
 	}
 	unsigned ret = page_tables[vp] & ATTRIB_MASK;

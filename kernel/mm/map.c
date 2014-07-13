@@ -83,6 +83,8 @@ addr_t mm_establish_mapping(struct inode *node, addr_t virt,
 		int prot, int flags, size_t offset, size_t length)
 {
 	assert(node);
+	if(!(flags & MAP_ANONYMOUS) && (offset + length > (size_t)node->len))
+		return -EINVAL;
 	mutex_acquire(&current_task->thread->map_lock);
 	vnode_t *vn = acquire_virtual_location(&virt, flags & MAP_FIXED, length);
 	if(!vn && !virt)

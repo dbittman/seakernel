@@ -23,6 +23,8 @@ addr_t mm_mmap(addr_t address, size_t length, int prot, int flags, int fd, size_
 		node = f->inode;
 		add_atomic(&f->inode->count, 1);
 	}
+	/* a mapping replaces any other mapping that it overwrites, according to opengroup */
+	mm_mapping_munmap(address, length);
 	addr_t mapped_address = mm_establish_mapping(node, address, prot, flags, offset, length);
 	vfs_iput(node);
 	return mapped_address;

@@ -31,7 +31,7 @@ static int is_valid_location(addr_t addr)
 static vnode_t *acquire_virtual_location(addr_t *virt, int fixed, size_t length)
 {
 	assert(virt);
-	if(is_valid_location(*virt)) {
+	if(is_valid_location(*virt) && is_valid_location(*virt + length)) {
 		return 0;
 	} else if(fixed) {
 		*virt = 0;

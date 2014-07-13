@@ -135,7 +135,10 @@ void fs_inode_sync_physical_page(struct inode *node, addr_t virt, size_t offset)
 	if(!mm_vm_get_map(virt, 0, 0))
 		return;
 	/* again, no real good way to notify userspace of a failure */
-	if(node->i_ops && vfs_write_inode(node, offset, PAGE_SIZE, (void *)virt) < 0)
+	size_t len = PAGE_SIZE;
+	if(len + offset > node->length)
+		len = node->length - offset;
+	if(node->i_ops && vfs_write_inode(node, offset, len, (void *)virt) < 0)
 		printk(0, "[mminode]: warning: failed to writeback data\n");
 }
 

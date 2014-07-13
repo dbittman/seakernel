@@ -9,8 +9,27 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/fs/inode.h>
 #include <sea/tm/schedule.h>
+#include <sea/ll.h>
+#include <sea/mm/map.h>
 
 unsigned running_processes = 0;
+
+static void __copy_mappings(task_t *ch, task_t *pa)
+{
+	mutex_acquire(&pa->thread->map_lock);
+	struct llistnode *node;
+	struct memmap *map;
+	ll_for_each_entry(&pa->thread->mappings, node, struct memmap *, map) {
+		if(map->flags & MAP_SHARED) {
+			struct memmap *n = kmalloc(sizeof(*map));
+			memcpy(n, map, sizeof(*n));
+			add_atomic(&n->node->count, 1);
+			fs_inode_map_region(n->node, n->offset, n->length);
+			n->entry = ll_insert(&ch->thread->mappings, n);
+		}
+	}
+	mutex_release(&pa->thread->map_lock);
+}
 
 static void copy_thread_data(task_t *task, task_t *parent)
 {
@@ -30,6 +49,7 @@ static void copy_thread_data(task_t *task, task_t *parent)
 	task->thread->real_uid = parent->thread->real_uid;
 	task->thread->real_gid = parent->thread->real_gid;
 	task->thread->global_sig_mask = parent->thread->global_sig_mask;
+	__copy_mappings(task, parent);
 }
 
 static void copy_task_struct(task_t *task, task_t *parent, char share_thread_data)

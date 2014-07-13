@@ -6,6 +6,7 @@
 #include <sea/ll.h>
 #include <sea/mm/map.h>
 #include <sea/mm/vmem.h>
+#include <sea/cpu/atomic.h>
 
 static struct memmap *initialize_map(struct inode *node, 
 			addr_t virt_start, int prot, int flags, size_t offset, size_t length)
@@ -62,10 +63,9 @@ static void remove_mapping(struct memmap *map)
 
 static void disengage_mapping(struct memmap *map)
 {
-	if(map->flags & MAP_SHARED) {
+	if((map->flags & MAP_SHARED)) {
 		fs_inode_unmap_region(map->node, map->virtual, map->offset, map->length);
 	} else {
-		/* MAP_ANONYMOUS and MAP_PRIVATE are unmapped in the same way. MAP_PRIVATE never gets written back */
 		size_t o=0;
 		for(addr_t v = map->virtual;v < (map->virtual + map->length);v += PAGE_SIZE, o += PAGE_SIZE) {
 			if(mm_vm_get_map(v, 0, 0)) 
@@ -77,6 +77,7 @@ static void disengage_mapping(struct memmap *map)
 addr_t mm_establish_mapping(struct inode *node, addr_t virt, 
 		int prot, int flags, size_t offset, size_t length)
 {
+	assert(node);
 	mutex_acquire(&current_task->thread->map_lock);
 	vnode_t *vn = acquire_virtual_location(&virt, flags & MAP_FIXED, length);
 	if(!vn && !virt)
@@ -86,8 +87,9 @@ addr_t mm_establish_mapping(struct inode *node, addr_t virt,
 	struct memmap *map = initialize_map(node, virt, prot, flags, offset, length);
 	if(vn)
 		map->vn = vn;
+	add_atomic(&node->count, 1);
 	record_mapping(map);
-	if(flags & MAP_SHARED)
+	if((flags & MAP_SHARED))
 		fs_inode_map_region(map->node, map->offset, map->length);
 	mutex_release(&current_task->thread->map_lock);
 	return 0;
@@ -98,8 +100,7 @@ int mm_disestablish_mapping(struct memmap *map)
 	mutex_acquire(&current_task->thread->map_lock);
 	disengage_mapping(map);
 	release_virtual_location(map->vn);
-	if(map->node)
-		vfs_iput(map->node);
+	vfs_iput(map->node);
 	map->node = 0;
 	remove_mapping(map);
 	kfree(map);
@@ -109,12 +110,12 @@ int mm_disestablish_mapping(struct memmap *map)
 
 int mm_sync_mapping(struct memmap *map, addr_t start, size_t length, int flags)
 {
-	if(!(map->flags & MAP_SHARED))
+	if(!(map->flags & MAP_SHARED) || (map->flags & MAP_ANONYMOUS))
 		return 0;
-	
 	size_t fo = (start - map->virtual);
 	for(addr_t v = 0;v < length;v += PAGE_SIZE) {
-		fs_inode_sync_physical_page(map->node, start + v, map->offset + fo + v);
+		if(mm_vm_get_map(start + v, 0, 0))
+			fs_inode_sync_physical_page(map->node, start + v, map->offset + fo + v);
 	}
 	return 0;
 }
@@ -139,7 +140,6 @@ static int load_file_data(struct memmap *map, addr_t fault_address)
 	addr_t address = fault_address & PAGE_MASK;
 	size_t offset = map->offset + (address - map->virtual);
 	assert(!(offset & ~PAGE_MASK));
-	
 	int attr = ((map->prot & PROT_WRITE) ? PAGE_WRITE : 0);
 	if(map->flags & MAP_SHARED) {
 		fs_inode_map_shared_physical_page(map->node, address, offset, FS_INODE_POPULATE, PAGE_PRESENT | PAGE_USER | attr);
@@ -158,17 +158,6 @@ int mm_page_fault_test_mappings(addr_t address)
 		return -1;
 	}
 
-	if(map->flags & MAP_ANONYMOUS)
-	{
-		if(!(mm_vm_get_attrib(address, 0, 0) & PAGE_PRESENT)) {
-			int attr = ((map->prot & PROT_WRITE) ? PAGE_WRITE : 0);
-			mm_vm_map(address, mm_alloc_physical_page(), PAGE_PRESENT | PAGE_USER | attr, 0);
-			return 0;
-		} else {
-			mutex_release(&current_task->thread->map_lock);
-			return -1;
-		}
-	}
 	if(load_file_data(map, address) != -1)
 	{
 		mutex_release(&current_task->thread->map_lock);

@@ -3,6 +3,7 @@
 #include <sea/tm/process.h>
 #include <sea/mm/swap.h>
 #include <sea/loader/elf.h>
+#include <sea/mm/map.h>
 static void print_pfe(int x, registers_t *regs, addr_t cr2)
 {
 	assert(regs);
@@ -67,8 +68,9 @@ void arch_mm_page_fault(registers_t *regs, int int_no)
 		}
 		#endif
 		
-		//if(pfault_mmf_check(err_code, cr2))
-		//	return;
+		if(mm_page_fault_test_mappings(cr2) == 0)
+			return;
+		
 		print_pfe(0, regs, cr2);
 		mutex_acquire(&pd_cur_data->lock);
 		if(map_in_page(cr2, err_code)) {

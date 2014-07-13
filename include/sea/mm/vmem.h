@@ -28,5 +28,6 @@ int vmem_create(vma_t *v, addr_t addr, addr_t max, int num_ipages);
 vnode_t *vmem_find_node(vma_t *v, addr_t addr);
 int vmem_remove_node(vma_t *v, vnode_t *n);
 vnode_t *vmem_insert_node(vma_t *v, unsigned num_p);
+vnode_t *vmem_split_node(vma_t *v, vnode_t *n, unsigned new_np);
 
 #endif

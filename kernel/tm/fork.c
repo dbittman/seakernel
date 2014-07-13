@@ -28,6 +28,10 @@ static void __copy_mappings(task_t *ch, task_t *pa)
 			n->entry = ll_insert(&ch->thread->mappings, n);
 		}
 	}
+	/* for this simple copying of data to work, we rely on the address space being cloned BEFORE
+	 * this is called */
+	memcpy(&(ch->thread->mmf_vmem), &(pa->thread->mmf_vmem), sizeof(pa->thread->mmf_vmem));
+	ch->thread->mmf_vmem.lock.lock = 0;
 	mutex_release(&pa->thread->map_lock);
 }
 

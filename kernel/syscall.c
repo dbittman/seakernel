@@ -20,6 +20,7 @@
 #include <sea/dm/pipe.h>
 #include <sea/loader/exec.h>
 #include <sea/cpu/atomic.h>
+#include <sea/mm/map.h>
 static unsigned int num_syscalls=0;
 //#define SC_DEBUG 1
 int sys_null(long a, long b, long c, long d, long e)
@@ -101,7 +102,7 @@ void *syscall_table[129] = {
 	
 	SC /**64*/sys_nice,
 	
-	SC sys_null,       SC sys_null,       SC sys_null,      SC sys_task_stat, 
+	SC sys_mmap,       SC sys_munmap,       SC sys_msync,      SC sys_task_stat, 
 	SC sys_null,       SC sys_null,       SC tm_delay,         SC kernel_reset,
 	SC kernel_poweroff,SC tm_get_uid,        SC tm_get_gid,       SC tm_set_uid, 
 	SC tm_set_gid,        SC sys_null,    SC sys_task_pstat,    SC sys_mount2,
@@ -170,7 +171,7 @@ int check_pointers(volatile registers_t *regs)
 			
 		case SYS_TIMES: case SYS_GETPWD: case SYS_PIPE: 
 		case SYS_MEMSTAT: case SYS_GETTIME: case SYS_GETHOSTNAME:
-		case SYS_UNAME:
+		case SYS_UNAME: case SYS_MSYNC: case SYS_MUNMAP:
 			return mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_A_, 0);
 			
 		case SYS_SETSIG: case SYS_WAITPID:
@@ -212,7 +213,12 @@ int check_pointers(volatile registers_t *regs)
 			if(!mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_A_, 0))
 				return 0;
 			break;
-		
+		case SYS_MMAP:
+			if(!mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_A_, 1))
+				return 0;
+			if(!mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_B_, 0))
+				return 0;
+			break;
 		//default:
 		//	printk(0, ":: UNTESTED SYSCALL: %d\n", SYSCALL_NUM_AND_RET);
 	}

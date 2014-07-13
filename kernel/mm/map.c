@@ -61,17 +61,22 @@ static void remove_mapping(struct memmap *map)
 	ll_remove(&current_task->thread->mappings, map->entry);
 }
 
-static void disengage_mapping(struct memmap *map)
+static void disengage_mapping_region(struct memmap *map, addr_t start, size_t offset, size_t length)
 {
 	if((map->flags & MAP_SHARED)) {
-		fs_inode_unmap_region(map->node, map->virtual, map->offset, map->length);
+		fs_inode_unmap_region(map->node, start, offset, length);
 	} else {
 		size_t o=0;
-		for(addr_t v = map->virtual;v < (map->virtual + map->length);v += PAGE_SIZE, o += PAGE_SIZE) {
+		for(addr_t v = start;v < (start + length);v += PAGE_SIZE, o += PAGE_SIZE) {
 			if(mm_vm_get_map(v, 0, 0)) 
 				mm_vm_unmap(v, 0);
 		}
 	}
+}
+
+static void disengage_mapping(struct memmap *map)
+{
+	disengage_mapping_region(map, map->virtual, map->offset, map->length);
 }
 
 addr_t mm_establish_mapping(struct inode *node, addr_t virt, 
@@ -92,20 +97,26 @@ addr_t mm_establish_mapping(struct inode *node, addr_t virt,
 	if((flags & MAP_SHARED))
 		fs_inode_map_region(map->node, map->offset, map->length);
 	mutex_release(&current_task->thread->map_lock);
-	return 0;
+	return virt;
 }
 
-int mm_disestablish_mapping(struct memmap *map)
+static int __do_mm_disestablish_mapping(struct memmap *map)
 {	
-	mutex_acquire(&current_task->thread->map_lock);
 	disengage_mapping(map);
 	release_virtual_location(map->vn);
 	vfs_iput(map->node);
 	map->node = 0;
 	remove_mapping(map);
 	kfree(map);
-	mutex_release(&current_task->thread->map_lock);
 	return 0;
+}
+
+int mm_disestablish_mapping(struct memmap *map)
+{
+	mutex_acquire(&current_task->thread->map_lock);
+	int ret = __do_mm_disestablish_mapping(map);
+	mutex_release(&current_task->thread->map_lock);
+	return ret;
 }
 
 int mm_sync_mapping(struct memmap *map, addr_t start, size_t length, int flags)
@@ -165,5 +176,56 @@ int mm_page_fault_test_mappings(addr_t address)
 	}
 	mutex_release(&current_task->thread->map_lock);
 	return -1;
+}
+
+int mm_mapping_msync(addr_t start, size_t length, int flags)
+{
+	mutex_acquire(&current_task->thread->map_lock);
+	for(addr_t addr = start; addr < (start + length); addr += PAGE_SIZE)
+	{
+		struct memmap *map = find_mapping(addr);
+		mm_sync_mapping(map, addr, PAGE_SIZE, flags);
+	}
+	mutex_release(&current_task->thread->map_lock);
+	return 0;
+}
+
+int mm_mapping_munmap(addr_t start, size_t length)
+{
+	mutex_acquire(&current_task->thread->map_lock);
+	for(addr_t addr = start; addr < (start + length); addr += PAGE_SIZE)
+	{
+		struct memmap *map = find_mapping(addr);
+		if(!map)
+			continue;
+		mm_sync_mapping(map, addr, PAGE_SIZE, 0);
+		disengage_mapping_region(map, addr, map->offset + (addr - map->virtual), PAGE_SIZE);
+		if(map->virtual == addr) {
+			/* page is at the start of the map */
+			map->virtual += PAGE_SIZE;
+			map->offset  += PAGE_SIZE;
+			map->length  -= PAGE_SIZE;
+		} else if((map->virtual + (map->length - PAGE_SIZE)) == addr) {
+			/* page is at the end of the map */
+			map->length -= PAGE_SIZE;
+		} else {
+			/* the page splits the map */
+			struct memmap *n = initialize_map(map->node, map->virtual, map->prot, map->flags, map->offset, map->length);
+			n->length -= ((addr + PAGE_SIZE) - n->virtual);
+			n->offset += (addr - n->virtual) + PAGE_SIZE;
+			n->virtual = addr + PAGE_SIZE;
+			map->length = (addr - map->virtual);
+			if(map->vn) {
+				/* split virtual node */
+				n->vn = vmem_split_node(&current_task->thread->mmf_vmem, map->vn, map->length / PAGE_SIZE);
+			}
+			add_atomic(&n->node->count, 1);
+			record_mapping(n);
+		}
+		if(map->length == 0)
+			__do_mm_disestablish_mapping(map);
+	}
+	mutex_release(&current_task->thread->map_lock);
+	return 0;
 }
 

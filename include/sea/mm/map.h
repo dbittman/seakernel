@@ -14,6 +14,15 @@ struct memmap {
 	struct llistnode *entry;
 	vnode_t *vn;
 };
+
+struct __mmap_args {
+	size_t length;
+	int prot;
+	int flags;
+	int fd;
+	size_t offset;
+};
+
 /*
  *  * Prots to 'mmap'.
  *   */
@@ -55,6 +64,12 @@ addr_t mm_establish_mapping(struct inode *node, addr_t virt,
 int mm_disestablish_mapping(struct memmap *map);
 int mm_sync_mapping(struct memmap *map, addr_t start, size_t length, int flags);
 int mm_page_fault_test_mappings(addr_t address);
+int mm_mapping_munmap(addr_t start, size_t length);
+int mm_mapping_msync(addr_t start, size_t length, int flags);
 
+int sys_msync(void *address, size_t length, int flags);
+int sys_munmap(void *addr, size_t length);
+void *sys_mmap(void *address, struct __mmap_args *args);
+addr_t mm_mmap(addr_t address, size_t length, int prot, int flags, int fd, size_t offset);
 #endif
 

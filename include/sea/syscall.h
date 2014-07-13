@@ -69,8 +69,8 @@ int sys_setup();
 #define SYS_UNUSED20	 48
 #define SYS_UNUSED10		 49
 
-#define SYS_MMAP		 50
-#define SYS_MUNMAP		 51
+#define SYS_UNUSED67		 50
+#define SYS_UNUSED68		 51
 #define SYS_SYNC		 52
 #define SYS_RMDIR		 53
 #define SYS_FSYNC		 54
@@ -87,9 +87,9 @@ int sys_setup();
 #define SYS_SWAPOFF 		 63
 #define SYS_NICE    		 64
 
-#define SYS_UNUSED4		 65
-#define SYS_UNUSED5		 66
-#define SYS_UNUSED6		 67
+#define SYS_MMAP		 65
+#define SYS_MUNMAP		 66
+#define SYS_MSYNC		 67
 
 #define SYS_TSTAT   		 68
 

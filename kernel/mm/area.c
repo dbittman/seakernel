@@ -84,6 +84,29 @@ vnode_t *vmem_insert_node(vma_t *v, unsigned num_p)
 	return newn;
 }
 
+vnode_t *vmem_split_node(vma_t *v, vnode_t *n, unsigned new_np)
+{
+	mutex_acquire(&v->lock);
+	unsigned i=0;
+	assert(new_np && new_np < n->num_pages);
+	while(i < NUM_NODES(v) && v->nodes[i]) ++i;
+	/* TODO: User space can make this crash... */
+	assert(i < NUM_NODES(v));
+	v->nodes[i] = 1;
+	vnode_t *newn = (vnode_t *)(v->addr + i * sizeof(vnode_t));
+	memset(newn, 0, sizeof(*newn));
+	newn->next = n->next;
+	n->next = newn;
+
+	newn->num_pages = (n->num_pages - new_np);
+	n->num_pages = new_np;
+	newn->addr = n->addr + n->num_pages*PAGE_SIZE;
+
+	v->used_nodes++;
+	mutex_release(&v->lock);
+	return newn;
+}
+
 int vmem_remove_node(vma_t *v, vnode_t *n)
 {
 	mutex_acquire(&v->lock);

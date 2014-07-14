@@ -6,6 +6,7 @@
 #include <sea/types.h>
 #include <sea/fs/file.h>
 #include <sea/cpu/atomic.h>
+#include <sea/sys/fcntl.h>
 
 addr_t mm_mmap(addr_t address, size_t length, int prot, int flags, int fd, size_t offset)
 {
@@ -23,6 +24,14 @@ addr_t mm_mmap(addr_t address, size_t length, int prot, int flags, int fd, size_
 		struct file *f = fs_get_file_pointer(current_task, fd);
 		if(!f)
 			return -EBADF;
+		if(!(f->flags & _FREAD)) {
+			fs_fput(current_task, fd, 0);
+			return -EACCES;
+		}
+		if(!(flags & MAP_PRIVATE) && (prot & PROT_WRITE) && !(f->flags & _FWRITE)) {
+			fs_fput(current_task, fd, 0);
+			return -EACCES;
+		}
 		node = f->inode;
 		add_atomic(&f->inode->count, 1);
 		fs_fput(current_task, fd, 0);

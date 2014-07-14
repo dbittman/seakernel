@@ -245,14 +245,17 @@ int mm_mapping_munmap(addr_t start, size_t length)
 	return 0;
 }
 
+/* called by exit and exec */
 void mm_destroy_all_mappings(task_t *t)
 {
-	/* don't need to worry about locking, we're the last thread */
+	mutex_acquire(&current_task->thread->map_lock);
 	struct llistnode *cur, *next;
 	struct memmap *map;
 	ll_for_each_entry_safe(&(t->thread->mappings), cur, next, struct memmap *, map) {
-		mm_disestablish_mapping(map);
+		disengage_mapping(map);
+		__do_mm_disestablish_mapping(map);
 	}
 	assert(t->thread->mappings.num == 0);
+	mutex_release(&current_task->thread->map_lock);
 }
 

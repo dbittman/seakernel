@@ -18,6 +18,7 @@ Roadmap:
 0.3 B2
 	* make sure all features listed in termcap are properly implemented
 	* add chaining to file descriptors (and modify the return value for the sysconf entry)
+	* Fix O_APPEND
 
 0.4 
 	* Proper Threading

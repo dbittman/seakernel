@@ -123,7 +123,7 @@ int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw,
 	cmdReg |= 0x1 | (rw == READ ? 8 : 0);
 	cont->irqwait=0;
 	int ret = size * count;
-	cpu_interrupt_set(1);
+	int old_int = cpu_interrupt_set(1);
 	outb(cont->port_bmr_base + BMR_COMMAND, cmdReg);
 	timeout=1000000;
 	while((ret && timeout--)) {
@@ -142,6 +142,7 @@ int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw,
 		printk(4, "[ata]: timeout on waiting for data transfer\n");
 		return -EIO;
 	}
+	cpu_interrupt_set(old_int);
 	st = inb(cont->port_bmr_base + BMR_COMMAND);
 	outb(cont->port_bmr_base + BMR_COMMAND, st & ~0x1);
 	

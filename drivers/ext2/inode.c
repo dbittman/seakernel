@@ -609,7 +609,6 @@ int ext2_inode_readblk(ext2_inode_t* inode, uint32_t block, void* buf, size_t co
 		b = offset / block_size;
 		ext2_read_block(fs, b, (unsigned char *)buf + block_size * i);
 	}
-	
 	return count;
 }
 

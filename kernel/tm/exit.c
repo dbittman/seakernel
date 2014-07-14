@@ -138,8 +138,8 @@ void tm_exit(int code)
 		if(t->thread->root)vfs_iput(t->thread->root);
 		if(t->thread->pwd) vfs_iput(t->thread->pwd);
 		mutex_destroy(&t->thread->files_lock);
-		mutex_destroy(&t->thread->map_lock);
 		__destroy_all_mappings(t);
+		mutex_destroy(&t->thread->map_lock);
 		
 		void *addr = t->thread;
 		t->thread = 0;

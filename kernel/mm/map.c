@@ -83,12 +83,14 @@ addr_t mm_establish_mapping(struct inode *node, addr_t virt,
 		int prot, int flags, size_t offset, size_t length)
 {
 	assert(node);
-	if(!(flags & MAP_ANONYMOUS) && (offset + length > (size_t)node->len))
+	if(!(flags & MAP_ANONYMOUS) && (offset >= (size_t)node->len)) {
 		return -EINVAL;
+	}
 	mutex_acquire(&current_task->thread->map_lock);
 	vnode_t *vn = acquire_virtual_location(&virt, flags & MAP_FIXED, length);
-	if(!vn && !virt)
+	if(!vn && !virt) {
 		return -ENOMEM;
+	}
 	if(vn)
 		virt = vn->addr;
 	struct memmap *map = initialize_map(node, virt, prot, flags, offset, length);
@@ -96,6 +98,12 @@ addr_t mm_establish_mapping(struct inode *node, addr_t virt,
 		map->vn = vn;
 	add_atomic(&node->count, 1);
 	record_mapping(map);
+
+	for(addr_t s=virt;s < (virt + length);s+=PAGE_SIZE)
+	{
+		if(mm_vm_get_map(s, 0, 0))
+			mm_vm_unmap(s, 0);
+	}
 	if((flags & MAP_SHARED))
 		fs_inode_map_region(map->node, map->offset, map->length);
 	mutex_release(&current_task->thread->map_lock);
@@ -104,7 +112,6 @@ addr_t mm_establish_mapping(struct inode *node, addr_t virt,
 
 static int __do_mm_disestablish_mapping(struct memmap *map)
 {	
-	disengage_mapping(map);
 	release_virtual_location(map->vn);
 	vfs_iput(map->node);
 	map->node = 0;
@@ -116,6 +123,7 @@ static int __do_mm_disestablish_mapping(struct memmap *map)
 int mm_disestablish_mapping(struct memmap *map)
 {
 	mutex_acquire(&current_task->thread->map_lock);
+	disengage_mapping(map);
 	int ret = __do_mm_disestablish_mapping(map);
 	mutex_release(&current_task->thread->map_lock);
 	return ret;
@@ -162,7 +170,7 @@ static int load_file_data(struct memmap *map, addr_t fault_address)
 	return 0;
 }
 
-int mm_page_fault_test_mappings(addr_t address)
+int mm_page_fault_test_mappings(addr_t address, int pf_cause)
 {
 	mutex_acquire(&current_task->thread->map_lock);
 	struct memmap *map = find_mapping(address);
@@ -170,12 +178,18 @@ int mm_page_fault_test_mappings(addr_t address)
 		mutex_release(&current_task->thread->map_lock);
 		return -1;
 	}
-
+	/* check protections */
+	if((pf_cause & PF_CAUSE_READ) && !(map->prot & PROT_READ))
+		goto out;
+	if((pf_cause & PF_CAUSE_WRITE) && !(map->prot & PROT_WRITE))
+		goto out;
+	
 	if(load_file_data(map, address) != -1)
 	{
 		mutex_release(&current_task->thread->map_lock);
 		return 0;
 	}
+out:
 	mutex_release(&current_task->thread->map_lock);
 	return -1;
 }

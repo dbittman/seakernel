@@ -13,20 +13,19 @@
 #include <sea/mm/map.h>
 
 unsigned running_processes = 0;
-
 static void __copy_mappings(task_t *ch, task_t *pa)
 {
 	mutex_acquire(&pa->thread->map_lock);
 	struct llistnode *node;
 	struct memmap *map;
 	ll_for_each_entry(&pa->thread->mappings, node, struct memmap *, map) {
+		struct memmap *n = kmalloc(sizeof(*map));
+		memcpy(n, map, sizeof(*n));
+		add_atomic(&n->node->count, 1);
 		if(map->flags & MAP_SHARED) {
-			struct memmap *n = kmalloc(sizeof(*map));
-			memcpy(n, map, sizeof(*n));
-			add_atomic(&n->node->count, 1);
 			fs_inode_map_region(n->node, n->offset, n->length);
-			n->entry = ll_insert(&ch->thread->mappings, n);
 		}
+		n->entry = ll_insert(&ch->thread->mappings, n);
 	}
 	/* for this simple copying of data to work, we rely on the address space being cloned BEFORE
 	 * this is called */

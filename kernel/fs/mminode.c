@@ -46,6 +46,7 @@ addr_t fs_inode_map_private_physical_page(struct inode *node, addr_t virt,
 	/* try to read the data. If this fails, we don't really have a good way 
 	 * of telling userspace this...eh.
 	 */
+
 	if(node->i_ops && (err=vfs_read_inode(node, offset, PAGE_SIZE, (void *)virt) < 0))
 		printk(0, "[mminode]: read inode failed with %d\n", err);
 	return ph;
@@ -75,8 +76,9 @@ addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt,
 		entry->page = mm_alloc_physical_page();
 		if(mm_vm_get_map(virt, 0, 0))
 			panic(0, "trying to remap mminode shared section");
-		/* DON'T specify NOCLEAR, since read_inode may not fill up the whole page */
-		mm_vm_map(virt, entry->page, attrib, 0);
+		/* DON'T specify NOCLEAR, since read_inode may not fill up the whole page. Also,
+		 * specify PAGE_LINK so that mm_vm_clone doesn't copy shared pages */
+		mm_vm_map(virt, entry->page, attrib | PAGE_LINK, 0);
 		int err;
 		/* try to read the data. If this fails, we don't really have a good way 
 		 * of telling userspace this...eh.
@@ -167,6 +169,8 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 			{
 				/* count is now zero. write back data, free the page, delete the entry, free the entry */
 				fs_inode_sync_physical_page(node, virt + (i - page_number)*PAGE_SIZE, i * PAGE_SIZE);
+				addr_t p = mm_vm_get_map(virt + (i - page_number)*PAGE_SIZE, 0, 0);
+				assert(!p || p == entry->page);
 				if(entry->page)
 					mm_free_physical_page(entry->page);
 				sub_atomic(&node->mapped_pages_count, 1);
@@ -177,10 +181,14 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 				sub_atomic(&node->mapped_entries_count, 1);
 			} else
 				mutex_release(&entry->lock);
-			/* we'll actually do the unmapping too */
+		}
+		/* we'll actually do the unmapping too */
+		unsigned attr;
+		if(mm_vm_get_map(virt + (i - page_number)*PAGE_SIZE, 0, 0) 
+				&& mm_vm_get_attrib(virt + (i - page_number)*PAGE_SIZE, &attr, 0)) {
+			assert(attr & PAGE_LINK);
 			mm_vm_unmap_only(virt + (i - page_number)*PAGE_SIZE, 0);
 		}
-		/* and if the entry isn't found, we're all good! */
 	}
 	mutex_release(&node->mappings_lock);
 }

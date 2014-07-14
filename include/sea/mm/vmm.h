@@ -67,4 +67,13 @@ static void user_map_if_not_mapped_noclear(addr_t loc)
 	else
 		mm_vm_set_attrib(loc & PAGE_MASK, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
 }
+
+#define PF_CAUSE_NONPRESENT  1
+#define PF_CAUSE_READ         2
+#define PF_CAUSE_WRITE        4
+#define PF_CAUSE_IFETCH       8
+#define PF_CAUSE_RSVD      0x10
+#define PF_CAUSE_USER      0x20
+#define PF_CAUSE_SUPER     0x40
+
 #endif

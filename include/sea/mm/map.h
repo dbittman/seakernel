@@ -20,7 +20,7 @@ struct __mmap_args {
 	int prot;
 	int flags;
 	int fd;
-	size_t offset;
+	off_t offset;
 };
 
 /*
@@ -63,7 +63,7 @@ addr_t mm_establish_mapping(struct inode *node, addr_t virt,
 		int prot, int flags, size_t offset, size_t length);
 int mm_disestablish_mapping(struct memmap *map);
 int mm_sync_mapping(struct memmap *map, addr_t start, size_t length, int flags);
-int mm_page_fault_test_mappings(addr_t address);
+int mm_page_fault_test_mappings(addr_t address, int);
 int mm_mapping_munmap(addr_t start, size_t length);
 int mm_mapping_msync(addr_t start, size_t length, int flags);
 

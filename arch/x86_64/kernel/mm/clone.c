@@ -19,10 +19,17 @@ static void copy_pde(page_dir_t *pd, page_dir_t *parent_pd, int idx)
 		if(parent[i])
 		{
 			unsigned attr = parent[i] & ATTRIB_MASK;
-			addr_t new_page = mm_alloc_physical_page();
 			addr_t parent_page = parent[i] & PAGE_MASK;
-			memcpy((void *)(new_page + PHYS_PAGE_MAP), (void *)(parent_page + PHYS_PAGE_MAP), PAGE_SIZE);
-			entries[i] = new_page | attr;
+			if(attr & PAGE_LINK) {
+				/* we're just linking to the paren't physical page.
+				 * see warnings about PAGE_LINK where PAGE_LINK is
+				 * defined */
+				entries[i] = parent_page | attr;
+			} else {
+				addr_t new_page = mm_alloc_physical_page();
+				memcpy((void *)(new_page + PHYS_PAGE_MAP), (void *)(parent_page + PHYS_PAGE_MAP), PAGE_SIZE);
+				entries[i] = new_page | attr;
+			}
 		} else
 			entries[i]=0;
 	}

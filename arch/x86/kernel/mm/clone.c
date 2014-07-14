@@ -25,10 +25,20 @@ static int vm_do_copy_table(int i, page_dir_t *new, page_dir_t *from, char cow)
 	{
 		if(mm_vm_get_map(virt, &phyz, 1) && mm_vm_get_attrib(virt, &attrib, 1) && virt != VIRT_TEMP)
 		{
-			/* OK, this page exists, we have the physical address of it too */
-			addr_t page = mm_alloc_physical_page();
-			mm_copy_page_physical((addr_t)phyz /* Source */, (addr_t)page /* Destination*/);
-			table[q] = (addr_t)(page | attrib);
+			/* OK, this page exists */
+			if(attrib & PAGE_LINK) {
+				/* but we're only going to link it.
+				 * WARNING: Features that use PAGE_LINK must be VERY CAREFUL to mm_vm_unmap_only that
+				 * page BEFORE the address space is freed normally, since that function DOES NOT KNOW
+				 * that multiple mappings may use that physical page! This can lead to memory leaks
+				 * and/or duplicate pages in the page stack!!! */
+				table[q] = (addr_t)(phyz | attrib);
+			} else {
+				/* copy like normal */
+				addr_t page = mm_alloc_physical_page();
+				mm_copy_page_physical((addr_t)phyz /* Source */, (addr_t)page /* Destination*/);
+				table[q] = (addr_t)(page | attrib);
+			}
 		}
 	}
 	new[i] = table_phys | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;

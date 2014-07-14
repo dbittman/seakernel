@@ -43,7 +43,6 @@ addr_t mm_mmap(addr_t address, size_t length, int prot, int flags, int fd, size_
 	return mapped_address;
 }
 
-/* TODO: Check file permissions and flags */
 void *sys_mmap(void *address, struct __mmap_args *args)
 {
 	if(((addr_t)address & ~PAGE_MASK))

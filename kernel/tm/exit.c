@@ -101,18 +101,6 @@ void tm_kill_process(unsigned int pid)
 	}
 }
 
-void __destroy_all_mappings(task_t *t)
-{
-	/* don't need to worry about locking, we're the last thread */
-	struct llistnode *cur, *next;
-	struct memmap *map;
-	ll_for_each_entry_safe(&(t->thread->mappings), cur, next, struct memmap *, map) {
-		mm_disestablish_mapping(map);
-	}
-	assert(t->thread->mappings.num == 0);
-	ll_destroy(&(t->thread->mappings));
-}
-
 void tm_exit(int code)
 {
 	if(!current_task || current_task->pid == 0) 
@@ -138,7 +126,8 @@ void tm_exit(int code)
 		if(t->thread->root)vfs_iput(t->thread->root);
 		if(t->thread->pwd) vfs_iput(t->thread->pwd);
 		mutex_destroy(&t->thread->files_lock);
-		__destroy_all_mappings(t);
+		mm_destroy_all_mappings(t);
+		ll_destroy(&(t->thread->mappings));
 		mutex_destroy(&t->thread->map_lock);
 		
 		void *addr = t->thread;

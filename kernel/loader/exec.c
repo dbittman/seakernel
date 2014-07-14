@@ -13,6 +13,7 @@
 #include <sea/mm/vmm.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/atomic.h>
+#include <sea/mm/map.h>
 /* Prepares a process to recieve a new executable. Desc is the descriptor of 
  * the executable. We keep it open through here so that we dont have to 
  * re-open it. */
@@ -22,6 +23,8 @@ static task_t *preexec(task_t *t, int desc)
 {
 	if(t->magic != TASK_MAGIC)
 		panic(0, "Invalid task in exec (%d)", t->pid);
+	/* unmap all mappings, specified by POSIX */
+	mm_destroy_all_mappings(t);
 	mm_free_thread_shared_directory();
 	t->sigd=0;
 	memset((void *)t->thread->signal_act, 0, sizeof(struct sigaction) * 128);

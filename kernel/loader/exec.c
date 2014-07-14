@@ -26,6 +26,9 @@ static task_t *preexec(task_t *t, int desc)
 	/* unmap all mappings, specified by POSIX */
 	mm_destroy_all_mappings(t);
 	mm_free_thread_shared_directory();
+	vmem_create_user(&(t->thread->mmf_vmem), MMF_BEGIN, MMF_END, MMF_VMEM_NUM_INDEX_PAGES);
+	for(addr_t a = MMF_BEGIN;a < (MMF_BEGIN + MMF_VMEM_NUM_INDEX_PAGES);a+=PAGE_SIZE)
+		mm_vm_set_attrib(a, PAGE_PRESENT | PAGE_WRITE);
 	t->sigd=0;
 	memset((void *)t->thread->signal_act, 0, sizeof(struct sigaction) * 128);
 	return 0;

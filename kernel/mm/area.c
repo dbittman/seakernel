@@ -158,3 +158,18 @@ int vmem_create(vma_t *v, addr_t addr, addr_t max, int num_ipages)
 	mutex_create(&v->lock, 0);
 	return 0;
 }
+
+int vmem_create_user(vma_t *v, addr_t addr, addr_t max, int num_ipages)
+{
+	memset(v, 0, sizeof(vma_t));
+	v->addr = addr;
+	v->num_ipages=num_ipages;
+	v->max = max;
+	v->used_nodes=0;
+	int i;
+	for(i=0;i<num_ipages;i++)
+		user_map_if_not_mapped(addr + i * PAGE_SIZE);
+	mutex_create(&v->lock, 0);
+	return 0;
+}
+

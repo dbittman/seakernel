@@ -39,7 +39,7 @@ addr_t fs_inode_map_private_physical_page(struct inode *node, addr_t virt,
 	assert(!(virt & ~PAGE_MASK));
 	assert(!(offset & ~PAGE_MASK));
 	if(mm_vm_get_map(virt, 0, 0))
-		panic(0, "trying to remap mminode private section");
+		panic(0, "trying to remap mminode private section %x", virt);
 	/* DON'T specify NOCLEAR, since read_inode may not fill up the whole page */
 	mm_vm_map(virt, (ph=mm_alloc_physical_page()), attrib, 0);
 	int err;

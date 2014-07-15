@@ -93,7 +93,8 @@ addr_t mm_establish_mapping(struct inode *node, addr_t virt,
 	}
 	if(vn)
 		virt = vn->addr;
-	printk(0, "[mmap]: mapping %x for %x, f=%x, p=%x: %s:%d\n", virt, length, flags, prot, node->i_ops ? node->name : "(ANON)", offset);
+	printk(0, "[mmap]: mapping %x for %x, f=%x, p=%x: %s:%d\n", 
+			virt, length, flags, prot, node->i_ops ? node->name : "(ANON)", offset);
 	struct memmap *map = initialize_map(node, virt, prot, flags, offset, length);
 	if(vn)
 		map->vn = vn;

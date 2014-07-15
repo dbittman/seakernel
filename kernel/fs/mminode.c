@@ -141,7 +141,7 @@ void fs_inode_sync_physical_page(struct inode *node, addr_t virt, size_t offset)
 	if(len + offset > (size_t)node->len)
 		len = node->len - offset;
 	if(node->i_ops && vfs_write_inode(node, offset, len, (void *)virt) < 0)
-		printk(0, "[mminode]: warning: failed to writeback data\n");
+		printk(0, "[mminode]: warning: failed to write back data\n");
 }
 
 void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_t length)

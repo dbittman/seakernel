@@ -32,6 +32,10 @@ addr_t mm_mmap(addr_t address, size_t length, int prot, int flags, int fd, size_
 			fs_fput(current_task, fd, 0);
 			return -EACCES;
 		}
+		if(!S_ISREG(f->inode->mode)) {
+			fs_fput(current_task, fd, 0);
+			return -ENODEV;
+		}
 		node = f->inode;
 		add_atomic(&f->inode->count, 1);
 		fs_fput(current_task, fd, 0);

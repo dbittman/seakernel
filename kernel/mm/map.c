@@ -31,9 +31,11 @@ static int is_valid_location(addr_t addr)
 static vnode_t *acquire_virtual_location(addr_t *virt, int fixed, size_t length)
 {
 	assert(virt);
+	/* if the given address is valid, use that. */
 	if(is_valid_location(*virt) && is_valid_location(*virt + length)) {
 		return 0;
 	} else if(fixed) {
+		/* if it wasn't valid, and MAP_FIXED was specified, fail. */
 		*virt = 0;
 		return 0;
 	}
@@ -67,6 +69,8 @@ static void disengage_mapping_region(struct memmap *map, addr_t start, size_t of
 		fs_inode_unmap_region(map->node, start, offset, length);
 	} else {
 		size_t o=0;
+		/* we don't need to tell mminode about it, since it maps the page and the forgets
+		 * about it */
 		for(addr_t v = start;v < (start + length);v += PAGE_SIZE, o += PAGE_SIZE) {
 			if(mm_vm_get_map(v, 0, 0)) 
 				mm_vm_unmap(v, 0);
@@ -87,6 +91,7 @@ addr_t mm_establish_mapping(struct inode *node, addr_t virt,
 		return -EINVAL;
 	}
 	mutex_acquire(&current_task->thread->map_lock);
+	/* get a virtual region to use */
 	vnode_t *vn = acquire_virtual_location(&virt, flags & MAP_FIXED, length);
 	if(!vn && !virt) {
 		return -ENOMEM;
@@ -98,14 +103,18 @@ addr_t mm_establish_mapping(struct inode *node, addr_t virt,
 	struct memmap *map = initialize_map(node, virt, prot, flags, offset, length);
 	if(vn)
 		map->vn = vn;
+	
 	add_atomic(&node->count, 1);
 	record_mapping(map);
 
+	/* unmap the region of previous pages */
 	for(addr_t s=virt;s < (virt + length);s+=PAGE_SIZE)
 	{
 		if(mm_vm_get_map(s, 0, 0))
 			mm_vm_unmap(s, 0);
 	}
+	/* if it's MAP_SHARED, then notify the mminode framework. Otherwise, we just
+	 * wait for a pagefault to bring in the pages */
 	if((flags & MAP_SHARED))
 		fs_inode_map_region(map->node, map->offset, map->length);
 	mutex_release(&current_task->thread->map_lock);
@@ -143,6 +152,8 @@ int mm_sync_mapping(struct memmap *map, addr_t start, size_t length, int flags)
 	return 0;
 }
 
+/* linear scan over all mappings for an address...yeah, it's a but slow, but
+ * most programs aren't going to have a large number of mapped regions...probably */
 static struct memmap *find_mapping(addr_t address)
 {
 	assert(mutex_is_locked(&current_task->thread->map_lock));
@@ -172,6 +183,9 @@ static int load_file_data(struct memmap *map, addr_t fault_address)
 	return 0;
 }
 
+/* handles a pagefault. If we can find the mapping, we need to check
+ * the cause of the fault against what we're allowed to do, and then
+ * either fail, or load the data correctly. */
 int mm_page_fault_test_mappings(addr_t address, int pf_cause)
 {
 	mutex_acquire(&current_task->thread->map_lock);
@@ -208,6 +222,8 @@ int mm_mapping_msync(addr_t start, size_t length, int flags)
 	return 0;
 }
 
+/* unmap page-by-page. This is quite slow compared to unmapping entire maps at once,
+ * but it also makes for a much simpler implementation of munmaps crazy nonsense.*/
 int mm_mapping_munmap(addr_t start, size_t length)
 {
 	mutex_acquire(&current_task->thread->map_lock);
@@ -217,9 +233,10 @@ int mm_mapping_munmap(addr_t start, size_t length)
 		if(!map)
 			continue;
 		mm_sync_mapping(map, addr, PAGE_SIZE, 0);
+		/* unmap this specific page */
 		disengage_mapping_region(map, addr, map->offset + (addr - map->virtual), PAGE_SIZE);
 		if(map->virtual == addr) {
-			/* page is at the start of the map */
+			/* page is at the start of the map, so change the mapping */
 			map->virtual += PAGE_SIZE;
 			map->offset  += PAGE_SIZE;
 			map->length  -= PAGE_SIZE;
@@ -227,16 +244,19 @@ int mm_mapping_munmap(addr_t start, size_t length)
 			/* page is at the end of the map */
 			map->length -= PAGE_SIZE;
 		} else {
-			/* the page splits the map */
+			/* the page splits the map. create a second mapping */
 			struct memmap *n = initialize_map(map->node, map->virtual, map->prot, map->flags, map->offset, map->length);
 			n->length -= ((addr + PAGE_SIZE) - n->virtual);
 			n->offset += (addr - n->virtual) + PAGE_SIZE;
 			n->virtual = addr + PAGE_SIZE;
 			map->length = (addr - map->virtual);
+			/* we don't need to notify the mminode framework that a new mapping has been created, since
+			 * the counts on the pages haven't actually changed */
 			if(map->vn) {
 				/* split virtual node */
 				n->vn = vmem_split_node(&current_task->thread->mmf_vmem, map->vn, map->length / PAGE_SIZE);
 			}
+			/* remember to increase the count of the inode... */
 			add_atomic(&n->node->count, 1);
 			record_mapping(n);
 		}

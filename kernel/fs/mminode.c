@@ -46,12 +46,16 @@ addr_t fs_inode_map_private_physical_page(struct inode *node, addr_t virt,
 	/* try to read the data. If this fails, we don't really have a good way 
 	 * of telling userspace this...eh.
 	 */
-
 	if(node->i_ops && (err=vfs_read_inode(node, offset, PAGE_SIZE, (void *)virt) < 0))
 		printk(0, "[mminode]: read inode failed with %d\n", err);
 	return ph;
 }
 
+/* try to map a physical page of an inode to a virtual address. If FS_INODE_POPULATE
+ * is passed in flags, then if the page doesn't exist, then it allocates a physical
+ * page, maps it, and loaded the data. If that flag is not passed, then it simply
+ * tries to return the physical page.
+ */
 addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt, 
 		size_t offset, int flags, int attrib)
 {
@@ -99,6 +103,7 @@ static struct physical_page *__create_entry()
 	return p;
 }
 
+/* increase the counts of all requested pages by 1 */
 void fs_inode_map_region(struct inode *node, size_t offset, size_t length)
 {
 	mutex_acquire(&node->mappings_lock);
@@ -146,6 +151,8 @@ void fs_inode_sync_physical_page(struct inode *node, addr_t virt, size_t offset)
 		printk(0, "[mminode]: warning: failed to write back data\n");
 }
 
+/* decrease the count of each requested page by 1, and unmap it from the virtual address.
+ * if the count reaches zero, sync the page, free it, and delete the entry to the hash table */
 void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_t length)
 {
 	mutex_acquire(&node->mappings_lock);

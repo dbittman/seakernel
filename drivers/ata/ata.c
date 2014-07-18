@@ -124,6 +124,10 @@ int module_exit()
 				mm_free_dma_buffer(&secondary->dma_buffers[i]);
 			}
 		}
+		if(primary->prdt_virt)
+			mm_free_dma_buffer(&primary->prdt_dma);
+		if(secondary->prdt_virt)
+			mm_free_dma_buffer(&secondary->prdt_dma);
 		mutex_destroy(primary->wait);
 		mutex_destroy(secondary->wait);
 		interrupt_unregister_handler(32 + ATA_PRIMARY_IRQ, irq1);

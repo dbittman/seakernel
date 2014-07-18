@@ -112,6 +112,7 @@ struct ata_controller {
     uint16_t                    irq;
     int                         dma_use;
     volatile unsigned           irqwait;
+	struct dma_region           prdt_dma;
     unsigned                    prdt_phys;
     uint64_t*                   prdt_virt;
 	struct dma_region           dma_buffers[512];

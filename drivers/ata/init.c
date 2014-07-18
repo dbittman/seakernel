@@ -60,9 +60,11 @@ void allocate_dma(struct ata_controller *cont)
 	addr_t buf;
 	addr_t p;
 	if(!cont->prdt_virt) {
-		buf = (addr_t)kmalloc_ap(0x1000, &p);
-		cont->prdt_virt = (uint64_t *)buf;
-		cont->prdt_phys = p;
+		cont->prdt_dma.p.size = 0x1000;
+		cont->prdt_dma.p.alignment = 0x1000;
+		mm_allocate_dma_buffer(&cont->prdt_dma);
+		cont->prdt_virt = (void *)cont->prdt_dma.v;
+		cont->prdt_phys = cont->prdt_dma.p.address;
 	}
 	for(int i=0;i<512;i++) {
 		cont->dma_buffers[i].p.size = 64 * 1024;

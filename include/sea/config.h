@@ -64,8 +64,8 @@
 #define SCHED_TTY_CYC CONFIG_SCHED_TTY_AMOUNT
 
 #define MAJ_VER 0
-#define MIN_VER 2
-#define PRE_VER 10
+#define MIN_VER 3
+#define PRE_VER 1
 
 #define KVERSION (MAJ_VER * 200 + MIN_VER * 20 + PRE_VER)
 

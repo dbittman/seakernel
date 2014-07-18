@@ -16,7 +16,7 @@
 static void process_memorymap(struct multiboot *mboot)
 {
 	addr_t i = mboot->mmap_addr;
-	unsigned int num_pages=0, unusable=0;
+	unsigned long num_pages=0, unusable=0;
 	uint64_t j=0, address, length;
 	int found_contiguous=0;
 	while(i < (mboot->mmap_addr + mboot->mmap_length)){

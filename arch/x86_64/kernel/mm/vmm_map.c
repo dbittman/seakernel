@@ -34,7 +34,6 @@ int arch_mm_vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned opt)
 	asm("invlpg (%0)"::"r" (virt));
 	if(!(opt & MAP_NOCLEAR)) 
 		memset((void *)(virt&PAGE_MASK), 0, 0x1000);
-	
 	#if CONFIG_SMP
 	if(kernel_task) {
 		if(IS_KERN_MEM(virt))

@@ -27,7 +27,7 @@ Map-based allocation is done with two functions:
 void mm_alloc_contiguous_region(struct mm_physical_region *p)
 void mm_free_contiguous_region(struct mm_physical_region *p)
 
-struct mm_physical_region contains fields 'address', 'start' and 'alignment'.
+struct mm_physical_region contains fields 'address', 'size' and 'alignment'.
 The allocation function expects size and alignment to be filled out, and will
 fill out the address field before the return of the function. If the
 allocation function is unable to allocate the requested size and alignment,

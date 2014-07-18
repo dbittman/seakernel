@@ -4,6 +4,7 @@
 #if CONFIG_MODULE_AHCI
 #include <sea/types.h>
 #include <sea/fs/inode.h>
+#include <sea/mm/dma.h>
 typedef enum
 {
 	FIS_TYPE_REG_H2D	= 0x27,	// Register FIS - host to device
@@ -317,7 +318,9 @@ struct ahci_device {
 	int idx;
 	mutex_t lock;
 	void *fis_virt, *clb_virt;
+	struct dma_region dma_clb, dma_fis;
 	void *ch[HBA_COMMAND_HEADER_NUM];
+	struct dma_region ch_dmas[HBA_COMMAND_HEADER_NUM];
 	struct ata_identify identify;
 	uint32_t slots;
 	int created, psm_minor;

@@ -26,16 +26,21 @@ if [[ "$1" = "/" ]]; then
 else
 	fsck -p -T -C $1
 	printf "Mounting filesystems: $1 -> / "
-	mount $1 /mnt
-	printf "dev "
-	mount -t devfs \* /mnt/dev
-	printf "proc "
-	mount -t procfs \* /mnt/proc
-	printf "tmp "
-	mount -t tmpfs \* /mnt/tmp
-	printf "done\n"
-	if ! chroot /mnt /bin/sh /etc/rc/boot ; then
-		printf "** chroot failed, dropping to initrd shell **\n"
+	if ! mount $1 /mnt; then
+		echo
+		echo "Failed to mount root filesystem, falling back to initrd shell..."
 		sh
+	else
+		printf "dev "
+		mount -t devfs \* /mnt/dev
+		printf "proc "
+		mount -t procfs \* /mnt/proc
+		printf "tmp "
+		mount -t tmpfs \* /mnt/tmp
+		printf "done\n"
+		if ! chroot /mnt /bin/sh /etc/rc/boot ; then
+			printf "** chroot failed, dropping to initrd shell **\n"
+			sh
+		fi
 	fi
 fi

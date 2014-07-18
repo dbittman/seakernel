@@ -3,6 +3,7 @@
 #include <modules/ahci.h>
 #include <sea/tm/schedule.h>
 #include <sea/tm/process.h>
+#include <sea/mm/dma.h>
 
 uint32_t ahci_flush_commands(struct hba_port *port)
 {
@@ -88,20 +89,30 @@ int ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev)
 	port->interrupt_enable = AHCI_DEFAULT_INT; /* we want some interrupts */
 	/* map memory */
 	addr_t clb_phys, fis_phys;
-	void *clb_virt, *fis_virt;
-	clb_virt = kmalloc_ap(0x2000, &clb_phys);
-	fis_virt = kmalloc_ap(0x1000, &fis_phys);
-	dev->clb_virt = clb_virt;
-	dev->fis_virt = fis_virt;
+	
+	dev->dma_clb.p.size = 0x2000;
+	dev->dma_clb.p.alignment = 0x1000;
+	dev->dma_fis.p.size = 0x1000;
+	dev->dma_fis.p.alignment = 0x1000;
+
+	mm_allocate_dma_buffer(&dev->dma_clb);
+	mm_allocate_dma_buffer(&dev->dma_fis);
+
+	dev->clb_virt = (void *)dev->dma_clb.v;
+	dev->fis_virt = (void *)dev->dma_fis.v;
+	clb_phys = dev->dma_clb.p.address;
+	fis_phys = dev->dma_fis.p.address;
 	dev->slots=0;
-	struct hba_command_header *h = (struct hba_command_header *)clb_virt;
+	struct hba_command_header *h = (struct hba_command_header *)dev->clb_virt;
 	int i;
 	for(i=0;i<HBA_COMMAND_HEADER_NUM;i++) {
-		addr_t phys;
-		dev->ch[i] = kmalloc_ap(0x1000, &phys);
+		dev->ch_dmas[i].p.size = 0x1000;
+		dev->ch_dmas[i].p.alignment = 0x1000;
+		mm_allocate_dma_buffer(&dev->ch_dmas[i]);
+		dev->ch[i] = (void *)dev->ch_dmas[i].v;
 		memset(h, 0, sizeof(*h));
-		h->command_table_base_l = phys & 0xFFFFFFFF;
-		h->command_table_base_h = UPPER32(phys);
+		h->command_table_base_l = dev->ch_dmas[i].p.address & 0xFFFFFFFF;
+		h->command_table_base_h = UPPER32(dev->ch_dmas[i].p.address);
 		h++;
 	}
 	

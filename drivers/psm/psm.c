@@ -52,6 +52,7 @@ int psm_enumerate_partitions(int id, dev_t dev, struct disk_info *di)
 {
 	struct part_info pi;
 	int i=0;
+	printk(KERN_DEBUG, "[psm]: enumerate (%d, %d)\n", MAJOR(dev), MINOR(dev));
 	while(read_partition_dev(dev, &pi, i))
 	{
 		char name[16];

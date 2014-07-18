@@ -116,7 +116,7 @@ void arch_mm_page_fault(registers_t *regs, int int_no)
 			
 			for(;;) asm("cli;hlt");
 		}
-		panic(PANIC_MEM | PANIC_NOSYNC, "Early Page Fault");
+		panic(PANIC_MEM | PANIC_NOSYNC, "Early Page Fault (pf_cause=%x)", pf_error);
 	}
-	panic(PANIC_MEM | PANIC_NOSYNC, "Page Fault");
+	panic(PANIC_MEM | PANIC_NOSYNC, "Page Fault (pf_cause=%x)", pf_error);
 }

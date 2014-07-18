@@ -113,25 +113,27 @@ int ahci_rw_multiple_do(int rw, int min, u64 blk, char *out_buffer, int count)
 		count = end_blk - blk;
 	if(!count)
 		return 0;
-	
 	int num_pages = ((ATA_SECTOR_SIZE * (count-1)) / PAGE_SIZE) + 1;
 	assert(length <= (unsigned)num_pages * 0x1000);
-	unsigned char *buf = kmalloc_a(0x1000 * num_pages);
+	struct dma_region dma;
+	dma.p.size = 0x1000 * num_pages;
+	dma.p.alignment = 0x1000;
+	mm_allocate_dma_buffer(&dma);
 	int num_read_blocks = count;
 	struct hba_port *port = (struct hba_port *)&hba_mem->ports[dev->idx];
 	if(rw == WRITE)
-		memcpy(buf, out_buffer, length);
+		memcpy((void *)dma.v, out_buffer, length);
 	
 	int slot=ahci_port_acquire_slot(dev);
-	if(!ahci_port_dma_data_transfer(hba_mem, port, dev, slot, rw == WRITE ? 1 : 0, (addr_t)buf, count, blk))
+	if(!ahci_port_dma_data_transfer(hba_mem, port, dev, slot, rw == WRITE ? 1 : 0, (addr_t)dma.v, count, blk))
 		num_read_blocks = 0;
 	
 	ahci_port_release_slot(dev, slot);
 	
 	if(rw == READ && num_read_blocks)
-		memcpy(out_buffer, buf, length);
+		memcpy(out_buffer, (void *)dma.v, length);
 	
-	kfree(buf);
+	mm_free_dma_buffer(&dma);
 	return num_read_blocks * ATA_SECTOR_SIZE;
 }
 
@@ -191,10 +193,10 @@ int module_exit()
 	{
 		if(ports[i]) {
 			mutex_destroy(&(ports[i]->lock));
-			kfree(ports[i]->clb_virt);
-			kfree(ports[i]->fis_virt);
+			mm_free_dma_buffer(&(ports[i]->dma_clb));
+			mm_free_dma_buffer(&(ports[i]->dma_fis));
 			for(int j=0;j<HBA_COMMAND_HEADER_NUM;j++)
-				kfree(ports[i]->ch[j]);
+				mm_free_dma_buffer(&(ports[i]->ch_dmas[j]));
 #if CONFIG_MODULE_PSM
 			if(ports[i]->created)
 				psm_unregister_disk_device(PSM_AHCI_ID, ports[i]->psm_minor);

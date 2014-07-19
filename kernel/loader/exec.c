@@ -14,6 +14,7 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/atomic.h>
 #include <sea/mm/map.h>
+#include <sea/loader/exec.h>
 /* Prepares a process to recieve a new executable. Desc is the descriptor of 
  * the executable. We keep it open through here so that we dont have to 
  * re-open it. */
@@ -44,7 +45,12 @@ static void free_dp(char **mem, int num)
 	kfree(mem);
 }
 
-static int do_exec(task_t *t, char *path, char **argv, char **env)
+static int __is_shebang(char *mem)
+{
+	return (mem[0] == '#' && mem[1] == '!');
+}
+
+int do_exec(task_t *t, char *path, char **argv, char **env, int shebanged)
 {
 	unsigned int i=0;
 	addr_t end, eip;
@@ -81,8 +87,14 @@ static int do_exec(task_t *t, char *path, char **argv, char **env)
 #elif CONFIG_ARCH == TYPE_ARCH_X86
 	header_size = sizeof(elf32_header_t);
 #endif
+	if(header_size < 2) header_size = 2;
 	char mem[header_size];
 	fs_read_file_data(desc, mem, 0, header_size);
+	
+	if(__is_shebang(mem)) {
+		return loader_do_shebang(desc, argv, env);
+	}
+	
 	int other_bitsize=0;
 	if(!is_valid_elf(mem, 2) && !other_bitsize) {
 		sys_close(desc);
@@ -93,16 +105,17 @@ static int do_exec(task_t *t, char *path, char **argv, char **env)
 		printk(0, "[%d]: Copy data\n", t->pid);
 	/* okay, lets back up argv and env so that we can
 	 * clear out the address space and not lose data..*/
-	if(mm_is_valid_user_pointer(SYS_EXECVE, argv, 0)) {
-		while(mm_is_valid_user_pointer(SYS_EXECVE, argv[argc], 0) && *argv[argc]) argc++;
+	if((shebanged || mm_is_valid_user_pointer(SYS_EXECVE, argv, 0)) && argv) {
+		while((shebanged || mm_is_valid_user_pointer(SYS_EXECVE, argv[argc], 0)) && argv[argc] && *argv[argc])
+			argc++;
 		backup_argv = (char **)kmalloc(sizeof(addr_t) * argc);
 		for(i=0;i<argc;i++) {
 			backup_argv[i] = (char *)kmalloc(strlen(argv[i]) + 1);
 			_strcpy(backup_argv[i], argv[i]);
 		}
 	}
-	if(mm_is_valid_user_pointer(SYS_EXECVE, env, 0)) {
-		while(mm_is_valid_user_pointer(SYS_EXECVE, env[envc], 0) && *env[envc]) envc++;
+	if((shebanged || mm_is_valid_user_pointer(SYS_EXECVE, env, 0)) && env) {
+		while((shebanged || mm_is_valid_user_pointer(SYS_EXECVE, env[envc], 0)) && env[envc] && *env[envc]) envc++;
 		backup_env = (char **)kmalloc(sizeof(addr_t) * envc);
 		for(i=0;i<envc;i++) {
 			backup_env[i] = (char *)kmalloc(strlen(env[i]) + 1);
@@ -228,5 +241,5 @@ static int do_exec(task_t *t, char *path, char **argv, char **env)
 
 int execve(char *path, char **argv, char **env)
 {
-	return do_exec((task_t *)current_task, path, argv, env);
+	return do_exec((task_t *)current_task, path, argv, env, 0);
 }

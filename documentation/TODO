@@ -10,9 +10,7 @@ Roadmap:
 
 0.3 B1
 	* Shared Libraries
-	* mmap
-	* memory <-> device mapping framework
-	* extend mm_devmap to exec
+	* extend mmap to exec
 	* Shebangs
 
 0.3 B2

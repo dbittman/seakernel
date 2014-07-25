@@ -66,10 +66,10 @@ int loader_do_shebang(int desc, char **argv, char **env)
 	sys_close(desc);
 	char *interp = buf+2; /* skip the #! */
 
+	interp = chomp(interp);
 	char *interp_args = strchr(interp, ' ');
 	if(interp_args)
 		*(interp_args++) = 0;
-	interp = chomp(interp);
 	interp_args = chomp(interp_args);
 
 	/* count args */

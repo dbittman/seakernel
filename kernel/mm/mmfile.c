@@ -48,9 +48,6 @@
 addr_t mm_mmap(addr_t address, size_t length, int prot, int flags, int fd, size_t offset)
 {
 	struct inode *node;
-	/* round up length */
-	if(length & ~PAGE_MASK)
-		length = (length & PAGE_MASK) + PAGE_SIZE;
 	if(flags & MAP_ANONYMOUS) {
 		/* create fake inode */
 		node = kmalloc(sizeof(*node));
@@ -106,9 +103,6 @@ int sys_msync(void *address, size_t length, int flags)
 {
 	if(((addr_t)address & ~PAGE_MASK))
 		return -EINVAL;
-	/* round up length */
-	if(length & ~PAGE_MASK)
-		length = (length & PAGE_MASK) + PAGE_SIZE;
 	return mm_mapping_msync((addr_t)address, length, flags);
 }
 

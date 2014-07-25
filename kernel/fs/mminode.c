@@ -33,7 +33,7 @@ static void __init_physicals(struct inode *node)
 }
 
 addr_t fs_inode_map_private_physical_page(struct inode *node, addr_t virt,
-		size_t offset, int attrib)
+		size_t offset, int attrib, size_t req_len)
 {
 	addr_t ph;
 	assert(!(virt & ~PAGE_MASK));
@@ -42,12 +42,20 @@ addr_t fs_inode_map_private_physical_page(struct inode *node, addr_t virt,
 		panic(0, "trying to remap mminode private section %x", virt);
 	/* DON'T specify NOCLEAR, since read_inode may not fill up the whole page */
 	mm_vm_map(virt, (ph=mm_alloc_physical_page()), attrib, 0);
-	int err;
+	int err=-1;
 	/* try to read the data. If this fails, we don't really have a good way 
 	 * of telling userspace this...eh.
 	 */
-	if(node->i_ops && (err=vfs_read_inode(node, offset, PAGE_SIZE, (void *)virt) < 0))
-		printk(0, "[mminode]: read inode failed with %d\n", err);
+	size_t len = req_len;
+	if(len + offset > (size_t)node->len)
+		len = node->len - offset;
+	if(offset < (size_t)node->len) {
+		if(node->i_ops) {
+			err = vfs_read_inode(node, offset, len, (void *)virt);
+			if(err < 0 || (size_t)err != len)
+				printk(0, "[mminode]: read inode failed with %d\n", err);
+		}
+	}
 	return ph;
 }
 
@@ -57,7 +65,7 @@ addr_t fs_inode_map_private_physical_page(struct inode *node, addr_t virt,
  * tries to return the physical page.
  */
 addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt, 
-		size_t offset, int flags, int attrib)
+		size_t offset, int flags, int attrib, size_t req_len)
 {
 	assert(!(virt & ~PAGE_MASK));
 	assert(!(offset & ~PAGE_MASK));
@@ -87,8 +95,13 @@ addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt,
 		/* try to read the data. If this fails, we don't really have a good way 
 		 * of telling userspace this...eh.
 		 */
-		if(node->i_ops && (err=vfs_read_inode(node, offset, PAGE_SIZE, (void *)virt) < 0))
-			printk(0, "[mminode]: read inode failed with %d\n", err);
+		size_t len = req_len;
+		if(len + offset > (size_t)node->len)
+			len = node->len - offset;
+		if(offset < (size_t)node->len) {
+			if(node->i_ops && (err=vfs_read_inode(node, offset, len, (void *)virt) < 0))
+				printk(0, "[mminode]: read inode failed with %d\n", err);
+		}
 		add_atomic(&node->mapped_pages_count, 1);
 	}
 	addr_t ret = entry->page;
@@ -135,14 +148,14 @@ void fs_inode_map_region(struct inode *node, size_t offset, size_t length)
 	mutex_release(&node->mappings_lock);
 }
 
-void fs_inode_sync_physical_page(struct inode *node, addr_t virt, size_t offset)
+void fs_inode_sync_physical_page(struct inode *node, addr_t virt, size_t offset, size_t req_len)
 {
 	assert(!(offset & ~PAGE_MASK));
 	assert(!(virt & ~PAGE_MASK));
 	if(!mm_vm_get_map(virt, 0, 0))
 		return;
 	/* again, no real good way to notify userspace of a failure */
-	size_t len = PAGE_SIZE;
+	size_t len = req_len;
 	if(len + offset > (size_t)node->len)
 		len = node->len - offset;
 	if(offset >= (size_t)node->len)
@@ -177,7 +190,10 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 			if(!sub_atomic(&entry->count, 1))
 			{
 				/* count is now zero. write back data, free the page, delete the entry, free the entry */
-				fs_inode_sync_physical_page(node, virt + (i - page_number)*PAGE_SIZE, i * PAGE_SIZE);
+				size_t page_len = PAGE_SIZE;
+				if(length - (i-page_number)*PAGE_SIZE < PAGE_SIZE)
+					page_len = length - (i-page_number)*PAGE_SIZE;
+				fs_inode_sync_physical_page(node, virt + (i - page_number)*PAGE_SIZE, i * PAGE_SIZE, page_len);
 				addr_t p = mm_vm_get_map(virt + (i - page_number)*PAGE_SIZE, 0, 0);
 				assert(!p || p == entry->page);
 				if(entry->page)
@@ -195,6 +211,9 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 		unsigned attr;
 		if(mm_vm_get_map(virt + (i - page_number)*PAGE_SIZE, 0, 0) 
 				&& mm_vm_get_attrib(virt + (i - page_number)*PAGE_SIZE, &attr, 0)) {
+			if(!(attr & PAGE_LINK)) {
+				kprintf(":: %x %x %x\n", virt + (i - page_number)*PAGE_SIZE, attr, attr & PAGE_LINK);
+			}
 			assert(attr & PAGE_LINK);
 			mm_vm_unmap_only(virt + (i - page_number)*PAGE_SIZE, 0);
 		}

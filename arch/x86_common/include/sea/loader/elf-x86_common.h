@@ -108,6 +108,10 @@ typedef struct
 #define EDT_TEXTREL 22
 #define EDT_JMPREL  23
 
+#define ELF_PF_R 4
+#define ELF_PF_W 2
+#define ELF_PF_X 1
+
 #define ELF_ST_TYPE(i) ((i)&0xf)
 
 const char *elf32_lookup_symbol (uint32_t addr, elf32_t *elf);

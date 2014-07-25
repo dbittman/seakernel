@@ -3,6 +3,8 @@
 #include <sea/loader/elf.h>
 #include <sea/loader/symbol.h>
 #include <sea/fs/file.h>
+#include <sea/mm/map.h>
+
 static int process_elf64_phdr(char *mem, int fp, addr_t *start, addr_t *end)
 {
 	uint32_t i, x;
@@ -16,23 +18,37 @@ static int process_elf64_phdr(char *mem, int fp, addr_t *start, addr_t *end)
 	for(i=0;i < eh->phnum;i++)
 	{
 		elf64_program_header_t *ph = (elf64_program_header_t *)(buffer + (i*eh->phsize));
-		vaddr = ph->p_addr;
-		if(vaddr < min)
-			min = vaddr;
-		offset = ph->p_offset;
-		length = ph->p_filesz;
-		stop = vaddr+ph->p_memsz;
-		tmp = vaddr&PAGE_MASK;
+		
+		if((ph->p_addr + ph->p_memsz) > max)
+			max = ph->p_addr + ph->p_memsz;
+		if(ph->p_addr < min)
+			min = ph->p_addr;
+		
 		if(ph->p_type == PH_LOAD) {
-			if(stop > max) max = stop;
-			while(tmp <= stop + PAGE_SIZE)
-			{
-				user_map_if_not_mapped(tmp);
-				tmp += PAGE_SIZE;
-			}
-			if((unsigned)fs_do_sys_read_flags(file, offset, (char *)vaddr, length) != length) {
-				fs_fput((task_t *)current_task, fp, 0);
-				return 0;
+			size_t additional = ph->p_memsz - ph->p_filesz;
+			size_t inpage_offset = ph->p_addr & (~PAGE_MASK);
+			addr_t newend = (ph->p_addr + ph->p_filesz);
+			size_t page_free = PAGE_SIZE - (newend % PAGE_SIZE);
+			
+			int prot = 0;
+			if(ph->p_flags & ELF_PF_R)
+				prot |= PROT_READ;
+			if(ph->p_flags & ELF_PF_W)
+				prot |= PROT_WRITE;
+			if(ph->p_flags & ELF_PF_X)
+				prot |= PROT_EXEC;
+
+			int flags = MAP_FIXED;
+			if(prot & PROT_WRITE)
+				flags |= MAP_PRIVATE;
+			//else
+			//	flags |= MAP_SHARED;
+
+			mm_mmap(ph->p_addr & PAGE_MASK, ph->p_filesz + inpage_offset, 
+					prot, flags, fp, ph->p_offset & PAGE_MASK);
+			if(additional > page_free) {
+				mm_mmap((newend & PAGE_MASK) + PAGE_SIZE, additional - page_free,
+						prot, flags | MAP_ANONYMOUS, -1, 0);
 			}
 		}
 	}
@@ -40,7 +56,7 @@ static int process_elf64_phdr(char *mem, int fp, addr_t *start, addr_t *end)
 	if(!max)
 		return 0;
 	*start = eh->entry;
-	*end = max;
+	*end = (max & PAGE_MASK) + PAGE_SIZE;
 	return 1;
 }
 

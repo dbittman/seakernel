@@ -107,6 +107,10 @@ void arch_mm_page_fault(registers_t *regs, int int_no)
 		tm_kill_process(current_task->pid);
 		current_task->sysregs = 0;
 		return;
+	} else {
+		/* this may not be safe... */
+		if(mm_page_fault_test_mappings(cr2, pf_error) == 0)
+			return;
 	}
 	print_pfe(5, regs, cr2);
 	if(!current_task) {

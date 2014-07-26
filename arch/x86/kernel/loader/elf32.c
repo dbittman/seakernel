@@ -34,11 +34,21 @@ static int process_elf32_phdr(char *mem, int fp, addr_t *start, addr_t *end)
 			min = ph->p_addr;
 		
 		if(ph->p_type == PH_LOAD) {
+			/* mmap program headers. if the memsz is the same as the filesz, we don't have
+			 * to do anything special. if not, then we might need additional mappings: the
+			 * file is mapped to some section of the program header's region, and then the
+			 * rest is MAP_ANONYMOUS memory. if it fits in the end of the page for the file
+			 * mapped memory, then it can fit there. otherwise, we call mmap again.
+			 *
+			 * also, the actual section we want might be offset from a page. handle that as
+			 * well, with inpage_offset.
+			 */
 			size_t additional = ph->p_memsz - ph->p_filesz;
 			size_t inpage_offset = ph->p_addr & (~PAGE_MASK);
 			addr_t newend = (ph->p_addr + ph->p_filesz);
 			size_t page_free = PAGE_SIZE - (newend % PAGE_SIZE);
 
+			/* calculate the protections for the region. */
 			int prot = 0;
 			if(ph->p_flags & ELF_PF_R)
 				prot |= PROT_READ;
@@ -47,12 +57,8 @@ static int process_elf32_phdr(char *mem, int fp, addr_t *start, addr_t *end)
 			if(ph->p_flags & ELF_PF_X)
 				prot |= PROT_EXEC;
 
-			int flags = MAP_FIXED;
-			if(prot & PROT_WRITE)
-				flags |= MAP_PRIVATE;
-			//else
-			//	flags |= MAP_SHARED;
-
+			/* TODO: MAP_SHARED? */
+			int flags = MAP_FIXED | MAP_PRIVATE;
 			mm_mmap(ph->p_addr & PAGE_MASK, ph->p_filesz + inpage_offset, 
 					prot, flags, fp, ph->p_offset & PAGE_MASK);
 			if(additional > page_free) {

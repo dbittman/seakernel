@@ -65,7 +65,7 @@ addr_t fs_inode_map_private_physical_page(struct inode *node, addr_t virt,
  * tries to return the physical page.
  */
 addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt, 
-		size_t offset, int flags, int attrib, size_t req_len)
+		size_t offset, int flags, int attrib)
 {
 	assert(!(virt & ~PAGE_MASK));
 	assert(!(offset & ~PAGE_MASK));
@@ -91,11 +91,11 @@ addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt,
 		/* DON'T specify NOCLEAR, since read_inode may not fill up the whole page. Also,
 		 * specify PAGE_LINK so that mm_vm_clone doesn't copy shared pages */
 		mm_vm_map(virt, entry->page, attrib | PAGE_LINK, 0);
-		int err;
+		int err=-1;
 		/* try to read the data. If this fails, we don't really have a good way 
 		 * of telling userspace this...eh.
 		 */
-		size_t len = req_len;
+		size_t len = PAGE_SIZE;
 		if(len + offset > (size_t)node->len)
 			len = node->len - offset;
 		if(offset < (size_t)node->len) {
@@ -103,6 +103,10 @@ addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt,
 				printk(0, "[mminode]: read inode failed with %d\n", err);
 		}
 		add_atomic(&node->mapped_pages_count, 1);
+	} else if(entry->page) {
+		if(mm_vm_get_map(virt, 0, 0))
+			panic(0, "trying to remap mminode shared section");
+		mm_vm_map(virt, entry->page, attrib | PAGE_LINK, 0);
 	}
 	addr_t ret = entry->page;
 	mutex_release(&entry->lock);
@@ -211,9 +215,6 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 		unsigned attr;
 		if(mm_vm_get_map(virt + (i - page_number)*PAGE_SIZE, 0, 0) 
 				&& mm_vm_get_attrib(virt + (i - page_number)*PAGE_SIZE, &attr, 0)) {
-			if(!(attr & PAGE_LINK)) {
-				kprintf(":: %x %x %x\n", virt + (i - page_number)*PAGE_SIZE, attr, attr & PAGE_LINK);
-			}
 			assert(attr & PAGE_LINK);
 			mm_vm_unmap_only(virt + (i - page_number)*PAGE_SIZE, 0);
 		}

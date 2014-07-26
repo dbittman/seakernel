@@ -192,7 +192,7 @@ static int load_file_data(struct memmap *map, addr_t fault_address)
 		page_len = map->length - diff;
 	if(map->flags & MAP_SHARED) {
 		fs_inode_map_shared_physical_page(map->node, address, offset, 
-				FS_INODE_POPULATE, PAGE_PRESENT | PAGE_USER | attr, page_len);
+				FS_INODE_POPULATE, PAGE_PRESENT | PAGE_USER | attr);
 	} else {
 		fs_inode_map_private_physical_page(map->node, address, offset, PAGE_PRESENT | PAGE_USER | attr, page_len);
 	}

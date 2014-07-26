@@ -122,7 +122,7 @@ int sync_inode_tofs(struct inode *i);
 
 #define FS_INODE_POPULATE 1
 addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt, 
-		size_t offset, int flags, int attrib, size_t);
+		size_t offset, int flags, int attrib);
 addr_t fs_inode_map_private_physical_page(struct inode *node, addr_t virt,
 		size_t offset, int attrib, size_t);
 void fs_inode_map_region(struct inode *node, size_t offset, size_t length);

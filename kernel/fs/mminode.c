@@ -67,6 +67,7 @@ addr_t fs_inode_map_private_physical_page(struct inode *node, addr_t virt,
 addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt, 
 		size_t offset, int flags, int attrib)
 {
+	/* TODO: Handle non page-aligned lengths */
 	assert(!(virt & ~PAGE_MASK));
 	assert(!(offset & ~PAGE_MASK));
 	/* test if we have any shared mappings... */

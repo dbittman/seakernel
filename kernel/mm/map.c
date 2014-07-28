@@ -98,8 +98,8 @@ addr_t mm_establish_mapping(struct inode *node, addr_t virt,
 	}
 	if(vn)
 		virt = vn->addr;
-	printk(0, "[mmap]: mapping %x for %x, f=%x, p=%x: %s:%d\n", 
-			virt, length, flags, prot, node->i_ops ? node->name : "(ANON)", offset);
+	//printk(0, "[mmap]: mapping %x for %x, f=%x, p=%x: %s:%x\n", 
+	//		virt, length, flags, prot, node->i_ops ? node->name : "(ANON)", offset);
 	struct memmap *map = initialize_map(node, virt, prot, flags, offset, length);
 	if(vn)
 		map->vn = vn;
@@ -146,8 +146,12 @@ int mm_sync_mapping(struct memmap *map, addr_t start, size_t length, int flags)
 		return 0;
 	size_t fo = (start - map->virtual);
 	for(addr_t v = 0;v < length;v += PAGE_SIZE) {
-		if(mm_vm_get_map(start + v, 0, 0))
-			fs_inode_sync_physical_page(map->node, start + v, map->offset + fo + v);
+		if(mm_vm_get_map(start + v, 0, 0)) {
+			size_t page_len = PAGE_SIZE;
+			if((length - v) < PAGE_SIZE)
+				page_len = length - v;
+			fs_inode_sync_physical_page(map->node, start + v, map->offset + fo + v, page_len);
+		}
 	}
 	return 0;
 }
@@ -161,8 +165,14 @@ static struct memmap *find_mapping(addr_t address)
 	struct memmap *map;
 	/* don't worry about the list's lock, we already have a lock */
 	ll_for_each_entry(&current_task->thread->mappings, n, struct memmap *, map) {
-		/* check if address is in range */
-		if(address >= map->virtual && address < (map->virtual + map->length))
+		/* check if address is in range. A special case to note: 'length' may not
+		 * be page aligned, but here we act as if it were rounded up. 'length' refers
+		 * to file length, but in a partial page, memory mapping is still valid for
+		 * the rest of the page, just filled with zeros. */
+		size_t rounded_length = map->length;
+		if(rounded_length & (~PAGE_MASK))
+			rounded_length = (rounded_length & PAGE_MASK) + PAGE_SIZE;
+		if(address >= map->virtual && address < (map->virtual + rounded_length))
 			return map;
 	}
 	return 0;
@@ -172,13 +182,19 @@ static int load_file_data(struct memmap *map, addr_t fault_address)
 {
 	/* whee, page alignment */
 	addr_t address = fault_address & PAGE_MASK;
-	size_t offset = map->offset + (address - map->virtual);
+	addr_t diff = address - map->virtual;
+	size_t offset = map->offset + diff;
 	assert(!(offset & ~PAGE_MASK));
+	assert(diff < map->length);
 	int attr = ((map->prot & PROT_WRITE) ? PAGE_WRITE : 0);
+	size_t page_len = PAGE_SIZE;
+	if(map->length - diff < PAGE_SIZE)
+		page_len = map->length - diff;
 	if(map->flags & MAP_SHARED) {
-		fs_inode_map_shared_physical_page(map->node, address, offset, FS_INODE_POPULATE, PAGE_PRESENT | PAGE_USER | attr);
+		fs_inode_map_shared_physical_page(map->node, address, offset, 
+				FS_INODE_POPULATE, PAGE_PRESENT | PAGE_USER | attr);
 	} else {
-		fs_inode_map_private_physical_page(map->node, address, offset, PAGE_PRESENT | PAGE_USER | attr);
+		fs_inode_map_private_physical_page(map->node, address, offset, PAGE_PRESENT | PAGE_USER | attr, page_len);
 	}
 	return 0;
 }
@@ -216,7 +232,10 @@ int mm_mapping_msync(addr_t start, size_t length, int flags)
 	for(addr_t addr = start; addr < (start + length); addr += PAGE_SIZE)
 	{
 		struct memmap *map = find_mapping(addr);
-		mm_sync_mapping(map, addr, PAGE_SIZE, flags);
+		size_t page_len = PAGE_SIZE;
+		if(length - (addr - start) < PAGE_SIZE)
+			page_len = length - (addr - start);
+		mm_sync_mapping(map, addr, page_len, flags);
 	}
 	mutex_release(&current_task->thread->map_lock);
 	return 0;
@@ -226,6 +245,7 @@ int mm_mapping_msync(addr_t start, size_t length, int flags)
  * but it also makes for a much simpler implementation of munmaps crazy nonsense.*/
 int mm_mapping_munmap(addr_t start, size_t length)
 {
+	/* TODO: support non-page-aligned length */
 	mutex_acquire(&current_task->thread->map_lock);
 	for(addr_t addr = start; addr < (start + length); addr += PAGE_SIZE)
 	{
@@ -233,16 +253,26 @@ int mm_mapping_munmap(addr_t start, size_t length)
 		if(!map)
 			continue;
 		mm_sync_mapping(map, addr, PAGE_SIZE, 0);
+		size_t rounded_length = map->length;
+		size_t page_len = PAGE_SIZE;
+		if(rounded_length & ~(PAGE_MASK)) {
+			rounded_length = (rounded_length & PAGE_MASK) + PAGE_SIZE;
+			page_len = map->length & (~PAGE_MASK);
+		}
+		
 		/* unmap this specific page */
 		disengage_mapping_region(map, addr, map->offset + (addr - map->virtual), PAGE_SIZE);
 		if(map->virtual == addr) {
 			/* page is at the start of the map, so change the mapping */
 			map->virtual += PAGE_SIZE;
 			map->offset  += PAGE_SIZE;
-			map->length  -= PAGE_SIZE;
-		} else if((map->virtual + (map->length - PAGE_SIZE)) == addr) {
+			if(map->length < PAGE_SIZE)
+				map->length = 0;
+			else
+				map->length -= PAGE_SIZE;
+		} else if((map->virtual + (rounded_length - PAGE_SIZE)) == addr) {
 			/* page is at the end of the map */
-			map->length -= PAGE_SIZE;
+			map->length -= page_len;
 		} else {
 			/* the page splits the map. create a second mapping */
 			struct memmap *n = initialize_map(map->node, map->virtual, map->prot, map->flags, map->offset, map->length);

@@ -196,11 +196,11 @@ void idt_set_gate(u8int num, u32int base, u16int sel, u8int flags)
 /* each CPU gets it's own GDT and TSS, so we need to specify that here. */
 void load_tables_ap(cpu_t *cpu)
 {
-	init_gdt(cpu->gdt, &cpu->gdt_ptr);
+	init_gdt(cpu->arch_cpu_data.gdt, &cpu->arch_cpu_data.gdt_ptr);
 	/* don't init the IDT again, just flush it into the current processor.
 	 * if init_idt is called, this can cause random GPF */
 	idt_flush((u32int)&idt_ptr);
-	write_tss(cpu->gdt, &cpu->tss, 5, 0x10, 0x0);
+	write_tss(cpu->arch_cpu_data.gdt, &cpu->arch_cpu_data.tss, 5, 0x10, 0x0);
 	tss_flush();
 }
 

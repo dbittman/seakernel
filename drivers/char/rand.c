@@ -57,7 +57,7 @@ int rand_rw(int rw, int min, char *buf, size_t count)
 	{
 		for(i=0;i<count;i++)
 		{
-			unsigned t = (unsigned)get_rand()*arch_time_get_epoch();
+			unsigned t = (unsigned)get_rand()*time_get_epoch();
 			buf[i] = (char)(t);
 		}
 #if CONFIG_ARCH == TYPE_ARCH_X86 || CONFIG_ARCH == TYPE_ARCH_X86_64
@@ -122,7 +122,7 @@ int module_install()
 	if(rand_maj == -1)
 		return EINVAL;
 	df = devfs_add(devfs_root, "random", S_IFCHR, rand_maj, 0);
-	seed=arch_time_get_epoch();
+	seed=time_get_epoch();
 	a1=seed;
 	/* check for rdrand */
 #if CONFIG_ARCH == TYPE_ARCH_X86 || CONFIG_ARCH == TYPE_ARCH_X86_64

@@ -3,6 +3,7 @@
 #include <sea/types.h>
 #include <sea/cpu/processor.h>
 #include <sea/tm/process.h>
+#include <sea/cpu/x86msr.h>
 
 #include <modules/shiv.h>
 

@@ -1,6 +1,5 @@
 #include <sea/config.h>
 
-#define current_tss (&((cpu_t *)current_task->cpu)->tss)
 
 #if CONFIG_ARCH == TYPE_ARCH_X86
 #include <sea/tm/context-x86.h>

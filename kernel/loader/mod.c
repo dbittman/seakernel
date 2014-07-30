@@ -53,7 +53,7 @@ void loader_init_kernel_symbols(void)
 	loader_add_kernel_symbol(rwlock_destroy);
 	
 	/* these systems export these, but have no initialization function */
-	loader_add_kernel_symbol(arch_time_get_epoch);
+	loader_add_kernel_symbol(time_get_epoch);
 }
 
 void loader_do_add_kernel_symbol(const intptr_t func, const char * funcstr)

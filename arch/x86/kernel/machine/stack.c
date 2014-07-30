@@ -60,7 +60,7 @@ void arch_cpu_print_stack_trace(unsigned int MaxFrames)
 	}
 }
 
-void copy_update_stack(addr_t new, addr_t old, unsigned length)
+void arch_cpu_copy_fixup_stack(addr_t new, addr_t old, size_t length)
 {
 	memcpy((void *)new, (void *)old, length);
 	int offset=0;
@@ -77,3 +77,4 @@ void copy_update_stack(addr_t new, addr_t old, unsigned length)
 		}
 	}
 }
+

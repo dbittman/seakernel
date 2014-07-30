@@ -142,7 +142,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	/* Load the rest... */
 	fs_initrd_parse();
 	kt_init_kernel_tasking();
-	arch_time_get(&kernel_start_time);
+	time_get(&kernel_start_time);
 	printk(KERN_MILE, "[kernel]: Kernel is setup (%2.2d:%2.2d:%2.2d, kv=%d, ts=%d bytes, bits=%d: ok)\n", 
 	       kernel_start_time.tm_hour, kernel_start_time.tm_min, 
 	       kernel_start_time.tm_sec, KVERSION, sizeof(task_t), BITS_PER_LONG);

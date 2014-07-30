@@ -10,6 +10,7 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/cmos-x86_common.h>
 #include <sea/cpu/cpu-x86.h>
+#include <sea/cpu/x86msr.h>
 
 unsigned num_cpus=0, num_booted_cpus=0, num_failed_cpus=0;
 int imps_scan_mptables(unsigned addr, unsigned len);
@@ -41,7 +42,7 @@ int probe_smp()
 		//if(!parse_acpi_madt()) return 0;
 	}
 	set_ksf(KSF_CPUS_RUNNING);
-	printk(5, "[cpu]: CPU%s initialized (boot=%d, #APs=%d: ok)                    \n", num_cpus > 1 ? "s" : "", primary_cpu->apicid, num_booted_cpus);
+	printk(5, "[cpu]: CPU%s initialized (boot=%d, #APs=%d: ok)                    \n", num_cpus > 1 ? "s" : "", primary_cpu->snum, num_booted_cpus);
 	return num_booted_cpus > 0;
 }
 

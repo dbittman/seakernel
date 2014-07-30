@@ -73,7 +73,7 @@ void panic(int flags, char *fmt, ...)
 			addr_t a=0;
 			if(t->regs) a = t->regs->eip;
 			else if(t->sysregs) a = t->sysregs->eip;
-			printk_safe(9, "          : cpu=%x (%d), regs eip=%x\n", t->cpu, ((cpu_t *)(t->cpu))->apicid, a);
+			printk_safe(9, "          : cpu=%x (%d), regs eip=%x\n", t->cpu, ((cpu_t *)(t->cpu))->snum, a);
 		}
 		cur=0;
 		t=0;
@@ -84,7 +84,7 @@ void panic(int flags, char *fmt, ...)
 			addr_t a=0;
 			if(t->regs) a = t->regs->eip;
 			else if(t->sysregs) a = t->sysregs->eip;
-			printk_safe(9, "          : cpu=%x (%d), regs eip=%x\n", t->cpu, ((cpu_t *)(t->cpu))->apicid, a);
+			printk_safe(9, "          : cpu=%x (%d), regs eip=%x\n", t->cpu, ((cpu_t *)(t->cpu))->snum, a);
 		}
 	}
 #if CONFIG_GDB_STUB

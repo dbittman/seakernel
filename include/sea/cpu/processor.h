@@ -7,10 +7,11 @@
 #include <sea/mutex.h>
 #include <sea/config.h>
 #if CONFIG_ARCH == TYPE_ARCH_X86
-  #include <sea/cpu/tables-x86.h>
+  #include <sea/cpu/cpu-x86_common.h>
 #elif CONFIG_ARCH == TYPE_ARCH_X86_64
-  #include <sea/cpu/tables-x86_64.h>
+  #include <sea/cpu/cpu-x86_common.h>
 #endif
+
 #define CPU_STACK_TEMP_SIZE 1024
 
 #define CPU_UP      0x1
@@ -24,34 +25,20 @@
 #define CPU_LOCK  0x100
 #define CPU_FXSAVE 0x200
 
-typedef struct {
-	char manufacturer_string[13];
-	int max_basic_input_val;
-	int max_ext_input_val;
-	int features_ecx, features_edx;
-	int ext_features_ecx, ext_features_edx;
-	char stepping, model, family, type; 
-	char cache_line_size, logical_processors, lapic_id;
-	char cpu_brand[49];
-} cpuid_t;
-
 typedef struct __cpu_t__ {
-	unsigned num;
+	unsigned knum, snum; /* knum: cpu number to the kernel, snum: cpu number to the hardware */
 	unsigned flags;
 	cpuid_t cpuid;
-	int apicid;
 	volatile page_dir_t *kd;
 	volatile addr_t kd_phys;
 	tqueue_t *active_queue;
 	task_t *ktask, *cur;
 	mutex_t lock;
-#if CONFIG_ARCH == TYPE_ARCH_X86 || CONFIG_ARCH == TYPE_ARCH_X86_64
-	gdt_entry_t gdt[NUM_GDT_ENTRIES];
-	gdt_ptr_t gdt_ptr;
-	tss_entry_t tss;
-#endif
 	unsigned numtasks;
 	unsigned stack[CPU_STACK_TEMP_SIZE];
+
+	struct arch_cpu arch_cpu_data;
+
 	struct __cpu_t__ *next, *prev;
 } cpu_t;
 
@@ -59,17 +46,24 @@ void cpu_smp_task_idle(task_t *me);
 int cpu_get_num_running_processors();
 int cpu_get_num_halted_processors();
 int cpu_get_num_secondary_processors();
+
+extern cpu_t cpu_array[CONFIG_MAX_CPUS];
+extern unsigned cpu_array_num;
+
 #if CONFIG_SMP
 
-cpu_t *cpu_get(int id);
+cpu_t *cpu_get(unsigned id);
 cpu_t *cpu_add(cpu_t *c);
 
 #endif
+
 extern volatile unsigned num_halted_cpus;
 extern unsigned num_cpus, num_booted_cpus, num_failed_cpus;
 
 extern cpu_t *primary_cpu;
-void copy_update_stack(addr_t old, addr_t, unsigned length);
+void arch_cpu_copy_fixup_stack(addr_t, addr_t, size_t length);
+void cpu_copy_fixup_stack(addr_t, addr_t, size_t length);
+
 void arch_cpu_send_ipi(int dest, unsigned signal, unsigned flags);
 void cpu_send_ipi(int dest, unsigned signal, unsigned flags);
 

@@ -199,7 +199,7 @@ int sys_chmod(char *path, int fd, mode_t mode)
 		return -EPERM;
 	}
 	i->mode = (i->mode&~0xFFF) | mode;
-	i->mtime = arch_time_get_epoch();
+	i->mtime = time_get_epoch();
 	sync_inode_tofs(i);
 	if(path)
 		vfs_iput(i);
@@ -235,7 +235,7 @@ int sys_chown(char *path, int fd, uid_t uid, gid_t gid)
 		i->mode &= ~S_ISUID;
 		i->mode &= ~S_ISGID;
 	}
-	i->mtime = arch_time_get_epoch();
+	i->mtime = time_get_epoch();
 	sync_inode_tofs(i);
 	if(path) 
 		vfs_iput(i);
@@ -253,8 +253,8 @@ int sys_utime(char *path, time_t a, time_t m)
 		vfs_iput(i);
 		return -EPERM;
 	}
-	i->mtime = m ? m : (time_t)arch_time_get_epoch();
-	i->atime = a ? a : (time_t)arch_time_get_epoch();
+	i->mtime = m ? m : (time_t)time_get_epoch();
+	i->atime = a ? a : (time_t)time_get_epoch();
 	sync_inode_tofs(i);
 	vfs_iput(i);
 	return 0;
@@ -282,7 +282,7 @@ int sys_ftruncate(int f, off_t length)
 		return -EACCES;
 	}
 	file->inode->len = length;
-	file->inode->mtime = arch_time_get_epoch();
+	file->inode->mtime = time_get_epoch();
 	sync_inode_tofs(file->inode);
 	fs_fput((task_t *)current_task, f, 0);
 	return 0;

@@ -3,7 +3,30 @@
 
 #include <sea/mutex.h>
 #include <sea/types.h>
-#include <sea/cpu/processor.h>
+#if CONFIG_ARCH == TYPE_ARCH_X86
+  #include <sea/cpu/tables-x86.h>
+#elif CONFIG_ARCH == TYPE_ARCH_X86_64
+  #include <sea/cpu/tables-x86_64.h>
+#endif
+
+typedef struct {
+	char manufacturer_string[13];
+	int max_basic_input_val;
+	int max_ext_input_val;
+	int features_ecx, features_edx;
+	int ext_features_ecx, ext_features_edx;
+	char stepping, model, family, type; 
+	char cache_line_size, logical_processors, lapic_id;
+	char cpu_brand[49];
+} cpuid_t;
+
+struct arch_cpu {
+	cpuid_t cpuid;
+	gdt_entry_t gdt[NUM_GDT_ENTRIES];
+	gdt_ptr_t gdt_ptr;
+	tss_entry_t tss;
+};
+
 
 #define APIC_BCAST_ID			0xFF
 #define	APIC_VERSION(x)			((x) & 0xFF)
@@ -82,14 +105,13 @@
 #define LAPIC_READ(x)  (*((volatile unsigned *) (lapic_addr+(x))))
 #define LAPIC_WRITE(x, y)   \
    (*((volatile unsigned *) (lapic_addr+(x))) = (y))
+
 extern addr_t lapic_addr;
 extern unsigned lapic_timer_start;
 extern mutex_t ipi_mutex;
 
 void load_tables_ap(cpu_t *cpu);
-extern cpu_t cpu_array[CONFIG_MAX_CPUS];
 void parse_cpuid(cpu_t *);
-extern unsigned cpu_array_num;
 #if CONFIG_SMP
 
 int boot_cpu(unsigned id, unsigned apic_ver);

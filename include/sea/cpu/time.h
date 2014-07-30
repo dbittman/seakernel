@@ -29,6 +29,8 @@ struct tms {
 };
 
 unsigned long long arch_time_get_epoch();
+unsigned long long time_get_epoch();
 void arch_time_get(struct tm *now);
+void time_get(struct tm *);
 
 #endif

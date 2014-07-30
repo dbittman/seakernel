@@ -19,7 +19,7 @@ int proc_cpu(char rw, struct inode *inode, int m, char *buf, int off, int len)
 		cpu_t *c = cpu_get(m);
 		cpuid_t *cpuid = &c->cpuid;
 		char tmp[256];
-		snprintf(tmp, 256, "cpu: %d\n", c->apicid, c->flags);
+		snprintf(tmp, 256, "cpu: %d\n", c->snum, c->flags);
 		total_len += proc_append_buffer(buf, tmp, total_len, -1, off, len);
 		total_len += proc_append_buffer(buf, "\tCPUID: ", total_len, -1, off, len);
 		snprintf(tmp, 256, "%s\n", cpuid->manufacturer_string);

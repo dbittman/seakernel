@@ -21,7 +21,7 @@ void acpi_madt_parse_processor(void *ent, int boot)
 		return;
 	}
 	memset(&new_cpu, 0, sizeof(cpu_t));
-	new_cpu.apicid = proc->apicid;
+	new_cpu.snum = proc->apicid;
 	new_cpu.flags=0;
 	cpu_t *cp = cpu_add(&new_cpu);
 	if(boot) {

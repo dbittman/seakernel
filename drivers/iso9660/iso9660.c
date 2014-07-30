@@ -162,7 +162,7 @@ struct inode *create_sea_inode(iso_fs_t *fs, struct iso9660DirRecord *in, char *
 		out->mode |= 0x8000;
 	out->mode |= 0x1FF;
 	out->len = in->DataLen_LE;
-	out->atime = arch_time_get_epoch();
+	out->atime = time_get_epoch();
 	out->mtime = timeToUnix(in->Time);
 	out->nlink = 1;
 	out->nblocks = out->len / 2048;

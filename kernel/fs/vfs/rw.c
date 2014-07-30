@@ -15,7 +15,7 @@ int vfs_write_inode(struct inode *i, off_t off, size_t len, char *b)
 	if(!vfs_inode_get_check_permissions(i, MAY_WRITE, 0))
 		return -EACCES;
 	int r = vfs_callback_write(i, off, len, b);
-	i->mtime = arch_time_get_epoch();
+	i->mtime = time_get_epoch();
 	sync_inode_tofs(i);
 	return r;
 }

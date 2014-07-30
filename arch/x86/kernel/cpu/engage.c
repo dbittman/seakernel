@@ -89,7 +89,7 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	mutex_create(&cpu->lock, MT_NOSCHED);
 	cpu->numtasks=1;
 	task->thread = tm_thread_data_create();
-	set_kernel_stack(&cpu->tss, task->kernel_stack + (KERN_STACK_SIZE - STACK_ELEMENT_SIZE));
+	set_kernel_stack(&cpu->arch_cpu_data.tss, task->kernel_stack + (KERN_STACK_SIZE - STACK_ELEMENT_SIZE));
 	add_atomic(&running_processes, 1);
 	/* set up the real stack, and call cpu_k_task_entry with a pointer to this cpu's ktask as 
 	 * the argument */

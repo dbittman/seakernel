@@ -133,7 +133,7 @@ int do_exec(task_t *t, char *path, char **argv, char **env, int shebanged)
 	 * file descs, free up the page directory and clear up the resources 
 	 * of the task */
 	if(EXEC_LOG)
-		printk(0, "Executing (task %d, cpu %d, tty %d, cwd=%s): %s\n", t->pid, ((cpu_t *)t->cpu)->apicid, t->tty, current_task->thread->pwd->name, path);
+		printk(0, "Executing (task %d, cpu %d, tty %d, cwd=%s): %s\n", t->pid, ((cpu_t *)t->cpu)->snum, t->tty, current_task->thread->pwd->name, path);
 	preexec(t, desc);
 	strncpy((char *)t->command, path, 128);
 	if(!loader_parse_elf_executable(mem, desc, &eip, &end))

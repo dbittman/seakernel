@@ -130,7 +130,7 @@ static struct inode *do_add_dirent(struct inode *p, char *name, int mode)
 	struct inode *ret = vfs_callback_create(p, name, mode);
 	if(ret) ret->count=1;
 	if(ret) {
-		ret->mtime = arch_time_get_epoch();
+		ret->mtime = time_get_epoch();
 		ret->uid = current_task->thread->effective_uid;
 		ret->gid = current_task->thread->effective_gid;
 		vfs_do_add_inode(p, ret, 1);

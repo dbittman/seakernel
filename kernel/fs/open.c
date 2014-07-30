@@ -62,7 +62,7 @@ struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int
 	if(flags & _FTRUNC && S_ISREG(inode->mode))
 	{
 		inode->len=0;
-		inode->mtime = arch_time_get_epoch();
+		inode->mtime = time_get_epoch();
 		sync_inode_tofs(inode);
 	}
 	if(S_ISFIFO(inode->mode) && inode->pipe) {

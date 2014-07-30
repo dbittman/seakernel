@@ -7,6 +7,8 @@
 #include <sea/cpu/processor.h>
 #include <sea/cpu/atomic.h>
 
+#define current_tss (&((cpu_t *)current_task->cpu)->arch_cpu_data.tss)
+
 static void _overflow(char *type)
 {
 	printk(5, "%s overflow occurred in task %d (esp=%x, ebp=%x, heap_end=%x). Killing...\n", 
@@ -95,7 +97,7 @@ inline static int engage_new_stack(task_t *task, task_t *parent)
 		task->esp=(esp-parent->kernel_stack) + task->kernel_stack;
 		task->ebp=(ebp-parent->kernel_stack) + task->kernel_stack;
 		task->sysregs = (parent->sysregs - parent->kernel_stack) + task->kernel_stack;
-		copy_update_stack(task->kernel_stack, parent->kernel_stack, KERN_STACK_SIZE);
+		cpu_copy_fixup_stack(task->kernel_stack, parent->kernel_stack, KERN_STACK_SIZE);
 		return 1;
 	} else {
 		task->sysregs = parent->sysregs;

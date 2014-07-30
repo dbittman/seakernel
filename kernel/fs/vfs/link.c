@@ -22,7 +22,7 @@ int vfs_do_unlink(struct inode *i)
 		err = -EISDIR;
 	if(!vfs_inode_get_check_permissions(i->parent, MAY_WRITE, 0))
 		err = -EACCES;
-	i->mtime = arch_time_get_epoch();	
+	i->mtime = time_get_epoch();	
 	sync_inode_tofs(i);
 	rwlock_acquire(&i->rwl, RWL_WRITER);
 	if(i->f_count) {
@@ -86,7 +86,7 @@ int vfs_link(char *old, char *new)
 		return -EPERM;
 	}
 	int ret = vfs_callback_link(i, new);
-	i->mtime = arch_time_get_epoch();
+	i->mtime = time_get_epoch();
 	sync_inode_tofs(i);
 	vfs_iput(i);
 	if(!ret) sys_utime(new, 0, 0);
@@ -116,7 +116,7 @@ int vfs_rmdir(char *f)
 	if(!i)
 		return -ENOENT;
 	int err = 0;
-	i->mtime = arch_time_get_epoch();
+	i->mtime = time_get_epoch();
 	sync_inode_tofs(i);
 	rwlock_acquire(&i->rwl, RWL_READER);
 	if(!vfs_directory_is_empty(i))

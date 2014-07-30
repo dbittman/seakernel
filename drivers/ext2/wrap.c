@@ -238,7 +238,7 @@ struct inode *do_wrap_ext2_create(struct inode *i, char *name, mode_t mode)
 		ext2_inode_t dir;
 		int ret = ext2_dir_create(&inode, name, &dir);
 		dir.mode = mode;
-		dir.change_time = arch_time_get_epoch();
+		dir.change_time = time_get_epoch();
 		ext2_inode_update(&dir);
 		update_sea_inode(i, &inode, 0);
 		return create_sea_inode(&dir, name);
@@ -252,7 +252,7 @@ struct inode *do_wrap_ext2_create(struct inode *i, char *name, mode_t mode)
 	new.gid = current_task->thread->effective_gid;
 	if(!ext2_dir_link(&inode, &new, name)) 
 		return 0;
-	new.change_time = arch_time_get_epoch();
+	new.change_time = time_get_epoch();
 	ext2_inode_update(&new);
 	ext2_inode_update(&inode);
 	update_sea_inode(i, &inode, 0);

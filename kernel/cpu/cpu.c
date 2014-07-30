@@ -41,12 +41,17 @@ void cpu_print_stack_trace(int num)
 	arch_cpu_print_stack_trace(num);
 }
 
+void cpu_copy_fixup_stack(addr_t new, addr_t old, size_t len)
+{
+	arch_cpu_copy_fixup_stack(new, old, len);
+}
+
 #if CONFIG_SMP
-cpu_t *cpu_get(int id)
+cpu_t *cpu_get(unsigned id)
 {
 	for(unsigned int i=0;i<cpu_array_num;i++)
 	{
-		if(cpu_array[i].apicid == id) return &cpu_array[i];
+		if(cpu_array[i].snum == id) return &cpu_array[i];
 	}
 	return 0;
 }

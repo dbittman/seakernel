@@ -17,7 +17,7 @@ static void get_timed(struct tm *now)
 
 void arch_time_get(struct tm *now) {
 	memset(now, 0, sizeof(struct tm));
-	now->tm_sec = arch_time_get_epoch();
+	now->tm_sec = time_get_epoch();
 }
 
 unsigned long long arch_time_get_epoch()

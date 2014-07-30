@@ -9,6 +9,7 @@
 #include <sea/cpu/atomic.h>
 #include <sea/cpu/imps-x86.h>
 #include <sea/cpu/cpu-x86.h>
+#include <sea/cpu/x86msr.h>
 volatile int imps_release_cpus = 0;
 char imcr_present=0;
 
@@ -29,7 +30,7 @@ static void imps_add_processor(struct imps_processor *proc)
 	if (!(proc->flags & IMPS_FLAG_ENABLED))
 		return;
 	memset(&new_cpu, 0, sizeof(cpu_t));
-	new_cpu.apicid = apicid;
+	new_cpu.snum = apicid;
 	new_cpu.flags=0;
 	cpu_t *cp = cpu_add(&new_cpu);
 	if (proc->flags & (IMPS_CPUFLAG_BOOT)) {

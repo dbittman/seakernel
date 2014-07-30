@@ -14,8 +14,6 @@ void cpu_smp_task_idle(task_t *me)
 	for(;;) 
 		tm_schedule();
 }
-extern int num_booted_cpus;
-extern int num_halted_cpus;
 #endif
 
 int cpu_get_num_running_processors()

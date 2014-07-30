@@ -32,5 +32,6 @@ unsigned int arch_mm_vm_get_attrib(addr_t v, unsigned *p, unsigned locked);
 int arch_mm_vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned opt);
 int arch_mm_vm_unmap(addr_t virt, unsigned locked);
 int arch_mm_vm_unmap_only(addr_t virt, unsigned locked);
+void arch_mm_flush_page_tables();
 
 #endif

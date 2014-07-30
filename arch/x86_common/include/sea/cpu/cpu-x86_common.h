@@ -90,10 +90,8 @@ void load_tables_ap(cpu_t *cpu);
 extern cpu_t cpu_array[CONFIG_MAX_CPUS];
 void parse_cpuid(cpu_t *);
 extern unsigned cpu_array_num;
-extern volatile unsigned num_halted_cpus;
 #if CONFIG_SMP
-/* The following definitions are taken from http://www.uruk.org/mps/ */
-extern unsigned num_cpus, num_booted_cpus, num_failed_cpus;
+
 int boot_cpu(unsigned id, unsigned apic_ver);
 void calibrate_lapic_timer(unsigned freq);
 extern unsigned bootstrap;

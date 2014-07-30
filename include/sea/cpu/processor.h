@@ -65,6 +65,8 @@ cpu_t *cpu_get(int id);
 cpu_t *cpu_add(cpu_t *c);
 
 #endif
+extern volatile unsigned num_halted_cpus;
+extern unsigned num_cpus, num_booted_cpus, num_failed_cpus;
 
 extern cpu_t *primary_cpu;
 void copy_update_stack(addr_t old, addr_t, unsigned length);
@@ -85,5 +87,7 @@ void arch_cpu_processor_init_2();
 
 void arch_cpu_early_init();
 void cpu_early_init();
+
+void cpu_halt();
 
 #endif

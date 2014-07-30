@@ -31,4 +31,13 @@ void cpu_timer_install(int hz);
 
 extern volatile long int_count[256];
 
+#if CONFIG_SMP
+
+void cpu_handle_ipi_tlb(volatile registers_t);
+void cpu_handle_ipi_tlb_ack(volatile registers_t);
+void cpu_handle_ipi_reschedule(volatile registers_t);
+void cpu_handle_ipi_halt(volatile registers_t);
+
+#endif
+
 #endif

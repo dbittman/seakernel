@@ -71,3 +71,8 @@ int mm_vm_unmap(addr_t virt, unsigned locked)
 	return arch_mm_vm_unmap(virt, locked);
 }
 
+void mm_flush_page_tables()
+{
+	arch_mm_flush_page_tables();
+}
+

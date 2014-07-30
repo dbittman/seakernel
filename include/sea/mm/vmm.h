@@ -36,6 +36,7 @@ int mm_vm_unmap_only(addr_t virt, unsigned locked);
 int mm_vm_unmap(addr_t virt, unsigned locked);
 int mm_is_valid_user_pointer(int num, void *p, char flags);
 void mm_page_fault_handler(registers_t *, addr_t, int);
+void mm_flush_page_tables();
 
 static void map_if_not_mapped(addr_t loc)
 {

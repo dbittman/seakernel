@@ -6,6 +6,9 @@
 
 static int do_map_page(addr_t addr, unsigned attr)
 {
+	/* only map a new page if one isn't already mapped. In addition,
+	 * we tell the functions that the directory is locked (since it always
+	 * will be) */
 	addr &= PAGE_MASK;
 	if(!mm_vm_get_map(addr, 0, 1))
 		mm_vm_map(addr, mm_alloc_physical_page(), attr, MAP_CRIT | MAP_PDLOCKED);
@@ -14,11 +17,10 @@ static int do_map_page(addr_t addr, unsigned attr)
 
 static int map_in_page(addr_t address)
 {
-	if(address >= current_task->heap_start && address <= current_task->heap_end) {
-		do_map_page(address, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
-		memset((void *)(address&PAGE_MASK), 0, PAGE_SIZE);
-		return 1;
-	}
+	/* check if the memory is for the heap */
+	if(address >= current_task->heap_start && address <= current_task->heap_end)
+		return do_map_page(address, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
+	/* and check if the memory is for the stack */
 	if(address >= TOP_TASK_MEM_EXEC && address < (TOP_TASK_MEM_EXEC+STACK_SIZE*2))
 		return do_map_page(address, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
 	return 0;

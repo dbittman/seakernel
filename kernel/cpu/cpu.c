@@ -16,6 +16,11 @@ void cpu_reset()
 	arch_cpu_reset();
 }
 
+void cpu_halt()
+{
+	arch_cpu_halt();
+}
+
 void cpu_processor_init_1()
 {
 	arch_cpu_processor_init_1();

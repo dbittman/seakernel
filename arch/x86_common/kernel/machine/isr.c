@@ -9,6 +9,11 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/fs/proc.h>
 #include <sea/tm/schedule.h>
+#if CONFIG_ARCH == TYPE_ARCH_X86
+#include <sea/cpu/cpu-x86.h>
+#else
+#include <sea/cpu/cpu-x86_64.h>
+#endif
 
 /* don't need to worry about other processors getting in the way here, since
  * this is only used if SMP is disabled or unavailable */
@@ -35,16 +40,17 @@ void arch_interrupt_ipi_handler(volatile registers_t regs)
 		case IPI_DEBUG:
 		case IPI_SHUTDOWN:
 		case IPI_PANIC:
-			x86_cpu_handle_ipi_cpu_halt(regs);
+			LAPIC_WRITE(LAPIC_TPR, 0xFFFFFFFF);
+			cpu_handle_ipi_halt(regs);
 			break;
 		case IPI_SCHED:
-			x86_cpu_handle_ipi_reschedule(regs);
+			cpu_handle_ipi_reschedule(regs);
 			break;
 		case IPI_TLB:
-			x86_cpu_handle_ipi_tlb(regs);
+			cpu_handle_ipi_tlb(regs);
 			break;
 		case IPI_TLB_ACK:
-			x86_cpu_handle_ipi_tlb_ack(regs);
+			cpu_handle_ipi_tlb_ack(regs);
 			break;
 		default:
 			panic(PANIC_NOSYNC, "invalid interprocessor interrupt number: %d", regs.int_no);

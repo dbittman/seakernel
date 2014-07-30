@@ -88,19 +88,18 @@ static void copy_task_struct(task_t *task, task_t *parent, char share_thread_dat
 
 #if CONFIG_SMP
 extern cpu_t cpu_array[];
-extern int num_cpus;
 static int __counter = 0;
 static cpu_t *fork_choose_cpu(task_t *parent)
 {
 	cpu_t *pc = parent->cpu;
 	cpu_t *cpu = &cpu_array[__counter];
 	add_atomic(&__counter, 1);
-	if(__counter >= num_cpus)
+	if(__counter >= (int)num_cpus)
 		__counter=0;
 	if(!(cpu->flags & CPU_TASK))
 		return pc;
 	if(cpu->active_queue->num < 2) return cpu;
-	for(int i=0;i<num_cpus;i++) {
+	for(int i=0;i<(int)num_cpus;i++) {
 		cpu_t *tmp = &cpu_array[i];
 		if(tmp->active_queue->num < cpu->active_queue->num)
 			cpu = tmp;

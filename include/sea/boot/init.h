@@ -46,7 +46,5 @@ void tm_init_multitasking();
 #define sys_setup() dosyscall(0,0,0,0,0,0)
 
 extern char *stuff_to_pass[128];
-extern int argc_STP;
-extern char tmp_cmd_line[2048];
 
 #endif

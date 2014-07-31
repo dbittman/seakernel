@@ -6,9 +6,10 @@
 #include <sea/fs/mount.h>
 #include <sea/fs/callback.h>
 #include <sea/cpu/atomic.h>
-struct llist *mountlist, *sblist;
+struct llist *mountlist;
+static struct llist *sblist;
 
-unsigned int fs_idx_counter=0;
+static unsigned int fs_idx_counter=0;
 
 struct inode *fs_get_filesystem(int _n)
 {

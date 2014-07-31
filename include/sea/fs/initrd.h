@@ -18,8 +18,6 @@ typedef struct __attribute__((packed))
 	u32int length; 
 } initrd_file_header_t;
 
-extern addr_t initrd_location;
-
 void fs_initrd_load(struct multiboot *mb);
 void fs_initrd_parse();
 

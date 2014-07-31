@@ -18,7 +18,7 @@ int procfs_fsstat(struct inode *i, struct posix_statfs *s)
 	return 0;
 }
 
-struct inode_operations procfs_inode_ops = {
+static struct inode_operations procfs_inode_ops = {
  proc_read,
  proc_write,
  0,
@@ -41,7 +41,7 @@ int proc_vfs(char rw, struct inode *n, int m, char *buf, int off, int len);
 int proc_kern_rw(char rw, struct inode *inode, int m, char *buf, int off, int len);
 int proc_rw_mem(char rw, struct inode *inode, int m, char *buf, int off, int len);
 
-int *pfs_table[64] = {
+static int *pfs_table[64] = {
  (int *)proc_rw_mem, //Memory
  (int *)0, //Tasking
  (int *)proc_vfs, //VFS

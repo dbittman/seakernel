@@ -12,9 +12,9 @@
 #include <sea/sys/fcntl.h>
 
 module_t *modules=0;
-mutex_t mod_mutex;
-mutex_t sym_mutex;
-kernel_symbol_t export_syms[MAX_SYMS];
+static mutex_t mod_mutex;
+static mutex_t sym_mutex;
+static kernel_symbol_t export_syms[MAX_SYMS];
 
 void loader_init_kernel_symbols(void)
 {

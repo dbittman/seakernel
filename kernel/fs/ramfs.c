@@ -18,7 +18,7 @@ int ramfs_unlink(struct inode *i)
 	return 0;
 }
 
-struct inode_operations rfs_inode_ops = {
+static struct inode_operations rfs_inode_ops = {
  fs_ramfs_read,
  fs_ramfs_write,
  (void *)ramfs_op_dummy,

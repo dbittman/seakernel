@@ -5,11 +5,12 @@ Todo:
 	* Networking
 	* VT-x
 	* perf counters
+	* shared libraries
 
 Roadmap:
 
 0.3 B1
-	* Shared Libraries
+	* refactor CPU code
 
 0.3 B2
 	* make sure all features listed in termcap are properly implemented

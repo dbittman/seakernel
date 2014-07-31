@@ -65,8 +65,8 @@ void pmap_destroy(struct pmap *m)
 		kfree(m);
 }
 
-addr_t mmdev_addr = 0;
-mutex_t mmd_lock;
+static addr_t mmdev_addr = 0;
+static mutex_t mmd_lock;
 addr_t get_next_mm_device_page()
 {
 	if(!mmdev_addr) {

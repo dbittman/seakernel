@@ -7,7 +7,7 @@
 #include <sea/fs/ramfs.h>
 
 static int initrd_version=0;
-addr_t initrd_location=0;
+static addr_t initrd_location=0;
 static initrd_header_t *initrd_header;
 static initrd_file_header_t *file_headers;
 

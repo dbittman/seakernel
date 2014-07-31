@@ -14,11 +14,10 @@ volatile unsigned long pm_num_pages=0, pm_used_pages=0;
 volatile uint64_t highest_page=0;
 volatile uint64_t lowest_page=~0;
 
-addr_t pmm_contiguous_address_start;
-int pmm_contiguous_end_index, pmm_contiguous_max_index, pmm_contiguous_index_bytes, pmm_contiguous_start_index;
-uint8_t pmm_contiguous_index[4096];
+static addr_t pmm_contiguous_address_start;
+static int pmm_contiguous_end_index, pmm_contiguous_max_index, pmm_contiguous_index_bytes, pmm_contiguous_start_index;
+static uint8_t pmm_contiguous_index[4096];
 
-int memory_has_been_mapped=0;
 volatile addr_t placement;
 mutex_t pm_mutex;
 
@@ -168,7 +167,7 @@ addr_t mm_alloc_physical_page()
 		current_task->allocated++;
 		current_task->phys_mem_usage++;
 	}
-	if(memory_has_been_mapped)
+	if(kernel_state_flags & KSF_MEMMAPPED)
 	{
 		mutex_acquire(&pm_mutex);
 		/* out of physical memory!! */
@@ -218,7 +217,7 @@ found:
 	if(!ret)
 		panic(PANIC_MEM | PANIC_NOSYNC, "found zero address in page stack (%x %x)\n", pm_stack, pm_stack_max);
 	if(((ret > highest_page) || ret < lowest_page) 
-		&& memory_has_been_mapped)
+		&& (kernel_state_flags & KSF_MEMMAPPED))
 		panic(PANIC_MEM | PANIC_NOSYNC, "found invalid address in page stack: %x (H=%x, L=%x)\n", ret, highest_page, lowest_page);
 	return ret;
 }
@@ -228,7 +227,7 @@ void mm_free_physical_page(addr_t addr)
 	if(!(kernel_state_flags & KSF_PAGING))
 		panic(PANIC_MEM | PANIC_NOSYNC, "Called free page without paging environment");
 	if(addr < pm_location || (((addr > highest_page) || addr < lowest_page)
-		&& memory_has_been_mapped)) {
+		&& (kernel_state_flags & KSF_MEMMAPPED))) {
 		panic(PANIC_MEM | PANIC_NOSYNC, "tried to free invalid physical address (%x)", addr);
 		return;
 	}
@@ -246,13 +245,13 @@ void mm_free_physical_page(addr_t addr)
 	else if(pm_stack_max <= pm_stack)
 	{
 		/* TODO: not sure if this is correct... */
-		if(!memory_has_been_mapped)
+		if(!(kernel_state_flags & KSF_MEMMAPPED))
 			mm_vm_map(pm_stack_max, mm_alloc_physical_page(), PAGE_PRESENT | PAGE_WRITE, 0);
 		else
 			mm_vm_map(pm_stack_max, addr, PAGE_PRESENT | PAGE_WRITE, 0);
 		memset((void *)pm_stack_max, 0, PAGE_SIZE);
 		pm_stack_max += PAGE_SIZE;
-		if(!memory_has_been_mapped) goto add;
+		if(!(kernel_state_flags & KSF_MEMMAPPED)) goto add;
 	} else {
 		add:
 		assert(*(addr_t *)(pm_stack) = addr);

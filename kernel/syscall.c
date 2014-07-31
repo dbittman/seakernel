@@ -56,7 +56,7 @@ int sys_syslog(int level, char *buf, int len, int ctl)
 	return 0;
 }
 
-void *syscall_table[129] = {
+static void *syscall_table[129] = {
 	SC sys_setup,
 	
 	SC tm_exit,           SC tm_do_fork,        SC tm_process_wait,     SC sys_readpos, 

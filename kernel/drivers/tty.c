@@ -13,7 +13,7 @@
 #include <sea/tm/tqueue.h>
 #include <sea/cpu/atomic.h>
 
-struct vterm consoles[MAX_CONSOLES];
+static struct vterm consoles[MAX_CONSOLES];
 static unsigned *tty_calltable = 0;
 extern struct console_driver crtc_drv;
 /* Create a terminal if needed, and set as current */

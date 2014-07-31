@@ -122,6 +122,5 @@ struct vbemodeinfo {
 	u16 mode_id;
 	u8  depth;
 } __attribute__ ((packed));
-extern struct multiboot *mtboot;
 
 #endif

@@ -230,6 +230,7 @@ int sys_setpgid(int a, int b);
 int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds, 
 	struct timeval *timeout);
 int sys_sbrk(long inc);
+int sys_isstate(int pid, int state);
 
 #define tm_read_eip arch_tm_read_eip
 addr_t arch_tm_read_eip();

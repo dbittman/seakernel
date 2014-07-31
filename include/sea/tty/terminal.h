@@ -60,7 +60,6 @@ void arch_console_init_stage1();
 
 int tty_read_escape_seq(struct vterm *con, char *seq);
 
-extern struct vterm consoles[];
 extern struct vterm *current_console, *kernel_console, *log_console;
 
 void console_puts(struct vterm *c, char *s);

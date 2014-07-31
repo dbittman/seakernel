@@ -19,10 +19,10 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/atomic.h>
 
-struct multiboot *mtboot;
-addr_t i_stack=0;
+static struct multiboot *mtboot;
+addr_t initial_boot_stack=0;
 char *stuff_to_pass[128];
-int argc_STP=3;
+static int argc_STP=3;
 unsigned init_pid=0;
 elf32_t kernel_elf;
 int april_fools=0;
@@ -106,7 +106,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	 * We want serial log output as early as possible */
 	kernel_state_flags=0;
 	mtboot = mboot_header;
-	i_stack = initial_stack;
+	initial_boot_stack = initial_stack;
 	loader_parse_kernel_elf(mboot_header, &kernel_elf);
 #if CONFIG_MODULES
 	loader_init_kernel_symbols();

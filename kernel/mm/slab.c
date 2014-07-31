@@ -22,8 +22,8 @@
 
 #define SLAB_NUM_INDEX 120
 
-addr_t slab_start=0, slab_end=0;
-vma_t slab_area_alloc;
+static addr_t slab_start=0, slab_end=0;
+static vma_t slab_area_alloc;
 
 static slab_cache_t *scache_list[NUM_SCACHES];
 static unsigned pages_used=0;
@@ -33,7 +33,7 @@ static void release_slab(slab_t *slab);
 static mutex_t scache_lock;
 //#define SLAB_DEBUG 1
 #ifdef SLAB_DEBUG
-unsigned total=0;
+static unsigned total=0;
 #endif
 
 static vnode_t *alloc_slab(unsigned np)

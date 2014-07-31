@@ -11,7 +11,7 @@
 #include <sea/loader/symbol.h>
 #include <sea/lib/hash.h>
 
-struct llist *cache_list;
+static struct llist *cache_list;
 
 static void accessed_cache(cache_t *c)
 {

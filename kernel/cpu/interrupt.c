@@ -70,7 +70,7 @@ char interrupt_controller=0;
 /* if this is set to true, there may be a stage2 handler waiting to
  * be run. This is not always true though, if for instance another
  * tasks handles the stage2s first. */
-volatile char maybe_handle_stage_2=0;
+static volatile char maybe_handle_stage_2=0;
 
 /* interrupt handlers come in two types:
  * stage1: executed immediately when the interrupt is handled.

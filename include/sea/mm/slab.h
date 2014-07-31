@@ -6,9 +6,6 @@
 #define SLAB_MAGIC 0x11235813
 #define S_ALIGN 1
 
-extern addr_t slab_start, slab_end;
-extern vma_t slab_area_alloc;
-
 enum transfer_vals {
 	TO_EMPTY=0, 
 	TO_PARTIAL=1, 

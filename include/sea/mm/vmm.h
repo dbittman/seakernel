@@ -19,7 +19,7 @@ extern struct pd_data *pd_cur_data;
 
 extern volatile vmm_context_t *kernel_dir, *current_dir;
 extern int id_tables;
-extern addr_t i_stack;
+extern addr_t initial_boot_stack;
 vmm_context_t *mm_vm_clone(vmm_context_t *pd, char cow);
 vmm_context_t *mm_vm_copy(vmm_context_t *pd);
 void mm_free_thread_shared_directory();

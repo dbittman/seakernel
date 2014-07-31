@@ -85,8 +85,8 @@ static void process_memorymap(struct multiboot *mboot)
  			, mbs, KMALLOC_NAME);
 	printk(1, "[mm]: num pages = %d\n", num_pages);
 	pm_num_pages=num_pages;
-	memory_has_been_mapped=1;
 	pm_used_pages=0;
+	set_ksf(KSF_MEMMAPPED);
 	mm_pmm_init_contiguous(pm_location);
 }
 

@@ -5,7 +5,7 @@
 #include <sea/rwlock.h>
 #include <sea/errno.h>
 
-struct hash_collision_resolver *hash_collision_resolvers[NUM_HASH_COLLISION_RESOLVERS] = {
+static struct hash_collision_resolver *hash_collision_resolvers[NUM_HASH_COLLISION_RESOLVERS] = {
 	0,
 	&__hash_chain_resolver,
 	0,
@@ -27,7 +27,7 @@ int __default_byte_sum_fn(int sz, void *key, size_t kesz, size_t len, int iterat
 	return sum % sz;
 }
 
-void *hash_functions_list[NUM_HASH_FUNCTIONS] = {
+static void *hash_functions_list[NUM_HASH_FUNCTIONS] = {
 	__default_byte_sum_fn
 };
 

@@ -10,7 +10,6 @@
 #endif
 
 int syscall_handler(registers_t *regs);
-extern void *syscall_table[];
 
 int sys_null();
 int sys_setup();

@@ -14,7 +14,7 @@ void move_stack(void *start, size_t sz)
 	addr_t pd_addr;
 	addr_t old_stack_pointer;
 	addr_t old_base_pointer;
-	addr_t offset = (addr_t)start - i_stack;
+	addr_t offset = (addr_t)start - initial_boot_stack;
 	addr_t new_base_pointer, new_stack_pointer, tmp, *tmp2;
 	asm("mov %%cr3, %0" : "=r" (pd_addr));
 	asm("mov %0, %%cr3" : : "r" (pd_addr)); 
@@ -22,12 +22,12 @@ void move_stack(void *start, size_t sz)
 	asm("mov %%rbp, %0" : "=r" (old_base_pointer));
 	new_stack_pointer = old_stack_pointer + offset;
 	new_base_pointer  = old_base_pointer  + offset; 
-	memcpy((void*)new_stack_pointer, (void*)old_stack_pointer, i_stack-old_stack_pointer);
+	memcpy((void*)new_stack_pointer, (void*)old_stack_pointer, initial_boot_stack-old_stack_pointer);
 	
 	for(i = (u64int)start; i > (u64int)start-sz; i -= 8)
 	{
 		tmp = *(u64int*)i;
-		if((old_stack_pointer < tmp) && (tmp < i_stack))
+		if((old_stack_pointer < tmp) && (tmp < initial_boot_stack))
 		{
 			tmp = tmp + offset;
 			tmp2 = (u64int*)i;

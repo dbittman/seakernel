@@ -7,7 +7,7 @@ do_deps:
 	done
 	echo -e "\e[2K[DP]    calculating deps: done"
 
-make.deps:
+make.deps: $(ADHEADS)
 	@touch make.deps
 	@${MAKE} -s do_deps
 

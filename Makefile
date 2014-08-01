@@ -61,6 +61,7 @@ export GASFLAGS= ${GASFLAGS_ARCH}
 
 include kernel/make.inc
 include drivers/make.inc
+include arch/make.inc
 
 all: can_build make.deps
 	$(MAKE) -s kernel
@@ -85,7 +86,12 @@ deps:
 library/klib.a:
 	$(MAKE) -s -C library
 
-skernel.1: $(AOBJS) $(KOBJS) library/klib.a
+$(ADHEADS):
+	@mkdir -p arch/include/sea/arch-include
+	@echo "[GH]    $@"
+	@tools/arch-dep-header-gen.sh $@ > $@
+
+skernel.1: $(ADHEADS) $(AOBJS) $(KOBJS) library/klib.a
 	echo "[LD]	skernel"
 	$(CC) $(CFLAGS) $(LDFLAGS) -o skernel.1 $(AOBJS) $(KOBJS) library/klib.a -lgcc -static-libgcc -static
 
@@ -99,7 +105,7 @@ initrd.img: modules
 	echo "Building initrd..."
 	./tools/ird.rb initrd-${ARCH_TC}.conf > /dev/null ;\
 
-modules: library/klib.a
+modules: $(ADHEADS) library/klib.a
 	echo Building modules, pass 1...
 	$(MAKE) -C drivers
 
@@ -114,7 +120,7 @@ install: kernel
 	@make -C drivers install VERSION=${KERNEL_VERSION}
 
 clean:
-	@-rm -f $(AOBJS) $(KOBJS) $(CLEAN) initrd.img skernel make.deps skernel.1
+	@-rm -f $(ADHEADS) $(AOBJS) $(KOBJS) $(CLEAN) initrd.img skernel make.deps skernel.1
 	@-$(MAKE) -s -C library clean &> /dev/null
 	@-$(MAKE) -s -C drivers clean &> /dev/null
 

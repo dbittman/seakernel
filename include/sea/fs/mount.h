@@ -18,8 +18,6 @@ struct mountlst {
 	struct llistnode *node;
 };
 
-
-
 extern struct sblktbl *sb_table;
 extern struct llist *mountlist;
 
@@ -36,4 +34,6 @@ int vfs_do_unmount(struct inode *i, int flags);
 int vfs_unmount(char *n, int flags);
 int sys_mount(char *node, char *to);
 int sys_mount2(char *node, char *to, char *name, char *opts, int);
+
 #endif
+

@@ -21,9 +21,8 @@ MCFLAGS=        -std=gnu11 \
 		-nostdlib \
 		-I../arch/${ARCH}/include \
 		-Iarch/${ARCH}/include \
-		-I../../arch/${ARCH}/include \
-		-I../include -I../../include \
-		-I../../../include \
+		-I../include \
+		-I../arch/include \
 		-Wall -Wextra -Wformat-security -Wformat-nonliteral -Wshadow \
 		-Wpointer-arith -Wcast-align -Wno-unused -Wnested-externs \
 		-Winline -Wno-long-long -Wno-unused-parameter -Wno-unused-but-set-parameter $(CFLAGS_ARCH) \

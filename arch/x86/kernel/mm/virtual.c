@@ -102,7 +102,7 @@ void arch_mm_vm_init(addr_t id_map_to)
 {
 	id_mapped_location=id_map_to;
 	/* Register some stuff... */
-	interrupt_register_handler (14, (isr_t)&arch_mm_page_fault, 0);
+	interrupt_register_handler (14, (isr_t)&arch_mm_page_fault_handle, 0);
 	
 	page_dir_t *pd = (page_dir_t *)vm_init_directory(id_map_to);
 	minimal_directory = pd;

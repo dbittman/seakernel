@@ -13,8 +13,6 @@
 #define MAY_WRITE     0200
 #define MAY_READ      0400
 
-
-
 #define INAME_LEN 256
 
 #define inode_has_children(i) (i->children.head && ll_is_active((&i->children)))

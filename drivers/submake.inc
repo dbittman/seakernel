@@ -1,6 +1,8 @@
 include ../../make.inc
 include ../../arch/$(ARCH)/drivers/submake.inc
 
+MCFLAGS+=-I../../arch/$(ARCH)/include -I ../../include -I../../arch/include
+
 all: make.deps $(OUTPUT)
 
 %.o: %.c

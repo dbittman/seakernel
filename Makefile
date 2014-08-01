@@ -23,7 +23,8 @@ CFLAGS_NOARCH = -std=gnu11 -nostdlib -nodefaultlibs \
                 -mno-red-zone \
                 -mpush-args -mno-accumulate-outgoing-args \
                 -Iarch/${ARCH}/include \
-                -I../include -Iinclude -I ../../include -I ../../../include \
+                -Iinclude \
+				-Iarch/include \
                 -D__KERNEL__ \
                 -Wall -Wextra -Wformat-security -Wformat-nonliteral \
 	        -Wno-strict-aliasing -Wshadow -Wpointer-arith -Wcast-align \

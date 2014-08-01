@@ -1,13 +1,7 @@
 #ifndef __ELF_H
 #define __ELF_H
-#include <sea/config.h>
-#if CONFIG_ARCH == TYPE_ARCH_X86
-#include <sea/loader/elf-x86.h>
-#elif CONFIG_ARCH == TYPE_ARCH_X86_64
-#include <sea/loader/elf-x86_64.h>
-#endif
-
 #include <sea/boot/multiboot.h>
+#include <sea/arch-include/loader-elf.h>
 
 void *loader_parse_elf_module(module_t *mod, void * buf);
 int arch_loader_parse_elf_executable(void *mem, int fp, addr_t *start, addr_t *end);

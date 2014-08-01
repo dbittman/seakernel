@@ -5,11 +5,7 @@
 
 #include <sea/config.h>
 #include <sea/types.h>
-#if CONFIG_ARCH == TYPE_ARCH_X86
-#include <sea/asm/system-x86_common.h>
-#elif CONFIG_ARCH == TYPE_ARCH_X86_64
-#include <sea/asm/system-x86_common.h>
-#endif
+#include <sea/arch-include/asm-system.h>
 
 #define likely(x)       __builtin_expect((x),1)
 #define unlikely(x)     __builtin_expect((x),0)

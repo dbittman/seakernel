@@ -4,12 +4,7 @@
 #include <sea/mm/context.h>
 #include <sea/tm/process.h>
 #include <sea/mm/pmm.h>
-#if CONFIG_ARCH == TYPE_ARCH_X86
-#include <sea/mm/memory-x86.h>
-#elif CONFIG_ARCH == TYPE_ARCH_X86_64
-#include <sea/mm/memory-x86_64.h>
-#endif
-
+#include <sea/arch-include/mm-memory.h>
 struct pd_data {
 	unsigned count;
 	mutex_t lock;

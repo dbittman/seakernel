@@ -2,16 +2,9 @@
 #define SYSCALL_H
 #include <sea/kernel.h>
 #include <sea/cpu/interrupt.h>
-#include <sea/config.h>
-#if CONFIG_ARCH == TYPE_ARCH_X86
-#include <sea/syscall-x86.h>
-#elif CONFIG_ARCH == TYPE_ARCH_X86_64
-#include <sea/syscall-x86_64.h>
-#endif
-
+#include <sea/arch-include/syscall.h>
 int syscall_handler(registers_t *regs);
 
-int sys_null();
 int sys_setup();
 
 #define SYS_SETUP 		  0

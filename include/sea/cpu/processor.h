@@ -5,12 +5,8 @@
 #include <sea/tm/tqueue.h>
 #include <sea/tm/process.h>
 #include <sea/mutex.h>
-#include <sea/config.h>
-#if CONFIG_ARCH == TYPE_ARCH_X86
-  #include <sea/cpu/cpu-x86_common.h>
-#elif CONFIG_ARCH == TYPE_ARCH_X86_64
-  #include <sea/cpu/cpu-x86_common.h>
-#endif
+
+#include <sea/arch-include/cpu-processor.h>
 
 #define CPU_STACK_TEMP_SIZE 1024
 

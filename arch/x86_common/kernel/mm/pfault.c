@@ -3,7 +3,7 @@
 
 /* handle a page fault. Convert arch-dep things into generic
  * kernel stuff (the error codes), and get the address. */
-void arch_mm_page_fault(registers_t *regs, int int_no)
+void arch_mm_page_fault_handle(registers_t *regs, int int_no)
 {
 	assert(regs);
 	addr_t cr2, err_code = regs->err_code;

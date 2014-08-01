@@ -5,20 +5,20 @@ typedef long clock_t;
 
 struct tm
 {
-  int	tm_sec;
-  int	tm_min;
-  int	tm_hour;
-  int	tm_mday;
-  int	tm_mon;
-  int	tm_year;
-  int	tm_wday;
-  int	tm_yday;
-  int	tm_isdst;
+	int	tm_sec;
+	int	tm_min;
+	int	tm_hour;
+	int	tm_mday;
+	int	tm_mon;
+	int	tm_year;
+	int	tm_wday;
+	int	tm_yday;
+	int	tm_isdst;
 };
 
 struct timeval {
-  int      tv_sec;
-  int tv_usec;
+	int tv_sec;
+	int tv_usec;
 };
 
 struct tms {
@@ -34,3 +34,4 @@ void arch_time_get(struct tm *now);
 void time_get(struct tm *);
 
 #endif
+

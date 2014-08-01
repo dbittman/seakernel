@@ -18,3 +18,5 @@ tools/mkird
 initrd-*
 documentation/built
 drivers/built/
+arch/include
+

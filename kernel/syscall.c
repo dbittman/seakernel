@@ -248,7 +248,7 @@ int syscall_handler(volatile registers_t *regs)
 
 	#ifdef SC_DEBUG
 	if(current_task->tty == current_console->tty) 
-		printk(SC_DEBUG, "tty %d: syscall %d (from: %x): enter %d\n", i
+		printk(SC_DEBUG, "tty %d: syscall %d (from: %x): enter %d\n", 
 				current_task->tty, current_task->pid, 
 				current_task->sysregs->eip, SYSCALL_NUM_AND_RET);
 	int or_t = tm_get_ticks();

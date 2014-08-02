@@ -18,12 +18,8 @@ int __tm_handle_signal(task_t *t)
 	t->sig_mask |= sa->sa_mask;
 	if(!(sa->sa_flags & SA_NODEFER))
 		t->sig_mask |= (1 << t->sigd);
-	int user_success=0;
-	if(sa->_sa_func._sa_handler && t->sigd != SIGKILL) {
-		/* try user space handling */
-		user_success = arch_tm_userspace_signal_initializer(t, sa);
-	}
-	if(!sa->_sa_func._sa_handler && !t->system && !user_success) {
+	if(sa->_sa_func._sa_handler && t->sigd != SIGKILL && arch_tm_userspace_signal_initializer(t, sa));
+	else if(!sa->_sa_func._sa_handler && !t->system) {
 		/* Default Handlers */
 		tm_process_raise_flag(t, TF_SCHED);
 		switch(t->sigd)

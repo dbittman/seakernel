@@ -15,14 +15,23 @@
 unsigned running_processes = 0;
 static void __copy_mappings(task_t *ch, task_t *pa)
 {
+	/* copy the memory mappings. All mapping types are inherited, but
+	 * they only barely modified. Like, just enough for the new process
+	 * to not screw up the universe. This is accomplished by the fact
+	 * that everything is just pointers to sections of memory that are
+	 * copied during mm_vm_clone anyway... */
 	mutex_acquire(&pa->thread->map_lock);
 	struct llistnode *node;
 	struct memmap *map;
 	ll_for_each_entry(&pa->thread->mappings, node, struct memmap *, map) {
+		/* new mapping object, copy the data */
 		struct memmap *n = kmalloc(sizeof(*map));
 		memcpy(n, map, sizeof(*n));
+		/* of course, we have another reference to the backing inode */
 		add_atomic(&n->node->count, 1);
 		if(map->flags & MAP_SHARED) {
+			/* and if it's shared, tell the inode that another processor
+			 * cares about some section of memory */
 			fs_inode_map_region(n->node, n->offset, n->length);
 		}
 		n->entry = ll_insert(&ch->thread->mappings, n);
@@ -36,6 +45,8 @@ static void __copy_mappings(task_t *ch, task_t *pa)
 
 static void copy_thread_data(task_t *task, task_t *parent)
 {
+	/* we've created a new process, not a new thread. Copy over the data
+	 * and increase reference counts */
 	assert(parent->thread->magic == THREAD_MAGIC);
 	if(parent->thread->root) {
 		task->thread->root = parent->thread->root;
@@ -58,7 +69,7 @@ static void copy_thread_data(task_t *task, task_t *parent)
 static void copy_task_struct(task_t *task, task_t *parent, char share_thread_data)
 {
 	task->parent = parent;
-	task->pid = add_atomic(&next_pid, 1)-1;
+	task->pid = add_atomic(&next_pid, 1)-1 /* just....shut up */;
 	/* copy over the data if we're a new process. If this is going to be a thread, 
 	 * then add to the count and set the pointer */
 	if(!share_thread_data) {
@@ -69,7 +80,7 @@ static void copy_task_struct(task_t *task, task_t *parent, char share_thread_dat
 		task->thread = parent->thread;
 		assert(parent->thread->magic == THREAD_MAGIC);
 	}
-	
+
 	task->tty = parent->tty;
 	task->sig_mask = parent->sig_mask;
 	task->priority = parent->priority;
@@ -146,11 +157,11 @@ int tm_do_fork(unsigned flags)
 	/* Copy the stack */
 	cpu_interrupt_set(0);
 	engage_new_stack(task, current_task);
+	volatile task_t *parent = current_task;
+	store_context_fork(task);
 	/* Here we read the EIP of this exact location. The parent then sets the
 	 * eip of the child to this. On the reschedule for the child, it will 
 	 * start here as well. */
-	volatile task_t *parent = current_task;
-	store_context_fork(task);
 	eip = tm_read_eip();
 	if(current_task == parent)
 	{

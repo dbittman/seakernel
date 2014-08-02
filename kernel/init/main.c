@@ -33,7 +33,7 @@ static int count_ie=0;
 static char *init_env[12];
 static char cleared_args=0;
 static char kernel_name[128];
-static struct tm kernel_start_time;
+static unsigned long long start_epoch;
 
 void parse_kernel_cmd(char *buf)
 {
@@ -122,7 +122,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 #if CONFIG_MODULES
 	loader_init_modules();
 #endif
-	init_syscalls();
+	syscall_init();
 	fs_initrd_load(mtboot);
 	cpu_timer_install(1000);
 	mm_pm_init(placement, mtboot);
@@ -142,10 +142,11 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	/* Load the rest... */
 	fs_initrd_parse();
 	kt_init_kernel_tasking();
-	time_get(&kernel_start_time);
-	printk(KERN_MILE, "[kernel]: Kernel is setup (%2.2d:%2.2d:%2.2d, kv=%d, ts=%d bytes, bits=%d: ok)\n", 
-	       kernel_start_time.tm_hour, kernel_start_time.tm_min, 
-	       kernel_start_time.tm_sec, KVERSION, sizeof(task_t), BITS_PER_LONG);
+	start_epoch = time_get_epoch();
+	printk(KERN_MILE, "[kernel]: Kernel is setup (time=%d, kv=%d: ok)\n", 
+	       start_epoch, KVERSION, sizeof(task_t), BITS_PER_LONG);
+	printk(KERN_DEBUG, "[kernel]: structure sizes: task=%d bytes, thread=%d bytes, inode=%d bytes\n",
+			sizeof(task_t), sizeof(struct thread_shared_data), sizeof(struct inode));
 	assert(!cpu_interrupt_set(1));
 	if(!tm_fork())
 		init();

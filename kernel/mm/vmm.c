@@ -28,12 +28,12 @@ void mm_free_thread_specific_directory()
 
 void mm_vm_init(addr_t id_map_to)
 {
-	return arch_mm_vm_init(id_map_to);
+	arch_mm_vm_init(id_map_to);
 }
 
 void mm_vm_init_2()
 {
-	return arch_mm_vm_init_2();
+	arch_mm_vm_init_2();
 }
 
 void mm_vm_switch_context(vmm_context_t *n/*VIRTUAL ADDRESS*/)

@@ -80,7 +80,6 @@ int tty_read(int min, char *buf, size_t len)
 		return -ENOENT;
 	if(!buf) return -EINVAL;
 	struct vterm *con=0;
-	again:
 	con = &consoles[min];
 	if(!con->flag)
 		return -ENOENT;

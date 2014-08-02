@@ -18,10 +18,12 @@ int __tm_handle_signal(task_t *t)
 	t->sig_mask |= sa->sa_mask;
 	if(!(sa->sa_flags & SA_NODEFER))
 		t->sig_mask |= (1 << t->sigd);
-	/* tricky short-circuit evaluation */
-	if(sa->_sa_func._sa_handler && t->sigd != SIGKILL && arch_tm_userspace_signal_initializer(t, sa));
-	else if(!sa->_sa_func._sa_handler && !t->system)
-	{
+	int user_success=0;
+	if(sa->_sa_func._sa_handler && t->sigd != SIGKILL) {
+		/* try user space handling */
+		user_success = arch_tm_userspace_signal_initializer(t, sa);
+	}
+	if(!sa->_sa_func._sa_handler && !t->system && !user_success) {
 		/* Default Handlers */
 		tm_process_raise_flag(t, TF_SCHED);
 		switch(t->sigd)
@@ -100,7 +102,6 @@ int tm_do_send_signal(int pid, int __sig, int p)
 	if(task != current_task) {
 		if(!p && pid != 0 && (current_task->thread->effective_uid) && !current_task->system)
 			panic(PANIC_NOSYNC, "Priority signal sent by an illegal task!");
-		/* Check for vfs_inode_get_check_permissions */
 		if(!__sig || (__sig < 32 && __can_send_signal(current_task, task) && !p))
 			return -EACCES;
 		if(task->state == TASK_DEAD || task->state == TASK_SUICIDAL)
@@ -229,8 +230,13 @@ int sys_sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict os
 
 int tm_signal_will_be_fatal(task_t *t, int sig)
 {
+	/* will the signal be fatal? Well, if it's SIGKILL then....yes */
 	if(sig == SIGKILL) return 1;
-	if(t->thread->signal_act[t->sigd]._sa_func._sa_handler) return 0;
+	/* if there is a user-space handler, then it will be called, and
+	 * so will not be fatal (probably) */
+	if(t->thread->signal_act[t->sigd]._sa_func._sa_handler)
+		return 0;
+	/* of the default handlers, these signals don't kill the process */
 	if(sig == SIGUSLEEP || sig == SIGISLEEP || sig == SIGSTOP || sig == SIGCHILD)
 		return 0;
 	return 1;
@@ -246,3 +252,4 @@ int tm_process_got_signal(task_t *t)
 	/* otherwise, return if we have a signal */
 	return (t->sigd);
 }
+

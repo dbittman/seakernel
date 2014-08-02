@@ -75,7 +75,8 @@ void mm_page_fault_handler(registers_t *regs, addr_t address, int pf_cause)
 
 		kprintf("[mm]: %d: segmentation fault\n", current_task->pid);
 		printk(0, "[mm]: %d: cause = %x, address = %x\n", current_task->pid, pf_cause, address);
-		printk(0, "[mm]: %d: heap %x -> %x, flags = %x\n", current_task->pid, current_task->heap_start, 
+		printk(0, "[mm]: %d: heap %x -> %x, flags = %x\n",
+				current_task->pid, current_task->heap_start, 
 				current_task->heap_end, current_task->flags);
 		
 		tm_kill_process(current_task->pid);
@@ -85,7 +86,8 @@ void mm_page_fault_handler(registers_t *regs, addr_t address, int pf_cause)
 		if(mm_page_fault_test_mappings(address, pf_cause) == 0)
 			return;
 	}
-	printk(0, "[mm]: KPF: current_task=%x:%d, system=%d, flags=%x, F=%x\n", current_task, current_task->pid, current_task->system,
+	printk(0, "[mm]: KPF: current_task=%x:%d, system=%d, flags=%x, F=%x\n",
+			current_task, current_task->pid, current_task->system,
 			current_task->flags, current_task->flag);
 	if(!current_task) {
 		if(kernel_task) {

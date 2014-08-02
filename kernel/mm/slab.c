@@ -52,7 +52,7 @@ static void free_slab(slab_t *slab)
 {
 	unsigned num_pages = slab->num_pages;
 #ifdef SLAB_DEBUG
-	printk(0, "[slab]: free slab %x - %x\n", (addr_t)slab, (addr_t)slab + num_pages * 0x1000);
+	printk(0, "[slab]: free slab %x - %x\n", (addr_t)slab, (addr_t)slab + num_pages * PAGE_SIZE);
 #endif
 	assert(slab);
 	pages_used -= slab->num_pages;
@@ -218,7 +218,7 @@ static slab_t *create_slab(slab_cache_t *sc, int num_pages, unsigned short flags
 		tmp++;
 	}
 #ifdef SLAB_DEBUG
-	printk(0, "[slab]: created new slab: %x - %x: %x %x %x %x\n", addr, addr + num_pages * 0x1000, flags, sc->obj_size, num_pages, slab->obj_num);
+	printk(0, "[slab]: created new slab: %x - %x: %x %x %x %x\n", addr, addr + num_pages * PAGE_SIZE, flags, sc->obj_size, num_pages, slab->obj_num);
 #endif
 	return slab;
 }
@@ -236,7 +236,7 @@ static addr_t do_alloc_object(slab_t *slab)
 	unsigned short obj = *(--slab->stack);
 	assert(obj != 0xFFFF);
 	addr_t obj_addr = FIRST_OBJ(slab) + OBJ_SIZE(slab)*obj;
-	assert((obj_addr > (addr_t)slab) && (((obj_addr+sc->obj_size)-(addr_t)slab) <= slab->num_pages*0x1000));
+	assert((obj_addr > (addr_t)slab) && (((obj_addr+sc->obj_size)-(addr_t)slab) <= slab->num_pages*PAGE_SIZE));
 	slab->obj_used++;
 	return obj_addr;
 }
@@ -320,7 +320,7 @@ unsigned __mm_slab_init(addr_t start, addr_t end)
 {
 	printk(1, "[slab]: Initiating slab allocator...");
 	map_if_not_mapped(start);
-	map_if_not_mapped(start + 0x1000);
+	map_if_not_mapped(start + PAGE_SIZE);
 	slab_start = start;
 	slab_end = end;
 	assert(start < end && start);
@@ -354,10 +354,10 @@ unsigned __mm_slab_init(addr_t start, addr_t end)
 static unsigned slab_size(int sz)
 {
 	unsigned s = (sz * MAX_OBJ_ID) + sizeof(slab_t);
-	if(s > (0x1000 * 128))
-		s = 0x1000 * 128;
+	if(s > (PAGE_SIZE * 128))
+		s = PAGE_SIZE * 128;
 	if(s < (unsigned)sz * 2) s = sz * 2;
-	s = (s&PAGE_MASK) + 0x1000;
+	s = (s&PAGE_MASK) + PAGE_SIZE;
 	return s;
 }
 
@@ -374,7 +374,7 @@ static slab_t *find_usable_slab(unsigned size, int align, int allow_range)
 	for(;i<NUM_SCACHES;i++)
 	{
 		/* If we want aligned objects, we need to have sizes 
-		 * multiples of 0x1000 */
+		 * multiples of PAGE_SIZE */
 		if(scache_list[i]->id != -1 
 			&& scache_list[i]->obj_size >= size 
 			&& (scache_list[i]->obj_size <= size*RANGE_MUL || allow_range == 2)) 

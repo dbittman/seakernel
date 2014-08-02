@@ -115,24 +115,14 @@ void tm_set_kernel_stack(addr_t start, addr_t end)
 void tm_switch_to_user_mode()
 {
 	/* set up the kernel stack first...*/
-	tm_set_kernel_stack(current_task->kernel_stack, current_task->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
+	tm_set_kernel_stack(current_task->kernel_stack,
+			current_task->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
 	arch_tm_switch_to_user_mode();
 }
 
 task_t *tm_get_process_by_pid(int pid)
 {
 	return tm_search_tqueue(primary_queue, TSEARCH_PID, pid, 0, 0, 0);
-}
-
-int sys_times(struct tms *buf)
-{
-	if(buf) {
-		buf->tms_utime = current_task->utime;
-		buf->tms_stime = current_task->stime;
-		buf->tms_cstime = current_task->t_cstime;
-		buf->tms_cutime = current_task->t_cutime;
-	}
-	return tm_get_ticks();
 }
 
 /* we set interrupts to zero here so that we may use rwlocks in

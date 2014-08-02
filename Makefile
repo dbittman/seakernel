@@ -63,7 +63,7 @@ include kernel/make.inc
 include drivers/make.inc
 include arch/make.inc
 
-all: can_build make.deps
+all: make.deps
 	$(MAKE) -s kernel
 
 ifneq ($(MAKECMDGOALS),config)
@@ -111,7 +111,6 @@ modules: $(ADHEADS) library/klib.a
 
 kernel: make.deps skernel initrd.img
 
-
 install: kernel
 	@echo "installing kernel..."
 	@cp -f skernel /sys/kernel
@@ -142,18 +141,13 @@ defconfig:
 	@echo post-processing configuration...
 	@tools/config.rb .config.cfg
 
-can_build:
-	@echo -n "Checking for configuration (if this fails, please run ./configure)..."
-	@test -e tools/confed
-	@echo "All good"
-
 doc:
 	make -s -C documentation pdf
 	make -s -C documentation aux_clean
 
 love:
 	@echo Not war
-	
+
 gcc_print_optimizers:
 	@$(CC) $(CFLAGS) -Q --help=optimizers
 

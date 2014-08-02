@@ -12,6 +12,22 @@
 #include <sea/tm/schedule.h>
 #include <sea/mm/map.h>
 
+/* DESIGN: A process that calls exit() goes through a number of stages. First, exit()
+ * adds the task to the kill_queue list right away, but doesn't free it yet. Once exit()
+ * cleans up as much as it can, it calls set_as_dead(), which sets the tasks TF_DYING
+ * flag, and sets the state to TASK_DEAD. This means that the task will not get
+ * rescheduled, and tells the scheduler to "bury" the task. Since we can't risk freeing
+ * the task while it's still exiting, so we wait until the scheduler is done switching away
+ * from it. Once it does so, the scheduler sets the TF_BURIED flag.
+ *
+ * The task is now a zombie, waiting for a process to call wait() on it before it gets freed
+ * up. Once wait() is called (or the kernel decides that the zombie should be ...put down...),
+ * the task has its TF_KILLREADY flag set, which lets the kernel know that it can be freed.
+ */
+
+/* removes the task from the active queue of the CPU, and marks it as
+ * not runnable. note: the task stays in the primary queue, so it can
+ * still be accessed by its parents with a wait() call */
 static __attribute__((always_inline)) inline void set_as_dead(task_t *t)
 {
 	assert(t);
@@ -23,7 +39,10 @@ static __attribute__((always_inline)) inline void set_as_dead(task_t *t)
 	t->state = TASK_DEAD;
 }
 
-void __tm_move_task_to_kill_queue(task_t *t, int locked)
+/* only occurs when a parent wait()'s on a task, or the task is
+ * inaccessable by any tasks. task is removed from the primary
+ * queue. */
+void __tm_remove_task_from_primary_queue(task_t *t, int locked)
 {
 	if(locked)
 		tqueue_remove_nolock(primary_queue, t->listnode);
@@ -32,6 +51,9 @@ void __tm_move_task_to_kill_queue(task_t *t, int locked)
 	tm_process_raise_flag(t, TF_KILLREADY);
 }
 
+/* all of this stuff cannot be freed by the task itself. this
+ * function gets called by the kernel background process to
+ * free up the structures */
 static void release_process(task_t *p)
 {
 	mm_destroy_task_page_directory(p);
@@ -42,26 +64,37 @@ static void release_process(task_t *p)
 	kfree((void *)p);
 }
 
+/* kernel background process calls this, and it tries to release
+ * a process, and move tasks to the kill queue */
 int __KT_try_releasing_tasks()
 {
 	struct llistnode *cur;
 	rwlock_acquire(&kill_queue->rwl, RWL_WRITER);
+	/* if there's nothing in the kill_queue, return instantly */
 	if(ll_is_empty(kill_queue))
 	{
 		rwlock_release(&kill_queue->rwl, RWL_WRITER);
 		return 0;
 	}
+	/* check everything in the kill_queue. If a buried (zombie) task
+	 * has no parent, a dead parent, or is a kernel task, then we can
+	 * free it without a wait() call. */
 	task_t *t=0;
 	ll_for_each_entry(kill_queue, cur, task_t *, t)
 	{
 		/* need to check for orphaned zombie tasks */
 		if(t->flags & TF_BURIED && (t != ((cpu_t *)t->cpu)->cur)) {
-			if(t->parent == 0 || t->parent->state == TASK_DEAD || (t->parent->flags & TF_KTASK) || t->parent == kernel_task)
-				__tm_move_task_to_kill_queue(t, 0);
+			if(t->parent == 0 
+					|| t->parent->state == TASK_DEAD 
+					|| (t->parent->flags & TF_KTASK) 
+					|| t->parent == kernel_task)
+				__tm_remove_task_from_primary_queue(t, 0);
+			/* if the task is ready to be freed, then break */
 			if(t->flags & TF_KILLREADY)
 				break;
 		}
 	}
+	/* make sure we can actually free it */
 	if(!t || !((t->flags & TF_BURIED) && (t->flags & TF_KILLREADY)))
 	{
 		rwlock_release(&kill_queue->rwl, RWL_WRITER);
@@ -70,12 +103,15 @@ int __KT_try_releasing_tasks()
 	assert(cur->entry == t);
 	void *node = ll_do_remove(kill_queue, cur, 1);
 	assert(node == cur);
+	/* return 1 if there are still tasks to free */
 	int ret = 0;
 	if(!ll_is_empty(kill_queue))
 		ret = 1;
 	rwlock_release(&kill_queue->rwl, RWL_WRITER);
+	/* and finally, free the process structs */
 	int pid = t->pid;
 	release_process(t);
+	/* free the node of the kill queue */
 	kfree(cur);
 	return pid;
 }
@@ -85,6 +121,7 @@ void tm_process_suicide()
 	tm_exit(-9);
 }
 
+/* just....fucking....DIE */
 void tm_kill_process(unsigned int pid)
 {
 	if(pid == 0) return;
@@ -94,7 +131,7 @@ void tm_kill_process(unsigned int pid)
 		return;
 	}
 	task->state = TASK_SUICIDAL;
-	task->sigd = 0; /* fuck your signals */
+	task->sigd = 0; /* lol signals */
 	if(task == current_task)
 	{
 		for(;;) tm_schedule();
@@ -123,8 +160,10 @@ void tm_exit(int code)
 	{
 		/* we're the last thread to share this data. Clean it up */
 		fs_close_all_files(t);
-		if(t->thread->root)vfs_iput(t->thread->root);
-		if(t->thread->pwd) vfs_iput(t->thread->pwd);
+		if(t->thread->root)
+			vfs_iput(t->thread->root);
+		if(t->thread->pwd)
+			vfs_iput(t->thread->pwd);
 		mutex_destroy(&t->thread->files_lock);
 		mm_destroy_all_mappings(t);
 		ll_destroy(&(t->thread->mappings));

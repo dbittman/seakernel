@@ -8,7 +8,7 @@ void setup_kernelstack();
 void install_timer(int);
 void init_memory(struct multiboot *);
 void init_main_cpu();
-void init_syscalls();
+void syscall_init();
 int exec_init();
 void init_dm();
 void kb_install();

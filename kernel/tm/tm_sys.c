@@ -2,7 +2,7 @@
 #include <sea/mm/vmm.h>
 #include <sea/tm/process.h>
 #include <sea/tm/tqueue.h>
-
+#include <sea/tm/schedule.h>
 /* Low-level memory allocator implementation */
 int sys_sbrk(long inc)
 {
@@ -173,6 +173,17 @@ int tm_get_egid()
 int tm_get_euid()
 {
 	return current_task->thread->effective_uid;
+}
+
+int sys_times(struct tms *buf)
+{
+	if(buf) {
+		buf->tms_utime = current_task->utime;
+		buf->tms_stime = current_task->stime;
+		buf->tms_cstime = current_task->t_cstime;
+		buf->tms_cutime = current_task->t_cutime;
+	}
+	return tm_get_ticks();
 }
 
 static void do_sys_task_stat(struct task_stat *s, task_t *t)

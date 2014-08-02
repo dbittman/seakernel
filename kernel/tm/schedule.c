@@ -136,12 +136,15 @@ int tm_schedule()
 	task_t *next_task = (task_t *)get_next_task(old, cpu);
 	
 	if(old == next_task) {
-		/* if we've chose the current task to run again, no need for a full context switch. But we need to 
-		 * check signals. */
+		/* if we've chose the current task to run again, no need for a 
+		 * full context switch. But we need to check signals. */
 		check_signals();
 		return 0;
 	}
 
+	/* we're going to mess with interrupt state here. Cause, ya know, context
+	 * switching. Store the current state so that when we switch back to this
+	 * process, we can restore it later */
 	if(cpu_interrupt_set(0)) {
 		assert(!(current_task->flags & TF_SETINT));
 		tm_raise_flag(TF_SETINT);
@@ -205,3 +208,4 @@ void __tm_check_alarms()
 	}
 	mutex_release(alarm_mutex);
 }
+

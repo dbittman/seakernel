@@ -47,24 +47,18 @@ static void process_memorymap(struct multiboot *mboot)
 #else
 				page = j;
 #endif
-				//if(page < 0xC0000000) {
-					if(lowest_page > page)
-						lowest_page=page;
-					if(page > highest_page)
-						highest_page=page;
-					if(page >= pm_location)
-						mm_free_physical_page(page);
-					num_pages++;
-				//} else {
-				//	unusable++;
-				//}
+				if(lowest_page > page)
+					lowest_page=page;
+				if(page > highest_page)
+					highest_page=page;
+				if(page >= pm_location)
+					mm_free_physical_page(page);
+				num_pages++;
 			}
 		}
 		i += me->size + sizeof (uint32_t);
 	}
 	printk(1, "[mm]: Highest page = %x, num_pages = %d               \n", highest_page, num_pages);
-	//if(unusable)
-	//	printk(1, "[mm]: warning: %d pages (%d MB) unusable!\n", unusable, (unusable/1024)*4);
 	if(!j)
 		panic(PANIC_MEM | PANIC_NOSYNC, "Memory map corrupted");
 	int gbs=0;
@@ -81,8 +75,8 @@ static void process_memorymap(struct multiboot *mboot)
 		printk(KERN_MILE, "%d GB and ", gbs);
 		mbs = mbs % 1024;
 	}
-	printk(KERN_MILE, "%d MB available memory (page size=0x1000, kmalloc=%s: ok)\n"
- 			, mbs, KMALLOC_NAME);
+	printk(KERN_MILE, "%d MB available memory (page size=%d KB, kmalloc=%s: ok)\n"
+ 			, mbs, PAGE_SIZE/1024, KMALLOC_NAME);
 	printk(1, "[mm]: num pages = %d\n", num_pages);
 	pm_num_pages=num_pages;
 	pm_used_pages=0;
@@ -138,3 +132,4 @@ int mm_stat_mem(struct mem_stat *s)
 	s->perc = ((float)pm_used_pages*100) / ((float)pm_num_pages);
 	return 0;
 }
+

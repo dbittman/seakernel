@@ -19,6 +19,9 @@
 
 int mutex_is_locked(mutex_t *m)
 {
+	/* this is ONLY TO BE USED AS A HINT. The mutex state MAY change
+	 * before this information is used, or even DURING THE RETURN of
+	 * this function */
 	if(kernel_state_flags & KSF_SHUTDOWN)
 		return 1;
 	return m->lock;

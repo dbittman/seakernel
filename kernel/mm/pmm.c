@@ -7,8 +7,8 @@
 #include <sea/tm/schedule.h>
 
 volatile addr_t pm_location=0;
-volatile addr_t pm_stack = PM_STACK_ADDR;
-volatile addr_t pm_stack_max = PM_STACK_ADDR;
+static volatile addr_t pm_stack = PM_STACK_ADDR;
+static volatile addr_t pm_stack_max = PM_STACK_ADDR;
 
 volatile unsigned long pm_num_pages=0, pm_used_pages=0;
 volatile uint64_t highest_page=0;

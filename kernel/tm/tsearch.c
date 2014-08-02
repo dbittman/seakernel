@@ -63,7 +63,7 @@ task_t *tm_search_tqueue(tqueue_t *tq, unsigned flags, unsigned long value, void
 		{
 			tmp->parent = 0;
 			if(tmp->state == TASK_DEAD)
-				__tm_move_task_to_kill_queue(tmp, 1);
+				__tm_remove_task_from_primary_queue(tmp, 1);
 		}
 		next:
 		/* have we found something and are only looking for one thing? */
@@ -72,10 +72,12 @@ task_t *tm_search_tqueue(tqueue_t *tq, unsigned flags, unsigned long value, void
 	}
 	/* TSEARCH_EXIT_PARENT is specified only during a process's tm_exit. If this task has no parent, or 
 	 * will soon have no parent, we just move ourselves to the kill queue immediately, saving time later */
-	if(flags & TSEARCH_EXIT_PARENT && (current_task->parent == 0 || (current_task->parent->flags & TF_EXITING)) && (current_task->flags & TF_EXITING))
+	if(flags & TSEARCH_EXIT_PARENT 
+			&& (current_task->parent == 0 || (current_task->parent->flags & TF_EXITING)) 
+			&& (current_task->flags & TF_EXITING))
 	{
 		/* some more housekeeping... */
-		__tm_move_task_to_kill_queue(current_task, 1);
+		__tm_remove_task_from_primary_queue(current_task, 1);
 	}
 	mutex_release(&tq->lock);
 	cpu_interrupt_set(old);

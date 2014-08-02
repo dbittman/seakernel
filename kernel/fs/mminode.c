@@ -194,11 +194,13 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 			mutex_acquire(&entry->lock);
 			if(!sub_atomic(&entry->count, 1))
 			{
-				/* count is now zero. write back data, free the page, delete the entry, free the entry */
+				/* count is now zero. write back data, 
+				 * free the page, delete the entry, free the entry */
 				size_t page_len = PAGE_SIZE;
 				if(length - (i-page_number)*PAGE_SIZE < PAGE_SIZE)
 					page_len = length - (i-page_number)*PAGE_SIZE;
-				fs_inode_sync_physical_page(node, virt + (i - page_number)*PAGE_SIZE, i * PAGE_SIZE, page_len);
+				fs_inode_sync_physical_page(node, virt + (i - page_number)*PAGE_SIZE,
+						i * PAGE_SIZE, page_len);
 				addr_t p = mm_vm_get_map(virt + (i - page_number)*PAGE_SIZE, 0, 0);
 				assert(!p || p == entry->page);
 				if(entry->page)

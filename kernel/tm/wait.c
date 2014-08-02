@@ -42,7 +42,7 @@ static void get_status_int(task_t *t, int *st, int *__pid)
 	ret_val = t->exit_reason.ret;
 	status |= t->exit_reason.cause | t->exit_reason.coredump;
 	if(__pid) *__pid = t->exit_reason.pid;
-	
+	/* yeah, lots of weird posix stuff going on here */
 	short code=0;
 	short info=0;
 	if(status & __COREDUMP) code |= 0x80;
@@ -95,7 +95,7 @@ int sys_waitpid(int pid, int *st, int opt)
 	}
 	int code, gotpid;
 	get_status_int(t, &code, &gotpid);
-	if(pid == -1) __tm_move_task_to_kill_queue(t, 0);
+	if(pid == -1) __tm_remove_task_from_primary_queue(t, 0);
 	if(st)
 		*st = code;
 	tm_lower_flag(TF_BGROUND);
@@ -113,3 +113,4 @@ int sys_wait3(int *a, int b, int *c)
 {
 	return sys_waitpid(-1, a, b);
 }
+

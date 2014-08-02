@@ -63,7 +63,7 @@ int do_exec(task_t *t, char *path, char **argv, char **env, int shebanged)
 		panic(0, "Invalid task in exec (%d)", t->pid);
 	if(!path || !*path)
 		return -EINVAL;
-	/* Load the file, and make sure that it is valid and accessable */
+	/* Load the file, and make sure that it is valid and accessible */
 	if(EXEC_LOG == 2) 
 		printk(0, "[%d]: Checking executable file (%s)\n", t->pid, path);
 	struct file *efil;
@@ -75,25 +75,26 @@ int do_exec(task_t *t, char *path, char **argv, char **env, int shebanged)
 		desc = err_open;
 	if(desc < 0 || !efil)
 		return -ENOENT;
+	/* are we allowed to execute it? */
 	if(!vfs_inode_get_check_permissions(efil->inode, MAY_EXEC, 0))
 	{
 		sys_close(desc);
 		return -EACCES;
 	}
-	/* Detirmine if the file is a valid ELF */
+	/* is it a valid elf? */
 	int header_size = 0;
 #if CONFIG_ARCH == TYPE_ARCH_X86_64
 	header_size = sizeof(elf64_header_t);
 #elif CONFIG_ARCH == TYPE_ARCH_X86
 	header_size = sizeof(elf32_header_t);
 #endif
+	/* read in the ELF header, and check if it's a shebang */
 	if(header_size < 2) header_size = 2;
 	char mem[header_size];
 	fs_read_file_data(desc, mem, 0, header_size);
 	
-	if(__is_shebang(mem)) {
+	if(__is_shebang(mem))
 		return loader_do_shebang(desc, argv, env);
-	}
 	
 	int other_bitsize=0;
 	if(!is_valid_elf(mem, 2) && !other_bitsize) {
@@ -104,7 +105,9 @@ int do_exec(task_t *t, char *path, char **argv, char **env, int shebanged)
 	if(EXEC_LOG == 2) 
 		printk(0, "[%d]: Copy data\n", t->pid);
 	/* okay, lets back up argv and env so that we can
-	 * clear out the address space and not lose data..*/
+	 * clear out the address space and not lose data...
+	 * If this call if coming from a shebang, then we don't check the pointers,
+	 * since they won't be from userspace */
 	if((shebanged || mm_is_valid_user_pointer(SYS_EXECVE, argv, 0)) && argv) {
 		while((shebanged || mm_is_valid_user_pointer(SYS_EXECVE, argv[argc], 0)) && argv[argc] && *argv[argc])
 			argc++;
@@ -135,6 +138,8 @@ int do_exec(task_t *t, char *path, char **argv, char **env, int shebanged)
 	if(EXEC_LOG)
 		printk(0, "Executing (task %d, cpu %d, tty %d, cwd=%s): %s\n", t->pid, ((cpu_t *)t->cpu)->snum, t->tty, current_task->thread->pwd->name, path);
 	preexec(t, desc);
+	
+	/* load in the new image */
 	strncpy((char *)t->command, path, 128);
 	if(!loader_parse_elf_executable(mem, desc, &eip, &end))
 		eip=0;
@@ -145,7 +150,7 @@ int do_exec(task_t *t, char *path, char **argv, char **env, int shebanged)
 	if(efil->inode->mode & S_ISGID) {
 		t->thread->effective_gid = efil->inode->gid;
 	}
-	
+	/* we don't need the file anymore, close it out */
 	sys_close(desc);
 	if(!eip) {
 		printk(5, "[exec]: Tried to execute an invalid ELF file!\n");
@@ -219,6 +224,7 @@ int do_exec(task_t *t, char *path, char **argv, char **env, int shebanged)
 	t->argv = argv;
 	kfree(path);
 	
+	/* set the heap locations, and map in the start */
 	t->heap_start = t->heap_end = end + PAGE_SIZE;
 	if(other_bitsize)
 		tm_process_raise_flag(t, TF_OTHERBS);
@@ -231,8 +237,11 @@ int do_exec(task_t *t, char *path, char **argv, char **env, int shebanged)
 	if(EXEC_LOG == 2) 
 		printk(0, "[%d]: Performing call\n", t->pid);
 	
+	/* now, we just need to deal with the syscall return stuff. When the syscall
+	 * returns, it'll just jump into the entry point of the new process */
 	cpu_interrupt_set(0);
 	tm_process_lower_flag(t, TF_SCHED);
+	/* the kernel cares if it has executed something or not */
 	if(!(kernel_state_flags & KSF_HAVEEXECED))
 		set_ksf(KSF_HAVEEXECED);
 	arch_loader_exec_initializer(t, argc, eip);
@@ -243,3 +252,4 @@ int execve(char *path, char **argv, char **env)
 {
 	return do_exec((task_t *)current_task, path, argv, env, 0);
 }
+

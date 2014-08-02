@@ -59,13 +59,13 @@ int sys_syslog(int level, char *buf, int len, int ctl)
 static void *syscall_table[129] = {
 	SC sys_setup,
 	
-	SC tm_exit,           SC tm_do_fork,        SC tm_process_wait,     SC sys_readpos, 
-	SC sys_writepos,   SC sys_open_posix, SC sys_close,     SC sys_fstat,
-	SC sys_stat,       SC sys_isatty,     SC sys_seek,      SC tm_send_signal, 
-	SC sys_sbrk,       SC sys_times,          SC sys_dup,       SC sys_dup2,
+	SC tm_exit,        SC tm_do_fork,     SC tm_process_wait, SC sys_readpos, 
+	SC sys_writepos,   SC sys_open_posix, SC sys_close,       SC sys_fstat,
+	SC sys_stat,       SC sys_isatty,     SC sys_seek,        SC tm_send_signal, 
+	SC sys_sbrk,       SC sys_times,      SC sys_dup,         SC sys_dup2,
 	
-	SC sys_ioctl,      SC sys_null,       SC sys_null,      SC sys_null, 
-	SC sys_null,       SC sys_null,       SC sys_null,      SC sys_null,
+	SC sys_ioctl,      SC sys_null,       SC sys_null,        SC sys_null, 
+	SC sys_null,       SC sys_null,       SC sys_null,        SC sys_null,
 	SC sys_null,       SC execve, 
 	
 	#if CONFIG_MODULES
@@ -80,15 +80,15 @@ static void *syscall_table[129] = {
 	SC sys_null,
 	#endif
 	
-	SC sys_get_pid,        SC /**32*/sys_getppid,
+	SC sys_get_pid,    SC /**32*/sys_getppid,
 	
-	SC sys_link,       SC vfs_unlink,         SC vfs_inode_get_ref_count, SC sys_get_pwd, 
-	SC sys_getpath,    SC sys_null,       SC vfs_chroot,    SC sys_chdir,
-	SC sys_mount,      SC vfs_unmount,        SC vfs_read_dir,      SC sys_null, 
-	SC console_create, SC console_switch, SC sys_null,      SC sys_null,
+	SC sys_link,       SC vfs_unlink,     SC vfs_inode_get_ref_count, SC sys_get_pwd, 
+	SC sys_getpath,    SC sys_null,       SC vfs_chroot,              SC sys_chdir,
+	SC sys_mount,      SC vfs_unmount,    SC vfs_read_dir,            SC sys_null, 
+	SC console_create, SC console_switch, SC sys_null,                SC sys_null,
 	
-	SC sys_null,       SC sys_null,       SC sys_null,    SC sys_sync, 
-	SC vfs_rmdir,          SC sys_fsync,      SC sys_alarm,     SC sys_select,
+	SC sys_null,       SC sys_null,       SC sys_null,      SC sys_sync, 
+	SC vfs_rmdir,      SC sys_fsync,      SC sys_alarm,     SC sys_select,
 	SC sys_null,       SC sys_null,       SC sys_sysconf,   SC sys_setsid, 
 	SC sys_setpgid, 
 	
@@ -102,15 +102,15 @@ static void *syscall_table[129] = {
 	
 	SC /**64*/sys_nice,
 	
-	SC sys_mmap,       SC sys_munmap,       SC sys_msync,      SC sys_task_stat, 
-	SC sys_null,       SC sys_null,       SC tm_delay,         SC kernel_reset,
-	SC kernel_poweroff,SC tm_get_uid,        SC tm_get_gid,       SC tm_set_uid, 
-	SC tm_set_gid,        SC sys_null,    SC sys_task_pstat,    SC sys_mount2,
+	SC sys_mmap,        SC sys_munmap,     SC sys_msync,      SC sys_task_stat, 
+	SC sys_null,        SC sys_null,       SC tm_delay,       SC kernel_reset,
+	SC kernel_poweroff, SC tm_get_uid,     SC tm_get_gid,     SC tm_set_uid, 
+	SC tm_set_gid,      SC sys_null,       SC sys_task_pstat, SC sys_mount2,
 	
-	SC tm_set_euid,       SC tm_set_egid,       SC sys_pipe,      SC tm_set_signal, 
-	SC tm_get_euid,       SC tm_get_egid,       SC sys_null,      SC sys_null,
-	SC arch_time_get,       SC sys_get_timer_th,   SC sys_isstate,   SC sys_wait3, 
-	SC sys_null,       SC sys_null,       SC sys_getcwdlen, 
+	SC tm_set_euid,     SC tm_set_egid,       SC sys_pipe,      SC tm_set_signal, 
+	SC tm_get_euid,     SC tm_get_egid,       SC sys_null,      SC sys_null,
+	SC arch_time_get,   SC sys_get_timer_th,  SC sys_isstate,   SC sys_wait3, 
+	SC sys_null,        SC sys_null,          SC sys_getcwdlen, 
 	
 	#if CONFIG_SWAP
 	SC /**96*/sys_swaptask,
@@ -118,18 +118,18 @@ static void *syscall_table[129] = {
 	SC /**96*/sys_null,
 	#endif
 	
-	SC sys_dirstat,    SC sys_sigact,     SC sys_access,    SC sys_chmod, 
-	SC sys_fcntl,      SC sys_dirstat_fd, SC sys_getdepth,  SC sys_waitpid,
-	SC sys_mknod,      SC sys_symlink,    SC sys_readlink,  SC sys_umask, 
-	SC sys_sigprocmask,SC sys_ftruncate,  SC sys_getnodestr,SC sys_chown,
+	SC sys_dirstat,     SC sys_sigact,     SC sys_access,     SC sys_chmod, 
+	SC sys_fcntl,       SC sys_dirstat_fd, SC sys_getdepth,   SC sys_waitpid,
+	SC sys_mknod,       SC sys_symlink,    SC sys_readlink,   SC sys_umask, 
+	SC sys_sigprocmask, SC sys_ftruncate,  SC sys_getnodestr, SC sys_chown,
 	
-	SC sys_utime,      SC sys_gethostname,SC sys_gsetpriority,SC sys_uname, 
-	SC sys_gethost,    SC sys_getserv,    SC sys_setserv,     SC sys_syslog,
-	SC sys_posix_fsstat,SC sys_null,      SC sys_null,        SC sys_null, 
-	SC sys_null,       SC sys_null,       SC sys_waitagain,   SC /**128*/sys_null /* RESERVED*/,
+	SC sys_utime,        SC sys_gethostname, SC sys_gsetpriority, SC sys_uname, 
+	SC sys_gethost,      SC sys_getserv,     SC sys_setserv,      SC sys_syslog,
+	SC sys_posix_fsstat, SC sys_null,        SC sys_null,         SC sys_null, 
+	SC sys_null,         SC sys_null,        SC sys_waitagain,    SC /**128*/sys_null /* RESERVED*/,
 };
 
-void init_syscalls()
+void syscall_init()
 {
 	num_syscalls = sizeof(syscall_table)/sizeof(void *);
 }
@@ -248,14 +248,17 @@ int syscall_handler(volatile registers_t *regs)
 
 	#ifdef SC_DEBUG
 	if(current_task->tty == current_console->tty) 
-		printk(SC_DEBUG, "tty %d: syscall %d (from: %x): enter %d\n", current_task->tty, current_task->pid, current_task->sysregs->eip, SYSCALL_NUM_AND_RET);
+		printk(SC_DEBUG, "tty %d: syscall %d (from: %x): enter %d\n", i
+				current_task->tty, current_task->pid, 
+				current_task->sysregs->eip, SYSCALL_NUM_AND_RET);
 	int or_t = tm_get_ticks();
 	#endif
 	__do_syscall_jump(ret, syscall_table[SYSCALL_NUM_AND_RET], _E_, _D_, 
 					  _C_, _B_, _A_);
 	#ifdef SC_DEBUG
 	if((current_task->tty == current_console->tty || 1) && (tm_get_ticks() - or_t >= 10 || 1) 
-		&& (ret < 0 || 1) && (ret == -EINTR || 1) && ((current_task->allocated != 0 || current_task->freed != 0 || 1)))
+		&& (ret < 0 || 1) && (ret == -EINTR || 1) 
+		&& ((current_task->allocated != 0 || current_task->freed != 0 || 1)))
 		printk(SC_DEBUG, "syscall %d: %d ret %d, took %d ticks (%d al, %d fr)\n", 
 			   current_task->pid, current_task->system, ret, tm_get_ticks() - or_t,
 			   current_task->allocated, current_task->freed);
@@ -292,3 +295,4 @@ int syscall_handler(volatile registers_t *regs)
 	}
 	return ret;
 }
+

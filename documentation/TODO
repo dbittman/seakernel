@@ -11,6 +11,8 @@ Roadmap:
 
 0.3 B1
 	* refactor CPU code
+	* test out a replacement of vmem code with something that doesn't suck
+	* implement a "call function" IPI
 
 0.3 B2
 	* make sure all features listed in termcap are properly implemented

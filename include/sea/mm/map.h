@@ -13,7 +13,6 @@ struct memmap {
 	struct inode *node;
 	int flags, prot;
 	struct llistnode *entry;
-	//vnode_t *vn;
 	struct valloc_region vr;
 };
 

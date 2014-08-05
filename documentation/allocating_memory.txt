@@ -58,6 +58,47 @@ by the function call, and contains the physical address that the returned
 virtual address is mapped to. The kfree function takes in any address
 returned by kmalloc.
 
+Virtual
+-------
+Virtual memory is not something that can be simply "allocated" without much
+care. All of virtual memory is partitioned into sections that are then used
+by subsystems of the kernel for specific things. However, such a section of
+memory may find it useful to partition it up further. Thus, there exists a
+way of allocating pages of virtual memory from a given section of virtual
+memory, using the valloc code.
+
+struct valloc *valloc_create(struct valloc *, addr_t start, addr_t end,
+							size_t page_size, int flags)
+void valloc_destroy(struct valloc *)
+
+These creation and destruction functions work like all other create/destroy
+functions for other kernel objects do. 'start' and 'end' define the region
+that this allocator will allocate in, and page_size specifies granularity
+of such allocations (must be in multiples of the system page size). 'flags'
+indicates creation flags:
+	VALLOC_USERMAP : maps the index with user-mapping attributes.
+
+struct valloc_region *valloc_allocate(struct valloc *,
+									 struct valloc_region *vr, int numpages)
+void valloc_deallocate(struct valloc *, struct valloc_region *vr)
+
+These functions allocate and de-allocate sections of memory within this
+allocator (section of virtual memory). numpages is the number of pages of
+size specified during creation. The valloc_region structure acts like any
+other kernel object creation (if argument is null, it's allocated, otherwise
+it is just used, etc). On success, the valloc_region's fields are filled out.
+On failure, the function returns 0.
+
+struct valloc_region *valloc_split_region(struct valloc *,
+										 struct valloc_region *vr,
+										 struct valloc_region *new_vr,
+										 int num_pages)
+
+This function splits the region specified by vr into two regions, changes
+the length of the vr region, and sets the new_vr region to point to the
+region after the newly-shrunk vr region. new_vr acts like any other kernel
+object creation.
+
 Other Allocation Mechanisms
 ---------------------------
 DMA buffers can be allocated from the kernel. This is an extension of the
@@ -72,6 +113,4 @@ calls to mm_allocate_contiguous_region. The virtual address field will be
 filled out during calls to the functions, and will map to a contiguous
 physical memory region.
 
-There is no way to allocate arbitrary virtual memory directly, without
-the use of the vmem code.
 

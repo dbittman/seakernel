@@ -25,7 +25,8 @@
 static void __valloc_set_bits(struct valloc *va, int start, int count)
 {
 	for(int idx = start;idx < (start + count); idx++) {
-		assert(!TEST_BIT(va->start, idx));
+		if(start >= va->nindex)
+			assert(!TEST_BIT(va->start, idx));
 		SET_BIT(va->start, idx);
 	}
 }
@@ -33,7 +34,8 @@ static void __valloc_set_bits(struct valloc *va, int start, int count)
 static void __valloc_clear_bits(struct valloc *va, int start, int count)
 {
 	for(int idx = start;idx < (start + count); idx++) {
-		assert(TEST_BIT(va->start, idx));
+		if(start >= va->nindex)
+			assert(TEST_BIT(va->start, idx));
 		CLEAR_BIT(va->start, idx);
 	}
 }
@@ -85,14 +87,17 @@ static int __valloc_get_start_index(struct valloc *va, int np)
 	return -1;
 }
 
-static void __valloc_populate_index(struct valloc *va)
+static void __valloc_populate_index(struct valloc *va, int flags)
 {
 	/* we can have larger pages than PAGE_SIZE, but here
 	 * we need to map it in, and we need to work in increments
 	 * of the system page size */
 	int mm_pages = (va->nindex * va->psize) / PAGE_SIZE;
 	for(int i=0;i<mm_pages;i++) {
-		map_if_not_mapped(va->start + i * PAGE_SIZE);
+		if(flags & VALLOC_USERMAP)
+			user_map_if_not_mapped(va->start + i * PAGE_SIZE);
+		else
+			map_if_not_mapped(va->start + i * PAGE_SIZE);
 	}
 	__valloc_set_bits(va, 0, va->nindex);
 }
@@ -126,7 +131,7 @@ struct valloc *valloc_create(struct valloc *va, addr_t start, addr_t end, size_t
 
 	va->npages = (end - start) / page_size;
 	va->nindex = ((va->npages-1) / (8 * page_size)) + 1;
-	__valloc_populate_index(va);
+	__valloc_populate_index(va, flags);
 	return va;
 }
 

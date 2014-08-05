@@ -7,6 +7,7 @@
 #include <sea/mm/map.h>
 #include <sea/mm/vmem.h>
 #include <sea/cpu/atomic.h>
+#include <sea/mm/valloc.h>
 
 static struct memmap *initialize_map(struct inode *node, 
 			addr_t virt_start, int prot, int flags, size_t offset, size_t length)
@@ -18,6 +19,7 @@ static struct memmap *initialize_map(struct inode *node,
 	map->offset = offset;
 	map->length = length;
 	map->virtual = virt_start;
+	map->vr.start = 0;
 	return map;
 }
 
@@ -28,9 +30,10 @@ static int is_valid_location(addr_t addr)
 	return 1;
 }
 
-static vnode_t *acquire_virtual_location(addr_t *virt, int fixed, size_t length)
+static int acquire_virtual_location(struct valloc_region *vr, addr_t *virt, int fixed, size_t length)
 {
 	assert(virt);
+	vr->start=0;
 	/* if the given address is valid, use that. */
 	if(is_valid_location(*virt) && is_valid_location(*virt + length)) {
 		return 0;
@@ -42,15 +45,16 @@ static vnode_t *acquire_virtual_location(addr_t *virt, int fixed, size_t length)
 	/* otherwise, allocate from given range... */
 	int npages = ((length-1)/PAGE_SIZE) + 1;
 	*virt = 0;
-	vnode_t *node = vmem_insert_node(&current_task->thread->mmf_vmem, npages);
-	return node;
+	vr->start = 0;
+	valloc_allocate(&(current_task->thread->mmf_valloc), vr, npages);
+	return 1;
 }
 
-static void release_virtual_location(vnode_t *node)
+static void release_virtual_location(struct valloc_region *vr)
 {
-	if(!node)
+	if(!vr)
 		return;
-	vmem_remove_node(&current_task->thread->mmf_vmem, node);
+	valloc_deallocate(&(current_task->thread->mmf_valloc), vr);
 }
 
 static void record_mapping(struct memmap *map)
@@ -92,17 +96,18 @@ addr_t mm_establish_mapping(struct inode *node, addr_t virt,
 	}
 	mutex_acquire(&current_task->thread->map_lock);
 	/* get a virtual region to use */
-	vnode_t *vn = acquire_virtual_location(&virt, flags & MAP_FIXED, length);
-	if(!vn && !virt) {
+	struct valloc_region vr;
+	int ret = acquire_virtual_location(&vr, &virt, flags & MAP_FIXED, length);
+	if(!ret && !virt) {
 		return -ENOMEM;
 	}
-	if(vn)
-		virt = vn->addr;
+	if(vr.start)
+		virt = vr.start;
 	//printk(0, "[mmap]: mapping %x for %x, f=%x, p=%x: %s:%x\n", 
 	//		virt, length, flags, prot, node->i_ops ? node->name : "(ANON)", offset);
 	struct memmap *map = initialize_map(node, virt, prot, flags, offset, length);
-	if(vn)
-		map->vn = vn;
+	if(vr.start)
+		memcpy(&(map->vr), &vr, sizeof(struct valloc_region));
 	
 	add_atomic(&node->count, 1);
 	record_mapping(map);
@@ -122,8 +127,8 @@ addr_t mm_establish_mapping(struct inode *node, addr_t virt,
 }
 
 static int __do_mm_disestablish_mapping(struct memmap *map)
-{	
-	release_virtual_location(map->vn);
+{
+	release_virtual_location(&map->vr);
 	vfs_iput(map->node);
 	map->node = 0;
 	remove_mapping(map);
@@ -282,9 +287,10 @@ int mm_mapping_munmap(addr_t start, size_t length)
 			map->length = (addr - map->virtual);
 			/* we don't need to notify the mminode framework that a new mapping has been created, since
 			 * the counts on the pages haven't actually changed */
-			if(map->vn) {
+			if(map->vr.start) {
 				/* split virtual node */
-				n->vn = vmem_split_node(&current_task->thread->mmf_vmem, map->vn, map->length / PAGE_SIZE);
+				valloc_split_region(&(current_task->thread->mmf_valloc), 
+						&map->vr, &n->vr, map->length / PAGE_SIZE);
 			}
 			/* remember to increase the count of the inode... */
 			add_atomic(&n->node->count, 1);

@@ -19,8 +19,8 @@ struct valloc {
 	int flags, last;
 };
 
-#define VALLOC_ALLOC 1
-
+#define VALLOC_ALLOC        1
+#define VALLOC_USERMAP      2
 struct valloc *valloc_create(struct valloc *va, addr_t start, addr_t end, size_t page_size,
 		int flags);
 

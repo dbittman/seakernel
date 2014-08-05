@@ -5,6 +5,7 @@
 #include <sea/fs/inode.h>
 #include <sea/ll.h>
 #include <sea/mm/vmem.h>
+#include <sea/mm/valloc.h>
 
 struct memmap {
 	addr_t virtual;
@@ -12,7 +13,8 @@ struct memmap {
 	struct inode *node;
 	int flags, prot;
 	struct llistnode *entry;
-	vnode_t *vn;
+	//vnode_t *vn;
+	struct valloc_region vr;
 };
 
 struct __mmap_args {

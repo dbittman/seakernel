@@ -9,6 +9,7 @@
 #include <sea/sys/stat.h>
 #include <sea/kernel.h>
 #include <sea/mm/vmem.h>
+#include <sea/mm/valloc.h>
 
 #define KERN_STACK_SIZE 0x16000
 
@@ -85,7 +86,8 @@ struct thread_shared_data {
 
 	struct llist mappings;
 	mutex_t map_lock;
-	vma_t mmf_vmem;
+	//vma_t mmf_vmem;
+	struct valloc mmf_valloc;
 };
 
 typedef struct __cpu_t__ cpu_t;

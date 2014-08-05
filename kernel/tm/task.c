@@ -42,8 +42,8 @@ struct thread_shared_data *tm_thread_data_create()
 	ll_create_lockless(&thread->mappings);
 	mutex_create(&thread->map_lock, 0);
 	if(kernel_task) {
-		vmem_create_user(&thread->mmf_vmem, MMF_BEGIN, MMF_END, MMF_VMEM_NUM_INDEX_PAGES);
-		for(addr_t a = MMF_BEGIN;a < (MMF_BEGIN + MMF_VMEM_NUM_INDEX_PAGES);a+=PAGE_SIZE)
+		valloc_create(&thread->mmf_valloc, MMF_BEGIN, MMF_END, PAGE_SIZE, VALLOC_USERMAP);
+		for(addr_t a = MMF_BEGIN;a < (MMF_BEGIN + (size_t)thread->mmf_valloc.nindex);a+=PAGE_SIZE)
 			mm_vm_set_attrib(a, PAGE_PRESENT | PAGE_WRITE);
 	}
 	return thread;

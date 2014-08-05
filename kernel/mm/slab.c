@@ -315,84 +315,60 @@ static unsigned slab_size(int sz)
 	unsigned s = (sz * MAX_OBJ_ID) + sizeof(struct slab);
 	if(s > (PAGE_SIZE * 128))
 		s = PAGE_SIZE * 128;
-	if(s < (unsigned)sz * 2)
-		s = sz * 2;
+	if(s < ((unsigned)sz + sizeof(struct slab)))
+		s = sz + sizeof(struct slab);
 	s = (s&PAGE_MASK) + PAGE_SIZE;
 	return s;
 }
 
-static struct slab *find_usable_slab(unsigned size, int allow_range)
+static int __does_fit(size_t obj, size_t container, int any_fit)
 {
-	unsigned i;
-	int perfect_fit=0;
-	struct slab_cache *new_sc;
+	/* we allow a little bit of wasted space */
+	if(container < obj)
+		return 0;
+	if(!any_fit && container > obj * 2)
+		return 0;
+	return 1;
+}
+
+static struct slab *find_usable_slab(size_t size, int any_fit)
+{
+	struct slab_cache *sc = 0;
 	struct slab *slab;
-	struct slab_cache *sc=0;
-	look_again_perfect:
-	i = perfect_fit;
-	if(i)
-		i++;
-	for(;i<NUM_SCACHES;i++)
-	{
-		if(scache_list[i]->id != -1 
-			&& scache_list[i]->obj_size >= size 
-			&& (scache_list[i]->obj_size <= size*RANGE_MUL || allow_range == 2)) 
-		{
-			if(scache_list[i]->obj_size != size && !allow_range)
-				continue;
-			perfect_fit = i;
+	int i;
+	/* search the existing slab caches for one that can hold this
+	 * object reasonably */
+	for(i=0;i<(int)NUM_SCACHES;i++) {
+		if(scache_list[i]->id != -1
+				&& __does_fit(size, scache_list[i]->obj_size, any_fit)) {
+			sc = scache_list[i];
 			break;
 		}
 	}
+	/* not found, create a new one */
 	if(i == NUM_SCACHES)
-		goto not_found;
-	sc = scache_list[perfect_fit];
-	assert(sc);
-	if(sc->partial || sc->empty)
-	{/* Good, theres room */
-		slab = sc->partial;
-		if(!slab)
-			slab = sc->empty;
-		if(!slab)
-		{
-			/* Should we look for a different cache, or add a new slab? */
-			if(sc->obj_size == size) {
-				goto add_new_slab;
-			}
-			goto look_again_perfect;
-		}
-		
-		return slab;
-	} else
-	{
-		add_new_slab:
-		/* Can we add a slab to this cache? */
-		/* Yes: Do it.
-		 * 
-		 * No: Look again
-		 * 
-		 */
-		slab = create_slab(sc, slab_size(size)/PAGE_SIZE);
-		if(!slab)
-		{
-			tm_engage_idle();
-			tm_delay(100);
+		sc = get_empty_scache(size);
+	
+	if(!sc) {
+		/* we already tried everything we could do, so just fail */
+		if(any_fit)
 			return 0;
-		} else 
-			add_slab_to_list(slab, TO_EMPTY);
-		return slab;
+		/* we weren't even able to create a new slab cache, so try to
+		 * fit this object in anywhere */
+		return find_usable_slab(size, 1);
 	}
-	not_found:
-	/* Couldn't find a perfect fit.
-	 * Either add a new cache, or use a close fit. */
-	new_sc = get_empty_scache(size);
-	if(!new_sc)
-	{
-		//if(allow_range)
-		//	panic("Ran out of slab caches!");
-		return find_usable_slab(size, 2);
+	
+	/* try to find a usable slab */
+	slab = sc->partial ? sc->partial : sc->empty;
+	if(!slab) {
+		/* nothing in the partial or empty list, so create a slab and
+		 * add use it */
+		slab = create_slab(sc, slab_size(sc->obj_size) / PAGE_SIZE);
+		if(!slab)
+			panic(PANIC_MEM | PANIC_NOSYNC, "failed to add slab to scache");
+		add_slab_to_list(slab, TO_EMPTY);
 	}
-	return find_usable_slab(size, 0);
+	return slab;
 }
 
 /* handle aligned allocations as if each is its own slab. This
@@ -404,6 +380,8 @@ addr_t __slab_do_kmalloc_aligned(size_t sz)
 	assert(sz == PAGE_SIZE);
 	valloc_allocate(&slab_valloc, &vr, sz / PAGE_SIZE);
 	assert(!(vr.start & ~PAGE_MASK));
+	/* we only need to map one page, since page-aligned allocations are only
+	 * a single page size */
 	map_if_not_mapped(vr.start);
 	return vr.start;
 }
@@ -432,7 +410,7 @@ addr_t __mm_do_kmalloc_slab(size_t sz, char align)
 	if(sz < 32)
 		sz = 32;
 	sz += (sizeof(addr_t) * 2);
-	struct slab *slab = find_usable_slab(sz, 1);
+	struct slab *slab = find_usable_slab(sz, 0);
 	assert(slab && slab->magic == SLAB_MAGIC);
 	if(slab->obj_used >= slab->obj_num)
 		panic(PANIC_MEM | PANIC_NOSYNC, 

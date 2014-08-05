@@ -1,7 +1,6 @@
 #ifndef SLAB_H
 #define SLAB_H
 #include <sea/types.h>
-#include <sea/mm/vmem.h>
 #include <sea/config.h>
 #include <sea/mm/valloc.h>
 #define SLAB_MAGIC 0x11235813

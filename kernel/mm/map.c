@@ -1,11 +1,9 @@
 #include <sea/kernel.h>
 #include <sea/types.h>
 #include <sea/mm/vmm.h>
-#include <sea/mm/vmem.h>
 #include <sea/fs/inode.h>
 #include <sea/ll.h>
 #include <sea/mm/map.h>
-#include <sea/mm/vmem.h>
 #include <sea/cpu/atomic.h>
 #include <sea/mm/valloc.h>
 

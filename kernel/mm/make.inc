@@ -12,6 +12,7 @@ KOBJS+= kernel/mm/area.o \
 		kernel/mm/pmap.o \
 		kernel/mm/pmm.o \
 		kernel/mm/slab.o \
+		kernel/mm/valloc.o \
 		kernel/mm/vmm.o
 
 KOBJS += $(SWAP-y)

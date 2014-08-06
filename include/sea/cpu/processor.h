@@ -83,6 +83,20 @@ void arch_cpu_processor_init_2();
 void arch_cpu_early_init();
 void cpu_early_init();
 
-void cpu_halt();
+static inline void cpu_halt()
+{
+	arch_cpu_halt();
+}
+
+static inline void cpu_pause()
+{
+	arch_cpu_pause();
+}
+
+static inline void cpu_jump(addr_t a)
+{
+	arch_cpu_jump(a);
+}
 
 #endif
+

@@ -4,6 +4,7 @@
 #include <sea/cpu/processor.h>
 #include <sea/tm/process.h>
 #include <sea/cpu/x86msr.h>
+#include <sea/asm/system.h>
 
 #include <modules/shiv.h>
 
@@ -102,13 +103,18 @@ addr_t shiv_build_ept_pml4(addr_t memsz)
 {
 	addr_t pml4 = mm_alloc_physical_page();
 	for(addr_t i=0;i<memsz;i++)
-		arch_mm_vm_early_map(pml4 + PHYS_PAGE_MAP, i, mm_alloc_physical_page(), 7, MAP_NOCLEAR); 
+		arch_mm_vm_early_map(pml4 + PHYS_PAGE_MAP
+				, i, mm_alloc_physical_page(), 7, MAP_NOCLEAR); 
 	return pml4;
 }
 
 void shiv_vm_exit_handler()
 {
+	/* check cause of exit */
 
+	/* handle exit reasons */
+
+	/* return to VM */
 }
 
 struct vmcs *shiv_alloc_vmcs()
@@ -122,11 +128,6 @@ void shiv_init_vmcs(struct vmachine *vm)
 }
 
 int shiv_init_virtual_machine(struct vmachine *vm)
-{
-
-}
-
-int shiv_init_vmm()
 {
 
 }

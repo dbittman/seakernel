@@ -24,7 +24,8 @@ void kernel_shutdown()
 #if CONFIG_SMP
 	printk(0, "[smp]: shutting down application processors\n");
 	cpu_send_ipi(CPU_IPI_DEST_OTHERS, IPI_SHUTDOWN, 0);
-	while(cpu_get_num_halted_processors() < cpu_get_num_secondary_processors()) asm("pause");
+	while(cpu_get_num_halted_processors() 
+			< cpu_get_num_secondary_processors()) cpu_pause();
 #endif
 	current_task->thread->effective_uid=current_task->thread->real_uid=0;
 	tm_raise_flag(TF_SHUTDOWN);

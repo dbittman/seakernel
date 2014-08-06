@@ -5,6 +5,7 @@
 #include <sea/types.h>
 #include <modules/pci.h>
 #include <sea/mm/dma.h>
+#include <sea/asm/system.h>
 /* Most of these definitions and support functions have been borrowed from CDI */
 #define PCI_CLASS_ATA           0x01
 #define PCI_SUBCLASS_ATA        0x01

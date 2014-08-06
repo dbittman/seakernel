@@ -3,6 +3,7 @@
 #include <modules/ahci.h>
 #include <sea/tm/schedule.h>
 #include <sea/mm/dma.h>
+#include <sea/cpu/processor.h>
 
 struct hba_command_header *ahci_initialize_command_header(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev, int slot, int write, int atapi, int prd_entries, int fis_len)
 {
@@ -141,7 +142,7 @@ int ahci_device_identify_ahci(struct hba_memory *abar, struct hba_port *port, st
 	int timeout = ATA_TFD_TIMEOUT;
 	port->sata_error = ~0;
 	while ((port->task_file_data & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && --timeout)
-		asm("pause");
+		cpu_pause();
 	if(!timeout)
 	{
 		printk(KERN_DEBUG, "[ahci]: device %d: identify 1: port hung\n", dev->idx);

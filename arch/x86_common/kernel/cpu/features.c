@@ -1,5 +1,6 @@
 #include <sea/kernel.h>
 #include <sea/cpu/processor.h>
+#include <sea/asm/system.h>
 #if CONFIG_ARCH == TYPE_ARCH_X86
 #include <sea/cpu/cpu-x86.h>
 #else

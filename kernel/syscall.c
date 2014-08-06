@@ -109,7 +109,7 @@ static void *syscall_table[129] = {
 	
 	SC tm_set_euid,     SC tm_set_egid,       SC sys_pipe,      SC tm_set_signal, 
 	SC tm_get_euid,     SC tm_get_egid,       SC sys_null,      SC sys_null,
-	SC arch_time_get,   SC sys_get_timer_th,  SC sys_isstate,   SC sys_wait3, 
+	SC time_get,   SC sys_get_timer_th,  SC sys_isstate,   SC sys_wait3, 
 	SC sys_null,        SC sys_null,          SC sys_getcwdlen, 
 	
 	#if CONFIG_SWAP

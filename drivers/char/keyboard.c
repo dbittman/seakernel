@@ -8,6 +8,7 @@
 #include <sea/loader/symbol.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/atomic.h>
+#include <sea/asm/system.h>
 int is_ctrl=0, is_alt=0, is_shift=0, is_altgr=0;
 int capslock, slock;
 unsigned short *(*_keymap_callback)(int, int, int, int) = 0;

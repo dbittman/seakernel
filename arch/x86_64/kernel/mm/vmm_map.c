@@ -5,6 +5,7 @@
 #include <sea/tm/process.h>
 #include <sea/cpu/processor.h>
 #include <sea/cpu/cpu-x86_64.h>
+#include <sea/asm/system.h>
 int arch_mm_vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned opt)
 {
 	addr_t vpage = (virt&PAGE_MASK)/0x1000;

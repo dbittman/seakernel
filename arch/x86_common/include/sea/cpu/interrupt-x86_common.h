@@ -2,6 +2,7 @@
 #define __ARCH_SEA_CPU_INTERRUPT_X86_COMMON_H
 
 #include <sea/cpu/registers.h>
+#include <sea/asm/system.h>
 
 int interrupt_register_handler(u8int num, isr_t stage1_handler, isr_t stage2_handler);
 void interrupt_unregister_handler(u8int n, int id);

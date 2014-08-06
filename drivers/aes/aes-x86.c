@@ -1,6 +1,7 @@
 #include <sea/kernel.h>
 #include <sea/loader/module.h>
 #include <sea/config.h>
+#include <sea/asm/system.h>
 
 #if CONFIG_ARCH == TYPE_ARCH_X86_64
 

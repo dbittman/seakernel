@@ -4,6 +4,7 @@
 #include <sea/tm/schedule.h>
 #include <sea/tm/process.h>
 #include <sea/mm/dma.h>
+#include <sea/cpu/processor.h>
 
 uint32_t ahci_flush_commands(struct hba_port *port)
 {
@@ -20,7 +21,7 @@ void ahci_stop_port_command_engine(volatile struct hba_port *port)
 	port->command &= ~HBA_PxCMD_ST;
 	port->command &= ~HBA_PxCMD_FRE;
 	while((port->command & HBA_PxCMD_CR) || (port->command & HBA_PxCMD_FR))
-		asm("pause");
+		cpu_pause();
 }
 
 void ahci_start_port_command_engine(volatile struct hba_port *port)
@@ -168,7 +169,7 @@ void ahci_init_hba(struct hba_memory *abar)
 		/* request BIOS/OS ownership handoff */
 		printk(KERN_DEBUG, "[ahci]: requesting AHCI ownership change\n");
 		abar->bohc |= (1 << 1);
-		while((abar->bohc & 1) || !(abar->bohc & (1<<1))) asm("pause");
+		while((abar->bohc & 1) || !(abar->bohc & (1<<1))) cpu_pause();
 		printk(KERN_DEBUG, "[ahci]: ownership change completed\n");
 	}
 	
@@ -176,7 +177,7 @@ void ahci_init_hba(struct hba_memory *abar)
 	abar->global_host_control |= HBA_GHC_AHCI_ENABLE;
 	abar->global_host_control |= HBA_GHC_RESET;
 	/* wait for reset to complete */
-	while(abar->global_host_control & HBA_GHC_RESET) asm("pause");
+	while(abar->global_host_control & HBA_GHC_RESET) cpu_pause();
 	/* enable the AHCI and interrupts */
 	abar->global_host_control |= HBA_GHC_AHCI_ENABLE;
 	abar->global_host_control |= HBA_GHC_INTERRUPT_ENABLE;

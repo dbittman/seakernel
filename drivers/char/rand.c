@@ -4,6 +4,7 @@
 #include <sea/dm/char.h>
 #include <sea/cpu/processor.h>
 #include <sea/fs/devfs.h>
+#include <sea/asm/system.h>
 int rand_maj=-1;
 int seed=0;
 unsigned int use_rdrand=0;

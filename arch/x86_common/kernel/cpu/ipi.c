@@ -18,6 +18,7 @@
 #include <sea/cpu/atomic.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/tm/schedule.h>
+#include <sea/asm/system.h>
 #if CONFIG_ARCH == TYPE_ARCH_X86
 #include <sea/cpu/cpu-x86.h>
 #else

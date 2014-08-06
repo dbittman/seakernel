@@ -3,6 +3,7 @@
 #include <sea/mm/vmm.h>
 #include <sea/mm/map.h>
 #include <sea/string.h>
+#include <sea/cpu/processor.h>
 
 static int do_map_page(addr_t addr, unsigned attr)
 {
@@ -92,7 +93,8 @@ void mm_page_fault_handler(registers_t *regs, addr_t address, int pf_cause)
 	if(!current_task) {
 		if(kernel_task) {
 			/* maybe a page fault while panicing? */
-			asm("cli; hlt");
+			cpu_interrupt_set(0);
+			cpu_halt();
 		}
 		panic(PANIC_MEM | PANIC_NOSYNC, "early page fault (addr=%x, cause=%x)", address, pf_cause);
 	}

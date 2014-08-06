@@ -12,6 +12,7 @@ initialization */
 #include <sea/cpu/features-x86_common.h>
 #include <sea/mm/context.h>
 #include <sea/cpu/cmos-x86_common.h>
+#include <sea/asm/system.h>
 void load_tables_ap();
 void set_lapic_timer(unsigned tmp);
 void init_lapic(int);

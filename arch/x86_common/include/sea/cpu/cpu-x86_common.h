@@ -3,6 +3,7 @@
 
 #include <sea/mutex.h>
 #include <sea/types.h>
+#include <sea/asm/system.h>
 #if CONFIG_ARCH == TYPE_ARCH_X86
   #include <sea/cpu/tables-x86.h>
 #elif CONFIG_ARCH == TYPE_ARCH_X86_64
@@ -119,5 +120,20 @@ void calibrate_lapic_timer(unsigned freq);
 extern unsigned bootstrap;
 void init_ioapic();
 #endif /* CONFIG_SMP */
+
+static inline void arch_cpu_jump(addr_t x)
+{
+	asm("jmp *%0"::"r"(x));
+}
+
+static inline void arch_cpu_halt()
+{
+	asm("hlt");
+}
+
+static inline void arch_cpu_pause()
+{
+	asm("pause");
+}
 
 #endif

@@ -7,6 +7,7 @@
 #include <sea/mm/pmm.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/cpu-x86.h>
+#include <sea/asm/system.h>
 int arch_mm_vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned opt)
 {
 	unsigned vpage = (virt&PAGE_MASK)/0x1000;

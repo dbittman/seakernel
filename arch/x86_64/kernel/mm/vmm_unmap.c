@@ -6,6 +6,7 @@
 #include <sea/mm/swap.h>
 #include <sea/cpu/processor.h>
 #include <sea/cpu/cpu-x86_64.h>
+#include <sea/asm/system.h>
 /* send the TBL shootdown to cpus if:
  *  - tasking is enabled
  *  - either:

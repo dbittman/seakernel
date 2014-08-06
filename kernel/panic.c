@@ -8,12 +8,6 @@
 #include <sea/cpu/atomic.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/fs/file.h>
-#include <sea/asm/system.h>
-#if CONFIG_ARCH == TYPE_ARCH_X86
-#include <sea/cpu/cpu-x86.h>
-#else
-#include <sea/cpu/cpu-x86_64.h>
-#endif
 static inline void _set_lowercase(char *b)
 {
 	while(*b) {
@@ -30,10 +24,14 @@ void panic(int flags, char *fmt, ...)
 	/* tell the other processors to halt */
 	cpu_send_ipi(CPU_IPI_DEST_OTHERS, IPI_PANIC, 0);
 	int timeout = 100000;
-	while(cpu_get_num_halted_processors() < cpu_get_num_secondary_processors() && --timeout) asm("pause");
+	while(cpu_get_num_halted_processors() 
+			< cpu_get_num_secondary_processors() && --timeout) cpu_pause();
 #endif
 	if(kernel_state_flags & KSF_PANICING) {
-		for(;;) asm("cli; hlt");
+		for(;;) {
+			cpu_interrupt_set(0);
+			cpu_halt();
+		}
 	}
 	set_ksf(KSF_PANICING);
 	int pid=0;

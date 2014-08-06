@@ -10,7 +10,7 @@
 #include <sea/cpu/imps-x86.h>
 #endif
 #include <sea/mm/vmm.h>
-#include <sea/cpu/cpu-x86.h>
+#include <sea/asm/system.h>
 volatile page_dir_t *kernel_dir=0, *minimal_directory=0;
 static unsigned int cr0temp;
 int id_tables=0;

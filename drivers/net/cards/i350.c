@@ -8,6 +8,7 @@
 #include <sea/tm/process.h>
 #include <sea/cpu/atomic.h>
 #include <sea/cpu/interrupt.h>
+#include <sea/cpu/processor.h>
 
 int i350_int;
 struct pmap i350_pmap;
@@ -70,9 +71,9 @@ uint32_t i350_read32(struct i350_device *dev, uint32_t reg)
 void i350_reset(struct i350_device *dev)
 {
 	while((i350_read32(dev, E1000_CTRL) & E1000_CTRL_RESET))
-		asm("pause");
+		cpu_pause();
 	while(!(i350_read32(dev, E1000_STATUS) & E1000_STATUS_RESET_DONE))
-		asm("pause");
+		cpu_pause();
 	/* disable master */
 	uint32_t tmp;
 	tmp = i350_read32(dev, E1000_CTRL);
@@ -81,7 +82,7 @@ void i350_reset(struct i350_device *dev)
 	
 	/* wait for master to disable */
 	while((i350_read32(dev, E1000_STATUS) & E1000_STATUS_GIO_MASTER_ENABLE))
-		asm("pause");
+		cpu_pause();
 	
 	/* issue port reset */
 	tmp |= E1000_CTRL_RESET;
@@ -89,9 +90,9 @@ void i350_reset(struct i350_device *dev)
 	
 	/* wait for reset */
 	while((i350_read32(dev, E1000_CTRL) & E1000_CTRL_RESET))
-		asm("pause");
+		cpu_pause();
 	while(!(i350_read32(dev, E1000_STATUS) & E1000_STATUS_RESET_DONE))
-		asm("pause");
+		cpu_pause();
 	
 	/* re-enable master */
 	tmp = i350_read32(dev, E1000_CTRL);
@@ -138,7 +139,7 @@ void i350_allocate_receive_buffers(struct i350_device *dev)
 	tmp |= (1<<25);
 	i350_write32(dev, E1000_RXDCTL, tmp);
 	
-	while(!(i350_read32(dev, E1000_RXDCTL) & (1<<25))) asm("pause");
+	while(!(i350_read32(dev, E1000_RXDCTL) & (1<<25))) cpu_pause();
 	
 	tmp = i350_read32(dev, E1000_RCTL);
 	i350_write32(dev, E1000_RCTL, tmp | (1<<1) | (1<<3) | (1<<4) | (1<<15));
@@ -181,7 +182,7 @@ void i350_allocate_transmit_buffers(struct i350_device *dev)
 	tmp |= (1<<25);
 	i350_write32(dev, E1000_TXDCTL, tmp);
 	
-	while(!(i350_read32(dev, E1000_TXDCTL) & (1<<25))) asm("pause");
+	while(!(i350_read32(dev, E1000_TXDCTL) & (1<<25))) cpu_pause();
 	
 	tmp = i350_read32(dev, E1000_TCTL);
 	i350_write32(dev, E1000_TCTL, tmp | (1<<1) | (1<<3));
@@ -345,7 +346,7 @@ void i350_interrupt_lvl2(registers_t *regs, int int_no)
 	}
 }
 
-int irq1;
+int i350_irq1;
 
 int module_install()
 {
@@ -358,7 +359,7 @@ int module_install()
 	pmap_create(&i350_pmap, 0);
 	struct i350_device *dev = kmalloc(sizeof(struct i350_device));
 	dev->pci = i350;
-	irq1=interrupt_register_handler(i350_int, i350_interrupt, i350_interrupt_lvl2);
+	i350_irq1=interrupt_register_handler(i350_int, i350_interrupt, i350_interrupt_lvl2);
 	i350_dev = dev;
 	dev->tx_queue_lock[0] = mutex_create(0, 0);
 	dev->rx_queue_lock[0] = mutex_create(0, 0);

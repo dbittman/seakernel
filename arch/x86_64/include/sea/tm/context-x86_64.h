@@ -6,6 +6,7 @@
 #include <sea/tm/process.h>
 #include <sea/cpu/processor.h>
 #include <sea/cpu/atomic.h>
+#include <sea/asm/system.h>
 
 #define current_tss (&((cpu_t *)current_task->cpu)->arch_cpu_data.tss)
 

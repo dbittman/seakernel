@@ -7,6 +7,8 @@
 #include <sea/cpu/atomic.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/boot/init.h>
+#include <sea/asm/system.h>
+
 volatile addr_t *kernel_dir=0;
 pml4_t *kernel_dir_phys=0;
 int id_tables=0;

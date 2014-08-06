@@ -1,4 +1,5 @@
 #include <sea/kernel.h>
+#include <sea/asm/system.h>
 
 /* This does the actual reset */
 void arch_cpu_reset()

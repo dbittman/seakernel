@@ -178,7 +178,8 @@ int module_install()
 		return -ENOENT;
 	}
 	irq1 = interrupt_register_handler(ahci_int, ahci_interrupt_handler, 0);
-	ahci_major = dm_set_available_block_device(ahci_rw_single, ATA_SECTOR_SIZE, ioctl_ahci, ahci_rw_multiple, 0);
+	ahci_major = dm_set_available_block_device(ahci_rw_single,
+			ATA_SECTOR_SIZE, ioctl_ahci, ahci_rw_multiple, 0);
 	ahci_init_hba(hba_mem);
 	ahci_probe_ports(hba_mem);
 	return 0;
@@ -208,3 +209,4 @@ int module_exit()
 	ahci_pci->flags = 0;
 	return 0;
 }
+

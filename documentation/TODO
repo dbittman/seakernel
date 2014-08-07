@@ -14,11 +14,14 @@ Roadmap:
 
 0.3 B2
 	* make sure all features listed in termcap are properly implemented
-	* add chaining to file descriptors (and modify the return value for the sysconf entry)
 	* Fix O_APPEND
+	* refactor driver code
+	* refactor arch-dep code
+	* fix driver arch-dep/arch-indep stuff
 
 0.4 
 	* Proper Threading
+	* termcap features for vim
 	* CPU scheduling
 	* SA_RESTART
 	* user-space io port access

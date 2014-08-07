@@ -51,7 +51,7 @@ int ahci_write_prdt(struct hba_memory *abar, struct hba_port *port, struct ahci_
 		addr_t phys_buffer = mm_vm_get_map(virt_buffer, 0, 0);
 		prd = &tbl->prdt_entries[i+offset];
 		prd->byte_count = PRDT_MAX_COUNT-1;
-		prd->data_base_l = phys_buffer & 0xFFFFFFFF;
+		prd->data_base_l = LOWER32(phys_buffer);
 		prd->data_base_h = UPPER32(phys_buffer);
 		prd->interrupt_on_complete=0;
 		
@@ -61,7 +61,7 @@ int ahci_write_prdt(struct hba_memory *abar, struct hba_port *port, struct ahci_
 	addr_t phys_buffer = mm_vm_get_map(virt_buffer, 0, 0);
 	prd = &tbl->prdt_entries[i+offset];
 	prd->byte_count = length-1;
-	prd->data_base_l = phys_buffer & 0xFFFFFFFF;
+	prd->data_base_l = LOWER32(phys_buffer);
 	prd->data_base_h = UPPER32(phys_buffer);
 	prd->interrupt_on_complete=0;
 	
@@ -72,10 +72,14 @@ int ahci_port_dma_data_transfer(struct hba_memory *abar, struct hba_port *port, 
 {
 	int timeout;
 	int fis_len = sizeof(struct fis_reg_host_to_device) / 4;
-	int ne = ahci_write_prdt(abar, port, dev, slot, 0, ATA_SECTOR_SIZE * sectors, virt_buffer);
-	struct hba_command_header *h = ahci_initialize_command_header(abar, port, dev, slot, write, 0, ne, fis_len);
-	struct fis_reg_host_to_device *fis = ahci_initialize_fis_host_to_device(abar, port, dev, slot, 1, write ? ATA_CMD_WRITE_DMA_EX : ATA_CMD_READ_DMA_EX);
+	int ne = ahci_write_prdt(abar, port, dev,
+			slot, 0, ATA_SECTOR_SIZE * sectors, virt_buffer);
+	struct hba_command_header *h = ahci_initialize_command_header(abar,
+			port, dev, slot, write, 0, ne, fis_len);
+	struct fis_reg_host_to_device *fis = ahci_initialize_fis_host_to_device(abar,
+			port, dev, slot, 1, write ? ATA_CMD_WRITE_DMA_EX : ATA_CMD_READ_DMA_EX);
 	fis->device = 1<<6;
+	/* WARNING: assumes little-endian */
 	fis->count_l = sectors & 0xFF;
 	fis->count_h = (sectors >> 8) & 0xFF;
 	
@@ -124,12 +128,14 @@ int ahci_port_dma_data_transfer(struct hba_memory *abar, struct hba_port *port, 
 	port_hung:
 	printk(KERN_DEBUG, "[ahci]: device %d: port hung\n", dev->idx);
 	error:
-	printk(KERN_DEBUG, "[ahci]: device %d: tfd=%x, serr=%x\n", dev->idx, port->task_file_data, port->sata_error);
+	printk(KERN_DEBUG, "[ahci]: device %d: tfd=%x, serr=%x\n",
+			dev->idx, port->task_file_data, port->sata_error);
 	ahci_reset_device(abar, port, dev);
 	return 0;
 }
 
-int ahci_device_identify_ahci(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev)
+int ahci_device_identify_ahci(struct hba_memory *abar,
+		struct hba_port *port, struct ahci_device *dev)
 {
 	int fis_len = sizeof(struct fis_reg_host_to_device) / 4;
 	struct dma_region dma;
@@ -137,8 +143,10 @@ int ahci_device_identify_ahci(struct hba_memory *abar, struct hba_port *port, st
 	dma.p.alignment = 0x1000;
 	mm_allocate_dma_buffer(&dma);
 	ahci_write_prdt(abar, port, dev, 0, 0, 512, (addr_t)dma.v);
-	struct hba_command_header *h = ahci_initialize_command_header(abar, port, dev, 0, 0, 0, 1, fis_len);
-	struct fis_reg_host_to_device *fis = ahci_initialize_fis_host_to_device(abar, port, dev, 0, 1, ATA_CMD_IDENTIFY);
+	struct hba_command_header *h = ahci_initialize_command_header(abar,
+			port, dev, 0, 0, 0, 1, fis_len);
+	struct fis_reg_host_to_device *fis = ahci_initialize_fis_host_to_device(abar,
+			port, dev, 0, 1, ATA_CMD_IDENTIFY);
 	int timeout = ATA_TFD_TIMEOUT;
 	port->sata_error = ~0;
 	while ((port->task_file_data & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && --timeout)
@@ -146,7 +154,8 @@ int ahci_device_identify_ahci(struct hba_memory *abar, struct hba_port *port, st
 	if(!timeout)
 	{
 		printk(KERN_DEBUG, "[ahci]: device %d: identify 1: port hung\n", dev->idx);
-		printk(KERN_DEBUG, "[ahci]: device %d: identify 1: tfd=%x, serr=%x\n", dev->idx, port->task_file_data, port->sata_error);
+		printk(KERN_DEBUG, "[ahci]: device %d: identify 1: tfd=%x, serr=%x\n",
+				dev->idx, port->task_file_data, port->sata_error);
 		mm_free_dma_buffer(&dma);
 		return 0;
 	}
@@ -160,13 +169,16 @@ int ahci_device_identify_ahci(struct hba_memory *abar, struct hba_port *port, st
 	if(!timeout)
 	{
 		printk(KERN_DEBUG, "[ahci]: device %d: identify 2: port hung\n", dev->idx);
-		printk(KERN_DEBUG, "[ahci]: device %d: identify 2: tfd=%x, serr=%x\n", dev->idx, port->task_file_data, port->sata_error);
+		printk(KERN_DEBUG, "[ahci]: device %d: identify 2: tfd=%x, serr=%x\n",
+				dev->idx, port->task_file_data, port->sata_error);
 		mm_free_dma_buffer(&dma);
 		return 0;
 	}
 	
 	memcpy(&dev->identify, (void *)dma.v, sizeof(struct ata_identify));
 	mm_free_dma_buffer(&dma);
-	printk(2, "[ahci]: device %d: num sectors=%d: %x, %x\n", dev->idx, dev->identify.lba48_addressable_sectors, dev->identify.ss_2);
+	printk(2, "[ahci]: device %d: num sectors=%d: %x, %x\n", dev->idx,
+			dev->identify.lba48_addressable_sectors, dev->identify.ss_2);
 	return 1;
 }
+

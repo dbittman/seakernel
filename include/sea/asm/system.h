@@ -15,10 +15,10 @@
 #define unlikely(x)     __builtin_expect((x),0)
 
 #define UPPER32(x) \
-	((sizeof(x) > 32) ? ((x >> 32) & 0xFFFFFFFF) : 0)
+	(((uint64_t)x >> 32) & 0xFFFFFFFF)
 
 #define LOWER32(x) \
-	((u32int_t)(x & 0xFFFFFFFF))
+	((uint32_t)(x & 0xFFFFFFFF))
 
 #define ALIGN(x,a) \
 		((void *)((((addr_t)x) & ~(a-1)) + a))

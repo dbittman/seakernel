@@ -6,26 +6,52 @@ endif
 endif
 include ../make.inc
 endif
+
+MODULES-$(CONFIG_MODULE_LOOP)       += block/loop.m
+MODULES-$(CONFIG_MODULE_CRYPTO_PART)       += block/crypto-part.m
+MODULES-$(CONFIG_MODULE_RAND)	    += char/rand.m
+MODULES-$(CONFIG_MODULE_CRC32)      += library/crc32.m
+MODULES-$(CONFIG_MODULE_ETHERNET)   += net/ethernet.m
+MODULES-$(CONFIG_MODULE_IPV4)	    += net/ipv4.m
+MODULES-$(CONFIG_MODULE_I825XX)     += net/cards/i825xx.m
+MODULES-$(CONFIG_MODULE_RTL8139)    += net/cards/rtl8139.m
+MODULES-$(CONFIG_MODULE_I350)       += net/cards/i350.m
+MODULES-$(CONFIG_MODULE_PARTITIONS) += partitions/partitions.m
+
+SUBDIRS-$(CONFIG_MODULE_AES)	    += aes
+SUBDIRS-$(CONFIG_MODULE_AHCI)	    += ahci
+SUBDIRS-$(CONFIG_MODULE_EXT2)	    += ext2
+SUBDIRS-$(CONFIG_MODULE_ISO9660)    += iso9660
+SUBDIRS-$(CONFIG_MODULE_FAT)	    += fat
+SUBDIRS-$(CONFIG_MODULE_PSM)	    += psm
+SUBDIRS-$(CONFIG_MODULE_SHIV)	    += shiv
+
+ALLSUBDIRS = aes ext2 iso9660 fat ahci psm shiv
+
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
 include ../arch/$(ARCH)/drivers/make.inc
 endif
 endif
 
+MODULES += $(MODULES-y)
+SUBDIRS = "$(SUBDIRS-y)"
+VERSION=${KERNEL_VERSION}
+
 # note the use of mcmodel=large
 # I believe, but don't quote me on this, that
 # this flag is needed if we want to access relocations
 # that require 64bit fields...
-MCFLAGS=        -std=gnu11 \
-		-D__KERNEL__ -mno-red-zone -ffreestanding -include ../sea_defines.h\
+MCFLAGS:=        -std=gnu11 \
+		-D__KERNEL__ -mno-red-zone -ffreestanding -include `realpath ../sea_defines.h`\
 		-nostdlib \
-		-I../arch/${ARCH}/include \
-		-Iarch/${ARCH}/include \
-		-I../include \
-		-I../arch/include \
+		-I`realpath ../arch/${ARCH}/include` \
+		-I`realpath ../include` \
+		-I`realpath ../arch/include`\
 		-Wall -Wextra -Wformat-security -Wformat-nonliteral -Wshadow \
 		-Wpointer-arith -Wcast-align -Wno-unused -Wnested-externs \
-		-Winline -Wno-long-long -Wno-unused-parameter -Wno-unused-but-set-parameter $(CFLAGS_ARCH) \
+		-Winline -Wno-long-long -Wno-unused-parameter \
+		-Wno-unused-but-set-parameter $(CFLAGS_ARCH) \
 		-mno-mmx -mno-sse -mno-sse2 -mno-sse3 -mno-3dnow \
 		-fno-omit-frame-pointer \
 		-fno-tree-loop-distribute-patterns \
@@ -45,32 +71,6 @@ export MCFLAGS
 export CC
 export LD
 
-MODULES-$(CONFIG_MODULE_LOOP)       += block/loop.m
-MODULES-$(CONFIG_MODULE_CRYPTO_PART)       += block/crypto-part.m
-MODULES-$(CONFIG_MODULE_PCI)        += bus/pci.m
-MODULES-$(CONFIG_MODULE_KEYBOARD)   += char/keyboard.m
-MODULES-$(CONFIG_MODULE_RAND)	    += char/rand.m
-MODULES-$(CONFIG_MODULE_CRC32)      += library/crc32.m
-MODULES-$(CONFIG_MODULE_ETHERNET)   += net/ethernet.m
-MODULES-$(CONFIG_MODULE_IPV4)	    += net/ipv4.m
-MODULES-$(CONFIG_MODULE_I825XX)     += net/cards/i825xx.m
-MODULES-$(CONFIG_MODULE_RTL8139)    += net/cards/rtl8139.m
-MODULES-$(CONFIG_MODULE_I350)       += net/cards/i350.m
-MODULES-$(CONFIG_MODULE_PARTITIONS) += partitions/partitions.m
-MODULES += $(MODULES-y)
-
-SUBDIRS-$(CONFIG_MODULE_AES)	    += aes
-SUBDIRS-$(CONFIG_MODULE_ATA)	    += ata
-SUBDIRS-$(CONFIG_MODULE_AHCI)	    += ahci
-SUBDIRS-$(CONFIG_MODULE_EXT2)	    += ext2
-SUBDIRS-$(CONFIG_MODULE_ISO9660)    += iso9660
-SUBDIRS-$(CONFIG_MODULE_FAT)	    += fat
-SUBDIRS-$(CONFIG_MODULE_PSM)	    += psm
-SUBDIRS-$(CONFIG_MODULE_SHIV)	    += shiv
-SUBDIRS = "$(SUBDIRS-y)"
-ALLSUBDIRS = "aes ata ext2 iso9660 fat ahci psm shiv"
-VERSION=${KERNEL_VERSION}
-
 all:
 	@$(MAKE) -s all_s
 
@@ -79,7 +79,8 @@ all_s: make.deps $(MODULES)
 	
 	for i in "$(SUBDIRS)"; do \
 		if [[ $$i != "" ]]; then \
-		$(MAKE) -s -C $$i ;\
+			export MCFLAGS="$(MCFLAGS)" ;\
+			$(MAKE) -s -C $$i ;\
 		fi ;\
 	done
 	@-mkdir -p built
@@ -90,7 +91,7 @@ all_s: make.deps $(MODULES)
 	done
 	@-for i in "$(SUBDIRS)"; do \
 		if [[ $$i != "" ]]; then \
-		cp -f $$i/$$i.m built/$$i ;\
+		cp -f $$i/$$(basename $$i).m built/$$(basename $$i) ;\
 		fi ;\
 	done
 	@cp modules.deps built/
@@ -116,9 +117,17 @@ clean:
 	@-find -name "*.o" | xargs rm -f
 	@-find -name "*.m.1" | xargs rm -f
 	@-find -name "make.deps" | xargs rm -f
-	@-rm -rf built/*
-	@-for i in "$(ALLSUBDIRS)"; do \
-		$(MAKE) -s -C $$i clean 2>/dev/null ;\
+	@-find $$(find ../arch -name drivers | grep -v kernel) -name "*.m" | xargs rm -f
+	@-find $$(find ../arch -name drivers | grep -v kernel) -name "*.o" | xargs rm -f
+	@-find $$(find ../arch -name drivers | grep -v kernel) -name "make.deps" | xargs rm -f
+	@-for i in $$(find $$(find ../arch -name drivers | grep -v kernel) -name "Makefile"); do \
+		-$(MAKE) -s -C $$(dirname $$i) clean 2>/dev/null ;\
+	done
+	@-rm -rf built/* $(MODULES) $(MODULES:.m=.m.o)
+	@-find ../arch -name "*.m" | xargs rm -f
+	@-find ../arch -name "*.m.o" | xargs rm -f
+	@-for i in $(ALLSUBDIRS); do \
+		-$(MAKE) -s -C $$i clean 2>/dev/null ;\
 	done
 
 export OBJ_EXT=m

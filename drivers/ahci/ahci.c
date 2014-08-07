@@ -112,15 +112,15 @@ int ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev)
 		mm_allocate_dma_buffer(&dev->ch_dmas[i]);
 		dev->ch[i] = (void *)dev->ch_dmas[i].v;
 		memset(h, 0, sizeof(*h));
-		h->command_table_base_l = dev->ch_dmas[i].p.address & 0xFFFFFFFF;
+		h->command_table_base_l = LOWER32(dev->ch_dmas[i].p.address);
 		h->command_table_base_h = UPPER32(dev->ch_dmas[i].p.address);
 		h++;
 	}
 	
-	port->command_list_base_l = (clb_phys & 0xFFFFFFFF);
+	port->command_list_base_l = LOWER32(clb_phys);
 	port->command_list_base_h = UPPER32(clb_phys);
 	
-	port->fis_base_l = (fis_phys & 0xFFFFFFFF);
+	port->fis_base_l = LOWER32(fis_phys);
 	port->fis_base_h = UPPER32(fis_phys);
  	ahci_start_port_command_engine(port);
 	port->sata_error = ~0;

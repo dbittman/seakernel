@@ -19,6 +19,7 @@ class Node
 	attr_accessor :result
 	attr_accessor :dnwv
 	attr_accessor :depends
+	attr_accessor :res_include
 	def initialize(k)
 		if $debugging then puts "new node: #{k}" end
 		@key = k
@@ -30,6 +31,7 @@ class Node
 		@result = nil
 		@dnwv = nil
 		@depends = nil
+		@res_include = Hash.new
 	end
 
 	def parse_line(line)
@@ -55,6 +57,8 @@ class Node
 				@depends=kv[1].dup.strip
 			when "desc"
 				@desc=kv[1].dup.strip
+			when "condinclude"
+				@res_include[kv[1].strip.to_sym] = kv[2].dup.strip
 			end
 		end
 	end
@@ -223,6 +227,9 @@ $node_array.each do |node|
 	end
 	puts ""
 	node.result = result
+	if !node.res_include[result.to_sym].nil? then
+		process_file(node.res_include[result.to_sym])
+	end
 end
 
 file = File.open($output_file, "w")

@@ -2,9 +2,8 @@
 
 # processes a .cfg file
 
-$output_array = Array.new
+$node_hash = Hash.new
 $path_array = []
-$node_array = Array.new
 $output_file = ".config.cfg"
 $input_files = []
 $debugging = false
@@ -69,12 +68,9 @@ class Node
 		end
 		ar = @depends.split(",")
 		ar.each do |dep|
-			$node_array.each do |n|
-				if n.key == dep
-					if n.result == "n"
-						return false
-					end
-				end
+			if $debugging then puts "checking dep for #{@key}: #{dep}" end
+			if $node_hash[dep.to_sym].result == "n"
+				return false
 			end
 		end
 		return true
@@ -142,7 +138,7 @@ def process_file(path)
 			if popped.index("=")
 				# popped a node! Add it to the chain
 				if $debugging then puts "adding node #{node.key} to chain" end
-				$node_array.push(node.dup)
+				$node_hash[node.key.to_sym] = node.dup
 				node = nil
 			end
 		elsif line.index("{")
@@ -182,27 +178,21 @@ def process_file(path)
 	if $debugging then puts "end of file: #{path}" end
 end
 
-ARGV.each_index do |idx|
-	opt = ARGV[idx]
-	if opt == "-o" || opt == "--output"
-		$output_file = ARGV[idx+1].dup
-		ARGV.delete_at(idx+1);
-	elsif opt == "-$"
-		$debugging = true
-	elsif opt == "-d"
-		$default_config = true
-	else
-		$input_files.push(opt.dup)
+def ask_node(node)
+	if(node.nil?) then return end
+	file_to_add = nil
+	
+	if(!node.result.nil?) then return end
+
+	# iterate deps
+	if(!node.depends.nil?)
+		node.depends.split(",").each {|dep|
+			if ! (file_to_add = ask_node($node_hash[dep.to_sym])).nil?
+				return file_to_add
+			end
+		}
 	end
-end
-
-if $debugging then puts "building chain..." end
-
-$input_files.each { |file| process_file(file) }
-
-if $debugging then puts "chain build. Asking questions..." end
-
-$node_array.each do |node|
+	
 	path = node.path.dup
 	path.pop
 	printf("%s/ : %s\n%s\n", path.join("/"), node.key, node.desc)
@@ -223,23 +213,71 @@ $node_array.each do |node|
 		end
 	end
 	if result.nil?
-		result = get_input(node.name, node.ans.nil? ? nil : node.ans.split(","), node.default)
+		result = get_input(node.name,
+					node.ans.nil? ? 
+						nil : node.ans.split(","), node.default)
 	end
 	puts ""
 	node.result = result
 	if !node.res_include[result.to_sym].nil? then
-		process_file(node.res_include[result.to_sym])
+		file_to_add = node.res_include[result.to_sym];
+	end
+	return file_to_add
+end
+
+def iterate_questions()
+	file_to_add = nil;
+	$node_hash.each_pair do |key, node|
+		if ! node.result.nil?
+			next
+		end
+
+		if ! (file_to_add = ask_node(node)).nil?
+			break
+		end
+	end
+
+	if ! file_to_add.nil?
+		process_file(file_to_add);
+		iterate_questions()
 	end
 end
+
+
+ARGV.each_index do |idx|
+	opt = ARGV[idx]
+	if opt == "-o" || opt == "--output"
+		$output_file = ARGV[idx+1].dup
+		ARGV.delete_at(idx+1);
+	elsif opt == "-$"
+		$debugging = true
+	elsif opt == "-d"
+		$default_config = true
+	else
+		$input_files.push(opt.dup)
+	end
+end
+
+if $debugging then puts "building chain..." end
+
+$input_files.each { |file| process_file(file) }
+
+if $debugging then puts "chain built. Asking questions..." end
+
+iterate_questions()
 
 file = File.open($output_file, "w")
 File.truncate($output_file, 0)
 
 puts "writing configuration to #{$output_file}"
 file.puts(config_header)
-$node_array.each do |node|
+$node_hash.each_value do |node|
+	if node.result.nil?
+		puts "*** BUG: unanswered configuration node"
+	end
 	if node.dnwv != node.result
 		file.puts(node.key + "=" + node.result.to_s)
 	end
 end
 file.close
+

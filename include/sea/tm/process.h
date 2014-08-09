@@ -52,6 +52,7 @@
 #define TF_OTHERBS   0x100000 /* other bit-size. Task is running as different bit-size than the CPU */
 #define TF_SHUTDOWN  0x200000 /* this task called shutdown */
 #define TF_KILLREADY 0x400000 /* task is ready to be killed */
+#define TF_DIDEXEC   0x800000 /* task exec'd after a fork */
 
 
 #define PRIO_PROCESS 1
@@ -181,6 +182,7 @@ void tm_process_resume(task_t *t);
 void tm_process_enter_system(int sys);
 void tm_process_exit_system();
 int tm_do_fork(unsigned flags);
+int sys_vfork();
 void tm_engage_idle();
 task_t *tm_get_process_by_pid(int);
 

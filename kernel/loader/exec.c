@@ -244,6 +244,7 @@ int do_exec(task_t *t, char *path, char **argv, char **env, int shebanged)
 	/* the kernel cares if it has executed something or not */
 	if(!(kernel_state_flags & KSF_HAVEEXECED))
 		set_ksf(KSF_HAVEEXECED);
+	t->flags |= TF_DIDEXEC;
 	arch_loader_exec_initializer(t, argc, eip);
 	return 0;
 }

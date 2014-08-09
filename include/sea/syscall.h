@@ -26,7 +26,7 @@ int sys_setup();
 #define SYS_DUP2  		 16
 #define SYS_IOCTL 		 17
 
-#define SYS_UNUSED0		 18
+#define SYS_VFORK		 18
 #define SYS_UNUSED23	 19
 #define SYS_UNUSED24 	 20
 

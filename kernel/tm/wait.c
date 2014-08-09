@@ -56,7 +56,7 @@ static void get_status_int(task_t *t, int *st, int *__pid)
 		info=ret_val<<8;
 	}
 	if(status & __STOPPED)
-		code = 0x7f;
+		info=0, code = 0x7f;
 	if(st)
 		*st = code << 16 | info;
 }

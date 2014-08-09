@@ -176,3 +176,20 @@ int tm_do_fork(unsigned flags)
 	}
 	return 0;
 }
+
+int sys_vfork()
+{
+	int pid = tm_do_fork(0);
+	if(pid < 0) {
+		return pid;
+	} else if(pid) {
+		/* parent */
+		task_t *t = tm_get_process_by_pid(pid);
+		/* TODO: should we clean up like wait() if the task dies? */
+		while(t->state != TASK_DEAD && t->flags & TF_DIDEXEC) tm_schedule();
+		return pid;
+	} else {
+		return 0;
+	}
+}
+

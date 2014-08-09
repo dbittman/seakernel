@@ -75,8 +75,6 @@ class Node
 		end
 		return true
 	end
-	
-	
 end
 
 config_header = <<DOC

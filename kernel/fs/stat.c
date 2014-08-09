@@ -9,6 +9,7 @@
 #include <sea/fs/file.h>
 #include <sea/fs/dir.h>
 #include <sea/fs/callback.h>
+#include <sea/dm/pipe.h>
 int sys_isatty(int f)
 {
 	struct file *file = fs_get_file_pointer((task_t *) current_task, f);
@@ -49,6 +50,11 @@ static void do_stat(struct inode * inode, struct stat * tmp)
 	tmp->st_mtime = inode->mtime;
 	tmp->st_ctime = inode->ctime;
 	tmp->st_blksize = inode->blksize;
+	if(inode->pipe) {
+		tmp->st_blksize = PAGE_SIZE;
+		tmp->st_blocks = PIPE_SIZE / PAGE_SIZE;
+		tmp->st_size = inode->pipe->pending;
+	}
 	/* HACK: some filesystems might not set this... */
 	if(!tmp->st_blksize)
 		tmp->st_blksize = 512;

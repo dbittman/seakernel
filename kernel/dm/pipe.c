@@ -128,48 +128,57 @@ int dm_read_pipe(struct inode *ino, char *buffer, size_t length)
 	return count;
 }
 
-int dm_write_pipe(struct inode *ino, char *buffer, size_t length)
+int dm_write_pipe(struct inode *ino, char *initialbuffer, size_t totallength)
 {
-	if(!ino || !buffer)
+	if(!ino || !initialbuffer)
 		return -EINVAL;
 	pipe_t *pipe = ino->pipe;
 	if(!pipe)
 		return -EINVAL;
-	mutex_acquire(pipe->lock);
-	/* we're writing to a pipe with no reading process! */
-	if(pipe->count <= 1 && pipe->type != PIPE_NAMED) {
-		mutex_release(pipe->lock);
-		return -EPIPE;
-	}
-	/* IO block until we can write to it */
-	while((pipe->write_pos+length)>=PIPE_SIZE) {
-		int old = cpu_interrupt_set(0);
-		tm_add_to_blocklist(pipe->write_blocked, (task_t *)current_task);
-		mutex_release(pipe->lock);
-		while(!tm_schedule());
-		assert(!cpu_interrupt_set(old));
-		if(tm_process_got_signal(current_task))
-			return -EINTR;
-		mutex_acquire(pipe->lock);
-	}
 	
-	/* this shouldn't happen, but lets be safe */
-	if((pipe->write_pos+length)>=PIPE_SIZE)
-	{
-		printk(1, "[pipe]: warning - task %d failed to block for writing to pipe\n"
-			, current_task->pid);
+	/* allow for partial writes of the system page size. Thus, we wont
+	 * have a process freeze because it tries to fill up the pipe in one
+	 * shot. */
+	char *buffer = initialbuffer;
+	size_t length;
+	size_t remain = totallength;
+
+	while(remain) {
+		length = PAGE_SIZE;
+		if(length > remain)
+			length = remain;
+		
+		mutex_acquire(pipe->lock);
+		/* we're writing to a pipe with no reading process! */
+		if(pipe->count <= 1 && pipe->type != PIPE_NAMED) {
+			mutex_release(pipe->lock);
+			return -EPIPE;
+		}
+		/* IO block until we can write to it */
+		while((pipe->write_pos+length)>=PIPE_SIZE) {
+			int old = cpu_interrupt_set(0);
+			tm_add_to_blocklist(pipe->write_blocked, (task_t *)current_task);
+			mutex_release(pipe->lock);
+			while(!tm_schedule());
+			assert(!cpu_interrupt_set(old));
+			if(tm_process_got_signal(current_task))
+				return -EINTR;
+			mutex_acquire(pipe->lock);
+		}
+		
+		memcpy((void *)(pipe->buffer + pipe->write_pos), buffer, length);
+		pipe->length = ino->len;
+		pipe->write_pos += length;
+		pipe->pending += length;
+		/* now, unblock the tasks */
+		tm_remove_all_from_blocklist(pipe->read_blocked);
+		tm_remove_all_from_blocklist(pipe->write_blocked);
 		mutex_release(pipe->lock);
-		return -EPIPE;
+
+		remain -= length;
+		buffer += length;
 	}
-	memcpy((void *)(pipe->buffer + pipe->write_pos), buffer, length);
-	pipe->length = ino->len;
-	pipe->write_pos += length;
-	pipe->pending += length;
-	/* now, unblock the tasks */
-	tm_remove_all_from_blocklist(pipe->read_blocked);
-	tm_remove_all_from_blocklist(pipe->write_blocked);
-	mutex_release(pipe->lock);
-	return length;
+	return totallength;
 }
 
 int dm_pipedev_select(struct inode *in, int rw)

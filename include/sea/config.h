@@ -54,7 +54,7 @@
 #define CACHE_CAP 20000
 
 #define NUM_DT 4
-#define PIPE_SIZE 0x4000
+#define PIPE_SIZE 0x8000
 
 /* video */
 #define MAX_CONSOLES 10

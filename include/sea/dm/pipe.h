@@ -20,8 +20,8 @@ typedef struct pipe_struct {
 
 int sys_mkfifo(char *path, mode_t mode);
 void dm_free_pipe(struct inode *i);
-int dm_read_pipe(struct inode *ino, char *buffer, size_t length);
-int dm_write_pipe(struct inode *ino, char *buffer, size_t length);
+int dm_read_pipe(struct inode *ino, int flags, char *buffer, size_t length);
+int dm_write_pipe(struct inode *ino, int flags, char *buffer, size_t length);
 int dm_pipedev_select(struct inode *in, int rw);
 int sys_pipe(int *files);
 pipe_t *dm_create_pipe();

@@ -77,7 +77,7 @@ void dm_free_pipe(struct inode *i)
 	i->pipe=0;
 }
 
-int dm_read_pipe(struct inode *ino, char *buffer, size_t length)
+int dm_read_pipe(struct inode *ino, int flags, char *buffer, size_t length)
 {
 	if(!ino || !buffer)
 		return -EINVAL;
@@ -128,21 +128,19 @@ int dm_read_pipe(struct inode *ino, char *buffer, size_t length)
 	return count;
 }
 
-int dm_write_pipe(struct inode *ino, char *initialbuffer, size_t totallength)
+int dm_write_pipe(struct inode *ino, int flags, char *initialbuffer, size_t totallength)
 {
 	if(!ino || !initialbuffer)
 		return -EINVAL;
 	pipe_t *pipe = ino->pipe;
 	if(!pipe)
 		return -EINVAL;
-	
 	/* allow for partial writes of the system page size. Thus, we wont
 	 * have a process freeze because it tries to fill up the pipe in one
 	 * shot. */
 	char *buffer = initialbuffer;
 	size_t length;
 	size_t remain = totallength;
-
 	while(remain) {
 		length = PAGE_SIZE;
 		if(length > remain)
@@ -152,11 +150,13 @@ int dm_write_pipe(struct inode *ino, char *initialbuffer, size_t totallength)
 		/* we're writing to a pipe with no reading process! */
 		if(pipe->count <= 1 && pipe->type != PIPE_NAMED) {
 			mutex_release(pipe->lock);
+			current_task->sigd = SIGPIPE;
 			return -EPIPE;
 		}
 		/* IO block until we can write to it */
 		while((pipe->write_pos+length)>=PIPE_SIZE) {
 			int old = cpu_interrupt_set(0);
+			tm_remove_all_from_blocklist(pipe->read_blocked);
 			tm_add_to_blocklist(pipe->write_blocked, (task_t *)current_task);
 			mutex_release(pipe->lock);
 			while(!tm_schedule());

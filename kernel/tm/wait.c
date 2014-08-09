@@ -36,7 +36,7 @@ int tm_process_wait(unsigned pid, int state)
 static void get_status_int(task_t *t, int *st, int *__pid)
 {
 	int ret_val, sig_number;
-	int status=__EXIT;
+	int status= (t->state == TASK_DEAD) ? __EXIT : __STOPPED;
 	
 	sig_number = t->exit_reason.sig;
 	ret_val = t->exit_reason.ret;
@@ -55,6 +55,8 @@ static void get_status_int(task_t *t, int *st, int *__pid)
 	if(status == __EXIT || status == __COREDUMP) {
 		info=ret_val<<8;
 	}
+	if(status & __STOPPED)
+		code = 0x7f;
 	if(st)
 		*st = code << 16 | info;
 }
@@ -95,7 +97,7 @@ int sys_waitpid(int pid, int *st, int opt)
 	}
 	int code, gotpid;
 	get_status_int(t, &code, &gotpid);
-	if(pid == -1) __tm_remove_task_from_primary_queue(t, 0);
+	if(pid == -1 && t->state == TASK_DEAD) __tm_remove_task_from_primary_queue(t, 0);
 	if(st)
 		*st = code;
 	tm_lower_flag(TF_BGROUND);

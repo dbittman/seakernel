@@ -19,6 +19,7 @@
 #define __COREDUMP 1
 #define __EXITSIG  2
 #define __STOPSIG  4
+#define __STOPPED  8
 
 #define TASK_MAGIC 0xCAFEBABE
 #define THREAD_MAGIC 0xBABECAFE

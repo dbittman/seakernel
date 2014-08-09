@@ -121,7 +121,6 @@ struct task_struct
 	time_t stime, utime;
 	time_t t_cutime, t_cstime;
 	volatile addr_t stack_end;
-	volatile unsigned num_pages;
 	unsigned last; /* the previous systemcall */
 	ex_stat exit_reason, we_res;
 	/* pushed registers by the interrupt handlers */

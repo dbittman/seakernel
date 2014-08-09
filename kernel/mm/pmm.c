@@ -155,70 +155,47 @@ void mm_free_contiguous_region(struct mm_physical_region *p)
 	mutex_release(&pm_mutex);
 }
 
+static addr_t __oom_handler()
+{
+	addr_t ret = mm_reclaim_page_from_contiguous();
+	if(!ret)
+		panic(PANIC_MEM | PANIC_NOSYNC, "ran out of physical memory");
+	return ret;
+}
+
 addr_t mm_alloc_physical_page()
 {
 	if(!pm_location)
 		panic(PANIC_MEM | PANIC_NOSYNC, "Physical memory allocation before initilization");
-	addr_t ret;
-	unsigned flag=0;
-	try_again:
-	ret=0;
-	if(current_task) {
-		current_task->allocated++;
-		current_task->phys_mem_usage++;
-	}
+	addr_t ret = 0;
 	if(kernel_state_flags & KSF_MEMMAPPED)
 	{
 		mutex_acquire(&pm_mutex);
-		/* out of physical memory!! */
-		if(pm_stack <= (PM_STACK_ADDR+sizeof(addr_t)*2)) {
-			oom:
-			/* try to reclaim from contiguous memory. If we're doing this, we're likely
-			 * nearly out of memory anyway... */
-			if((ret = mm_reclaim_page_from_contiguous()))
-			{
-				mutex_release(&pm_mutex);
-				goto found;
-			}
-			if(current_task == kernel_task || !current_task)
-				panic(PANIC_MEM | PANIC_NOSYNC, "Ran out of physical memory");
-			mutex_release(&pm_mutex);
-			if(OOM_HANDLER == OOM_SLEEP) {
-				if(!flag++) 
-					printk(0, "Warning - Ran out of physical memory in task %d\n", 
-						   current_task->pid);
-					tm_engage_idle();
-				tm_schedule();
-				goto try_again;
-			} else if(OOM_HANDLER == OOM_KILL)
-			{
-				printk(0, "Warning - Ran out of physical memory in task %d. Killing...\n", 
-					   current_task->pid);
-				tm_exit(-10);
-			}
-			else
-				panic(PANIC_MEM | PANIC_NOSYNC, "Ran out of physical memory");
+		/* if the stack is empty, OR the poping from the stack would make it
+		 * empty (want to reserve one page for emergencies), OR
+		 * the next address is invalid, then call OOM */
+		if(pm_stack == PM_STACK_ADDR
+				|| (pm_stack -= sizeof(addr_t)) == PM_STACK_ADDR
+				|| *(addr_t *)(pm_stack) <= pm_location) {
+			ret = __oom_handler();
 		}
-		pm_stack -= sizeof(addr_t);
-		ret = *(addr_t *)pm_stack;
-		*(addr_t *)pm_stack = 0;
-		if(ret <= pm_location)
-			goto oom;
-		++pm_used_pages;
+		if(!ret) {
+			/* __oom_handler was not called, so we're good */
+			ret = *(addr_t *)pm_stack;
+			*(addr_t *)pm_stack = 0;
+			++pm_used_pages;
+		}
 		mutex_release(&pm_mutex);
 	} else {
 		/* this isn't locked, because it is used before multitasking happens */
 		ret = pm_location;
 		pm_location+=PAGE_SIZE;
 	}
-found:
-	if(current_task)
-		current_task->num_pages++;
-	if(!ret)
-		panic(PANIC_MEM | PANIC_NOSYNC, "found zero address in page stack (%x %x)\n", pm_stack, pm_stack_max);
-	if(((ret > highest_page) || ret < lowest_page) 
-		&& (kernel_state_flags & KSF_MEMMAPPED))
-		panic(PANIC_MEM | PANIC_NOSYNC, "found invalid address in page stack: %x (H=%x, L=%x)\n", ret, highest_page, lowest_page);
+	if(current_task) {
+		current_task->allocated++;
+		current_task->phys_mem_usage++;
+	}
+	assert(ret);
 	return ret;
 }
 
@@ -260,8 +237,6 @@ void mm_free_physical_page(addr_t addr)
 		assert(*(addr_t *)(pm_stack - sizeof(addr_t)) == addr);
 	}
 	mutex_release(&pm_mutex);
-	if(current_task && current_task->num_pages)
-		current_task->num_pages--;
 }
 
 void mm_pm_init(addr_t start, struct multiboot *mboot)

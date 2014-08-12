@@ -68,7 +68,7 @@ int sys_uname(struct utsname *name)
 		return -EINVAL;
 	strncpy(name->sysname, "seaos", 6);
 	strncpy(name->nodename, "", 1);
-	get_kernel_version(name->release);
+	strncpy(name->release, CONFIG_VERSION, 8);
 	strncpy(name->version, "eclipse", 8);
 #if CONFIG_ARCH == TYPE_ARCH_X86
 	strncpy(name->machine, "i586", 5);

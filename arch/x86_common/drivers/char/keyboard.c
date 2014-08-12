@@ -380,5 +380,5 @@ int module_exit()
 
 int module_deps(char *b)
 {
-	return KVERSION;
+	return CONFIG_VERSION_NUMBER;
 }

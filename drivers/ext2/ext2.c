@@ -184,7 +184,7 @@ int ext2_sb_update(ext2_fs_t *fs, ext2_superblock_t *sb)
 }
 int module_deps(char *b)
 {
-	return KVERSION;
+	return CONFIG_VERSION_NUMBER;
 }
 
 int ext2_inode_type(ext2_inode_t *in)

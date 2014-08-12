@@ -3,6 +3,8 @@
 
 #include <../sea_defines.h>
 
+#include <sea/version.h>
+
 #if CONFIG_DEBUG
 #define DEBUG 1
 #endif
@@ -62,12 +64,6 @@
 /* task */
 #define SCHED_TTY CONFIG_SCHED_TTY
 #define SCHED_TTY_CYC CONFIG_SCHED_TTY_AMOUNT
-
-#define MAJ_VER 0
-#define MIN_VER 3
-#define PRE_VER 1
-
-#define KVERSION (MAJ_VER * 200 + MIN_VER * 20 + PRE_VER)
 
 #if PRE_VER < 8
 #undef DEBUG

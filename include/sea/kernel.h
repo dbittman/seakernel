@@ -41,23 +41,6 @@ extern volatile unsigned int __allow_idle;
   #define assert(c) {}
 #endif
 
-static inline void get_kernel_version(char *b)
-{
-	char t = 'a';
-	if(PRE_VER >= 4 && PRE_VER < 8)
-		t = 'b';
-	if(PRE_VER >= 8 && PRE_VER < 10)
-		t = 'c';
-	if(PRE_VER == 10)
-		t=0;
-	int p=0;
-	if(PRE_VER < 8)
-		p = (PRE_VER % 4)+1;
-	else
-		p = (PRE_VER - 7);
-	snprintf(b, 32, "%d.%d%c%c%d", MAJ_VER, MIN_VER, t ? '-' : 0, t, p);
-}
-
 struct inode *kt_set_as_kernel_task(char *name);
 void panic(int flags, char *fmt, ...);
 void kernel_reset();

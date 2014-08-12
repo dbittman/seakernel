@@ -115,9 +115,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	console_init_stage1();
 	cpu_early_init();
 	console_kernel_puts("~ SeaOS Version ");	
-	char ver[32];
-	get_kernel_version(ver);
-	console_kernel_puts(ver);
+	console_kernel_puts(CONFIG_VERSION_STRING);
 	console_kernel_puts(" Booting Up ~\n\r");
 #if CONFIG_MODULES
 	loader_init_modules();
@@ -144,7 +142,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	kt_init_kernel_tasking();
 	start_epoch = time_get_epoch();
 	printk(KERN_MILE, "[kernel]: Kernel is setup (time=%d, kv=%d: ok)\n", 
-	       start_epoch, KVERSION, sizeof(task_t), BITS_PER_LONG);
+	       start_epoch, CONFIG_VERSION_NUMBER, sizeof(task_t), BITS_PER_LONG);
 	printk(KERN_DEBUG, "[kernel]: structure sizes: task=%d bytes, thread=%d bytes, inode=%d bytes\n",
 			sizeof(task_t), sizeof(struct thread_shared_data), sizeof(struct inode));
 	cpu_interrupt_set(1);

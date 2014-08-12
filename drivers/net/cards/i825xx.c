@@ -163,7 +163,7 @@ int module_install()
 int module_deps(char *b)
 {
 	write_deps(b, "pci,ethernet,:");
-	return KVERSION;
+	return CONFIG_VERSION_NUMBER;
 }
 
 int module_exit()

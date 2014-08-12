@@ -40,5 +40,5 @@ int module_exit()
 
 int module_deps()
 {
-	return KVERSION;
+	return CONFIG_VERSION_NUMBER;
 }

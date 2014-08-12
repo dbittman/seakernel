@@ -399,6 +399,13 @@ void __slab_do_kfree_aligned(addr_t a)
 /* aligned allocations are handled seperately. Non-aligned ones
  * are forced to be non-aligned, since free checks whether the
  * pointer passed to it is aligned and handles that differently.
+ *
+ * So, many processors dislike accessing data that isn't word
+ * aligned, so we just assume that that is always true (because
+ * assumptions are like, totally great). We have to force
+ * non-page-alignment to not screw over _mm_do_kfree_slab, so
+ * we do that by (maybe) adding a sizeof(addr_t *), which is
+ * (at least) word aligned.
  */
 addr_t __mm_do_kmalloc_slab(size_t sz, char align)
 {
@@ -417,12 +424,12 @@ addr_t __mm_do_kmalloc_slab(size_t sz, char align)
 			"Attemping to allocate from full slab: %d:%d\n", 
 			slab->obj_used, slab->obj_num);
 	addr_t addr = alloc_object(slab);
-	/* force non-alignment */
+	/* force non-page-alignment */
 	if(((addr + sizeof(addr_t *)) & PAGE_MASK) == (addr + sizeof(addr_t *)))
-		addr += sizeof(addr_t);
+		addr += sizeof(addr_t *);
 	/* save a pointer to the slab that this is from for easy recovery in free */
 	*(addr_t *)(addr) = (addr_t)slab;
-	addr += sizeof(addr_t);
+	addr += sizeof(addr_t *);
 	assert((addr & PAGE_MASK) != addr);
 	return addr;
 }

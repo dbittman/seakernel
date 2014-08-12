@@ -3,6 +3,7 @@
 #include <sea/tm/schedule.h>
 #include <sea/kernel.h>
 #include <sea/string.h>
+#include <sea/loader/symbol.h>
 
 cpu_t *primary_cpu=0;
 #if CONFIG_SMP
@@ -24,6 +25,16 @@ void cpu_processor_init_1()
 void cpu_processor_init_2()
 {
 	arch_cpu_processor_init_2();
+#if CONFIG_MODULES
+	loader_do_add_kernel_symbol((unsigned)(cpu_t *)primary_cpu, "primary_cpu");
+	loader_add_kernel_symbol(cpu_interrupt_set);
+	loader_add_kernel_symbol(cpu_interrupt_get_flag);
+#if CONFIG_SMP
+	loader_add_kernel_symbol(cpu_get);
+	loader_add_kernel_symbol((addr_t)&cpu_array_num);
+	loader_add_kernel_symbol((addr_t)&num_booted_cpus);
+#endif
+#endif
 }
 
 void cpu_early_init()

@@ -16,7 +16,7 @@
 
 unsigned lapic_timer_start=0;
 volatile unsigned num_ioapic=0;
-struct imps_ioapic *ioapic_list[MAX_IOAPIC];
+static struct imps_ioapic *ioapic_list[MAX_IOAPIC];
 
 void add_ioapic(struct imps_ioapic *ioapic)
 {
@@ -27,7 +27,7 @@ void add_ioapic(struct imps_ioapic *ioapic)
 	ioapic_list[++num_ioapic]=0;
 }
 
-unsigned ioapic_rw(struct imps_ioapic *l, int rw, unsigned char off, unsigned val)
+static unsigned ioapic_rw(struct imps_ioapic *l, int rw, unsigned char off, unsigned val)
 {
 	*(uint32_t*)(l->addr) = off;
 	if(rw == WRITE)
@@ -36,7 +36,7 @@ unsigned ioapic_rw(struct imps_ioapic *l, int rw, unsigned char off, unsigned va
 		return *(uint32_t*)(l->addr + 0x10);
 }
 
-void write_ioapic_vector(struct imps_ioapic *l, unsigned irq, char masked, char trigger, char polarity, char mode, unsigned char vector)
+static void write_ioapic_vector(struct imps_ioapic *l, unsigned irq, char masked, char trigger, char polarity, char mode, unsigned char vector)
 {
 	unsigned lower=0, higher=0;
 	lower = (unsigned)vector & 0xFF;
@@ -57,7 +57,7 @@ void write_ioapic_vector(struct imps_ioapic *l, unsigned irq, char masked, char 
 	write_ioapic(l, irq*2 + 0x10, lower);
 }
 
-int program_ioapic(struct imps_ioapic *ia)
+static int program_ioapic(struct imps_ioapic *ia)
 {
 	int i;
 	for(i=0;i<16;i++) {

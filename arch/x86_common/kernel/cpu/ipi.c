@@ -58,33 +58,4 @@ void arch_cpu_send_ipi(int dest, unsigned signal, unsigned flags)
 	x86_cpu_send_ipi(dest, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | signal);
 }
 
-void x86_cpu_handle_ipi_cpu_halt(volatile registers_t regs)
-{
-	/* TODO: processes may hold system locks on a halting processor */
-	cpu_interrupt_set(0);
-	/* No interrupts */
-	LAPIC_WRITE(LAPIC_TPR, 0xFFFFFFFF);
-	add_atomic(&num_halted_cpus, 1);
-	asm("cli");
-	while(1) asm("hlt");
-}
-
-void x86_cpu_handle_ipi_reschedule(volatile registers_t regs)
-{
-	if(!cpu_interrupt_get_flag())
-		return;
-	tm_schedule();
-}
-
-void x86_cpu_handle_ipi_tlb(volatile registers_t regs)
-{
-	/* flush the TLB */
-	flush_pd();
-}
-
-void x86_cpu_handle_ipi_tlb_ack(volatile registers_t regs)
-{
-	
-}
-
 #endif

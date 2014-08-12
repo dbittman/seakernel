@@ -150,7 +150,7 @@ int tm_do_fork(unsigned flags)
 	 * And then add it to the queue */
 	task->state = TASK_USLEEP;
 	tqueue_insert(primary_queue, (void *)task, task->listnode);
-	cpu_t *cpu = (cpu_t *)current_task->cpu;
+	cpu_t *cpu = current_task->cpu;
 #if CONFIG_SMP
 	cpu = fork_choose_cpu(current_task);
 #endif

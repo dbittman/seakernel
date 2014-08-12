@@ -87,7 +87,6 @@ struct thread_shared_data {
 
 	struct llist mappings;
 	mutex_t map_lock;
-	//vma_t mmf_vmem;
 	struct valloc mmf_valloc;
 };
 
@@ -141,8 +140,6 @@ struct task_struct
 	int cmask;
 	int tty;
 	unsigned long slice;
-	//mmf_t *mm_files;
-	//vma_t *mmf_priv_space, *mmf_share_space;
 	
 	/* signal handling */
 	volatile sigset_t sig_mask;

@@ -5,7 +5,6 @@
 #include <sea/tm/process.h>
 #include <sea/mutex.h>
 #include <sea/cpu/atomic.h>
-#include <sea/loader/symbol.h>
 #include <sea/cpu/acpi.h>
 #include <sea/cpu/features-x86_common.h>
 extern cpu_t *primary_cpu;
@@ -32,14 +31,6 @@ void arch_cpu_processor_init_1()
 	primary_cpu->flags |= CPU_RUNNING;
 	printk(KERN_EVERY, "done\n");
 	mutex_create((mutex_t *)&primary_cpu->lock, MT_NOSCHED);
-#if CONFIG_MODULES
-	loader_add_kernel_symbol(cpu_interrupt_set);
-#if CONFIG_SMP
-	loader_add_kernel_symbol(cpu_get);
-	loader_add_kernel_symbol((addr_t)&cpu_array_num);
-	loader_add_kernel_symbol((addr_t)&num_booted_cpus);
-#endif
-#endif
 }
 
 void arch_cpu_processor_init_2()
@@ -77,7 +68,4 @@ void arch_cpu_processor_init_2()
 	primary_cpu->flags |= CPU_RUNNING;
 	printk(KERN_EVERY, "done\n");
 	mutex_create((mutex_t *)&primary_cpu->lock, MT_NOSCHED);
-#if CONFIG_MODULES
-	loader_do_add_kernel_symbol((addr_t)(cpu_t *)&primary_cpu, "primary_cpu");
-#endif
 }

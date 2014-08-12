@@ -7,7 +7,7 @@
 #include <sea/cpu/processor.h>
 #include <sea/asm/system.h>
 
-#define current_tss (&((cpu_t *)current_task->cpu)->arch_cpu_data.tss)
+#define current_tss (&(current_task->cpu->arch_cpu_data.tss))
 
 static void _overflow(char *type)
 {
@@ -38,7 +38,7 @@ __attribute__((always_inline)) inline static void store_context()
 	/* TODO: There is a lot of overhead here, because we don't need
 	 * to do this for every task. For now, this works, but it needs
 	 * to be fixed. */
-	if(((cpu_t *)current_task->cpu)->flags & CPU_FXSAVE || ((cpu_t *)current_task->cpu)->flags & CPU_SSE || ((cpu_t *)current_task->cpu)->flags & CPU_FPU)
+	if(current_task->cpu->flags & CPU_FXSAVE || current_task->cpu->flags & CPU_SSE || current_task->cpu->flags & CPU_FPU)
 		__asm__ __volatile__("fxsave (%0)"
 			:: "r" (ALIGN(current_task->fpu_save_data, 16)));
 	/* Check for stack and heap overflow */
@@ -54,7 +54,7 @@ __attribute__((always_inline)) inline static void restore_context(task_t *n)
 	/* Update some last-minute things. The stack. */
 	set_kernel_stack(current_tss, n->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
 
-	if(((cpu_t *)n->cpu)->flags & CPU_SSE || ((cpu_t *)n->cpu)->flags & CPU_FPU)
+	if(n->cpu->flags & CPU_SSE || n->cpu->flags & CPU_FPU)
 		__asm__ __volatile__("fxrstor (%0)"
 			:: "r" (ALIGN(current_task->fpu_save_data, 16)));
 

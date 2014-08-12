@@ -10,11 +10,6 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/features-x86_common.h>
 
-extern cpu_t *primary_cpu;
-#if CONFIG_SMP
-extern cpu_t cpu_array[CONFIG_MAX_CPUS];
-extern unsigned cpu_array_num;
-#endif
 extern cpu_t primary_cpu_data;
 
 void init_lapic(int);
@@ -36,9 +31,9 @@ void arch_cpu_processor_init_1()
 	init_lapic(1);
 	calibrate_lapic_timer(1000);
 	init_ioapic();
- 	if(res >= 0) {
+ 	if(res >= 0) 
 		set_ksf(KSF_SMP_ENABLE);
-	} else
+	else
 		kprintf("[smp]: error in init code, disabling SMP support\n");
 #else
 	primary_cpu = &primary_cpu_data;
@@ -55,17 +50,6 @@ void arch_cpu_processor_init_1()
 	primary_cpu->flags |= CPU_RUNNING;
 	printk(KERN_EVERY, "done\n");
 	mutex_create((mutex_t *)&primary_cpu->lock, MT_NOSCHED);
-#if CONFIG_MODULES
-	loader_do_add_kernel_symbol((unsigned)(cpu_t *)primary_cpu, "primary_cpu");
-	loader_add_kernel_symbol(cpu_interrupt_set);
-	loader_add_kernel_symbol(cpu_interrupt_get_flag);
-#if CONFIG_SMP
-	loader_add_kernel_symbol(cpu_get);
-	loader_add_kernel_symbol((addr_t)&cpu_array_num);
-	loader_add_kernel_symbol((addr_t)&num_booted_cpus);
-#endif
-#endif
-
 #if CONFIG_GDB_STUB
 	set_debug_traps();
 	kprintf("---[DEBUG - waiting for GDB connection]---\n");

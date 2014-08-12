@@ -32,10 +32,10 @@ static __attribute__((always_inline)) inline void set_as_dead(task_t *t)
 {
 	assert(t);
 	sub_atomic(&running_processes, 1);
-	sub_atomic(&(((cpu_t *)t->cpu)->numtasks), 1);
+	sub_atomic(&(t->cpu->numtasks), 1);
 	cpu_interrupt_set(0);
 	tm_raise_flag(TF_DYING);
-	tqueue_remove(((cpu_t *)t->cpu)->active_queue, t->activenode);
+	tqueue_remove(t->cpu->active_queue, t->activenode);
 	t->state = TASK_DEAD;
 }
 
@@ -83,7 +83,7 @@ int __KT_try_releasing_tasks()
 	ll_for_each_entry(kill_queue, cur, task_t *, t)
 	{
 		/* need to check for orphaned zombie tasks */
-		if(t->flags & TF_BURIED && (t != ((cpu_t *)t->cpu)->cur)) {
+		if(t->flags & TF_BURIED && (t != t->cpu->cur)) {
 			if(t->parent == 0 
 					|| t->parent->state == TASK_DEAD 
 					|| (t->parent->flags & TF_KTASK) 

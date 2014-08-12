@@ -23,8 +23,8 @@
 #define KSF_HAVEEXECED     0x40 /* have we exec'd once? we dont check for valid pointers if this is unset */
 #define KSF_MEMMAPPED      0x80 /* is memory mapped? (used by pmm) */
 extern volatile unsigned kernel_state_flags;
-#define set_ksf(flag) {or_atomic(&kernel_state_flags, flag);}
-#define unset_ksf(flag) {and_atomic(&kernel_state_flags, ~flag);}
+#define set_ksf(flag) or_atomic(&kernel_state_flags, flag)
+#define unset_ksf(flag) and_atomic(&kernel_state_flags, ~flag)
 extern volatile unsigned int __allow_idle;
 
 #define PANIC_NOSYNC  1

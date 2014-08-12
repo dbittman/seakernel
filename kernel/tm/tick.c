@@ -58,7 +58,7 @@ static void do_tick()
 {
 	if(!current_task || (kernel_state_flags&KSF_PANICING))
 		return;
-	if(!(((cpu_t *)current_task->cpu)->flags & CPU_TASK))
+	if(!(current_task->cpu->flags & CPU_TASK))
 		return;
 	if(current_task) {
 		current_task->system 
@@ -75,7 +75,7 @@ void tm_timer_handler(registers_t *r, int int_no)
 {
 	/* prevent multiple cpus from adding to ticks */
 	/* TODO */
-	//if(!current_task || !current_task->cpu || ((cpu_t *)current_task->cpu) == primary_cpu)
+	//if(!current_task || !current_task->cpu || current_task->cpu == primary_cpu)
 		add_atomic(&ticks, 1);
 	/* engage the idle task occasionally */
 	if((ticks % current_hz*10) == 0)

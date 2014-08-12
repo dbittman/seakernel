@@ -23,7 +23,8 @@ struct file *fs_get_file_pointer(task_t *t, int n)
 	struct file *ret=0;
 	if(fp) {
 		add_atomic(&fp->count, 1);
-		assert(ret = fp->fi);
+		ret = fp->fi;
+		assert(ret);
 	}
 	mutex_release(&t->thread->files_lock);
 	return ret;

@@ -221,7 +221,7 @@ void cpu_interrupt_syscall_entry(registers_t *regs, int syscall_num)
 		}
 		assert(!cpu_interrupt_get_flag());
 	}
-	assert(!cpu_interrupt_set(0));
+	cpu_interrupt_set(0);
 	current_task->sysregs=0;
 	current_task->regs=0;
 	/* we don't need worry about this being wrong, since we'll always be returning to
@@ -267,7 +267,7 @@ void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_addres
 	}
 	/* clean up... Also, we don't handle stage 2 in ISR handling, since this
 	 can occur from within a stage2 handler */
-	assert(!cpu_interrupt_set(0));
+	cpu_interrupt_set(0);
 	/* if it went unhandled, kill the process or panic */
 	if(!called)
 		faulted(int_no, !already_in_interrupt, return_address);
@@ -345,7 +345,7 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 		assert(!cpu_interrupt_get_flag());
 	}
 	/* ok, now lets clean up */
-	assert(!cpu_interrupt_set(0));
+	cpu_interrupt_set(0);
 	/* clear the registers if we saved the ones from this interrupt */
 	if(current_task && clear_regs)
 		current_task->regs=0;

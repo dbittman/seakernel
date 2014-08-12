@@ -56,7 +56,7 @@ void arch_interrupt_ipi_handler(volatile registers_t regs)
 			panic(PANIC_NOSYNC, "invalid interprocessor interrupt number: %d", regs.int_no);
 	}
 #endif
-	assert(!cpu_interrupt_set(0));
+	cpu_interrupt_set(0);
 	cpu_interrupt_set_flag(previous_interrupt_flag); /* assembly code will issue sti */
 #if CONFIG_SMP
 	lapic_eoi();

@@ -31,7 +31,15 @@ extern volatile unsigned int __allow_idle;
 #define PANIC_MEM     2
 #define PANIC_VERBOSE 4
 
-#define assert(c) if(__builtin_expect((!(c)),0)) panic_assert(__FILE__, __LINE__, #c)
+#if CONFIG_ENABLE_ASSERTS
+  #define assert(c) \
+	do {\
+		if(__builtin_expect((!(c)),0)) \
+			panic_assert(__FILE__, __LINE__, #c); \
+	} while(0)
+#else
+  #define assert(c) {}
+#endif
 
 static inline void get_kernel_version(char *b)
 {

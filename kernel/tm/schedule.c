@@ -113,7 +113,7 @@ __attribute__((always_inline)) static inline void post_context_switch()
 	check_signals();
 	
 	if(enable_interrupts)
-		assert(!cpu_interrupt_set(1));
+		cpu_interrupt_set(1);
 }
 
 int tm_schedule()

@@ -231,7 +231,7 @@ void mm_free_physical_page(addr_t addr)
 		if(!(kernel_state_flags & KSF_MEMMAPPED)) goto add;
 	} else {
 		add:
-		assert(*(addr_t *)(pm_stack) = addr);
+		*(addr_t *)(pm_stack) = addr;
 		pm_stack += sizeof(addr_t);
 		--pm_used_pages;
 		assert(*(addr_t *)(pm_stack - sizeof(addr_t)) == addr);

@@ -134,7 +134,7 @@ void tm_add_to_blocklist_and_block(struct llist *list, task_t *task)
 	ll_do_insert(list, task->blocknode, (void *)task);
 	tqueue_remove(task->cpu->active_queue, task->activenode);
 	tm_process_pause(task);
-	assert(!cpu_interrupt_set(old));
+	cpu_interrupt_set(old);
 }
 
 void tm_add_to_blocklist(struct llist *list, task_t *task)
@@ -144,7 +144,7 @@ void tm_add_to_blocklist(struct llist *list, task_t *task)
 	ll_do_insert(list, task->blocknode, (void *)task);
 	tqueue_remove(task->cpu->active_queue, task->activenode);
 	task->state = TASK_ISLEEP;
-	assert(!cpu_interrupt_set(old));
+	cpu_interrupt_set(old);
 }
 
 void tm_remove_from_blocklist(struct llist *list, task_t *t)
@@ -155,7 +155,7 @@ void tm_remove_from_blocklist(struct llist *list, task_t *t)
 	t->blocklist = 0;
 	ll_do_remove(list, bn, 0);
 	tm_process_resume(t);
-	assert(!cpu_interrupt_set(old));
+	cpu_interrupt_set(old);
 }
 
 void tm_remove_all_from_blocklist(struct llist *list)
@@ -174,7 +174,7 @@ void tm_remove_all_from_blocklist(struct llist *list)
 	}
 	assert(!list->num);
 	rwlock_release(&list->rwl, RWL_WRITER);
-	assert(!cpu_interrupt_set(old));
+	cpu_interrupt_set(old);
 }
 
 void tm_move_task_cpu(task_t *t, cpu_t *cpu)

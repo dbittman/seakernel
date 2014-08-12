@@ -100,7 +100,7 @@ int dm_read_pipe(struct inode *ino, int flags, char *buffer, size_t length)
 		tm_add_to_blocklist(pipe->read_blocked, (task_t *)current_task);
 		mutex_release(pipe->lock);
 		while(!tm_schedule());
-		assert(!cpu_interrupt_set(old));
+		cpu_interrupt_set(old);
 		if(tm_process_got_signal(current_task))
 			return -EINTR;
 		mutex_acquire(pipe->lock);
@@ -160,7 +160,7 @@ int dm_write_pipe(struct inode *ino, int flags, char *initialbuffer, size_t tota
 			tm_add_to_blocklist(pipe->write_blocked, (task_t *)current_task);
 			mutex_release(pipe->lock);
 			while(!tm_schedule());
-			assert(!cpu_interrupt_set(old));
+			cpu_interrupt_set(old);
 			if(tm_process_got_signal(current_task))
 				return -EINTR;
 			mutex_acquire(pipe->lock);

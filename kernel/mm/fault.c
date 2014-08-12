@@ -74,7 +74,7 @@ void mm_page_fault_handler(registers_t *regs, addr_t address, int pf_cause)
 		/* ...and if that didn't work, the task did something evil */
 		mutex_release(&pd_cur_data->lock);
 
-		kprintf("[mm]: %d: segmentation fault\n", current_task->pid);
+		kprintf("[mm]: %d: segmentation fault at eip=%x\n", current_task->pid, regs->eip);
 		printk(0, "[mm]: %d: cause = %x, address = %x\n", current_task->pid, pf_cause, address);
 		printk(0, "[mm]: %d: heap %x -> %x, flags = %x\n",
 				current_task->pid, current_task->heap_start, 

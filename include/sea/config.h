@@ -35,16 +35,7 @@
 #define KMALLOC_NAME ((char *)"slab")
 
 /* MM */
-
-//#define SLAB_DEBUG
-#define RANGE_MUL 2
 #define STACK_SIZE (CONFIG_STACK_PAGES * 0x1000)
-
-
-#define OOM_KILL 1
-#define OOM_SLEEP 2
-#define OOM_HANDLER CONFIG_OOM_HANDLER
-
 
 #define BASE_SLAB_SIZE 8 /* In number of pages */
 #define MAX_OBJ_ID 1024

@@ -89,6 +89,8 @@ int dm_read_pipe(struct inode *ino, int flags, char *buffer, size_t length)
 	size_t len = length;
 	int ret=0;
 	size_t count=0;
+	if((flags & _FNONBLOCK) && !pipe->pending)
+		return -EAGAIN;
 	/* should we even try reading? (empty pipe with no writing processes=no) */
 	if(!pipe->pending && pipe->count <= 1 && pipe->type != PIPE_NAMED)
 		return count;
@@ -143,14 +145,17 @@ int dm_write_pipe(struct inode *ino, int flags, char *initialbuffer, size_t tota
 	char *buffer = initialbuffer;
 	size_t length;
 	size_t remain = totallength;
+	mutex_acquire(pipe->lock);
+	if((flags & _FNONBLOCK) && pipe->write_pos + totallength > PIPE_SIZE) {
+		mutex_release(pipe->lock);
+		return -EAGAIN;
+	}
 	while(remain) {
 		length = PAGE_SIZE;
 		if(length > remain)
 			length = remain;
-		
-		mutex_acquire(pipe->lock);
 		/* we're writing to a pipe with no reading process! */
-		if(pipe->count <= 1 && pipe->type != PIPE_NAMED) {
+		if((pipe->count - pipe->wrcount) == 0 && pipe->type != PIPE_NAMED) {
 			mutex_release(pipe->lock);
 			current_task->sigd = SIGPIPE;
 			return -EPIPE;
@@ -175,11 +180,11 @@ int dm_write_pipe(struct inode *ino, int flags, char *initialbuffer, size_t tota
 		/* now, unblock the tasks */
 		tm_remove_all_from_blocklist(pipe->read_blocked);
 		tm_remove_all_from_blocklist(pipe->write_blocked);
-		mutex_release(pipe->lock);
 
 		remain -= length;
 		buffer += length;
 	}
+	mutex_release(pipe->lock);
 	return totallength;
 }
 

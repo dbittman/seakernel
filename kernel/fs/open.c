@@ -49,6 +49,14 @@ struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int
 		*error = -EACCES;
 		return 0;
 	}
+	if((flags & _FNONBLOCK) && (flags & _FWRITE) && S_ISFIFO(inode->mode) && inode->pipe) {
+		/* check if we have readers on this fifo. If not, we return an error */
+		if((inode->pipe->count - inode->pipe->wrcount) == 0) {
+			vfs_iput(inode);
+			*error = -ENXIO;
+			return 0;
+		}
+	}
 	int ret;
 	f = (struct file *)kmalloc(sizeof(struct file));
 	f->inode = inode;

@@ -135,7 +135,7 @@ install: kernel
 	@cp -f skernel /sys/kernel
 	@echo "installing initrd..."
 	@cp -f initrd.img /sys/initrd
-	@make -C drivers install VERSION=${KERNEL_VERSION}
+	@make -C drivers install VERSION=${VERSION}
 
 clean:
 	@-rm -f $(VERSION_H) $(ADHEADS) $(AOBJS) $(KOBJS) $(CLEAN) initrd.img skernel make.deps skernel.1

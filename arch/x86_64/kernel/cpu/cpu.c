@@ -7,6 +7,10 @@
 #include <sea/cpu/atomic.h>
 #include <sea/cpu/acpi.h>
 #include <sea/cpu/features-x86_common.h>
+#include <sea/vsprintf.h>
+#include <sea/cpu/interrupt.h>
+#include <sea/string.h>
+#include <sea/tty/terminal.h>
 extern cpu_t *primary_cpu;
 #if CONFIG_SMP
 extern cpu_t cpu_array[CONFIG_MAX_CPUS];

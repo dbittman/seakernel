@@ -1,4 +1,3 @@
-#include <sea/kernel.h>
 #include <sea/cpu/processor.h>
 #include <sea/mm/vmm.h>
 #include <sea/cpu/atomic.h>

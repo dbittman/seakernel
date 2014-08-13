@@ -1,4 +1,3 @@
-#include <sea/kernel.h>
 #include <sea/dm/block.h>
 #include <sea/loader/module.h>
 #include <sea/fs/inode.h>
@@ -7,6 +6,7 @@
 #include <modules/aes.h>
 #include <sea/errno.h>
 #include <sea/vsprintf.h>
+#include <sea/string.h>
 
 #define MAX_CRYPTO 32
 int cp_major;

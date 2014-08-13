@@ -69,7 +69,7 @@ include kernel/make.inc
 include drivers/make.inc
 include arch/make.inc
 
-all: make.deps
+all: $(VERSION_H) $(ADHEADS) make.deps
 	$(MAKE) -s kernel
 
 ifneq ($(MAKECMDGOALS),config)
@@ -89,6 +89,8 @@ deps:
 	@${MAKE} -s -C library deps
 	@${MAKE} -s -C drivers deps
 .PHONY: library/klib.a
+.NOTPARALLEL: $(VERSION_H)
+.NOTPARALLEL: $(ADHEADS)
 library/klib.a:
 	$(MAKE) -s -C library
 

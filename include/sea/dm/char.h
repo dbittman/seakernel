@@ -1,7 +1,6 @@
 #ifndef __SEA_DM_CHAR_H
 #define __SEA_DM_CHAR_H
 
-#include <sea/kernel.h>
 #include <sea/dm/dev.h>
 #include <sea/fs/inode.h>
 typedef struct chardevice_s {

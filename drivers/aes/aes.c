@@ -2,6 +2,7 @@
 #include <sea/loader/module.h>
 #include <sea/cpu/processor.h>
 #include <sea/loader/symbol.h>
+#include <sea/vsprintf.h>
 #include "rijndael.h"
 
 #if CONFIG_ARCH == TYPE_ARCH_X86_64

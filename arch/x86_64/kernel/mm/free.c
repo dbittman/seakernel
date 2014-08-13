@@ -3,6 +3,7 @@
 #include <sea/kernel.h>
 #include <sea/mm/vmm.h>
 #include <sea/tm/process.h>
+#include <sea/mm/kmalloc.h>
 void free_pde(page_dir_t *pd, unsigned idx)
 {
 	if(!pd[idx]) 

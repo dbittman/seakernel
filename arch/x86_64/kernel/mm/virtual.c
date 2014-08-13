@@ -8,6 +8,7 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/boot/init.h>
 #include <sea/asm/system.h>
+#include <sea/vsprintf.h>
 
 volatile addr_t *kernel_dir=0;
 pml4_t *kernel_dir_phys=0;

@@ -1,7 +1,6 @@
 #include <sea/cpu/processor.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/tm/schedule.h>
-#include <sea/kernel.h>
 #include <sea/string.h>
 #include <sea/loader/symbol.h>
 
@@ -26,7 +25,7 @@ void cpu_processor_init_2()
 {
 	arch_cpu_processor_init_2();
 #if CONFIG_MODULES
-	loader_do_add_kernel_symbol((unsigned)(cpu_t *)primary_cpu, "primary_cpu");
+	loader_do_add_kernel_symbol((addr_t)(cpu_t *)primary_cpu, "primary_cpu");
 	loader_add_kernel_symbol(cpu_interrupt_set);
 	loader_add_kernel_symbol(cpu_interrupt_get_flag);
 #if CONFIG_SMP

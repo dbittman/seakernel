@@ -3,6 +3,7 @@
 
 #include <sea/mm/memory-x86_common.h>
 #include <sea/types.h>
+#include <sea/kernel.h>
 #define TOP_TASK_MEM       0xA8000000
 #define TOP_TASK_MEM_EXEC  0xA0000000
 #define TOP_USER_HEAP      0x90000000

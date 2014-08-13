@@ -1,4 +1,3 @@
-#include <sea/kernel.h>
 #include <sea/loader/module.h>
 #include <modules/ahci.h>
 #include <sea/tm/schedule.h>
@@ -7,6 +6,7 @@
 #include <sea/cpu/processor.h>
 #include <sea/vsprintf.h>
 #include <sea/mm/kmalloc.h>
+#include <sea/string.h>
 
 uint32_t ahci_flush_commands(struct hba_port *port)
 {

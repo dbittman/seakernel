@@ -1,6 +1,6 @@
-#include <sea/kernel.h>
 #include <sea/tty/terminal.h>
 #include <sea/vsprintf.h>
+#include <sea/string.h>
 static int DEF_FG=15;
 static int DEF_BG=0;
 static int reset_terconal(struct vterm *con)

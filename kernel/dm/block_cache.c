@@ -2,11 +2,11 @@
  * (write-through block cache. Speeds up writing */
 #include <sea/config.h>
 #if CONFIG_BLOCK_CACHE
-#include <sea/kernel.h>
 #include <sea/dm/dev.h>
 #include <sea/dm/block.h>
 #include <sea/lib/cache.h>
 #include <sea/loader/symbol.h>
+#include <sea/string.h>
 
 static cache_t *blk_cache=0;
 

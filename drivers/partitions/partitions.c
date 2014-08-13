@@ -1,10 +1,10 @@
-#include <sea/kernel.h>
 #include <sea/dm/dev.h>
 #include <sea/fs/inode.h>
 #include <sea/dm/block.h>
 #include <sea/loader/symbol.h>
 #include <modules/psm.h>
 #include <sea/vsprintf.h>
+#include <sea/string.h>
 struct partition {
 	char flag;
 	char ext;

@@ -1,6 +1,5 @@
 /* Provides callbacks for VFS functions to drivers */
 
-#include <sea/kernel.h>
 #include <sea/fs/inode.h>
 #include <sea/errno.h>
 

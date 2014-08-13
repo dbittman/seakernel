@@ -1,4 +1,3 @@
-#include <sea/kernel.h>
 #include <sea/dm/dev.h>
 #include <sea/fs/inode.h>
 #include <sea/dm/pipe.h>
@@ -9,6 +8,7 @@
 #include <sea/sys/fcntl.h>
 #include <sea/errno.h>
 #include <sea/mm/kmalloc.h>
+#include <sea/string.h>
 
 pipe_t *dm_create_pipe()
 {

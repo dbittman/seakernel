@@ -1,7 +1,6 @@
 /* pit.c: Copyright (c) 2010 Daniel Bittman
  * Functions for handling the PIT
  */
-#include <sea/kernel.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/tm/process.h>
 #include <sea/cpu/atomic.h>

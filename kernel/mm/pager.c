@@ -1,4 +1,3 @@
-#include <sea/kernel.h>
 #include <sea/mm/vmm.h>
 #include <sea/tm/process.h>
 /* this is an extremely complicated function, so take some care

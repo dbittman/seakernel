@@ -2,6 +2,7 @@
 #define ELF_x86_64_H
 #include <sea/loader/module.h>
 #include <sea/mm/memory-x86_64.h>
+#include <sea/string.h>
 extern void * kernel_start;
 #include <sea/types.h>
 typedef struct __attribute__((packed))

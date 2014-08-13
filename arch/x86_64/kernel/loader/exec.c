@@ -1,4 +1,6 @@
 #include <sea/tm/process.h>
+#include <sea/kernel.h>
+#include <sea/vsprintf.h>
 void arch_loader_exec_initializer(task_t *t, unsigned argc, addr_t eip)
 {
 	/* don't ya just love iret? */

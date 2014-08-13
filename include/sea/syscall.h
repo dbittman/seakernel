@@ -1,6 +1,5 @@
 #ifndef SYSCALL_H
 #define SYSCALL_H
-#include <sea/kernel.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/arch-include/syscall.h>
 int syscall_handler(registers_t *regs);

@@ -35,7 +35,6 @@
  * of the remaining mapped pages.
  */
 
-#include <sea/kernel.h>
 #include <sea/mm/vmm.h>
 #include <sea/tm/process.h>
 #include <sea/fs/inode.h>

@@ -1,5 +1,4 @@
 #include <sea/types.h>
-#include <sea/kernel.h>
 #include <sea/fs/inode.h>
 #include <sea/tm/process.h>
 #include <sea/sys/stat.h>
@@ -9,6 +8,7 @@
 #include <sea/fs/mount.h>
 #include <sea/fs/dir.h>
 #include <sea/fs/proc.h>
+#include <sea/string.h>
 
 struct mnttab {
 	char	*mt_special;

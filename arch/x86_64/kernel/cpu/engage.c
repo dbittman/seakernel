@@ -13,6 +13,7 @@ initialization */
 #include <sea/mm/context.h>
 #include <sea/cpu/cmos-x86_common.h>
 #include <sea/asm/system.h>
+#include <sea/cpu/interrupt.h>
 void load_tables_ap();
 void set_lapic_timer(unsigned tmp);
 void init_lapic(int);

@@ -1,10 +1,11 @@
 /* mm/clone.c: Copyright (c) 2010 Daniel Bittman
  * Handles cloning an address space */
-#include <sea/kernel.h>
 #include <sea/mm/vmm.h>
 #include <sea/tm/process.h>
 #include <sea/mm/swap.h>
 #include <sea/cpu/processor.h>
+#include <sea/string.h>
+#include <sea/mm/kmalloc.h>
 
 static void copy_pde(page_dir_t *pd, page_dir_t *parent_pd, int idx)
 {

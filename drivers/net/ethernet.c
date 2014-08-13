@@ -1,4 +1,3 @@
-#include <sea/kernel.h>
 #include <sea/dm/dev.h>
 #include <sea/loader/symbol.h>
 #include <modules/crc32.h>

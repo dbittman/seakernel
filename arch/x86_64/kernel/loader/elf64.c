@@ -1,10 +1,11 @@
-#include <sea/kernel.h>
 #include <sea/loader/module.h>
 #include <sea/loader/elf.h>
 #include <sea/loader/symbol.h>
 #include <sea/fs/file.h>
 #include <sea/mm/map.h>
-
+#include <sea/vsprintf.h>
+#include <sea/mm/kmalloc.h>
+#include <sea/tty/terminal.h>
 static int process_elf64_phdr(char *mem, int fp, addr_t *start, addr_t *end)
 {
 	uint32_t i, x;

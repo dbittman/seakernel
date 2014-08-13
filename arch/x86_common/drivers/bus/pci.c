@@ -21,7 +21,6 @@
  * 
  * Each device obviously needs a min value...major and min...yeah. 
  * We just use bus*256+dev*8+func. */
-#include <sea/kernel.h>
 #include <sea/types.h>
 #include <modules/pci.h>
 #include <sea/tm/process.h>

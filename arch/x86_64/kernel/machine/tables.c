@@ -3,6 +3,7 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/tss-x86_64.h>
 #include <sea/cpu/processor.h>
+#include <sea/cpu/cpu-io.h>
 static void init_idt();
 gdt_entry_t gdt_entries[NUM_GDT_ENTRIES];
 gdt_ptr_t   gdt_ptr;

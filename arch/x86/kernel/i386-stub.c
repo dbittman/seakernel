@@ -91,7 +91,6 @@ OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 *
 ****************************************************************************/
 
-#include <sea/kernel.h>
 #include <sea/string.h>
 
 /************************************************************************

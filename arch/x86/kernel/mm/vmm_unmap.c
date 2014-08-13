@@ -1,5 +1,4 @@
 /* Functions for unmapping addresses */
-#include <sea/kernel.h>
 #include <sea/mm/vmm.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/tm/process.h>

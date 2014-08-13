@@ -1,4 +1,3 @@
-#include <sea/kernel.h>
 #include <sea/mm/vmm.h>
 #include <sea/tm/process.h>
 #include <sea/asm/system.h>
@@ -12,6 +11,7 @@
 #include <sea/libgen.h>
 #include <sea/fs/dir.h>
 #include <sea/errno.h>
+#include <sea/string.h>
 
 int vfs_do_unlink(struct inode *i)
 {

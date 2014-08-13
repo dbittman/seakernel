@@ -1,6 +1,5 @@
 #include <sea/config.h>
 #if CONFIG_SMP
-#include <sea/kernel.h>
 #include <sea/tm/process.h>
 #include <sea/mutex.h>
 #include <sea/cpu/processor.h>
@@ -11,6 +10,7 @@
 #include <sea/cpu/cpu-x86.h>
 #include <sea/cpu/x86msr.h>
 #include <sea/vsprintf.h>
+#include <sea/string.h>
 volatile int imps_release_cpus = 0;
 char imcr_present=0;
 

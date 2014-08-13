@@ -1,4 +1,3 @@
-#include <sea/kernel.h>
 #include <sea/syscall.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/tm/process.h>
@@ -11,6 +10,7 @@
 #include <sea/tm/schedule.h>
 #include <sea/errno.h>
 #include <sea/vsprintf.h>
+#include <sea/string.h>
 long sys_sysconf(int cmd)
 {
 	int ret = -EINVAL;

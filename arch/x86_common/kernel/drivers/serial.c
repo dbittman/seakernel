@@ -1,7 +1,6 @@
 /* Serial port access. This is the most basic driver that can only
  * output to the first serial port. For better access, you'll need a
  * module of some sort */
-#include <sea/kernel.h>
 #include <sea/asm/system.h>
 #include <sea/dm/char.h>
 #include <sea/mutex.h>

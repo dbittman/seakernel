@@ -1,5 +1,4 @@
 #include <sea/sys/fcntl.h>
-#include <sea/kernel.h>
 #include <sea/fs/inode.h>
 #include <sea/dm/dev.h>
 #include <sea/dm/block.h>

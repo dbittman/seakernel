@@ -1,7 +1,6 @@
 /* crc32.c: provides a kernel API for calculating crc32.
  * Copyright (C) 2013 Daniel Bittman
  */
-#include <sea/kernel.h>
 #include <modules/crc32.h>
 #include <sea/loader/symbol.h>
 uint32_t crc32_table[256];

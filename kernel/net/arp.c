@@ -1,10 +1,9 @@
-#include <sea/kernel.h>
 #include <sea/net/net.h>
 #include <sea/net/ethernet.h>
 #include <sea/net/arp.h>
 #include <sea/asm/system.h>
 #include <sea/vsprintf.h>
-
+#include <sea/string.h>
 void arp_get_mac(uint8_t *mac, uint16_t m1, uint16_t m2, uint16_t m3)
 {
 	mac[0] = (m1 & 0xFF);

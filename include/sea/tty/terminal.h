@@ -6,16 +6,6 @@
 #include <sea/ll.h>
 #define TTY_IBLEN 256
 
-#define KERN_PANIC 8
-#define KERN_CRIT 7
-#define KERN_ERROR 6
-#define KERN_WARN 5
-#define KERN_MILE 4
-#define KERN_INFO 3
-#define KERN_MSG 2
-#define KERN_DEBUG 1
-#define KERN_EVERY 0
-
 struct vterm {
 	char flag;
 	volatile int x, ox, y, oy, f, b, w, h, bd, fw, fh, mode, es, scrollt, scrollb;

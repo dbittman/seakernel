@@ -1,12 +1,12 @@
 /* functions for dealing with ACPI.
  * copyright (c) 2013 Daniel Bittman: This file is GPL'd.
  */
-#include <sea/kernel.h>
 #include <sea/mm/vmm.h>
 #include <sea/cpu/acpi.h>
 #include <sea/loader/symbol.h>
 #include <sea/mm/pmap.h>
 #include <sea/vsprintf.h>
+#include <sea/string.h>
 static struct pmap acpi_pmap;
 static int __acpi_enable = 0;
 static int acpi_rsdt_pt_sz;

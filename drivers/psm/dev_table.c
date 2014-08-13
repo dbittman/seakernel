@@ -1,9 +1,9 @@
-#include <sea/kernel.h>
 #include <sea/loader/module.h>
 #include <sea/mutex.h>
 #include <sea/fs/devfs.h>
 #include <modules/psm.h>
 #include <sea/mm/kmalloc.h>
+#include <sea/string.h>
 
 struct psm_device *table;
 int table_length;

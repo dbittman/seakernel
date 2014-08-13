@@ -1,4 +1,3 @@
-#include <sea/kernel.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/tm/process.h>
 #include <sea/boot/init.h>

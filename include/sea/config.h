@@ -29,6 +29,16 @@
 #define KMALLOC_FREE  __mm_do_kfree_slab
 #define KMALLOC_NAME ((char *)"slab")
 
+#define KERN_PANIC 8
+#define KERN_CRIT 7
+#define KERN_ERROR 6
+#define KERN_WARN 5
+#define KERN_MILE 4
+#define KERN_INFO 3
+#define KERN_MSG 2
+#define KERN_DEBUG 1
+#define KERN_EVERY 0
+
 /* MM */
 #define STACK_SIZE (CONFIG_STACK_PAGES * 0x1000)
 

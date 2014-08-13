@@ -1,4 +1,3 @@
-#include <sea/kernel.h>
 #include <sea/fs/inode.h>
 #include <sea/dm/dev.h>
 #include <sea/asm/system.h>
@@ -8,6 +7,7 @@
 #include <sea/cpu/atomic.h>
 #include <sea/errno.h>
 #include <sea/mm/kmalloc.h>
+#include <sea/string.h>
 struct llist *mountlist;
 static struct llist *sblist;
 

@@ -1,4 +1,3 @@
-#include <sea/kernel.h>
 #include <sea/fs/inode.h>
 #include <sea/sys/stat.h>
 #include "iso9660.h"

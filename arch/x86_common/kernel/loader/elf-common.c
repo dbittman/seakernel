@@ -1,4 +1,3 @@
-#include <sea/kernel.h>
 #include <sea/loader/module.h>
 #include <sea/loader/elf.h>
 #include <sea/tm/process.h>

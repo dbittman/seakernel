@@ -1,4 +1,3 @@
-#include <sea/kernel.h>
 #include <sea/asm/system.h>
 #include <sea/cpu/cpu-io.h>
 /* This does the actual reset */

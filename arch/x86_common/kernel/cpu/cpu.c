@@ -1,7 +1,8 @@
-#include <sea/kernel.h>
 #include <sea/cpu/processor.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/vsprintf.h>
+#include <sea/tty/terminal.h>
+#include <sea/string.h>
 #if CONFIG_ARCH == TYPE_ARCH_X86
 #include <sea/cpu/cpu-x86.h>
 #else

@@ -1,11 +1,11 @@
 #include <sea/types.h>
 #include <sea/fs/inode.h>
 #include <sea/tm/process.h>
-#include <sea/kernel.h>
 #include <sea/errno.h>
 #include <modules/ext2.h>
 #include <sea/vsprintf.h>
 #include <sea/mm/kmalloc.h>
+#include <sea/string.h>
 
 extern unsigned int ext2_fs_idx;
 

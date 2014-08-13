@@ -1,4 +1,3 @@
-#include <sea/kernel.h>
 #include <sea/mm/vmm.h>
 #include <sea/tm/process.h>
 #include <sea/asm/system.h>
@@ -9,6 +8,7 @@
 #include <sea/fs/inode.h>
 #include <sea/fs/callback.h>
 #include <sea/dm/pipe.h>
+#include <sea/string.h>
 static struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, int *req)
 {
 	if(!i || !path || !*path)

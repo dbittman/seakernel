@@ -1,4 +1,3 @@
-#include <sea/kernel.h>
 #include <sea/loader/elf.h>
 #include <sea/boot/multiboot.h>
 #include <sea/loader/elf.h>

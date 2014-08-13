@@ -20,6 +20,8 @@
 #include <sea/sys/fcntl.h>
 #include <sea/errno.h>
 #include <sea/vsprintf.h>
+#include <sea/string.h>
+#include <sea/tty/terminal.h>
 static int system_setup=0;
 /* This function is called once at the start of the init process initialization.
  * It sets the task fs values to possible and useful things, allowing VFS access.

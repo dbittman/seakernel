@@ -1,6 +1,5 @@
 /* mm/clone.c: Copyright (c) 2010 Daniel Bittman
  * Handles cloning an address space */
-#include <sea/kernel.h>
 #include <sea/mm/vmm.h>
 #include <sea/tm/process.h>
 #include <sea/mm/swap.h>

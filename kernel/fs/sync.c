@@ -1,6 +1,5 @@
 /* sync.c - Synchronization
  * copyright (c) Daniel Bittman 2012 */
-#include <sea/kernel.h>
 #include <sea/fs/inode.h>
 #include <sea/lib/cache.h>
 #include <sea/dm/dev.h>

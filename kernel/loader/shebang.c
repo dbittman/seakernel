@@ -1,7 +1,7 @@
-#include <sea/kernel.h>
 #include <sea/types.h>
 #include <sea/fs/inode.h>
 #include <sea/loader/exec.h>
+#include <sea/string.h>
 static void __load_first_line(int desc, char *buf, int len)
 {
 	int i;

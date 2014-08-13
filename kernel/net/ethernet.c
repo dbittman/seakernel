@@ -1,4 +1,3 @@
-#include <sea/kernel.h>
 #include <sea/net/net.h>
 #include <sea/net/ethernet.h>
 #include <sea/net/arp.h>
@@ -6,6 +5,7 @@
 #include <sea/asm/system.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
+#include <sea/string.h>
 
 void ethernet_construct_header(struct ethernet_header *head, uint8_t src_mac[6], uint8_t dest_mac[6], uint16_t ethertype)
 {

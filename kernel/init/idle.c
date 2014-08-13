@@ -5,7 +5,6 @@
  * cleanup code can run slowly and when theres
  * nothing else to do. So we reschedule often.
  */
-#include <sea/kernel.h>
 #include <sea/boot/multiboot.h>
 #include <sea/tty/terminal.h>
 #include <sea/mm/vmm.h>
@@ -22,6 +21,7 @@
 #include <sea/tm/schedule.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
+#include <sea/string.h>
 
 int __KT_try_releasing_tasks();
 void __KT_try_handle_stage2_interrupts();

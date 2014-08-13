@@ -1,4 +1,3 @@
-#include <sea/kernel.h>
 #include <sea/cpu/interrupt.h>
 #include <modules/keymap.h>
 #include <modules/keyboard.h>

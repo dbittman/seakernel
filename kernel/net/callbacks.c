@@ -1,4 +1,3 @@
-#include <sea/kernel.h>
 #include <sea/types.h>
 #include <sea/net/net.h>
 #include <sea/errno.h>

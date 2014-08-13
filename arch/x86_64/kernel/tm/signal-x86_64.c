@@ -1,8 +1,8 @@
-#include <sea/kernel.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/tm/process.h>
 #include <sea/boot/init.h>
 #include <sea/cpu/atomic.h>
+#include <sea/string.h>
 
 #define SIGSTACK (STACK_LOCATION - (STACK_SIZE + PAGE_SIZE + 8))
 

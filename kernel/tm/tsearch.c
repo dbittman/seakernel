@@ -1,9 +1,9 @@
 /* searches a task queue for a task with specific properties. */
 #include <sea/tm/_tm.h>
-#include <sea/kernel.h>
 #include <sea/tm/process.h>
 #include <sea/tm/tqueue.h>
 #include <sea/cpu/interrupt.h>
+#include <sea/string.h>
 
 #define FOUND_ACTION \
 	if(action) \

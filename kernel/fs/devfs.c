@@ -1,4 +1,3 @@
-#include <sea/kernel.h>
 #include <sea/tm/process.h>
 #include <sea/mm/vmm.h>
 #include <sea/dm/dev.h>
@@ -10,6 +9,7 @@
 #include <sea/fs/devfs.h>
 #include <sea/vsprintf.h>
 #include <sea/mm/kmalloc.h>
+#include <sea/string.h>
 
 struct inode *devfs_root;
 static int devfs_nodescount=1;

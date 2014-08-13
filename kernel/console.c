@@ -1,13 +1,12 @@
 /* console.c: Copyright (c) 2010 Daniel Bittman
  * Provides functions for the virtual aspect of terminals. 
  */
-#include <sea/kernel.h>
 #include <sea/asm/system.h>
 #include <sea/mutex.h>
 #include <sea/tty/terminal.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
-
+#include <sea/string.h>
 struct vterm *current_console=0;
 struct vterm *kernel_console, *log_console=0;
 

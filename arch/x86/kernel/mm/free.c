@@ -1,6 +1,5 @@
 /* free.c: Copyright (c) 2010 Daniel Bittman
  * Handles freeing an address space */
-#include <sea/kernel.h>
 #include <sea/mm/vmm.h>
 #include <sea/tm/process.h>
 #include <sea/mm/kmalloc.h>

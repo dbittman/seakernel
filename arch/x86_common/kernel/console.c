@@ -1,4 +1,3 @@
-#include <sea/kernel.h>
 #include <sea/asm/system.h>
 #include <sea/mutex.h>
 #include <sea/tty/terminal.h>

@@ -1,4 +1,3 @@
-#include <sea/kernel.h>
 #include <sea/mm/vmm.h>
 #include <sea/tm/process.h>
 #include <sea/fs/inode.h>
@@ -6,6 +5,7 @@
 #include <sea/fs/ramfs.h>
 #include <sea/errno.h>
 #include <sea/mm/kmalloc.h>
+#include <sea/string.h>
 struct inode *ramfs_root;
 
 static unsigned int ramfs_node_num=0;

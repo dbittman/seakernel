@@ -1,4 +1,3 @@
-#include <sea/kernel.h>
 #include <sea/mm/vmm.h>
 #include <sea/tm/process.h>
 #include <sea/asm/system.h>
@@ -15,6 +14,7 @@
 #include <sea/fs/ramfs.h>
 #include <sea/errno.h>
 #include <sea/mm/kmalloc.h>
+#include <sea/string.h>
 
 static int do_mount(struct inode *i, struct inode *p)
 {

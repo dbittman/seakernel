@@ -1,4 +1,3 @@
-#include <sea/kernel.h>
 #include <sea/string.h>
 #include <sea/dm/dev.h>
 #include <sea/mm/vmm.h>

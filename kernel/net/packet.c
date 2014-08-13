@@ -1,4 +1,3 @@
-#include <sea/kernel.h>
 #include <sea/cpu/atomic.h>
 #include <sea/net/net.h>
 #include <sea/ll.h>
@@ -9,6 +8,7 @@
 #include <sea/tm/schedule.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
+#include <sea/string.h>
 struct llist *net_list;
 
 void net_init()

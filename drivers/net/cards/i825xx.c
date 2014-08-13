@@ -1,4 +1,3 @@
-#include <sea/kernel.h>
 #include <sea/dm/dev.h>
 #include <modules/pci.h>
 #include <sea/loader/symbol.h>

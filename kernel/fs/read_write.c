@@ -102,7 +102,9 @@ int sys_writepos(int fp, char *buf, size_t count)
 		return -EACCES;
 	}
 	assert(f->inode);
-	int ret=fs_do_sys_write(f, f->flags & _FAPPEND ? f->inode->len : f->pos, buf, count);
+	if(f->flags & _FAPPEND)
+		f->pos = f->inode->len;
+	int ret=fs_do_sys_write(f, f->pos, buf, count);
 	if(ret > 0)
 		f->pos += ret;
 	fs_fput((task_t *)current_task, fp, 0);

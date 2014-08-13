@@ -9,12 +9,9 @@ Todo:
 
 Roadmap:
 
-0.3 B1
-	* refactor CPU code
-
 0.3 B2
 	* make sure all features listed in termcap are properly implemented
-	* Fix O_APPEND
+	* Implement all file open flags correctly
 	* refactor driver code
 	* refactor arch-dep code
 	* fix driver arch-dep/arch-indep stuff

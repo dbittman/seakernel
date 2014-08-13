@@ -5,8 +5,6 @@
 #define	_FREAD		0x0001	/* read enabled */
 #define	_FWRITE		0x0002	/* write enabled */
 #define	_FAPPEND	0x0008	/* append (writes guaranteed at the end) */
-#define	_FMARK		0x0010	/* internal; mark during gc() */
-#define	_FDEFER		0x0020	/* internal; defer for next gc pass */
 #define	_FASYNC		0x0040	/* signal pgrp when data ready */
 #define	_FSHLOCK	0x0080	/* BSD flock() shared lock present */
 #define	_FEXLOCK	0x0100	/* BSD flock() exclusive lock present */
@@ -38,31 +36,6 @@
 /*	O_NDELAY	_FNBIO 		set in include/fcntl.h */
 #define	O_NONBLOCK	_FNONBLOCK
 #define	O_NOCTTY	_FNOCTTY
-/* For machines which care - */
-#if defined (_WIN32) || defined (__CYGWIN__)
-#define _FBINARY        0x10000
-#define _FTEXT          0x20000
-#define _FNOINHERIT	0x40000
-
-#define O_BINARY	_FBINARY
-#define O_TEXT		_FTEXT
-#define O_NOINHERIT	_FNOINHERIT
-
-/* The windows header files define versions with a leading underscore.  */
-#define _O_RDONLY	O_RDONLY
-#define _O_WRONLY	O_WRONLY
-#define _O_RDWR		O_RDWR
-#define _O_APPEND	O_APPEND
-#define _O_CREAT	O_CREAT
-#define _O_TRUNC	O_TRUNC
-#define _O_EXCL		O_EXCL
-#define _O_TEXT		O_TEXT
-#define _O_BINARY	O_BINARY
-#define _O_RAW		O_BINARY
-#define _O_NOINHERIT	O_NOINHERIT
-#endif
-
-#ifndef	_POSIX_SOURCE
 
 /*
  * Flags that work for fcntl(fd, F_SETFL, FXXXX)
@@ -94,8 +67,6 @@
 #define	FEXCL		_FEXCL
 #define	FNOCTTY		_FNOCTTY
 
-#endif	/* !_POSIX_SOURCE */
-
 /* XXX close on exec request; must match UF_EXCLOSE in user.h */
 #define	FD_CLOEXEC	1	/* posix */
 
@@ -105,38 +76,21 @@
 #define	F_SETFD		2	/* Set fildes flags (close on exec) */
 #define	F_GETFL		3	/* Get file flags */
 #define	F_SETFL		4	/* Set file flags */
-#ifndef	_POSIX_SOURCE
 #define	F_GETOWN 	5	/* Get owner - for ASYNC */
 #define	F_SETOWN 	6	/* Set owner - for ASYNC */
-#endif	/* !_POSIX_SOURCE */
 #define	F_GETLK  	7	/* Get record-locking information */
 #define	F_SETLK  	8	/* Set or Clear a record-lock (Non-Blocking) */
 #define	F_SETLKW 	9	/* Set or Clear a record-lock (Blocking) */
-#ifndef	_POSIX_SOURCE
 #define	F_RGETLK 	10	/* Test a remote lock to see if it is blocked */
 #define	F_RSETLK 	11	/* Set or unlock a remote lock */
 #define	F_CNVT 		12	/* Convert a fhandle to an open fd */
 #define	F_RSETLKW 	13	/* Set or Clear remote record-lock(Blocking) */
-#endif	/* !_POSIX_SOURCE */
 
 /* fcntl(2) flags (l_type field of flock structure) */
 #define	F_RDLCK		1	/* read lock */
 #define	F_WRLCK		2	/* write lock */
 #define	F_UNLCK		3	/* remove lock(s) */
-#ifndef	_POSIX_SOURCE
 #define	F_UNLKSYS	4	/* remove remote locks for a given system */
-#endif	/* !_POSIX_SOURCE */
-
-#ifdef __CYGWIN__
-/* Special descriptor value to denote the cwd in calls to openat(2) etc. */
-#define AT_FDCWD -2
-
-/* Flag values for faccessat2) et al. */
-#define AT_EACCESS              1
-#define AT_SYMLINK_NOFOLLOW     2
-#define AT_SYMLINK_FOLLOW       4
-#define AT_REMOVEDIR            8
-#endif
 
 #include <sea/fs/flock.h>
 

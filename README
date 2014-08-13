@@ -1,5 +1,4 @@
 				SeaKernel
-				Vers. 0.2
 A simple unix-like kernel designed for simplicity and speed. In it's 
 current iteration, it is a UNIX-like monolithic kernel with loadable module
 support.

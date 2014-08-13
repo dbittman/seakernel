@@ -15,7 +15,7 @@
 #define TOP_TASK_MEM_EXEC         0x0000700000000000
 
 #define MMF_BEGIN                 0x0000600000000000
-#define MMF_END                   0x0000700000000000
+#define MMF_END                   0x0000600010000000
 
 #define TOP_USER_HEAP             0x0000600000000000
 #define TOP_LOWER_KERNEL                  0x40000000

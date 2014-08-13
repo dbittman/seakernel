@@ -4,7 +4,10 @@
  *
  * current implementation is done as a bitmap with next-fit. This
  * isn't particularly good, or anything, but it's reasonably fast
- * and simple */
+ * and simple.
+ *
+ * WARNING: This is REALLY SLOW for large areas (>32 bits) of virtual
+ * memory */
 
 #include <sea/kernel.h>
 #include <sea/mm/valloc.h>
@@ -23,18 +26,18 @@
 #define TEST_BIT(start,index) \
 	(*((uint8_t *)start + (index / 8)) & (1 << (index % 8)))
 
-static void __valloc_set_bits(struct valloc *va, int start, int count)
+static void __valloc_set_bits(struct valloc *va, long start, long count)
 {
-	for(int idx = start;idx < (start + count); idx++) {
+	for(long idx = start;idx < (start + count); idx++) {
 		if(start >= va->nindex)
 			assert(!TEST_BIT(va->start, idx));
 		SET_BIT(va->start, idx);
 	}
 }
 
-static void __valloc_clear_bits(struct valloc *va, int start, int count)
+static void __valloc_clear_bits(struct valloc *va, long start, long count)
 {
-	for(int idx = start;idx < (start + count); idx++) {
+	for(long idx = start;idx < (start + count); idx++) {
 		if(start >= va->nindex)
 			assert(TEST_BIT(va->start, idx));
 		CLEAR_BIT(va->start, idx);
@@ -42,14 +45,14 @@ static void __valloc_clear_bits(struct valloc *va, int start, int count)
 }
 
 /* performs a linear next-fit search */
-static int __valloc_get_start_index(struct valloc *va, int np)
+static long __valloc_get_start_index(struct valloc *va, long np)
 {
-	int start = -1;
-	int count = 0;
-	int idx = va->last;
+	long start = -1;
+	long count = 0;
+	long idx = va->last;
 	if(idx > va->npages)
 		idx=0;
-	int prev = idx;
+	long prev = idx;
 	do {
 		int res = TEST_BIT(va->start, idx);
 		if(start == -1 && res == 0) {
@@ -149,7 +152,7 @@ struct valloc_region *valloc_allocate(struct valloc *va, struct valloc_region *r
 {
 	mutex_acquire(&va->lock);
 	/* find and set the region */
-	int index = __valloc_get_start_index(va, np);
+	long index = __valloc_get_start_index(va, np);
 	__valloc_set_bits(va, index, np);
 	mutex_release(&va->lock);
 	if(index == -1)
@@ -176,7 +179,7 @@ void valloc_deallocate(struct valloc *va, struct valloc_region *reg)
 }
 
 struct valloc_region *valloc_split_region(struct valloc *va, struct valloc_region *reg,
-		struct valloc_region *nr, int np)
+		struct valloc_region *nr, size_t np)
 {
 	if(!nr) {
 		nr = (void *)kmalloc(sizeof(struct valloc_region));
@@ -188,10 +191,10 @@ struct valloc_region *valloc_split_region(struct valloc *va, struct valloc_regio
 	/* with the newly created valloc_region, we can fix up the
 	 * data (resize and set the pointer for the new one).
 	 * The bitmap doesn't need to be updated! */
-	int old = reg->npages;
+	long old = reg->npages;
 	reg->npages = np;
-	int start_index_reg = (reg->start - va->start) / va->psize;
-	int start_index_nr = start_index_reg + np;
+	long start_index_reg = (reg->start - va->start) / va->psize;
+	long start_index_nr = start_index_reg + np;
 	nr->start = va->start + start_index_nr * va->psize;
 	nr->npages = old - np;
 	mutex_release(&va->lock);

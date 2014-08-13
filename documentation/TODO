@@ -11,7 +11,6 @@ Roadmap:
 
 0.3 B2
 	* make sure all features listed in termcap are properly implemented
-	* Implement all file open flags correctly
 	* refactor driver code
 	* refactor arch-dep code
 	* fix driver arch-dep/arch-indep stuff

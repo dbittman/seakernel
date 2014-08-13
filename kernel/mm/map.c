@@ -111,7 +111,6 @@ addr_t mm_establish_mapping(struct inode *node, addr_t virt,
 	
 	add_atomic(&node->count, 1);
 	record_mapping(map);
-
 	/* unmap the region of previous pages */
 	for(addr_t s=virt;s < (virt + length);s+=PAGE_SIZE)
 	{

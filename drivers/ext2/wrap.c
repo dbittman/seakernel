@@ -4,6 +4,8 @@
 #include <sea/kernel.h>
 #include <sea/errno.h>
 #include <modules/ext2.h>
+#include <sea/vsprintf.h>
+#include <sea/mm/kmalloc.h>
 
 extern unsigned int ext2_fs_idx;
 

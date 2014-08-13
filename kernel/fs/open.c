@@ -12,6 +12,8 @@
 #include <sea/cpu/atomic.h>
 #include <sea/fs/file.h>
 #include <sea/dm/pipe.h>
+#include <sea/errno.h>
+#include <sea/mm/kmalloc.h>
 
 struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int *num)
 {

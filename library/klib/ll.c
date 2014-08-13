@@ -10,6 +10,7 @@
 #include <sea/mutex.h>
 #include <sea/tm/process.h>
 #include <sea/cpu/atomic.h>
+#include <sea/mm/kmalloc.h>
 struct llistnode *ll_do_insert(struct llist *list, struct llistnode *n, void *entry)
 {
 	if(!(list->flags & LL_LOCKLESS)) 

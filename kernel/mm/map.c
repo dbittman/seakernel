@@ -6,6 +6,8 @@
 #include <sea/mm/map.h>
 #include <sea/cpu/atomic.h>
 #include <sea/mm/valloc.h>
+#include <sea/errno.h>
+#include <sea/mm/kmalloc.h>
 
 static struct memmap *initialize_map(struct inode *node, 
 			addr_t virt_start, int prot, int flags, size_t offset, size_t length)

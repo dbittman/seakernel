@@ -11,6 +11,8 @@
 #include <sea/fs/file.h>
 #include <sea/tm/schedule.h>
 #include <sea/mm/map.h>
+#include <sea/mm/kmalloc.h>
+#include <sea/vsprintf.h>
 
 /* DESIGN: A process that calls exit() goes through a number of stages. First, exit()
  * adds the task to the kill_queue list right away, but doesn't free it yet. Once exit()

@@ -4,6 +4,8 @@
 #include <sea/fs/inode.h>
 #include <sea/cpu/atomic.h>
 #include <sea/fs/ramfs.h>
+#include <sea/errno.h>
+#include <sea/mm/kmalloc.h>
 struct inode *ramfs_root;
 
 static unsigned int ramfs_node_num=0;

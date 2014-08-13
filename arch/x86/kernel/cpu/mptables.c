@@ -10,6 +10,7 @@
 #include <sea/cpu/imps-x86.h>
 #include <sea/cpu/cpu-x86.h>
 #include <sea/cpu/x86msr.h>
+#include <sea/vsprintf.h>
 volatile int imps_release_cpus = 0;
 char imcr_present=0;
 

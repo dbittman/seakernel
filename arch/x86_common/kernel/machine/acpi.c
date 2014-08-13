@@ -6,6 +6,7 @@
 #include <sea/cpu/acpi.h>
 #include <sea/loader/symbol.h>
 #include <sea/mm/pmap.h>
+#include <sea/vsprintf.h>
 static struct pmap acpi_pmap;
 static int __acpi_enable = 0;
 static int acpi_rsdt_pt_sz;

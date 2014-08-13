@@ -12,6 +12,10 @@
 #include <sea/loader/symbol.h>
 #include <sea/tm/tqueue.h>
 #include <sea/cpu/atomic.h>
+#include <sea/errno.h>
+#include <sea/syscall.h>
+#include <sea/mm/kmalloc.h>
+#include <sea/vsprintf.h>
 
 static struct vterm consoles[MAX_CONSOLES];
 static unsigned *tty_calltable = 0;

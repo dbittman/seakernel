@@ -2,6 +2,7 @@
 #include <sea/dm/dev.h>
 #include <sea/loader/symbol.h>
 #include <modules/crc32.h>
+#include <sea/vsprintf.h>
 intptr_t loader_find_kernel_function(char * unres);
 int (*process_packet_ipv4)(char *, int);
 int (*process_packet_ipv6)(char *, int);

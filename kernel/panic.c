@@ -8,6 +8,7 @@
 #include <sea/cpu/atomic.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/fs/file.h>
+#include <sea/vsprintf.h>
 static inline void _set_lowercase(char *b)
 {
 	while(*b) {

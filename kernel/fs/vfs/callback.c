@@ -2,6 +2,7 @@
 
 #include <sea/kernel.h>
 #include <sea/fs/inode.h>
+#include <sea/errno.h>
 
 #define CALLBACK_NOFUNC_ERROR -ENOTSUP
 

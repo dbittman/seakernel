@@ -10,6 +10,8 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/dm/dev.h>
 #include <sea/cpu/cpu-x86.h>
+#include <sea/cpu/cpu-io.h>
+#include <sea/vsprintf.h>
 #define MAX_IOAPIC 8
 #define write_ioapic(l,o,v) ioapic_rw(l, WRITE, o, v)
 #define read_ioapic(l,o) ioapic_rw(l, READ, o, 0)

@@ -10,6 +10,7 @@
 #include <sea/fs/inode.h>
 #include <sea/fs/callback.h>
 #include <sea/dm/pipe.h>
+#include <sea/mm/kmalloc.h>
 int vfs_inode_is_directory(struct inode *i)
 {
 	return i ? S_ISDIR(i->mode) : 0;

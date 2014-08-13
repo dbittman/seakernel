@@ -14,6 +14,7 @@
 #include <sea/cpu/processor.h>
 #include <sea/boot/multiboot.h>
 #include <sea/rwlock.h>
+#include <sea/vsprintf.h>
 
 const char *elf32_lookup_symbol (uint32_t addr, elf32_t *elf)
 {

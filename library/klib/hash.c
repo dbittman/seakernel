@@ -4,6 +4,7 @@
 #include <sea/types.h>
 #include <sea/rwlock.h>
 #include <sea/errno.h>
+#include <sea/mm/kmalloc.h>
 
 static struct hash_collision_resolver *hash_collision_resolvers[NUM_HASH_COLLISION_RESOLVERS] = {
 	0,

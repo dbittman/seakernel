@@ -5,6 +5,7 @@
 #include <sea/cpu/processor.h>
 #include <sea/cpu/atomic.h>
 #include <sea/tm/schedule.h>
+#include <sea/errno.h>
 int tm_process_wait(unsigned pid, int state)
 {
 	if(!state) return 0;

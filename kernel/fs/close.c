@@ -11,6 +11,7 @@
 #include <sea/cpu/atomic.h>
 #include <sea/fs/file.h>
 #include <sea/dm/pipe.h>
+#include <sea/errno.h>
 int sys_close(int fp)
 {
 	struct file *f = fs_get_file_pointer((task_t *) current_task, fp);

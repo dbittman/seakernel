@@ -6,6 +6,7 @@
 #include <sea/fs/inode.h>
 #include <sea/fs/inode.h>
 #include <sea/fs/callback.h>
+#include <sea/errno.h>
 int vfs_write_inode(struct inode *i, off_t off, size_t len, char *b)
 {
 	if(!i || !b)

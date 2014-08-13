@@ -8,6 +8,7 @@
 #include <sea/cpu/atomic.h>
 #include <sea/tm/schedule.h>
 #include <sea/asm/system.h>
+#include <sea/vsprintf.h>
 static int current_hz=1000;
 static volatile long ticks=0;
 

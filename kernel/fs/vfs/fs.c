@@ -5,6 +5,7 @@
 #include <sea/dm/dev.h>
 #include <sea/fs/inode.h>
 #include <sea/fs/callback.h>
+#include <sea/errno.h>
 int sync_inode_tofs(struct inode *i)
 {
 	if(!i)

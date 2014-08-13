@@ -4,6 +4,8 @@
 #include <sea/asm/system.h>
 #include <sea/tm/process.h>
 #include <sea/tty/terminal.h>
+#include <sea/mm/kmalloc.h>
+#include <sea/cpu/cpu-io.h>
 #define VIDEO_MEMORY 0xb8000
 
 static char crtc_first_init=0;

@@ -3,8 +3,8 @@
 
 #include <sea/cpu/registers.h>
 
-#if SCHED_TTY
-static int sched_tty = SCHED_TTY_CYC;
+#if CONFIG_SCHED_TTY
+static int sched_tty = CONFIG_SCHED_TTY_AMOUNT;
 #else
 static int sched_tty = 0;
 #endif
@@ -16,5 +16,7 @@ void tm_timer_handler(registers_t *, int);
 int tm_get_current_frequency();
 long tm_get_ticks();
 void tm_set_current_frequency_indicator(int);
+
+extern volatile unsigned int __allow_idle;
 
 #endif

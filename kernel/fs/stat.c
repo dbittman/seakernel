@@ -10,6 +10,7 @@
 #include <sea/fs/dir.h>
 #include <sea/fs/callback.h>
 #include <sea/dm/pipe.h>
+#include <sea/errno.h>
 int sys_isatty(int f)
 {
 	struct file *file = fs_get_file_pointer((task_t *) current_task, f);

@@ -2,6 +2,7 @@
 #define INIT_H
 
 #include <sea/boot/multiboot.h>
+#include <sea/syscall.h>
 
 void init();
 void setup_kernelstack();

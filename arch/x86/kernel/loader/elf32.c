@@ -14,6 +14,8 @@
 #include <sea/loader/symbol.h>
 #include <sea/fs/file.h>
 #include <sea/mm/map.h>
+#include <sea/vsprintf.h>
+#include <sea/mm/kmalloc.h>
 
 static int process_elf32_phdr(char *mem, int fp, addr_t *start, addr_t *end)
 {

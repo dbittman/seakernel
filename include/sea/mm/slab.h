@@ -5,6 +5,8 @@
 #include <sea/mm/valloc.h>
 #define SLAB_MAGIC 0x11235813
 
+#define MAX_OBJ_ID 1024
+
 enum transfer_vals {
 	TO_EMPTY=0, 
 	TO_PARTIAL=1, 

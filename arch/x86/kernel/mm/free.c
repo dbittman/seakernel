@@ -3,6 +3,7 @@
 #include <sea/kernel.h>
 #include <sea/mm/vmm.h>
 #include <sea/tm/process.h>
+#include <sea/mm/kmalloc.h>
 __attribute__ ((noinline)) static void self_free_table(int t)
 {
 	addr_t virt = t*1024*PAGE_SIZE;

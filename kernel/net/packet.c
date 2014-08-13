@@ -7,6 +7,8 @@
 #include <sea/asm/system.h>
 #include <sea/net/ethernet.h>
 #include <sea/tm/schedule.h>
+#include <sea/mm/kmalloc.h>
+#include <sea/vsprintf.h>
 struct llist *net_list;
 
 void net_init()

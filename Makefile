@@ -42,6 +42,10 @@ ifeq ($(CONFIG_DEBUG),y)
 	CFLAGS_NOARCH += -g -D__DEBUG__
 endif
 
+ifeq ($(CONFIG_WERROR),y)
+	CFLAGS_NOARCH += -Werror
+endif
+
 include make.inc
 	        
 ifneq ($(ARCH),__none__)

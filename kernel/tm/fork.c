@@ -11,6 +11,8 @@
 #include <sea/tm/schedule.h>
 #include <sea/ll.h>
 #include <sea/mm/map.h>
+#include <sea/errno.h>
+#include <sea/mm/kmalloc.h>
 
 unsigned running_processes = 0;
 static void __copy_mappings(task_t *ch, task_t *pa)
@@ -124,7 +126,7 @@ static cpu_t *fork_choose_cpu(task_t *parent)
 int tm_do_fork(unsigned flags)
 {
 	assert(current_task && kernel_task);
-	assert(running_processes < (unsigned)MAX_TASKS || MAX_TASKS == -1);
+	assert(running_processes < (unsigned)CONFIG_MAX_TASKS || CONFIG_MAX_TASKS == -1);
 	addr_t eip;
 	task_t *task = tm_task_create();
 	page_dir_t *newspace;

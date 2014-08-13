@@ -9,6 +9,8 @@
 #include <sea/cpu/acpi.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/features-x86_common.h>
+#include <sea/mm/kmalloc.h>
+#include <sea/vsprintf.h>
 
 extern cpu_t primary_cpu_data;
 

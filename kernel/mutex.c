@@ -11,6 +11,7 @@
 #include <sea/cpu/processor.h>
 #include <sea/tm/schedule.h>
 #include <sea/asm/system.h>
+#include <sea/mm/kmalloc.h>
 /* a task may relock a mutex if it is inside an interrupt handler, 
  * and has previously locked the same mutex outside of the interrupt
  * handler. this allows for a task to handle an event that requires
@@ -42,7 +43,7 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 		&& (m->flags & MT_NOSCHED) && !(current_task->cpu->flags&CPU_INTER)
 		&& (int)current_task->pid != m->pid && m->pid != -1)
 			panic(0, "mutex will deadlock (%d %d): %s:%d\n", file, line);
-#if DEBUG
+#if CONFIG_DEBUG
 	int t = 100000000;
 #endif
 	if(current_task && (m->pid == (int)current_task->pid) && (current_task->flags & TF_IN_INT)) {
@@ -57,7 +58,7 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 			tm_schedule();
 		else
 			arch_cpu_pause();
-#if DEBUG
+#if CONFIG_DEBUG
 		if(!--t) panic(0, "mutex time out %s:%d\n", file, line);
 #endif
 	}

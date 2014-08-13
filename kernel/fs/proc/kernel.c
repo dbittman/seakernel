@@ -9,6 +9,8 @@
 #include <sea/cpu/processor.h>
 #include <sea/dm/block.h>
 #include <sea/fs/proc.h>
+#include <sea/errno.h>
+#include <sea/vsprintf.h>
 int proc_read_int(char *buf, int off, int len);
 
 #if CONFIG_SMP

@@ -4,13 +4,8 @@
 #ifndef KERNEL_H
 #define KERNEL_H
 
-#include <sea/cpu/cpu-io.h>
 #include <sea/string.h>
-#include <sea/vsprintf.h>
 #include <sea/tty/terminal.h>
-#include <sea/mm/kmalloc.h>
-#include <sea/syscall.h>
-#include <sea/errno.h>
 
 #define KSF_MMU            0x1
 #define KSF_SHUTDOWN       0x2
@@ -25,7 +20,6 @@
 extern volatile unsigned kernel_state_flags;
 #define set_ksf(flag) or_atomic(&kernel_state_flags, flag)
 #define unset_ksf(flag) and_atomic(&kernel_state_flags, ~flag)
-extern volatile unsigned int __allow_idle;
 
 #define PANIC_NOSYNC  1
 #define PANIC_MEM     2
@@ -41,14 +35,12 @@ extern volatile unsigned int __allow_idle;
   #define assert(c) {}
 #endif
 
-struct inode *kt_set_as_kernel_task(char *name);
 void panic(int flags, char *fmt, ...);
 void kernel_reset();
 void panic_assert(const char *file, u32int line, const char *desc);
 void kernel_poweroff();
 extern int april_fools;
 void do_reset();
-int sys_gethostname(char *buf, size_t len);
 
 #endif
 

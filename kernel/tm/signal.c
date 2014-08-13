@@ -9,6 +9,8 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/atomic.h>
 #include <sea/tm/schedule.h>
+#include <sea/errno.h>
+#include <sea/vsprintf.h>
 int __tm_handle_signal(task_t *t)
 {
 	int ret = TASK_RUNNING;

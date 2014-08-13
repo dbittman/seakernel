@@ -7,6 +7,7 @@
 #include <sea/cpu/processor.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/cpu-x86.h>
+#include <sea/mm/kmalloc.h>
 /* Accepts virtual, returns virtual */
 static int vm_do_copy_table(int i, page_dir_t *new, page_dir_t *from, char cow)
 {

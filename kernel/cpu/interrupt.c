@@ -16,6 +16,8 @@
 #include <sea/tm/schedule.h>
 #include <sea/loader/symbol.h>
 #include <sea/fs/proc.h>
+#include <sea/vsprintf.h>
+#include <sea/syscall.h>
 
 /* okay, these aren't architecture independent exactly, but they're fine for now */
 static char *exception_messages[] =

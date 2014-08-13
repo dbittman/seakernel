@@ -6,6 +6,9 @@
 #include <sea/dm/block.h>
 #include <sea/ll.h>
 #include <sea/fs/devfs.h>
+#include <sea/errno.h>
+#include <sea/mm/kmalloc.h>
+#include <sea/vsprintf.h>
 struct loop_device {
 	struct inode *node;
 	int min;

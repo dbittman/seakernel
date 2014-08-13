@@ -9,6 +9,9 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/atomic.h>
 #include <sea/asm/system.h>
+#include <sea/errno.h>
+#include <sea/cpu/cpu-io.h>
+#include <sea/vsprintf.h>
 int is_ctrl=0, is_alt=0, is_shift=0, is_altgr=0;
 int capslock, slock;
 unsigned short *(*_keymap_callback)(int, int, int, int) = 0;

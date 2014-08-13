@@ -3,6 +3,7 @@
 #include <sea/mutex.h>
 #include <sea/fs/devfs.h>
 #include <modules/psm.h>
+#include <sea/mm/kmalloc.h>
 
 struct psm_device *table;
 int table_length;

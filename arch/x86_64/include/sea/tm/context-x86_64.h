@@ -15,9 +15,6 @@ static void _overflow(char *type)
 	printk(5, "%s overflow occurred in task %d (esp=%x, ebp=%x, heap_end=%x). Killing...\n", 
 		   type, current_task->pid, current_task->esp, current_task->ebp, 
 		current_task->heap_end);
-	#if DEBUG
-	panic(0, "Overflow");
-	#endif
 	tm_process_suicide();
 }
 

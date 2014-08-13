@@ -6,6 +6,8 @@
 #include <sea/fs/mount.h>
 #include <sea/fs/callback.h>
 #include <sea/cpu/atomic.h>
+#include <sea/errno.h>
+#include <sea/mm/kmalloc.h>
 struct llist *mountlist;
 static struct llist *sblist;
 

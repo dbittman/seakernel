@@ -14,6 +14,7 @@
 #include <sea/cpu/atomic.h>
 #include <sea/mm/slab.h>
 #include <sea/mm/valloc.h>
+#include <sea/vsprintf.h>
 
 static addr_t slab_start=0, slab_end=0;
 static struct valloc slab_valloc;

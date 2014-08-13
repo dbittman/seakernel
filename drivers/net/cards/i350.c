@@ -9,6 +9,9 @@
 #include <sea/cpu/atomic.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/processor.h>
+#include <sea/mm/kmalloc.h>
+#include <sea/vsprintf.h>
+#include <sea/errno.h>
 
 int i350_int;
 struct pmap i350_pmap;

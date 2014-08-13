@@ -12,6 +12,8 @@
 #include <sea/mm/pmm.h>
 #include <sea/mm/vmm.h>
 #include <sea/mm/dma.h>
+#include <sea/mm/kmalloc.h>
+#include <sea/vsprintf.h>
 
 static void process_memorymap(struct multiboot *mboot)
 {

@@ -5,6 +5,7 @@
 #include <sea/boot/multiboot.h>
 #include <sea/kernel.h>
 #include <sea/tm/schedule.h>
+#include <sea/vsprintf.h>
 
 volatile addr_t pm_location=0;
 static volatile addr_t pm_stack = PM_STACK_ADDR;

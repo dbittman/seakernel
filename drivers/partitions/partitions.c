@@ -4,6 +4,7 @@
 #include <sea/dm/block.h>
 #include <sea/loader/symbol.h>
 #include <modules/psm.h>
+#include <sea/vsprintf.h>
 struct partition {
 	char flag;
 	char ext;

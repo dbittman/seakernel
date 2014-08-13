@@ -15,6 +15,9 @@
 #include <sea/cpu/atomic.h>
 #include <sea/mm/map.h>
 #include <sea/loader/exec.h>
+#include <sea/errno.h>
+#include <sea/mm/kmalloc.h>
+#include <sea/vsprintf.h>
 /* Prepares a process to recieve a new executable. Desc is the descriptor of 
  * the executable. We keep it open through here so that we dont have to 
  * re-open it. */
@@ -156,9 +159,6 @@ int do_exec(task_t *t, char *path, char **argv, char **env, int shebanged)
 		printk(5, "[exec]: Tried to execute an invalid ELF file!\n");
 		free_dp(backup_argv, argc);
 		free_dp(backup_env, envc);
-#if DEBUG
-		panic(0, "");
-#endif
 		tm_exit(0);
 	}
 	

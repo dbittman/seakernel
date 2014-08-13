@@ -5,6 +5,9 @@
 #include <sea/dm/dev.h>
 #include <sea/dm/block.h>
 #include <sea/lib/cache.h>
+#include <sea/errno.h>
+#include <sea/mm/kmalloc.h>
+#include <sea/vsprintf.h>
 #undef DT_CHAR
 
 static mutex_t bd_search_lock;

@@ -13,6 +13,9 @@
 #include <modules/psm.h>
 #include <sea/tm/schedule.h>
 #include <sea/cpu/interrupt.h>
+#include <sea/vsprintf.h>
+#include <sea/errno.h>
+#include <sea/mm/kmalloc.h>
 
 struct pci_device *ahci_pci;
 int ahci_int = 0;

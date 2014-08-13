@@ -5,6 +5,8 @@
 #include <sea/tm/process.h>
 #include <sea/mm/dma.h>
 #include <sea/cpu/processor.h>
+#include <sea/vsprintf.h>
+#include <sea/mm/kmalloc.h>
 
 uint32_t ahci_flush_commands(struct hba_port *port)
 {

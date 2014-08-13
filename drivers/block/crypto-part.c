@@ -5,6 +5,8 @@
 #include <modules/psm.h>
 #include <sea/ll.h>
 #include <modules/aes.h>
+#include <sea/errno.h>
+#include <sea/vsprintf.h>
 
 #define MAX_CRYPTO 32
 int cp_major;

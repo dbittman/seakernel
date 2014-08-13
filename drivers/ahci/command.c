@@ -4,6 +4,8 @@
 #include <sea/tm/schedule.h>
 #include <sea/mm/dma.h>
 #include <sea/cpu/processor.h>
+#include <sea/vsprintf.h>
+#include <sea/mm/kmalloc.h>
 
 struct hba_command_header *ahci_initialize_command_header(struct hba_memory *abar, struct hba_port *port, struct ahci_device *dev, int slot, int write, int atapi, int prd_entries, int fis_len)
 {

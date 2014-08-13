@@ -67,6 +67,10 @@ ifeq ($(CONFIG_DEBUG),y)
 	MCFLAGS += -g -D__DEBUG__
 endif
 
+ifeq ($(CONFIG_WERROR),y)
+	MCFLAGS += -Werror
+endif
+
 export MCFLAGS
 export CC
 export LD

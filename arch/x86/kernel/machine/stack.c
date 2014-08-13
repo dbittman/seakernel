@@ -2,7 +2,7 @@
 #include <sea/mm/vmm.h>
 #include <sea/loader/elf-x86.h>
 #include <sea/asm/system.h>
-
+#include <sea/vsprintf.h>
 /* This function's design is based off of JamesM's tutorials. 
  * Yes, I know its bad. But it works okay. */
 void move_stack(void *start, unsigned int sz)

@@ -18,6 +18,8 @@
 #include <sea/dm/pipe.h>
 #include <sea/tm/schedule.h>
 #include <sea/sys/fcntl.h>
+#include <sea/errno.h>
+#include <sea/vsprintf.h>
 static int system_setup=0;
 /* This function is called once at the start of the init process initialization.
  * It sets the task fs values to possible and useful things, allowing VFS access.
@@ -58,7 +60,6 @@ void fs_init()
 	loader_add_kernel_symbol(proc_create_node_at_root);
 	loader_add_kernel_symbol(sys_open);
 	loader_add_kernel_symbol(sys_read);
-	loader_add_kernel_symbol(kt_set_as_kernel_task);
 	loader_add_kernel_symbol(sys_write);
 	loader_add_kernel_symbol(sys_close);
 	loader_add_kernel_symbol(vfs_read_inode);

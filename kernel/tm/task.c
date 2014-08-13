@@ -13,6 +13,8 @@
 #include <sea/cpu/atomic.h>
 #include <sea/tm/schedule.h>
 #include <sea/asm/system.h>
+#include <sea/syscall.h>
+#include <sea/mm/kmalloc.h>
 volatile task_t *kernel_task=0, *alarm_list_start=0;
 mutex_t *alarm_mutex=0;
 volatile unsigned next_pid=0;

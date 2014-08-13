@@ -2,10 +2,11 @@
 #define __CONTEXT_X86_H
 /* Functions for scheduling tasks */
 #include <sea/kernel.h>
-#include <sea/mm/vmm.h>
+//#include <sea/mm/vmm.h>
 #include <sea/tm/process.h>
 #include <sea/cpu/processor.h>
 #include <sea/asm/system.h>
+#include <sea/vsprintf.h>
 
 #define current_tss (&(current_task->cpu->arch_cpu_data.tss))
 
@@ -14,9 +15,6 @@ static void _overflow(char *type)
 	printk(5, "%s overflow occurred in task %d (esp=%x, ebp=%x, heap_end=%x). Killing...\n", 
 		   type, current_task->pid, current_task->esp, current_task->ebp, 
 		current_task->heap_end);
-	#if DEBUG
-	panic(0, "Overflow");
-	#endif
 	tm_process_suicide();
 }
 

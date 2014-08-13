@@ -6,6 +6,7 @@
 #include <sea/cpu/processor.h>
 #include <sea/cpu/atomic.h>
 #include <sea/cpu/interrupt.h>
+#include <sea/mm/kmalloc.h>
 /* the rules for tqueue's are simple:
  * 1) you MUST disable interrupts when accessing them. This makes
  *    it safe for single-cpu machines to use these.

@@ -6,6 +6,8 @@
 #include <sea/cpu/processor.h>
 #include <sea/cpu/atomic.h>
 #include <sea/cpu/interrupt.h>
+#include <sea/vsprintf.h>
+#include <sea/syscall.h>
 #if CONFIG_SMP
 #include <sea/cpu/imps-x86.h>
 #endif

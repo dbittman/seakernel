@@ -10,6 +10,8 @@
 #include <sea/dm/block.h>
 #include <modules/psm.h>
 #include <sea/fs/devfs.h>
+#include <sea/errno.h>
+#include <sea/vsprintf.h>
 #define MAX_PREFIXES 64
 
 int psm_major;

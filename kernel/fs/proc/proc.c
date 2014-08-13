@@ -8,6 +8,8 @@
 #include <sea/cpu/processor.h>
 #include <sea/fs/proc.h>
 #include <sea/sys/stat.h>
+#include <sea/errno.h>
+#include <sea/mm/kmalloc.h>
 struct inode *procfs_root, *procfs_kprocdir;
 
 int procfs_fsstat(struct inode *i, struct posix_statfs *s)

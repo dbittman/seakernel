@@ -11,6 +11,7 @@
 #include <sea/cpu/cmos-x86_common.h>
 #include <sea/cpu/cpu-x86.h>
 #include <sea/cpu/x86msr.h>
+#include <sea/vsprintf.h>
 
 unsigned num_cpus=0, num_booted_cpus=0, num_failed_cpus=0;
 int imps_scan_mptables(unsigned addr, unsigned len);

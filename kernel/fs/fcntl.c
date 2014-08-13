@@ -8,6 +8,8 @@
 #include <sea/dm/dev.h>
 #include <sea/fs/fcntl.h>
 #include <sea/fs/file.h>
+#include <sea/errno.h>
+#include <sea/vsprintf.h>
 
 int sys_ioctl(int fp, int cmd, long arg)
 {

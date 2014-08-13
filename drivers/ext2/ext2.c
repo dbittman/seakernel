@@ -8,6 +8,9 @@
 #include <sea/cpu/atomic.h>
 #include <sea/types.h>
 #include <sea/fs/mount.h>
+#include <sea/mm/kmalloc.h>
+#include <sea/vsprintf.h>
+#include <sea/errno.h>
 
 struct llist *fslist;
 unsigned fs_num=0;

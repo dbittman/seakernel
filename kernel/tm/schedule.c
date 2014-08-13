@@ -9,6 +9,7 @@
 #include <sea/cpu/atomic.h>
 #include <sea/tm/schedule.h>
 #include <sea/asm/system.h>
+#include <sea/syscall.h>
 
 static int GET_MAX_TS(task_t *t)
 {

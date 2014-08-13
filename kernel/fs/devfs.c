@@ -8,6 +8,8 @@
 #include <sea/loader/symbol.h>
 #include <sea/cpu/atomic.h>
 #include <sea/fs/devfs.h>
+#include <sea/vsprintf.h>
+#include <sea/mm/kmalloc.h>
 
 struct inode *devfs_root;
 static int devfs_nodescount=1;

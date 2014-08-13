@@ -9,6 +9,7 @@
 #include <sea/kernel.h>
 #include <sea/mm/valloc.h>
 #include <sea/mm/vmm.h>
+#include <sea/mm/kmalloc.h>
 
 /* helper macros.
  * TODO: Make a bitmap class */

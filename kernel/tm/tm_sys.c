@@ -3,6 +3,7 @@
 #include <sea/tm/process.h>
 #include <sea/tm/tqueue.h>
 #include <sea/tm/schedule.h>
+#include <sea/errno.h>
 /* Low-level memory allocator implementation */
 int sys_sbrk(long inc)
 {

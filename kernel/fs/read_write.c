@@ -10,6 +10,8 @@
 #include <sea/dm/block.h>
 #include <sea/fs/file.h>
 #include <sea/dm/pipe.h>
+#include <sea/errno.h>
+#include <sea/vsprintf.h>
 int fs_do_sys_read_flags(struct file *f, off_t off, char *buf, size_t count)
 {
 	if(!f || !buf)

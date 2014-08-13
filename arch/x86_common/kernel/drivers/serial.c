@@ -8,6 +8,7 @@
 #include <sea/loader/symbol.h>
 #include <sea/tm/process.h>
 #include <sea/tm/process.h>
+#include <sea/cpu/cpu-io.h>
 
 #if DISABLE_SERIAL
 #define DS_RET return

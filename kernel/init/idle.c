@@ -20,6 +20,8 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/atomic.h>
 #include <sea/tm/schedule.h>
+#include <sea/mm/kmalloc.h>
+#include <sea/vsprintf.h>
 
 int __KT_try_releasing_tasks();
 void __KT_try_handle_stage2_interrupts();
@@ -73,6 +75,10 @@ int kt_init_kernel_tasking()
 int kt_kernel_idle_task()
 {
 	int task, cache;
+#if CONFIG_MODULES
+	loader_add_kernel_symbol(kt_set_as_kernel_task);
+#endif
+
 #if CONFIG_SWAP
 	if(!tm_fork())
 	{

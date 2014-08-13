@@ -11,6 +11,7 @@
 #include <sea/dm/pipe.h>
 #include <sea/libgen.h>
 #include <sea/fs/dir.h>
+#include <sea/errno.h>
 
 int vfs_do_unlink(struct inode *i)
 {

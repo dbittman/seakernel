@@ -8,6 +8,8 @@
 #include <sea/fs/dir.h>
 #include <sea/fs/callback.h>
 #include <sea/fs/proc.h>
+#include <sea/errno.h>
+#include <sea/vsprintf.h>
 static int do_get_path_string(struct inode *p, char *path, int max)
 {
 	if(!p)

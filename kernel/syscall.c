@@ -21,11 +21,13 @@
 #include <sea/loader/exec.h>
 #include <sea/cpu/atomic.h>
 #include <sea/mm/map.h>
+#include <sea/errno.h>
+#include <sea/vsprintf.h>
 static unsigned int num_syscalls=0;
 //#define SC_DEBUG 1
 int sys_null(long a, long b, long c, long d, long e)
 {
-	#if DEBUG
+	#if CONFIG_DEBUG
 	kprintf("[kernel]: Null system call (%d) called in task %d\n%x %x %x %x %x", 
 			current_task->system, current_task->pid, a, b, c, d, e);
 	#endif
@@ -141,14 +143,14 @@ int mm_is_valid_user_pointer(int num, void *p, char flags)
 	if(!(kernel_state_flags & KSF_HAVEEXECED))
 		return 1;
 	if(addr < TOP_LOWER_KERNEL && addr) {
-		#if DEBUG
+		#if CONFIG_DEBUG
 		printk(0, "[kernel]: warning - task %d passed ptr %x to syscall %d (invalid)\n", 
 			   current_task->pid, addr, num);
 		#endif
 		return 0;
 	}
 	if(addr >= TOP_TASK_MEM) {
-		#if DEBUG
+		#if CONFIG_DEBUG
 		printk(0, "[kernel]: warning - task %d passed ptr %x to syscall %d (invalid)\n", 
 			   current_task->pid, addr, num);
 		#endif

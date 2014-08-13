@@ -9,6 +9,8 @@
 #include <sea/cpu/processor.h>
 #include <sea/uname.h>
 #include <sea/tm/schedule.h>
+#include <sea/errno.h>
+#include <sea/vsprintf.h>
 long sys_sysconf(int cmd)
 {
 	int ret = -EINVAL;

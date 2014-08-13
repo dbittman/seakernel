@@ -8,6 +8,7 @@
 #include <sea/cpu/atomic.h>
 #include <sea/fs/inode.h>
 #include <sea/dm/pipe.h>
+#include <sea/errno.h>
 int vfs_iput(struct inode *i)
 {
 	assert(i);

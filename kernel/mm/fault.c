@@ -4,6 +4,8 @@
 #include <sea/mm/map.h>
 #include <sea/string.h>
 #include <sea/cpu/processor.h>
+#include <sea/vsprintf.h>
+#include <sea/cpu/interrupt.h>
 
 static int do_map_page(addr_t addr, unsigned attr)
 {

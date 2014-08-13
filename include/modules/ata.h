@@ -6,6 +6,10 @@
 #include <modules/pci.h>
 #include <sea/mm/dma.h>
 #include <sea/asm/system.h>
+#include <sea/mm/kmalloc.h>
+#include <sea/vsprintf.h>
+#include <sea/errno.h>
+#include <sea/cpu/cpu-io.h>
 /* Most of these definitions and support functions have been borrowed from CDI */
 #define PCI_CLASS_ATA           0x01
 #define PCI_SUBCLASS_ATA        0x01

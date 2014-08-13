@@ -5,7 +5,9 @@
 #include <sea/sys/stat.h>
 #include <sea/dm/block.h>
 #include <sea/loader/symbol.h>
-
+#include <sea/errno.h>
+#include <sea/mm/kmalloc.h>
+#include <sea/vsprintf.h>
 static struct devhash_s devhash[NUM_DT];
 
 void dm_init()

@@ -7,6 +7,9 @@
 #include <sea/fs/fcntl.h>
 #include <sea/tm/schedule.h>
 #include <sea/fs/file.h>
+#include <sea/errno.h>
+#include <sea/vsprintf.h>
+#include <sea/mm/kmalloc.h>
 #define LSTART(a) (a->l_start + a->l_pos)
 void vfs_init_inode_flocks(struct inode *i)
 {

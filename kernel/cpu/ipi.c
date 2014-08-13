@@ -3,6 +3,7 @@
 #include <sea/mm/vmm.h>
 #include <sea/cpu/atomic.h>
 #include <sea/tm/schedule.h>
+#include <sea/syscall.h>
 
 #if CONFIG_SMP
 void cpu_send_ipi(int dest, unsigned signal, unsigned flags)

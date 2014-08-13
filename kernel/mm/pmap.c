@@ -2,6 +2,8 @@
 #include <sea/mm/pmap.h>
 #include <sea/mutex.h>
 #include <sea/mm/vmm.h>
+#include <sea/mm/kmalloc.h>
+#include <sea/vsprintf.h>
 
 /* this does, like, the opposite of mm_vm_map. Sometimes we want
  * to access a physical memory location (it's probably device memory)

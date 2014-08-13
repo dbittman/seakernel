@@ -10,7 +10,10 @@
 #include <sea/loader/symbol.h>
 #include <sea/loader/module.h>
 #include <sea/sys/fcntl.h>
-
+#include <sea/errno.h>
+#include <sea/cpu/cpu-io.h>
+#include <sea/vsprintf.h>
+#include <sea/mm/kmalloc.h>
 module_t *modules=0;
 static mutex_t mod_mutex;
 static mutex_t sym_mutex;

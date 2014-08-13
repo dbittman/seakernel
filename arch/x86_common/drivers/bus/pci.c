@@ -29,6 +29,9 @@
 #include <sea/dm/dev.h>
 #include <sea/loader/symbol.h>
 #include <sea/fs/proc.h>
+#include <sea/mm/kmalloc.h>
+#include <sea/cpu/cpu-io.h>
+#include <sea/vsprintf.h>
 #define PCI_LOGLEVEL 1
 
 struct inode *proc_pci;

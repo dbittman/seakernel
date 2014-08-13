@@ -5,6 +5,7 @@
 #include <sea/fs/inode.h>
 #include <sea/boot/multiboot.h>
 #include <sea/fs/ramfs.h>
+#include <sea/vsprintf.h>
 
 static int initrd_version=0;
 static addr_t initrd_location=0;

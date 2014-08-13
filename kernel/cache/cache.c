@@ -10,6 +10,8 @@
 #include <sea/cpu/atomic.h>
 #include <sea/loader/symbol.h>
 #include <sea/lib/hash.h>
+#include <sea/mm/kmalloc.h>
+#include <sea/vsprintf.h>
 
 static struct llist *cache_list;
 

@@ -13,6 +13,8 @@
 #include <sea/fs/devfs.h>
 #include <sea/fs/proc.h>
 #include <sea/fs/ramfs.h>
+#include <sea/errno.h>
+#include <sea/mm/kmalloc.h>
 
 static int do_mount(struct inode *i, struct inode *p)
 {

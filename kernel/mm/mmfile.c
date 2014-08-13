@@ -44,6 +44,8 @@
 #include <sea/fs/file.h>
 #include <sea/cpu/atomic.h>
 #include <sea/sys/fcntl.h>
+#include <sea/errno.h>
+#include <sea/mm/kmalloc.h>
 
 addr_t mm_mmap(addr_t address, size_t length, int prot, int flags, int fd, size_t offset)
 {

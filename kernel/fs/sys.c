@@ -42,7 +42,6 @@ int sys_setup(int a)
 	current_task->thread->pwd = current_task->thread->root = ramfs_root;
 	devfs_init();
 	proc_init();
-	vfs_add_inode(procfs_root, kproclist);
 	dm_char_rw(OPEN, GETDEV(3, 1), 0, 0);
 	sys_open("/dev/tty1", O_RDWR);   /* stdin  */
 	sys_open("/dev/tty1", O_WRONLY); /* stdout */

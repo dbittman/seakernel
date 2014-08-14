@@ -22,11 +22,10 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
 #include <sea/string.h>
+#include <sea/tm/kthread.h>
 
 int __KT_try_releasing_tasks();
 void __KT_try_handle_stage2_interrupts();
-
-struct inode *kproclist;
 
 static inline int __KT_clear_args()
 {
@@ -45,48 +44,16 @@ static inline int __KT_clear_args()
 	return 0;
 }
 
-struct inode *kt_set_as_kernel_task(char *name)
-{
-	struct inode *i = (struct inode *)kmalloc(sizeof(struct inode));
-	rwlock_create(&i->rwl);
-	i->mode = S_IFREG | 0664;
-	strncpy(i->name, name, INAME_LEN);
-	vfs_add_inode(kproclist, i);
-	tm_raise_flag(TF_KTASK);
-	strncpy((char *)current_task->command, name, 128);
-	printk(1, "[kernel]: Added '%s' as kernel task\n", name);
-	return i;
-}
-
-int kt_init_kernel_tasking()
-{
-	kproclist = (struct inode *)kmalloc(sizeof(struct inode));
-	_strcpy(kproclist->name, "kproclist");
-	kproclist->mode = S_IFDIR | 0664;
-	kproclist->count=1;
-	kproclist->dev = GETDEV(3, 0);
-	rwlock_create(&kproclist->rwl);
-#if CONFIG_MODULES
-	loader_do_add_kernel_symbol((addr_t)(struct inode **)&kproclist, "kproclist");
-#endif
-	return 0;
-}
+struct kthread kthread_pager;
 
 int kt_kernel_idle_task()
 {
 	int task, cache;
-#if CONFIG_MODULES
-	loader_add_kernel_symbol(kt_set_as_kernel_task);
-#endif
-
 #if CONFIG_SWAP
-	if(!tm_fork())
-	{
-		kt_set_as_kernel_task("kpager");
-		__KT_pager();
-	}
+	tm_kthread_create(&kthread_pager, "[kpager]", 0, __KT_pager, 0);
 #endif
-	kt_set_as_kernel_task("kidle");
+	current_task->flags |= TF_KTASK;
+	strncpy((char *)current_task->command, "[kidle]", 128);
 	/* First stage is to wait until we can clear various allocated things
 	 * that we wont need anymore */
 	while(!__KT_clear_args())

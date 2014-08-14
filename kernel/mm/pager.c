@@ -1,11 +1,13 @@
 #include <sea/mm/vmm.h>
 #include <sea/tm/process.h>
+#include <sea/tm/kthread.h>
 /* this is an extremely complicated function, so take some care
  * when reading it to increase understanding */
-void __KT_pager()
+int __KT_pager(struct kthread *kt, void *arg)
 {
-	for(;;) {
+	while(!tm_kthread_is_joining(kt)){
 		tm_process_pause((task_t *)current_task);
 	}
+	return 0;
 }
 

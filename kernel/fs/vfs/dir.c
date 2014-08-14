@@ -22,11 +22,6 @@ static int do_get_path_string(struct inode *p, char *path, int max)
 	*path=0;
 	if(!p)
 		return 0;
-	if(p->parent == kproclist)
-	{
-		snprintf(path, INAME_LEN, "%s", p->name);
-		return 0;
-	}
 	if(i != current_task->thread->root && i->mount_parent)
 		i = i->mount_parent;
 	char tmp[max * sizeof(char) +1];

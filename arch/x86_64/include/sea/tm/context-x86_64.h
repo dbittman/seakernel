@@ -99,6 +99,7 @@ inline static int engage_new_stack(task_t *task, task_t *parent)
 		cpu_copy_fixup_stack(task->kernel_stack, parent->kernel_stack, KERN_STACK_SIZE);
 		return 1;
 	} else {
+		task->flags |= TF_FORK_COPIEDUSER;
 		task->sysregs = parent->sysregs;
 		task->esp=esp;
 		task->ebp=ebp;

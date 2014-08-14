@@ -1,6 +1,7 @@
 #ifndef SEA_SWAP_H
 #define SEA_SWAP_H
 #include <sea/mm/vmm.h>
+#include <sea/tm/kthread.h>
 #define SW_FORCE 1
 #define SW_EMPTY 2
 #define SW_ENABLE 4
@@ -40,7 +41,7 @@ int swap_in_page(task_t *t, unsigned addr);
 int swap_page_out(task_t *t, unsigned addr);
 int page_out_task_addr(task_t *t, unsigned addr);
 int swap_in_all_the_pages(task_t *t);
-void __KT_pager();
+int __KT_pager(struct kthread *kt, void *);
 int sys_swaptask(unsigned pid);
 
 static inline char valid_swappable(addr_t x)

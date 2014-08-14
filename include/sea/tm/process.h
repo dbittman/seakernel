@@ -51,8 +51,8 @@
 #define TF_OTHERBS   0x100000 /* other bit-size. Task is running as different bit-size than the CPU */
 #define TF_SHUTDOWN  0x200000 /* this task called shutdown */
 #define TF_KILLREADY 0x400000 /* task is ready to be killed */
-#define TF_DIDEXEC   0x800000 /* task exec'd after a fork */
-
+#define TF_DIDEXEC          0x800000 /* task exec'd after a fork */
+#define TF_FORK_COPIEDUSER 0x1000000
 
 #define PRIO_PROCESS 1
 #define PRIO_PGRP    2

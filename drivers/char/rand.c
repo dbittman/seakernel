@@ -6,6 +6,7 @@
 #include <sea/asm/system.h>
 #include <sea/vsprintf.h>
 #include <sea/errno.h>
+#include <sea/tm/kthread.h>
 int rand_maj=-1;
 int seed=0;
 unsigned int use_rdrand=0;
@@ -132,7 +133,6 @@ int module_install()
 	if(use_rdrand)
 		printk(0, "[rand]: cpu supports rdrand instruction\n");
 #endif
-	
 	return 0;
 }
 

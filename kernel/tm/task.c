@@ -1,20 +1,20 @@
 #include <sea/tm/_tm.h>
 #include <sea/tm/process.h>
-#include <sea/kernel.h>
-#include <sea/mm/vmm.h>
-#include <sea/tm/process.h>
-#include <sea/loader/symbol.h>
 #include <sea/tm/tqueue.h>
-#include <sea/cpu/processor.h>
-#include <sea/ll.h>
-#include <sea/cpu/atomic.h>
-#include <sea/cpu/interrupt.h>
 #include <sea/tm/context.h>
-#include <sea/cpu/atomic.h>
 #include <sea/tm/schedule.h>
+#include <sea/tm/kthread.h>
+#include <sea/mm/vmm.h>
+#include <sea/mm/kmalloc.h>
+#include <sea/loader/symbol.h>
+#include <sea/cpu/atomic.h>
+#include <sea/cpu/processor.h>
+#include <sea/cpu/interrupt.h>
+#include <sea/cpu/atomic.h>
 #include <sea/asm/system.h>
 #include <sea/syscall.h>
-#include <sea/mm/kmalloc.h>
+#include <sea/ll.h>
+#include <sea/kernel.h>
 volatile task_t *kernel_task=0, *alarm_list_start=0;
 mutex_t *alarm_mutex=0;
 volatile unsigned next_pid=0;
@@ -97,6 +97,11 @@ void tm_init_multitasking()
 	loader_add_kernel_symbol(tm_process_pause);
 	loader_add_kernel_symbol(tm_process_resume);
 	loader_add_kernel_symbol(tm_process_got_signal);
+	loader_add_kernel_symbol(tm_kthread_create);
+	loader_add_kernel_symbol(tm_kthread_destroy);
+	loader_add_kernel_symbol(tm_kthread_wait);
+	loader_add_kernel_symbol(tm_kthread_join);
+	loader_add_kernel_symbol(tm_kthread_kill);
  #if CONFIG_SMP
 	loader_add_kernel_symbol(cpu_get);
  #endif

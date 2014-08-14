@@ -142,7 +142,6 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	net_init();
 	/* Load the rest... */
 	fs_initrd_parse();
-	kt_init_kernel_tasking();
 	start_epoch = time_get_epoch();
 	printk(KERN_MILE, "[kernel]: Kernel is setup (time=%d, kv=%d: ok)\n", 
 	       start_epoch, CONFIG_VERSION_NUMBER, sizeof(task_t), BITS_PER_LONG);

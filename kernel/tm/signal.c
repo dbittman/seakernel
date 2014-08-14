@@ -39,7 +39,7 @@ int __tm_handle_signal(task_t *t)
 				t->tick=0;
 				break;
 			case SIGSTOP: 
-				if(!(sa->sa_flags & SA_NOCLDSTOP))
+				if(!(sa->sa_flags & SA_NOCLDSTOP) && t->parent)
 					t->parent->sigd=SIGCHILD;
 				t->exit_reason.cause=__STOPSIG;
 				t->exit_reason.sig=t->sigd; /* Fall through */
@@ -92,7 +92,8 @@ int tm_do_send_signal(int pid, int __sig, int p)
 	task_t *task = tm_get_process_by_pid(pid);
 	if(!task) return -ESRCH;
 	if(__sig == 127) {
-		if(task->parent) task = task->parent;
+		if(task->parent)
+			task = task->parent;
 		task->wait_again=current_task->pid;
 	}
 	if(__sig > 32) return -EINVAL;

@@ -7,6 +7,9 @@ Todo:
 	* perf counters
 	* shared libraries
 
+Notes:
+	* Maybe tasks that are waiting by looping can do some kernel work while they're around
+
 Roadmap:
 
 0.3 B2

@@ -13,6 +13,7 @@
 #include <sea/mm/map.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
+#include <sea/boot/init.h>
 
 /* DESIGN: A process that calls exit() goes through a number of stages. First, exit()
  * adds the task to the kill_queue list right away, but doesn't free it yet. Once exit()
@@ -120,7 +121,16 @@ int __KT_try_releasing_tasks()
 
 void tm_process_suicide()
 {
-	tm_exit(-9);
+	/* we have to be a bit careful. If we're a kernel thread that
+	 * uses a user-area stack (created during boot), then we need
+	 * to actually do a system call in order to switch stacks */
+	/* HACK: see kernel/tm/kthread.c:tm_kthread_create */
+	if((current_task->flags & TF_FORK_COPIEDUSER) && (current_task->flags & TF_KTASK)) {
+		tm_switch_to_user_mode();
+		u_exit(-9);
+	} else {
+		tm_exit(-9);
+	}
 }
 
 /* just....fucking....DIE */

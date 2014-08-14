@@ -30,7 +30,6 @@ void kernel_task_freer();
 int kt_kernel_idle_task();
 void fs_init();
 int init_cache();
-int kt_init_kernel_tasking();
 void serial_init();
 void net_init();
 void tm_init_multitasking();

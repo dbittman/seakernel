@@ -33,8 +33,8 @@ struct kthread *tm_kthread_create(struct kthread *kt, const char *name, int flag
 		
 		mm_free_thread_shared_directory();
 		kt->code = entry(kt, arg);
-		or_atomic(&kt->flags, KT_EXITED);
 		int code = kt->code;
+		or_atomic(&kt->flags, KT_EXITED);
 		if(current_task->flags & TF_FORK_COPIEDUSER) {
 			/* HACK: this will cause the stack to switch over to the kernel stack
 			 * when exit is called, allowing us to free the whole page directory.
@@ -71,11 +71,14 @@ int tm_kthread_wait(struct kthread *kt, int flags)
 	return kt->code;
 }
 
-void tm_kthread_join(struct kthread *kt, int flags)
+int tm_kthread_join(struct kthread *kt, int flags)
 {
 	or_atomic(&kt->flags, KT_JOIN);
 	if(!(flags & KT_JOIN_NONBLOCK))
 		tm_kthread_wait(kt, 0);
+	if(kt->flags & KT_EXITED)
+		return kt->code;
+	return -1;
 }
 
 void tm_kthread_kill(struct kthread *kt, int flags)

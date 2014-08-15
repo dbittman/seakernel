@@ -19,7 +19,7 @@ struct kthread {
 struct kthread *tm_kthread_create(struct kthread *kt, const char *name, int flags, int (*entry)(struct kthread *, void *), void *arg);
 void tm_kthread_destroy(struct kthread *kt);
 int tm_kthread_wait(struct kthread *kt, int flags);
-void tm_kthread_join(struct kthread *kt, int flags);
+int tm_kthread_join(struct kthread *kt, int flags);
 void tm_kthread_kill(struct kthread *kt, int flags);
 
 #define tm_kthread_is_joining(kt) (kt->flags & KT_JOIN)

@@ -1,10 +1,9 @@
 #include <sea/tm/_tm.h>
-#include <sea/kernel.h>
-#include <sea/mm/vmm.h>
-#include <sea/tm/process.h>
-#include <sea/cpu/processor.h>
-#include <sea/cpu/atomic.h>
 #include <sea/tm/schedule.h>
+#include <sea/tm/process.h>
+#include <sea/tm/tqueue.h>
+#include <sea/cpu/atomic.h>
+#include <sea/cpu/interrupt.h>
 #include <sea/errno.h>
 int tm_process_wait(unsigned pid, int state)
 {
@@ -91,6 +90,8 @@ int sys_waitpid(int pid, int *st, int opt)
 	if(t->state != TASK_DEAD) {
 		if(!(opt & WNOHANG)) {
 			tm_schedule();
+			/* we're hanging around in the kernel anyway, might as well help out */
+			__KT_try_handle_stage2_interrupts();
 			goto top;
 		}
 		tm_lower_flag(TF_BGROUND);
@@ -98,7 +99,8 @@ int sys_waitpid(int pid, int *st, int opt)
 	}
 	int code, gotpid;
 	get_status_int(t, &code, &gotpid);
-	if(pid == -1 && t->state == TASK_DEAD) __tm_remove_task_from_primary_queue(t, 0);
+	if(pid == -1 && t->state == TASK_DEAD)
+		__tm_remove_task_from_primary_queue(t, 0);
 	if(st)
 		*st = code;
 	tm_lower_flag(TF_BGROUND);

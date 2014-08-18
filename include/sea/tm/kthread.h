@@ -23,6 +23,7 @@ int tm_kthread_join(struct kthread *kt, int flags);
 void tm_kthread_kill(struct kthread *kt, int flags);
 
 #define tm_kthread_is_joining(kt) (kt->flags & KT_JOIN)
+#define tm_kthread_is_waiting(kt) (kt->flags & KT_WAITING)
 
 #endif
 

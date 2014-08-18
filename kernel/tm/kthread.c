@@ -21,8 +21,14 @@ struct kthread *tm_kthread_create(struct kthread *kt, const char *name, int flag
 	kt->flags |= flags;
 	kt->entry = entry;
 	kt->arg = arg;
+	/* TODO: This doesn't need to be a real process...it can be a thread. But, for now,
+	 * this is simpler */
 	int pid = tm_fork();
 	if(!pid) {
+		/* kernel threads have no parent (since we don't do a wait() for them), and
+		 * they have root-like abilities. They are also constantly 'in the system',
+		 * and so they have their syscall num set to -1. Also, no regs are set, since
+		 * we can't do any weird iret calls or anything. */
 		current_task->parent = 0;
 		current_task->thread->real_uid = current_task->thread->effective_uid = 
 			current_task->thread->real_gid = current_task->thread->effective_gid = 0;
@@ -31,8 +37,13 @@ struct kthread *tm_kthread_create(struct kthread *kt, const char *name, int flag
 		current_task->regs = current_task->sysregs = 0;
 		strncpy((char *)current_task->command, name, 128);
 		
+		/* free up the directory save for the stack and the kernel stuff, since we
+		 * don't need it */
 		mm_free_thread_shared_directory();
+		/* okay, call the thread entry function */
 		kt->code = entry(kt, arg);
+		/* get the code FIRST, since once we set KT_EXITED, we can't rely on kt
+		 * being a valid pointer */
 		int code = kt->code;
 		or_atomic(&kt->flags, KT_EXITED);
 		if(current_task->flags & TF_FORK_COPIEDUSER) {
@@ -47,6 +58,7 @@ struct kthread *tm_kthread_create(struct kthread *kt, const char *name, int flag
 		} else {
 			tm_exit(0);
 		}
+		panic(0, "kthread lived past exit");
 	}
 	kt->pid = pid;
 	return kt;
@@ -62,12 +74,19 @@ void tm_kthread_destroy(struct kthread *kt)
 
 int tm_kthread_wait(struct kthread *kt, int flags)
 {
+	/* eh, the thread may wish to know this */
 	or_atomic(&kt->flags, KT_WAITING);
 	while(!(kt->flags & KT_EXITED)) {
-		if(flags & KT_WAIT_NONBLOCK)
+		/* if we don't want to block, and the thread hasn't exited,
+		 * then return -1 */
+		if(flags & KT_WAIT_NONBLOCK) {
+			and_atomic(&kt->flags, ~KT_WAITING);
 			return -1;
+		}
 		tm_schedule();
 	}
+	/* the thread has exited. return the exit code */
+	and_atomic(&kt->flags, ~KT_WAITING);
 	return kt->code;
 }
 

@@ -18,6 +18,7 @@ int tm_kthread_wait(struct kthread *kt, int flags)
 int tm_kthread_join(struct kthread *kt, int flags)
 void tm_kthread_kill(struct kthread *kt, int flags)
 int tm_kthread_is_joining(struct kthread *kt)
+int tm_kthread_is_waiting(struct kthread *kt)
 
 Once a thread is created, it enters the function given by 'entry', and passes
 it 'args'. Once this function returns, the thread exits, and sets the flags

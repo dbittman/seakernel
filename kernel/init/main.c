@@ -142,9 +142,8 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	net_init();
 	/* Load the rest... */
 	fs_initrd_parse();
-	start_epoch = time_get_epoch();
-	printk(KERN_MILE, "[kernel]: Kernel is setup (time=%d, kv=%d: ok)\n", 
-	       start_epoch, CONFIG_VERSION_NUMBER, sizeof(task_t), BITS_PER_LONG);
+	printk(KERN_MILE, "[kernel]: Kernel is setup (kv=%d, bpl=%d: ok)\n", 
+	       CONFIG_VERSION_NUMBER, BITS_PER_LONG);
 	printk(KERN_DEBUG, "[kernel]: structure sizes: task=%d bytes, thread=%d bytes, inode=%d bytes\n",
 			sizeof(task_t), sizeof(struct thread_shared_data), sizeof(struct inode));
 	cpu_interrupt_set(1);
@@ -155,7 +154,11 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	kt_kernel_idle_task();
 }
 
-/* User-mode printf function */
+/* this function must exist entirely within ring 3. Because the kernel
+ * code is readable by userspace until after the init process starts,
+ * we don't have to worry about it faulting there. Besides that, everything
+ * this function does is either on the stack or just in code, so none
+ * of it will cause problems */
 void printf(const char *fmt, ...)
 {
 	char printbuf[1024];
@@ -185,7 +188,7 @@ void init()
 	tm_switch_to_user_mode();
 	/* We have to be careful now. If we try to call any kernel functions
 	 * without doing a system call, the processor will generate a GPF (or 
-	 * a page fault) because you can't execute kernel code in ring 3!
+	 * a page fault) because you can't do fancy kernel stuff in ring 3!
 	 * So we write simple wrapper functions for common functions that 
 	 * we will need */
 	ret = u_execve("/sh", (char **)stuff_to_pass, (char **)init_env);

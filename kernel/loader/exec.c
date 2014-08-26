@@ -53,7 +53,7 @@ static int __is_shebang(char *mem)
 	return (mem[0] == '#' && mem[1] == '!');
 }
 
-int do_exec(task_t *t, char *path, char **argv, char **env, int shebanged)
+int do_exec(task_t *t, char *path, char **argv, char **env, int shebanged /* oh my */)
 {
 	unsigned int i=0;
 	addr_t end, eip;

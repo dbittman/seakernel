@@ -338,7 +338,7 @@ void i350_interrupt(registers_t *regs, int int_no)
 	/* clear interrupt cause */
 	i350_write32(i350_dev, E1000_ICR, t);
 }
-
+/*
 void i350_interrupt_lvl2(registers_t *regs, int int_no)
 {
 	if(i350_net_dev->rx_pending)
@@ -348,6 +348,7 @@ void i350_interrupt_lvl2(registers_t *regs, int int_no)
 		net_receive_packet(i350_net_dev, packet, 1);
 	}
 }
+*/
 
 int i350_irq1;
 
@@ -362,7 +363,7 @@ int module_install()
 	pmap_create(&i350_pmap, 0);
 	struct i350_device *dev = kmalloc(sizeof(struct i350_device));
 	dev->pci = i350;
-	i350_irq1=interrupt_register_handler(i350_int, i350_interrupt, i350_interrupt_lvl2);
+	i350_irq1=interrupt_register_handler(i350_int, i350_interrupt, 0);
 	i350_dev = dev;
 	dev->tx_queue_lock[0] = mutex_create(0, 0);
 	dev->rx_queue_lock[0] = mutex_create(0, 0);

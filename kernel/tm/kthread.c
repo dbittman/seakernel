@@ -61,6 +61,7 @@ struct kthread *tm_kthread_create(struct kthread *kt, const char *name, int flag
 		panic(0, "kthread lived past exit");
 	}
 	kt->pid = pid;
+	kt->process = tm_get_process_by_pid(pid);
 	return kt;
 }
 

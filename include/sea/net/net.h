@@ -3,6 +3,7 @@
 
 #include <sea/types.h>
 #include <sea/ll.h>
+#include <sea/tm/kthread.h>
 
 #define ND_RX_POLLING 1
 
@@ -17,6 +18,7 @@ struct net_dev {
 	uint8_t mac[6];
 	
 	struct llistnode *node;
+	struct kthread rec_thread;
 };
 
 struct net_packet {

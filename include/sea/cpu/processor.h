@@ -32,7 +32,7 @@ typedef struct __cpu_t__ {
 	cpuid_t cpuid;
 	volatile page_dir_t *kd;
 	volatile addr_t kd_phys;
-	tqueue_t *active_queue;
+	struct tqueue *active_queue;
 	task_t *ktask, *cur;
 	mutex_t lock;
 	unsigned numtasks;

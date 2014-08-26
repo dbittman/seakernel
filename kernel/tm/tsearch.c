@@ -15,7 +15,7 @@
 /* assumes that the passed task queue contains
  * elements of task_t.
  */
-task_t *tm_search_tqueue(tqueue_t *tq, unsigned flags, unsigned long value, void (*action)(task_t *, int), int arg, int *count)
+task_t *tm_search_tqueue(struct tqueue *tq, unsigned flags, unsigned long value, void (*action)(task_t *, int), int arg, int *count)
 {
 	int old = cpu_interrupt_set(0);
 	mutex_acquire(&tq->lock);

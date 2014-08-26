@@ -19,7 +19,7 @@ volatile task_t *kernel_task=0, *alarm_list_start=0;
 mutex_t *alarm_mutex=0;
 volatile unsigned next_pid=0;
 struct llist *kill_queue=0;
-tqueue_t *primary_queue=0;
+struct tqueue *primary_queue=0;
 
 /* create the bare task structure. This needs to be then populated with all the data
  * required for an actual process */

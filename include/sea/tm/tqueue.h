@@ -20,23 +20,23 @@
 
 #define TQ_MAGIC 0xCAFED00D
 
-typedef struct {
+struct tqueue {
 	unsigned magic;
 	unsigned flags;
 	mutex_t lock;
 	volatile unsigned num;
 	volatile struct llistnode *current;
 	struct llist tql;
-} tqueue_t;
+};
 
-tqueue_t *tqueue_create(tqueue_t *tq, unsigned flags);
-void tqueue_destroy(tqueue_t *tq);
-struct llistnode *tqueue_insert(tqueue_t *tq, void *item, struct llistnode *node);
-void tqueue_remove_entry(tqueue_t *tq, void *item);
-void tqueue_remove_nolock(tqueue_t *tq, struct llistnode *i);
-void tqueue_remove(tqueue_t *tq, struct llistnode *i);
-void *tqueue_next(tqueue_t *tq);
-task_t *tm_search_tqueue(tqueue_t *tq, unsigned flags, unsigned long value, void (*action)(task_t *, int), int arg, int *);
-extern tqueue_t *primary_queue;
+struct tqueue *tqueue_create(struct tqueue *tq, unsigned flags);
+void tqueue_destroy(struct tqueue *tq);
+struct llistnode *tqueue_insert(struct tqueue *tq, void *item, struct llistnode *node);
+void tqueue_remove_entry(struct tqueue *tq, void *item);
+void tqueue_remove_nolock(struct tqueue *tq, struct llistnode *i);
+void tqueue_remove(struct tqueue *tq, struct llistnode *i);
+void *tqueue_next(struct tqueue *tq);
+task_t *tm_search_tqueue(struct tqueue *tq, unsigned flags, unsigned long value, void (*action)(task_t *, int), int arg, int *);
+extern struct tqueue *primary_queue;
 extern struct llist *kill_queue;
 #endif

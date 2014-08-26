@@ -50,7 +50,7 @@ int kt_kernel_idle_task()
 {
 	int task, cache;
 #if CONFIG_SWAP
-	tm_kthread_create(&kthread_pager, "[kpager]", 0, __KT_pager, 0);
+	kthread_create(&kthread_pager, "[kpager]", 0, __KT_pager, 0);
 #endif
 	current_task->flags |= TF_KTASK;
 	strncpy((char *)current_task->command, "[kidle]", 128);

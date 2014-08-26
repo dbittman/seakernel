@@ -124,7 +124,7 @@ void tm_process_suicide()
 	/* we have to be a bit careful. If we're a kernel thread that
 	 * uses a user-area stack (created during boot), then we need
 	 * to actually do a system call in order to switch stacks */
-	/* HACK: see kernel/tm/kthread.c:tm_kthread_create */
+	/* HACK: see kernel/tm/kthread.c:kthread_create */
 	if((current_task->flags & TF_FORK_COPIEDUSER) && (current_task->flags & TF_KTASK)) {
 		tm_switch_to_user_mode();
 		u_exit(-9);

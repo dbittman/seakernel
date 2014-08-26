@@ -16,10 +16,10 @@
  *    possibly reschedule, enable interrupts, or access tqueues.
  */
 
-tqueue_t *tqueue_create(tqueue_t *tq, unsigned flags)
+struct tqueue *tqueue_create(struct tqueue *tq, unsigned flags)
 {
 	if(!tq) {
-		tq = (void *)kmalloc(sizeof(tqueue_t));
+		tq = (void *)kmalloc(sizeof(struct tqueue));
 		tq->flags = (TQ_ALLOC | flags);
 	} else
 		tq->flags=flags;
@@ -30,7 +30,7 @@ tqueue_t *tqueue_create(tqueue_t *tq, unsigned flags)
 	return tq;
 }
 
-void tqueue_destroy(tqueue_t *tq)
+void tqueue_destroy(struct tqueue *tq)
 {
 	mutex_destroy(&tq->lock);
 	ll_destroy(&tq->tql);
@@ -38,7 +38,7 @@ void tqueue_destroy(tqueue_t *tq)
 		kfree(tq);
 }
 
-struct llistnode *tqueue_insert(tqueue_t *tq, void *item, struct llistnode *node)
+struct llistnode *tqueue_insert(struct tqueue *tq, void *item, struct llistnode *node)
 {
 	int old = cpu_interrupt_set(0);
 	mutex_acquire(&tq->lock);
@@ -52,7 +52,7 @@ struct llistnode *tqueue_insert(tqueue_t *tq, void *item, struct llistnode *node
 	return node;
 }
 
-void tqueue_remove(tqueue_t *tq, struct llistnode *node)
+void tqueue_remove(struct tqueue *tq, struct llistnode *node)
 {
 	int old = cpu_interrupt_set(0);
 	mutex_acquire(&tq->lock);
@@ -66,7 +66,7 @@ void tqueue_remove(tqueue_t *tq, struct llistnode *node)
 
 /* tsearch may occasionally need to remove tasks from the queue
  * while the queue is locked, so we provide this for it */
-void tqueue_remove_nolock(tqueue_t *tq, struct llistnode *i)
+void tqueue_remove_nolock(struct tqueue *tq, struct llistnode *i)
 {
 	assert(tq->magic == TQ_MAGIC);
 	if(tq->current == i) tq->current=0;
@@ -75,7 +75,7 @@ void tqueue_remove_nolock(tqueue_t *tq, struct llistnode *i)
 }
 
 /* this function may return null if there are no tasks in the queue */
-void *tqueue_next(tqueue_t *tq)
+void *tqueue_next(struct tqueue *tq)
 {
 	int old = cpu_interrupt_set(0);
 	mutex_acquire(&tq->lock);

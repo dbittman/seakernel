@@ -19,7 +19,7 @@ volatile task_t *kernel_task=0, *alarm_list_start=0;
 mutex_t *alarm_mutex=0;
 volatile unsigned next_pid=0;
 struct llist *kill_queue=0;
-tqueue_t *primary_queue=0;
+struct tqueue *primary_queue=0;
 
 /* create the bare task structure. This needs to be then populated with all the data
  * required for an actual process */
@@ -97,11 +97,11 @@ void tm_init_multitasking()
 	loader_add_kernel_symbol(tm_process_pause);
 	loader_add_kernel_symbol(tm_process_resume);
 	loader_add_kernel_symbol(tm_process_got_signal);
-	loader_add_kernel_symbol(tm_kthread_create);
-	loader_add_kernel_symbol(tm_kthread_destroy);
-	loader_add_kernel_symbol(tm_kthread_wait);
-	loader_add_kernel_symbol(tm_kthread_join);
-	loader_add_kernel_symbol(tm_kthread_kill);
+	loader_add_kernel_symbol(kthread_create);
+	loader_add_kernel_symbol(kthread_destroy);
+	loader_add_kernel_symbol(kthread_wait);
+	loader_add_kernel_symbol(kthread_join);
+	loader_add_kernel_symbol(kthread_kill);
  #if CONFIG_SMP
 	loader_add_kernel_symbol(cpu_get);
  #endif

@@ -5,20 +5,20 @@ interrupt handler? Syscalls got you down? Can't rely on stupid user-space
 processes to get things done on time? Then kernel threads are the product for
 you!
 
-A kernel thread is created with the tm_kthread_create function, and is
+A kernel thread is created with the kthread_create function, and is
 referenced by a struct kthread. The creation and destruction functions are
 similar to other kernel objects, with optional allocation via kmalloc, or the
 use of a passed kthread structure to be filled out.
 
-struct kthread *tm_kthread_create(struct kthread *kt, const char *name,
+struct kthread *kthread_create(struct kthread *kt, const char *name,
 							int flags, int (*entry)(struct kthread *, void *),
 							void *arg);
-void tm_kthread_destroy(struct kthread *kt)
-int tm_kthread_wait(struct kthread *kt, int flags)
-int tm_kthread_join(struct kthread *kt, int flags)
-void tm_kthread_kill(struct kthread *kt, int flags)
-int tm_kthread_is_joining(struct kthread *kt)
-int tm_kthread_is_waiting(struct kthread *kt)
+void kthread_destroy(struct kthread *kt)
+int kthread_wait(struct kthread *kt, int flags)
+int kthread_join(struct kthread *kt, int flags)
+void kthread_kill(struct kthread *kt, int flags)
+int kthread_is_joining(struct kthread *kt)
+int kthread_is_waiting(struct kthread *kt)
 
 Once a thread is created, it enters the function given by 'entry', and passes
 it 'args'. Once this function returns, the thread exits, and sets the flags
@@ -29,28 +29,28 @@ Typical implentation of a kernel thread would be:
 int entry(struct kthread *kt, void *arg)
 {
 	/* initialize */
-	while(!tm_kthread_is_joining(kt)) {
+	while(!kthread_is_joining(kt)) {
 		/* do work */
 	}
 	/* clean up */
 	return exit_code;
 }
 
-tm_kthread_join sets the struct kthread's flags element to include KT_JOIN.
+kthread_join sets the struct kthread's flags element to include KT_JOIN.
 This is designed to alert the thread that its creator would like it to
-terminate nicely. The tm_kthread_is_joining function checks for this flag and
-allows the thread to monitor when it should return. tm_kthread_join takes a
+terminate nicely. The kthread_is_joining function checks for this flag and
+allows the thread to monitor when it should return. kthread_join takes a
 flag as an argument; if the flag has KT_JOIN_NONBLOCK, the function sets the
 KT_JOIN flag and returns immediately. Otherwise, it waits until the thread
-exits. If the thread has exited before tm_kthread_join returns, then it
+exits. If the thread has exited before kthread_join returns, then it
 returns the return code of the thread. Otherwise, it returns -1.
 
-tm_kthread_wait gets the return code of the thread if it has exited, and
+kthread_wait gets the return code of the thread if it has exited, and
 returns -1 if it has not. By default, it waits for the thread to exit before
 returning, but KT_WAIT_NONBLOCK can be passed in 'flags' to make it return
 immediately.
 
-tm_kthread_kill kills the thread immediately, no questions asked. This can be
+kthread_kill kills the thread immediately, no questions asked. This can be
 dangerous! It doesn't give the thread a chance to clean up, and can KILL THE
 THREAD WHILE IT STILL HOLDS LOCKS. DO NOT CALL THIS FUNCTION UNLESS YOU KNOW
 EXACTLY WHAT YOU'RE DOING, as it can corrupt kernel state.
@@ -59,7 +59,7 @@ For a module's usage of kernel threads, a typical example would be:
 
 int entry(struct kthread *kt, void *arg)
 {
-	while(!tm_kthread_is_joining(kt)) {
+	while(!kthread_is_joining(kt)) {
 		/* blah blah */
 	}
 	return 0;
@@ -68,14 +68,14 @@ int entry(struct kthread *kt, void *arg)
 int module_install()
 {
 	. . .
-	kt = tm_kthread_create(0, "[kexample]", 0, entry, 0);
+	kt = kthread_create(0, "[kexample]", 0, entry, 0);
 	. . .
 }
 
 int module_exit()
 {
 	. . .
-	int code = tm_kthread_join(kt, 0);
+	int code = kthread_join(kt, 0);
 	/* do something with exit code */
 	. . .
 }
@@ -85,9 +85,9 @@ thread needed time to clean up):
 
 int module_exit()
 {
-	tm_kthread_join(kt, KT_JOIN_NONBLOCK);
+	kthread_join(kt, KT_JOIN_NONBLOCK);
 	. . .
-	tm_kthread_wait(kt, 0);
+	kthread_wait(kt, 0);
 }
 
 

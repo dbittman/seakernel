@@ -1,0 +1,50 @@
+Kernel Objects
+--------------
+Any object that is allocated and freed, used by any thread within kernel space,
+and has defined operations on it is called a Kernel Object. They have a common
+method of creation and destruction, but all other operations that can be done
+on them depend on the specific object or type of object.
+
+Any kernel object must provide functions that follow a consistant naming
+scheme, and a consistant operation model. Two functions are required, a
+creation function and a destruction function:
+
+struct kobj *kobj_create(struct kobj *obj, ..., int flags, ...);
+void kobj_destroy(struct kobj *obj);
+
+Here, kobj refers to any kernel object (be it linked lists, or kernel threads).
+
+Note that the creation function gets passed a pointer to the object type that
+it is creating. This is so that kernel objects can be created without the use
+of kmalloc, since early initialization may need to create objects before
+kmalloc can function. Thus, if a pointer is passed to kobj_create's first
+argument, the function will use that memory region to fill out the kobj struct.
+Should you wish to use kmalloc to allocate the object, passing 0 to the first
+argument will do that.
+
+The creation function may take any number of arguments after the first, and
+may (usually) include a flags option. A flag named KOBJ_ALLOC may be specified
+by the header file. DO NOT set this flag manually. This flag indicates that
+the object was created with kmalloc. Setting this flag can lead to unspecified
+behavior when calling kobj_destroy.
+
+The destruction function cleans up anything that the object has done, and frees
+it if it was created via kmalloc. For objects that were not allocated via
+kmalloc, this function may do nothing. Not calling this function because of
+that is against coding practices because the internals of the function may
+change at any time, and the function may need to be called.
+
+Example
+-------
+#include <sea/kobj.h>
+void example() {
+	struct kobj *obj1 = kobj_create(0);
+	struct kobj obj2;
+	kobj_create(&obj2);
+	
+	/* ... */
+	
+	kobj_destroy(&obj2);
+	kobj_destroy(obj1);
+}
+

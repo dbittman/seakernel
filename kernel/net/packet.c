@@ -26,7 +26,7 @@ void net_init()
 static int kt_packet_rec_thread(struct kthread *kt, void *arg)
 {
 	struct net_dev *nd = arg;
-	while(!tm_kthread_is_joining(kt)) {
+	while(!kthread_is_joining(kt)) {
 		if(nd->rx_pending) {
 			printk(0, "kt rec packet %d: got packet\n", current_task->pid);
 		} else {
@@ -45,7 +45,7 @@ struct net_dev *net_add_device(struct net_dev_calls *fn, void *data)
 	uint8_t mac[6];
 	net_callback_get_mac(nd, mac);
 	memcpy(nd->mac, mac, sizeof(uint8_t) * 6);
-	tm_kthread_create(&nd->rec_thread, "[kpacket]", 0, kt_packet_rec_thread, nd);
+	kthread_create(&nd->rec_thread, "[kpacket]", 0, kt_packet_rec_thread, nd);
 	return nd;
 }
 

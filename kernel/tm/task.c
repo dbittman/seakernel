@@ -97,11 +97,11 @@ void tm_init_multitasking()
 	loader_add_kernel_symbol(tm_process_pause);
 	loader_add_kernel_symbol(tm_process_resume);
 	loader_add_kernel_symbol(tm_process_got_signal);
-	loader_add_kernel_symbol(tm_kthread_create);
-	loader_add_kernel_symbol(tm_kthread_destroy);
-	loader_add_kernel_symbol(tm_kthread_wait);
-	loader_add_kernel_symbol(tm_kthread_join);
-	loader_add_kernel_symbol(tm_kthread_kill);
+	loader_add_kernel_symbol(kthread_create);
+	loader_add_kernel_symbol(kthread_destroy);
+	loader_add_kernel_symbol(kthread_wait);
+	loader_add_kernel_symbol(kthread_join);
+	loader_add_kernel_symbol(kthread_kill);
  #if CONFIG_SMP
 	loader_add_kernel_symbol(cpu_get);
  #endif

@@ -8,7 +8,7 @@
 #include <sea/string.h>
 #include <sea/boot/init.h>
 
-struct kthread *tm_kthread_create(struct kthread *kt, const char *name, int flags,
+struct kthread *kthread_create(struct kthread *kt, const char *name, int flags,
 		int (*entry)(struct kthread *, void *), void *arg)
 {
 	if(!kt) {
@@ -64,7 +64,7 @@ struct kthread *tm_kthread_create(struct kthread *kt, const char *name, int flag
 	return kt;
 }
 
-void tm_kthread_destroy(struct kthread *kt)
+void kthread_destroy(struct kthread *kt)
 {
 	if(!(kt->flags & KT_EXITED))
 		panic(0, "tried to destroy a running kernel thread");
@@ -72,7 +72,7 @@ void tm_kthread_destroy(struct kthread *kt)
 		kfree(kt);
 }
 
-int tm_kthread_wait(struct kthread *kt, int flags)
+int kthread_wait(struct kthread *kt, int flags)
 {
 	/* eh, the thread may wish to know this */
 	or_atomic(&kt->flags, KT_WAITING);
@@ -90,17 +90,17 @@ int tm_kthread_wait(struct kthread *kt, int flags)
 	return kt->code;
 }
 
-int tm_kthread_join(struct kthread *kt, int flags)
+int kthread_join(struct kthread *kt, int flags)
 {
 	or_atomic(&kt->flags, KT_JOIN);
 	if(!(flags & KT_JOIN_NONBLOCK))
-		tm_kthread_wait(kt, 0);
+		kthread_wait(kt, 0);
 	if(kt->flags & KT_EXITED)
 		return kt->code;
 	return -1;
 }
 
-void tm_kthread_kill(struct kthread *kt, int flags)
+void kthread_kill(struct kthread *kt, int flags)
 {
 	if(kt->pid && kt->pid == current_task->pid)
 		panic(0, "kthread tried to commit suicide");

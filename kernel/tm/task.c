@@ -205,7 +205,7 @@ void tm_move_task_cpu(task_t *t, cpu_t *cpu)
 		if(oldcpu->cur != t)
 			break;
 		mutex_release(&oldcpu->lock);
-		arch_cpu_pause();
+		cpu_pause();
 	}
 	/* ok, we have the lock and the task */
 	t->cpu = cpu;

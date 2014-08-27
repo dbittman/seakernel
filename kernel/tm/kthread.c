@@ -21,9 +21,7 @@ struct kthread *kthread_create(struct kthread *kt, const char *name, int flags,
 	kt->flags |= flags;
 	kt->entry = entry;
 	kt->arg = arg;
-	/* TODO: This doesn't need to be a real process...it can be a thread. But, for now,
-	 * this is simpler */
-	int pid = tm_fork();
+	int pid = tm_do_fork(FORK_SHAREDIR);
 	if(!pid) {
 		/* kernel threads have no parent (since we don't do a wait() for them), and
 		 * they have root-like abilities. They are also constantly 'in the system',

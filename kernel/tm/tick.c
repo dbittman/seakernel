@@ -108,7 +108,7 @@ void tm_delay_sleep(int t)
 	int to=100000;
 	long start = ticks;
 	while(ticks < end) {
-		arch_cpu_pause();
+		cpu_pause();
 		cpu_interrupt_set(1);
 		if(!--to && start == ticks) {
 			printk(4, "[tm]: tm_delay_sleep reached timeout!\n");

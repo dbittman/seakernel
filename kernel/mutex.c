@@ -57,7 +57,7 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 		if(!(m->flags & MT_NOSCHED))
 			tm_schedule();
 		else
-			arch_cpu_pause();
+			cpu_pause();
 #if CONFIG_DEBUG
 		if(!--t) panic(0, "mutex time out %s:%d\n", file, line);
 #endif

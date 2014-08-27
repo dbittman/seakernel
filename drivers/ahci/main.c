@@ -60,7 +60,7 @@ void ahci_create_device(struct ahci_device *dev)
 #endif
 }
 
-void ahci_interrupt_handler(registers_t *regs, int int_no)
+void ahci_interrupt_handler(registers_t *regs)
 {
 	int i;
 	for(i=0;i<32;i++) {

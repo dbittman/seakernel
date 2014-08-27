@@ -59,11 +59,12 @@ static char *exception_messages[] =
  "Reserved"
 };
 
-/* 3D array. So, the first "dimension" is all 255 of the possible
+/* 2D array. So, the first "dimension" is all 255 of the possible
  * x86 processor interrupts. The second is all 255 of the allowed
- * handlers per interrupt. The third is the two stages of handlers
- * per interrupt handler. See below */
-static isr_t interrupt_handlers[MAX_INTERRUPTS][MAX_HANDLERS][2];
+ * handlers per interrupt.
+ */
+static isr_s1_handler_t interrupt_handlers_s1[MAX_INTERRUPTS][MAX_HANDLERS];
+static isr_s2_handler_t interrupt_handlers_s2[MAX_INTERRUPTS][MAX_HANDLERS];
 static unsigned int stage2_count[256];
 volatile long int_count[256];
 static mutex_t isr_lock, s2_lock;
@@ -88,16 +89,16 @@ static volatile char maybe_handle_stage_2=0;
  *         task handles the interrupt, it will probably run the second
  *         stage handler right away.
  */
-int interrupt_register_handler(u8int num, isr_t stage1_handler, isr_t stage2_handler)
+int interrupt_register_handler(u8int num, isr_s1_handler_t stage1_handler, isr_s2_handler_t stage2_handler)
 {
 	mutex_acquire(&isr_lock);
 	int i;
 	for(i=0;i<MAX_HANDLERS;i++)
 	{
-		if(!interrupt_handlers[num][i][0] && !interrupt_handlers[num][i][1])
+		if(!interrupt_handlers_s1[num][i] && !interrupt_handlers_s2[num][i])
 		{
-			interrupt_handlers[num][i][0] = stage1_handler;
-			interrupt_handlers[num][i][1] = stage2_handler;
+			interrupt_handlers_s1[num][i] = stage1_handler;
+			interrupt_handlers_s2[num][i] = stage2_handler;
 			break;
 		}
 	}
@@ -109,9 +110,10 @@ int interrupt_register_handler(u8int num, isr_t stage1_handler, isr_t stage2_han
 void interrupt_unregister_handler(u8int n, int id)
 {
 	mutex_acquire(&isr_lock);
-	if(!interrupt_handlers[n][id][0] && !interrupt_handlers[n][id][1])
+	if(!interrupt_handlers_s1[n][id] && !interrupt_handlers_s2[n][id])
 		panic(0, "tried to unregister an empty interrupt handler");
-	interrupt_handlers[n][id][0] = interrupt_handlers[n][id][1] = 0;
+	interrupt_handlers_s1[n][id] = 0;
+	interrupt_handlers_s2[n][id] = 0;
 	mutex_release(&isr_lock);
 }
 
@@ -213,8 +215,8 @@ void cpu_interrupt_syscall_entry(registers_t *regs, int syscall_num)
 				{
 					sub_atomic(&stage2_count[i], 1);
 					for(int j=0;j<MAX_HANDLERS;j++) {
-						if(interrupt_handlers[i][j][1]) {
-							(interrupt_handlers[i][j][1])(0, i);
+						if(interrupt_handlers_s2[i][j]) {
+							(interrupt_handlers_s2[i][j])(i);
 						}
 					}
 				}
@@ -252,13 +254,13 @@ void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_addres
 	char need_second_stage = 0;
 	for(int i=0;i<MAX_HANDLERS;i++)
 	{
-		if(interrupt_handlers[int_no][i][0] || interrupt_handlers[int_no][i][1])
+		if(interrupt_handlers_s1[int_no][i] || interrupt_handlers_s2[int_no][i])
 		{
 			/* we're able to handle the error! */
 			called = 1;
-			if(interrupt_handlers[int_no][i][0])
-				(interrupt_handlers[int_no][i][0])(regs, regs->int_no);
-			if(interrupt_handlers[int_no][i][1])
+			if(interrupt_handlers_s1[int_no][i])
+				(interrupt_handlers_s1[int_no][i])(regs);
+			if(interrupt_handlers_s2[int_no][i])
 				need_second_stage = 1;
 		}
 	}
@@ -309,9 +311,9 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 	char need_second_stage = 0;
 	for(int i=0;i<MAX_HANDLERS;i++)
 	{
-		if(interrupt_handlers[int_no][i][0])
-			(interrupt_handlers[int_no][i][0])(regs, regs->int_no);
-		if(interrupt_handlers[int_no][i][1]) 
+		if(interrupt_handlers_s1[int_no][i])
+			(interrupt_handlers_s1[int_no][i])(regs);
+		if(interrupt_handlers_s2[int_no][i]) 
 			need_second_stage = 1;
 	}
 	/* if we need a second stage handler, increment the count for this 
@@ -337,8 +339,8 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 				 * all the second stage handlers and run them */
 				sub_atomic(&stage2_count[i], 1);
 				for(int j=0;j<MAX_HANDLERS;j++) {
-					if(interrupt_handlers[i][j][1]) {
-						(interrupt_handlers[i][j][1])(0, i);
+					if(interrupt_handlers_s2[i][j]) {
+						(interrupt_handlers_s2[i][j])(i);
 					}
 				}
 			}
@@ -376,8 +378,8 @@ void __KT_try_handle_stage2_interrupts()
 			{
 				sub_atomic(&stage2_count[i], 1);
 				for(int j=0;j<MAX_HANDLERS;j++) {
-					if(interrupt_handlers[i][j][1]) {
-						(interrupt_handlers[i][j][1])(0, i);
+					if(interrupt_handlers_s2[i][j]) {
+						(interrupt_handlers_s2[i][j])(i);
 					}
 				}
 			}
@@ -394,7 +396,8 @@ void interrupt_init()
 		stage2_count[i] = 0;
 		for(int j=0;j<MAX_HANDLERS;j++)
 		{
-			interrupt_handlers[i][j][0] = interrupt_handlers[i][j][1] = 0;
+			interrupt_handlers_s1[i][j] = 0;
+			interrupt_handlers_s2[i][j] = 0;
 		}
 	}
 	
@@ -404,7 +407,8 @@ void interrupt_init()
 #if CONFIG_MODULES
 	loader_add_kernel_symbol(interrupt_register_handler);
 	loader_add_kernel_symbol(interrupt_unregister_handler);
-	loader_do_add_kernel_symbol((addr_t)interrupt_handlers, "interrupt_handlers");
+	loader_do_add_kernel_symbol((addr_t)interrupt_handlers_s1, "interrupt_handlers_s1");
+	loader_do_add_kernel_symbol((addr_t)interrupt_handlers_s2, "interrupt_handlers_s2");
 #endif
 }
 
@@ -456,3 +460,4 @@ int cpu_interrupt_get_flag()
 	cpu_t *cpu = current_task ? current_task->cpu : 0;
 	return (cpu ? (cpu->flags&CPU_INTER) : 0);
 }
+

@@ -269,13 +269,13 @@ int try_console_switch(int code)
 unsigned char last_sc=0;
 unsigned char key_stack[64];
 int ks_idx=0;
-int keyboard_int_stage1(registers_t *regs, int int_no)
+void keyboard_int_stage1(registers_t *regs)
 {
 	unsigned char scancode = inb(0x60);
 	int x = add_atomic(&ks_idx, 1)-1;
 	if(ks_idx > 63) {
 		sub_atomic(&ks_idx, 1);
-		return 0;
+		return;
 	}
 	key_stack[x] = scancode;
 	if(x && scancode == BREAKER1 && key_stack[x-1] == BREAKER0)
@@ -283,15 +283,15 @@ int keyboard_int_stage1(registers_t *regs, int int_no)
 		kprintf("BREAKPOINT TRIGGERED\n");
 		asm("int $0x3");
 	}
-	return 0;
+	return;
 }
 
-int keyboard_int_stage2(registers_t *regs, int int_no)
+void keyboard_int_stage2(int int_no)
 {
 	int x = sub_atomic(&ks_idx, 1);
 	if(x < 0) {
 		ks_idx=0;
-		return 0;
+		return;
 	}
 	unsigned char scancode = key_stack[x];
 	last_sc = scancode;
@@ -300,9 +300,9 @@ int keyboard_int_stage2(registers_t *regs, int int_no)
 	unsigned short *map = get_keymap(is_shift, is_alt, is_ctrl, is_altgr);
 	if(!release)
 		if(try_console_switch(scancode))
-			return 0;
+			return;
 	if(!map)
-		return 0;
+		return;
 	unsigned code = map[scancode];
 	int type = code >> 8;
 	if(type > 0xF0 && (type-0xF0) == 0xb)
@@ -315,7 +315,7 @@ int keyboard_int_stage2(registers_t *regs, int int_no)
 	if(type < 0xF0) {
 		if (!release)
 			to_utf8(code);
-		return 0;
+		return;
 	}
 	type -= 0xF0;
 	switch(type)
@@ -341,7 +341,7 @@ int keyboard_int_stage2(registers_t *regs, int int_no)
 		default:
 			if(!release) printk(0, "[keyboard]: unknown scancode: %d-> %x\n", scancode, (unsigned)code);
 	}
-	return 0;
+	return;
 }
 
 void set_keymap_callback(addr_t ptr)
@@ -366,7 +366,7 @@ int module_install()
 	_keymap_callback=0;
 	loader_add_kernel_symbol(set_keymap_callback);
 	loader_add_kernel_symbol(get_keymap_callback);
-	irqk = interrupt_register_handler(IRQ1, (isr_t)&keyboard_int_stage1, (isr_t)&keyboard_int_stage2);
+	irqk = interrupt_register_handler(IRQ1, keyboard_int_stage1, keyboard_int_stage2);
 	flush_port();
 	printk(1, "[keyboard]: initialized keyboard\n");
 	return 0;

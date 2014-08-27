@@ -6,13 +6,19 @@
 #include <sea/fs/devfs.h>
 #include <sea/mm/dma.h>
 #include <sea/net/net.h>
+#include <sea/vsprintf.h>
+#include <sea/cpu/cpu-io.h>
+#include <sea/mm/kmalloc.h>
+#include <sea/cpu/interrupt.h>
+#include <sea/mm/dma.h>
 int rtl8139_maj=-1;
 typedef struct rtl8139_dev_s
 {
-	unsigned addr, inter, tx_o, rx_o;
+	unsigned addr, tx_o, rx_o;
 	addr_t rec_buf, rec_buf_virt;
-	int inter_id;
+	int inter_id, inter;
 	struct pci_device *device;
+	struct dma_region rx_reg, tx_reg;
 	struct inode *node;
 } rtl8139dev_t;
 
@@ -106,14 +112,15 @@ int rtl8139_init(rtl8139dev_t *dev)
 {
 	if(!rtl8139_reset(dev->addr))
 		return -1;
-	addr_t buf, p;
-	int ret = mm_allocate_dma_buffer(RX_BUF_SIZE, &buf, &p);
+	dev->rx_reg.p.size = RX_BUF_SIZE;
+	dev->rx_reg.p.alignment = 0x1000;
+	int ret = mm_allocate_dma_buffer(&dev->rx_reg);
 	if(ret == -1) {
 		printk(0, "[rtl8139]: failed to allocate dma buffer\n");
 		return -1;
 	}
-	dev->rec_buf = p;
-	dev->rec_buf_virt = buf;
+	dev->rec_buf = dev->rx_reg.p.address;
+	dev->rec_buf_virt = dev->rx_reg.v;
 	outb(dev->addr+0x50, 0xC0);
 	
 	// get the card out of low power mode
@@ -212,37 +219,22 @@ int rtl8139_receive_packet(struct net_dev *nd, struct net_packet *packets, int c
 	return num;
 }
 
-
-int rtl8139_int_1(registers_t *regs, int int_no)
-{
-	rtl8139dev_t *t=rtldev;
-	if((t->inter+IRQ0) == regs->int_no)
-	{
-		unsigned short data = inw(t->addr + 0x3E);
-		outw(t->addr + 0x3E, data);
-	}
-	return 0;
-}
-
-
 void do_recieve(rtl8139dev_t *dev, unsigned short data)
 {
 	net_notify_packet_ready(rtl8139_net_dev);
 }
 
-int rtl8139_int(registers_t *regs, int int_no)
-{ 
-	kprintf("STAGE2 %d\n", regs->int_no);
+void rtl8139_int_1(registers_t *regs)
+{
 	rtl8139dev_t *t=rtldev;
-	if((t->inter+IRQ0) == int_no)
+	if((unsigned)(t->inter+IRQ0) == regs->int_no)
 	{
-		printk(1, "[rtl]: TRACE: Got irq (%d) %x\n", int_no, t->addr);
 		unsigned short data = inw(t->addr + 0x3E);
-		if(data&0x01)
+		outw(t->addr + 0x3E, data);
+		if(data & 0x01)
 			do_recieve(t, data);
-		
 	}
-	return 0;
+	return;
 }
 
 int rtl8139_load_device_pci(struct pci_device *device)
@@ -277,7 +269,7 @@ int rtl8139_load_device_pci(struct pci_device *device)
 	device->flags |= PCI_ENGAGED;
 	device->flags |= PCI_DRIVEN;
 	dev->inter = device->pcs->interrupt_line;
-	dev->inter_id = interrupt_register_handler(dev->inter + IRQ0, (isr_t)rtl8139_int_1, (isr_t)&rtl8139_int);
+	dev->inter_id = interrupt_register_handler(dev->inter + IRQ0, rtl8139_int_1, 0);
 	printk(1, "[rtl8139]: registered interrupt line %d\n", dev->inter);
 	printk(1, "[rtl8139]: Success!\n");
 	rtldev = dev;

@@ -29,6 +29,7 @@ static int kt_packet_rec_thread(struct kthread *kt, void *arg)
 	while(!kthread_is_joining(kt)) {
 		if(nd->rx_pending) {
 			printk(0, "kt rec packet %d: got packet\n", current_task->pid);
+			sub_atomic(&nd->rx_pending, 1);
 		} else {
 			tm_process_pause(current_task);
 		}

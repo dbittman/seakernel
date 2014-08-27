@@ -72,7 +72,7 @@ static void do_tick()
 	do_run_scheduler();
 }
 
-void tm_timer_handler(registers_t *r, int int_no)
+void tm_timer_handler(registers_t *r)
 {
 	/* prevent multiple cpus from adding to ticks */
 	/* TODO */

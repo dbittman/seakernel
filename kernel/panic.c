@@ -18,49 +18,12 @@ static inline void _set_lowercase(char *b)
 	}
 }
 
-void panic(int flags, char *fmt, ...)
+static void __panic_print_extra_data(int flags, task_t *t)
 {
-	cpu_interrupt_set(0);
-#if CONFIG_SMP
-	/* tell the other processors to halt */
-	cpu_send_ipi(CPU_IPI_DEST_OTHERS, IPI_PANIC, 0);
-	int timeout = 100000;
-	while(cpu_get_num_halted_processors() 
-			< cpu_get_num_secondary_processors() && --timeout) cpu_pause();
-#endif
-	if(kernel_state_flags & KSF_PANICING) {
-		for(;;) {
-			cpu_interrupt_set(0);
-			cpu_halt();
-		}
-	}
-	set_ksf(KSF_PANICING);
-	int pid=0;
-	task_t *t=current_task;
-	if(t) pid=t->pid;
-	
-	printk_safe(9, "\n\n*** kernel panic - ");
-	
-	char buf[512];
-	va_list args;
-	va_start(args, fmt);
-	vsnprintf(512, buf, fmt, args);
-	_set_lowercase(buf);
-	printk_safe(9,buf);
-	
-	printk_safe(9," ***\n");
-	
 	if(t) 
 		printk_safe(9,"current_task=%x:%d(%s), sys=%d, flags=%x, F=%x. Stack trace:\n", t, 
 				t->pid, t->command, t->system, t->flags, t->flag);
 	cpu_print_stack_trace(64);
-	if(pid && !(flags & PANIC_NOSYNC))
-	{
-		printk_safe(9,"[panic]: syncing...");
-		sys_sync();
-		printk_safe(9,"\n[panic]: Done\n");
-	} else
-		printk_safe(9,"[panic]: not syncing\n");
 	if(flags & PANIC_VERBOSE)
 	{
 		printk_safe(9, "task listing:\n");
@@ -90,13 +53,55 @@ void panic(int flags, char *fmt, ...)
 					, t->cpu, t->cpu->snum, a);
 		}
 	}
+
+}
+
+void panic(int flags, char *fmt, ...)
+{
+	cpu_interrupt_set(0);
+#if CONFIG_SMP
+	/* tell the other processors to halt */
+	cpu_send_ipi(CPU_IPI_DEST_OTHERS, IPI_PANIC, 0);
+	int timeout = 100000;
+	while(cpu_get_num_halted_processors() 
+			< cpu_get_num_secondary_processors() && --timeout)
+		cpu_pause();
+#endif
+	if(kernel_state_flags & KSF_PANICING) {
+		/* panicing from within a panic? That's....bad.... */
+		for(;;) {
+			cpu_interrupt_set(0);
+			cpu_halt();
+		}
+	}
+	set_ksf(KSF_PANICING);
+	task_t *t = current_task;
+	
+	printk_safe(9, "\n\n*** kernel panic - ");	
+	char buf[512];
+	va_list args;
+	va_start(args, fmt);
+	vsnprintf(512, buf, fmt, args);
+	_set_lowercase(buf);
+	printk_safe(9,buf);
+	printk_safe(9," ***\n");
+	
+	if(t && t->pid && !(flags & PANIC_NOSYNC))
+	{
+		printk_safe(9,"[panic]: syncing...");
+		sys_sync();
+		printk_safe(9,"\n[panic]: Done\n");
+	} else
+		printk_safe(9,"[panic]: not syncing\n");
+	
+	__panic_print_extra_data(flags, t);
 #if CONFIG_GDB_STUB
 	/* breakpoint so that GDB will catch us, allowing some better debugging */
 	asm("int $0x3");
 #endif
 	cpu_interrupt_set(0);
 	for(;;)
-		arch_cpu_halt();
+		cpu_halt();
 }
 
 void panic_assert(const char *file, u32int line, const char *desc)

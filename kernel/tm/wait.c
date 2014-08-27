@@ -1,3 +1,4 @@
+#include <sea/kernel.h>
 #include <sea/tm/_tm.h>
 #include <sea/tm/schedule.h>
 #include <sea/tm/process.h>

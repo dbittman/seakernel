@@ -83,8 +83,8 @@ int module_install()
 		kfree(nodes);
 		return EEXIST;
 	}
-	irq1 = interrupt_register_handler(32 + ATA_PRIMARY_IRQ, &ata_irq_handler, 0);
-	irq2 = interrupt_register_handler(32 + ATA_SECONDARY_IRQ, &ata_irq_handler, 0);
+	irq1 = interrupt_register_handler(32 + ATA_PRIMARY_IRQ, ata_irq_handler, 0);
+	irq2 = interrupt_register_handler(32 + ATA_SECONDARY_IRQ, ata_irq_handler, 0);
 	api = dm_set_available_block_device(atapi_rw_main, 2048, ioctl_atapi, atapi_rw_main_multiple, 0);
 	dm_set_block_device(3, ata_rw_main, 512, ioctl_ata, ata_rw_multiple, 0);
 	primary->wait   = mutex_create(0, 0);

@@ -11,6 +11,9 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/mm/dma.h>
+#include <sea/mutex.h>
+#include <sea/cpu/processor.h>
+#include <sea/errno.h>
 int rtl8139_maj=-1;
 typedef struct rtl8139_dev_s
 {
@@ -18,28 +21,32 @@ typedef struct rtl8139_dev_s
 	addr_t rec_buf, rec_buf_virt;
 	int inter_id, inter;
 	struct pci_device *device;
-	struct dma_region rx_reg, tx_reg;
+	struct dma_region rx_reg, tx_buffer[4];
 	struct inode *node;
+	mutex_t tx_lock;
+	int tx_num;
+	unsigned short hwaddr[3];
 } rtl8139dev_t;
 
 rtl8139dev_t *rtldev;
 
 #define RX_BUF_SIZE 64 * 1024
 int rtl8139_receive_packet(struct net_dev *nd, struct net_packet *, int count);
+int rtl8139_transmit_packet(struct net_dev *nd, struct net_packet *packets, int count);
 int rtl8139_get_mac(struct net_dev *nd, uint8_t mac[6])
 {
-	mac[0] = 1;
-	mac[1] = 2;
-	mac[2] = 3;
-	mac[3] = 5;
-	mac[4] = 4;
-	mac[5] = 6;
+	mac[0] = rtldev->hwaddr[0] & 0xFF;
+	mac[1] = rtldev->hwaddr[0] >> 8;
+	mac[2] = rtldev->hwaddr[1] & 0xFF;
+	mac[3] = rtldev->hwaddr[1] >> 8;
+	mac[4] = rtldev->hwaddr[2] & 0xFF;
+	mac[5] = rtldev->hwaddr[2] >> 8;
 	return 0;
 }
 
 struct net_dev_calls rtl8139_net_callbacks = {
 	rtl8139_receive_packet,
-	0,
+	rtl8139_transmit_packet,
 	rtl8139_get_mac,
 	0,0,0
 };
@@ -52,6 +59,47 @@ rtl8139dev_t *create_new_device(unsigned addr, struct pci_device *device)
 	d->addr = addr;
 	d->device = device;
 	return d;
+}
+#define EE_SHIFT_CLK    0x04    //!< EEPROM shift clock.
+#define EE_CS           0x08    //!< EEPROM chip select.
+#define EE_DATA_WRITE   0x02    //!< EEPROM chip data in.
+#define EE_WRITE_0      0x00    //!< EEPROM write 0.
+#define EE_WRITE_1      0x02    //!< EEPROM write 1.
+#define EE_DATA_READ    0x01    //!< EEPROM chip data out.
+#define EE_ENB          (0x80 | EE_CS)
+#define EE_READ_CMD   (6 << 6)
+#define delay_eeprom() inl(eeaddr)
+uint32_t rtl8139_read_eeprom(rtl8139dev_t *dev, int loc)
+{
+	int i;
+	uint32_t ret=0;
+	long eeaddr = dev->addr + 0x50;
+	int cmd = loc | EE_READ_CMD;
+
+	/* don't ask me what the fuck is going on here */
+	outb(eeaddr, EE_ENB & ~EE_CS);
+	outb(eeaddr, EE_ENB);
+
+	for(i=10;i>=0;--i) {
+		int data = (cmd & (1 << i)) ? EE_DATA_WRITE : 0;
+		outb(eeaddr, EE_ENB | data);
+		delay_eeprom();
+		outb(eeaddr, EE_ENB | data | EE_SHIFT_CLK);
+		delay_eeprom();
+	}
+	outb(eeaddr, EE_ENB);
+	delay_eeprom();
+
+	for(i=16;i>0;--i) {
+		outb(eeaddr, EE_ENB | EE_SHIFT_CLK);
+		delay_eeprom();
+		ret = (ret << 1) | ((inb(eeaddr) & EE_DATA_READ) ? 1 : 0);
+		outb(eeaddr, EE_ENB);
+		delay_eeprom();
+	}
+
+	outb(eeaddr, ~EE_CS);
+	return ret;
 }
 
 int rtl8139_reset(int base_addr)
@@ -121,6 +169,21 @@ int rtl8139_init(rtl8139dev_t *dev)
 	}
 	dev->rec_buf = dev->rx_reg.p.address;
 	dev->rec_buf_virt = dev->rx_reg.v;
+	
+	for(int i=0;i<4;i++) {
+		dev->tx_buffer[i].p.size = 0x1000;
+		dev->tx_buffer[i].p.alignment = 0x1000;
+		if(mm_allocate_dma_buffer(&dev->tx_buffer[0]) == -1)
+			return -1;
+	}
+	dev->tx_num = 0;
+	
+	if(rtl8139_read_eeprom(dev, 0) != 0xFFFF) {
+		for(int i=0;i<3;i++) {
+			dev->hwaddr[i] = rtl8139_read_eeprom(dev, i + 7);
+		}
+	}
+	
 	outb(dev->addr+0x50, 0xC0);
 	
 	// get the card out of low power mode
@@ -160,6 +223,35 @@ int rtl8139_init(rtl8139dev_t *dev)
 	return 0;
 }
 
+int rtl8139_transmit_packet(struct net_dev *nd, struct net_packet *packets, int count)
+{
+	/* TODO: count */
+	rtl8139dev_t *dev = rtldev;
+	if(packets[0].length > 0x1000)
+		return -EIO;
+	mutex_acquire(&dev->tx_lock);
+
+	/* wait for the thing */
+	while(1) {
+		uint32_t status = inl(dev->addr + 0x10 + dev->tx_num * 4);
+		if((status & (1 << 13)))
+			break;
+		cpu_pause();
+	}
+	memcpy((void *)dev->tx_buffer[dev->tx_num].v, packets[0].data, packets[0].length);
+	if(packets[0].length < 0x1000)
+		memset((void *)(dev->tx_buffer[dev->tx_num].v + packets[0].length), 0, 0x1000 - packets[0].length);
+
+	outl(dev->addr + 0x20 + dev->tx_num * 4, dev->tx_buffer[dev->tx_num].p.address);
+	outl(dev->addr + 0x10 + dev->tx_num * 4, 0x3F0000 | (packets[0].length & 0x1FFF));
+
+	dev->tx_num++;
+	dev->tx_num %= 4;
+
+	mutex_release(&dev->tx_lock);
+	return 1;
+}
+
 int rtl8139_receive_packet(struct net_dev *nd, struct net_packet *packets, int count)
 {
 	printk(1, "[rtl]: TRACE: Recieve packet\n");
@@ -196,7 +288,8 @@ int rtl8139_receive_packet(struct net_dev *nd, struct net_packet *packets, int c
 			
 			if((dev->rx_o + length - 4) >= RX_BUF_SIZE) {
 				memcpy(data, buffer, RX_BUF_SIZE - dev->rx_o);
-				memcpy(data + (RX_BUF_SIZE - dev->rx_o), (void *)dev->rec_buf_virt, (length - 4) - (RX_BUF_SIZE - dev->rx_o));
+				memcpy(data + (RX_BUF_SIZE - dev->rx_o),
+						(void *)dev->rec_buf_virt, (length - 4) - (RX_BUF_SIZE - dev->rx_o));
 			} else {
 				memcpy(data, buffer, length - 4);
 			}
@@ -233,6 +326,11 @@ void rtl8139_int_1(registers_t *regs)
 		outw(t->addr + 0x3E, data);
 		if(data & 0x01)
 			do_recieve(t, data);
+		if(data & (1 << 2)) {
+			/* need to read all status registers */
+			for(int i=0;i<4;i++)
+				inw(t->addr + 0x10 + i * 4);
+		}
 	}
 	return;
 }
@@ -270,6 +368,7 @@ int rtl8139_load_device_pci(struct pci_device *device)
 	device->flags |= PCI_DRIVEN;
 	dev->inter = device->pcs->interrupt_line;
 	dev->inter_id = interrupt_register_handler(dev->inter + IRQ0, rtl8139_int_1, 0);
+	mutex_create(&dev->tx_lock, 0);
 	printk(1, "[rtl8139]: registered interrupt line %d\n", dev->inter);
 	printk(1, "[rtl8139]: Success!\n");
 	rtldev = dev;
@@ -284,6 +383,7 @@ int rtl8139_unload_device_pci(rtl8139dev_t *dev)
 		device->dev, device->func);
 	device->flags &= ~PCI_ENGAGED;
 	device->flags &= ~PCI_DRIVEN;
+	mutex_destroy(&dev->tx_lock);
 	devfs_remove(dev->node);
 	interrupt_unregister_handler(dev->inter, dev->inter_id);
 	return 0;

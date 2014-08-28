@@ -25,11 +25,16 @@ void net_init()
 
 static int kt_packet_rec_thread(struct kthread *kt, void *arg)
 {
+	struct net_packet pack;
 	struct net_dev *nd = arg;
+	int packets=0;
 	while(!kthread_is_joining(kt)) {
 		if(nd->rx_pending) {
-			printk(0, "kt rec packet %d: got packet\n", current_task->pid);
+			packets++;
+			printk(0, "kt rec packet %d: got packet (%d %d)\n", current_task->pid, nd->rx_pending, packets);
+			net_callback_poll(nd, &pack, 1);
 			sub_atomic(&nd->rx_pending, 1);
+			net_receive_packet(nd, &pack, 1);
 		} else {
 			tm_process_pause(current_task);
 		}
@@ -87,5 +92,4 @@ int net_block_for_packets(struct net_dev *nd, struct net_packet *packets, int ma
 	} while(!(ret=net_callback_poll(nd, packets, max)));
 	return ret;
 }
-
 

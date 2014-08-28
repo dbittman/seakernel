@@ -30,6 +30,11 @@ void arp_send_packet(struct net_dev *nd, struct arp_packet *packet)
 	ethernet_send_packet(nd, &eh, (unsigned char *)packet, sizeof(*packet));
 }
 
+void arp_send_request(struct net_dev *nd, unsigned char *prot_addr, int addr_len)
+{
+
+}
+
 int arp_receive_packet(struct net_dev *nd, struct arp_packet *packet)
 {
 	uint8_t mac[6];
@@ -63,5 +68,7 @@ int arp_receive_packet(struct net_dev *nd, struct arp_packet *packet)
 			arp_send_packet(nd, &reply);
 		}
 	}
+	/* TODO: caching. all (almost?) ARP packets try to add information to the cache */
 	return 0;
 }
+

@@ -3,7 +3,8 @@
 #include <modules/pci.h>
 #include <modules/i350.h>
 #include <sea/mm/pmap.h>
-#include <sea/net/net.h>
+#include <sea/net/packet.h>
+#include <sea/net/interface.h>
 #include <sea/mutex.h>
 #include <sea/tm/process.h>
 #include <sea/cpu/atomic.h>

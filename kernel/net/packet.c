@@ -1,5 +1,5 @@
 #include <sea/cpu/atomic.h>
-#include <sea/net/net.h>
+#include <sea/net/packet.h>
 #include <sea/ll.h>
 #include <sea/tm/process.h>
 #include <sea/loader/symbol.h>
@@ -10,57 +10,7 @@
 #include <sea/vsprintf.h>
 #include <sea/string.h>
 #include <sea/tm/kthread.h>
-struct llist *net_list;
-
-void net_init()
-{
-	net_list = ll_create(0);
-#if CONFIG_MODULES
-	loader_add_kernel_symbol(net_add_device);
-	loader_add_kernel_symbol(net_notify_packet_ready);
-	loader_add_kernel_symbol(net_block_for_packets);
-	loader_add_kernel_symbol(net_receive_packet);
-#endif
-}
-
-static int kt_packet_rec_thread(struct kthread *kt, void *arg)
-{
-	struct net_packet pack;
-	struct net_dev *nd = arg;
-	int packets=0;
-	while(!kthread_is_joining(kt)) {
-		if(nd->rx_pending) {
-			packets++;
-			printk(0, "kt rec packet %d: got packet (%d %d)\n", current_task->pid, nd->rx_pending, packets);
-			net_callback_poll(nd, &pack, 1);
-			sub_atomic(&nd->rx_pending, 1);
-			net_receive_packet(nd, &pack, 1);
-		} else {
-			tm_process_pause(current_task);
-		}
-	}
-	return 0;
-}
-
-struct net_dev *net_add_device(struct net_dev_calls *fn, void *data)
-{
-	struct net_dev *nd = kmalloc(sizeof(struct net_dev));
-	nd->node = ll_insert(net_list, nd);
-	nd->callbacks = fn;
-	nd->data = data;
-	uint8_t mac[6];
-	net_callback_get_mac(nd, mac);
-	memcpy(nd->mac, mac, sizeof(uint8_t) * 6);
-	kthread_create(&nd->rec_thread, "[kpacket]", 0, kt_packet_rec_thread, nd);
-	return nd;
-}
-
-void net_remove_device(struct net_dev *nd)
-{
-	ll_remove(net_list, nd->node);
-	kfree(nd);
-}
-
+#include <sea/net/interface.h>
 void net_notify_packet_ready(struct net_dev *nd)
 {
 	add_atomic(&nd->rx_pending, 1);
@@ -70,7 +20,6 @@ void net_notify_packet_ready(struct net_dev *nd)
 
 void net_receive_packet(struct net_dev *nd, struct net_packet *packets, int count)
 {
-	kprintf("NET: PACKETS: %d\n", count);
 	for(int i=0;i<count;i++)
 		ethernet_receive_packet(nd, &packets[i]);
 }

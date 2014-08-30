@@ -5,7 +5,8 @@
 #include <sea/loader/module.h>
 #include <sea/fs/devfs.h>
 #include <sea/mm/dma.h>
-#include <sea/net/net.h>
+#include <sea/net/packet.h>
+#include <sea/net/interface.h>
 #include <sea/vsprintf.h>
 #include <sea/cpu/cpu-io.h>
 #include <sea/mm/kmalloc.h>

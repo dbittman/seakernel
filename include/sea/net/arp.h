@@ -1,8 +1,9 @@
 #ifndef NET_ARP_H
 #define NET_ARP_H
 
-#include <sea/net/net.h>
+#include <sea/net/packet.h>
 #include <sea/types.h>
+#include <sea/net/interface.h>
 
 struct __attribute__((__packed__)) arp_packet {
 	uint16_t hw_type;
@@ -22,8 +23,15 @@ struct __attribute__((__packed__)) arp_packet {
 	uint16_t tar_p_addr_2;
 };
 
+struct arp_entry {
+	uint16_t prot_addr[2];
+	uint16_t hw_addr[3];
+	int hw_len, prot_len;
+	int type;
+	/* TODO: timestamps */
+};
+
 int arp_receive_packet(struct net_dev *nd, struct arp_packet *packet);
-void arp_send_packet(struct net_dev *nd, struct arp_packet *packet);
 
 #define ARP_OPER_REQUEST 1
 #define ARP_OPER_REPLY   2

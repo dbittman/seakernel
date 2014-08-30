@@ -1,5 +1,6 @@
 #include <sea/types.h>
-#include <sea/net/net.h>
+#include <sea/net/packet.h>
+#include <sea/net/interface.h>
 #include <sea/errno.h>
 
 int net_callback_poll(struct net_dev *nd, struct net_packet *packets, int max)

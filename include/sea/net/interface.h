@@ -1,5 +1,5 @@
-#ifndef __NET_NET_H
-#define __NET_NET_H
+#ifndef __SEA_NET_INTERFACE_H
+#define __SEA_NET_INTERFACE_H
 
 #include <sea/types.h>
 #include <sea/ll.h>
@@ -16,16 +16,13 @@ struct net_dev {
 	void *data; /* driver specific data */
 	
 	uint8_t mac[6];
+	uint8_t ipv4[4];
 	
 	struct llistnode *node;
 	struct kthread rec_thread;
 };
 
-struct net_packet {
-	unsigned char data[0x1000];
-	size_t length;
-	size_t flags;
-};
+struct net_packet;
 
 struct net_dev_calls {
 	/* poll shall return received packets from the device in the array packets, up to
@@ -48,10 +45,11 @@ int net_callback_get_flags(struct net_dev *, uint32_t *);
 int net_callback_send(struct net_dev *nd, struct net_packet *packets, int count);
 int net_callback_get_mac(struct net_dev *nd, uint8_t mac[6]);
 
-void net_notify_packet_ready(struct net_dev *nd);
-int net_block_for_packets(struct net_dev *nd, struct net_packet *, int max);
-void net_receive_packet(struct net_dev *nd, struct net_packet *packets, int count);
 struct net_dev *net_add_device(struct net_dev_calls *fn, void *);
 int net_transmit_packet(struct net_dev *nd, struct net_packet *packets, int count);
 
+void net_iface_set_prot_addr(struct net_dev *nd, int type, uint8_t *addr);
+void net_iface_get_prot_addr(struct net_dev *nd, int type, uint8_t *addr);
+
 #endif
+

@@ -20,12 +20,15 @@ void net_notify_packet_ready(struct net_dev *nd)
 
 void net_receive_packet(struct net_dev *nd, struct net_packet *packets, int count)
 {
+	printk(0, "[packet]: receive %d packets\n", count);
 	for(int i=0;i<count;i++)
 		ethernet_receive_packet(nd, &packets[i]);
 }
 
 int net_transmit_packet(struct net_dev *nd, struct net_packet *packets, int count)
 {
+	add_atomic(&nd->tx_count, 1);
+	printk(0, "[packet]: send #%d\n", nd->tx_count);
 	return net_callback_send(nd, packets, count);
 }
 

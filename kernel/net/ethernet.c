@@ -26,7 +26,7 @@ void ethernet_send_packet(struct net_dev *nd, struct ethernet_header *head, unsi
 	memcpy((void *)((addr_t)packet.data + sizeof(*head)), payload, length);
 	packet.length = length + sizeof(*head);
 	if(packet.length < 60) packet.length = 60;
-	kprintf("ETH: Send packet size %d\n", packet.length);
+	printk(0, "[ethernet]: send packet size %d\n", packet.length);
 	net_transmit_packet(nd, &packet, 1);
 }
 
@@ -35,6 +35,7 @@ void ethernet_receive_packet(struct net_dev *nd, struct net_packet *packet)
 	struct ethernet_header *head = (struct ethernet_header *)packet->data;
 	unsigned char *payload = (unsigned char *)(head+1);
 	unsigned length = packet->length;
+	printk(0, "[ethernet]: receive packet size %d\n", length);
 	switch(BIG_TO_HOST16(head->type)) {
 		case ETHERTYPE_ARP:
 			arp_receive_packet(nd, (struct arp_packet *)payload);

@@ -33,12 +33,13 @@ static int kt_packet_rec_thread(struct kthread *kt, void *arg)
 	while(!kthread_is_joining(kt)) {
 		if(nd->rx_pending) {
 			packets++;
-			printk(0, "kt rec packet %d: got packet (%d %d)\n", current_task->pid, nd->rx_pending, packets);
+			printk(0, "[kpacket]: got packet (%d %d)\n", nd->rx_pending, packets);
 			net_callback_poll(nd, &pack, 1);
 			sub_atomic(&nd->rx_pending, 1);
 			net_receive_packet(nd, &pack, 1);
 		} else {
-			tm_process_pause(current_task);
+			//tm_process_pause(current_task);
+			tm_schedule();
 		}
 	}
 	return 0;
@@ -54,6 +55,7 @@ struct net_dev *net_add_device(struct net_dev_calls *fn, void *data)
 	net_callback_get_mac(nd, mac);
 	memcpy(nd->mac, mac, sizeof(uint8_t) * 6);
 	kthread_create(&nd->rec_thread, "[kpacket]", 0, kt_packet_rec_thread, nd);
+	nd->rec_thread.process->priority = 100;
 	unsigned char ifa[4];
 	ifa[0] = 2;
 	ifa[1] = 0;

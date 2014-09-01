@@ -44,7 +44,7 @@ void ipv4_accept_packet(struct net_dev *nd, struct ipv4_header *packet,
 void ipv4_receive_packet(struct net_dev *nd, struct ipv4_header *packet)
 {
 	/* check if we are to accept this packet */
-	printk(0, "TRACE: ipv4 packet rec. packet checksum = %x\n", packet->checksum);
+	printk(0, "[ipv4]: receive_packet\n");
 	uint16_t checksum = packet->checksum;
 	packet->checksum = 0;
 	uint16_t sum = ipv4_calc_checksum(packet, packet->header_len * 4);
@@ -91,8 +91,8 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 	union ipv4_address packet_destination;
 	union ipv4_address dest = (union ipv4_address)BIG_TO_HOST32(packet->header.dest_ip);
 	
-	if(packet->tries > 0 && (time_get_epoch() == packet->last_attempt_time))
-		return 0;
+	//if(packet->tries > 0 && (time_get_epoch() == packet->last_attempt_time))
+	//	return 0;
 	packet->tries++;
 	packet->last_attempt_time = time_get_epoch();
 
@@ -107,6 +107,7 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 		packet_destination = dest;
 	}
 	if(arp_lookup(ETHERTYPE_IPV4, packet_destination.addr_bytes, hwaddr) == -ENOENT) {
+		printk(0, "[ipv4]: send_packet: ARP lookup failed, sending request\n");
 		/* no idea where the destination is! Send an ARP request. ARP handles multiple
 		 * requests to the same address. */
 		arp_send_request(nd, ETHERTYPE_IPV4, packet_destination.addr_bytes, 4);
@@ -114,6 +115,7 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 		ipv4_do_enqueue_packet(packet);
 		return 0;
 	}
+	printk(0, "[ipv4]: send_packet: sending\n");
 	ipv4_finish_constructing_packet(nd, r, packet);
 	struct ethernet_header eh;
 	ethernet_construct_header(&eh, nd->mac, hwaddr, ETHERTYPE_IPV4);
@@ -136,6 +138,7 @@ int ipv4_enqueue_packet(uint8_t *data, int length, int ttl, int id, int ptype, u
 	packet->header.version = 4;
 	packet->header.header_len = 5;
 	packet->header.dest_ip = HOST_TO_BIG32(dest.address);
+	printk(0, "[ipv4]: enqueue packet to %x\n", dest.address);
 	ipv4_do_enqueue_packet(packet);
 	return 0;
 }
@@ -146,19 +149,21 @@ static int ipv4_sending_thread(struct kthread *kt, void *arg)
 		if(ipv4_send_queue->num > 0) {
 			/* try getting an entry */
 			struct ipv4_packet *packet = ll_remove_head(ipv4_send_queue);
-			printk(0, "doing work...\n");
+			printk(0, "[kipv4-send]: popped packet\n");
 			if(packet) {
 				/* got packet entry! */
 				if(time_get_epoch() > packet->enqueue_time + 20) {
 					/* timeout! */
+					printk(0, "[kipv4-send]: packet timed out\n");
 					kfree(packet);
 				} else { 
 					int r = ipv4_send_packet(packet);
-					printk(0, "send returned %d\n", r);
+					printk(0, "[kipv4-send]: send returned %d\n", r);
 				}
 			}
 		}
-		tm_process_pause(current_task);
+		//tm_process_pause(current_task);
+		tm_schedule();
 	}
 	return 0;
 }
@@ -167,5 +172,6 @@ void ipv4_init()
 {
 	ipv4_send_queue = ll_create(0);
 	ipv4_send_thread = kthread_create(0, "[kipv4-send]", 0, ipv4_sending_thread, 0);
+	ipv4_send_thread->process->priority = 100;
 }
 

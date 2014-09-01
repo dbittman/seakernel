@@ -1,6 +1,7 @@
 #include <sea/cpu/time.h>
+#include <sea/types.h>
 
-unsigned long long time_get_epoch()
+time_t time_get_epoch()
 {
 	return arch_time_get_epoch();
 }

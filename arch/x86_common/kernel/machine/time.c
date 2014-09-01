@@ -20,7 +20,7 @@ void arch_time_get(struct tm *now) {
 	now->tm_sec = time_get_epoch();
 }
 
-unsigned long long arch_time_get_epoch()
+time_t arch_time_get_epoch()
 {
 	struct tm *tm, _t;tm = &_t;
 	get_timed(tm);

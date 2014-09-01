@@ -1,6 +1,7 @@
 #ifndef __SEA_CPU_TIME_H
 #define __SEA_CPU_TIME_H
 
+#include <sea/types.h>
 typedef long clock_t;
 
 struct tm
@@ -28,8 +29,8 @@ struct tms {
 	clock_t tms_cstime;
 };
 
-unsigned long long arch_time_get_epoch();
-unsigned long long time_get_epoch();
+time_t arch_time_get_epoch();
+time_t time_get_epoch();
 void arch_time_get(struct tm *now);
 void time_get(struct tm *);
 

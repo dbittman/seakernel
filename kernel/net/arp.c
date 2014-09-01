@@ -7,7 +7,10 @@
 #include <sea/lib/hash.h>
 #include <sea/errno.h>
 #include <sea/mm/kmalloc.h>
-struct hash_table *ipv4_hash = 0; /* TODO: hashes for any protocol */
+#include <sea/cpu/time.h>
+
+static struct hash_table *ipv4_hash = 0; /* TODO: hashes for any protocol */
+static struct llist *outstanding = 0;
 
 static void arp_get_mac(uint8_t *mac, uint16_t m1, uint16_t m2, uint16_t m3)
 {
@@ -24,6 +27,53 @@ static void arp_set_mac(uint8_t *mac, uint16_t *m1, uint16_t *m2, uint16_t *m3)
 	*m1 = (mac[0] | (mac[1] << 8));
 	*m2 = (mac[2] | (mac[3] << 8));
 	*m3 = (mac[4] | (mac[5] << 8));
+}
+
+static struct arp_entry *__arp_get_outstanding_requests_entry(int prot_type, uint16_t addr[2], int check_time)
+{
+	rwlock_acquire(&outstanding->rwl, RWL_READER);
+
+	struct llistnode *node;
+	struct arp_entry *entry;
+	ll_for_each_entry(outstanding, node, struct arp_entry *, entry) {
+		if(check_time && (time_get_epoch() > (entry->timestamp + 1))) {
+			/* TODO: remove request, keep looking */
+			
+			continue;
+		}
+		if(entry->type == prot_type && !memcmp(entry->prot_addr, addr, 2 * sizeof(uint16_t))) {
+			/* found valid */
+			rwlock_release(&outstanding->rwl, RWL_READER);
+			return entry;
+		}
+	}
+	rwlock_release(&outstanding->rwl, RWL_READER);
+	return 0;
+}
+
+static int arp_check_outstanding_requests(int prot_type, uint16_t addr[2])
+{
+	if(__arp_get_outstanding_requests_entry(prot_type, addr, 1))
+		return 1;
+	return 0;
+}
+
+static void arp_remove_outstanding_requests(int prot_type, uint16_t addr[2])
+{
+	struct arp_entry *ent;
+	while((ent = __arp_get_outstanding_requests_entry(prot_type, addr, 0))) {
+		ll_remove(outstanding, ent->node);
+		kfree(ent);
+	}
+}
+
+static void arp_add_outstanding_requests(int prot_type, uint16_t addr[2])
+{
+	struct arp_entry *entry = kmalloc(sizeof(struct arp_entry));
+	entry->type = prot_type;
+	memcpy(entry->prot_addr, addr, 2 * sizeof(uint16_t));
+	entry->node = ll_insert(outstanding, entry);
+	entry->timestamp = time_get_epoch();
 }
 
 static void arp_add_entry_to_hash(struct hash_table *hash, uint16_t prot_addr[2], struct arp_entry *entry)
@@ -61,7 +111,20 @@ static void arp_send_packet(struct net_dev *nd, struct arp_packet *packet, int b
 
 void arp_send_request(struct net_dev *nd, uint16_t prot_type, uint8_t prot_addr[4], int addr_len)
 {
+	/* first, we check for an outstanding current request to this address for this protocol.
+	 * if it exists, we just return. If not, we record the request, and send it.
+	 * NOTE: if we find a request that is over 1 second old, we re-send the request
+	 * and reset the timeout value for it.
+	 */
 	struct arp_packet packet;
+	packet.tar_p_addr_1 = prot_addr[3] | (prot_addr[2] << 8);
+	packet.tar_p_addr_2 = prot_addr[1] | (prot_addr[0] << 8);
+	uint16_t addr[2];
+	addr[0] = packet.tar_p_addr_1;
+	addr[1] = packet.tar_p_addr_2;
+	if(arp_check_outstanding_requests(prot_type, addr))
+		return;
+
 	packet.hw_type = HOST_TO_BIG16(1); /* ethernet */
 	packet.p_type = HOST_TO_BIG16(prot_type);
 	packet.hw_addr_len = 6;
@@ -70,15 +133,14 @@ void arp_send_request(struct net_dev *nd, uint16_t prot_type, uint8_t prot_addr[
 	
 	arp_set_mac(nd->mac, &packet.src_hw_addr_1, &packet.src_hw_addr_2, &packet.src_hw_addr_3);
 	uint8_t src_p[4];
-	net_iface_get_prot_addr(nd, ETHERTYPE_IPV4, src_p);
-	packet.src_p_addr_1 = src_p[0] | (src_p[1] << 8);
-	packet.src_p_addr_2 = src_p[2] | (src_p[3] << 8);
+	net_iface_get_prot_addr(nd, prot_type, src_p);
+	packet.src_p_addr_1 = src_p[3] | (src_p[2] << 8);
+	packet.src_p_addr_2 = src_p[1] | (src_p[0] << 8);
 
 	packet.tar_hw_addr_1 = packet.tar_hw_addr_2 = packet.tar_hw_addr_3 = 0;
-	packet.tar_p_addr_1 = prot_addr[0] | (prot_addr[1] << 8);
-	packet.tar_p_addr_2 = prot_addr[2] | (prot_addr[3] << 8);
 
 	arp_send_packet(nd, &packet, 1);
+	arp_add_outstanding_requests(prot_type, addr);
 }
 
 static struct arp_entry *arp_do_lookup(int ethertype, uint16_t prot_addr[2])
@@ -95,8 +157,8 @@ void arp_remove_entry(int ptype, uint8_t paddr[4])
 {
 	/* a little bit manipulation */
 	uint16_t pr[2];
-	pr[0] = paddr[0] | (paddr[1] << 8);
-	pr[1] = paddr[2] | (paddr[3] << 8);
+	pr[0] = paddr[3] | (paddr[2] << 8);
+	pr[1] = paddr[1] | (paddr[0] << 8);
 	
 	void *ent;
 	if(hash_table_get_entry(ipv4_hash, pr, sizeof(uint16_t), 2, &ent) != -ENOENT) {
@@ -109,8 +171,8 @@ int arp_lookup(int ptype, uint8_t paddr[4], uint8_t hwaddr[6])
 {
 	/* a little bit manipulation */
 	uint16_t pr[2];
-	pr[0] = paddr[0] | (paddr[1] << 8);
-	pr[1] = paddr[2] | (paddr[3] << 8);
+	pr[0] = paddr[3] | (paddr[2] << 8);
+	pr[1] = paddr[1] | (paddr[0] << 8);
 	struct arp_entry *ent = arp_do_lookup(ptype, pr);
 	if(!ent)
 		return -ENOENT;
@@ -121,7 +183,7 @@ int arp_lookup(int ptype, uint8_t paddr[4], uint8_t hwaddr[6])
 
 static int __arp_compare_address(uint8_t addr[4], uint16_t a1, uint16_t a2)
 {
-	if((addr[0] | (addr[1] << 8)) == a1 && (addr[2] | (addr[3] << 8)) == a2)
+	if((addr[3] | (addr[2] << 8)) == a1 && (addr[1] | (addr[0] << 8)) == a2)
 		return 0;
 	return 1;
 }
@@ -153,8 +215,8 @@ int arp_receive_packet(struct net_dev *nd, struct arp_packet *packet)
 			reply.tar_p_addr_2 = packet->src_p_addr_2;
 			reply.oper = HOST_TO_BIG16(ARP_OPER_REPLY);
 			
-			reply.src_p_addr_1 = ifaddr[0] | (ifaddr[1] << 8);
-			reply.src_p_addr_2 = ifaddr[2] | (ifaddr[3] << 8);
+			reply.src_p_addr_1 = ifaddr[3] | (ifaddr[2] << 8);
+			reply.src_p_addr_2 = ifaddr[1] | (ifaddr[0] << 8);
 			
 			arp_send_packet(nd, &reply, 0);
 		}
@@ -179,6 +241,13 @@ int arp_receive_packet(struct net_dev *nd, struct arp_packet *packet)
 			ipv4_hash = arp_create_cache();
 		arp_add_entry_to_hash(ipv4_hash, p_addr, entry);
 	}
+	if(oper == ARP_OPER_REQUEST || oper == ARP_OPER_REPLY) 
+		arp_remove_outstanding_requests(BIG_TO_HOST16(packet->p_type), p_addr);
 	return 0;
+}
+
+void arp_init()
+{
+	outstanding = ll_create(0);
 }
 

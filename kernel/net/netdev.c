@@ -6,6 +6,10 @@
 #include <sea/loader/symbol.h>
 #include <sea/cpu/atomic.h>
 #include <sea/vsprintf.h>
+#include <sea/net/ipv4.h>
+#include <sea/net/arp.h>
+#include <sea/net/route.h>
+
 struct llist *net_list;
 
 void net_init()
@@ -17,6 +21,8 @@ void net_init()
 	loader_add_kernel_symbol(net_block_for_packets);
 	loader_add_kernel_symbol(net_receive_packet);
 #endif
+	arp_init();
+	ipv4_init();
 }
 
 static int kt_packet_rec_thread(struct kthread *kt, void *arg)
@@ -49,11 +55,15 @@ struct net_dev *net_add_device(struct net_dev_calls *fn, void *data)
 	memcpy(nd->mac, mac, sizeof(uint8_t) * 6);
 	kthread_create(&nd->rec_thread, "[kpacket]", 0, kt_packet_rec_thread, nd);
 	unsigned char ifa[4];
-	ifa[0] = 0xa;
+	ifa[0] = 2;
 	ifa[1] = 0;
 	ifa[2] = 0;
-	ifa[3] = 2;
+	ifa[3] = 0xa;
 	net_iface_set_prot_addr(nd, 0x800, ifa);
+	struct route *r = kmalloc(sizeof(struct route));
+	r->interface = nd;
+	r->flags |= ROUTE_FLAG_DEFAULT;
+	net_route_add_entry(r);
 	return nd;
 }
 

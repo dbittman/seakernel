@@ -40,7 +40,7 @@ void ethernet_receive_packet(struct net_dev *nd, struct net_packet *packet)
 			arp_receive_packet(nd, (struct arp_packet *)payload);
 			break;
 		case ETHERTYPE_IPV4:
-			ipv4_receive_packet(nd, (struct ipv4_packet *)payload);
+			ipv4_receive_packet(nd, (struct ipv4_header *)payload);
 			break;
 		default:
 			kprintf("unknown ethertype\n");

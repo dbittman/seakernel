@@ -136,7 +136,13 @@ void *ll_remove_head(struct llist *list)
 	void *ent;
 	if(!(list->flags & LL_LOCKLESS)) 
 		rwlock_acquire(&list->rwl, RWL_WRITER);
+	if(!list->num) {
+		if(!(list->flags & LL_LOCKLESS)) 
+			rwlock_release(&list->rwl, RWL_WRITER);
+		return 0;
+	}
 	assert(list->magic == LLIST_MAGIC);
+	assert(list->head);
 	ent = list->head->entry;
 	if(ent)
 		kfree(ll_do_remove(list, (struct llistnode *)list->head, 1));

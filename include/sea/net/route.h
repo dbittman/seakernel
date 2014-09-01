@@ -19,7 +19,7 @@ struct route {
 	struct llistnode *node;
 };
 
-struct route *net_route_get_entry(union ipv4_address addr);
+struct route *net_route_select_entry(union ipv4_address addr);
 void net_route_add_entry(struct route *r);
 void net_route_del_entry(struct route *r);
 #endif

@@ -13,9 +13,9 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/net/datalayer.h>
 #include <sea/net/ethertype.h>
+#include <sea/lib/queue.h>
 
-/* TODO: real queue implementation */
-static struct llist *ipv4_send_queue = 0;
+static struct queue *ipv4_tx_queue = 0;
 static struct kthread *ipv4_send_thread = 0;
 
 static uint16_t ipv4_calc_checksum(void *__data, int length)
@@ -79,7 +79,7 @@ void ipv4_receive_packet(struct net_dev *nd, struct net_packet *netpacket, struc
 static int ipv4_do_enqueue_packet(struct ipv4_packet *packet)
 {
 	/* error checking */
-	ll_insert(ipv4_send_queue, packet);
+	queue_enqueue(ipv4_tx_queue, packet);
 	tm_process_resume(ipv4_send_thread->process);
 	return 0;
 }
@@ -152,9 +152,9 @@ int ipv4_enqueue_packet(struct net_packet *netpacket, struct ipv4_header *header
 static int ipv4_sending_thread(struct kthread *kt, void *arg)
 {
 	while(!kthread_is_joining(kt)) {
-		if(ipv4_send_queue->num > 0) {
+		if(queue_count(ipv4_tx_queue) > 0) {
 			/* try getting an entry */
-			struct ipv4_packet *packet = ll_remove_head(ipv4_send_queue);
+			struct ipv4_packet *packet = queue_dequeue(ipv4_tx_queue);
 			TRACE(0, "[kipv4-send]: popped packet\n");
 			if(packet) {
 				/* got packet entry! */
@@ -176,7 +176,7 @@ static int ipv4_sending_thread(struct kthread *kt, void *arg)
 
 void ipv4_init()
 {
-	ipv4_send_queue = ll_create(0);
+	ipv4_tx_queue = queue_create(0, 0);
 	ipv4_send_thread = kthread_create(0, "[kipv4-send]", 0, ipv4_sending_thread, 0);
 	ipv4_send_thread->process->priority = 100;
 }

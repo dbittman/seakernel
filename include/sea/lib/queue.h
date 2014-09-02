@@ -16,5 +16,13 @@ struct queue {
 
 #define QUEUE_ALLOC 1
 
+struct queue *queue_create(struct queue *q, int flags);
+void *queue_dequeue(struct queue *q);
+void queue_enqueue(struct queue *q, void *ent);
+void *queue_peek(struct queue *q);
+void queue_destroy(struct queue *q);
+
+#define queue_count(q) q->count
+
 #endif
 

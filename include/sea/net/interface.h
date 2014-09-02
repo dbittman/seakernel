@@ -12,6 +12,7 @@ struct net_dev {
 	int flags;
 	uint32_t state;
 	size_t rx_count, tx_count, rx_err_count, tx_err_count, rx_pending;
+	time_t rx_thread_lastwork;
 	/* these fields are specified by the driver at time of net_dev creation */
 	struct net_dev_calls *callbacks;
 	void *data; /* driver specific data */

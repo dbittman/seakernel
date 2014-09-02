@@ -39,9 +39,12 @@ static int kt_packet_rec_thread(struct kthread *kt, void *arg)
 			net_callback_poll(nd, pack, 1);
 			sub_atomic(&nd->rx_pending, 1);
 			net_receive_packet(nd, pack, 1);
+			nd->rx_thread_lastwork = tm_get_ticks();
 		} else {
-			//tm_process_pause(current_task);
-			tm_schedule();
+			if(tm_get_ticks() > nd->rx_thread_lastwork + TICKS_SECONDS(5))
+				tm_process_pause(current_task);
+			else
+				tm_schedule();
 		}
 	}
 	return 0;

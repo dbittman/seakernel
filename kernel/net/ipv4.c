@@ -17,7 +17,7 @@
 
 static struct queue *ipv4_tx_queue = 0;
 static struct kthread *ipv4_send_thread = 0;
-
+static time_t ipv4_thread_lastwork;
 static uint16_t ipv4_calc_checksum(void *__data, int length)
 {
 	uint8_t *data = __data;
@@ -172,9 +172,12 @@ static int ipv4_sending_thread(struct kthread *kt, void *arg)
 					TRACE(0, "[kipv4-send]: send returned %d\n", r);
 				}
 			}
+			ipv4_thread_lastwork = tm_get_ticks();
 		}
-		//tm_process_pause(current_task);
-		tm_schedule();
+		if(tm_get_ticks() > ipv4_thread_lastwork + TICKS_SECONDS(5))
+			tm_process_pause(current_task);
+		else if(!queue_count(ipv4_tx_queue))
+			tm_schedule();
 	}
 	return 0;
 }

@@ -203,7 +203,7 @@ static void do_sys_task_stat(struct task_stat *s, task_t *t)
 	s->argv = t->argv;
 	s->pid = t->pid;
 	strncpy(s->cmd, (char *)t->command, 128);
-	s->mem_usage = t->pid ? t->phys_mem_usage * 4 : 0;
+	s->mem_usage = (t->pid && !(t->flags & TF_KTASK)) ? t->phys_mem_usage * 4 : 0;
 }
 
 int sys_task_pstat(unsigned int pid, struct task_stat *s)

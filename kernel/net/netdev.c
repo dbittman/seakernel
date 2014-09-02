@@ -70,7 +70,8 @@ struct net_dev *net_add_device(struct net_dev_calls *fn, void *data)
 	net_iface_set_network_addr(nd, 0x800, ifa);
 	struct route *r = kmalloc(sizeof(struct route));
 	r->interface = nd;
-	r->flags |= ROUTE_FLAG_DEFAULT;
+	nd->flags |= IFACE_FLAG_UP;
+	r->flags |= ROUTE_FLAG_DEFAULT | ROUTE_FLAG_UP;
 	net_route_add_entry(r);
 	return nd;
 }

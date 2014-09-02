@@ -9,6 +9,7 @@
 #include <sea/cpu/time.h>
 #include <sea/net/ethertype.h>
 #include <sea/net/datalayer.h>
+#include <sea/tm/schedule.h>
 
 static struct hash_table *ipv4_hash = 0; /* TODO: hashes for any protocol */
 static struct llist *outstanding = 0;
@@ -37,7 +38,7 @@ static struct arp_entry *__arp_get_outstanding_requests_entry(int prot_type, uin
 	struct llistnode *node;
 	struct arp_entry *entry;
 	ll_for_each_entry(outstanding, node, struct arp_entry *, entry) {
-		if(check_time && (time_get_epoch() > (entry->timestamp + 1))) {
+		if(check_time && (tm_get_ticks() > (entry->timestamp + TICKS_SECONDS(1)))) {
 			/* TODO: remove request, keep looking */
 			
 			continue;
@@ -74,7 +75,7 @@ static void arp_add_outstanding_requests(int prot_type, uint16_t addr[2])
 	entry->type = prot_type;
 	memcpy(entry->prot_addr, addr, 2 * sizeof(uint16_t));
 	entry->node = ll_insert(outstanding, entry);
-	entry->timestamp = time_get_epoch();
+	entry->timestamp = tm_get_ticks();
 }
 
 static void arp_add_entry_to_hash(struct hash_table *hash, uint16_t prot_addr[2], struct arp_entry *entry)

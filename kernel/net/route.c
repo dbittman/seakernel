@@ -11,6 +11,10 @@ static struct llist *table = 0;
  */
 int __net_route_calc_confidence(struct route *r, union ipv4_address addr)
 {
+	if(!(r->flags & ROUTE_FLAG_UP))
+			return -1;
+	if(!(r->interface->flags & IFACE_FLAG_UP))
+		return -1;
 	uint32_t prefix = NETWORK_PREFIX(addr.address, r->netmask);
 	if(prefix == r->destination.address) {
 		/* this route works! our 'confidence' is the number of bits

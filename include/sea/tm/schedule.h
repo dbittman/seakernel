@@ -17,6 +17,8 @@ int tm_get_current_frequency();
 long tm_get_ticks();
 void tm_set_current_frequency_indicator(int);
 
+#define TICKS_SECONDS(nsec) (tm_get_current_frequency() * nsec)
+
 extern volatile unsigned int __allow_idle;
 
 #endif

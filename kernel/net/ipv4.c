@@ -102,10 +102,10 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 	union ipv4_address packet_destination;
 	union ipv4_address dest = (union ipv4_address)BIG_TO_HOST32(packet->header->dest_ip);
 	
-	//if(packet->tries > 0 && (time_get_epoch() == packet->last_attempt_time))
+	//if(packet->tries > 0 && (tm_get_ticks() <= packet->last_attempt_time + TICKS_SECONDS(1)))
 	//	return 0;
 	packet->tries++;
-	packet->last_attempt_time = time_get_epoch();
+	packet->last_attempt_time = tm_get_ticks();
 
 	struct route *r = net_route_select_entry(dest);
 	uint8_t hwaddr[6];
@@ -138,10 +138,15 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 
 int ipv4_enqueue_packet(struct net_packet *netpacket, struct ipv4_header *header)
 {
-	/* set packet timestamp for entering send queue, and check if the route is
-	 * available */
+	union ipv4_address dest = (union ipv4_address)BIG_TO_HOST32(header->dest_ip);
+	struct route *r = net_route_select_entry(dest);
+	if(!r) {
+		kfree(netpacket);
+		TRACE(0, "[ipv4]: destination unavailable\n");
+		return -1;
+	}
 	struct ipv4_packet *packet = kmalloc(sizeof(struct ipv4_packet));
-	packet->enqueue_time = time_get_epoch();
+	packet->enqueue_time = tm_get_ticks();
 	packet->header = header;
 	packet->netpacket = netpacket;
 	TRACE(0, "[ipv4]: enqueue packet to %x\n", header->dest_ip);
@@ -158,7 +163,7 @@ static int ipv4_sending_thread(struct kthread *kt, void *arg)
 			TRACE(0, "[kipv4-send]: popped packet\n");
 			if(packet) {
 				/* got packet entry! */
-				if(time_get_epoch() > packet->enqueue_time + 20) {
+				if(tm_get_ticks() > packet->enqueue_time + TICKS_SECONDS(100)) {
 					/* timeout! */
 					TRACE(0, "[kipv4-send]: packet timed out\n");
 					kfree(packet);

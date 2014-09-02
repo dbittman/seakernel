@@ -34,6 +34,7 @@ rtl8139dev_t *rtldev;
 #define RX_BUF_SIZE 64 * 1024
 int rtl8139_receive_packet(struct net_dev *nd, struct net_packet *, int count);
 int rtl8139_transmit_packet(struct net_dev *nd, struct net_packet *packets, int count);
+int rtl8139_set_flags(struct net_dev *nd, int flags);
 int rtl8139_get_mac(struct net_dev *nd, uint8_t mac[6])
 {
 	mac[0] = rtldev->hwaddr[0] & 0xFF;
@@ -49,7 +50,8 @@ struct net_dev_calls rtl8139_net_callbacks = {
 	rtl8139_receive_packet,
 	rtl8139_transmit_packet,
 	rtl8139_get_mac,
-	0,0
+	rtl8139_set_flags,
+	0
 };
 
 struct net_dev *rtl8139_net_dev;
@@ -216,12 +218,25 @@ int rtl8139_init(rtl8139dev_t *dev)
 	outb(dev->addr+0x50, 0x00);
 	
 	// enable Rx and Tx
-	outb(dev->addr+0x37, 0x08 | 0x04);
+	//outb(dev->addr+0x37, 0x08 | 0x04);
 	
 	// enable all good irqs
 	outw(dev->addr+0x3C, 15);
 	outw(dev->addr+0x3E, 0xffff);
 	return 0;
+}
+
+int rtl8139_set_flags(struct net_dev *nd, int flags)
+{
+	rtl8139dev_t *dev = rtldev;
+	if(!(flags & IFACE_FLAG_UP) && (nd->flags & IFACE_FLAG_UP)) {
+		/* set interface down */
+		outb(dev->addr+0x37, 0);
+	} else if((flags & IFACE_FLAG_UP) && !(nd->flags & IFACE_FLAG_UP)) {
+		/* set interface up */
+		outb(dev->addr+0x37, 0x08 | 0x04);
+	}
+	return flags;
 }
 
 int rtl8139_transmit_packet(struct net_dev *nd, struct net_packet *packets, int count)

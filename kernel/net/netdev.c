@@ -70,7 +70,7 @@ struct net_dev *net_add_device(struct net_dev_calls *fn, void *data)
 	net_iface_set_network_addr(nd, 0x800, ifa);
 	struct route *r = kmalloc(sizeof(struct route));
 	r->interface = nd;
-	nd->flags |= IFACE_FLAG_UP;
+	net_iface_set_flags(nd, IFACE_FLAG_UP);
 	r->flags |= ROUTE_FLAG_DEFAULT | ROUTE_FLAG_UP;
 	net_route_add_entry(r);
 	return nd;
@@ -104,7 +104,6 @@ int net_iface_get_flags(struct net_dev *nd)
 
 int net_iface_set_flags(struct net_dev *nd, int flags)
 {
-	nd->flags = flags;
-	return net_callback_set_flags(nd, flags);
+	return (nd->flags = net_callback_set_flags(nd, flags));
 }
 

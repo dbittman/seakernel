@@ -71,7 +71,7 @@ void ipv4_receive_packet(struct net_dev *nd, struct net_packet *netpacket, struc
 		ipv4_accept_packet(nd, netpacket, packet, 
 				src, BIG_TO_HOST16(packet->length) - (packet->header_len * 4));
 	} else {
-		/* TODO: IP forwarding */
+		/* TODO: IP forwarding, maybe split packets  */
 		kfree(netpacket);
 	}
 }

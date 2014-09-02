@@ -53,6 +53,8 @@ int net_transmit_packet(struct net_dev *nd, struct net_packet *packets, int coun
 
 void net_iface_set_network_addr(struct net_dev *nd, int type, uint8_t *addr);
 void net_iface_get_network_addr(struct net_dev *nd, int type, uint8_t *addr);
+int net_iface_set_flags(struct net_dev *nd, int flags);
+int net_iface_get_flags(struct net_dev *nd);
 
 #endif
 

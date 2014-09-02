@@ -18,33 +18,31 @@ void ethernet_construct_header(struct ethernet_header *head, uint8_t src_mac[6],
 	head->type = HOST_TO_BIG16(ethertype);
 }
 
-void ethernet_send_packet(struct net_dev *nd, struct ethernet_header *head, unsigned char *payload, int length)
+void ethernet_send_packet(struct net_dev *nd, struct net_packet *netpacket)
 {
-	struct net_packet packet;
-	memset(packet.data, 0, 64);
-	memcpy(packet.data, head, sizeof(*head));
-	memcpy((void *)((addr_t)packet.data + sizeof(*head)), payload, length);
-	packet.length = length + sizeof(*head);
-	if(packet.length < 60) packet.length = 60;
-	printk(0, "[ethernet]: send packet size %d\n", packet.length);
-	net_transmit_packet(nd, &packet, 1);
+	if(netpacket->length < 60)
+		netpacket->length = 60;
+	TRACE(0, "[ethernet]: send packet size %d\n", netpacket->length);
+	net_transmit_packet(nd, netpacket, 1);
 }
 
 void ethernet_receive_packet(struct net_dev *nd, struct net_packet *packet)
 {
 	struct ethernet_header *head = (struct ethernet_header *)packet->data;
+	packet->data_header = head;
 	unsigned char *payload = (unsigned char *)(head+1);
 	unsigned length = packet->length;
-	printk(0, "[ethernet]: receive packet size %d\n", length);
+	TRACE(0, "[ethernet]: receive packet size %d\n", length);
 	switch(BIG_TO_HOST16(head->type)) {
 		case ETHERTYPE_ARP:
-			arp_receive_packet(nd, (struct arp_packet *)payload);
+			arp_receive_packet(nd, packet, (struct arp_packet *)payload);
 			break;
 		case ETHERTYPE_IPV4:
-			ipv4_receive_packet(nd, (struct ipv4_header *)payload);
+			ipv4_receive_packet(nd, packet, (struct ipv4_header *)payload);
 			break;
 		default:
 			kprintf("unknown ethertype\n");
 			break;
 	}
 }
+

@@ -49,7 +49,7 @@ struct net_dev_calls rtl8139_net_callbacks = {
 	rtl8139_receive_packet,
 	rtl8139_transmit_packet,
 	rtl8139_get_mac,
-	0,0,0
+	0,0
 };
 
 struct net_dev *rtl8139_net_dev;
@@ -255,7 +255,6 @@ int rtl8139_transmit_packet(struct net_dev *nd, struct net_packet *packets, int 
 
 int rtl8139_receive_packet(struct net_dev *nd, struct net_packet *packets, int count)
 {
-	printk(1, "[rtl]: TRACE: Recieve packet\n");
 	rtl8139dev_t *dev = rtldev;
 	uint8_t *buffer;
 	uint16_t length, info;

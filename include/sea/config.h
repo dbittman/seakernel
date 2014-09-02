@@ -59,4 +59,8 @@ long sys_sysconf(int cmd);
 #include <sea/types.h>
 int sys_gethostname(char *buf, size_t len);
 
+#define VOID_CALL(...)
+
+#define TRACE printk
+
 #endif

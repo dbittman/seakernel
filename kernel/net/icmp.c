@@ -22,29 +22,31 @@ static uint16_t icmp_calc_checksum(void *__data, int length)
 	return HOST_TO_BIG16(~sum);
 }
 
-void icmp_receive_echo_request(struct net_dev *nd, union ipv4_address src,
+void icmp_receive_echo_request(struct net_dev *nd, struct net_packet *netpacket, union ipv4_address src,
 		struct icmp_packet *packet, int len)
 {
-	printk(0, "[icmp]: got echo request from %x\n", src.address);
+	TRACE(0, "[icmp]: got echo request from %x\n", src.address);
 	packet->type = 0;
-
-	ipv4_enqueue_packet((uint8_t *)packet, len, 64, 0, IP_PROTOCOL_ICMP, src);
+	struct ipv4_header *header = netpacket->network_header;
+	header->dest_ip = header->src_ip;
+	ipv4_enqueue_packet(netpacket, header);
 }
 
-void icmp_receive_packet(struct net_dev *nd, union ipv4_address src, struct icmp_packet *packet, int len)
+void icmp_receive_packet(struct net_dev *nd, struct net_packet *netpacket, 
+		union ipv4_address src, struct icmp_packet *packet, int len)
 {
 	uint16_t cs = packet->checksum;
 	packet->checksum = 0;
 	uint16_t calced = icmp_calc_checksum(packet, len);
-	printk(0, "[icmp]: trace: rec packet from %x. type=%x, code=%x. len = %d\n", src.address, packet->type, packet->code, len);
+	TRACE(0, "[icmp]: trace: rec packet from %x. type=%x, code=%x. len = %d\n", src.address, packet->type, packet->code, len);
 	if(calced != cs) {
-		printk(0, "[icmp]: got invalid checksum\n");
+		TRACE(0, "[icmp]: got invalid checksum\n");
 		return;
 	}
 	switch(packet->type) {
 		case 8:
 			if(packet->code == 0)
-				icmp_receive_echo_request(nd, src, packet, len);
+				icmp_receive_echo_request(nd, netpacket, src, packet, len);
 	}
 }
 

@@ -33,7 +33,7 @@ struct arp_entry {
 	struct llistnode *node; /* for outstanding requests list */
 };
 
-int arp_receive_packet(struct net_dev *nd, struct arp_packet *packet);
+int arp_receive_packet(struct net_dev *nd, struct net_packet *, struct arp_packet *packet);
 void arp_send_request(struct net_dev *nd, uint16_t prot_type, uint8_t prot_addr[4], int addr_len);
 int arp_lookup(int ptype, uint8_t paddr[4], uint8_t hwaddr[6]);
 void arp_init();

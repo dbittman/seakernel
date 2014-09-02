@@ -4,13 +4,13 @@
 #include <sea/tm/process.h>
 #include <sea/loader/symbol.h>
 #include <sea/asm/system.h>
-#include <sea/net/ethernet.h>
 #include <sea/tm/schedule.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
 #include <sea/string.h>
 #include <sea/tm/kthread.h>
 #include <sea/net/interface.h>
+#include <sea/net/datalayer.h>
 void net_notify_packet_ready(struct net_dev *nd)
 {
 	add_atomic(&nd->rx_pending, 1);
@@ -20,28 +20,15 @@ void net_notify_packet_ready(struct net_dev *nd)
 
 void net_receive_packet(struct net_dev *nd, struct net_packet *packets, int count)
 {
-	printk(0, "[packet]: receive %d packets\n", count);
+	TRACE(0, "[packet]: receive %d packets\n", count);
 	for(int i=0;i<count;i++)
-		ethernet_receive_packet(nd, &packets[i]);
+		net_data_receive(nd, &packets[i]);
 }
 
 int net_transmit_packet(struct net_dev *nd, struct net_packet *packets, int count)
 {
 	add_atomic(&nd->tx_count, 1);
-	printk(0, "[packet]: send #%d\n", nd->tx_count);
+	TRACE(0, "[packet]: send #%d\n", nd->tx_count);
 	return net_callback_send(nd, packets, count);
-}
-
-int net_block_for_packets(struct net_dev *nd, struct net_packet *packets, int max)
-{
-	int ret=0;
-	do {
-		if(!(nd->flags & ND_RX_POLLING)) {
-			while(!nd->rx_pending)
-				tm_schedule();
-		} else
-			tm_schedule();
-	} while(!(ret=net_callback_poll(nd, packets, max)));
-	return ret;
 }
 

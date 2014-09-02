@@ -10,6 +10,6 @@ struct icmp_packet {
 	uint32_t rest;
 } __attribute__ ((packed));
 
-void icmp_receive_packet(struct net_dev *nd, union ipv4_address src, struct icmp_packet *packet, int len);
+void icmp_receive_packet(struct net_dev *nd, struct net_packet *netpacket, union ipv4_address src, struct icmp_packet *packet, int len);
 
 #endif

@@ -37,7 +37,7 @@ struct net_dev_calls i350_net_callbacks = {
 	i350_receive_packet,
 	i350_transmit_packet,
 	i350_get_mac,
-	0,0,0
+	0,0
 };
 
 struct pci_device *get_i350_pci()

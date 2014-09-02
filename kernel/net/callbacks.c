@@ -17,18 +17,11 @@ int net_callback_change_link(struct net_dev *nd, uint32_t link)
 	return nd->callbacks->change_link(nd, link);
 }
 
-int net_callback_set_flags(struct net_dev *nd, uint32_t flags)
+int net_callback_set_flags(struct net_dev *nd, int flags)
 {
 	if(!nd || !nd->callbacks || !nd->callbacks->set_flags)
 		return -EINVAL;
 	return nd->callbacks->set_flags(nd, flags);
-}
-
-int net_callback_get_flags(struct net_dev *nd, uint32_t *flags)
-{
-	if(!nd || !nd->callbacks || !nd->callbacks->get_flags || !flags)
-		return -EINVAL;
-	return nd->callbacks->get_flags(nd, flags);
 }
 
 int net_callback_send(struct net_dev *nd, struct net_packet *packets, int count)
@@ -44,3 +37,4 @@ int net_callback_get_mac(struct net_dev *nd, uint8_t mac[6])
 		return -EINVAL;
 	return nd->callbacks->get_mac(nd, mac);
 }
+

@@ -61,21 +61,20 @@ struct net_dev *net_add_device(struct net_dev_calls *fn, void *data)
 	memcpy(nd->hw_address, mac, sizeof(uint8_t) * 6);
 	kthread_create(&nd->rec_thread, "[kpacket]", 0, kt_packet_rec_thread, nd);
 	nd->rec_thread.process->priority = 100;
+	
 	unsigned char ifa[4];
 	ifa[0] = 2;
 	ifa[1] = 0;
 	ifa[2] = 0;
 	ifa[3] = 0xa;
 	nd->net_address_len = 4;
-	nd->hw_address_len = 6;
-	nd->hw_type = 1;
-	nd->data_header_len = sizeof(struct ethernet_header);
 	net_iface_set_network_addr(nd, 0x800, ifa);
 	struct route *r = kmalloc(sizeof(struct route));
 	r->interface = nd;
 	net_iface_set_flags(nd, IFACE_FLAG_UP);
 	r->flags |= ROUTE_FLAG_DEFAULT | ROUTE_FLAG_UP;
 	net_route_add_entry(r);
+	
 	return nd;
 }
 

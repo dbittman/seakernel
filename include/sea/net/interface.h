@@ -8,6 +8,8 @@
 #define IFACE_FLAG_UP        0x1
 #define IFACE_FLAG_BROADCAST 0x2
 
+#define NET_HWTYPE_ETHERNET 1
+
 struct net_dev {
 	int flags;
 	uint32_t state;

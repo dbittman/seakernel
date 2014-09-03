@@ -15,6 +15,8 @@
 #include <sea/mutex.h>
 #include <sea/cpu/processor.h>
 #include <sea/errno.h>
+#include <sea/net/ethernet.h>
+
 int rtl8139_maj=-1;
 typedef struct rtl8139_dev_s
 {
@@ -419,14 +421,18 @@ int module_install()
 	rtl8139_maj = dm_set_available_char_device(rtl8139_rw_main, ioctl_rtl8139, 0);
 	int i=0;
 	printk(1, "[rtl8139]: Scanning PCI bus...\n");
-	while(1) {
+	//while(1) {
 		struct pci_device *dev = pci_locate_devices(0x10ec, 0x8139, i);
-		if(!dev)
-			break;
+		if(dev) {
 		rtl8139_load_device_pci(dev);
 		rtl8139_net_dev = net_add_device(&rtl8139_net_callbacks, 0);
+		rtl8139_net_dev->data_header_len = sizeof(struct ethernet_header);
+		rtl8139_net_dev->hw_address_len = 6;
+		rtl8139_net_dev->hw_type = NET_HWTYPE_ETHERNET;
+
 		i++;
-	}
+		}
+	//}
 	return 0;
 }
 

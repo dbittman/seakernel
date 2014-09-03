@@ -41,6 +41,7 @@ typedef          char  sint8_t;
 typedef unsigned int    intptr_t;
 typedef s32 off_t;
 typedef u32 size_t;
+typedef s32 ssize_t;
 typedef s32 uid_t;
 typedef s32 gid_t;
 typedef s32 dev_t;

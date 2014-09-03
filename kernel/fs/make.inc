@@ -9,6 +9,7 @@ kernel/fs/mount.o \
 kernel/fs/open.o \
 kernel/fs/ramfs.o \
 kernel/fs/read_write.o \
+kernel/fs/socket.o \
 kernel/fs/stat.o \
 kernel/fs/sync.o \
 kernel/fs/sys.o 

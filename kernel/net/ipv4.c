@@ -102,8 +102,8 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 	union ipv4_address packet_destination;
 	union ipv4_address dest = (union ipv4_address)BIG_TO_HOST32(packet->header->dest_ip);
 	
-	//if(packet->tries > 0 && (tm_get_ticks() <= packet->last_attempt_time + TICKS_SECONDS(1)))
-	//	return 0;
+	if(packet->tries > 0 && (tm_get_ticks() == packet->last_attempt_time))
+		return 0;
 	packet->tries++;
 	packet->last_attempt_time = tm_get_ticks();
 

@@ -43,6 +43,7 @@ typedef unsigned long  long intptr_t;
 
 typedef s64 off_t;
 typedef u64 size_t;
+typedef s64 ssize_t;
 typedef s32 uid_t;
 typedef s32 gid_t;
 typedef s32 dev_t;

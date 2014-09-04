@@ -23,6 +23,8 @@
 #include <sea/mm/map.h>
 #include <sea/errno.h>
 #include <sea/vsprintf.h>
+#include <sea/fs/socket.h>
+
 static unsigned int num_syscalls=0;
 //#define SC_DEBUG 1
 int sys_null(long a, long b, long c, long d, long e)
@@ -66,9 +68,9 @@ static void *syscall_table[129] = {
 	SC sys_stat,       SC sys_isatty,     SC sys_seek,        SC tm_send_signal, 
 	SC sys_sbrk,       SC sys_times,      SC sys_dup,         SC sys_dup2,
 	
-	SC sys_ioctl,      SC sys_vfork,       SC sys_null,        SC sys_null, 
-	SC sys_null,       SC sys_null,       SC sys_null,        SC sys_null,
-	SC sys_null,       SC execve, 
+	SC sys_ioctl,      SC sys_vfork,       SC sys_recv,        SC sys_send, 
+	SC sys_socket,       SC sys_accept,       SC sys_connect,        SC sys_listen,
+	SC sys_bind,       SC execve, 
 	
 	#if CONFIG_MODULES
 	SC sys_load_module, 
@@ -85,11 +87,11 @@ static void *syscall_table[129] = {
 	SC sys_get_pid,    SC /**32*/sys_getppid,
 	
 	SC sys_link,       SC vfs_unlink,     SC vfs_inode_get_ref_count, SC sys_get_pwd, 
-	SC sys_getpath,    SC sys_null,       SC vfs_chroot,              SC sys_chdir,
+	SC sys_getpath,    SC sys_getsockname,       SC vfs_chroot,              SC sys_chdir,
 	SC sys_mount,      SC vfs_unmount,    SC vfs_read_dir,            SC sys_null, 
-	SC console_create, SC console_switch, SC sys_null,                SC sys_null,
+	SC console_create, SC console_switch, SC sys_sockshutdown,                SC sys_getsockopt,
 	
-	SC sys_null,       SC sys_null,       SC sys_null,      SC sys_sync, 
+	SC sys_setsockopt,       SC sys_null,       SC sys_null,      SC sys_sync, 
 	SC vfs_rmdir,      SC sys_fsync,      SC sys_alarm,     SC sys_select,
 	SC sys_null,       SC sys_null,       SC sys_sysconf,   SC sys_setsid, 
 	SC sys_setpgid, 

@@ -2,6 +2,8 @@
 #define __SEA_FS_SOCKET_H
 
 #include <sea/types.h>
+#include <sea/fs/inode.h>
+#include <sea/fs/file.h>
 
 typedef unsigned short sa_family_t;
 typedef unsigned int socklen_t;
@@ -11,13 +13,14 @@ struct sockaddr {
 	char sa_data[14];
 };
 
-#define PROTOCOL_TCP 1
-#define PROTOCOL_UDP 2
-#define PROT_MAXPROT 2
+#define PROTOCOL_TCP     1
+#define PROTOCOL_UDP     2
+#define PROTOCOL_RAWINET 3
+#define PROT_MAXPROT     3
 
-#define SOCK_STREAM 1       /* stream socket */
-#define SOCK_DGRAM  2       /* datagram socket */
-#define SOCK_RAW    3       /* raw-protocol interface */
+#define SOCK_STREAM  1       /* stream socket */
+#define SOCK_DGRAM   2       /* datagram socket */
+#define SOCK_RAW     3       /* raw-protocol interface */
 #define SOCK_MAXTYPE 3
 
 static int __socket_default_protocols_per_type[4] = {
@@ -25,6 +28,13 @@ static int __socket_default_protocols_per_type[4] = {
 	PROTOCOL_TCP, PROTOCOL_UDP,
 	0
 };
+
+#define SOCK_FLAG_CONNECTING   0x1
+#define SOCK_FLAG_CONNECTED    0x2
+#define SOCK_FLAG_ALLOWSEND    0x4
+#define SOCK_FLAG_ALLOWRECV    0x8
+
+
 /*
  * Option flags per-socket.
  */
@@ -92,15 +102,38 @@ struct sockproto {
 #define SHUT_WR     1       /* shut down the writing side */
 #define SHUT_RDWR   2       /* shut down both sides */
 
-struct socket {
-	int domain;
-	int type;
-	int prot;
-	
-	int sopt;
-	int fd;
+struct socket;
+
+struct socket_calls {
+	int (*init)(struct socket *);
+	int (*connect)(struct socket *, const struct sockaddr *addr, socklen_t len);
+	struct socket * (*accept)(struct socket *, struct sockaddr *restrict addr, socklen_t *restrict len, int *err);
+	int (*listen)(struct socket *, int backlog);
+	int (*bind)(struct socket *, const struct sockaddr *addr, socklen_t len);
+	int (*shutdown)(struct socket *, int how);
+	int (*recv)(struct socket *, void *buffer, size_t length, int flags);
+	int (*send)(struct socket *, const void *buffer, size_t length, int flags);
+	int (*destroy)(struct socket *);
 };
 
+struct socket {
+	int flags;
+	int domain;
+	int type;
+	int prot;	
+	int sopt;
+	int fd;
+
+	struct socket_calls *calls;
+	struct sockaddr peer, local;
+	socklen_t peer_len, local_len;
+
+	struct inode *inode;
+	struct file *file;
+};
+
+struct socket *socket_create(int *errcode);
+void socket_set_calls(int prot, struct socket_calls *calls);
 int sys_socket(int domain, int type, int prot);
 int sys_connect(int socket, const struct sockaddr *addr, socklen_t len);
 int sys_accept(int socket, struct sockaddr *restrict addr, socklen_t *restrict addr_len);
@@ -110,9 +143,10 @@ int sys_getsockopt(int socket, int level, int option_name,
 		void *restrict option_value, socklen_t *restrict option_len);
 int sys_setsockopt(int socket, int level, int option_name,
 		const void *option_value, socklen_t option_len);
-int sys_shutdown(int socket, int how);
+int sys_sockshutdown(int socket, int how);
 ssize_t sys_recv(int socket, void *buffer, size_t length, int flags);
 ssize_t sys_send(int socket, const void *buffer, size_t length, int flags);
-
+int sys_getsockname(int socket, struct sockaddr *restrict address,
+		socklen_t *restrict address_len);
 #endif
 

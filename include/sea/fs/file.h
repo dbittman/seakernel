@@ -10,10 +10,13 @@
 
 #define FPUT_CLOSE 1
 
+struct socket;
+
 struct file {
 	unsigned int flags, fd_flags, count;
 	off_t pos;
 	struct inode * inode;
+	struct socket *socket;
 };
 
 struct file_ptr {

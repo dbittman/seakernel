@@ -1,10 +1,70 @@
 #include <sea/fs/socket.h>
 #include <sea/fs/file.h>
+#include <sea/fs/inode.h>
 #include <sea/errno.h>
+#include <sea/mm/kmalloc.h>
 
-static struct socket *create_socket(int *errcode)
+#include <sea/net/ipv4sock.h>
+
+struct socket_calls socket_calls_null = {0,0,0,0,0,0,0,0,0};
+
+struct socket_calls *__socket_calls_list[PROT_MAXPROT + 1] = {
+	&socket_calls_null,
+	0, /* TCP */
+	0, /* UDP */
+	&socket_calls_rawipv4
+};
+
+struct socket *socket_create(int *errcode)
 {
+	*errcode = 0;
+	struct inode *inode = kmalloc(sizeof(struct inode));
+	struct file *f = kmalloc(sizeof(struct file));
+	f->inode = inode;
+	inode->count = 1;
+	f->count = 1;
+	int fd = fs_add_file_pointer(current_task, f);
+	if(fd < 0)
+		*errcode = -ENFILE;
+	struct socket *sock = kmalloc(sizeof(struct socket));
+	sock->inode = inode;
+	sock->file = f;
+	sock->fd = fd;
+	f->socket = sock;
+	return sock;
+}
 
+static struct socket *get_socket(int fd, int *err)
+{
+	*err = 0;
+	struct file *f = fs_get_file_pointer(current_task, fd);
+	if(!f) {
+		*err = -EBADF;
+		return 0;
+	}
+	if(!f->socket) {
+		*err = -ENOTSOCK;
+		return 0;
+	}
+	return f->socket;
+}
+
+static void socket_destroy(struct socket *sock)
+{
+	if(sock->calls->destroy)
+		sock->calls->destroy(sock);
+	/* TODO: free memory.... this must also be called by close(), which could
+	 * be used to clean up the allocated file and inode... */
+}
+
+static struct socket_calls *socket_get_calls(int prot)
+{
+	return __socket_calls_list[prot];
+}
+
+void socket_set_calls(int prot, struct socket_calls *calls)
+{
+	__socket_calls_list[prot] = calls;
 }
 
 int sys_socket(int domain, int type, int prot)
@@ -18,26 +78,184 @@ int sys_socket(int domain, int type, int prot)
 	if(domain > PF_MAX || domain <= 0)
 		return -EAFNOSUPPORT;
 	int err;
-	struct socket *sock = create_socket(&err);
+	struct socket *sock = socket_create(&err);
 	if(!sock)
 		return err;
 	sock->domain = domain;
 	sock->type = type;
 	sock->prot = prot;
-
+	sock->flags = SOCK_FLAG_ALLOWSEND | SOCK_FLAG_ALLOWRECV;
+	sock->calls = socket_get_calls(prot);
+	if(sock->calls->init)
+		sock->calls->init(sock);
 	return sock->fd;
 }
 
-int sys_connect(int socket, const struct sockaddr *addr, socklen_t len);
-int sys_accept(int socket, struct sockaddr *restrict addr, socklen_t *restrict addr_len);
-int sys_listen(int socket, int backlog);
-int sys_bind(int socket, const struct sockaddr *address, socklen_t address_len);
-int sys_getsockopt(int socket, int level, int option_name,
-		void *restrict option_value, socklen_t *restrict option_len);
-int sys_setsockopt(int socket, int level, int option_name,
-		const void *option_value, socklen_t option_len);
-int sys_shutdown(int socket, int how);
-ssize_t sys_recv(int socket, void *buffer, size_t length, int flags);
-ssize_t sys_send(int socket, const void *buffer, size_t length, int flags);
+int sys_connect(int socket, const struct sockaddr *addr, socklen_t len)
+{
+	int err;
+	struct socket *sock = get_socket(socket, &err);
+	if(!sock)
+		return err;
+	if(sock->flags & SOCK_FLAG_CONNECTING)
+		return -EALREADY;
+	if(sock->flags & SOCK_FLAG_CONNECTED)
+		return -EISCONN;
+	if(sock->sopt & SO_ACCEPTCONN)
+		return -EOPNOTSUPP;
+	/* okay, tell the protocol to make the connection */
+	int ret = -EOPNOTSUPP;
+	if(sock->calls->connect)
+		ret = sock->calls->connect(sock, addr, len);
+	if(ret < 0)
+		return ret;
+	memcpy(&sock->peer, addr, len);
+	sock->peer_len = len;
+	return 0;
+}
 
+int sys_accept(int socket, struct sockaddr *restrict addr, socklen_t *restrict addr_len)
+{
+	int err;
+	struct socket *sock = get_socket(socket, &err);
+	if(!sock)
+		return err;
+	err = -EOPNOTSUPP;
+	struct socket *sret = 0;
+	if(sock->calls->accept)
+		sret = sock->calls->accept(sock, addr, addr_len, &err);
+	if(!sret)
+		return err;
+	return sret->fd;
+}
+
+int sys_listen(int socket, int backlog)
+{
+	int err;
+	struct socket *sock = get_socket(socket, &err);
+	if(!sock)
+		return err;
+	int ret = -EOPNOTSUPP;
+	if(sock->calls->listen)
+		ret = sock->calls->listen(sock, backlog);
+	if(ret < 0)
+		return ret;
+	sock->sopt |= SO_ACCEPTCONN;
+	return 0;
+}
+
+int sys_bind(int socket, const struct sockaddr *address, socklen_t address_len)
+{
+	int err;
+	struct socket *sock = get_socket(socket, &err);
+	if(!sock)
+		return err;
+	int ret = -EOPNOTSUPP;
+	if(sock->calls->bind)
+		ret = sock->calls->bind(sock, address, address_len);
+	if(ret < 0)
+		return ret;
+	memcpy(&sock->local, address, address_len);
+	sock->local_len = address_len;
+	return 0;
+}
+
+int sys_getsockopt(int socket, int level, int option_name,
+		void *restrict option_value, socklen_t *restrict option_len)
+{
+	int err;
+	struct socket *sock = get_socket(socket, &err);
+	if(!sock)
+		return err;
+	*(int*)option_value = sock->sopt & option_name;
+	*option_len = sizeof(int);
+	return 0;
+}
+
+int sys_setsockopt(int socket, int level, int option_name,
+		const void *option_value, socklen_t option_len)
+{
+	int err;
+	struct socket *sock = get_socket(socket, &err);
+	if(!sock)
+		return err;
+	uint64_t value = 0;
+	switch(option_len) {
+		case 1:
+			value = *(uint8_t *)option_value;
+			break;
+		case 2:
+			value = *(uint16_t *)option_value;
+			break;
+defualt: case 4:
+			value = *(uint32_t *)option_value;
+			break;
+		case 8:
+			value = *(uint64_t *)option_value;
+			break;
+	}
+	if(value)
+		sock->sopt |= option_name;
+	else
+		sock->sopt &= ~option_name;
+	return 0;
+}
+
+int sys_sockshutdown(int socket, int how)
+{
+	int err;
+	struct socket *sock = get_socket(socket, &err);
+	if(!sock)
+		return err;
+	int ret = -EOPNOTSUPP;
+	if(sock->calls->shutdown)
+		ret = sock->calls->shutdown(sock, how);
+	if(ret < 0)
+		return ret;
+	int rd = (how == SHUT_RD || how == SHUT_RDWR);
+	int wr = (how == SHUT_WR || how == SHUT_RDWR);
+	if(rd)
+		sock->flags &= ~SOCK_FLAG_ALLOWRECV;
+	if(wr)
+		sock->flags &= ~SOCK_FLAG_ALLOWSEND;
+	if(!(sock->flags & SOCK_FLAG_ALLOWSEND) && !(sock->flags & SOCK_FLAG_ALLOWRECV))
+		socket_destroy(sock);
+	return 0;
+}
+
+ssize_t sys_recv(int socket, void *buffer, size_t length, int flags)
+{
+	int err;
+	struct socket *sock = get_socket(socket, &err);
+	if(!sock)
+		return err;
+	int ret = -EOPNOTSUPP;
+	if(sock->calls->recv)
+		ret = sock->calls->recv(sock, buffer, length, flags);
+	return ret;
+}
+
+ssize_t sys_send(int socket, const void *buffer, size_t length, int flags)
+{
+	int err;
+	struct socket *sock = get_socket(socket, &err);
+	if(!sock)
+		return err;
+	int ret = -EOPNOTSUPP;
+	if(sock->calls->send)
+		ret = sock->calls->send(sock, buffer, length, flags);\
+	return ret;
+}
+
+int sys_getsockname(int socket, struct sockaddr *restrict address,
+		       socklen_t *restrict address_len)
+{
+	int err;
+	struct socket *sock = get_socket(socket, &err);
+	if(!sock)
+		return err;
+	memcpy(address, &sock->local, sock->local_len);
+	*address_len = sock->local_len;
+	return 0;
+}
 

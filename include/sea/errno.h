@@ -1,7 +1,6 @@
 #ifndef _SEA_ERRNO_H
 #define _SEA_ERRNO_H
 
-
 #define EPERM 1         /* Not super-user */
 #define ENOENT 2        /* No such file or directory */
 #define ESRCH 3         /* No such process */

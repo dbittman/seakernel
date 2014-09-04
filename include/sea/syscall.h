@@ -44,7 +44,7 @@ int sys_setup();
 #define SYS_GETREFCOUNT  35
 #define SYS_GETPWD       36
 #define SYS_GETPATH      37
-
+#define SYS_GETSOCKNAME  38
 #define SYS_CHROOT       39
 #define SYS_CHDIR        40
 #define SYS_MOUNT        41

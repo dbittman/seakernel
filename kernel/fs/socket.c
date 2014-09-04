@@ -187,7 +187,7 @@ int sys_setsockopt(int socket, int level, int option_name,
 		case 2:
 			value = *(uint16_t *)option_value;
 			break;
-defualt: case 4:
+		defualt: case 4:
 			value = *(uint32_t *)option_value;
 			break;
 		case 8:
@@ -230,8 +230,8 @@ ssize_t sys_recv(int socket, void *buffer, size_t length, int flags)
 	if(!sock)
 		return err;
 	int ret = -EOPNOTSUPP;
-	if(sock->calls->recv)
-		ret = sock->calls->recv(sock, buffer, length, flags);
+	if(sock->calls->recvfrom)
+		ret = sock->calls->recvfrom(sock, buffer, length, flags, 0, 0);
 	return ret;
 }
 
@@ -242,8 +242,8 @@ ssize_t sys_send(int socket, const void *buffer, size_t length, int flags)
 	if(!sock)
 		return err;
 	int ret = -EOPNOTSUPP;
-	if(sock->calls->send)
-		ret = sock->calls->send(sock, buffer, length, flags);\
+	if(sock->calls->sendto)
+		ret = sock->calls->sendto(sock, buffer, length, flags, 0, 0);
 	return ret;
 }
 
@@ -257,5 +257,31 @@ int sys_getsockname(int socket, struct sockaddr *restrict address,
 	memcpy(address, &sock->local, sock->local_len);
 	*address_len = sock->local_len;
 	return 0;
+}
+
+int sys_recvfrom(struct socket_fromto_info *m)
+{
+	int err;
+	struct socket *sock = get_socket(m->sock, &err);
+	if(!sock)
+		return err;
+	int ret = -EOPNOTSUPP;
+	if(sock->calls->recvfrom)
+		ret = sock->calls->recvfrom(sock, m->buffer, m->len, m->flags, m->addr, m->addr_len);
+	return ret;
+}
+
+int sys_sendto(struct socket_fromto_info *m)
+{
+	int err;
+	struct socket *sock = get_socket(m->sock, &err);
+	if(!sock)
+		return err;
+	if(!m->addr_len)
+		return -EINVAL;
+	int ret = -EOPNOTSUPP;
+	if(sock->calls->sendto)
+		ret = sock->calls->sendto(sock, m->buffer, m->len, m->flags, m->addr, *m->addr_len);
+	return ret;
 }
 

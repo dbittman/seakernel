@@ -56,8 +56,8 @@ int sys_setup();
 #define SYS_SOCKSHUTDOWN 47
 #define SYS_GETSOCKOPT   48
 #define SYS_SETSOCKOPT   49
-
-
+#define SYS_RECVFROM     50
+#define SYS_SENDTO       51
 #define SYS_SYNC         52
 #define SYS_RMDIR        53
 #define SYS_FSYNC        54

@@ -111,8 +111,10 @@ struct socket_calls {
 	int (*listen)(struct socket *, int backlog);
 	int (*bind)(struct socket *, const struct sockaddr *addr, socklen_t len);
 	int (*shutdown)(struct socket *, int how);
-	int (*recv)(struct socket *, void *buffer, size_t length, int flags);
-	int (*send)(struct socket *, const void *buffer, size_t length, int flags);
+	int (*recvfrom)(struct socket *, void *buffer, size_t length,
+			int flags, struct sockaddr *addr, socklen_t *addr_len);
+	int (*sendto)(struct socket *, const void *buffer, size_t length,
+			int flags, struct sockaddr *addr, socklen_t addr_len);
 	int (*destroy)(struct socket *);
 };
 
@@ -132,6 +134,15 @@ struct socket {
 	struct file *file;
 };
 
+struct socket_fromto_info {
+    int sock;
+    void *buffer;
+    size_t len;
+    int flags;
+    struct sockaddr *addr;
+    socklen_t *addr_len;
+};
+
 struct socket *socket_create(int *errcode);
 void socket_set_calls(int prot, struct socket_calls *calls);
 int sys_socket(int domain, int type, int prot);
@@ -148,5 +159,7 @@ ssize_t sys_recv(int socket, void *buffer, size_t length, int flags);
 ssize_t sys_send(int socket, const void *buffer, size_t length, int flags);
 int sys_getsockname(int socket, struct sockaddr *restrict address,
 		socklen_t *restrict address_len);
+int sys_recvfrom(struct socket_fromto_info *m);
+int sys_sendto(struct socket_fromto_info *m);
 #endif
 

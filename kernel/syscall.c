@@ -91,7 +91,7 @@ static void *syscall_table[129] = {
 	SC sys_mount,      SC vfs_unmount,    SC vfs_read_dir,            SC sys_null, 
 	SC console_create, SC console_switch, SC sys_sockshutdown,                SC sys_getsockopt,
 	
-	SC sys_setsockopt,       SC sys_null,       SC sys_null,      SC sys_sync, 
+	SC sys_setsockopt,       SC sys_recvfrom,       SC sys_sendto,      SC sys_sync, 
 	SC vfs_rmdir,      SC sys_fsync,      SC sys_alarm,     SC sys_select,
 	SC sys_null,       SC sys_null,       SC sys_sysconf,   SC sys_setsid, 
 	SC sys_setpgid, 

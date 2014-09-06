@@ -13,10 +13,10 @@ struct sockaddr {
 	char sa_data[14];
 };
 
-#define PROTOCOL_TCP     1
-#define PROTOCOL_UDP     2
-#define PROTOCOL_RAWINET 3
-#define PROT_MAXPROT     3
+#define PROTOCOL_ICMP    1
+#define PROTOCOL_TCP     6
+#define PROTOCOL_UDP     17
+#define PROT_MAXPROT     17
 
 #define SOCK_STREAM  1       /* stream socket */
 #define SOCK_DGRAM   2       /* datagram socket */

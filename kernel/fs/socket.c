@@ -3,16 +3,15 @@
 #include <sea/fs/inode.h>
 #include <sea/errno.h>
 #include <sea/mm/kmalloc.h>
-
+#include <sea/vsprintf.h>
 #include <sea/net/ipv4sock.h>
 
 struct socket_calls socket_calls_null = {0,0,0,0,0,0,0,0,0};
 
 struct socket_calls *__socket_calls_list[PROT_MAXPROT + 1] = {
 	&socket_calls_null,
-	0, /* TCP */
-	0, /* UDP */
-	&socket_calls_rawipv4
+	&socket_calls_rawipv4,
+	
 };
 
 struct socket *socket_create(int *errcode)
@@ -59,6 +58,7 @@ static void socket_destroy(struct socket *sock)
 
 static struct socket_calls *socket_get_calls(int prot)
 {
+	printk(0, "[socket]: getting calls: %d\n", prot);
 	return __socket_calls_list[prot];
 }
 
@@ -73,7 +73,8 @@ int sys_socket(int domain, int type, int prot)
 		return -EAFNOSUPPORT;
 	if(!prot)
 		prot = __socket_default_protocols_per_type[type];
-	if(prot > PROT_MAXPROT || prot <= 0)
+	struct socket_calls *calls = socket_get_calls(prot);
+	if(prot > PROT_MAXPROT || prot <= 0 || !calls)
 		return -EPROTONOSUPPORT;
 	if(domain > PF_MAX || domain <= 0)
 		return -EAFNOSUPPORT;
@@ -81,11 +82,12 @@ int sys_socket(int domain, int type, int prot)
 	struct socket *sock = socket_create(&err);
 	if(!sock)
 		return err;
+	printk(0, "[socket]: created socket %d, d=%d, t=%d, p=%d\n", sock->fd, domain, type, prot);
 	sock->domain = domain;
 	sock->type = type;
 	sock->prot = prot;
 	sock->flags = SOCK_FLAG_ALLOWSEND | SOCK_FLAG_ALLOWRECV;
-	sock->calls = socket_get_calls(prot);
+	sock->calls = calls;
 	if(sock->calls->init)
 		sock->calls->init(sock);
 	return sock->fd;
@@ -104,6 +106,7 @@ int sys_connect(int socket, const struct sockaddr *addr, socklen_t len)
 	if(sock->sopt & SO_ACCEPTCONN)
 		return -EOPNOTSUPP;
 	/* okay, tell the protocol to make the connection */
+	printk(0, "[socket]: connecting %d\n", socket);
 	int ret = -EOPNOTSUPP;
 	if(sock->calls->connect)
 		ret = sock->calls->connect(sock, addr, len);
@@ -122,6 +125,7 @@ int sys_accept(int socket, struct sockaddr *restrict addr, socklen_t *restrict a
 		return err;
 	err = -EOPNOTSUPP;
 	struct socket *sret = 0;
+	printk(0, "[socket]: %d accepting\n", socket);
 	if(sock->calls->accept)
 		sret = sock->calls->accept(sock, addr, addr_len, &err);
 	if(!sret)
@@ -151,6 +155,7 @@ int sys_bind(int socket, const struct sockaddr *address, socklen_t address_len)
 	if(!sock)
 		return err;
 	int ret = -EOPNOTSUPP;
+	printk(0, "[socket]: %d binding\n", socket);
 	if(sock->calls->bind)
 		ret = sock->calls->bind(sock, address, address_len);
 	if(ret < 0)

@@ -93,7 +93,7 @@ int sys_setup();
 #define SYS_SETSIG       84
 #define SYS_GETEUID      85
 #define SYS_GETEGID      86
-
+#define SYS_GETTIMEEPOCH 87
 
 #define SYS_GETTIME      89
 #define SYS_TIMERTH      90

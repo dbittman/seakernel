@@ -35,6 +35,8 @@ void ipv4_accept_packet(struct net_dev *nd, struct net_packet *netpacket, struct
 		union ipv4_address src, int payload_size)
 {
 	/* TODO: handle fragmentation */
+	
+	ipv4_copy_to_sockets(netpacket, packet);
 	switch(packet->ptype) {
 		case IP_PROTOCOL_ICMP:
 			icmp_receive_packet(nd, netpacket, src, (struct icmp_packet *)packet->data, payload_size);

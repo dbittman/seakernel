@@ -6,6 +6,21 @@
 #include <sea/vsprintf.h>
 #include <sea/net/ipv4sock.h>
 
+#warning "TODO"
+/* TODO:
+ * refcounts on packets.
+ * standard DGRAM and STREAM type socket data queues
+ *
+ * network worker threads just add the packet to the
+ * queues that read from them (can be multiple queues)
+ * and give proper refcounts. user programs are then woken
+ * up and read from the queues.
+ *
+ * When writing, the user program creates the packet and sends
+ * it all the way down to the network layer (where, in ipv4 at least,
+ * it is taken over by a sending thread).
+ */
+
 struct socket_calls socket_calls_null = {0,0,0,0,0,0,0,0,0};
 
 struct socket_calls *__socket_calls_list[PROT_MAXPROT + 1] = {
@@ -21,6 +36,8 @@ struct socket *socket_create(int *errcode)
 	struct file *f = kmalloc(sizeof(struct file));
 	f->inode = inode;
 	inode->count = 1;
+	inode->f_count = 1;
+	rwlock_create(&inode->rwl);
 	f->count = 1;
 	int fd = fs_add_file_pointer(current_task, f);
 	if(fd < 0)
@@ -30,6 +47,7 @@ struct socket *socket_create(int *errcode)
 	sock->file = f;
 	sock->fd = fd;
 	f->socket = sock;
+	fs_fput(current_task, fd, 0);
 	return sock;
 }
 
@@ -41,6 +59,7 @@ static struct socket *get_socket(int fd, int *err)
 		*err = -EBADF;
 		return 0;
 	}
+	fs_fput(current_task, fd, 0);
 	if(!f->socket) {
 		*err = -ENOTSOCK;
 		return 0;
@@ -54,6 +73,10 @@ static void socket_destroy(struct socket *sock)
 		sock->calls->destroy(sock);
 	/* TODO: free memory.... this must also be called by close(), which could
 	 * be used to clean up the allocated file and inode... */
+	struct file *file = sock->file;
+	file->socket = 0;
+	sys_close(sock->fd);
+	kfree(sock);
 }
 
 static struct socket_calls *socket_get_calls(int prot)
@@ -212,11 +235,8 @@ int sys_sockshutdown(int socket, int how)
 	struct socket *sock = get_socket(socket, &err);
 	if(!sock)
 		return err;
-	int ret = -EOPNOTSUPP;
 	if(sock->calls->shutdown)
-		ret = sock->calls->shutdown(sock, how);
-	if(ret < 0)
-		return ret;
+		sock->calls->shutdown(sock, how);
 	int rd = (how == SHUT_RD || how == SHUT_RDWR);
 	int wr = (how == SHUT_WR || how == SHUT_RDWR);
 	if(rd)

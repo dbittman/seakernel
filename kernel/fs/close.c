@@ -12,12 +12,20 @@
 #include <sea/fs/file.h>
 #include <sea/dm/pipe.h>
 #include <sea/errno.h>
+#include <sea/fs/socket.h>
 int sys_close(int fp)
 {
 	struct file *f = fs_get_file_pointer((task_t *) current_task, fp);
 	if(!f)
 		return -EBADF;
 	assert(f->inode && f->inode->f_count);
+	/* handle sockets calling close. We just translate it to a call to shutdown.
+	 * be aware that shutdown does end up calling close! */
+	if(f->socket) {
+		fs_fput(current_task, fp, 0);
+		sys_sockshutdown(fp, SHUT_RDWR);
+		return 0;
+	}
 	if(f->inode->pipe)
 	{
 		/* okay, its a pipe. We need to do some special things

@@ -4,6 +4,7 @@
 #include <sea/types.h>
 #include <sea/fs/inode.h>
 #include <sea/fs/file.h>
+#include <sea/ll.h>
 
 typedef unsigned short sa_family_t;
 typedef unsigned int socklen_t;
@@ -17,6 +18,7 @@ struct sockaddr {
 #define PROTOCOL_TCP     6
 #define PROTOCOL_UDP     17
 #define PROT_MAXPROT     17
+#define IPPROTO_RAW 255
 
 #define SOCK_STREAM  1       /* stream socket */
 #define SOCK_DGRAM   2       /* datagram socket */
@@ -132,6 +134,8 @@ struct socket {
 
 	struct inode *inode;
 	struct file *file;
+
+	struct llistnode *node;
 };
 
 struct socket_fromto_info {

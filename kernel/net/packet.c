@@ -11,6 +11,42 @@
 #include <sea/tm/kthread.h>
 #include <sea/net/interface.h>
 #include <sea/net/datalayer.h>
+
+struct net_packet *net_packet_create(struct net_packet *packet, int flags)
+{
+	if(!packet) {
+		packet = kmalloc(sizeof(struct net_packet));
+		packet->flags = (flags | NP_FLAG_ALLOC);
+	} else {
+		packet->flags = flags;
+	}
+	TRACE(0, "[packet]: creating new packet\n");
+	packet->count = 1;
+	return packet;
+}
+
+void net_packet_destroy(struct net_packet *packet)
+{
+	assert(packet->count == 0);
+	TRACE(0, "[packet]: destroying packet\n");
+	if(packet->flags & NP_FLAG_ALLOC)
+		kfree(packet);
+}
+
+void net_packet_get(struct net_packet *packet)
+{
+	add_atomic(&packet->count, 1);
+}
+
+void net_packet_put(struct net_packet *packet, int flag)
+{
+	int r = sub_atomic(&packet->count, 1);
+	if((flag & NP_FLAG_DESTROY) && r)
+		panic(0, "failed to destroy packet before it went out of scope");
+	if(!r)
+		net_packet_destroy(packet);
+}
+
 void net_notify_packet_ready(struct net_dev *nd)
 {
 	add_atomic(&nd->rx_pending, 1);

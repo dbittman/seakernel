@@ -141,11 +141,13 @@ void arp_send_request(struct net_dev *nd, uint16_t prot_type, uint8_t prot_addr[
 	packet.tar_hw_addr_1 = packet.tar_hw_addr_2 = packet.tar_hw_addr_3 = 0;
 
 	struct net_packet netpacket;
+	net_packet_create(&netpacket, 0);
 	netpacket.data_header = (void *)netpacket.data;
 	
 	memcpy((void *)((addr_t)netpacket.data + nd->data_header_len), &packet, sizeof(packet));
 	
 	arp_send_packet(nd, &netpacket, &packet, 1);
+	net_packet_put(&netpacket, NP_FLAG_DESTROY);
 	arp_add_outstanding_requests(prot_type, addr);
 }
 

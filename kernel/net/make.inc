@@ -6,6 +6,7 @@ KOBJS += kernel/net/arp.o \
 		 kernel/net/ipv4.o \
 		 kernel/net/ipv4sock.o \
 		 kernel/net/packet.o \
+		 kernel/net/net_data_queue.o \
 		 kernel/net/netdev.o \
 		 kernel/net/route.o
 

@@ -56,7 +56,6 @@ void ipv4_receive_packet(struct net_dev *nd, struct net_packet *netpacket, struc
 	uint16_t sum = ipv4_calc_checksum(packet, packet->header_len * 4);
 	if(sum != checksum) {
 		TRACE(0, "[ipv4]: discarding bad packet!\n");
-		kfree(netpacket);
 		return;
 	}
 	/* check IP address */
@@ -74,7 +73,6 @@ void ipv4_receive_packet(struct net_dev *nd, struct net_packet *netpacket, struc
 				src, BIG_TO_HOST16(packet->length) - (packet->header_len * 4));
 	} else {
 		/* TODO: IP forwarding, maybe split packets  */
-		kfree(netpacket);
 	}
 }
 
@@ -132,8 +130,7 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 	ipv4_finish_constructing_packet(nd, r, packet);
 	
 	net_data_send(nd, packet->netpacket, ETHERTYPE_IPV4, hwaddr, BIG_TO_HOST16(packet->header->length));
-	/* TODO: standardize the place that this happens */
-	kfree(packet->netpacket);
+	net_packet_put(packet->netpacket, 0);
 	kfree(packet);
 	return 1;
 }
@@ -143,13 +140,13 @@ int ipv4_enqueue_packet(struct net_packet *netpacket, struct ipv4_header *header
 	union ipv4_address dest = (union ipv4_address)BIG_TO_HOST32(header->dest_ip);
 	struct route *r = net_route_select_entry(dest);
 	if(!r) {
-		kfree(netpacket);
 		TRACE(0, "[ipv4]: destination unavailable\n");
 		return -1;
 	}
 	struct ipv4_packet *packet = kmalloc(sizeof(struct ipv4_packet));
 	packet->enqueue_time = tm_get_ticks();
 	packet->header = header;
+	net_packet_get(netpacket);
 	packet->netpacket = netpacket;
 	TRACE(0, "[ipv4]: enqueue packet to %x\n", header->dest_ip);
 	ipv4_do_enqueue_packet(packet);

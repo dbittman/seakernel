@@ -5,13 +5,10 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
 #include <sea/net/ipv4sock.h>
-
-#warning "TODO"
-/* TODO:
- * refcounts on packets.
- * standard DGRAM and STREAM type socket data queues
- *
- * network worker threads just add the packet to the
+#include <sea/net/data_queue.h>
+#include <sea/tm/schedule.h>
+#include <sea/fs/fcntl.h>
+/* network worker threads just add the packet to the
  * queues that read from them (can be multiple queues)
  * and give proper refcounts. user programs are then woken
  * up and read from the queues.
@@ -26,7 +23,7 @@ struct socket_calls socket_calls_null = {0,0,0,0,0,0,0,0,0};
 struct socket_calls *__socket_calls_list[PROT_MAXPROT + 1] = {
 	&socket_calls_null,
 	&socket_calls_rawipv4,
-	
+
 };
 
 struct socket *socket_create(int *errcode)
@@ -46,6 +43,7 @@ struct socket *socket_create(int *errcode)
 	sock->inode = inode;
 	sock->file = f;
 	sock->fd = fd;
+	queue_create(&sock->rec_data_queue, 0);
 	f->socket = sock;
 	fs_fput(current_task, fd, 0);
 	return sock;
@@ -71,11 +69,10 @@ static void socket_destroy(struct socket *sock)
 {
 	if(sock->calls->destroy)
 		sock->calls->destroy(sock);
-	/* TODO: free memory.... this must also be called by close(), which could
-	 * be used to clean up the allocated file and inode... */
 	struct file *file = sock->file;
 	file->socket = 0;
 	sys_close(sock->fd);
+	queue_destroy(&sock->rec_data_queue);
 	kfree(sock);
 }
 
@@ -195,8 +192,32 @@ int sys_getsockopt(int socket, int level, int option_name,
 	struct socket *sock = get_socket(socket, &err);
 	if(!sock)
 		return err;
-	*(int*)option_value = sock->sopt & option_name;
-	*option_len = sizeof(int);
+	uint64_t value;
+	int size;
+	if(level == SOL_SOCKET && option_name <= 0x1000) {
+		value = sock->sopt & option_name;
+		size = sizeof(int);
+	} else if(level == SOL_SOCKET) {
+		value = sock->sopt_extra[option_name - 0x1000];
+		size = sock->sopt_extra_sizes[option_name - 0x1000];
+	} else {
+		value = sock->sopt_levels[level][option_name];
+		size = sock->sopt_levels_sizes[level][option_name];
+	}
+	switch(size) {
+		case 1:
+			*(uint8_t *)option_value = (uint8_t)value;
+			*option_len = size;
+			break;
+		case 2:
+			*(uint16_t *)option_value = (uint16_t)value;
+			*option_len = size;
+			break;
+		default: case 4:
+			*(uint32_t *)option_value = (uint32_t)value;
+			*option_len = size;
+			break;
+	}
 	return 0;
 }
 
@@ -222,10 +243,19 @@ int sys_setsockopt(int socket, int level, int option_name,
 			value = *(uint64_t *)option_value;
 			break;
 	}
-	if(value)
-		sock->sopt |= option_name;
-	else
-		sock->sopt &= ~option_name;
+	TRACE(0, "[socket]: setsockopt(): level=%d, opt=%d, val=%x\n", level, option_name, value);
+	if(level == SOL_SOCKET && option_name <= 0x1000) {
+		if(value)
+			sock->sopt |= option_name;
+		else
+			sock->sopt &= ~option_name;
+	} else if(level == SOL_SOCKET) {
+		sock->sopt_extra[option_name - 0x1000] = value;
+		sock->sopt_extra_sizes[option_name - 0x1000] = option_len;
+	} else {
+		sock->sopt_levels[level][option_name] = value;
+		sock->sopt_levels_sizes[level][option_name] = option_len;
+	}
 	return 0;
 }
 
@@ -254,10 +284,27 @@ ssize_t sys_recv(int socket, void *buffer, size_t length, int flags)
 	struct socket *sock = get_socket(socket, &err);
 	if(!sock)
 		return err;
-	int ret = -EOPNOTSUPP;
+	int ret = 0;
 	if(sock->calls->recvfrom)
 		ret = sock->calls->recvfrom(sock, buffer, length, flags, 0, 0);
-	return ret;
+	if(ret)
+		return ret;
+	printk(0, "[socket]: trace: recv, waiting\n");
+	size_t nbytes = 0;
+	while(nbytes == 0) {
+		/* TODO: better blocking */
+		if(nbytes == 0 && tm_process_got_signal(current_task))
+			return -EINTR;
+		nbytes += net_data_queue_copy_out(sock, &sock->rec_data_queue, buffer, length, (flags & MSG_PEEK), 0);
+		printk(0, "[socket]: recv: %d\n", nbytes);
+		if(!nbytes) {
+			if(sock->file->flags & _FNONBLOCK)
+				return nbytes;
+			else
+				tm_schedule();
+		}
+	}
+	return nbytes;
 }
 
 ssize_t sys_send(int socket, const void *buffer, size_t length, int flags)
@@ -273,7 +320,7 @@ ssize_t sys_send(int socket, const void *buffer, size_t length, int flags)
 }
 
 int sys_getsockname(int socket, struct sockaddr *restrict address,
-		       socklen_t *restrict address_len)
+		socklen_t *restrict address_len)
 {
 	int err;
 	struct socket *sock = get_socket(socket, &err);
@@ -290,10 +337,30 @@ int sys_recvfrom(struct socket_fromto_info *m)
 	struct socket *sock = get_socket(m->sock, &err);
 	if(!sock)
 		return err;
-	int ret = -EOPNOTSUPP;
+	int ret = 0;
 	if(sock->calls->recvfrom)
 		ret = sock->calls->recvfrom(sock, m->buffer, m->len, m->flags, m->addr, m->addr_len);
-	return ret;
+	if(ret)
+		return ret;
+	TRACE(0, "[socket]: recvfrom (%x)\n", &current_task->sigd);
+	size_t nbytes = 0;
+	while(nbytes == 0) {
+		/* TODO: better blocking */
+		if(nbytes == 0 && tm_process_got_signal(current_task))
+			return -EINTR;
+		nbytes += net_data_queue_copy_out(sock, &sock->rec_data_queue,
+				m->buffer, m->len, (m->flags & MSG_PEEK), m->addr);
+		if(!nbytes) {
+			if(sock->file->flags & _FNONBLOCK)
+				return nbytes;
+			else
+				tm_schedule();
+		}
+
+	}
+	if(m->addr_len)
+		*m->addr_len = 16;
+	return nbytes;
 }
 
 int sys_sendto(struct socket_fromto_info *m)

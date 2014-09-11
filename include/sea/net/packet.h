@@ -4,8 +4,10 @@
 #include <sea/types.h>
 #include <sea/net/interface.h>
 
+#define MAX_PACKET_SIZE 0x1000
+
 struct net_packet {
-	unsigned char data[0x1000];
+	unsigned char data[MAX_PACKET_SIZE];
 	size_t length;
 	int flags;
 

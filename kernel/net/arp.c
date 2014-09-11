@@ -10,10 +10,11 @@
 #include <sea/net/ethertype.h>
 #include <sea/net/datalayer.h>
 #include <sea/tm/schedule.h>
+#include <sea/mutex.h>
 
 static struct hash_table *ipv4_hash = 0; /* TODO: hashes for any protocol */
 static struct llist *outstanding = 0;
-
+mutex_t *outlock;
 static void arp_get_mac(uint8_t *mac, uint16_t m1, uint16_t m2, uint16_t m3)
 {
 	mac[0] = (m1 & 0xFF);
@@ -31,42 +32,42 @@ static void arp_set_mac(uint8_t *mac, uint16_t *m1, uint16_t *m2, uint16_t *m3)
 	*m3 = (mac[4] | (mac[5] << 8));
 }
 
-static struct arp_entry *__arp_get_outstanding_requests_entry(int prot_type, uint16_t addr[2], int check_time)
+static struct arp_entry *__arp_get_outstanding_requests_entry(int prot_type, uint16_t addr[2], int check_time, int remove)
 {
-	rwlock_acquire(&outstanding->rwl, RWL_READER);
-
+	mutex_acquire(outlock);
 	struct llistnode *node;
 	struct arp_entry *entry;
 	ll_for_each_entry(outstanding, node, struct arp_entry *, entry) {
 		if(check_time && (tm_get_ticks() > (entry->timestamp + TICKS_SECONDS(1)))) {
-			/* TODO: remove request, keep looking */
-			
+			ll_remove(outstanding, entry->node);
+			kfree(entry);
 			continue;
 		}
 		if(entry->type == prot_type && !memcmp(entry->prot_addr, addr, 2 * sizeof(uint16_t))) {
 			/* found valid */
-			rwlock_release(&outstanding->rwl, RWL_READER);
+			if(remove) {
+				ll_remove(outstanding, entry->node);
+				kfree(entry);
+				continue;
+			}
+			mutex_release(outlock);
 			return entry;
 		}
 	}
-	rwlock_release(&outstanding->rwl, RWL_READER);
+	mutex_release(outlock);
 	return 0;
 }
 
 static int arp_check_outstanding_requests(int prot_type, uint16_t addr[2])
 {
-	if(__arp_get_outstanding_requests_entry(prot_type, addr, 1))
+	if(__arp_get_outstanding_requests_entry(prot_type, addr, 1, 0))
 		return 1;
 	return 0;
 }
 
 static void arp_remove_outstanding_requests(int prot_type, uint16_t addr[2])
 {
-	struct arp_entry *ent;
-	while((ent = __arp_get_outstanding_requests_entry(prot_type, addr, 0))) {
-		ll_remove(outstanding, ent->node);
-		kfree(ent);
-	}
+	__arp_get_outstanding_requests_entry(prot_type, addr, 0, 1);
 }
 
 static void arp_add_outstanding_requests(int prot_type, uint16_t addr[2])
@@ -74,8 +75,10 @@ static void arp_add_outstanding_requests(int prot_type, uint16_t addr[2])
 	struct arp_entry *entry = kmalloc(sizeof(struct arp_entry));
 	entry->type = prot_type;
 	memcpy(entry->prot_addr, addr, 2 * sizeof(uint16_t));
-	entry->node = ll_insert(outstanding, entry);
+	mutex_acquire(outlock);
 	entry->timestamp = tm_get_ticks();
+	entry->node = ll_insert(outstanding, entry);
+	mutex_release(outlock);
 }
 
 static void arp_add_entry_to_hash(struct hash_table *hash, uint16_t prot_addr[2], struct arp_entry *entry)
@@ -87,7 +90,7 @@ static void arp_add_entry_to_hash(struct hash_table *hash, uint16_t prot_addr[2]
 		/* TODO: PROBLEM: this is not thread-safe */
 		kfree(tmp);
 	}
-	TRACE(0, "[arp]: adding entry %x:%x\n", prot_addr[0], prot_addr[1]);
+	TRACE(0, "[arp]: adding entry %x:%x -- %x\n", prot_addr[0], prot_addr[1], entry->hw_addr[0]);
 	hash_table_set_entry(hash, prot_addr, sizeof(uint16_t), 2, entry);
 }
 
@@ -249,12 +252,12 @@ int arp_receive_packet(struct net_dev *nd, struct net_packet *netpacket, struct 
 	}
 	if(oper == ARP_OPER_REQUEST || oper == ARP_OPER_REPLY) 
 		arp_remove_outstanding_requests(BIG_TO_HOST16(packet->p_type), p_addr);
-	kfree(netpacket);
 	return 0;
 }
 
 void arp_init()
 {
-	outstanding = ll_create(0);
+	outstanding = ll_create_lockless(0);
+	outlock = mutex_create(0, 0);
 }
 

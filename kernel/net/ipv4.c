@@ -14,6 +14,7 @@
 #include <sea/net/datalayer.h>
 #include <sea/net/ethertype.h>
 #include <sea/lib/queue.h>
+#include <sea/net/ipv4sock.h>
 
 static struct queue *ipv4_tx_queue = 0;
 static struct kthread *ipv4_send_thread = 0;
@@ -102,8 +103,10 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 	union ipv4_address packet_destination;
 	union ipv4_address dest = (union ipv4_address)BIG_TO_HOST32(packet->header->dest_ip);
 	
-	if(packet->tries > 0 && (tm_get_ticks() == packet->last_attempt_time))
+	if(packet->tries > 0 && (tm_get_ticks() == packet->last_attempt_time)) {
+		ipv4_do_enqueue_packet(packet);
 		return 0;
+	}
 	packet->tries++;
 	packet->last_attempt_time = tm_get_ticks();
 
@@ -118,7 +121,7 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 		packet_destination = dest;
 	}
 	if(arp_lookup(ETHERTYPE_IPV4, packet_destination.addr_bytes, hwaddr) == -ENOENT) {
-		TRACE(0, "[ipv4]: send_packet: ARP lookup failed, sending request\n");
+		//TRACE(0, "[ipv4]: send_packet: ARP lookup failed, sending request\n");
 		/* no idea where the destination is! Send an ARP request. ARP handles multiple
 		 * requests to the same address. */
 		arp_send_request(nd, ETHERTYPE_IPV4, packet_destination.addr_bytes, 4);
@@ -141,7 +144,7 @@ int ipv4_enqueue_packet(struct net_packet *netpacket, struct ipv4_header *header
 	struct route *r = net_route_select_entry(dest);
 	if(!r) {
 		TRACE(0, "[ipv4]: destination unavailable\n");
-		return -1;
+		return -ENETUNREACH;
 	}
 	struct ipv4_packet *packet = kmalloc(sizeof(struct ipv4_packet));
 	packet->enqueue_time = tm_get_ticks();
@@ -153,28 +156,50 @@ int ipv4_enqueue_packet(struct net_packet *netpacket, struct ipv4_header *header
 	return 0;
 }
 
+int ipv4_copy_enqueue_packet(struct net_packet *netpacket, struct ipv4_header *header)
+{
+	union ipv4_address dest = (union ipv4_address)BIG_TO_HOST32(header->dest_ip);
+	struct route *r = net_route_select_entry(dest);
+	if(!r) {
+		TRACE(0, "[ipv4]: destination unavailable\n");
+		return -ENETUNREACH;
+	}
+	memcpy(netpacket->data + r->interface->data_header_len, header, BIG_TO_HOST16(header->length));
+	struct ipv4_packet *packet = kmalloc(sizeof(struct ipv4_packet));
+	packet->enqueue_time = tm_get_ticks();
+	packet->header = (void *)(netpacket->data + r->interface->data_header_len);
+	net_packet_get(netpacket);
+	packet->netpacket = netpacket;
+	TRACE(0, "[ipv4]: enqueue packet to %x\n", header->dest_ip);
+	ipv4_do_enqueue_packet(packet);
+	return BIG_TO_HOST32(header->length);
+}
+
 static int ipv4_sending_thread(struct kthread *kt, void *arg)
 {
 	while(!kthread_is_joining(kt)) {
 		if(queue_count(ipv4_tx_queue) > 0) {
 			/* try getting an entry */
 			struct ipv4_packet *packet = queue_dequeue(ipv4_tx_queue);
-			TRACE(0, "[kipv4-send]: popped packet\n");
+			//TRACE(0, "[kipv4-send]: popped packet\n");
 			if(packet) {
 				/* got packet entry! */
 				if(tm_get_ticks() > packet->enqueue_time + TICKS_SECONDS(100)) {
 					/* timeout! */
 					TRACE(0, "[kipv4-send]: packet timed out\n");
+					net_packet_put(packet->netpacket, 0);
 					kfree(packet);
 				} else { 
 					int r = ipv4_send_packet(packet);
-					TRACE(0, "[kipv4-send]: send returned %d\n", r);
+					//TRACE(0, "[kipv4-send]: send returned %d\n", r);
+					if(!r)
+						tm_schedule();
 				}
 			}
 			ipv4_thread_lastwork = tm_get_ticks();
 		}
-		if(tm_get_ticks() > ipv4_thread_lastwork + TICKS_SECONDS(5))
-			tm_process_pause(current_task);
+		//if(tm_get_ticks() > ipv4_thread_lastwork + TICKS_SECONDS(5))
+		//	tm_process_pause(current_task);
 		else if(!queue_count(ipv4_tx_queue))
 			tm_schedule();
 	}

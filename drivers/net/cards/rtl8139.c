@@ -195,7 +195,7 @@ int rtl8139_init(rtl8139dev_t *dev)
 	outb(dev->addr+0x52, 0);
 	
 	// write the RxBuffer's address
-	outl(dev->addr+0x30, (unsigned)dev->rec_buf);
+	outl(dev->addr+0x30, (addr_t)dev->rec_buf);
 	
 	// no missed packets
 	outb(dev->addr+0x4C, 0);

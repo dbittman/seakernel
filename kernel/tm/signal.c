@@ -245,10 +245,11 @@ int tm_process_got_signal(task_t *t)
 {
 	if(kernel_state_flags & KSF_SHUTDOWN)
 		return 0;
-	if(!t->sigd) return 0;
+	int sn = t->cursig ? t->cursig : t->sigd;
+	if(!sn) return 0;
 	/* if the SA_RESTART flag is set, then return false */
-	if(t->thread->signal_act[t->sigd].sa_flags & SA_RESTART) return 0;
+	if(t->thread->signal_act[sn].sa_flags & SA_RESTART) return 0;
 	/* otherwise, return if we have a signal */
-	return (t->sigd);
+	return (sn);
 }
 

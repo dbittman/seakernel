@@ -17,6 +17,7 @@ Roadmap:
 	* refactor driver code
 	* refactor arch-dep code
 	* fix driver arch-dep/arch-indep stuff
+	* preempt kernel threads
 
 0.4 
 	* Proper Threading

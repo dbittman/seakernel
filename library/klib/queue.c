@@ -52,7 +52,12 @@ void queue_enqueue(struct queue *q, void *ent)
 
 void *queue_peek(struct queue *q)
 {
-	return q->head->ent;
+	void *ret = 0;
+	mutex_acquire(&q->lock);
+	if(q->head)
+		ret = q->head->ent;
+	mutex_release(&q->lock);
+	return ret;
 }
 
 void queue_destroy(struct queue *q)

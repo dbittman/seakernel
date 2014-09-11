@@ -5,6 +5,7 @@
 #include <sea/fs/inode.h>
 #include <sea/fs/file.h>
 #include <sea/ll.h>
+#include <sea/lib/queue.h>
 
 typedef unsigned short sa_family_t;
 typedef unsigned int socklen_t;
@@ -14,6 +15,7 @@ struct sockaddr {
 	char sa_data[14];
 };
 
+#define PROTOCOL_IP      0
 #define PROTOCOL_ICMP    1
 #define PROTOCOL_TCP     6
 #define PROTOCOL_UDP     17
@@ -104,6 +106,8 @@ struct sockproto {
 #define SHUT_WR     1       /* shut down the writing side */
 #define SHUT_RDWR   2       /* shut down both sides */
 
+#define IP_HDRINCL              2
+
 struct socket;
 
 struct socket_calls {
@@ -127,6 +131,10 @@ struct socket {
 	int prot;	
 	int sopt;
 	int fd;
+	int sopt_extra[16];
+	int sopt_extra_sizes[16];
+	int sopt_levels[18][64];
+	int sopt_levels_sizes[18][64];
 
 	struct socket_calls *calls;
 	struct sockaddr peer, local;
@@ -136,6 +144,7 @@ struct socket {
 	struct file *file;
 
 	struct llistnode *node;
+	struct queue rec_data_queue;
 };
 
 struct socket_fromto_info {

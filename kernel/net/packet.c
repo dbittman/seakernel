@@ -22,6 +22,7 @@ struct net_packet *net_packet_create(struct net_packet *packet, int flags)
 	}
 	TRACE(0, "[packet]: creating new packet\n");
 	packet->count = 1;
+	packet->data_header = packet->data;
 	return packet;
 }
 
@@ -65,6 +66,8 @@ int net_transmit_packet(struct net_dev *nd, struct net_packet *packets, int coun
 {
 	add_atomic(&nd->tx_count, 1);
 	TRACE(0, "[packet]: send #%d\n", nd->tx_count);
-	return net_callback_send(nd, packets, count);
+	int ret = net_callback_send(nd, packets, count);
+	TRACE(0, "[packet]: send returned %d\n", ret);
+	return ret;
 }
 

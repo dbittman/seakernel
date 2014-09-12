@@ -34,7 +34,7 @@ typedef struct rtl8139_dev_s
 
 rtl8139dev_t *rtldev;
 
-#define RX_BUF_SIZE (64 * 1024 + 0x1000)
+#define RX_BUF_SIZE (64 * 1024)
 int rtl8139_receive_packet(struct net_dev *nd, struct net_packet *, int count);
 int rtl8139_transmit_packet(struct net_dev *nd, struct net_packet *packets, int count);
 int rtl8139_set_flags(struct net_dev *nd, int flags);
@@ -114,22 +114,22 @@ int rtl8139_reset(int base_addr)
 	outb(base_addr+0x52, 0x00);
 	char done=0;
 	while(1) {
-			//outb(base_addr+0x50, inb(base_addr+0x50)|(0x03 << 6));
-			
+		//outb(base_addr+0x50, inb(base_addr+0x50)|(0x03 << 6));
+
+		tm_delay(10);
+		if(done)
+			break;
+		outb(base_addr+0x37, 0x10);
+		while(--timeout){
 			tm_delay(10);
-			if(done)
-					break;
-			outb(base_addr+0x37, 0x10);
-			while(--timeout){
-					tm_delay(10);
-					if(!(inb(base_addr+0x37)&(1<<4)))
-							break;
-			}
-			if(timeout < 1) {
-					printk(KERN_WARN, "RTL8139: An error occured\n");
-					return 0;
-			}
-			done++;
+			if(!(inb(base_addr+0x37)&(1<<4)))
+				break;
+		}
+		if(timeout < 1) {
+			printk(KERN_WARN, "RTL8139: An error occured\n");
+			return 0;
+		}
+		done++;
 	}
 	//outw(base_addr+0x62, 0x3300);
 	//if((inb(base_addr+0x52) & 0x04) == 0)
@@ -137,13 +137,13 @@ int rtl8139_reset(int base_addr)
 	timeout=10;
 	while(--timeout)
 	{
-			if((inw(base_addr+0x64) & 0x2C) == 0x2C)
-					break;
-			tm_delay(50);
+		if((inw(base_addr+0x64) & 0x2C) == 0x2C)
+			break;
+		tm_delay(50);
 	}
 	if(timeout < 1) {
-			printk(KERN_WARN, "RTL8139: An error occured\n");
-			return 0;
+		printk(KERN_WARN, "RTL8139: An error occured\n");
+		return 0;
 	}
 	return 1;
 }
@@ -166,7 +166,7 @@ int rtl8139_init(rtl8139dev_t *dev)
 {
 	if(!rtl8139_reset(dev->addr))
 		return -1;
-	dev->rx_reg.p.size = RX_BUF_SIZE;
+	dev->rx_reg.p.size = RX_BUF_SIZE + 0x1000;
 	dev->rx_reg.p.alignment = 0x1000;
 	int ret = mm_allocate_dma_buffer(&dev->rx_reg);
 	if(ret == -1) {
@@ -175,7 +175,7 @@ int rtl8139_init(rtl8139dev_t *dev)
 	}
 	dev->rec_buf = dev->rx_reg.p.address;
 	dev->rec_buf_virt = dev->rx_reg.v;
-	
+
 	for(int i=0;i<4;i++) {
 		dev->tx_buffer[i].p.size = 0x1000;
 		dev->tx_buffer[i].p.alignment = 0x1000;
@@ -183,46 +183,46 @@ int rtl8139_init(rtl8139dev_t *dev)
 			return -1;
 	}
 	dev->tx_num = 0;
-	
+
 	if(rtl8139_read_eeprom(dev, 0) != 0xFFFF) {
 		for(int i=0;i<3;i++) {
 			dev->hwaddr[i] = rtl8139_read_eeprom(dev, i + 7);
 		}
 	}
-	
+
 	outb(dev->addr+0x50, 0xC0);
-	
+
 	// get the card out of low power mode
 	outb(dev->addr+0x52, 0);
-	
+
 	// write the RxBuffer's address
 	outl(dev->addr+0x30, (addr_t)dev->rec_buf);
-	
+
 	// no missed packets
 	outb(dev->addr+0x4C, 0);
-	
+
 	// BMCR options
 	outw(dev->addr+0x62, 0x2000 | 0x1000 | 0x100);
-	
+
 	// MSR options
 	outb(dev->addr+0x58, 0x40);
-	
+
 	// write rx and tx config
 	outl(dev->addr+0x44, RTL_RXCFG_FTH_NONE | RTL_RXCFG_RBLN_64K | 
 			RTL_RXCFG_MDMA_UNLM | RTL_RXCFG_AR | RTL_RXCFG_AB | 
 			RTL_RXCFG_AM | RTL_RXCFG_APM | RTL_RXCFG_AAP);
 	outl(dev->addr+0x40, RTL_TXCFG_MDMA_2K | RTL_TXCFG_RR_48);
-	
+
 	// write multicast addresses
 	outl(dev->addr+8, 0xFFFFFFFF);
 	outl(dev->addr+12, 0xFFFFFFFF);
-	
+
 	// lock BCMR registers
 	outb(dev->addr+0x50, 0x00);
-	
+
 	// enable Rx and Tx
 	//outb(dev->addr+0x37, 0x08 | 0x04);
-	
+
 	// enable all good irqs
 	outw(dev->addr+0x3C, 15);
 	outw(dev->addr+0x3E, 0xffff);
@@ -281,52 +281,46 @@ int rtl8139_receive_packet(struct net_dev *nd, struct net_packet *packets, int c
 	{
 		uint32_t cmd = inb(dev->addr + 0x37);
 		if(cmd & 1) {
-			printk(0, "[rtl8139]: buffer is empty\n");
-			break;
+			return 0;
 		}
-		
+
 		buffer = (void *)(dev->rec_buf_virt + dev->rx_o);
 		info = *(uint16_t *)buffer;
 		buffer += 2;
-		
-		if(!(info & 1)) {
-			printk(0, "[rtl8139]: invalid packet\n");
-			break;
-		}
-		
-		length = *(uint16_t *)buffer;
-		printk(0, " %d got packet len %d\n", dev->rx_o, length);
-		buffer += 2;
-		dev->rx_o += 4;
-		if(length >= 14) /* larger than ethernet frame header */
-		{
-			uint8_t *data = packets[0].data;
-			packets[0].length = length - 4;
-			packets[0].flags = 0;
-			
-			if((dev->rx_o + length - 4) >= RX_BUF_SIZE) {
-				memcpy(data, buffer, RX_BUF_SIZE - dev->rx_o);
-				memcpy(data + (RX_BUF_SIZE - dev->rx_o),
-						(void *)dev->rec_buf_virt, (length - 4) - (RX_BUF_SIZE - dev->rx_o));
-			} else {
-				memcpy(data, buffer, length - 4);
+
+			length = *(uint16_t *)buffer;
+			//printk(0, " %d got packet len %d, invalid? %d\n", dev->rx_o, length, info & 1);
+			buffer += 2;
+			dev->rx_o += 4;
+			if(length >= 14 && (info & 1)) /* larger than ethernet frame header */
+			{
+				uint8_t *data = packets[0].data;
+				packets[0].length = length - 4;
+				packets[0].flags = 0;
+
+				if((dev->rx_o + length - 4) >= RX_BUF_SIZE) {
+					memcpy(data, buffer, RX_BUF_SIZE - dev->rx_o);
+					memcpy(data + (RX_BUF_SIZE - dev->rx_o),
+							(void *)dev->rec_buf_virt, (length - 4) - (RX_BUF_SIZE - dev->rx_o));
+				} else {
+					memcpy(data, buffer, length - 4);
+				}
+
+				num = 1;
+
 			}
-			
-			num = 1;
-			
-		}
-		
-		dev->rx_o += length;
+
+			dev->rx_o += length;
 		dev->rx_o = (dev->rx_o + 3) & ~3;
 		dev->rx_o %= RX_BUF_SIZE;
-		
+
 		outw(dev->addr + 0x38, dev->rx_o - 0x10);
-		
+
 		/* TODO */
 		break;
 	}
-	
-	
+
+
 	return num;
 }
 
@@ -366,20 +360,20 @@ int rtl8139_load_device_pci(struct pci_device *device)
 	unsigned short cmd = device->pcs->command | 4;
 	device->pcs->command = cmd;
 	pci_write_dword(device->bus, device->dev, device->func, 4, cmd);
-	
+
 	rtl8139dev_t *dev = create_new_device(addr, device);
 	printk(1, "[rtl8139]: Initiating rtl8139 controller (%x.%x.%x)...\n", 
-		device->bus, device->dev, device->func);
+			device->bus, device->dev, device->func);
 	if(rtl8139_init(dev))
 		ret++;
-	
+
 	if(ret){
 		kfree(dev);
 		printk(1, "[rtl8139]: Device error when trying to initialize\n");
 		device->flags |= PCI_ERROR;
 		return -1;
 	}
-	
+
 	struct inode *i = devfs_add(devfs_root, "rtl8139", S_IFCHR, rtl8139_maj, 0);
 	dev->node = i;
 	device->flags |= PCI_ENGAGED;
@@ -398,7 +392,7 @@ int rtl8139_unload_device_pci(rtl8139dev_t *dev)
 	if(!dev) return 0;
 	struct pci_device *device = dev->device;
 	printk(1, "[rtl8139]: Unloading device (%x.%x.%x)\n", device->bus, 
-		device->dev, device->func);
+			device->dev, device->func);
 	device->flags &= ~PCI_ENGAGED;
 	device->flags &= ~PCI_DRIVEN;
 	mutex_destroy(&dev->tx_lock);
@@ -423,8 +417,8 @@ int module_install()
 	int i=0;
 	printk(1, "[rtl8139]: Scanning PCI bus...\n");
 	//while(1) {
-		struct pci_device *dev = pci_locate_devices(0x10ec, 0x8139, i);
-		if(dev) {
+	struct pci_device *dev = pci_locate_devices(0x10ec, 0x8139, i);
+	if(dev) {
 		rtl8139_load_device_pci(dev);
 		rtl8139_net_dev = net_add_device(&rtl8139_net_callbacks, 0);
 		rtl8139_net_dev->data_header_len = sizeof(struct ethernet_header);
@@ -432,7 +426,7 @@ int module_install()
 		rtl8139_net_dev->hw_type = NET_HWTYPE_ETHERNET;
 
 		i++;
-		}
+	}
 	//}
 	return 0;
 }

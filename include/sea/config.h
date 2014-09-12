@@ -61,6 +61,6 @@ int sys_gethostname(char *buf, size_t len);
 
 #define VOID_CALL(...)
 
-#define TRACE VOID_CALL
+#define TRACE printk
 
 #endif

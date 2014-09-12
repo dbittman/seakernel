@@ -42,6 +42,8 @@ static int kt_packet_rec_thread(struct kthread *kt, void *arg)
 				if(nd->rx_pending > 0)
 					sub_atomic(&nd->rx_pending, 1);
 				net_receive_packet(nd, pack, 1);
+			} else {
+				tm_schedule();
 			}
 			net_packet_put(pack, 0);
 			nd->rx_thread_lastwork = tm_get_ticks();

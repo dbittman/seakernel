@@ -100,7 +100,7 @@ void ipv4_copy_to_sockets(struct net_packet *packet, struct ipv4_header *header)
 	ll_for_each_entry(sock_list, node, struct socket *, sock) {
 		if(header->ptype == sock->prot || sock->prot == IPPROTO_RAW)
 			net_data_queue_enqueue(&sock->rec_data_queue, packet, header,
-					packet->length - ((addr_t)header - (addr_t)packet->data), &addr);
+					BIG_TO_HOST16(header->length), &addr);
 	}
 	rwlock_release(&sock_list->rwl, RWL_READER);
 }

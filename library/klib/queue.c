@@ -2,6 +2,7 @@
 #include <sea/mutex.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/kernel.h>
+#include <sea/cpu/atomic.h>
 
 struct queue *queue_create(struct queue *q, int flags)
 {
@@ -12,6 +13,7 @@ struct queue *queue_create(struct queue *q, int flags)
 		q->flags = flags;
 	}
 	q->head = q->tail = 0;
+	q->count = 0;
 	mutex_create(&q->lock, 0);
 	return q;
 }
@@ -19,24 +21,27 @@ struct queue *queue_create(struct queue *q, int flags)
 void *queue_dequeue(struct queue *q)
 {
 	void *ret = 0;
+	struct queue_item *free = 0;
 	mutex_acquire(&q->lock);
 	if(q->head) {
 		struct queue_item *i = q->head;
 		ret = q->head->ent;
 		q->head = q->head->next;
-		kfree(i);
+		free = i;
 		if(!q->head)
 			q->tail = 0;
 	}
-	q->count--;
+	sub_atomic(&q->count, 1);
 	mutex_release(&q->lock);
+	if(free)
+		kfree(free);
 	return ret;
 }
 
 void queue_enqueue(struct queue *q, void *ent)
 {
-	mutex_acquire(&q->lock);
 	struct queue_item *i = kmalloc(sizeof(struct queue_item));
+	mutex_acquire(&q->lock);
 	i->ent = ent;
 	i->next = 0;
 	if(q->tail) {
@@ -46,7 +51,7 @@ void queue_enqueue(struct queue *q, void *ent)
 		assert(!q->head);
 		q->head = q->tail = i;
 	}
-	q->count++;
+	add_atomic(&q->count, 1);
 	mutex_release(&q->lock);
 }
 

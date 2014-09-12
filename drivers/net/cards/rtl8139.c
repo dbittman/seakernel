@@ -16,6 +16,7 @@
 #include <sea/cpu/processor.h>
 #include <sea/errno.h>
 #include <sea/net/ethernet.h>
+#include <sea/cpu/atomic.h>
 
 int rtl8139_maj=-1;
 typedef struct rtl8139_dev_s
@@ -33,7 +34,7 @@ typedef struct rtl8139_dev_s
 
 rtl8139dev_t *rtldev;
 
-#define RX_BUF_SIZE 64 * 1024
+#define RX_BUF_SIZE (64 * 1024 + 0x1000)
 int rtl8139_receive_packet(struct net_dev *nd, struct net_packet *, int count);
 int rtl8139_transmit_packet(struct net_dev *nd, struct net_packet *packets, int count);
 int rtl8139_set_flags(struct net_dev *nd, int flags);
@@ -269,7 +270,7 @@ int rtl8139_transmit_packet(struct net_dev *nd, struct net_packet *packets, int 
 	mutex_release(&dev->tx_lock);
 	return 1;
 }
-
+int nums = 0;
 int rtl8139_receive_packet(struct net_dev *nd, struct net_packet *packets, int count)
 {
 	rtl8139dev_t *dev = rtldev;
@@ -294,9 +295,9 @@ int rtl8139_receive_packet(struct net_dev *nd, struct net_packet *packets, int c
 		}
 		
 		length = *(uint16_t *)buffer;
+		printk(0, " %d got packet len %d\n", dev->rx_o, length);
 		buffer += 2;
 		dev->rx_o += 4;
-		
 		if(length >= 14) /* larger than ethernet frame header */
 		{
 			uint8_t *data = packets[0].data;
@@ -340,7 +341,6 @@ void rtl8139_int_1(registers_t *regs)
 	if((unsigned)(t->inter+IRQ0) == regs->int_no)
 	{
 		unsigned short data = inw(t->addr + 0x3E);
-		outw(t->addr + 0x3E, data);
 		if(data & 0x01)
 			do_recieve(t, data);
 		if(data & (1 << 2)) {
@@ -348,6 +348,7 @@ void rtl8139_int_1(registers_t *regs)
 			for(int i=0;i<4;i++)
 				inw(t->addr + 0x10 + i * 4);
 		}
+		outw(t->addr + 0x3E, data);
 	}
 	return;
 }

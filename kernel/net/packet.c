@@ -20,7 +20,7 @@ struct net_packet *net_packet_create(struct net_packet *packet, int flags)
 	} else {
 		packet->flags = flags;
 	}
-	TRACE(0, "[packet]: creating new packet\n");
+	TRACE(0, "[packet]: creating new packet %x\n", packet);
 	packet->count = 1;
 	packet->data_header = packet->data;
 	return packet;
@@ -29,18 +29,20 @@ struct net_packet *net_packet_create(struct net_packet *packet, int flags)
 void net_packet_destroy(struct net_packet *packet)
 {
 	assert(packet->count == 0);
-	TRACE(0, "[packet]: destroying packet\n");
+	TRACE(0, "[packet]: destroying packet %x\n", packet);
 	if(packet->flags & NP_FLAG_ALLOC)
 		kfree(packet);
 }
 
 void net_packet_get(struct net_packet *packet)
 {
+	TRACE(0, "[packet]: inc ref count packet %x\n", packet);
 	add_atomic(&packet->count, 1);
 }
 
 void net_packet_put(struct net_packet *packet, int flag)
 {
+	TRACE(0, "[packet]: dec ref count packet %x\n", packet);
 	int r = sub_atomic(&packet->count, 1);
 	if((flag & NP_FLAG_DESTROY) && r)
 		panic(0, "failed to destroy packet before it went out of scope");

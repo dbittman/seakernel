@@ -78,7 +78,7 @@ static void socket_destroy(struct socket *sock)
 
 static struct socket_calls *socket_get_calls(int prot)
 {
-	printk(0, "[socket]: getting calls: %d\n", prot);
+	TRACE(0, "[socket]: getting calls: %d\n", prot);
 	return __socket_calls_list[prot];
 }
 
@@ -102,7 +102,7 @@ int sys_socket(int domain, int type, int prot)
 	struct socket *sock = socket_create(&err);
 	if(!sock)
 		return err;
-	printk(0, "[socket]: created socket %d, d=%d, t=%d, p=%d\n", sock->fd, domain, type, prot);
+	TRACE(0, "[socket]: created socket %d, d=%d, t=%d, p=%d\n", sock->fd, domain, type, prot);
 	sock->domain = domain;
 	sock->type = type;
 	sock->prot = prot;
@@ -126,7 +126,7 @@ int sys_connect(int socket, const struct sockaddr *addr, socklen_t len)
 	if(sock->sopt & SO_ACCEPTCONN)
 		return -EOPNOTSUPP;
 	/* okay, tell the protocol to make the connection */
-	printk(0, "[socket]: connecting %d\n", socket);
+	TRACE(0, "[socket]: connecting %d\n", socket);
 	int ret = -EOPNOTSUPP;
 	if(sock->calls->connect)
 		ret = sock->calls->connect(sock, addr, len);
@@ -145,7 +145,7 @@ int sys_accept(int socket, struct sockaddr *restrict addr, socklen_t *restrict a
 		return err;
 	err = -EOPNOTSUPP;
 	struct socket *sret = 0;
-	printk(0, "[socket]: %d accepting\n", socket);
+	TRACE(0, "[socket]: %d accepting\n", socket);
 	if(sock->calls->accept)
 		sret = sock->calls->accept(sock, addr, addr_len, &err);
 	if(!sret)

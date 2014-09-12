@@ -25,7 +25,8 @@ static uint16_t icmp_calc_checksum(void *__data, int length)
 void icmp_receive_echo_request(struct net_dev *nd, struct net_packet *netpacket, union ipv4_address src,
 		struct icmp_packet *packet, int len)
 {
-	TRACE(0, "[icmp]: got echo request from %x\n", src.address);
+	uint32_t rest = BIG_TO_HOST32(packet->rest);
+	TRACE(0, "[icmp]: got echo request from %x (%d %d)\n", (rest >> 16) & 0xffff, rest & 0xFFFF, src.address);
 	packet->type = 0;
 	struct ipv4_header *header = netpacket->network_header;
 	header->dest_ip = header->src_ip;

@@ -31,14 +31,18 @@ static int kt_packet_rec_thread(struct kthread *kt, void *arg)
 	struct net_packet *pack;
 	struct net_dev *nd = arg;
 	int packets=0;
+	int ret = 0;
 	while(!kthread_is_joining(kt)) {
-		if(nd->rx_pending) {
+		if(nd->rx_pending || ret) {
 			packets++;
-			TRACE(0, "[kpacket]: got packet (%d %d)\n", nd->rx_pending, packets);
 			pack = net_packet_create(0, 0);
-			net_callback_poll(nd, pack, 1);
-			sub_atomic(&nd->rx_pending, 1);
-			net_receive_packet(nd, pack, 1);
+			ret = net_callback_poll(nd, pack, 1);
+			TRACE(0, "\n\n[kpacket]: got packet (%d %d : %d)\n", nd->rx_pending, packets, ret);
+			if(ret) {
+				if(nd->rx_pending > 0)
+					sub_atomic(&nd->rx_pending, 1);
+				net_receive_packet(nd, pack, 1);
+			}
 			net_packet_put(pack, 0);
 			nd->rx_thread_lastwork = tm_get_ticks();
 		} else {

@@ -103,7 +103,7 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 	union ipv4_address packet_destination;
 	union ipv4_address dest = (union ipv4_address)BIG_TO_HOST32(packet->header->dest_ip);
 	
-	if(packet->tries > 0 && (tm_get_ticks() == packet->last_attempt_time)) {
+	if(packet->tries > 0 && (tm_get_ticks() <= packet->last_attempt_time)) {
 		ipv4_do_enqueue_packet(packet);
 		return 0;
 	}
@@ -121,11 +121,13 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 		packet_destination = dest;
 	}
 	if(arp_lookup(ETHERTYPE_IPV4, packet_destination.addr_bytes, hwaddr) == -ENOENT) {
-		//TRACE(0, "[ipv4]: send_packet: ARP lookup failed, sending request\n");
+		TRACE(0, "[ipv4]: send_packet: ARP lookup failed, sending request\n");
 		/* no idea where the destination is! Send an ARP request. ARP handles multiple
 		 * requests to the same address. */
 		arp_send_request(nd, ETHERTYPE_IPV4, packet_destination.addr_bytes, 4);
 		/* re-enqueue the packet */
+		if(packet->tries > 5)
+			packet->last_attempt_time = tm_get_ticks() + 20;
 		ipv4_do_enqueue_packet(packet);
 		return 0;
 	}

@@ -137,6 +137,20 @@ void tm_set_signal(int sig, addr_t hand)
 	current_task->thread->signal_act[sig]._sa_func._sa_handler = (void (*)(int))hand;
 }
 
+void tm_remove_process_from_alarm(task_t *t)
+{
+	if((t->flags & TF_ALARM)) {
+		tm_lower_flag(TF_ALARM);
+		int old = cpu_interrupt_set(0);
+		mutex_acquire(alarm_mutex);
+		if(current_task->alarm_prev) current_task->alarm_prev->alarm_next = current_task->alarm_next;
+		if(current_task->alarm_next) current_task->alarm_next->alarm_prev = current_task->alarm_prev;
+		current_task->alarm_next = current_task->alarm_prev = 0;
+		mutex_release(alarm_mutex);
+		cpu_interrupt_set(old);
+	}
+}
+
 int sys_alarm(int a)
 {
 	if(a)
@@ -165,17 +179,7 @@ int sys_alarm(int a)
 		} else
 			return old_value < 0 ? 0 : old_value;
 	} else {
-		task_t *t = current_task;
-		if((t->flags & TF_ALARM)) {
-			tm_lower_flag(TF_ALARM);
-			int old = cpu_interrupt_set(0);
-			mutex_acquire(alarm_mutex);
-			if(current_task->alarm_prev) current_task->alarm_prev->alarm_next = current_task->alarm_next;
-			if(current_task->alarm_next) current_task->alarm_next->alarm_prev = current_task->alarm_prev;
-			current_task->alarm_next = current_task->alarm_prev = 0;
-			mutex_release(alarm_mutex);
-			cpu_interrupt_set(old);
-		}
+		tm_remove_process_from_alarm(current_task);
 	}
 	return 0;
 }

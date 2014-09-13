@@ -159,6 +159,7 @@ void tm_exit(int code)
 	assert(t->thread->magic == THREAD_MAGIC);
 	ll_insert(kill_queue, (void *)t);
 	tm_raise_flag(TF_EXITING);
+	tm_remove_process_from_alarm(t);
 	if(code != -9) 
 		t->exit_reason.cause = 0;
 	t->exit_reason.ret = code;

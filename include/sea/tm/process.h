@@ -187,6 +187,7 @@ void tm_add_to_blocklist(struct llist *list, task_t *task);
 void tm_remove_from_blocklist(struct llist *list, task_t *t);
 void tm_remove_all_from_blocklist(struct llist *list);
 void tm_switch_to_user_mode();
+void tm_remove_process_from_alarm(task_t *t);
 
 int tm_process_got_signal(task_t *t);
 int tm_signal_will_be_fatal(task_t *t, int sig);

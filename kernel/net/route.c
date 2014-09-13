@@ -22,7 +22,7 @@ int __net_route_calc_confidence(struct route *r, union ipv4_address addr)
 		 * care if the network prefix is equal to the route destination, 
 		 * that just means the number of bits set in the netmask. Because
 		 * of the way netmasks are formatted, the more bits are set, the
-		 * larger the number, so we can just that as the confidence. */
+		 * larger the number, so we can just use that as the confidence. */
 		return r->netmask;
 	}
 	/* default route has a confidence of 0, but is still a possible route */

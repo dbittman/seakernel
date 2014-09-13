@@ -295,7 +295,6 @@ int rtl8139_receive_packet(struct net_dev *nd, struct net_packet *packets, int c
 			{
 				uint8_t *data = packets[0].data;
 				packets[0].length = length - 4;
-				packets[0].flags = 0;
 
 				if((dev->rx_o + length - 4) >= RX_BUF_SIZE) {
 					memcpy(data, buffer, RX_BUF_SIZE - dev->rx_o);

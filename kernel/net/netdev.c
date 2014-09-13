@@ -37,7 +37,7 @@ static int kt_packet_rec_thread(struct kthread *kt, void *arg)
 			packets++;
 			pack = net_packet_create(0, 0);
 			ret = net_callback_poll(nd, pack, 1);
-			TRACE(0, "\n\n[kpacket]: got packet (%d %d : %d)\n", nd->rx_pending, packets, ret);
+			TRACE(0, "[kpacket]: got packet (%d %d : %d)\n", nd->rx_pending, packets, ret);
 			if(ret) {
 				if(nd->rx_pending > 0)
 					sub_atomic(&nd->rx_pending, 1);
@@ -46,6 +46,7 @@ static int kt_packet_rec_thread(struct kthread *kt, void *arg)
 				tm_schedule();
 			}
 			net_packet_put(pack, 0);
+			pack = 0;
 			nd->rx_thread_lastwork = tm_get_ticks();
 		} else {
 			//if(tm_get_ticks() > nd->rx_thread_lastwork + TICKS_SECONDS(5))

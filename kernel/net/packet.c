@@ -37,15 +37,18 @@ void net_packet_destroy(struct net_packet *packet)
 void net_packet_get(struct net_packet *packet)
 {
 	TRACE(0, "[packet]: inc ref count packet %x\n", packet);
+	assert(packet->count > 0);
 	add_atomic(&packet->count, 1);
 }
 
 void net_packet_put(struct net_packet *packet, int flag)
 {
 	TRACE(0, "[packet]: dec ref count packet %x\n", packet);
+	assert(packet->count > 0);
 	int r = sub_atomic(&packet->count, 1);
 	if((flag & NP_FLAG_DESTROY) && r)
 		panic(0, "failed to destroy packet before it went out of scope");
+	assert(r >= 0);
 	if(!r)
 		net_packet_destroy(packet);
 }

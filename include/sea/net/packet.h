@@ -14,7 +14,7 @@ struct net_packet {
 	void *data_header;
 	void *network_header;
 
-	int count;
+	volatile int count;
 };
 
 #define NP_FLAG_ALLOC 1

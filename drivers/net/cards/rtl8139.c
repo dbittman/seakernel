@@ -270,7 +270,6 @@ int rtl8139_transmit_packet(struct net_dev *nd, struct net_packet *packets, int 
 	mutex_release(&dev->tx_lock);
 	return 1;
 }
-int nums = 0;
 int rtl8139_receive_packet(struct net_dev *nd, struct net_packet *packets, int count)
 {
 	rtl8139dev_t *dev = rtldev;

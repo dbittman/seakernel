@@ -14,7 +14,7 @@
 
 static struct hash_table *ipv4_hash = 0; /* TODO: hashes for any protocol */
 static struct llist *outstanding = 0;
-mutex_t *outlock;
+mutex_t *outlock, *hashlock;
 static void arp_get_mac(uint8_t *mac, uint16_t m1, uint16_t m2, uint16_t m3)
 {
 	mac[0] = (m1 & 0xFF);
@@ -85,13 +85,14 @@ static void arp_add_entry_to_hash(struct hash_table *hash, uint16_t prot_addr[2]
 {
 	void *tmp;
 	/* we have to first lookup the address, as we may be changing an entry */
+	mutex_acquire(hashlock);
 	if(hash_table_get_entry(hash, prot_addr, sizeof(uint16_t), 2, &tmp) != -ENOENT) {
 		hash_table_delete_entry(hash, prot_addr, sizeof(uint16_t), 2);
-		/* TODO: PROBLEM: this is not thread-safe */
 		kfree(tmp);
 	}
 	TRACE(0, "[arp]: adding entry %x:%x -- %x\n", prot_addr[0], prot_addr[1], entry->hw_addr[0]);
 	hash_table_set_entry(hash, prot_addr, sizeof(uint16_t), 2, entry);
+	mutex_release(hashlock);
 }
 
 static struct hash_table *arp_create_cache()
@@ -159,8 +160,12 @@ static struct arp_entry *arp_do_lookup(int ethertype, uint16_t prot_addr[2])
 	if(!ipv4_hash)
 		return 0;
 	void *entry;
-	if(hash_table_get_entry(ipv4_hash, prot_addr, sizeof(uint16_t), 2, &entry) == -ENOENT)
+	mutex_acquire(hashlock);
+	if(hash_table_get_entry(ipv4_hash, prot_addr, sizeof(uint16_t), 2, &entry) == -ENOENT) {
+		mutex_release(hashlock);
 		return 0;
+	}
+	mutex_release(hashlock);
 	return entry;
 }
 
@@ -172,10 +177,12 @@ void arp_remove_entry(int ptype, uint8_t paddr[4])
 	pr[1] = paddr[1] | (paddr[0] << 8);
 	
 	void *ent;
+	mutex_acquire(hashlock);
 	if(hash_table_get_entry(ipv4_hash, pr, sizeof(uint16_t), 2, &ent) != -ENOENT) {
 		hash_table_delete_entry(ipv4_hash, pr, sizeof(uint16_t), 2);
 		kfree(ent);
 	}
+	mutex_release(hashlock);
 }
 
 int arp_lookup(int ptype, uint8_t paddr[4], uint8_t hwaddr[6])
@@ -187,7 +194,6 @@ int arp_lookup(int ptype, uint8_t paddr[4], uint8_t hwaddr[6])
 	struct arp_entry *ent = arp_do_lookup(ptype, pr);
 	if(!ent)
 		return -ENOENT;
-	/* TODO: timeout? */
 	arp_get_mac(hwaddr, ent->hw_addr[0], ent->hw_addr[1], ent->hw_addr[2]);
 	return 0;
 }
@@ -259,5 +265,6 @@ void arp_init()
 {
 	outstanding = ll_create_lockless(0);
 	outlock = mutex_create(0, 0);
+	hashlock = mutex_create(0, 0);
 }
 

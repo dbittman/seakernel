@@ -27,7 +27,6 @@ struct ipv4_header {
 struct ipv4_packet {
 	time_t enqueue_time, last_attempt_time;
 	int tries;
-	/* TODO: source layer */
 	struct net_packet *netpacket;
 	struct ipv4_header *header;
 } __attribute__ ((packed));

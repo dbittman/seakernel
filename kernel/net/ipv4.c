@@ -113,7 +113,7 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 	struct route *r = net_route_select_entry(dest);
 	uint8_t hwaddr[6];
 	if(!r)
-		return -1;//TODO: NETWORK_UNREACHABLE;
+		return -1;
 	nd = r->interface;
 	if(r->flags & ROUTE_FLAG_GATEWAY) {
 		packet_destination = r->gateway;
@@ -121,7 +121,7 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 		packet_destination = dest;
 	}
 	if(arp_lookup(ETHERTYPE_IPV4, packet_destination.addr_bytes, hwaddr) == -ENOENT) {
-		TRACE(0, "[ipv4]: send_packet: ARP lookup failed, sending request\n");
+		//TRACE(0, "[ipv4]: send_packet: ARP lookup failed, sending request\n");
 		/* no idea where the destination is! Send an ARP request. ARP handles multiple
 		 * requests to the same address. */
 		arp_send_request(nd, ETHERTYPE_IPV4, packet_destination.addr_bytes, 4);
@@ -186,7 +186,7 @@ static int ipv4_sending_thread(struct kthread *kt, void *arg)
 			//TRACE(0, "[kipv4-send]: popped packet\n");
 			if(packet) {
 				/* got packet entry! */
-				if(tm_get_ticks() > packet->enqueue_time + TICKS_SECONDS(100)) {
+				if(tm_get_ticks() > packet->enqueue_time + TICKS_SECONDS(10)) {
 					/* timeout! */
 					TRACE(0, "[kipv4-send]: packet timed out\n");
 					net_packet_put(packet->netpacket, 0);

@@ -41,7 +41,6 @@ static int sendto(struct socket *sock, const void *buffer, size_t length,
 {
 	if(!sock_list)
 		return -EINVAL;
-	/* TODO: check if we need to construct a header, check length */
 	uint8_t tmp[length + 20];
 	struct ipv4_header *head;
 	if(sock->sopt_levels[PROTOCOL_IP][IP_HDRINCL]) {
@@ -60,9 +59,9 @@ static int sendto(struct socket *sock, const void *buffer, size_t length,
 	}
 	struct net_packet *packet = net_packet_create(0, 0);
 	int ret;
-	if((ret = ipv4_copy_enqueue_packet(packet, head) < 0))
-		return ret;
-	return length;
+	ret = ipv4_copy_enqueue_packet(packet, head);
+	net_packet_put(packet, 0);
+	return ret < 0 ? ret : length;
 }
 
 static int init(struct socket *sock)

@@ -5,15 +5,16 @@
 #include <sea/ll.h>
 #include <sea/tm/kthread.h>
 
-#define IFACE_FLAG_UP        0x1
-#define IFACE_FLAG_BROADCAST 0x2
-
+#define IFACE_FLAG_UP           0x1
+#define IFACE_FLAG_ACCBROADCAST 0x2
+#define IFACE_FLAG_FORWARD      0x4
 #define NET_HWTYPE_ETHERNET 1
 
 struct net_dev {
 	int flags;
 	uint32_t state;
 	size_t rx_count, tx_count, rx_err_count, tx_err_count, rx_pending;
+	int dropped;
 	time_t rx_thread_lastwork;
 	/* these fields are specified by the driver at time of net_dev creation */
 	struct net_dev_calls *callbacks;

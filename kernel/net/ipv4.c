@@ -15,6 +15,7 @@
 #include <sea/net/ethertype.h>
 #include <sea/lib/queue.h>
 #include <sea/net/ipv4sock.h>
+#include <sea/cpu/atomic.h>
 #include <sea/ll.h>
 #include <limits.h>
 static struct queue *ipv4_tx_queue = 0;
@@ -235,6 +236,31 @@ static void ipv4_accept_packet(struct net_dev *nd, struct net_packet *netpacket,
 		net_packet_put(netpacket, 0);
 }
 
+void ipv4_forward_packet(struct net_dev *nd, struct net_packet *netpacket, struct ipv4_header *header)
+{
+	if(!(header->ttl--)) {
+		add_atomic(&nd->dropped, 1);
+		/* send an ICMP message back */
+		struct net_packet *resp = net_packet_create(0, 0);
+		unsigned char data[header->header_len * 8 + 8 + sizeof(struct icmp_packet)];
+		struct ipv4_header *rh = (void *)data;
+		rh->ttl = 64;
+		rh->dest_ip = header->src_ip;
+		rh->id = 0;
+		rh->length = HOST_TO_BIG16(header->header_len * 8 + 8 + sizeof(struct icmp_packet));
+		rh->ptype = 1;
+		memcpy(data + header->header_len * 4 + sizeof(struct icmp_packet), header, header->header_len * 4 + 8);
+		struct icmp_packet *ir = (void *)(data + header->header_len * 4);
+		ir->type = 11;
+		ir->code = 0;
+		ipv4_copy_enqueue_packet(resp, rh);
+		net_packet_put(resp, 0);
+		return;
+	}
+	/* TODO: check if we have to split the packet */
+	ipv4_enqueue_packet(netpacket, header);
+}
+
 void ipv4_receive_packet(struct net_dev *nd, struct net_packet *netpacket, struct ipv4_header *packet)
 {
 	/* check if we are to accept this packet */
@@ -254,14 +280,17 @@ void ipv4_receive_packet(struct net_dev *nd, struct net_packet *netpacket, struc
 			src.address, src.addr_bytes[3], src.addr_bytes[2], src.addr_bytes[1], src.addr_bytes[0]);
 	union ipv4_address ifaddr;
 	net_iface_get_network_addr(nd, ETHERTYPE_IPV4, ifaddr.addr_bytes);
-	/* TODO: also check mode of interface. accept broadcast packets? etc */
-	if(ifaddr.address == dest.address || dest.address == BROADCAST_ADDRESS(ifaddr.address, nd->netmask)) {
+	if(ifaddr.address == dest.address
+			|| (dest.address == BROADCAST_ADDRESS(ifaddr.address, nd->netmask)
+				&& (nd->flags & IFACE_FLAG_ACCBROADCAST))) {
 		/* accepted unicast or broadcast packet for us */
 		TRACE(0, "[ipv4]: got packet for us of size %d!\n", BIG_TO_HOST16(packet->length));
 		ipv4_accept_packet(nd, netpacket, packet, 
 				src, BIG_TO_HOST16(packet->length) - (packet->header_len * 4));
+	} else if(nd->flags & IFACE_FLAG_FORWARD) {
+		ipv4_forward_packet(nd, netpacket, packet);
 	} else {
-		/* TODO: IP forwarding, maybe split packets  */
+		add_atomic(&nd->dropped, 1);
 	}
 }
 
@@ -308,20 +337,27 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 	} else {
 		packet_destination = dest;
 	}
-	if(arp_lookup(ETHERTYPE_IPV4, packet_destination.addr_bytes, hwaddr) == -ENOENT) {
-		//TRACE(0, "[ipv4]: send_packet: ARP lookup failed, sending request\n");
-		/* no idea where the destination is! Send an ARP request. ARP handles multiple
-		 * requests to the same address. */
-		arp_send_request(nd, ETHERTYPE_IPV4, packet_destination.addr_bytes, 4);
-		/* re-enqueue the packet */
-		if(packet->tries > 5)
-			packet->last_attempt_time = tm_get_ticks() + 20;
-		ipv4_do_enqueue_packet(packet);
-		return 0;
+	union ipv4_address ifaddr;
+	net_iface_get_network_addr(nd, ETHERTYPE_IPV4, ifaddr.addr_bytes);
+	if(dest.address == BROADCAST_ADDRESS(ifaddr.address, nd->netmask)) {
+		memset(hwaddr, 0xFF, 6);
+	} else {
+		if(arp_lookup(ETHERTYPE_IPV4, packet_destination.addr_bytes, hwaddr) == -ENOENT) {
+			//TRACE(0, "[ipv4]: send_packet: ARP lookup failed, sending request\n");
+			/* no idea where the destination is! Send an ARP request. ARP handles multiple
+			 * requests to the same address. */
+			arp_send_request(nd, ETHERTYPE_IPV4, packet_destination.addr_bytes, 4);
+			/* re-enqueue the packet */
+			if(packet->tries > 5)
+				packet->last_attempt_time = tm_get_ticks() + 20;
+			ipv4_do_enqueue_packet(packet);
+			return 0;
+		}
 	}
+	/* TODO: check if the packet must be split */
 	TRACE(0, "[ipv4]: send_packet: sending\n");
 	ipv4_finish_constructing_packet(nd, r, packet);
-	
+
 	net_data_send(nd, packet->netpacket, ETHERTYPE_IPV4, hwaddr, BIG_TO_HOST16(packet->header->length));
 	net_packet_put(packet->netpacket, 0);
 	kfree(packet);

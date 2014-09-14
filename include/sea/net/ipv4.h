@@ -4,6 +4,7 @@
 #include <sea/net/interface.h>
 #include <sea/asm/system.h>
 #include <sea/cpu/time.h>
+#include <sea/ll.h>
 struct ipv4_header {
 #ifdef LITTLE_ENDIAN
 	uint32_t header_len : 4;
@@ -36,6 +37,19 @@ union ipv4_address {
 	uint8_t addr_bytes[4];
 };
 
+struct ipv4_fragment {
+	struct net_packet *netpacket;
+	struct ipv4_header *header;
+	size_t total_length;
+	int complete;
+	uint32_t src, dest;
+	uint8_t prot;
+	uint16_t id;
+	time_t start_time;
+	struct llistnode *node;
+	sint16_t first_hole;
+};
+
 void ipv4_receive_packet(struct net_dev *nd, struct net_packet *, struct ipv4_header *);
 void ipv4_init();
 int ipv4_enqueue_packet(struct net_packet *netpacket, struct ipv4_header *header);
@@ -47,4 +61,9 @@ int ipv4_copy_enqueue_packet(struct net_packet *netpacket, struct ipv4_header *h
 
 #define IP_PROTOCOL_ICMP 1
 
+#define IP_FLAG_MF      (1 << 1)
+
+#define FRAG_TIMEOUT 30
+
 #endif
+

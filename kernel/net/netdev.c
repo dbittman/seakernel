@@ -49,9 +49,9 @@ static int kt_packet_rec_thread(struct kthread *kt, void *arg)
 			pack = 0;
 			nd->rx_thread_lastwork = tm_get_ticks();
 		} else {
-			//if(tm_get_ticks() > nd->rx_thread_lastwork + TICKS_SECONDS(5))
-			//	tm_process_pause(current_task);
-			//else
+			if(tm_get_ticks() > nd->rx_thread_lastwork + TICKS_SECONDS(5))
+				tm_process_pause(current_task);
+			else
 				tm_schedule();
 		}
 	}

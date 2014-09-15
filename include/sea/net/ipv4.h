@@ -62,6 +62,7 @@ int ipv4_copy_enqueue_packet(struct net_packet *netpacket, struct ipv4_header *h
 #define IP_PROTOCOL_ICMP 1
 
 #define IP_FLAG_MF      (1 << 1)
+#define IP_FLAG_DF      (1 << 2)
 
 #define FRAG_TIMEOUT 30
 

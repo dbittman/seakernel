@@ -257,7 +257,6 @@ void ipv4_forward_packet(struct net_dev *nd, struct net_packet *netpacket, struc
 		net_packet_put(resp, 0);
 		return;
 	}
-	/* TODO: check if we have to split the packet */
 	ipv4_enqueue_packet(netpacket, header);
 }
 
@@ -354,9 +353,50 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 			return 0;
 		}
 	}
-	/* TODO: check if the packet must be split */
 	TRACE(0, "[ipv4]: send_packet: sending\n");
 	ipv4_finish_constructing_packet(nd, r, packet);
+	
+	/* split the packet if we need to... */
+	int total_packet_length = r->interface->data_header_len + BIG_TO_HOST16(packet->header->length);
+	int data_length = BIG_TO_HOST16(packet->header->length) - packet->header->header_len * 4;
+	uint16_t parent_flags = (BIG_TO_HOST16(packet->header->frag_offset) & 0xF000) >> 12;
+	uint16_t parent_offset = (BIG_TO_HOST16(packet->header->frag_offset) & ~0xF000) * 8;
+	if(r->interface->mtu && r->interface->mtu < total_packet_length) {
+		if(parent_flags & IP_FLAG_DF) {
+			add_atomic(&nd->dropped, 1);
+			/* TODO: ICMP back */
+			return -1;
+		}
+		/* split! */
+		int multiples = (nd->mtu - packet->header->header_len * 4) / 8;
+		int num_frags = data_length / multiples + 1;
+		assert(num_frags >= 2);
+		for(int i = 1;i<num_frags;i++) {
+			struct net_packet *frag = net_packet_create(0, 0);
+			struct ipv4_header *fh = (void *)(frag->data + nd->data_header_len);
+			memcpy(fh, packet->header, sizeof(*fh));
+
+			/* copy the data... */
+			int offset = i * multiples;
+			int length = multiples;
+			if(offset + length > data_length)
+				length = data_length - offset;
+			memcpy(fh->data, packet->header->data + offset, length);
+			/* fix up the new header */
+
+			uint16_t flags = ((i + 1 == num_frags) && !(parent_flags & IP_FLAG_MF))
+				? 0 : IP_FLAG_MF;
+			fh->frag_offset = HOST_TO_BIG16(
+					((uint16_t)((offset + parent_offset) / 8) & ~0xF000) | (flags << 12)
+					);
+
+			/* enqueue packet */
+			ipv4_enqueue_packet(frag, fh);
+			net_packet_put(frag, 0);
+		}
+		/* parent packet header update */
+		packet->header->frag_offset = HOST_TO_BIG16(IP_FLAG_MF << 12);
+	}
 
 	net_data_send(nd, packet->netpacket, ETHERTYPE_IPV4, hwaddr, BIG_TO_HOST16(packet->header->length));
 	net_packet_put(packet->netpacket, 0);
@@ -418,6 +458,9 @@ static int ipv4_sending_thread(struct kthread *kt, void *arg)
 					int r = ipv4_send_packet(packet);
 					if(!r)
 						tm_schedule();
+					if(r == -1) {
+						net_packet_put(packet->netpacket, 0);
+					}
 				}
 			}
 			ipv4_thread_lastwork = tm_get_ticks();

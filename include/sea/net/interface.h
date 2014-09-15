@@ -26,6 +26,7 @@ struct net_dev {
 	uint32_t netmask;
 	uint16_t hw_type;
 	int data_header_len;
+	int mtu;
 	
 	struct llistnode *node;
 	struct kthread rec_thread;

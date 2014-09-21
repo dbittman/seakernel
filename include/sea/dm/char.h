@@ -25,4 +25,7 @@ int ttyx_rw(int rw, int min, char *buf, size_t count);
 int tty_rw(int rw, int min, char *buf, size_t count);
 int tty_select(int, int);
 int ttyx_select(int, int);
+int net_char_select(int, int);
+int net_char_rw(int rw, int min, char *buf, size_t count);
+int net_char_ioctl(dev_t dev, int cmd, long arg);
 #endif

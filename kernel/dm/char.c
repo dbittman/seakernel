@@ -75,6 +75,7 @@ void dm_init_char_devices()
 	dm_set_char_device(3, ttyx_rw, ttyx_ioctl, ttyx_select);
 	dm_set_char_device(4, tty_rw, tty_ioctl, tty_select);
 	dm_set_char_device(5, serial_rw, 0, 0);
+	dm_set_char_device(6, net_char_rw, net_char_ioctl, net_char_select);
 	mutex_create(&cd_search_lock, 0);
 }
 

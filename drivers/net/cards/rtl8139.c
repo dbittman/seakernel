@@ -30,9 +30,10 @@ typedef struct rtl8139_dev_s
 	mutex_t tx_lock;
 	int tx_num;
 	unsigned short hwaddr[3];
+	struct net_dev *net_dev;
 } rtl8139dev_t;
 
-rtl8139dev_t *rtldev;
+rtl8139dev_t *devs[16];
 
 #define RX_BUF_SIZE (64 * 1024)
 int rtl8139_receive_packet(struct net_dev *nd, struct net_packet *, int count);
@@ -40,6 +41,7 @@ int rtl8139_transmit_packet(struct net_dev *nd, struct net_packet *packets, int 
 int rtl8139_set_flags(struct net_dev *nd, int flags);
 int rtl8139_get_mac(struct net_dev *nd, uint8_t mac[6])
 {
+	rtl8139dev_t *rtldev = nd->data;
 	mac[0] = rtldev->hwaddr[0] & 0xFF;
 	mac[1] = rtldev->hwaddr[0] >> 8;
 	mac[2] = rtldev->hwaddr[1] & 0xFF;
@@ -57,7 +59,6 @@ struct net_dev_calls rtl8139_net_callbacks = {
 	0
 };
 
-struct net_dev *rtl8139_net_dev;
 
 rtl8139dev_t *create_new_device(unsigned addr, struct pci_device *device)
 {
@@ -231,7 +232,7 @@ int rtl8139_init(rtl8139dev_t *dev)
 
 int rtl8139_set_flags(struct net_dev *nd, int flags)
 {
-	rtl8139dev_t *dev = rtldev;
+	rtl8139dev_t *dev = nd->data;
 	if(!(flags & IFACE_FLAG_UP) && (nd->flags & IFACE_FLAG_UP)) {
 		/* set interface down */
 		outb(dev->addr+0x37, 0);
@@ -245,7 +246,7 @@ int rtl8139_set_flags(struct net_dev *nd, int flags)
 int rtl8139_transmit_packet(struct net_dev *nd, struct net_packet *packets, int count)
 {
 	/* TODO: count */
-	rtl8139dev_t *dev = rtldev;
+	rtl8139dev_t *dev = nd->data;
 	if(packets[0].length > 0x1000)
 		return -EIO;
 	mutex_acquire(&dev->tx_lock);
@@ -272,7 +273,7 @@ int rtl8139_transmit_packet(struct net_dev *nd, struct net_packet *packets, int 
 }
 int rtl8139_receive_packet(struct net_dev *nd, struct net_packet *packets, int count)
 {
-	rtl8139dev_t *dev = rtldev;
+	rtl8139dev_t *dev = nd->data;
 	uint8_t *buffer;
 	uint16_t length, info;
 	int num=0;
@@ -324,35 +325,39 @@ int rtl8139_receive_packet(struct net_dev *nd, struct net_packet *packets, int c
 
 void do_recieve(rtl8139dev_t *dev, unsigned short data)
 {
-	net_notify_packet_ready(rtl8139_net_dev);
+	net_notify_packet_ready(dev->net_dev);
 }
 
 void rtl8139_int_1(registers_t *regs)
 {
-	rtl8139dev_t *t=rtldev;
-	if((unsigned)(t->inter+IRQ0) == regs->int_no)
-	{
-		unsigned short data = inw(t->addr + 0x3E);
-		if(data & 0x01)
-			do_recieve(t, data);
-		if(data & (1 << 2)) {
-			/* need to read all status registers */
-			for(int i=0;i<4;i++)
-				inw(t->addr + 0x10 + i * 4);
+	for(int i = 0;i<16;i++) {
+		rtl8139dev_t *t=devs[i];
+		if(!t)
+			continue;
+		if((unsigned)(t->inter+IRQ0) == regs->int_no)
+		{
+			unsigned short data = inw(t->addr + 0x3E);
+			if(data & 0x01)
+				do_recieve(t, data);
+			if(data & (1 << 2)) {
+				/* need to read all status registers */
+				for(int j=0;j<4;j++)
+					inw(t->addr + 0x10 + j * 4);
+			}
+			outw(t->addr + 0x3E, data);
 		}
-		outw(t->addr + 0x3E, data);
 	}
 	return;
 }
 
-int rtl8139_load_device_pci(struct pci_device *device)
+rtl8139dev_t *rtl8139_load_device_pci(struct pci_device *device)
 {
 	int addr;
 	char ret=0;
 	if(!(addr = pci_get_base_address(device)))
 	{
 		device->flags |= PCI_ERROR;
-		return 1;
+		return 0;
 	}
 	/* set PCI busmastering */
 	unsigned short cmd = device->pcs->command | 4;
@@ -369,7 +374,7 @@ int rtl8139_load_device_pci(struct pci_device *device)
 		kfree(dev);
 		printk(1, "[rtl8139]: Device error when trying to initialize\n");
 		device->flags |= PCI_ERROR;
-		return -1;
+		return 0;
 	}
 
 	struct inode *i = devfs_add(devfs_root, "rtl8139", S_IFCHR, rtl8139_maj, 0);
@@ -381,8 +386,7 @@ int rtl8139_load_device_pci(struct pci_device *device)
 	mutex_create(&dev->tx_lock, 0);
 	printk(1, "[rtl8139]: registered interrupt line %d\n", dev->inter);
 	printk(1, "[rtl8139]: Success!\n");
-	rtldev = dev;
-	return 0;
+	return dev;
 }
 
 int rtl8139_unload_device_pci(rtl8139dev_t *dev)
@@ -413,25 +417,34 @@ int module_install()
 {
 	rtl8139_maj = dm_set_available_char_device(rtl8139_rw_main, ioctl_rtl8139, 0);
 	int i=0;
+	memset(devs, 0, sizeof(rtl8139dev_t *) * 16);
 	printk(1, "[rtl8139]: Scanning PCI bus...\n");
-	//while(1) {
-	struct pci_device *dev = pci_locate_devices(0x10ec, 0x8139, i);
-	if(dev) {
-		rtl8139_load_device_pci(dev);
-		rtl8139_net_dev = net_add_device(&rtl8139_net_callbacks, 0);
-		rtl8139_net_dev->data_header_len = sizeof(struct ethernet_header);
-		rtl8139_net_dev->hw_address_len = 6;
-		rtl8139_net_dev->hw_type = NET_HWTYPE_ETHERNET;
+	while(i < 16) {
+		struct pci_device *dev = pci_locate_devices(0x10ec, 0x8139, i);
+		if(dev) {
+			rtl8139dev_t *rdev = rtl8139_load_device_pci(dev);
+			struct net_dev *rtl8139_net_dev = net_add_device(&rtl8139_net_callbacks, rdev);
+			rtl8139_net_dev->data_header_len = sizeof(struct ethernet_header);
+			rtl8139_net_dev->hw_address_len = 6;
+			rtl8139_net_dev->hw_type = NET_HWTYPE_ETHERNET;
 
-		i++;
+			rdev->net_dev = rtl8139_net_dev;
+			rtl8139_net_dev->data = rdev;
+			devs[i] = rdev;
+
+			i++;
+		}
+		if(!dev)
+			break;
 	}
-	//}
 	return 0;
 }
 
 int module_exit()
 {
 	dm_unregister_char_device(rtl8139_maj);
-	rtl8139_unload_device_pci(rtldev);
+	//rtl8139_unload_device_pci(rtldev);
+	///* TODO */
 	return 0;
 }
+

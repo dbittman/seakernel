@@ -11,8 +11,12 @@
 #include <sea/net/route.h>
 #include <sea/tm/schedule.h>
 #include <sea/net/datalayer.h>
-
+#include <sea/fs/devfs.h>
+#include <sea/errno.h>
 struct llist *net_list;
+
+int nd_num = 0;
+static struct net_dev *devices[256];
 
 void net_init()
 {
@@ -70,28 +74,44 @@ struct net_dev *net_add_device(struct net_dev_calls *fn, void *data)
 	kthread_create(&nd->rec_thread, "[kpacket]", 0, kt_packet_rec_thread, nd);
 	nd->rec_thread.process->priority = 100;
 	
-	unsigned char ifa[4];
-	ifa[0] = 2;
-	ifa[1] = 0;
-	ifa[2] = 0;
-	ifa[3] = 0xa;
-	nd->net_address_len = 4;
-	net_iface_set_network_addr(nd, 0x800, ifa);
-	struct route *r = kmalloc(sizeof(struct route));
-	r->interface = nd;
-	net_iface_set_flags(nd, IFACE_FLAG_UP);
-	r->flags |= ROUTE_FLAG_DEFAULT | ROUTE_FLAG_UP;
-	net_route_add_entry(r);
 	
+	
+	
+	net_iface_set_flags(nd, IFACE_FLAG_UP);
+	
+	
+	
+	int num = add_atomic(&nd_num, 1);
+	if(num > 255)
+		panic(0, "cannot add new netdev");
+	snprintf(nd->name, 16, "nd%d", num);
+	nd->num = num;
+	devices[num] = nd;
+	nd->devnode = devfs_add(devfs_root, nd->name, S_IFCHR, 6, num);
+
 	return nd;
 }
 
 void net_remove_device(struct net_dev *nd)
 {
+	devices[nd->num] = 0;
 	ll_remove(net_list, nd->node);
 	kfree(nd);
 }
 
+void net_iface_set_network_mask(struct net_dev *nd, int type, uint32_t mask)
+{
+	if(type != 0x800)
+		panic(0, "unknown protocol type");
+	nd->netmask = mask;
+}
+
+void net_iface_get_network_mask(struct net_dev *nd, int type, uint32_t *mask)
+{
+	if(type != 0x800)
+		panic(0, "unknown protocol type");
+	*mask = nd->netmask;
+}
 
 void net_iface_set_network_addr(struct net_dev *nd, int type, uint8_t *addr)
 {
@@ -115,5 +135,66 @@ int net_iface_get_flags(struct net_dev *nd)
 int net_iface_set_flags(struct net_dev *nd, int flags)
 {
 	return (nd->flags = net_callback_set_flags(nd, flags));
+}
+
+int net_char_select(int a, int b)
+{
+
+}
+
+int net_char_rw(int rw, int min, char *buf, size_t count)
+{
+
+}
+
+struct ul_route {
+	struct sockaddr dest, gate, mask;
+	int flags;
+};
+
+int net_char_ioctl(dev_t min, int cmd, long arg)
+{
+	struct net_dev *nd = devices[min];
+	if(!nd)
+		return -EINVAL;
+	printk(0, "[netdev]: ioctl %d %d %x\n", min, cmd, arg);
+	struct ifreq *req = (void *)arg;
+	struct ul_route *rt = (void *)arg;
+	struct sockaddr *sa = (struct sockaddr *)(&req->ifr_addr);
+	unsigned char ifa[4];
+	uint32_t mask;
+	struct route *route;
+	switch(cmd) {
+		case SIOCSIFADDR:
+			ifa[0] = sa->sa_data[5];
+			ifa[1] = sa->sa_data[4];
+			ifa[2] = sa->sa_data[3];
+			ifa[3] = sa->sa_data[2];
+			printk(0, "setting addr: %x %x %x %x\n", sa->sa_data[2], sa->sa_data[3], sa->sa_data[4], sa->sa_data[5]);
+			net_iface_set_network_addr(nd, 0x800, ifa);
+			nd->net_address_len = 4;
+			break;
+		case SIOCSIFNETMASK:
+			memcpy(&mask, sa->sa_data + 2, 4);
+			printk(0, "set mask: %x %x %x %x : %x\n", (uint8_t)sa->sa_data[2], (uint8_t)sa->sa_data[3], (uint8_t)sa->sa_data[4], (uint8_t)sa->sa_data[5], BIG_TO_HOST32(mask));
+			net_iface_set_network_mask(nd, 0x800, mask);
+
+			break;
+		case SIOCADDRT:
+			route = kmalloc(sizeof(struct route));
+			memcpy(&mask, rt->gate.sa_data + 2, 4);
+			route->gateway.address = BIG_TO_HOST32(mask);
+			memcpy(&mask, rt->dest.sa_data + 2, 4);
+			route->destination.address = BIG_TO_HOST32(mask);
+			memcpy(&mask, rt->mask.sa_data + 2, 4);
+			route->netmask = BIG_TO_HOST32(mask);
+			route->interface = nd;
+			route->flags = rt->flags;
+			printk(0, "add route: %x %x %x %x %s\n", route->destination.address, route->gateway.address, route->netmask, route->flags, nd->name);
+			net_route_add_entry(route);
+			break;
+		default:
+			return -EINVAL;
+	}
 }
 

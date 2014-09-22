@@ -161,15 +161,10 @@ int net_char_ioctl(dev_t min, int cmd, long arg)
 	struct ifreq *req = (void *)arg;
 	struct ul_route *rt = (void *)arg;
 	struct sockaddr *sa = (struct sockaddr *)(&req->ifr_addr);
-	unsigned char ifa[4];
 	uint32_t mask;
 	struct route *route;
 	switch(cmd) {
 		case SIOCSIFADDR:
-			ifa[0] = sa->sa_data[5];
-			ifa[1] = sa->sa_data[4];
-			ifa[2] = sa->sa_data[3];
-			ifa[3] = sa->sa_data[2];
 			printk(0, "setting addr: %x %x %x %x\n", sa->sa_data[2], sa->sa_data[3], sa->sa_data[4], sa->sa_data[5]);
 			net_iface_set_network_addr(nd, 0x800, (uint8_t *)(sa->sa_data + 2));
 			nd->net_address_len = 4;

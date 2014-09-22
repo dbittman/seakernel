@@ -12,9 +12,16 @@
 #include <sea/tm/schedule.h>
 #include <sea/mutex.h>
 
-static struct hash_table *ipv4_hash = 0; /* TODO: hashes for any protocol */
+#define MAX_PROTS 64
+
+static struct arp_database {
+	uint16_t ethertype;
+	struct hash_table *table;
+	mutex_t hashlock;
+} databases[MAX_PROTS];
+
 static struct llist *outstanding = 0;
-mutex_t *outlock, *hashlock;
+mutex_t *outlock, databaselock;
 static void arp_get_mac(uint8_t *mac, uint16_t m1, uint16_t m2, uint16_t m3)
 {
 	mac[0] = (m1 & 0xFF);
@@ -94,26 +101,54 @@ static void arp_add_outstanding_requests(int prot_type, uint16_t addr[2])
 	mutex_release(outlock);
 }
 
-static void arp_add_entry_to_hash(struct hash_table *hash, uint16_t prot_addr[2], struct arp_entry *entry)
+static struct arp_database *arp_get_database(uint16_t pt)
+{
+	mutex_acquire(&databaselock);
+	for(int i = 0;i<MAX_PROTS;i++) {
+		if(databases[i].ethertype == pt) {
+			mutex_release(&databaselock);
+			return &databases[i];
+		}
+	}
+	mutex_release(&databaselock);
+	return 0;
+}
+
+static void arp_add_entry_to_database(struct arp_database *db, uint16_t prot_addr[2], struct arp_entry *entry)
 {
 	void *tmp;
 	/* we have to first lookup the address, as we may be changing an entry */
-	mutex_acquire(hashlock);
-	if(hash_table_get_entry(hash, prot_addr, sizeof(uint16_t), 2, &tmp) != -ENOENT) {
-		hash_table_delete_entry(hash, prot_addr, sizeof(uint16_t), 2);
+	mutex_acquire(&db->hashlock);
+	if(hash_table_get_entry(db->table, prot_addr, sizeof(uint16_t), 2, &tmp) != -ENOENT) {
+		hash_table_delete_entry(db->table, prot_addr, sizeof(uint16_t), 2);
 		kfree(tmp);
 	}
 	TRACE(0, "[arp]: adding entry %x:%x -- %x\n", prot_addr[0], prot_addr[1], entry->hw_addr[0]);
-	hash_table_set_entry(hash, prot_addr, sizeof(uint16_t), 2, entry);
-	mutex_release(hashlock);
+	hash_table_set_entry(db->table, prot_addr, sizeof(uint16_t), 2, entry);
+	mutex_release(&db->hashlock);
 }
 
-static struct hash_table *arp_create_cache()
+static struct arp_database *arp_create_database(uint16_t et)
 {
 	struct hash_table *hash = hash_table_create(0, 0, HASH_TYPE_CHAIN);
 	hash_table_resize(hash, HASH_RESIZE_MODE_IGNORE, 100);
 	hash_table_specify_function(hash, HASH_FUNCTION_BYTE_SUM);
-	return hash;
+	mutex_acquire(&databaselock);
+	int i;
+	for(i=0;i<MAX_PROTS;i++) {
+		if(databases[i].ethertype == 0)
+			break;
+	}
+	if(i == MAX_PROTS)
+		printk(5, "[arp]: ran out of databases!\n");
+
+	struct arp_database *db = &databases[i];
+	db->table = hash;
+	db->ethertype = et;
+	mutex_create(&db->hashlock, 0);
+
+	mutex_release(&databaselock);
+	return db;
 }
 
 static void arp_send_packet(struct net_dev *nd, struct net_packet *netpacket, 
@@ -135,8 +170,6 @@ void arp_send_request(struct net_dev *nd, uint16_t prot_type, uint8_t prot_addr[
 	 * and reset the timeout value for it.
 	 */
 	struct arp_packet packet;
-	//packet.tar_p_addr_1 = prot_addr[3] | (prot_addr[2] << 8);
-	//packet.tar_p_addr_2 = prot_addr[1] | (prot_addr[0] << 8);
 	arp_write_short(prot_addr, &packet.tar_p_addr_1, &packet.tar_p_addr_2);
 	uint16_t addr[2];
 	addr[0] = packet.tar_p_addr_1;
@@ -153,8 +186,6 @@ void arp_send_request(struct net_dev *nd, uint16_t prot_type, uint8_t prot_addr[
 	arp_set_mac(nd->hw_address, &packet.src_hw_addr_1, &packet.src_hw_addr_2, &packet.src_hw_addr_3);
 	uint8_t src_p[4];
 	net_iface_get_network_addr(nd, prot_type, src_p);
-	//packet.src_p_addr_1 = src_p[3] | (src_p[2] << 8);
-	//packet.src_p_addr_2 = src_p[1] | (src_p[0] << 8);
 	arp_write_short(src_p, &packet.src_p_addr_1, &packet.src_p_addr_2);
 
 	packet.tar_hw_addr_1 = packet.tar_hw_addr_2 = packet.tar_hw_addr_3 = 0;
@@ -172,15 +203,16 @@ void arp_send_request(struct net_dev *nd, uint16_t prot_type, uint8_t prot_addr[
 
 static struct arp_entry *arp_do_lookup(int ethertype, uint16_t prot_addr[2])
 {
-	if(!ipv4_hash)
+	struct arp_database *db = arp_get_database(ethertype);
+	if(!db)
 		return 0;
 	void *entry;
-	mutex_acquire(hashlock);
-	if(hash_table_get_entry(ipv4_hash, prot_addr, sizeof(uint16_t), 2, &entry) == -ENOENT) {
-		mutex_release(hashlock);
+	mutex_acquire(&db->hashlock);
+	if(hash_table_get_entry(db->table, prot_addr, sizeof(uint16_t), 2, &entry) == -ENOENT) {
+		mutex_release(&db->hashlock);
 		return 0;
 	}
-	mutex_release(hashlock);
+	mutex_release(&db->hashlock);
 	return entry;
 }
 
@@ -188,25 +220,24 @@ void arp_remove_entry(int ptype, uint8_t paddr[4])
 {
 	/* a little bit manipulation */
 	uint16_t pr[2];
-	//pr[0] = paddr[3] | (paddr[2] << 8);
-	//pr[1] = paddr[1] | (paddr[0] << 8);
 	arp_write_short(paddr, &pr[0], &pr[1]);
 	
 	void *ent;
-	mutex_acquire(hashlock);
-	if(hash_table_get_entry(ipv4_hash, pr, sizeof(uint16_t), 2, &ent) != -ENOENT) {
-		hash_table_delete_entry(ipv4_hash, pr, sizeof(uint16_t), 2);
+	struct arp_database *db = arp_get_database(ptype);
+	if(!db)
+		return;
+	mutex_acquire(&db->hashlock);
+	if(hash_table_get_entry(db->table, pr, sizeof(uint16_t), 2, &ent) != -ENOENT) {
+		hash_table_delete_entry(db->table, pr, sizeof(uint16_t), 2);
 		kfree(ent);
 	}
-	mutex_release(hashlock);
+	mutex_release(&db->hashlock);
 }
 
 int arp_lookup(int ptype, uint8_t paddr[4], uint8_t hwaddr[6])
 {
 	/* a little bit manipulation */
 	uint16_t pr[2];
-//	pr[0] = paddr[3] | (paddr[2] << 8);
-//	pr[1] = paddr[1] | (paddr[0] << 8);
 	arp_write_short(paddr, &pr[0], &pr[1]);
 	struct arp_entry *ent = arp_do_lookup(ptype, pr);
 	if(!ent)
@@ -240,8 +271,6 @@ int arp_receive_packet(struct net_dev *nd, struct net_packet *netpacket, struct 
 			packet->tar_p_addr_2 = packet->src_p_addr_2;
 			packet->oper = HOST_TO_BIG16(ARP_OPER_REPLY);
 			
-			//packet->src_p_addr_1 = ifaddr[3] | (ifaddr[2] << 8);
-			//packet->src_p_addr_2 = ifaddr[1] | (ifaddr[0] << 8);
 			arp_write_short(ifaddr, &packet->src_p_addr_1, &packet->src_p_addr_2);
 			
 			arp_send_packet(nd, netpacket, packet, 0);
@@ -263,9 +292,11 @@ int arp_receive_packet(struct net_dev *nd, struct net_packet *netpacket, struct 
 		entry->hw_len = 6;
 		entry->prot_len = 4;
 
-		if(!ipv4_hash)
-			ipv4_hash = arp_create_cache();
-		arp_add_entry_to_hash(ipv4_hash, p_addr, entry);
+		struct arp_database *db = arp_get_database(BIG_TO_HOST16(packet->p_type));
+		if(!db)
+			db = arp_create_database(BIG_TO_HOST16(packet->p_type));
+		if(db)
+			arp_add_entry_to_database(db, p_addr, entry);
 	}
 	if(oper == ARP_OPER_REQUEST || oper == ARP_OPER_REPLY) 
 		arp_remove_outstanding_requests(BIG_TO_HOST16(packet->p_type), p_addr);
@@ -276,6 +307,9 @@ void arp_init()
 {
 	outstanding = ll_create_lockless(0);
 	outlock = mutex_create(0, 0);
-	hashlock = mutex_create(0, 0);
+	for(int i = 0;i<MAX_PROTS;i++) {
+		databases[i].ethertype = 0;
+	}
+	mutex_create(&databaselock, 0);
 }
 

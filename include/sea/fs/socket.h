@@ -12,7 +12,7 @@ typedef unsigned int socklen_t;
 
 struct sockaddr {
 	sa_family_t sa_family;
-	char sa_data[14];
+	unsigned char sa_data[14];
 };
 
 #define PROTOCOL_IP      0
@@ -85,6 +85,7 @@ static int __socket_default_protocols_per_type[4] = {
 #define AF_FILE     PF_FILE
 #define AF_INET     PF_INET
 
+extern uint16_t af_to_ethertype_map[PF_MAX];
 struct sockproto {
 	uint16_t sp_family;      /* address family */
 	uint16_t sp_protocol;        /* protocol */

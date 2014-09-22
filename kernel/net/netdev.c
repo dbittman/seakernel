@@ -13,6 +13,11 @@
 #include <sea/net/datalayer.h>
 #include <sea/fs/devfs.h>
 #include <sea/errno.h>
+
+uint16_t af_to_ethertype_map[PF_MAX] = {
+	[AF_INET] = 0x800,
+};
+
 struct llist *net_list;
 
 int nd_num = 0;
@@ -77,7 +82,7 @@ struct net_dev *net_add_device(struct net_dev_calls *fn, void *data)
 	
 	
 	
-	net_iface_set_flags(nd, IFACE_FLAG_UP);
+	net_iface_set_flags(nd, IFACE_FLAGS_DEFAULT | IFACE_FLAG_UP);
 	
 	
 	
@@ -137,6 +142,12 @@ int net_iface_set_flags(struct net_dev *nd, int flags)
 	return (nd->flags = net_callback_set_flags(nd, flags));
 }
 
+void net_iface_export_data(struct net_dev *nd, struct if_data *stat)
+{
+	
+}
+
+
 int net_char_select(int a, int b)
 {
 
@@ -159,9 +170,11 @@ int net_char_ioctl(dev_t min, int cmd, long arg)
 		return -EINVAL;
 	printk(0, "[netdev]: ioctl %d %d %x\n", min, cmd, arg);
 	struct ifreq *req = (void *)arg;
+	struct if_data *stat = (void *)arg;
 	struct ul_route *rt = (void *)arg;
 	struct sockaddr *sa = (struct sockaddr *)(&req->ifr_addr);
 	uint32_t mask;
+	int flags;
 	struct route *route;
 	switch(cmd) {
 		case SIOCSIFADDR:
@@ -169,11 +182,26 @@ int net_char_ioctl(dev_t min, int cmd, long arg)
 			net_iface_set_network_addr(nd, 0x800, (uint8_t *)(sa->sa_data + 2));
 			nd->net_address_len = 4;
 			break;
+		case SIOCGIFADDR:
+			net_iface_get_network_addr(nd, 0x800, (uint8_t *)(sa->sa_data + 2));
+			break;
 		case SIOCSIFNETMASK:
 			memcpy(&mask, sa->sa_data + 2, 4);
 			printk(0, "set mask: %x %x %x %x : %x\n", (uint8_t)sa->sa_data[2], (uint8_t)sa->sa_data[3], (uint8_t)sa->sa_data[4], (uint8_t)sa->sa_data[5], BIG_TO_HOST32(mask));
 			net_iface_set_network_mask(nd, 0x800, mask);
 
+			break;
+		case SIOCGIFNETMASK:
+			net_iface_get_network_mask(nd, 0x800, &mask);
+			memcpy(sa->sa_data + 2, &mask, 4);
+			break;
+		case SIOCGIFFLAGS:
+			req->ifr_flags = net_iface_get_flags(nd);
+			break;
+		case SIOCSIFFLAGS:
+			flags = req->ifr_flags;
+			flags &= ~IFACE_FLAGS_READONLY;
+			net_iface_set_flags(nd, flags);
 			break;
 		case SIOCADDRT:
 			route = kmalloc(sizeof(struct route));
@@ -188,8 +216,22 @@ int net_char_ioctl(dev_t min, int cmd, long arg)
 			printk(0, "add route: %x %x %x %x %s\n", route->destination.address, route->gateway.address, route->netmask, route->flags, nd->name);
 			net_route_add_entry(route);
 			break;
+		case SIOCGIFHWADDR:
+			memcpy(sa->sa_data, nd->hw_address, nd->hw_address_len);
+			break;
+		case SIOCGIFMTU:
+			req->ifr_mtu = nd->mtu;
+			break;
+		case SIOCSIFMTU:
+			if(current_task->thread->effective_uid != 0)
+				return -EPERM;
+			nd->mtu = req->ifr_mtu;
+			break;
+		case SIOCGIFDATA: 
+			net_iface_export_data(nd, stat);
+			break;
 		default:
-			return -EINVAL;
+			return -EOPNOTSUPP;
 	}
 }
 

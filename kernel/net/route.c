@@ -26,6 +26,7 @@ int __net_route_calc_confidence(struct route *r, union ipv4_address addr)
 	if(!(r->interface->flags & IFACE_FLAG_UP))
 		return -1;
 	uint32_t prefix = NETWORK_PREFIX(addr.address, r->netmask);
+	printk(0, "*** CALC: %x %x : %x %x\n", addr.address, r->netmask, prefix, r->destination.address);
 	if(prefix == r->destination.address) {
 		return bit_count(r->netmask);
 	}

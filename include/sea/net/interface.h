@@ -7,9 +7,49 @@
 #include <sea/fs/inode.h>
 #include <sea/fs/socket.h>
 #include <sea/sys/ioctls.h>
-#define IFACE_FLAG_UP           0x1
+
+#define IFF_UP      0x1     /* interface is up */
+#define IFF_BROADCAST   0x2     /* broadcast address valid */
+#define IFF_DEBUG   0x4     /* turn on debugging */
+#define IFF_LOOPBACK    0x8     /* is a loopback net */
+#define IFF_POINTOPOINT 0x10        /* interface is point-to-point link */
+#define IFF_NOTRAILERS  0x20        /* avoid use of trailers */
+#define IFF_RUNNING 0x40        /* resources allocated */
+#define IFF_NOARP   0x80        /* no address resolution protocol */
+#define IFF_PROMISC 0x100       /* receive all packets */
+#define IFF_ALLMULTI    0x200       /* receive all multicast packets */
+#define IFF_OACTIVE 0x400       /* transmission in progress */
+#define IFF_SIMPLEX 0x800       /* can't hear own transmissions */
+#define IFF_LINK0   0x1000      /* per link layer defined bit */
+#define IFF_LINK1   0x2000      /* per link layer defined bit */
+#define IFF_LINK2   0x4000      /* per link layer defined bit */
+#define IFF_ALTPHYS IFF_LINK2   /* use alternate physical connection */
+#define IFF_MULTICAST   0x8000      /* supports multicast */
+
+#define IFACE_FLAG_UP           IFF_UP
+#define IFACE_FLAG_BROADCAST    IFF_BROADCAST
+#define IFACE_FLAG_DEBUG        IFF_DEBUG
+#define IFACE_FLAG_LOOPBACK     IFF_LOOPBACK
+#define IFACE_FLAG_PTP          IFF_POINTOPOINT
+#define IFACE_FLAG_NOTRAILERS   IFF_NOTRAILERS
+#define IFACE_FLAG_RUNNING      IFF_RUNNING
+#define IFACE_FLAG_NOARP        IFF_NOARP
+#define IFACE_FLAG_PROMISC      IFF_PROMISC
+#define IFACE_FLAG_ALLMULTI     IFF_ALLMULTI
+#define IFACE_FLAG_OACTIVE      IFF_OACTIVE
+#define IFACE_FLAG_SIMPLEX      IFF_SIMPLEX
+#define IFACE_FLAG_MULTICAST    IFF_MULTICAST
+
+#define IFACE_FLAGS_READONLY \
+	(IFF_BROADCAST | IFF_LOOPBACK | IFF_RUNNING | IFF_OACTIVE | 0xFF000000 /* bits 24-31 are reserved by kernel */)
+
+/* these are reserved by the kernel */
 #define IFACE_FLAG_ACCBROADCAST 0x2
 #define IFACE_FLAG_FORWARD      0x4
+
+#define IFACE_FLAGS_DEFAULT \
+	(IFF_RUNNING | IFACE_FLAG_ACCBROADCAST | IFACE_FLAG_FORWARD)
+
 #define NET_HWTYPE_ETHERNET 1
 
 #define IFNAMSIZ 16
@@ -102,5 +142,33 @@ struct  ifreq {
 #define ifr_index       ifr_ifru.ifru_index     /* interface index */
 };
 
+struct if_data {
+	/* generic interface information */
+	unsigned char  ifi_type;       /* ethernet, tokenring, etc */
+	unsigned char  ifi_physical;       /* e.g., AUI, Thinnet, 10base-T, etc */
+	unsigned char  ifi_addrlen;        /* media address length */
+	unsigned char  ifi_hdrlen;     /* media header length */
+	unsigned char  ifi_recvquota;      /* polling quota for receive intrs */
+	unsigned char  ifi_xmitquota;      /* polling quota for xmit intrs */
+	unsigned long  ifi_mtu;        /* maximum transmission unit */
+	unsigned long  ifi_metric;     /* routing metric (external only) */
+	unsigned long  ifi_baudrate;       /* linespeed */
+	/* volatile statistics */
+	unsigned long  ifi_ipackets;       /* packets received on interface */
+	unsigned long  ifi_ierrors;        /* input errors on interface */
+	unsigned long  ifi_opackets;       /* packets sent on interface */
+	unsigned long  ifi_oerrors;        /* output errors on interface */
+	unsigned long  ifi_collisions;     /* collisions on csma interfaces */
+	unsigned long  ifi_ibytes;     /* total number of octets received */
+	unsigned long  ifi_obytes;     /* total number of octets sent */
+	unsigned long  ifi_imcasts;        /* packets received via multicast */
+	unsigned long  ifi_omcasts;        /* packets sent via multicast */
+	unsigned long  ifi_iqdrops;        /* dropped on input, this interface */
+	unsigned long  ifi_noproto;        /* destined for unsupported protocol */
+	unsigned long  ifi_hwassist;       /* HW offload capabilities */
+	unsigned long  ifi_unused;     /* XXX was ifi_xmittiming */
+	struct  timeval ifi_lastchange; /* time of last administrative change */
+};
+#define IFT_ETHER   0x6
 #endif
 

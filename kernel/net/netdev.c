@@ -171,7 +171,7 @@ int net_char_ioctl(dev_t min, int cmd, long arg)
 			ifa[2] = sa->sa_data[3];
 			ifa[3] = sa->sa_data[2];
 			printk(0, "setting addr: %x %x %x %x\n", sa->sa_data[2], sa->sa_data[3], sa->sa_data[4], sa->sa_data[5]);
-			net_iface_set_network_addr(nd, 0x800, ifa);
+			net_iface_set_network_addr(nd, 0x800, (uint8_t *)(sa->sa_data + 2));
 			nd->net_address_len = 4;
 			break;
 		case SIOCSIFNETMASK:
@@ -183,11 +183,11 @@ int net_char_ioctl(dev_t min, int cmd, long arg)
 		case SIOCADDRT:
 			route = kmalloc(sizeof(struct route));
 			memcpy(&mask, rt->gate.sa_data + 2, 4);
-			route->gateway.address = BIG_TO_HOST32(mask);
+			route->gateway.address = mask;
 			memcpy(&mask, rt->dest.sa_data + 2, 4);
-			route->destination.address = BIG_TO_HOST32(mask);
+			route->destination.address = mask;
 			memcpy(&mask, rt->mask.sa_data + 2, 4);
-			route->netmask = BIG_TO_HOST32(mask);
+			route->netmask = mask;
 			route->interface = nd;
 			route->flags = rt->flags;
 			printk(0, "add route: %x %x %x %x %s\n", route->destination.address, route->gateway.address, route->netmask, route->flags, nd->name);

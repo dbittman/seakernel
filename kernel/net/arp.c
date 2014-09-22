@@ -32,6 +32,19 @@ static void arp_set_mac(uint8_t *mac, uint16_t *m1, uint16_t *m2, uint16_t *m3)
 	*m3 = (mac[4] | (mac[5] << 8));
 }
 
+static void arp_write_short(uint8_t bytes[4], uint16_t *a, uint16_t *b)
+{
+	*a = bytes[0] | (bytes[1] << 8);
+	*b = bytes[2] | (bytes[3] << 8);
+}
+
+static int __arp_compare_address(uint8_t addr[4], uint16_t a1, uint16_t a2)
+{
+	if((addr[0] | (addr[1] << 8)) == a1 && (addr[2] | (addr[3] << 8)) == a2)
+		return 0;
+	return 1;
+}
+
 static struct arp_entry *__arp_get_outstanding_requests_entry(int prot_type, uint16_t addr[2], int check_time, int remove)
 {
 	mutex_acquire(outlock);
@@ -122,8 +135,9 @@ void arp_send_request(struct net_dev *nd, uint16_t prot_type, uint8_t prot_addr[
 	 * and reset the timeout value for it.
 	 */
 	struct arp_packet packet;
-	packet.tar_p_addr_1 = prot_addr[3] | (prot_addr[2] << 8);
-	packet.tar_p_addr_2 = prot_addr[1] | (prot_addr[0] << 8);
+	//packet.tar_p_addr_1 = prot_addr[3] | (prot_addr[2] << 8);
+	//packet.tar_p_addr_2 = prot_addr[1] | (prot_addr[0] << 8);
+	arp_write_short(prot_addr, &packet.tar_p_addr_1, &packet.tar_p_addr_2);
 	uint16_t addr[2];
 	addr[0] = packet.tar_p_addr_1;
 	addr[1] = packet.tar_p_addr_2;
@@ -139,8 +153,9 @@ void arp_send_request(struct net_dev *nd, uint16_t prot_type, uint8_t prot_addr[
 	arp_set_mac(nd->hw_address, &packet.src_hw_addr_1, &packet.src_hw_addr_2, &packet.src_hw_addr_3);
 	uint8_t src_p[4];
 	net_iface_get_network_addr(nd, prot_type, src_p);
-	packet.src_p_addr_1 = src_p[3] | (src_p[2] << 8);
-	packet.src_p_addr_2 = src_p[1] | (src_p[0] << 8);
+	//packet.src_p_addr_1 = src_p[3] | (src_p[2] << 8);
+	//packet.src_p_addr_2 = src_p[1] | (src_p[0] << 8);
+	arp_write_short(src_p, &packet.src_p_addr_1, &packet.src_p_addr_2);
 
 	packet.tar_hw_addr_1 = packet.tar_hw_addr_2 = packet.tar_hw_addr_3 = 0;
 
@@ -173,8 +188,9 @@ void arp_remove_entry(int ptype, uint8_t paddr[4])
 {
 	/* a little bit manipulation */
 	uint16_t pr[2];
-	pr[0] = paddr[3] | (paddr[2] << 8);
-	pr[1] = paddr[1] | (paddr[0] << 8);
+	//pr[0] = paddr[3] | (paddr[2] << 8);
+	//pr[1] = paddr[1] | (paddr[0] << 8);
+	arp_write_short(paddr, &pr[0], &pr[1]);
 	
 	void *ent;
 	mutex_acquire(hashlock);
@@ -189,20 +205,14 @@ int arp_lookup(int ptype, uint8_t paddr[4], uint8_t hwaddr[6])
 {
 	/* a little bit manipulation */
 	uint16_t pr[2];
-	pr[0] = paddr[3] | (paddr[2] << 8);
-	pr[1] = paddr[1] | (paddr[0] << 8);
+//	pr[0] = paddr[3] | (paddr[2] << 8);
+//	pr[1] = paddr[1] | (paddr[0] << 8);
+	arp_write_short(paddr, &pr[0], &pr[1]);
 	struct arp_entry *ent = arp_do_lookup(ptype, pr);
 	if(!ent)
 		return -ENOENT;
 	arp_get_mac(hwaddr, ent->hw_addr[0], ent->hw_addr[1], ent->hw_addr[2]);
 	return 0;
-}
-
-static int __arp_compare_address(uint8_t addr[4], uint16_t a1, uint16_t a2)
-{
-	if((addr[3] | (addr[2] << 8)) == a1 && (addr[1] | (addr[0] << 8)) == a2)
-		return 0;
-	return 1;
 }
 
 int arp_receive_packet(struct net_dev *nd, struct net_packet *netpacket, struct arp_packet *packet)
@@ -230,8 +240,9 @@ int arp_receive_packet(struct net_dev *nd, struct net_packet *netpacket, struct 
 			packet->tar_p_addr_2 = packet->src_p_addr_2;
 			packet->oper = HOST_TO_BIG16(ARP_OPER_REPLY);
 			
-			packet->src_p_addr_1 = ifaddr[3] | (ifaddr[2] << 8);
-			packet->src_p_addr_2 = ifaddr[1] | (ifaddr[0] << 8);
+			//packet->src_p_addr_1 = ifaddr[3] | (ifaddr[2] << 8);
+			//packet->src_p_addr_2 = ifaddr[1] | (ifaddr[0] << 8);
+			arp_write_short(ifaddr, &packet->src_p_addr_1, &packet->src_p_addr_2);
 			
 			arp_send_packet(nd, netpacket, packet, 0);
 		}

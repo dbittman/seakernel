@@ -257,6 +257,7 @@ void ipv4_forward_packet(struct net_dev *nd, struct net_packet *netpacket, struc
 		net_packet_put(resp, 0);
 		return;
 	}
+	netpacket->flags |= NP_FLAG_FORW; 
 	ipv4_enqueue_packet(netpacket, header);
 }
 
@@ -273,10 +274,10 @@ void ipv4_receive_packet(struct net_dev *nd, struct net_packet *netpacket, struc
 		return;
 	}
 	/* check IP address */
-	union ipv4_address src = (union ipv4_address)(uint32_t)(BIG_TO_HOST32(packet->src_ip));
-	union ipv4_address dest = (union ipv4_address)(uint32_t)(BIG_TO_HOST32(packet->dest_ip));
+	union ipv4_address src = (union ipv4_address)(uint32_t)packet->src_ip;
+	union ipv4_address dest = (union ipv4_address)(uint32_t)packet->dest_ip;
 	TRACE(0, "[ipv4]: packet from %x (%d.%d.%d.%d)\n",
-			src.address, src.addr_bytes[3], src.addr_bytes[2], src.addr_bytes[1], src.addr_bytes[0]);
+			src.address, src.addr_bytes[0], src.addr_bytes[1], src.addr_bytes[2], src.addr_bytes[3]);
 	union ipv4_address ifaddr;
 	net_iface_get_network_addr(nd, ETHERTYPE_IPV4, ifaddr.addr_bytes);
 	if(ifaddr.address == dest.address
@@ -286,7 +287,7 @@ void ipv4_receive_packet(struct net_dev *nd, struct net_packet *netpacket, struc
 		TRACE(0, "[ipv4]: got packet for us of size %d!\n", BIG_TO_HOST16(packet->length));
 		ipv4_accept_packet(nd, netpacket, packet, 
 				src, BIG_TO_HOST16(packet->length) - (packet->header_len * 4));
-	} else if(nd->flags & IFACE_FLAG_FORWARD) {
+	} else if(nd->flags & IFACE_FLAG_FORWARD || 1/*TODO */) {
 		ipv4_forward_packet(nd, netpacket, packet);
 	} else {
 		add_atomic(&nd->dropped, 1);
@@ -303,9 +304,11 @@ static int ipv4_do_enqueue_packet(struct ipv4_packet *packet)
 
 static void ipv4_finish_constructing_packet(struct net_dev *nd, struct route *r, struct ipv4_packet *packet)
 {
-	union ipv4_address src;
-	net_iface_get_network_addr(nd, ETHERTYPE_IPV4, src.addr_bytes);
-	packet->header->src_ip = HOST_TO_BIG32(src.address);
+	if(!(packet->netpacket->flags & NP_FLAG_FORW)) {
+		union ipv4_address src;
+		net_iface_get_network_addr(nd, ETHERTYPE_IPV4, src.addr_bytes);
+		packet->header->src_ip = src.address;
+	}
 	packet->header->version = 4;
 	packet->header->header_len = 5;
 	packet->header->frag_offset = 0;
@@ -317,7 +320,7 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 {
 	struct net_dev *nd;
 	union ipv4_address packet_destination;
-	union ipv4_address dest = (union ipv4_address)BIG_TO_HOST32(packet->header->dest_ip);
+	union ipv4_address dest = (union ipv4_address)packet->header->dest_ip;
 	
 	if(packet->tries > 0 && (tm_get_ticks() <= packet->last_attempt_time)) {
 		ipv4_do_enqueue_packet(packet);
@@ -406,7 +409,7 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 
 int ipv4_enqueue_packet(struct net_packet *netpacket, struct ipv4_header *header)
 {
-	union ipv4_address dest = (union ipv4_address)BIG_TO_HOST32(header->dest_ip);
+	union ipv4_address dest = (union ipv4_address)header->dest_ip;
 	struct route *r = net_route_select_entry(dest);
 	if(!r) {
 		TRACE(0, "[ipv4]: destination unavailable\n");
@@ -424,7 +427,7 @@ int ipv4_enqueue_packet(struct net_packet *netpacket, struct ipv4_header *header
 
 int ipv4_copy_enqueue_packet(struct net_packet *netpacket, struct ipv4_header *header)
 {
-	union ipv4_address dest = (union ipv4_address)BIG_TO_HOST32(header->dest_ip);
+	union ipv4_address dest = (union ipv4_address)header->dest_ip;
 	struct route *r = net_route_select_entry(dest);
 	if(!r) {
 		TRACE(0, "[ipv4]: destination unavailable\n");

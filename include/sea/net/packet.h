@@ -19,7 +19,7 @@ struct net_packet {
 
 #define NP_FLAG_ALLOC 1
 #define NP_FLAG_NOWR  2 /* don't allow changes to packet data */
-
+#define NP_FLAG_FORW  4 /* packet is being forwarded */
 #define NP_FLAG_DESTROY 1 /* this is a flag to net_packet_put, and not a packet state flag.
 						   * it tells put that it must destroy the packet, or panic. It would
 						   * only panic if the count is >1 when calling put, so this is useful

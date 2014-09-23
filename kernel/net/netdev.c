@@ -82,7 +82,7 @@ struct net_dev *net_add_device(struct net_dev_calls *fn, void *data)
 	
 	
 	
-	net_iface_set_flags(nd, IFACE_FLAGS_DEFAULT | IFACE_FLAG_UP);
+	net_iface_set_flags(nd, IFACE_FLAGS_DEFAULT | IFACE_FLAG_UP /* TODO */);
 	
 	
 	
@@ -144,7 +144,18 @@ int net_iface_set_flags(struct net_dev *nd, int flags)
 
 void net_iface_export_data(struct net_dev *nd, struct if_data *stat)
 {
-	
+	stat->ifi_type = 6; /* TODO */
+	stat->ifi_addrlen = nd->net_address_len;
+	stat->ifi_mtu = nd->mtu;
+	stat->ifi_baudrate = 0; /* TODO */
+	stat->ifi_ipackets = nd->rx_count;
+	stat->ifi_ierrors = nd->rx_err_count;
+	stat->ifi_opackets = nd->tx_count;
+	stat->ifi_oerrors = nd->tx_err_count;
+	stat->ifi_ibytes = nd->rx_bytes;
+	stat->ifi_obytes = nd->tx_bytes;
+	stat->ifi_iqdrops = nd->dropped;
+	stat->ifi_collisions = 0; /* TODO */
 }
 
 
@@ -177,6 +188,22 @@ int net_char_ioctl(dev_t min, int cmd, long arg)
 	int flags;
 	struct route *route;
 	switch(cmd) {
+		case SIOCGIFCOUNT:
+			/* TODO: uhg */
+			req->ifr_index = net_list->num;
+			break;
+		case SIOCGIFNAME:
+			flags = req->ifr_index;
+			int i;
+			for(i=0;i<256;i++) {
+				if(devices[i] && !(flags--)) {
+					break;
+				}
+			}
+			if(i == 256)
+				return -EINVAL;
+			strncpy(req->ifr_name, devices[i]->name, IFNAMSIZ);
+			break;
 		case SIOCSIFADDR:
 			printk(0, "setting addr: %x %x %x %x\n", sa->sa_data[2], sa->sa_data[3], sa->sa_data[4], sa->sa_data[5]);
 			net_iface_set_network_addr(nd, 0x800, (uint8_t *)(sa->sa_data + 2));
@@ -197,10 +224,15 @@ int net_char_ioctl(dev_t min, int cmd, long arg)
 			break;
 		case SIOCGIFFLAGS:
 			req->ifr_flags = net_iface_get_flags(nd);
+			printk(0, "getting flags %x\n", req->ifr_flags);
 			break;
 		case SIOCSIFFLAGS:
 			flags = req->ifr_flags;
+			printk(0, "setting flags pt1 %x\n", flags);
 			flags &= ~IFACE_FLAGS_READONLY;
+			int old_flags = net_iface_get_flags(nd);
+			flags |= (IFACE_FLAGS_READONLY & old_flags);
+			printk(0, "setting flags pt2 %x (%x %x)\n", flags, IFACE_FLAGS_READONLY, ~IFACE_FLAGS_READONLY);
 			net_iface_set_flags(nd, flags);
 			break;
 		case SIOCADDRT:
@@ -233,5 +265,6 @@ int net_char_ioctl(dev_t min, int cmd, long arg)
 		default:
 			return -EOPNOTSUPP;
 	}
+	return 0;
 }
 

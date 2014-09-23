@@ -44,8 +44,8 @@
 	(IFF_BROADCAST | IFF_LOOPBACK | IFF_RUNNING | IFF_OACTIVE | 0xFF000000 /* bits 24-31 are reserved by kernel */)
 
 /* these are reserved by the kernel */
-#define IFACE_FLAG_ACCBROADCAST 0x2
-#define IFACE_FLAG_FORWARD      0x4
+#define IFACE_FLAG_ACCBROADCAST 0x10000
+#define IFACE_FLAG_FORWARD      0x20000
 
 #define IFACE_FLAGS_DEFAULT \
 	(IFF_RUNNING | IFACE_FLAG_ACCBROADCAST | IFACE_FLAG_FORWARD)
@@ -60,7 +60,7 @@ struct net_dev {
 	int num;
 	int flags;
 	uint32_t state;
-	size_t rx_count, tx_count, rx_err_count, tx_err_count, rx_pending;
+	size_t rx_count, tx_count, rx_err_count, tx_err_count, rx_pending, rx_bytes, tx_bytes;
 	int dropped;
 	time_t rx_thread_lastwork;
 	/* these fields are specified by the driver at time of net_dev creation */

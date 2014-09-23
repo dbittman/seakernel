@@ -63,13 +63,18 @@ void net_notify_packet_ready(struct net_dev *nd)
 void net_receive_packet(struct net_dev *nd, struct net_packet *packets, int count)
 {
 	TRACE(0, "[packet]: receive %d packets\n", count);
-	for(int i=0;i<count;i++)
+	add_atomic(&nd->rx_count, count);
+	for(int i=0;i<count;i++) {
+		add_atomic(&nd->rx_bytes, packets[i].length);
 		net_data_receive(nd, &packets[i]);
+	}
 }
 
 int net_transmit_packet(struct net_dev *nd, struct net_packet *packets, int count)
 {
 	add_atomic(&nd->tx_count, 1);
+	for(int i=0;i<count;i++)
+		add_atomic(&nd->tx_bytes, packets[i].length);
 	TRACE(0, "[packet]: send #%d\n", nd->tx_count);
 	int ret = net_callback_send(nd, packets, count);
 	TRACE(0, "[packet]: send returned %d\n", ret);

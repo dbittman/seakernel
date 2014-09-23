@@ -158,7 +158,6 @@ void net_iface_export_data(struct net_dev *nd, struct if_data *stat)
 	stat->ifi_collisions = 0; /* TODO */
 }
 
-
 int net_char_select(int a, int b)
 {
 

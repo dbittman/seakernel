@@ -3,6 +3,7 @@
 #include <sea/net/ipv4.h>
 #include <sea/net/icmp.h>
 #include <sea/vsprintf.h>
+#include <sea/net/ethertype.h>
 
 static uint16_t icmp_calc_checksum(void *__data, int length)
 {
@@ -30,6 +31,9 @@ void icmp_receive_echo_request(struct net_dev *nd, struct net_packet *netpacket,
 	packet->type = 0;
 	struct ipv4_header *header = netpacket->network_header;
 	header->dest_ip = header->src_ip;
+	union ipv4_address ifaddr;
+	net_iface_get_network_addr(nd, ETHERTYPE_IPV4, ifaddr.addr_bytes);
+	header->src_ip = ifaddr.address;
 	ipv4_enqueue_packet(netpacket, header);
 }
 

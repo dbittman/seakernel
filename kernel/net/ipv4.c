@@ -341,6 +341,14 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 	}
 	union ipv4_address ifaddr;
 	net_iface_get_network_addr(nd, ETHERTYPE_IPV4, ifaddr.addr_bytes);
+	if(packet_destination.address == ifaddr.address) {
+		/* we're sending a packet to an address of an interface on this system! Loop it around... */
+		TRACE(0, "[ipv4]: sending packet to interface on this system! Re-receiving...\n");
+		ipv4_finish_constructing_packet(nd, r, packet);
+		ipv4_receive_packet(nd, packet->netpacket, packet->header);
+		net_packet_put(packet->netpacket, 0);
+		return 0;
+	}
 	if(dest.address == BROADCAST_ADDRESS(ifaddr.address, nd->netmask)) {
 		memset(hwaddr, 0xFF, 6);
 	} else {

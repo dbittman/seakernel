@@ -21,7 +21,7 @@
 #define S_ISBLK(m)	(((m) & S_IFMT) == S_IFBLK)
 #define S_ISFIFO(m)	(((m) & S_IFMT) == S_IFIFO)
 #define S_ISLNK(m)	(((m) & S_IFMT) == S_IFLNK)
-#define	S_ISSOCK(m)	(((m)&_IFMT) == _IFSOCK)
+#define	S_ISSOCK(m)	(((m) & S_IFMT) == S_IFSOCK)
 
 struct stat {
 	unsigned short	st_dev;

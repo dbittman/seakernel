@@ -50,6 +50,7 @@
 #define IFACE_FLAGS_DEFAULT \
 	(IFF_RUNNING | IFACE_FLAG_ACCBROADCAST | IFACE_FLAG_FORWARD)
 
+#define NET_HWTYPE_LOOP     0
 #define NET_HWTYPE_ETHERNET 1
 
 #define IFNAMSIZ 16
@@ -68,7 +69,8 @@ struct net_dev {
 	void *data; /* driver specific data */
 
 	uint8_t hw_address[6];
-	uint8_t net_address[8];
+	//uint8_t net_address[8];
+	struct sockaddr inet_address, broad_address;
 	int net_address_len, hw_address_len;
 	uint32_t netmask;
 	uint16_t hw_type;

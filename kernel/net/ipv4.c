@@ -281,6 +281,7 @@ void ipv4_receive_packet(struct net_dev *nd, struct net_packet *netpacket, struc
 	union ipv4_address ifaddr;
 	net_iface_get_network_addr(nd, ETHERTYPE_IPV4, ifaddr.addr_bytes);
 	if(ifaddr.address == dest.address
+			/* TODO: should we use this automatic broadcast address? */
 			|| (dest.address == BROADCAST_ADDRESS(ifaddr.address, nd->netmask)
 				&& (nd->flags & IFACE_FLAG_ACCBROADCAST))) {
 		/* accepted unicast or broadcast packet for us */

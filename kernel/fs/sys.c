@@ -22,6 +22,7 @@
 #include <sea/vsprintf.h>
 #include <sea/string.h>
 #include <sea/tty/terminal.h>
+#include <sea/fs/socket.h>
 static int system_setup=0;
 /* This function is called once at the start of the init process initialization.
  * It sets the task fs values to possible and useful things, allowing VFS access.
@@ -395,6 +396,8 @@ static int select_filedes(int i, int rw)
 		ready = dm_blockdev_select(in, rw);
 	else if(S_ISFIFO(in->mode))
 		ready = dm_pipedev_select(in, rw);
+	else if(S_ISSOCK(in->mode))
+		ready = socket_select(file, rw);
 	fs_fput((task_t *)current_task, i, 0);
 	return ready;
 }

@@ -23,6 +23,8 @@ struct llist *net_list;
 int nd_num = 0;
 static struct net_dev *devices[256];
 
+extern void net_lo_init();
+
 void net_init()
 {
 	net_list = ll_create(0);
@@ -47,7 +49,7 @@ static int kt_packet_rec_thread(struct kthread *kt, void *arg)
 			pack = net_packet_create(0, 0);
 			ret = net_callback_poll(nd, pack, 1);
 			TRACE(0, "[kpacket]: got packet (%d %d : %d)\n", nd->rx_pending, packets, ret);
-			if(ret) {
+			if(ret > 0) {
 				if(nd->rx_pending > 0)
 					sub_atomic(&nd->rx_pending, 1);
 				net_receive_packet(nd, pack, 1);
@@ -76,16 +78,11 @@ struct net_dev *net_add_device(struct net_dev_calls *fn, void *data)
 	uint8_t mac[6];
 	net_callback_get_mac(nd, mac);
 	memcpy(nd->hw_address, mac, sizeof(uint8_t) * 6);
-	kthread_create(&nd->rec_thread, "[kpacket]", 0, kt_packet_rec_thread, nd);
-	nd->rec_thread.process->priority = 100;
-	
-	
-	
-	
-	net_iface_set_flags(nd, IFACE_FLAGS_DEFAULT | IFACE_FLAG_UP /* TODO */);
-	
-	
-	
+	if(fn->poll) {
+		kthread_create(&nd->rec_thread, "[kpacket]", 0, kt_packet_rec_thread, nd);
+		nd->rec_thread.process->priority = 100;
+	}
+	net_iface_set_flags(nd, IFACE_FLAGS_DEFAULT);
 	int num = add_atomic(&nd_num, 1);
 	if(num > 255)
 		panic(0, "cannot add new netdev");
@@ -101,6 +98,7 @@ void net_remove_device(struct net_dev *nd)
 {
 	devices[nd->num] = 0;
 	ll_remove(net_list, nd->node);
+	/* TODO: kill rec thread */
 	kfree(nd);
 }
 
@@ -118,18 +116,39 @@ void net_iface_get_network_mask(struct net_dev *nd, int type, uint32_t *mask)
 	*mask = nd->netmask;
 }
 
-void net_iface_set_network_addr(struct net_dev *nd, int type, uint8_t *addr)
+void net_iface_set_broadcast_sockaddr(struct net_dev *nd, int type, struct sockaddr *addr)
 {
 	if(type != 0x800)
 		panic(0, "unknown protocol type");
-	memcpy(nd->net_address, addr, 4);
+	memcpy(&nd->broad_address, addr, sizeof(*addr));
+}
+
+void net_iface_get_broadcast_sockaddr(struct net_dev *nd, int type, struct sockaddr *addr)
+{
+	if(type != 0x800)
+		panic(0, "unknown protcol type");
+	memcpy(addr, &nd->broad_address, sizeof(*addr));
+}
+
+void net_iface_set_network_sockaddr(struct net_dev *nd, int type, struct sockaddr *addr)
+{
+	if(type != 0x800)
+		panic(0, "unknown protocol type");
+	memcpy(&nd->inet_address, addr, sizeof(*addr));
 }
 
 void net_iface_get_network_addr(struct net_dev *nd, int type, uint8_t *addr)
 {
 	if(type != 0x800)
 		panic(0, "unknown protocol type");
-	memcpy(addr, nd->net_address, 4);
+	memcpy(addr, nd->inet_address.sa_data + 2, 4);
+}
+
+void net_iface_get_network_sockaddr(struct net_dev *nd, int type, struct sockaddr *addr)
+{
+	if(type != 0x800)
+		panic(0, "unknown protcol type");
+	memcpy(addr, &nd->inet_address, sizeof(*addr));
 }
 
 int net_iface_get_flags(struct net_dev *nd)
@@ -158,14 +177,14 @@ void net_iface_export_data(struct net_dev *nd, struct if_data *stat)
 	stat->ifi_collisions = 0; /* TODO */
 }
 
-int net_char_select(int a, int b)
+int net_char_select(int min, int rw)
 {
-
+	return 1;
 }
 
 int net_char_rw(int rw, int min, char *buf, size_t count)
 {
-
+	return -ENOTSUP;
 }
 
 struct ul_route {
@@ -205,11 +224,11 @@ int net_char_ioctl(dev_t min, int cmd, long arg)
 			break;
 		case SIOCSIFADDR:
 			printk(0, "setting addr: %x %x %x %x\n", sa->sa_data[2], sa->sa_data[3], sa->sa_data[4], sa->sa_data[5]);
-			net_iface_set_network_addr(nd, 0x800, (uint8_t *)(sa->sa_data + 2));
+			net_iface_set_network_sockaddr(nd, 0x800, sa);
 			nd->net_address_len = 4;
 			break;
 		case SIOCGIFADDR:
-			net_iface_get_network_addr(nd, 0x800, (uint8_t *)(sa->sa_data + 2));
+			net_iface_get_network_sockaddr(nd, 0x800, sa);
 			break;
 		case SIOCSIFNETMASK:
 			memcpy(&mask, sa->sa_data + 2, 4);
@@ -260,6 +279,12 @@ int net_char_ioctl(dev_t min, int cmd, long arg)
 			break;
 		case SIOCGIFDATA: 
 			net_iface_export_data(nd, stat);
+			break;
+		case SIOCSIFBRDADDR:
+			net_iface_set_broadcast_sockaddr(nd, 0x800, sa);
+			break;
+		case SIOCGIFBRDADDR:
+			net_iface_get_broadcast_sockaddr(nd, 0x800, sa);
 			break;
 		default:
 			return -EOPNOTSUPP;

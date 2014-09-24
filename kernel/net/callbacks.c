@@ -20,7 +20,7 @@ int net_callback_change_link(struct net_dev *nd, uint32_t link)
 int net_callback_set_flags(struct net_dev *nd, int flags)
 {
 	if(!nd || !nd->callbacks || !nd->callbacks->set_flags)
-		return -EINVAL;
+		return flags;
 	return nd->callbacks->set_flags(nd, flags);
 }
 

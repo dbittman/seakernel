@@ -202,7 +202,6 @@ void __tm_check_alarms()
 	mutex_acquire(alarm_mutex);
 	if((unsigned)tm_get_ticks() > alarm_list_start->alarm_end)
 	{
-#warning "PROCESS DESTRUCTION -> REMOVE FROM ALARM LIST"
 		tm_process_lower_flag(alarm_list_start, TF_ALARM);
 		alarm_list_start->sigd = SIGALRM;
 		alarm_list_start = alarm_list_start->alarm_next;

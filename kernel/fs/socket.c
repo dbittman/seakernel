@@ -8,6 +8,7 @@
 #include <sea/net/data_queue.h>
 #include <sea/tm/schedule.h>
 #include <sea/fs/fcntl.h>
+#include <sea/dm/dev.h>
 /* network worker threads just add the packet to the
  * queues that read from them (can be multiple queues)
  * and give proper refcounts. user programs are then woken
@@ -34,6 +35,7 @@ struct socket *socket_create(int *errcode)
 	f->inode = inode;
 	inode->count = 1;
 	inode->f_count = 1;
+	inode->mode |= S_IFSOCK;
 	rwlock_create(&inode->rwl);
 	f->count = 1;
 	int fd = fs_add_file_pointer(current_task, f);
@@ -74,6 +76,15 @@ static void socket_destroy(struct socket *sock)
 	sys_close(sock->fd);
 	queue_destroy(&sock->rec_data_queue);
 	kfree(sock);
+}
+
+int socket_select(struct file *f, int rw)
+{
+	if(!f->socket)
+		return -ENOTSOCK;
+	if(rw == READ)
+		return f->socket->rec_data_queue.count > 0;
+	return 1;
 }
 
 static struct socket_calls *socket_get_calls(int prot)

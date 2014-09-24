@@ -175,5 +175,6 @@ int sys_getsockname(int socket, struct sockaddr *restrict address,
 		socklen_t *restrict address_len);
 int sys_recvfrom(struct socket_fromto_info *m);
 int sys_sendto(struct socket_fromto_info *m);
+int socket_select(struct file *file, int rw);
 #endif
 

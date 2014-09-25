@@ -54,7 +54,7 @@ void ipv4_receive_packet(struct net_dev *nd, struct net_packet *, struct ipv4_he
 void ipv4_init();
 int ipv4_enqueue_packet(struct net_packet *netpacket, struct ipv4_header *header);
 int ipv4_copy_enqueue_packet(struct net_packet *netpacket, struct ipv4_header *header);
-int ipv4_enqueue_sockaddr(void *payload, size_t len, struct sockaddr *addr, int prot);
+int ipv4_enqueue_sockaddr(void *payload, size_t len, struct sockaddr *addr, struct sockaddr *src, int prot);
 
 #define NETWORK_PREFIX(addr,mask) (addr & mask)
 #define HOST_ADDRESS_PART(addr,mask) (addr & ~mask)

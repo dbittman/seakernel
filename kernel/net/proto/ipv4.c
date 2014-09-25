@@ -226,22 +226,22 @@ static void ipv4_accept_packet(struct net_dev *nd, struct net_packet *netpacket,
 	if(!ipv4_handle_fragmentation(&netpacket, &packet, &payload_size, &from_fragment))
 		return;
 	ipv4_copy_to_sockets(netpacket, packet);
+	struct sockaddr sa_src, sa_dest;
 	switch(packet->ptype) {
 		case IP_PROTOCOL_ICMP:
 			icmp_receive_packet(nd, netpacket, src, (struct icmp_packet *)packet->data, payload_size);
 			break;
 		default:
-			TRACE(0, "[ipv4]: unknown protocol %x\n", packet->ptype);
+			memset(&sa_src, 0, sizeof(sa_src));
+			memset(&sa_dest, 0, sizeof(sa_dest));
+			union ipv4_address ifaddr;
+			net_iface_get_network_addr(nd, ETHERTYPE_IPV4, ifaddr.addr_bytes);
+			memcpy(sa_dest.sa_data + 2, &ifaddr.address, 4);
+			memcpy(sa_src.sa_data + 2, &src.address, 4);
+			sa_src.sa_family = sa_dest.sa_family = AF_INET;
+			net_tlayer_recvfrom_network(&sa_src, &sa_dest, netpacket, packet->ptype, packet->data, payload_size);
+			break;
 	}
-	
-	struct sockaddr sa_src, sa_dest;
-	memset(&sa_src, 0, sizeof(sa_src));
-	memset(&sa_dest, 0, sizeof(sa_dest));
-	union ipv4_address ifaddr;
-	net_iface_get_network_addr(nd, ETHERTYPE_IPV4, ifaddr.addr_bytes);
-	memcpy(sa_dest.sa_data + 2, &ifaddr.address, 4);
-	memcpy(sa_src.sa_data + 2, &src.address, 4);
-	net_tlayer_recvfrom_network(&sa_src, &sa_dest, netpacket, packet->ptype, packet->data, payload_size);
 	if(from_fragment)
 		net_packet_put(netpacket, 0);
 }
@@ -315,7 +315,7 @@ static int ipv4_do_enqueue_packet(struct ipv4_packet *packet)
 
 static void ipv4_finish_constructing_packet(struct net_dev *nd, struct route *r, struct ipv4_packet *packet)
 {
-	if(!(packet->netpacket->flags & NP_FLAG_FORW)) {
+	if(!(packet->netpacket->flags & NP_FLAG_FORW) && !(packet->netpacket->flags & NP_FLAG_NOFILLSRC)) {
 		union ipv4_address src;
 		net_iface_get_network_addr(nd, ETHERTYPE_IPV4, src.addr_bytes);
 		packet->header->src_ip = src.address;
@@ -463,9 +463,9 @@ int ipv4_copy_enqueue_packet(struct net_packet *netpacket, struct ipv4_header *h
 	return BIG_TO_HOST32(header->length);
 }
 
-int ipv4_enqueue_sockaddr(void *payload, size_t len, struct sockaddr *addr, int prot)
+int ipv4_enqueue_sockaddr(void *payload, size_t len, struct sockaddr *addr, struct sockaddr *src, int prot)
 {
-	union ipv4_address dest;
+	union ipv4_address dest, src_ip;
 	memcpy(&dest.address, addr->sa_data + 2, 4);
 	struct route *r = net_route_select_entry(dest);
 	if(!r)
@@ -480,6 +480,12 @@ int ipv4_enqueue_sockaddr(void *payload, size_t len, struct sockaddr *addr, int 
 	header->length = HOST_TO_BIG16(len + 20);
 	header->id = 0;
 	header->ptype = prot;
+	memcpy(&src_ip.address, src->sa_data + 2, 4);
+	if(src_ip.address) {
+		/* we're given a specific src address, so copy it in */
+		header->src_ip = src_ip.address;
+		np->flags |= NP_FLAG_NOFILLSRC;
+	}
 
 	memcpy(header->data, payload, len);
 	struct ipv4_packet *packet = kmalloc(sizeof(struct ipv4_packet));

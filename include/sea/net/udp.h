@@ -12,5 +12,7 @@ struct udp_header {
 	uint16_t checksum;
 };
 
+void udp_init();
+
 #endif
 

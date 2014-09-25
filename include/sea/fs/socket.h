@@ -37,6 +37,7 @@ static int __socket_default_protocols_per_type[4] = {
 #define SOCK_FLAG_CONNECTED    0x2
 #define SOCK_FLAG_ALLOWSEND    0x4
 #define SOCK_FLAG_ALLOWRECV    0x8
+#define SOCK_FLAG_BOUND       0x10
 
 #define socket_unbind(socket) (!((socket->flags & SOCK_FLAG_ALLOWSEND) || (socket->flags & SOCK_FLAG_ALLOWRECV)))
 
@@ -178,5 +179,6 @@ int sys_getsockname(int socket, struct sockaddr *restrict address,
 int sys_recvfrom(struct socket_fromto_info *m);
 int sys_sendto(struct socket_fromto_info *m);
 int socket_select(struct file *file, int rw);
+void socket_bind(struct socket *sock, const struct sockaddr *address, socklen_t len);
 #endif
 

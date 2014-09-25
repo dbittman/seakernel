@@ -195,6 +195,13 @@ int sys_listen(int socket, int backlog)
 	return 0;
 }
 
+void socket_bind(struct socket *sock, const struct sockaddr *address, socklen_t len)
+{
+	memcpy(&sock->local, address, len);
+	sock->local_len = len;
+	sock->flags |= SOCK_FLAG_BOUND;
+}
+
 int sys_bind(int socket, const struct sockaddr *address, socklen_t address_len)
 {
 	int err;
@@ -207,8 +214,7 @@ int sys_bind(int socket, const struct sockaddr *address, socklen_t address_len)
 		ret = sock->calls->bind(sock, address, address_len);
 	if(ret < 0)
 		return ret;
-	memcpy(&sock->local, address, address_len);
-	sock->local_len = address_len;
+	socket_bind(sock, address, address_len);
 	return 0;
 }
 

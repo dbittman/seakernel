@@ -21,7 +21,7 @@ static void inject_port(struct net_packet *, void *payload, size_t len, struct s
 static int  recv_packet(struct socket *, struct sockaddr *src, struct net_packet *, void *, size_t);
 static int  send_packet(struct socket *, struct sockaddr *src, struct net_packet *, void *, size_t);
 
-struct tlayer_prot_interface upd_ipi = {
+struct tlayer_prot_interface udp_tpi = {
 	.max_port = 65535,
 	.min_port = 0,
 	.start_ephemeral = 49152,
@@ -36,7 +36,7 @@ struct socket_calls socket_calls_udp = {
 	.accept = 0,
 	.listen = 0,
 	.connect = 0,
-	.bind = 0,
+	.bind = bind,
 	.shutdown = shutdown,
 	.destroy = 0,
 	.recvfrom = recvfrom,
@@ -59,12 +59,14 @@ static void inject_port(struct net_packet *np, void *payload, size_t len, struct
 
 static int recv_packet(struct socket *sock, struct sockaddr *src, struct net_packet *np, void *data, size_t len)
 {
-	net_data_queue_enqueue(&sock->rec_data_queue, np, data, len, src);
+	net_data_queue_enqueue(&sock->rec_data_queue, np, (uint8_t *)data + sizeof(struct udp_header), len, src);
 	return 0;
 }
 
 static int bind(struct socket *sock, const struct sockaddr *addr, socklen_t len)
 {
+	if(sock->flags & SOCK_FLAG_BOUND)
+		net_tlayer_unbind_socket(sock, (struct sockaddr *)addr);
 	return net_tlayer_bind_socket(sock, (struct sockaddr *)addr);
 }
 
@@ -79,6 +81,15 @@ static int sendto(struct socket *sock, const void *buffer, size_t length,
 {
 	if(!addr)
 		return -EINVAL; /* we require sendto, not send */
+	struct sockaddr zero;
+	memset(&zero, 0, sizeof(zero));
+	zero.sa_family = AF_INET;
+	if(!(sock->flags & SOCK_FLAG_BOUND)) {
+		int ret = sys_bind(sock->fd, &zero, addr_len);
+		printk(0, "sys_bind in sendto returned %d\n", ret);
+		if(ret < 0)
+			return ret;
+	}
 	unsigned char tmp[length + sizeof(struct udp_header)];
 	memcpy(tmp + sizeof(struct udp_header), buffer, length);
 	struct udp_header *uh = (void *)tmp;
@@ -86,6 +97,7 @@ static int sendto(struct socket *sock, const void *buffer, size_t length,
 	uh->length = length + sizeof(struct udp_header);
 	uh->checksum = 0; /* TODO */
 	uh->dest_port = *(uint16_t *)(addr->sa_data);
+	printk(0, "UDP: sendto %x %x\n", *(uint16_t *)addr->sa_data, *(uint32_t *)addr->sa_data);
 	return net_tlayer_sendto_network(sock, &sock->local, addr, (void *)tmp, length + sizeof(struct udp_header));
 }
 
@@ -94,5 +106,10 @@ static int shutdown(struct socket *sock, int how)
 	if(socket_unbind(sock))
 		net_tlayer_unbind_socket(sock, &sock->local);
 	return 0;
+}
+
+void udp_init()
+{
+	net_tlayer_register_protocol(PROTOCOL_UDP, &udp_tpi);
 }
 

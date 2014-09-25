@@ -11,8 +11,8 @@
 
 #include <sea/net/ipv4.h> /* TODO: generic network layer */
 
-#define GET_PORT(addr) BIG_TO_HOST16(*(uint16_t *)addr->sa_data)
-#define SET_PORT(addr,p) (*(uint16_t *)(addr->sa_data) = HOST_TO_BIG16(p))
+#define GET_PORT(addr) BIG_TO_HOST16(*(uint16_t *)(addr)->sa_data)
+#define SET_PORT(addr,p) (*(uint16_t *)((addr)->sa_data) = HOST_TO_BIG16(p))
 
 static struct tlayer_prot_interface *protocols[PROT_MAXPROT];
 static struct hash_table pool[PROT_MAXPROT];
@@ -48,8 +48,16 @@ static struct socket *net_tlayer_get_socket(int prot, struct sockaddr *addr)
 		return 0;
 	void *value;
 	/* so, we can just use the sockaddr as the key to a hash table */
-	if(hash_table_get_entry(&pool[prot], addr, sizeof(addr), 1, &value) == -ENOENT)
-		return 0;
+	if(hash_table_get_entry(&pool[prot], addr, sizeof(*addr), 1, &value) == -ENOENT)
+	{
+		/* and also try the "any" address */
+		struct sockaddr any;
+		memcpy(&any, addr, sizeof(any));
+		memset(any.sa_data, 0, sizeof(any.sa_data));
+		SET_PORT(&any, GET_PORT(addr));
+		if(hash_table_get_entry(&pool[prot], &any, sizeof(any), 1, &value) == -ENOENT)
+			return 0;
+	}
 	return value;
 }
 
@@ -70,14 +78,23 @@ int net_tlayer_bind_socket(struct socket *sock, struct sockaddr *addr)
 	int prot = sock->prot;
 	if(!protocols[prot])
 		return -EINVAL;
-	int port = GET_PORT(addr);
-	if(!port)
-		port = net_tlayer_dynamic_port(port, addr);
-	if(port == -1)
+	int port_num = GET_PORT(addr);
+	if(!port_num) {
+		port_num = net_tlayer_dynamic_port(prot, addr);
+		SET_PORT(addr, port_num);
+	}
+	if(port_num == -1)
 		return -EADDRINUSE;
-	if(hash_table_get_entry(&pool[prot], addr, sizeof(addr), 1, 0) != -ENOENT)
+	if(hash_table_get_entry(&pool[prot], addr, sizeof(*addr), 1, 0) != -ENOENT)
 		return -EADDRINUSE;
-	return hash_table_set_entry(&pool[prot], addr, sizeof(addr), 1, sock);
+	/* and also try the "any" address */
+	struct sockaddr any;
+	memcpy(&any, addr, sizeof(any));
+	memset(any.sa_data, 0, sizeof(any.sa_data));
+	SET_PORT(&any, GET_PORT(addr));
+	if(hash_table_get_entry(&pool[prot], &any, sizeof(any), 1, 0) != -ENOENT)
+		return -EADDRINUSE;
+	return hash_table_set_entry(&pool[prot], addr, sizeof(*addr), 1, sock);
 }
 
 int net_tlayer_unbind_socket(struct socket *sock, struct sockaddr *addr)
@@ -86,10 +103,10 @@ int net_tlayer_unbind_socket(struct socket *sock, struct sockaddr *addr)
 	if(!protocols[prot])
 		return -EINVAL;
 	void *value;
-	if(hash_table_get_entry(&pool[prot], addr, sizeof(addr), 1, &value) == -ENOENT)
+	if(hash_table_get_entry(&pool[prot], addr, sizeof(*addr), 1, &value) == -ENOENT)
 		return -ENOENT;
 	assert(value == sock);
-	hash_table_delete_entry(&pool[prot], addr, sizeof(addr), 1);
+	hash_table_delete_entry(&pool[prot], addr, sizeof(*addr), 1);
 	return 0;
 }
 
@@ -126,7 +143,7 @@ int net_tlayer_sendto_network(struct socket *socket, struct sockaddr *src, struc
 {
 	/* TODO: call a generic "network layer" */
 	/* construct a header, and call ipv4 */
-	return ipv4_enqueue_sockaddr(payload, len, dest, socket->prot);
+	return ipv4_enqueue_sockaddr(payload, len, dest, src, socket->prot);
 }
 
 void net_tlayer_init()

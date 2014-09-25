@@ -270,6 +270,10 @@ int net_char_ioctl(dev_t min, int cmd, long arg)
 			printk(0, "add route: %x %x %x %x %s\n", route->destination.address, route->gateway.address, route->netmask, route->flags, nd->name);
 			net_route_add_entry(route);
 			break;
+		case SIOCDELRT:
+			memcpy(&mask, rt->dest.sa_data + 2, 4);
+			net_route_find_del_entry(mask, nd);
+			break;
 		case SIOCGIFHWADDR:
 			memcpy(sa->sa_data, nd->hw_address, nd->hw_address_len);
 			break;

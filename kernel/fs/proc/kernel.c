@@ -131,3 +131,13 @@ int proc_rw_mem(char rw, struct inode *inode, int m, char *buf, int off, int len
 	}
 	return 0;
 }
+
+int proc_read_route(char *buf, int off, int len);
+int proc_net(char rw, struct inode *inode, int m, char *buf, int off, int len)
+{
+	if(rw == READ) {
+		if(m == 1)
+			return proc_read_route(buf, off, len);
+	}
+	return 0;
+}

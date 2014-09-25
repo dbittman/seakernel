@@ -2,6 +2,10 @@
 #include <sea/net/interface.h>
 #include <sea/ll.h>
 #include <sea/rwlock.h>
+#include <sea/fs/proc.h>
+#include <sea/vsprintf.h>
+#include <sea/errno.h>
+#include <sea/mm/kmalloc.h>
 /* TODO: make thread-safe */
 static struct llist *table = 0;
 
@@ -74,4 +78,80 @@ void net_route_del_entry(struct route *r)
 	ll_remove(table, r->node);
 	r->node = 0;
 }
+
+int net_route_find_del_entry(uint32_t dest, struct net_dev *nd)
+{
+	rwlock_acquire(&table->rwl, RWL_WRITER);
+	struct route *r, *del=0;
+	struct llistnode *node;
+	ll_for_each_entry(table, node, struct route *, r) {
+		if(r->destination.address == dest && r->interface == nd) {
+			del = r;
+		}
+	}
+	rwlock_release(&table->rwl, RWL_WRITER);
+	if(del) {
+		ll_remove(table, del->node);
+		del->node = 0;
+		kfree(del);
+	}
+	return del ? 0 : -ENOENT;
+}
+
+static void write_addr(char *str, uint32_t addr)
+{
+	snprintf(str, 32, "%d.%d.%d.%d", (addr) & 0xFF, (addr >> 8) & 0xFF, (addr >> 16) & 0xFF, (addr >> 24) & 0xFF);
+}
+
+int proc_read_route(char *buf, int off, int len)
+{
+	int i, total_len=0;
+	total_len += proc_append_buffer(buf, "DEST            GATEWAY         MASK            FLAGS IFACE\n", total_len, -1, off, len);
+	if(!table)
+		return total_len;
+	rwlock_acquire(&table->rwl, RWL_READER);
+	struct llistnode *node;
+	struct route *r;
+	ll_for_each_entry(table, node, struct route *, r) {
+		char tmp[32];
+		memset(tmp, 0, 32);
+		write_addr(tmp, r->destination.address);
+		total_len += proc_append_buffer(buf, tmp, total_len, -1, off, len);
+		total_len += proc_append_buffer(buf, " \t", total_len, -1, off, len);
+		
+		write_addr(tmp, r->gateway.address);
+		total_len += proc_append_buffer(buf, tmp, total_len, -1, off, len);
+		total_len += proc_append_buffer(buf, " \t", total_len, -1, off, len);
+		
+		write_addr(tmp, r->netmask);
+		total_len += proc_append_buffer(buf, tmp, total_len, -1, off, len);
+		total_len += proc_append_buffer(buf, " \t", total_len, -1, off, len);
+
+		if(r->flags & ROUTE_FLAG_UP)
+			total_len += proc_append_buffer(buf, "U", total_len, -1, off, len);
+		else
+			total_len += proc_append_buffer(buf, " ", total_len, -1, off, len);
+
+		if(r->flags & ROUTE_FLAG_HOST)
+			total_len += proc_append_buffer(buf, "H", total_len, -1, off, len);
+		else
+			total_len += proc_append_buffer(buf, " ", total_len, -1, off, len);
+		if(r->flags & ROUTE_FLAG_GATEWAY)
+			total_len += proc_append_buffer(buf, "G", total_len, -1, off, len);
+		else
+			total_len += proc_append_buffer(buf, " ", total_len, -1, off, len);
+		if(r->flags & ROUTE_FLAG_DEFAULT)
+			total_len += proc_append_buffer(buf, "D", total_len, -1, off, len);
+		else
+			total_len += proc_append_buffer(buf, " ", total_len, -1, off, len);
+
+		total_len += proc_append_buffer(buf, "  ", total_len, -1, off, len);
+
+		total_len += proc_append_buffer(buf, r->interface->name, total_len, -1, off, len);
+		total_len += proc_append_buffer(buf, "\n", total_len, -1, off, len);
+	}
+	rwlock_release(&table->rwl, RWL_READER);
+	return total_len;
+}
+
 

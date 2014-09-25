@@ -42,6 +42,7 @@ int proc_cpu(char rw, struct inode *inode, int m, char *buf, int off, int len);
 int proc_vfs(char rw, struct inode *n, int m, char *buf, int off, int len);
 int proc_kern_rw(char rw, struct inode *inode, int m, char *buf, int off, int len);
 int proc_rw_mem(char rw, struct inode *inode, int m, char *buf, int off, int len);
+int proc_net(char rw, struct inode *inode, int m, char *buf, int off, int len);
 
 static int *pfs_table[64] = {
  (int *)proc_rw_mem, //Memory
@@ -58,7 +59,8 @@ static int *pfs_table[64] = {
 #else
  0,
 #endif
- 0,0,0,0,0,0,0,0,0,0,0,
+ proc_net,
+ 0,0,0,0,0,0,0,0,0,0,
  0,0,0,0,0,0,0,0,0,0,0,0,
  0,0,0,0,0,0,0,0,0,0,0,0,
  0,0,0,0,0,0,0,0,0,0,0,0,
@@ -161,6 +163,7 @@ void proc_init()
 	proc_create_node_at_root("modules", S_IFREG, 4, 0);
 	proc_create_node_at_root("mounts", S_IFREG, 2, 2);
 	proc_create_node_at_root("seaos", S_IFREG, 3, 2);
+	proc_create_node_at_root("route", S_IFREG, 6, 1);
 	/* Mount the filesystem */
 	vfs_add_inode(current_task->thread->root, procfs_root);
 }

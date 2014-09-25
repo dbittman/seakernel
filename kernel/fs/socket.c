@@ -87,7 +87,7 @@ int socket_select(struct file *f, int rw)
 		return 0;
 	if(rw == WRITE && !(f->socket->flags & SOCK_FLAG_ALLOWSEND))
 		return 0;
-	int r;
+	int r = 1;
 	if(f->socket->calls->select)
 		r = f->socket->calls->select(f->socket, rw);
 	if(r == 0)

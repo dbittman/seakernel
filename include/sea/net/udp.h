@@ -1,12 +1,16 @@
 #ifndef __SEA_NET_UDP_H
 #define __SEA_NET_UDP_H
 
+#include <sea/types.h>
+
 extern struct socket_calls socket_calls_udp;
 
-#define DYN_PORT_START 49152
-#define DYN_PORT_END   65535
-
-#define MAX_PORTS      65535
+struct udp_header {
+	uint16_t src_port;
+	uint16_t dest_port;
+	uint16_t length;
+	uint16_t checksum;
+};
 
 #endif
 

@@ -13,7 +13,7 @@
 #include <sea/net/datalayer.h>
 #include <sea/fs/devfs.h>
 #include <sea/errno.h>
-
+#include <sea/net/tlayer.h>
 uint16_t af_to_ethertype_map[PF_MAX] = {
 	[AF_INET] = 0x800,
 };
@@ -35,6 +35,7 @@ void net_init()
 #endif
 	arp_init();
 	ipv4_init();
+	net_tlayer_init();
 }
 
 static int kt_packet_rec_thread(struct kthread *kt, void *arg)

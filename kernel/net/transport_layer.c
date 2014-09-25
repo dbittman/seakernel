@@ -9,6 +9,11 @@
 #include <sea/lib/hash.h>
 #include <sea/errno.h>
 
+#include <sea/net/ipv4.h> /* TODO: generic network layer */
+
+#define GET_PORT(addr) BIG_TO_HOST16(*(uint16_t *)addr->sa_data)
+#define SET_PORT(addr,p) (*(uint16_t *)(addr->sa_data) = HOST_TO_BIG16(p))
+
 static struct tlayer_prot_interface *protocols[PROT_MAXPROT];
 static struct hash_table pool[PROT_MAXPROT];
 
@@ -37,7 +42,7 @@ int net_tlayer_deregister_protocol(int prot)
 	return 0;
 }
 
-struct socket *net_tlayer_get_socket(int prot, struct sockaddr *addr)
+static struct socket *net_tlayer_get_socket(int prot, struct sockaddr *addr)
 {
 	if(!protocols[prot])
 		return 0;
@@ -48,11 +53,28 @@ struct socket *net_tlayer_get_socket(int prot, struct sockaddr *addr)
 	return value;
 }
 
+static int net_tlayer_dynamic_port(int prot, struct sockaddr *addr)
+{
+	/* okay, this is slow, since we have to scan... */
+	int p = protocols[prot]->start_ephemeral;
+	for(;p<=protocols[prot]->end_ephemeral;p++) {
+		SET_PORT(addr, p);
+		if(!net_tlayer_get_socket(prot, addr))
+			return p;
+	}
+	return -1;
+}
+
 int net_tlayer_bind_socket(struct socket *sock, struct sockaddr *addr)
 {
 	int prot = sock->prot;
 	if(!protocols[prot])
 		return -EINVAL;
+	int port = GET_PORT(addr);
+	if(!port)
+		port = net_tlayer_dynamic_port(port, addr);
+	if(port == -1)
+		return -EADDRINUSE;
 	if(hash_table_get_entry(&pool[prot], addr, sizeof(addr), 1, 0) != -ENOENT)
 		return -EADDRINUSE;
 	return hash_table_set_entry(&pool[prot], addr, sizeof(addr), 1, sock);
@@ -84,19 +106,19 @@ int net_tlayer_recvfrom_network(struct sockaddr *src, struct sockaddr *dest, str
 		return -ENOTSUP;
 
 	/* verify the packet */
-	if(tpi->calls.verify) {
-		if(tpi->calls.verify(np, payload, len) < 0)
+	if(tpi->verify) {
+		if(tpi->verify(np, payload, len) < 0)
 			return -EINVAL;
 	}
 	/* ask the protocol to fill in address data */
-	if(tpi->calls.inject_port)
-		tpi->calls.inject_port(np, payload, len, src, dest);
+	if(tpi->inject_port)
+		tpi->inject_port(np, payload, len, src, dest);
 	/* get the socket from the port pool */
 	struct socket *sock;
 	if(!(sock = net_tlayer_get_socket(prot, dest)))
 		return -ENOTCONN;
-	if(tpi->calls.recv_packet)
-		tpi->calls.recv_packet(sock, src, np, payload, len);
+	if(tpi->recv_packet)
+		tpi->recv_packet(sock, src, np, payload, len);
 	return 0;
 }
 
@@ -104,6 +126,7 @@ int net_tlayer_sendto_network(struct socket *socket, struct sockaddr *src, struc
 {
 	/* TODO: call a generic "network layer" */
 	/* construct a header, and call ipv4 */
+	return ipv4_enqueue_sockaddr(payload, len, dest, socket->prot);
 }
 
 void net_tlayer_init()

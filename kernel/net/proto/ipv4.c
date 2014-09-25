@@ -16,6 +16,7 @@
 #include <sea/lib/queue.h>
 #include <sea/net/ipv4sock.h>
 #include <sea/cpu/atomic.h>
+#include <sea/net/tlayer.h>
 #include <sea/ll.h>
 #include <limits.h>
 static struct queue *ipv4_tx_queue = 0;
@@ -232,6 +233,15 @@ static void ipv4_accept_packet(struct net_dev *nd, struct net_packet *netpacket,
 		default:
 			TRACE(0, "[ipv4]: unknown protocol %x\n", packet->ptype);
 	}
+	
+	struct sockaddr sa_src, sa_dest;
+	memset(&sa_src, 0, sizeof(sa_src));
+	memset(&sa_dest, 0, sizeof(sa_dest));
+	union ipv4_address ifaddr;
+	net_iface_get_network_addr(nd, ETHERTYPE_IPV4, ifaddr.addr_bytes);
+	memcpy(sa_dest.sa_data + 2, &ifaddr.address, 4);
+	memcpy(sa_src.sa_data + 2, &src.address, 4);
+	net_tlayer_recvfrom_network(&sa_src, &sa_dest, netpacket, packet->ptype, packet->data, payload_size);
 	if(from_fragment)
 		net_packet_put(netpacket, 0);
 }
@@ -451,6 +461,35 @@ int ipv4_copy_enqueue_packet(struct net_packet *netpacket, struct ipv4_header *h
 	TRACE(0, "[ipv4]: enqueue packet to %x\n", header->dest_ip);
 	ipv4_do_enqueue_packet(packet);
 	return BIG_TO_HOST32(header->length);
+}
+
+int ipv4_enqueue_sockaddr(void *payload, size_t len, struct sockaddr *addr, int prot)
+{
+	union ipv4_address dest;
+	memcpy(&dest.address, addr->sa_data + 2, 4);
+	struct route *r = net_route_select_entry(dest);
+	if(!r)
+		return -ENETUNREACH;
+
+	struct net_packet *np = net_packet_create(0, 0);
+	struct ipv4_header *header = (void *)(np->data + r->interface->data_header_len);
+
+	header->dest_ip = addr->sa_data[2] | (addr->sa_data[3] << 8)
+		| (addr->sa_data[4] << 16) | (addr->sa_data[5] << 24);
+	header->ttl = 64;
+	header->length = HOST_TO_BIG16(len + 20);
+	header->id = 0;
+	header->ptype = prot;
+
+	memcpy(header->data, payload, len);
+	struct ipv4_packet *packet = kmalloc(sizeof(struct ipv4_packet));
+	packet->enqueue_time = tm_get_ticks();
+	packet->header = header;
+	net_packet_get(np);
+	packet->netpacket = np;
+	TRACE(0, "[ipv4]: enqueue packet to %x\n", header->dest_ip);
+	ipv4_do_enqueue_packet(packet);
+	return 0;
 }
 
 static int ipv4_sending_thread(struct kthread *kt, void *arg)

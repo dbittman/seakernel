@@ -427,7 +427,7 @@ int module_install()
 			rtl8139_net_dev->data_header_len = sizeof(struct ethernet_header);
 			rtl8139_net_dev->hw_address_len = 6;
 			rtl8139_net_dev->hw_type = NET_HWTYPE_ETHERNET;
-
+			rtl8139_net_dev->brate = 10000000; /* TODO */
 			rdev->net_dev = rtl8139_net_dev;
 			rtl8139_net_dev->data = rdev;
 			devs[i] = rdev;

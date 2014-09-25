@@ -5,6 +5,7 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
 #include <sea/net/ipv4sock.h>
+#include <sea/net/udp.h>
 #include <sea/net/data_queue.h>
 #include <sea/tm/schedule.h>
 #include <sea/fs/fcntl.h>
@@ -19,12 +20,12 @@
  * it is taken over by a sending thread).
  */
 
-struct socket_calls socket_calls_null = {0,0,0,0,0,0,0,0,0};
+struct socket_calls socket_calls_null = {0,0,0,0,0,0,0,0,0,0};
 
 struct socket_calls *__socket_calls_list[PROT_MAXPROT + 1] = {
 	&socket_calls_null,
 	&socket_calls_rawipv4,
-
+	[17] = &socket_calls_udp,
 };
 
 struct socket *socket_create(int *errcode)
@@ -82,6 +83,17 @@ int socket_select(struct file *f, int rw)
 {
 	if(!f->socket)
 		return -ENOTSOCK;
+	if(rw == READ && !(f->socket->flags & SOCK_FLAG_ALLOWRECV))
+		return 0;
+	if(rw == WRITE && !(f->socket->flags & SOCK_FLAG_ALLOWSEND))
+		return 0;
+	int r;
+	if(f->socket->calls->select)
+		r = f->socket->calls->select(f->socket, rw);
+	if(r == 0)
+		return 0;
+	/* if the protocol says that we're allowed to read or write, that might
+	 * not be true for the socket layer...check the data queue */
 	if(rw == READ)
 		return f->socket->rec_data_queue.count > 0;
 	return 1;
@@ -89,7 +101,6 @@ int socket_select(struct file *f, int rw)
 
 static struct socket_calls *socket_get_calls(int prot)
 {
-	TRACE(0, "[socket]: getting calls: %d\n", prot);
 	return __socket_calls_list[prot];
 }
 
@@ -134,17 +145,20 @@ int sys_connect(int socket, const struct sockaddr *addr, socklen_t len)
 		return -EALREADY;
 	if(sock->flags & SOCK_FLAG_CONNECTED)
 		return -EISCONN;
-	if(sock->sopt & SO_ACCEPTCONN)
+	if(sock->sopt & SO_ACCEPTCONN) /* listening */
 		return -EOPNOTSUPP;
+	sock->flags |= SOCK_FLAG_CONNECTING;
 	/* okay, tell the protocol to make the connection */
 	TRACE(0, "[socket]: connecting %d\n", socket);
 	int ret = -EOPNOTSUPP;
 	if(sock->calls->connect)
 		ret = sock->calls->connect(sock, addr, len);
+	sock->flags &= ~SOCK_FLAG_CONNECTING;
 	if(ret < 0)
 		return ret;
 	memcpy(&sock->peer, addr, len);
 	sock->peer_len = len;
+	sock->flags |= SOCK_FLAG_CONNECTED;
 	return 0;
 }
 
@@ -154,6 +168,8 @@ int sys_accept(int socket, struct sockaddr *restrict addr, socklen_t *restrict a
 	struct socket *sock = get_socket(socket, &err);
 	if(!sock)
 		return err;
+	if(!(sock->flags & SOCK_FLAG_CONNECTED) || !(sock->sopt & SO_ACCEPTCONN))
+		return -EINVAL;
 	err = -EOPNOTSUPP;
 	struct socket *sret = 0;
 	TRACE(0, "[socket]: %d accepting\n", socket);
@@ -232,6 +248,7 @@ int sys_getsockopt(int socket, int level, int option_name,
 	return 0;
 }
 
+/* TODO: SO_BINDTODEVICE */
 int sys_setsockopt(int socket, int level, int option_name,
 		const void *option_value, socklen_t option_len)
 {
@@ -276,14 +293,14 @@ int sys_sockshutdown(int socket, int how)
 	struct socket *sock = get_socket(socket, &err);
 	if(!sock)
 		return err;
-	if(sock->calls->shutdown)
-		sock->calls->shutdown(sock, how);
 	int rd = (how == SHUT_RD || how == SHUT_RDWR);
 	int wr = (how == SHUT_WR || how == SHUT_RDWR);
 	if(rd)
 		sock->flags &= ~SOCK_FLAG_ALLOWRECV;
 	if(wr)
 		sock->flags &= ~SOCK_FLAG_ALLOWSEND;
+	if(sock->calls->shutdown)
+		sock->calls->shutdown(sock, how);
 	if(!(sock->flags & SOCK_FLAG_ALLOWSEND) && !(sock->flags & SOCK_FLAG_ALLOWRECV))
 		socket_destroy(sock);
 	return 0;
@@ -295,6 +312,8 @@ ssize_t sys_recv(int socket, void *buffer, size_t length, int flags)
 	struct socket *sock = get_socket(socket, &err);
 	if(!sock)
 		return err;
+	if(!(sock->flags & SOCK_FLAG_ALLOWRECV))
+		return -EIO;
 	int ret = 0;
 	if(sock->calls->recvfrom)
 		ret = sock->calls->recvfrom(sock, buffer, length, flags, 0, 0);
@@ -324,6 +343,8 @@ ssize_t sys_send(int socket, const void *buffer, size_t length, int flags)
 	struct socket *sock = get_socket(socket, &err);
 	if(!sock)
 		return err;
+	if(!(sock->flags & SOCK_FLAG_ALLOWSEND))
+		return -EIO;
 	int ret = -EOPNOTSUPP;
 	if(sock->calls->sendto)
 		ret = sock->calls->sendto(sock, buffer, length, flags, 0, 0);
@@ -348,6 +369,8 @@ int sys_recvfrom(struct socket_fromto_info *m)
 	struct socket *sock = get_socket(m->sock, &err);
 	if(!sock)
 		return err;
+	if(!(sock->flags & SOCK_FLAG_ALLOWRECV))
+		return -EIO;
 	int ret = 0;
 	if(sock->calls->recvfrom)
 		ret = sock->calls->recvfrom(sock, m->buffer, m->len, m->flags, m->addr, m->addr_len);
@@ -382,6 +405,8 @@ int sys_sendto(struct socket_fromto_info *m)
 		return err;
 	if(!m->addr_len)
 		return -EINVAL;
+	if(!(sock->flags & SOCK_FLAG_ALLOWSEND))
+		return -EIO;
 	int ret = -EOPNOTSUPP;
 	if(sock->calls->sendto)
 		ret = sock->calls->sendto(sock, m->buffer, m->len, m->flags, m->addr, *m->addr_len);

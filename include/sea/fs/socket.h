@@ -38,6 +38,7 @@ static int __socket_default_protocols_per_type[4] = {
 #define SOCK_FLAG_ALLOWSEND    0x4
 #define SOCK_FLAG_ALLOWRECV    0x8
 
+#define socket_unbind(socket) (!((socket->flags & SOCK_FLAG_ALLOWSEND) || (socket->flags & SOCK_FLAG_ALLOWRECV)))
 
 /*
  * Option flags per-socket.
@@ -123,6 +124,7 @@ struct socket_calls {
 	int (*sendto)(struct socket *, const void *buffer, size_t length,
 			int flags, struct sockaddr *addr, socklen_t addr_len);
 	int (*destroy)(struct socket *);
+	int (*select)(struct socket *, int);
 };
 
 struct socket {

@@ -50,8 +50,8 @@
 #define IFACE_FLAGS_DEFAULT \
 	(IFF_RUNNING | IFACE_FLAG_ACCBROADCAST | IFACE_FLAG_FORWARD)
 
-#define NET_HWTYPE_LOOP     0
-#define NET_HWTYPE_ETHERNET 1
+#define NET_HWTYPE_LOOP     0x18
+#define NET_HWTYPE_ETHERNET 0x6
 
 #define IFNAMSIZ 16
 
@@ -61,7 +61,7 @@ struct net_dev {
 	int num;
 	int flags;
 	uint32_t state;
-	size_t rx_count, tx_count, rx_err_count, tx_err_count, rx_pending, rx_bytes, tx_bytes;
+	size_t rx_count, tx_count, rx_err_count, tx_err_count, rx_pending, rx_bytes, tx_bytes, collisions, brate;
 	int dropped;
 	time_t rx_thread_lastwork;
 	/* these fields are specified by the driver at time of net_dev creation */
@@ -69,7 +69,6 @@ struct net_dev {
 	void *data; /* driver specific data */
 
 	uint8_t hw_address[6];
-	//uint8_t net_address[8];
 	struct sockaddr inet_address, broad_address;
 	int net_address_len, hw_address_len;
 	uint32_t netmask;

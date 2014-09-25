@@ -98,7 +98,8 @@ void net_remove_device(struct net_dev *nd)
 {
 	devices[nd->num] = 0;
 	ll_remove(net_list, nd->node);
-	/* TODO: kill rec thread */
+	if(nd->callbacks->poll)
+		kthread_join(&nd->rec_thread, 0);
 	kfree(nd);
 }
 
@@ -163,10 +164,10 @@ int net_iface_set_flags(struct net_dev *nd, int flags)
 
 void net_iface_export_data(struct net_dev *nd, struct if_data *stat)
 {
-	stat->ifi_type = 6; /* TODO */
+	stat->ifi_type = nd->hw_type;
 	stat->ifi_addrlen = nd->net_address_len;
 	stat->ifi_mtu = nd->mtu;
-	stat->ifi_baudrate = 0; /* TODO */
+	stat->ifi_baudrate = nd->brate;
 	stat->ifi_ipackets = nd->rx_count;
 	stat->ifi_ierrors = nd->rx_err_count;
 	stat->ifi_opackets = nd->tx_count;
@@ -174,7 +175,7 @@ void net_iface_export_data(struct net_dev *nd, struct if_data *stat)
 	stat->ifi_ibytes = nd->rx_bytes;
 	stat->ifi_obytes = nd->tx_bytes;
 	stat->ifi_iqdrops = nd->dropped;
-	stat->ifi_collisions = 0; /* TODO */
+	stat->ifi_collisions = nd->collisions;
 }
 
 int net_char_select(int min, int rw)

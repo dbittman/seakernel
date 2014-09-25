@@ -23,7 +23,8 @@ struct socket_calls socket_calls_rawipv4 = {
 	.shutdown = shutdown,
 	.destroy = 0,
 	.recvfrom = recvfrom,
-	.sendto = sendto
+	.sendto = sendto,
+	.select = 0
 };
 
 static struct llist *sock_list =0;
@@ -75,6 +76,8 @@ static int init(struct socket *sock)
 static int shutdown(struct socket *sock, int how)
 {
 	if(!sock_list)
+		return 0;
+	if(!socket_unbind(sock))
 		return 0;
 	ll_remove(sock_list, sock->node);
 	sock->node = 0;

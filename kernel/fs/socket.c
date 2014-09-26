@@ -207,7 +207,7 @@ int sys_bind(int socket, const struct sockaddr *address, socklen_t address_len)
 	if(!sock)
 		return err;
 	int ret = -EOPNOTSUPP;
-	printk(0, "[socket]: %d binding\n", socket);
+	TRACE(0, "[socket]: %d binding\n", socket);
 	if(sock->calls->bind)
 		ret = sock->calls->bind(sock, address, address_len);
 	if(ret < 0)
@@ -323,14 +323,13 @@ ssize_t sys_recv(int socket, void *buffer, size_t length, int flags)
 		ret = sock->calls->recvfrom(sock, buffer, length, flags, 0, 0);
 	if(ret)
 		return ret;
-	printk(0, "[socket]: trace: recv, waiting\n");
+	TRACE(0, "[socket]: trace: recv, waiting\n");
 	size_t nbytes = 0;
 	while(nbytes == 0) {
 		/* TODO: better blocking */
 		if(nbytes == 0 && tm_process_got_signal(current_task))
 			return -EINTR;
 		nbytes += net_data_queue_copy_out(sock, &sock->rec_data_queue, buffer, length, (flags & MSG_PEEK), 0);
-		printk(0, "[socket]: recv: %d\n", nbytes);
 		if(!nbytes) {
 			if(sock->file->flags & _FNONBLOCK)
 				return nbytes;

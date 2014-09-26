@@ -47,7 +47,6 @@ static int sendto(struct socket *sock, const void *buffer, size_t length,
 	if(sock->sopt_levels[PROTOCOL_IP][IP_HDRINCL]) {
 		head = (void *)buffer;
 	} else {
-		TRACE(0, "[ipv4sock]: constructing header\n");
 		head = (struct ipv4_header *)tmp;
 		memset(tmp, 0, 20);
 		memcpy(tmp + 20, buffer, length);
@@ -62,7 +61,7 @@ static int sendto(struct socket *sock, const void *buffer, size_t length,
 	int ret;
 	ret = ipv4_copy_enqueue_packet(packet, head);
 	net_packet_put(packet, 0);
-	return ret < 0 ? ret : length;
+	return ret < 0 ? ret : (int)length;
 }
 
 static int init(struct socket *sock)
@@ -98,11 +97,12 @@ void ipv4_copy_to_sockets(struct net_packet *packet, struct ipv4_header *header)
 	addr.sa_data[4] = (header->src_ip >> 16) & 0xFF;
 	addr.sa_data[5] = (header->src_ip >> 24) & 0xFF;
 	addr.sa_family = AF_INET;
-
 	ll_for_each_entry(sock_list, node, struct socket *, sock) {
-		if(header->ptype == sock->prot || sock->prot == IPPROTO_RAW)
+		if(header->ptype == sock->prot || sock->prot == IPPROTO_RAW) {
+			packet->flags |= NP_FLAG_NOWR;
 			net_data_queue_enqueue(&sock->rec_data_queue, packet, header,
-					BIG_TO_HOST16(header->length), &addr);
+					BIG_TO_HOST16(header->length), &addr, 0);
+		}
 	}
 	rwlock_release(&sock_list->rwl, RWL_READER);
 }

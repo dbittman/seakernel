@@ -5,15 +5,27 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
 
-void net_data_queue_enqueue(struct queue *q, struct net_packet *packet, void *data_start, size_t data_len, struct sockaddr *addr)
+#define MAX_PACKETS 2000 /* need to make this per-socket */
+
+int net_data_queue_enqueue(struct queue *q, struct net_packet *packet, void *data_start, size_t data_len, struct sockaddr *addr, int copy)
 {
+	if(queue_count(q) >= MAX_PACKETS)
+		return 0;
 	struct ndq_item *n = kmalloc(sizeof(struct ndq_item));
-	n->packet = packet;
-	net_packet_get(packet);
+	
+	if(copy) {
+		n->packet = net_packet_create(0, 0);
+		memcpy(n->packet->data, data_start, data_len);
+		data_start = n->packet->data;
+	} else {
+		net_packet_get(packet);
+		n->packet = packet;
+	}
 	n->data = data_start;
 	n->length = data_len;
 	memcpy(&n->addr, addr, sizeof(*addr));
 	queue_enqueue(q, n);
+	return 1;
 }
 
 size_t net_data_queue_copy_out(struct socket *sock, struct queue *queue, void *buffer, size_t len, int peek, struct sockaddr *addr)

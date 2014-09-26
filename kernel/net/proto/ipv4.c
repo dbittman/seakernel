@@ -357,8 +357,7 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 		TRACE(0, "[ipv4]: sending packet to interface on this system! Re-receiving...\n");
 		ipv4_finish_constructing_packet(nd, r, packet);
 		ipv4_receive_packet(nd, packet->netpacket, packet->header);
-		net_packet_put(packet->netpacket, 0);
-		return 0;
+		return 1;
 	}
 	if(dest.address == BROADCAST_ADDRESS(ifaddr.address, nd->netmask)) {
 		memset(hwaddr, 0xFF, 6);
@@ -421,8 +420,6 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 	}
 
 	net_data_send(nd, packet->netpacket, ETHERTYPE_IPV4, hwaddr, BIG_TO_HOST16(packet->header->length));
-	net_packet_put(packet->netpacket, 0);
-	kfree(packet);
 	return 1;
 }
 
@@ -491,7 +488,6 @@ int ipv4_enqueue_sockaddr(void *payload, size_t len, struct sockaddr *addr, stru
 	struct ipv4_packet *packet = kmalloc(sizeof(struct ipv4_packet));
 	packet->enqueue_time = tm_get_ticks();
 	packet->header = header;
-	net_packet_get(np);
 	packet->netpacket = np;
 	TRACE(0, "[ipv4]: enqueue packet to %x\n", header->dest_ip);
 	ipv4_do_enqueue_packet(packet);
@@ -515,8 +511,9 @@ static int ipv4_sending_thread(struct kthread *kt, void *arg)
 					int r = ipv4_send_packet(packet);
 					if(!r)
 						tm_schedule();
-					if(r == -1) {
+					if(r != 0) {
 						net_packet_put(packet->netpacket, 0);
+						kfree(packet);
 					}
 				}
 			}

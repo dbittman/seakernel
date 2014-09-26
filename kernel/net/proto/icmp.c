@@ -28,6 +28,23 @@ void icmp_receive_echo_request(struct net_dev *nd, struct net_packet *netpacket,
 {
 	uint32_t rest = BIG_TO_HOST32(packet->rest);
 	TRACE(0, "[icmp]: got echo request from %x (%d %d)\n", (rest >> 16) & 0xffff, rest & 0xFFFF, src.address);
+	int put = 0;
+	if(netpacket->flags & NP_FLAG_NOWR) {
+		/* we aren't allowed to screw with this packet, so we have to construct a new one */
+		/* TODO: this is really slow, is there a better way? */
+		struct net_packet *new_packet = net_packet_create(0, 0);
+		struct icmp_packet *new_header = (void *)(new_packet->data + ((addr_t)packet - (addr_t)netpacket->data));
+		
+		new_packet->network_header = (void *)(new_packet->data + ((addr_t)netpacket->network_header - (addr_t)netpacket->data));
+		new_packet->length = netpacket->length;
+		
+		memcpy(new_packet->network_header, netpacket->network_header, len + sizeof(struct ipv4_header));
+
+		netpacket = new_packet;
+		packet = new_header;
+		put = 1;
+	}
+	
 	packet->type = 0;
 	struct ipv4_header *header = netpacket->network_header;
 	header->dest_ip = header->src_ip;
@@ -35,6 +52,8 @@ void icmp_receive_echo_request(struct net_dev *nd, struct net_packet *netpacket,
 	net_iface_get_network_addr(nd, ETHERTYPE_IPV4, ifaddr.addr_bytes);
 	header->src_ip = ifaddr.address;
 	ipv4_enqueue_packet(netpacket, header);
+	if(put)
+		net_packet_put(netpacket, 0);
 }
 
 void icmp_receive_packet(struct net_dev *nd, struct net_packet *netpacket, 

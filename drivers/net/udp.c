@@ -58,7 +58,7 @@ static void inject_port(struct net_packet *np, void *payload, size_t len, struct
 
 static int recv_packet(struct socket *sock, struct sockaddr *src, struct net_packet *np, void *data, size_t len)
 {
-	net_data_queue_enqueue(&sock->rec_data_queue, np, (uint8_t *)data + sizeof(struct udp_header), len, src);
+	net_data_queue_enqueue(&sock->rec_data_queue, np, (uint8_t *)data + sizeof(struct udp_header), len, src, 0);
 	return 0;
 }
 

@@ -10,6 +10,5 @@ KOBJS += kernel/net/proto/arp.o \
 		 kernel/net/proto/icmp.o \
 		 kernel/net/proto/ipv4.o \
 		 kernel/net/proto/ipv4sock.o \
-		 kernel/net/proto/route.o \
-		 kernel/net/proto/udp.o
+		 kernel/net/proto/route.o 
 

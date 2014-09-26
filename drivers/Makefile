@@ -18,6 +18,7 @@ MODULES-$(CONFIG_MODULE_RTL8139)    += net/cards/rtl8139.m
 MODULES-$(CONFIG_MODULE_I350)       += net/cards/i350.m
 MODULES-$(CONFIG_MODULE_PARTITIONS) += partitions/partitions.m
 MODULES-$(CONFIG_MODULE_NETLOOP)    += net/lo.m
+MODULES-$(CONFIG_MODULE_UDP)        += net/udp.m
 
 SUBDIRS-$(CONFIG_MODULE_AES)	    += aes
 SUBDIRS-$(CONFIG_MODULE_AHCI)	    += ahci

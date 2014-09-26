@@ -14,7 +14,7 @@
 #include <sea/fs/devfs.h>
 #include <sea/errno.h>
 #include <sea/net/tlayer.h>
-#include <sea/net/udp.h>
+#include <sea/net/data_queue.h>
 uint16_t af_to_ethertype_map[PF_MAX] = {
 	[AF_INET] = 0x800,
 };
@@ -33,11 +33,18 @@ void net_init()
 	loader_add_kernel_symbol(net_add_device);
 	loader_add_kernel_symbol(net_notify_packet_ready);
 	loader_add_kernel_symbol(net_receive_packet);
+	loader_add_kernel_symbol(net_data_queue_enqueue);
+	loader_add_kernel_symbol(socket_set_calls);
+	loader_add_kernel_symbol(net_tlayer_sendto_network);
+	loader_add_kernel_symbol(net_tlayer_bind_socket);
+	loader_add_kernel_symbol(net_tlayer_unbind_socket);
+	loader_add_kernel_symbol(net_tlayer_register_protocol);
+	loader_add_kernel_symbol(net_tlayer_deregister_protocol);
+	loader_add_kernel_symbol(sys_bind);
 #endif
 	arp_init();
 	ipv4_init();
 	net_tlayer_init();
-	udp_init();
 }
 
 static int kt_packet_rec_thread(struct kthread *kt, void *arg)

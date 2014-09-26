@@ -1,6 +1,6 @@
 #include <sea/net/interface.h>
 #include <sea/net/ipv4.h>
-#include <sea/net/udp.h>
+#include <modules/udp.h>
 #include <sea/net/packet.h>
 #include <sea/net/tlayer.h>
 #include <sea/net/data_queue.h>
@@ -19,7 +19,6 @@ static int bind(struct socket *, const struct sockaddr *addr, socklen_t len);
 static int  verify(struct net_packet *, void *payload, size_t len);
 static void inject_port(struct net_packet *, void *payload, size_t len, struct sockaddr *src, struct sockaddr *dest);
 static int  recv_packet(struct socket *, struct sockaddr *src, struct net_packet *, void *, size_t);
-static int  send_packet(struct socket *, struct sockaddr *src, struct net_packet *, void *, size_t);
 
 struct tlayer_prot_interface udp_tpi = {
 	.max_port = 65535,
@@ -86,7 +85,6 @@ static int sendto(struct socket *sock, const void *buffer, size_t length,
 	zero.sa_family = AF_INET;
 	if(!(sock->flags & SOCK_FLAG_BOUND)) {
 		int ret = sys_bind(sock->fd, &zero, addr_len);
-		printk(0, "sys_bind in sendto returned %d\n", ret);
 		if(ret < 0)
 			return ret;
 	}
@@ -97,7 +95,6 @@ static int sendto(struct socket *sock, const void *buffer, size_t length,
 	uh->length = length + sizeof(struct udp_header);
 	uh->checksum = 0; /* TODO */
 	uh->dest_port = *(uint16_t *)(addr->sa_data);
-	printk(0, "UDP: sendto %x %x\n", *(uint16_t *)addr->sa_data, *(uint32_t *)addr->sa_data);
 	return net_tlayer_sendto_network(sock, &sock->local, addr, (void *)tmp, length + sizeof(struct udp_header));
 }
 
@@ -108,8 +105,17 @@ static int shutdown(struct socket *sock, int how)
 	return 0;
 }
 
-void udp_init()
+int module_install()
 {
 	net_tlayer_register_protocol(PROTOCOL_UDP, &udp_tpi);
+	socket_set_calls(17, &socket_calls_udp);
+	return 0;
+}
+
+int module_exit()
+{
+	net_tlayer_deregister_protocol(PROTOCOL_UDP);
+	socket_set_calls(17, 0);
+	return 0;
 }
 

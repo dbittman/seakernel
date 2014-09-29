@@ -79,6 +79,9 @@ static int __socket_default_protocols_per_type[4] = {
 #define PF_INET     2
 #define PF_UNIX     PF_LOCAL /* Old BSD name for PF_LOCAL.  */
 #define PF_FILE     PF_LOCAL /* Another non-standard name for PF_LOCAL.  */
+
+#define PF_ARP      28
+
 #define PF_MAX      32  /* For now..  */
 
 /* Address families.  */
@@ -86,6 +89,7 @@ static int __socket_default_protocols_per_type[4] = {
 #define AF_UNIX     PF_UNIX
 #define AF_FILE     PF_FILE
 #define AF_INET     PF_INET
+#define AF_ARP      PF_ARP
 
 extern uint16_t af_to_ethertype_map[PF_MAX];
 struct sockproto {

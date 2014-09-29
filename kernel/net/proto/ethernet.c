@@ -3,6 +3,8 @@
 #include <sea/net/interface.h>
 #include <sea/net/arp.h>
 #include <sea/net/ipv4.h>
+#include <sea/net/nlayer.h>
+#include <sea/fs/socket.h>
 #include <sea/asm/system.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
@@ -26,23 +28,36 @@ void ethernet_send_packet(struct net_dev *nd, struct net_packet *netpacket)
 	net_transmit_packet(nd, netpacket, 1);
 }
 
+sa_family_t ethernet_get_sa_family(int ethertype)
+{
+	switch(ethertype) {
+		case ETHERTYPE_ARP:
+			return AF_ARP;
+		case ETHERTYPE_IPV4:
+			return AF_INET;
+	}
+	return (sa_family_t)-1;
+}
+
+int ethernet_convert_sa_family(sa_family_t sa)
+{
+	switch(sa) {
+		case AF_INET:
+			return ETHERTYPE_IPV4;
+		case AF_ARP:
+			return ETHERTYPE_ARP;
+	}
+	return -1;
+}
+
 void ethernet_receive_packet(struct net_dev *nd, struct net_packet *packet)
 {
 	struct ethernet_header *head = (struct ethernet_header *)packet->data;
-	packet->data_header = head;
 	unsigned char *payload = (unsigned char *)(head+1);
-	unsigned length = packet->length;
-	TRACE(0, "[ethernet]: receive packet size %d\n", length);
-	switch(BIG_TO_HOST16(head->type)) {
-		case ETHERTYPE_ARP:
-			arp_receive_packet(nd, packet, (struct arp_packet *)payload);
-			break;
-		case ETHERTYPE_IPV4:
-			ipv4_receive_packet(nd, packet, (struct ipv4_header *)payload);
-			break;
-		default:
-			kprintf("unknown ethertype\n");
-			break;
-	}
+	TRACE(0, "[ethernet]: receive packet size %d\n", packet->length);
+	sa_family_t af = ethernet_get_sa_family(BIG_TO_HOST16(head->type));
+	if(af == (sa_family_t)-1)
+		return;
+	net_nlayer_receive_from_dlayer(nd, packet, af, payload);
 }
 

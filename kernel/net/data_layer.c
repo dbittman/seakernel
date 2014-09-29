@@ -4,8 +4,11 @@
 #include <sea/net/arp.h>
 #include <sea/net/ipv4.h>
 
-void net_data_send(struct net_dev *nd, struct net_packet *packet, int etype, uint8_t dest[6], int payload_len)
+#include <sea/fs/socket.h>
+
+void net_data_send(struct net_dev *nd, struct net_packet *packet, sa_family_t sa_family, uint8_t dest[6], int payload_len)
 {
+	int etype = ethernet_convert_sa_family(sa_family);
 	if(nd->hw_type == NET_HWTYPE_LOOP) {
 		*(uint16_t *)(packet->data) = HOST_TO_BIG16(etype);
 		net_transmit_packet(nd, packet, 1);
@@ -27,9 +30,6 @@ void net_data_receive(struct net_dev *nd, struct net_packet *packet)
 			break;
 		case ETHERTYPE_IPV4:
 			ipv4_receive_packet(nd, packet, (struct ipv4_header *)payload);
-			break;
-		default:
-			kprintf("unknown ethertype\n");
 			break;
 		}
 	} else {

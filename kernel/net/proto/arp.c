@@ -159,7 +159,7 @@ static void arp_send_packet(struct net_dev *nd, struct net_packet *netpacket,
 		memset(dest, 0xFF, 6);
 	else
 		arp_get_mac(dest, packet->tar_hw_addr_1, packet->tar_hw_addr_2, packet->tar_hw_addr_3);
-	net_data_send(nd, netpacket, ETHERTYPE_ARP, dest, sizeof(*packet));
+	net_data_send(nd, netpacket, AF_ARP, dest, sizeof(*packet));
 }
 
 void arp_send_request(struct net_dev *nd, uint16_t prot_type, uint8_t prot_addr[4], int addr_len)

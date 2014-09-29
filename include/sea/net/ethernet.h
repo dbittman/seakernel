@@ -4,7 +4,7 @@
 #include <sea/net/packet.h>
 #include <sea/net/interface.h>
 #include <sea/net/ethertype.h>
-
+#include <sea/fs/socket.h>
 struct ethernet_header {
 	uint8_t dest_mac[6];
 	uint8_t src_mac[6];
@@ -13,8 +13,7 @@ struct ethernet_header {
 
 void ethernet_receive_packet(struct net_dev *nd, struct net_packet *packet);
 void ethernet_construct_header(struct ethernet_header *head, uint8_t src_mac[6], uint8_t dest_mac[6], uint16_t ethertype);
-//void ethernet_send_packet(struct net_dev *nd, struct net_packet *, struct ethernet_header *head, unsigned char *payload, int length);
-
+int ethernet_convert_sa_family(sa_family_t sa);
 void ethernet_send_packet(struct net_dev *nd, struct net_packet *);
 
 

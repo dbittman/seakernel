@@ -15,6 +15,7 @@
 #include <sea/net/ethertype.h>
 #include <sea/lib/queue.h>
 #include <sea/net/ipv4sock.h>
+#include <sea/net/nlayer.h>
 #include <sea/cpu/atomic.h>
 #include <sea/net/tlayer.h>
 #include <sea/ll.h>
@@ -359,21 +360,17 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 		ipv4_receive_packet(nd, packet->netpacket, packet->header);
 		return 1;
 	}
-	if(dest.address == BROADCAST_ADDRESS(ifaddr.address, nd->netmask)) {
-		memset(hwaddr, 0xFF, 6);
-	} else {
-		if(arp_lookup(ETHERTYPE_IPV4, packet_destination.addr_bytes, hwaddr) == -ENOENT) {
-			//TRACE(0, "[ipv4]: send_packet: ARP lookup failed, sending request\n");
-			/* no idea where the destination is! Send an ARP request. ARP handles multiple
-			 * requests to the same address. */
-			arp_send_request(nd, ETHERTYPE_IPV4, packet_destination.addr_bytes, 4);
-			/* re-enqueue the packet */
-			if(packet->tries > 5)
-				packet->last_attempt_time = tm_get_ticks() + 20;
-			ipv4_do_enqueue_packet(packet);
-			return 0;
-		}
+	/* try to resolve the hardware address */
+	int nl_flags = 0;
+	if(dest.address == BROADCAST_ADDRESS(ifaddr.address, nd->netmask))
+		nl_flags = NLAYER_FLAG_HW_BROADCAST;
+	if(net_nlayer_resolve_hwaddr(nd, ETHERTYPE_IPV4, packet_destination.addr_bytes, hwaddr, nl_flags) == -ENOENT) {
+		if(packet->tries > 5)
+			packet->last_attempt_time = tm_get_ticks() + 20;
+		ipv4_do_enqueue_packet(packet);
+		return 0;
 	}
+
 	TRACE(0, "[ipv4]: send_packet: sending\n");
 	ipv4_finish_constructing_packet(nd, r, packet);
 	
@@ -419,7 +416,7 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 		packet->header->frag_offset = HOST_TO_BIG16(IP_FLAG_MF << 12);
 	}
 
-	net_data_send(nd, packet->netpacket, ETHERTYPE_IPV4, hwaddr, BIG_TO_HOST16(packet->header->length));
+	net_data_send(nd, packet->netpacket, AF_INET, hwaddr, BIG_TO_HOST16(packet->header->length));
 	return 1;
 }
 

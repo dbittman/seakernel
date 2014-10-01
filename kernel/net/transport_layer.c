@@ -2,6 +2,8 @@
  * and keeps a port pool for each protocol.
  */
 
+#include <sea/asm/system.h>
+
 #include <sea/net/packet.h>
 #include <sea/net/tlayer.h>
 #include <sea/fs/socket.h>
@@ -9,7 +11,7 @@
 #include <sea/lib/hash.h>
 #include <sea/errno.h>
 
-#include <sea/net/ipv4.h> /* TODO: generic network layer */
+#include <sea/net/nlayer.h>
 
 #define GET_PORT(addr) BIG_TO_HOST16(*(uint16_t *)(addr)->sa_data)
 #define SET_PORT(addr,p) (*(uint16_t *)((addr)->sa_data) = HOST_TO_BIG16(p))
@@ -141,9 +143,7 @@ int net_tlayer_recvfrom_network(struct sockaddr *src, struct sockaddr *dest, str
 
 int net_tlayer_sendto_network(struct socket *socket, struct sockaddr *src, struct sockaddr *dest, void *payload, size_t len)
 {
-	/* TODO: call a generic "network layer" */
-	/* construct a header, and call ipv4 */
-	return ipv4_enqueue_sockaddr(payload, len, dest, src, socket->prot);
+	return net_nlayer_send_packet(payload, len, dest, src, socket->domain, socket->prot);
 }
 
 void net_tlayer_init()

@@ -328,6 +328,21 @@ static void ipv4_finish_constructing_packet(struct net_dev *nd, struct route *r,
 	packet->header->checksum = ipv4_calc_checksum(packet->header, packet->header->header_len * 4);
 }
 
+static int ipv4_resolve_hwaddr(struct net_dev *nd, int ethertype, uint8_t *netaddr, uint8_t *hwaddr, int flags)
+{
+	if(flags & NLAYER_FLAG_HW_BROADCAST) {
+		memset(hwaddr, 0xFF, 6);
+	} else {
+		if(arp_lookup(ETHERTYPE_IPV4, netaddr, hwaddr) == -ENOENT) {
+			/* no idea where the destination is! Send an ARP request. ARP handles multiple
+			 * requests to the same address. */
+			arp_send_request(nd, ETHERTYPE_IPV4, netaddr, 4);
+			return -ENOENT;
+		}
+	}
+	return 0;
+}
+
 static int ipv4_send_packet(struct ipv4_packet *packet)
 {
 	struct net_dev *nd;
@@ -364,7 +379,7 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 	int nl_flags = 0;
 	if(dest.address == BROADCAST_ADDRESS(ifaddr.address, nd->netmask))
 		nl_flags = NLAYER_FLAG_HW_BROADCAST;
-	if(net_nlayer_resolve_hwaddr(nd, ETHERTYPE_IPV4, packet_destination.addr_bytes, hwaddr, nl_flags) == -ENOENT) {
+	if(ipv4_resolve_hwaddr(nd, ETHERTYPE_IPV4, packet_destination.addr_bytes, hwaddr, nl_flags) == -ENOENT) {
 		if(packet->tries > 5)
 			packet->last_attempt_time = tm_get_ticks() + 20;
 		ipv4_do_enqueue_packet(packet);

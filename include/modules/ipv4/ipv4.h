@@ -5,6 +5,8 @@
 #include <sea/asm/system.h>
 #include <sea/cpu/time.h>
 #include <sea/ll.h>
+#include <sea/tm/kthread.h>
+#include <sea/lib/queue.h>
 struct ipv4_header {
 #ifdef LITTLE_ENDIAN
 	uint32_t header_len : 4;
@@ -54,6 +56,9 @@ void ipv4_receive_packet(struct net_dev *nd, struct net_packet *, void *);
 int ipv4_enqueue_packet(struct net_packet *netpacket, struct ipv4_header *header);
 int ipv4_copy_enqueue_packet(struct net_packet *netpacket, struct ipv4_header *header);
 int ipv4_enqueue_sockaddr(void *payload, size_t len, struct sockaddr *addr, struct sockaddr *src, int prot);
+int ipv4_sending_thread(struct kthread *kt, void *arg);
+int __ipv4_cleanup_fragments(int do_remove);
+uint16_t ipv4_calc_checksum(void *__data, int length);
 
 #define NETWORK_PREFIX(addr,mask) (addr & mask)
 #define HOST_ADDRESS_PART(addr,mask) (addr & ~mask)
@@ -65,6 +70,11 @@ int ipv4_enqueue_sockaddr(void *payload, size_t len, struct sockaddr *addr, stru
 #define IP_FLAG_DF      (1 << 2)
 
 #define FRAG_TIMEOUT 30
+
+extern struct queue *ipv4_tx_queue;
+extern struct kthread *ipv4_send_thread;
+extern time_t ipv4_thread_lastwork;
+extern struct llist *frag_list;
 
 #endif
 

@@ -1,7 +1,6 @@
 #include <sea/net/packet.h>
 #include <sea/net/interface.h>
 #include <sea/net/nlayer.h>
-
 #include <sea/net/arp.h>
 
 #include <sea/fs/socket.h>

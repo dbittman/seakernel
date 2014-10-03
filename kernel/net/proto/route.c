@@ -9,6 +9,9 @@
 /* TODO: make thread-safe */
 static struct llist *table = 0;
 
+/* TODO: generics */
+#define NETWORK_PREFIX(addr,mask) (addr & mask)
+
 /*
  * ref: http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
  */
@@ -23,14 +26,14 @@ unsigned int bit_count(uint32_t v)
  * any positive number or zero means valid route, with the highest confidence
  * value being the best choice (and the default route being zero confidence)
  */
-int __net_route_calc_confidence(struct route *r, union ipv4_address addr)
+int __net_route_calc_confidence(struct route *r, uint32_t addr)
 {
 	if(!(r->flags & ROUTE_FLAG_UP))
 			return -1;
 	if(!(r->interface->flags & IFACE_FLAG_UP))
 		return -1;
-	uint32_t prefix = NETWORK_PREFIX(addr.address, r->netmask);
-	if(prefix == r->destination.address) {
+	uint32_t prefix = NETWORK_PREFIX(addr, r->netmask);
+	if(prefix == r->destination) {
 		return bit_count(r->netmask);
 	}
 	/* default route has a confidence of 0, but is still a possible route */
@@ -42,7 +45,7 @@ int __net_route_calc_confidence(struct route *r, union ipv4_address addr)
 /* this function does the actual routing algorithm. addr is the
  * destination address, and the function returns the route entry
  * for how to route it. */
-struct route *net_route_select_entry(union ipv4_address addr)
+struct route *net_route_select_entry(uint32_t addr)
 {
 	if(!table)
 		return 0;
@@ -85,7 +88,7 @@ int net_route_find_del_entry(uint32_t dest, struct net_dev *nd)
 	struct route *r, *del=0;
 	struct llistnode *node;
 	ll_for_each_entry(table, node, struct route *, r) {
-		if(r->destination.address == dest && r->interface == nd) {
+		if(r->destination == dest && r->interface == nd) {
 			del = r;
 		}
 	}
@@ -115,11 +118,11 @@ int proc_read_route(char *buf, int off, int len)
 	ll_for_each_entry(table, node, struct route *, r) {
 		char tmp[32];
 		memset(tmp, 0, 32);
-		write_addr(tmp, r->destination.address);
+		write_addr(tmp, r->destination);
 		total_len += proc_append_buffer(buf, tmp, total_len, -1, off, len);
 		total_len += proc_append_buffer(buf, " \t", total_len, -1, off, len);
 		
-		write_addr(tmp, r->gateway.address);
+		write_addr(tmp, r->gateway);
 		total_len += proc_append_buffer(buf, tmp, total_len, -1, off, len);
 		total_len += proc_append_buffer(buf, " \t", total_len, -1, off, len);
 		

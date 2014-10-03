@@ -4,17 +4,10 @@
 #include <sea/net/nlayer.h>
 
 #include <sea/net/arp.h>
-#include <sea/net/ipv4.h>
 
 #include <sea/fs/socket.h>
 
 #include <sea/errno.h>
-
-struct nlayer_protocol ipv4 = {
-	.flags = 0,
-	.receive = ipv4_receive_packet,
-	.send = ipv4_enqueue_sockaddr,
-};
 
 struct nlayer_protocol arp = {
 	.flags = 0,
@@ -23,7 +16,6 @@ struct nlayer_protocol arp = {
 };
 
 static struct nlayer_protocol *protocols[PF_MAX] = {
-	[PF_INET] = &ipv4,
 	[PF_ARP]  = &arp,
 };
 

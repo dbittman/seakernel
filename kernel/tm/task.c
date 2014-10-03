@@ -89,6 +89,8 @@ void tm_init_multitasking()
 	loader_add_kernel_symbol(tm_delay_sleep);
 	loader_add_kernel_symbol(tm_schedule);
 	loader_add_kernel_symbol(tm_exit);
+	loader_add_kernel_symbol(tm_get_ticks);
+	loader_add_kernel_symbol(tm_get_current_frequency);
 	loader_add_kernel_symbol(sys_setsid);
 	loader_add_kernel_symbol(tm_do_fork);
 	loader_add_kernel_symbol(tm_kill_process);

@@ -15,6 +15,8 @@ struct nlayer_protocol {
 
 void net_nlayer_receive_from_dlayer(struct net_dev *nd, struct net_packet *packet, sa_family_t sa_family, void *payload);
 int net_nlayer_send_packet(void *payload, size_t len, struct sockaddr *dest, struct sockaddr *src, sa_family_t sa_family, int prot);
+void net_nlayer_register_protocol(sa_family_t p, struct nlayer_protocol *np);
+void net_nlayer_unregister_protocol(sa_family_t p);
 
 #endif
 

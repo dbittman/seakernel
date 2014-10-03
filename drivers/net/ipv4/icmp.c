@@ -1,7 +1,7 @@
 #include <sea/net/packet.h>
 #include <sea/net/interface.h>
-#include <sea/net/ipv4.h>
-#include <sea/net/icmp.h>
+#include <modules/ipv4/ipv4.h>
+#include <modules/ipv4/icmp.h>
 #include <sea/vsprintf.h>
 #include <sea/net/ethertype.h>
 

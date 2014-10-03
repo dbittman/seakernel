@@ -1,6 +1,6 @@
 #include <sea/fs/socket.h>
-#include <sea/net/ipv4sock.h>
-#include <sea/net/ipv4.h>
+#include <modules/ipv4/ipv4sock.h>
+#include <modules/ipv4/ipv4.h>
 #include <sea/net/packet.h>
 #include <sea/ll.h>
 #include <sea/errno.h>

@@ -6,7 +6,6 @@
 #include <sea/loader/symbol.h>
 #include <sea/cpu/atomic.h>
 #include <sea/vsprintf.h>
-#include <sea/net/ipv4.h>
 #include <sea/net/arp.h>
 #include <sea/net/route.h>
 #include <sea/tm/schedule.h>
@@ -14,7 +13,9 @@
 #include <sea/fs/devfs.h>
 #include <sea/errno.h>
 #include <sea/net/tlayer.h>
+#include <sea/net/nlayer.h>
 #include <sea/net/data_queue.h>
+#include <sea/asm/system.h>
 uint16_t af_to_ethertype_map[PF_MAX] = {
 	[AF_INET] = 0x800,
 };
@@ -41,9 +42,19 @@ void net_init()
 	loader_add_kernel_symbol(net_tlayer_register_protocol);
 	loader_add_kernel_symbol(net_tlayer_deregister_protocol);
 	loader_add_kernel_symbol(sys_bind);
+	loader_add_kernel_symbol(net_route_select_entry);
+	loader_add_kernel_symbol(net_packet_create);
+	loader_add_kernel_symbol(net_nlayer_register_protocol);
+	loader_add_kernel_symbol(net_nlayer_unregister_protocol);
+	loader_add_kernel_symbol(net_packet_get);
+	loader_add_kernel_symbol(net_packet_put);
+	loader_add_kernel_symbol(net_iface_get_network_addr);
+	loader_add_kernel_symbol(net_tlayer_recvfrom_network);
+	loader_add_kernel_symbol(arp_lookup);
+	loader_add_kernel_symbol(arp_send_request);
+	loader_add_kernel_symbol(net_data_send);
 #endif
 	arp_init();
-	ipv4_init();
 	net_tlayer_init();
 }
 
@@ -267,14 +278,14 @@ int net_char_ioctl(dev_t min, int cmd, long arg)
 		case SIOCADDRT:
 			route = kmalloc(sizeof(struct route));
 			memcpy(&mask, rt->gate.sa_data + 2, 4);
-			route->gateway.address = mask;
+			route->gateway = mask;
 			memcpy(&mask, rt->dest.sa_data + 2, 4);
-			route->destination.address = mask;
+			route->destination = mask;
 			memcpy(&mask, rt->mask.sa_data + 2, 4);
 			route->netmask = mask;
 			route->interface = nd;
 			route->flags = rt->flags;
-			printk(0, "add route: %x %x %x %x %s\n", route->destination.address, route->gateway.address, route->netmask, route->flags, nd->name);
+			printk(0, "add route: %x %x %x %x %s\n", route->destination, route->gateway, route->netmask, route->flags, nd->name);
 			net_route_add_entry(route);
 			break;
 		case SIOCDELRT:

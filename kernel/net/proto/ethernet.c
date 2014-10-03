@@ -2,7 +2,6 @@
 #include <sea/net/ethernet.h>
 #include <sea/net/interface.h>
 #include <sea/net/arp.h>
-#include <sea/net/ipv4.h>
 #include <sea/net/nlayer.h>
 #include <sea/fs/socket.h>
 #include <sea/asm/system.h>

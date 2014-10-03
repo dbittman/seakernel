@@ -8,8 +8,5 @@ KOBJS += kernel/net/callbacks.o \
 
 KOBJS += kernel/net/proto/arp.o \
 		 kernel/net/proto/ethernet.o \
-		 kernel/net/proto/icmp.o \
-		 kernel/net/proto/ipv4.o \
-		 kernel/net/proto/ipv4sock.o \
 		 kernel/net/proto/route.o 
 

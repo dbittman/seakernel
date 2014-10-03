@@ -1,25 +1,32 @@
 #include <sea/net/packet.h>
 #include <sea/net/interface.h>
-#include <sea/net/ipv4.h>
-#include <sea/net/icmp.h>
+#include <sea/net/nlayer.h>
 #include <sea/net/route.h>
+#include <sea/net/datalayer.h>
+#include <sea/net/ethertype.h>
 #include <sea/net/arp.h>
+#include <sea/net/tlayer.h>
+
 #include <sea/tm/kthread.h>
 #include <sea/tm/process.h>
 #include <sea/tm/schedule.h>
+
+#include <sea/cpu/time.h>
+#include <sea/cpu/atomic.h>
+
+#include <sea/mm/kmalloc.h>
+#include <sea/lib/queue.h>
+
+#include <sea/ll.h>
 #include <sea/errno.h>
 #include <sea/vsprintf.h>
-#include <sea/cpu/time.h>
-#include <sea/mm/kmalloc.h>
-#include <sea/net/datalayer.h>
-#include <sea/net/ethertype.h>
-#include <sea/lib/queue.h>
-#include <sea/net/ipv4sock.h>
-#include <sea/net/nlayer.h>
-#include <sea/cpu/atomic.h>
-#include <sea/net/tlayer.h>
-#include <sea/ll.h>
+
 #include <limits.h>
+
+#include <modules/ipv4/ipv4sock.h>
+#include <modules/ipv4/ipv4.h>
+#include <modules/ipv4/icmp.h>
+
 static struct queue *ipv4_tx_queue = 0;
 static struct kthread *ipv4_send_thread = 0;
 static time_t ipv4_thread_lastwork;
@@ -169,13 +176,13 @@ static void __ipv4_new_fragment(struct net_packet *np, struct ipv4_header *heade
 	frag->node = ll_insert(frag_list, frag);
 }
 
-static void __ipv4_cleanup_fragments()
+static int __ipv4_cleanup_fragments(int do_remove)
 {
 	rwlock_acquire(&frag_list->rwl, RWL_READER);
 	struct llistnode *node;
 	struct ipv4_fragment *f, *rem = 0;
 	ll_for_each_entry(frag_list, node, struct ipv4_fragment *, f) {
-		if(!f->complete && (tm_get_ticks() > f->start_time + TICKS_SECONDS(FRAG_TIMEOUT))) {
+		if(do_remove || (!f->complete && (tm_get_ticks() > f->start_time + TICKS_SECONDS(FRAG_TIMEOUT)))) {
 			printk(1, "[ipv4]: removing old incomplete fragment\n");
 			rem = f;
 			break;
@@ -184,8 +191,11 @@ static void __ipv4_cleanup_fragments()
 	rwlock_release(&frag_list->rwl, RWL_READER);
 	if(rem) {
 		ll_remove(frag_list, rem->node);
+		net_packet_put(rem->netpacket, 0);
 		kfree(rem);
+		return 1;
 	}
+	return 0;
 }
 
 static int ipv4_handle_fragmentation(struct net_packet **np, struct ipv4_header **head, int *size, int *ff)
@@ -272,10 +282,11 @@ void ipv4_forward_packet(struct net_dev *nd, struct net_packet *netpacket, struc
 	ipv4_enqueue_packet(netpacket, header);
 }
 
-void ipv4_receive_packet(struct net_dev *nd, struct net_packet *netpacket, struct ipv4_header *packet)
+void ipv4_receive_packet(struct net_dev *nd, struct net_packet *netpacket, void *__packet)
 {
 	/* check if we are to accept this packet */
 	TRACE(0, "[ipv4]: receive_packet\n");
+	struct ipv4_header *packet = __packet;
 	netpacket->network_header = packet;
 	uint16_t checksum = packet->checksum;
 	packet->checksum = 0;
@@ -356,13 +367,13 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 	packet->tries++;
 	packet->last_attempt_time = tm_get_ticks();
 
-	struct route *r = net_route_select_entry(dest);
+	struct route *r = net_route_select_entry(dest.address);
 	uint8_t hwaddr[6];
 	if(!r)
 		return -1;
 	nd = r->interface;
 	if(r->flags & ROUTE_FLAG_GATEWAY) {
-		packet_destination = r->gateway;
+		packet_destination = (union ipv4_address)r->gateway;
 	} else {
 		packet_destination = dest;
 	}
@@ -438,7 +449,7 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 int ipv4_enqueue_packet(struct net_packet *netpacket, struct ipv4_header *header)
 {
 	union ipv4_address dest = (union ipv4_address)header->dest_ip;
-	struct route *r = net_route_select_entry(dest);
+	struct route *r = net_route_select_entry(dest.address);
 	if(!r) {
 		TRACE(0, "[ipv4]: destination unavailable\n");
 		return -ENETUNREACH;
@@ -456,7 +467,7 @@ int ipv4_enqueue_packet(struct net_packet *netpacket, struct ipv4_header *header
 int ipv4_copy_enqueue_packet(struct net_packet *netpacket, struct ipv4_header *header)
 {
 	union ipv4_address dest = (union ipv4_address)header->dest_ip;
-	struct route *r = net_route_select_entry(dest);
+	struct route *r = net_route_select_entry(dest.address);
 	if(!r) {
 		TRACE(0, "[ipv4]: destination unavailable\n");
 		return -ENETUNREACH;
@@ -476,7 +487,7 @@ int ipv4_enqueue_sockaddr(void *payload, size_t len, struct sockaddr *addr, stru
 {
 	union ipv4_address dest, src_ip;
 	memcpy(&dest.address, addr->sa_data + 2, 4);
-	struct route *r = net_route_select_entry(dest);
+	struct route *r = net_route_select_entry(dest.address);
 	if(!r)
 		return -ENETUNREACH;
 
@@ -535,16 +546,41 @@ static int ipv4_sending_thread(struct kthread *kt, void *arg)
 			tm_process_pause(current_task);
 		else if(!queue_count(ipv4_tx_queue))
 			tm_schedule();
-		__ipv4_cleanup_fragments();
+		__ipv4_cleanup_fragments(0);
 	}
 	return 0;
 }
 
-void ipv4_init()
+struct nlayer_protocol ipv4 = {
+	.flags = 0,
+	.receive = ipv4_receive_packet,
+	.send = ipv4_enqueue_sockaddr,
+};
+
+int module_install()
 {
 	ipv4_tx_queue = queue_create(0, 0);
 	ipv4_send_thread = kthread_create(0, "[kipv4-send]", 0, ipv4_sending_thread, 0);
 	ipv4_send_thread->process->priority = 100;
 	frag_list = ll_create(0);
+	net_nlayer_register_protocol(PF_INET, &ipv4);
+	socket_set_calls(1 /* TODO */, &socket_calls_rawipv4);
+	return 0;
+}
+
+int module_exit()
+{
+	/* shutdown the ipv4 sending thread */
+	kthread_join(ipv4_send_thread, 0);
+	/* unregister everything */
+	net_nlayer_unregister_protocol(PF_INET);
+	socket_set_calls(1, 0);
+	/* clean up the sending queue */
+	while(queue_dequeue(ipv4_tx_queue));
+	queue_destroy(ipv4_tx_queue);
+	/* clean up the fragmentation resources */
+	while(__ipv4_cleanup_fragments(1));
+	ll_destroy(frag_list);
+	return 0;
 }
 

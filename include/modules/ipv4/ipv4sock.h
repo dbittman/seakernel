@@ -2,7 +2,7 @@
 #define __SEA_NET_IPV4SOCK_H
 #include <sea/fs/socket.h>
 #include <sea/net/packet.h>
-#include <sea/net/ipv4.h>
+#include <modules/ipv4/ipv4.h>
 
 extern struct socket_calls socket_calls_rawipv4;
 

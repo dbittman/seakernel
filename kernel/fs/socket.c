@@ -4,7 +4,6 @@
 #include <sea/errno.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
-#include <sea/net/ipv4sock.h>
 #include <sea/net/data_queue.h>
 #include <sea/tm/schedule.h>
 #include <sea/fs/fcntl.h>
@@ -23,7 +22,6 @@ struct socket_calls socket_calls_null = {0,0,0,0,0,0,0,0,0,0};
 
 struct socket_calls *__socket_calls_list[PROT_MAXPROT + 1] = {
 	&socket_calls_null,
-	&socket_calls_rawipv4,
 };
 
 struct socket *socket_create(int *errcode)

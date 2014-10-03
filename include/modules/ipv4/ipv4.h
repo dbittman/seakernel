@@ -50,8 +50,7 @@ struct ipv4_fragment {
 	sint16_t first_hole;
 };
 
-void ipv4_receive_packet(struct net_dev *nd, struct net_packet *, struct ipv4_header *);
-void ipv4_init();
+void ipv4_receive_packet(struct net_dev *nd, struct net_packet *, void *);
 int ipv4_enqueue_packet(struct net_packet *netpacket, struct ipv4_header *header);
 int ipv4_copy_enqueue_packet(struct net_packet *netpacket, struct ipv4_header *header);
 int ipv4_enqueue_sockaddr(void *payload, size_t len, struct sockaddr *addr, struct sockaddr *src, int prot);

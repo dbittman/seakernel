@@ -1,5 +1,4 @@
 #include <sea/config.h>
-#include <sea/net/ethernet.h>
 #include <sea/net/packet.h>
 #include <sea/net/interface.h>
 #include <sea/mm/kmalloc.h>
@@ -53,6 +52,10 @@ void net_init()
 	loader_add_kernel_symbol(arp_lookup);
 	loader_add_kernel_symbol(arp_send_request);
 	loader_add_kernel_symbol(net_data_send);
+	loader_add_kernel_symbol(net_data_register_protocol);
+	loader_add_kernel_symbol(net_transmit_packet);
+	loader_add_kernel_symbol(net_nlayer_receive_from_dlayer);
+	loader_add_kernel_symbol(net_data_unregister_protocol);
 #endif
 	arp_init();
 	net_tlayer_init();

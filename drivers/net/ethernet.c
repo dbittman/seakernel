@@ -1,44 +1,87 @@
-#include <sea/dm/dev.h>
-#include <sea/loader/symbol.h>
-#include <modules/crc32.h>
+#include <sea/net/packet.h>
+#include <modules/ethernet.h>
+#include <sea/net/interface.h>
+#include <sea/net/arp.h>
+#include <sea/net/nlayer.h>
+#include <sea/net/datalayer.h>
+#include <sea/fs/socket.h>
+#include <sea/asm/system.h>
+#include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
-intptr_t loader_find_kernel_function(char * unres);
-int (*process_packet_ipv4)(char *, int);
-int (*process_packet_ipv6)(char *, int);
-#define IPV4 0xabcdef /* Whatever */
-int process_ethernet_packet(char *buffer, unsigned length)
+#include <sea/string.h>
+void ethernet_construct_header(struct ethernet_header *head, uint8_t src_mac[6], uint8_t dest_mac[6], uint16_t ethertype)
 {
-	kprintf("[eth]: Process packet: %x %d\n", buffer, length);
-	int type=0;
-	if(type == IPV4 && process_packet_ipv4)
-		process_packet_ipv4(buffer, length);
-	return 0;
+	for(int i=0;i<6;i++)
+	{
+		head->dest_mac[i] = dest_mac[i];
+		head->src_mac[i] = src_mac[i];
+	}
+	head->type = HOST_TO_BIG16(ethertype);
 }
 
-void reload_eth_routing_table()
+void ethernet_send_packet(struct net_dev *nd, struct net_packet *netpacket)
 {
-	process_packet_ipv4 = (int (*)(char *, int))loader_find_kernel_function("process_packet_ipv4");
-	process_packet_ipv6 = (int (*)(char *, int))loader_find_kernel_function("process_packet_ipv6");
-	printk(0, "[ethernet]: Reloaded table and found ipv4=%x, ipv6=%x\n", process_packet_ipv4, process_packet_ipv6);
+	if(netpacket->length < 60)
+		netpacket->length = 60;
+	TRACE(0, "[ethernet]: send packet size %d\n", netpacket->length);
+	net_transmit_packet(nd, netpacket, 1);
 }
+
+void ethernet_transmit_packet(struct net_dev *nd, struct net_packet *netpacket, sa_family_t sa, uint8_t dest[6], int len)
+{
+	int etype = ethernet_convert_sa_family(sa);
+	ethernet_construct_header(netpacket->data_header, nd->hw_address, dest, etype);
+	netpacket->length = len + sizeof(struct ethernet_header);
+	ethernet_send_packet(nd, netpacket);
+}
+
+sa_family_t ethernet_get_sa_family(int ethertype)
+{
+	switch(ethertype) {
+		case ETHERTYPE_ARP:
+			return AF_ARP;
+		case ETHERTYPE_IPV4:
+			return AF_INET;
+	}
+	return (sa_family_t)-1;
+}
+
+int ethernet_convert_sa_family(sa_family_t sa)
+{
+	switch(sa) {
+		case AF_INET:
+			return ETHERTYPE_IPV4;
+		case AF_ARP:
+			return ETHERTYPE_ARP;
+	}
+	return -1;
+}
+
+void ethernet_receive_packet(struct net_dev *nd, struct net_packet *packet)
+{
+	struct ethernet_header *head = (struct ethernet_header *)packet->data;
+	unsigned char *payload = (unsigned char *)(head+1);
+	TRACE(0, "[ethernet]: receive packet size %d\n", packet->length);
+	sa_family_t af = ethernet_get_sa_family(BIG_TO_HOST16(head->type));
+	if(af == (sa_family_t)-1)
+		return;
+	net_nlayer_receive_from_dlayer(nd, packet, af, payload);
+}
+
+struct data_layer_protocol ether = {
+	.flags = 0,
+	.send = ethernet_transmit_packet,
+	.receive = ethernet_receive_packet,
+};
 
 int module_install()
 {
-	loader_add_kernel_symbol(process_ethernet_packet);
-	loader_add_kernel_symbol(reload_eth_routing_table);
-	reload_eth_routing_table();
+	net_data_register_protocol(NET_HWTYPE_ETHERNET, &ether);
 	return 0;
 }
 
 int module_exit()
 {
-	loader_remove_kernel_symbol("process_ethernet_packet");
-	loader_remove_kernel_symbol("reload_eth_routing_table");
-	
+	net_data_unregister_protocol(NET_HWTYPE_ETHERNET);
 	return 0;
-}
-
-int module_deps()
-{
-	return CONFIG_VERSION_NUMBER;
 }

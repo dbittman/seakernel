@@ -7,6 +7,5 @@ KOBJS += kernel/net/callbacks.o \
 		 kernel/net/transport_layer.o
 
 KOBJS += kernel/net/proto/arp.o \
-		 kernel/net/proto/ethernet.o \
 		 kernel/net/proto/route.o 
 

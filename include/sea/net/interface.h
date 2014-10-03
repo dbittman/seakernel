@@ -52,6 +52,7 @@
 
 #define NET_HWTYPE_LOOP     0x18
 #define NET_HWTYPE_ETHERNET 0x6
+#define NET_HWTYPE_MAX      0x20
 
 #define IFNAMSIZ 16
 

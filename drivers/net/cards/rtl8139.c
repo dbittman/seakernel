@@ -15,7 +15,6 @@
 #include <sea/mutex.h>
 #include <sea/cpu/processor.h>
 #include <sea/errno.h>
-#include <sea/net/ethernet.h>
 #include <sea/cpu/atomic.h>
 
 int rtl8139_maj=-1;
@@ -424,7 +423,7 @@ int module_install()
 		if(dev) {
 			rtl8139dev_t *rdev = rtl8139_load_device_pci(dev);
 			struct net_dev *rtl8139_net_dev = net_add_device(&rtl8139_net_callbacks, rdev);
-			rtl8139_net_dev->data_header_len = sizeof(struct ethernet_header);
+			rtl8139_net_dev->data_header_len = 14;
 			rtl8139_net_dev->hw_address_len = 6;
 			rtl8139_net_dev->hw_type = NET_HWTYPE_ETHERNET;
 			rtl8139_net_dev->brate = 10000000; /* TODO */

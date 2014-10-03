@@ -1,6 +1,8 @@
 #include <sea/net/interface.h>
 #include <sea/net/packet.h>
-
+#include <sea/net/datalayer.h>
+#include <sea/net/ethertype.h>
+#include <sea/asm/system.h>
 #define MAX_LO 32
 
 struct lodevice {
@@ -26,6 +28,30 @@ static int send(struct net_dev *nd, struct net_packet *packets, int count)
 	return count;
 }
 
+int loop_convert_sa_family(sa_family_t sa)
+{
+	switch(sa) {
+		case AF_INET:
+			return ETHERTYPE_IPV4;
+		case AF_ARP:
+			return ETHERTYPE_ARP;
+	}
+	return -1;
+}
+
+static void data_layer_send(struct net_dev *nd, struct net_packet *packet, sa_family_t sa, uint8_t dest[6], int len)
+{
+	int etype = loop_convert_sa_family(sa);
+	*(uint16_t *)(packet->data) = HOST_TO_BIG16(etype);
+	net_transmit_packet(nd, packet, 1);
+}
+
+struct data_layer_protocol loop_prot = {
+	.flags = 0,
+	.send = data_layer_send,
+	.receive = 0,
+};
+
 void net_lo_create()
 {
 	for(int i=0;i<MAX_LO;i++) {
@@ -45,6 +71,7 @@ int module_install()
 	for(int i=0;i<MAX_LO;i++)
 		los[i].nd = 0;
 	net_lo_create();
+	net_data_register_protocol(NET_HWTYPE_LOOP, &loop_prot);
 	return 0;
 }
 

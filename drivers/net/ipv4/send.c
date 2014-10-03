@@ -27,10 +27,10 @@
 #include <modules/ipv4/ipv4.h>
 #include <modules/ipv4/icmp.h>
 
-
 struct queue *ipv4_tx_queue = 0;
 struct kthread *ipv4_send_thread = 0;
 time_t ipv4_thread_lastwork;
+
 static int ipv4_do_enqueue_packet(struct ipv4_packet *packet)
 {
 	/* error checking */

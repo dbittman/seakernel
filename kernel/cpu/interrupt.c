@@ -213,7 +213,7 @@ void cpu_interrupt_syscall_entry(registers_t *regs, int syscall_num)
 			{
 				if(stage2_count[i])
 				{
-					sub_atomic(&stage2_count[i], 1);
+					int  a =sub_atomic(&stage2_count[i], 1);
 					for(int j=0;j<MAX_HANDLERS;j++) {
 						if(interrupt_handlers_s2[i][j]) {
 							(interrupt_handlers_s2[i][j])(i);
@@ -320,7 +320,7 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 	 * interrupt number, and indicate that handlers should check for
 	 * second stage handlers. */
 	if(need_second_stage) {
-		add_atomic(&stage2_count[int_no], 1);
+		int r = add_atomic(&stage2_count[int_no], 1);
 		maybe_handle_stage_2 = 1;
 	}
 	assert(!cpu_interrupt_get_flag());
@@ -337,7 +337,7 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 			{
 				/* decrease the count for this interrupt number, and loop through
 				 * all the second stage handlers and run them */
-				sub_atomic(&stage2_count[i], 1);
+				int a = sub_atomic(&stage2_count[i], 1);
 				for(int j=0;j<MAX_HANDLERS;j++) {
 					if(interrupt_handlers_s2[i][j]) {
 						(interrupt_handlers_s2[i][j])(i);
@@ -365,9 +365,11 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 /* make sure it eventually gets handled */
 void __KT_try_handle_stage2_interrupts()
 {
-	if(maybe_handle_stage_2 && !mutex_is_locked(&s2_lock))
+	/* TODO: don't run this if there aren't any pending interrupts */
+	if(!mutex_is_locked(&s2_lock))
 	{
 		int old = cpu_interrupt_set(0);
+		int a;
 		maybe_handle_stage_2 = 0;
 		/* handle the stage2 handlers. NOTE: this may change to only 
 		 * handling one interrupt, one function. For now, this works. */
@@ -376,7 +378,7 @@ void __KT_try_handle_stage2_interrupts()
 		{
 			if(stage2_count[i])
 			{
-				sub_atomic(&stage2_count[i], 1);
+				a = sub_atomic(&stage2_count[i], 1);
 				for(int j=0;j<MAX_HANDLERS;j++) {
 					if(interrupt_handlers_s2[i][j]) {
 						(interrupt_handlers_s2[i][j])(i);

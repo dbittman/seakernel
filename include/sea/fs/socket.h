@@ -90,7 +90,7 @@ static int __socket_default_protocols_per_type[4] = {
 #define AF_FILE     PF_FILE
 #define AF_INET     PF_INET
 #define AF_ARP      PF_ARP
-
+#define AF_MAX      PF_MAX
 extern uint16_t af_to_ethertype_map[PF_MAX];
 struct sockproto {
 	uint16_t sp_family;      /* address family */

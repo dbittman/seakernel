@@ -43,8 +43,9 @@ static void ipv4_finish_constructing_packet(struct net_dev *nd, struct route *r,
 {
 	if(!(packet->netpacket->flags & NP_FLAG_FORW) && !(packet->netpacket->flags & NP_FLAG_NOFILLSRC)) {
 		union ipv4_address src;
-		net_iface_get_network_addr(nd, ETHERTYPE_IPV4, src.addr_bytes);
-		packet->header->src_ip = src.address;
+		struct sockaddr s;
+		net_iface_get_netaddr(nd, AF_INET, &s);
+		memcpy(&packet->header->src_ip, s.sa_data + 2, 4);
 	}
 	packet->header->version = 4;
 	packet->header->header_len = 5;
@@ -92,7 +93,9 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 		packet_destination = dest;
 	}
 	union ipv4_address ifaddr;
-	net_iface_get_network_addr(nd, ETHERTYPE_IPV4, ifaddr.addr_bytes);
+	struct sockaddr s;
+	net_iface_get_netaddr(nd, AF_INET, &s);
+	memcpy(&ifaddr.address, s.sa_data + 2, 4);
 	if(packet_destination.address == ifaddr.address) {
 		/* we're sending a packet to an address of an interface on this system! Loop it around... */
 		TRACE(0, "[ipv4]: sending packet to interface on this system! Re-receiving...\n");
@@ -102,7 +105,10 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 	}
 	/* try to resolve the hardware address */
 	int nl_flags = 0;
-	if(dest.address == BROADCAST_ADDRESS(ifaddr.address, nd->netmask))
+	net_iface_get_netmask(nd, AF_INET, &s);
+	uint32_t mask;
+	memcpy(&mask, s.sa_data + 2, 4);
+	if(dest.address == BROADCAST_ADDRESS(ifaddr.address, mask))
 		nl_flags = NLAYER_FLAG_HW_BROADCAST;
 	if(ipv4_resolve_hwaddr(nd, ETHERTYPE_IPV4, packet_destination.addr_bytes, hwaddr, nl_flags) == -ENOENT) {
 		if(packet->tries > 5)

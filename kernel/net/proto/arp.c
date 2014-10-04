@@ -52,6 +52,17 @@ static int __arp_compare_address(uint8_t addr[4], uint16_t a1, uint16_t a2)
 	return 1;
 }
 
+static int __arp_convert_af(int etype)
+{
+	switch(etype) {
+		case ETHERTYPE_IPV4:
+			return AF_INET;
+		case ETHERTYPE_ARP:
+			return AF_ARP;
+	}
+	return 0;
+}
+
 static struct arp_entry *__arp_get_outstanding_requests_entry(int prot_type, uint16_t addr[2], int check_time, int remove)
 {
 	mutex_acquire(outlock);
@@ -184,9 +195,9 @@ void arp_send_request(struct net_dev *nd, uint16_t prot_type, uint8_t prot_addr[
 	packet.oper = HOST_TO_BIG16(ARP_OPER_REQUEST);
 	
 	arp_set_mac(nd->hw_address, &packet.src_hw_addr_1, &packet.src_hw_addr_2, &packet.src_hw_addr_3);
-	uint8_t src_p[4];
-	net_iface_get_network_addr(nd, prot_type, src_p);
-	arp_write_short(src_p, &packet.src_p_addr_1, &packet.src_p_addr_2);
+	struct sockaddr s;
+	net_iface_get_netaddr(nd, __arp_convert_af(prot_type), &s);
+	arp_write_short(s.sa_data + 2, &packet.src_p_addr_1, &packet.src_p_addr_2);
 
 	packet.tar_hw_addr_1 = packet.tar_hw_addr_2 = packet.tar_hw_addr_3 = 0;
 
@@ -255,9 +266,9 @@ int arp_receive_packet(struct net_dev *nd, struct net_packet *netpacket, struct 
 	{
 		/* get this interface's protocol address */
 		uint16_t ptype = BIG_TO_HOST16(packet->p_type);
-		uint8_t ifaddr[4];
-		net_iface_get_network_addr(nd, ptype, ifaddr);
-		if(!__arp_compare_address(ifaddr, packet->tar_p_addr_1, packet->tar_p_addr_2))
+		struct sockaddr s;
+		net_iface_get_netaddr(nd, __arp_convert_af(ptype), &s);
+		if(!__arp_compare_address(s.sa_data + 2, packet->tar_p_addr_1, packet->tar_p_addr_2))
 		{
 			/* this is us! Form the reply packet */
 			packet->tar_hw_addr_1 = packet->src_hw_addr_1;
@@ -271,7 +282,7 @@ int arp_receive_packet(struct net_dev *nd, struct net_packet *netpacket, struct 
 			packet->tar_p_addr_2 = packet->src_p_addr_2;
 			packet->oper = HOST_TO_BIG16(ARP_OPER_REPLY);
 			
-			arp_write_short(ifaddr, &packet->src_p_addr_1, &packet->src_p_addr_2);
+			arp_write_short(s.sa_data + 2, &packet->src_p_addr_1, &packet->src_p_addr_2);
 			
 			arp_send_packet(nd, netpacket, packet, 0);
 		}

@@ -68,11 +68,22 @@ struct net_dev {
 	/* these fields are specified by the driver at time of net_dev creation */
 	struct net_dev_calls *callbacks;
 	void *data; /* driver specific data */
-
 	uint8_t hw_address[6];
+	int hw_address_len;
+	
+
+	struct sockaddr addresses[AF_MAX];
+	struct sockaddr masks[AF_MAX];
+	struct sockaddr broadcasts[AF_MAX];
+	size_t netaddr_lengths[AF_MAX];
+
+	/*
 	struct sockaddr inet_address, broad_address;
-	int net_address_len, hw_address_len;
+	int net_address_len;
 	uint32_t netmask;
+	*/
+	
+	
 	uint16_t hw_type;
 	int data_header_len;
 	int mtu;
@@ -105,12 +116,15 @@ int net_callback_get_mac(struct net_dev *nd, uint8_t mac[6]);
 struct net_dev *net_add_device(struct net_dev_calls *fn, void *);
 int net_transmit_packet(struct net_dev *nd, struct net_packet *packets, int count);
 
-void net_iface_get_network_mask(struct net_dev *nd, int type, uint32_t *mask);
-void net_iface_set_network_mask(struct net_dev *nd, int type, uint32_t mask);
-void net_iface_set_network_addr(struct net_dev *nd, int type, uint8_t *addr);
-void net_iface_get_network_addr(struct net_dev *nd, int type, uint8_t *addr);
 int net_iface_set_flags(struct net_dev *nd, int flags);
 int net_iface_get_flags(struct net_dev *nd);
+
+void net_iface_set_netmask(struct net_dev *nd, sa_family_t af, struct sockaddr *mask);
+void net_iface_get_netmask(struct net_dev *nd, sa_family_t af, struct sockaddr *mask);
+void net_iface_set_bcast_addr(struct net_dev *nd, sa_family_t af, struct sockaddr *addr);
+void net_iface_get_bcast_addr(struct net_dev *nd, sa_family_t af, struct sockaddr *addr);
+void net_iface_set_netaddr(struct net_dev *nd, sa_family_t af, struct sockaddr *addr);
+void net_iface_get_netaddr(struct net_dev *nd, sa_family_t af, struct sockaddr *addr);
 
 struct  ifreq {
 	char    ifr_name[IFNAMSIZ];             /* if name, e.g. "en0" */

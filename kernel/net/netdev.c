@@ -47,7 +47,8 @@ void net_init()
 	loader_add_kernel_symbol(net_nlayer_unregister_protocol);
 	loader_add_kernel_symbol(net_packet_get);
 	loader_add_kernel_symbol(net_packet_put);
-	loader_add_kernel_symbol(net_iface_get_network_addr);
+	loader_add_kernel_symbol(net_iface_get_netaddr);
+	loader_add_kernel_symbol(net_iface_get_netmask);
 	loader_add_kernel_symbol(net_tlayer_recvfrom_network);
 	loader_add_kernel_symbol(arp_lookup);
 	loader_add_kernel_symbol(arp_send_request);
@@ -127,53 +128,34 @@ void net_remove_device(struct net_dev *nd)
 	kfree(nd);
 }
 
-void net_iface_set_network_mask(struct net_dev *nd, int type, uint32_t mask)
+void net_iface_set_netmask(struct net_dev *nd, sa_family_t af, struct sockaddr *mask)
 {
-	if(type != 0x800)
-		panic(0, "unknown protocol type");
-	nd->netmask = mask;
+	memcpy(&nd->masks[af], mask, sizeof(*mask));
 }
 
-void net_iface_get_network_mask(struct net_dev *nd, int type, uint32_t *mask)
+void net_iface_get_netmask(struct net_dev *nd, sa_family_t af, struct sockaddr *mask)
 {
-	if(type != 0x800)
-		panic(0, "unknown protocol type");
-	*mask = nd->netmask;
+	memcpy(mask, &nd->masks[af], sizeof(*mask));
 }
 
-void net_iface_set_broadcast_sockaddr(struct net_dev *nd, int type, struct sockaddr *addr)
+void net_iface_set_bcast_addr(struct net_dev *nd, sa_family_t af, struct sockaddr *addr)
 {
-	if(type != 0x800)
-		panic(0, "unknown protocol type");
-	memcpy(&nd->broad_address, addr, sizeof(*addr));
+	memcpy(&nd->broadcasts[af], addr, sizeof(*addr));
 }
 
-void net_iface_get_broadcast_sockaddr(struct net_dev *nd, int type, struct sockaddr *addr)
+void net_iface_get_bcast_addr(struct net_dev *nd, sa_family_t af, struct sockaddr *addr)
 {
-	if(type != 0x800)
-		panic(0, "unknown protcol type");
-	memcpy(addr, &nd->broad_address, sizeof(*addr));
+	memcpy(addr, &nd->broadcasts[af], sizeof(*addr));
 }
 
-void net_iface_set_network_sockaddr(struct net_dev *nd, int type, struct sockaddr *addr)
+void net_iface_set_netaddr(struct net_dev *nd, sa_family_t af, struct sockaddr *addr)
 {
-	if(type != 0x800)
-		panic(0, "unknown protocol type");
-	memcpy(&nd->inet_address, addr, sizeof(*addr));
+	memcpy(&nd->addresses[af], addr, sizeof(*addr));
 }
 
-void net_iface_get_network_addr(struct net_dev *nd, int type, uint8_t *addr)
+void net_iface_get_netaddr(struct net_dev *nd, sa_family_t af, struct sockaddr *addr)
 {
-	if(type != 0x800)
-		panic(0, "unknown protocol type");
-	memcpy(addr, nd->inet_address.sa_data + 2, 4);
-}
-
-void net_iface_get_network_sockaddr(struct net_dev *nd, int type, struct sockaddr *addr)
-{
-	if(type != 0x800)
-		panic(0, "unknown protcol type");
-	memcpy(addr, &nd->inet_address, sizeof(*addr));
+	memcpy(addr, &nd->addresses[af], sizeof(*addr));
 }
 
 int net_iface_get_flags(struct net_dev *nd)
@@ -189,7 +171,7 @@ int net_iface_set_flags(struct net_dev *nd, int flags)
 void net_iface_export_data(struct net_dev *nd, struct if_data *stat)
 {
 	stat->ifi_type = nd->hw_type;
-	stat->ifi_addrlen = nd->net_address_len;
+	stat->ifi_addrlen = 4 /* TODO */;
 	stat->ifi_mtu = nd->mtu;
 	stat->ifi_baudrate = nd->brate;
 	stat->ifi_ipackets = nd->rx_count;
@@ -212,6 +194,15 @@ int net_char_rw(int rw, int min, char *buf, size_t count)
 	return -ENOTSUP;
 }
 
+int __get_addr_len(sa_family_t af)
+{
+	switch(af) {
+		case AF_INET:
+			return 4;
+	}
+	return 0;
+}
+
 struct ul_route {
 	struct sockaddr dest, gate, mask;
 	int flags;
@@ -222,7 +213,6 @@ int net_char_ioctl(dev_t min, int cmd, long arg)
 	struct net_dev *nd = devices[min];
 	if(!nd)
 		return -EINVAL;
-	printk(0, "[netdev]: ioctl %d %d %x\n", min, cmd, arg);
 	struct ifreq *req = (void *)arg;
 	struct if_data *stat = (void *)arg;
 	struct ul_route *rt = (void *)arg;
@@ -248,34 +238,27 @@ int net_char_ioctl(dev_t min, int cmd, long arg)
 			strncpy(req->ifr_name, devices[i]->name, IFNAMSIZ);
 			break;
 		case SIOCSIFADDR:
-			printk(0, "setting addr: %x %x %x %x\n", sa->sa_data[2], sa->sa_data[3], sa->sa_data[4], sa->sa_data[5]);
-			net_iface_set_network_sockaddr(nd, 0x800, sa);
-			nd->net_address_len = 4;
+			net_iface_set_netaddr(nd, sa->sa_family, sa);
+			nd->netaddr_lengths[sa->sa_family] = __get_addr_len(sa->sa_family);
 			break;
 		case SIOCGIFADDR:
-			net_iface_get_network_sockaddr(nd, 0x800, sa);
+			net_iface_get_netaddr(nd, sa->sa_family, sa);
 			break;
 		case SIOCSIFNETMASK:
 			memcpy(&mask, sa->sa_data + 2, 4);
-			printk(0, "set mask: %x %x %x %x : %x\n", (uint8_t)sa->sa_data[2], (uint8_t)sa->sa_data[3], (uint8_t)sa->sa_data[4], (uint8_t)sa->sa_data[5], BIG_TO_HOST32(mask));
-			net_iface_set_network_mask(nd, 0x800, mask);
-
+			net_iface_set_netmask(nd, sa->sa_family, sa);
 			break;
 		case SIOCGIFNETMASK:
-			net_iface_get_network_mask(nd, 0x800, &mask);
-			memcpy(sa->sa_data + 2, &mask, 4);
+			net_iface_get_netmask(nd, sa->sa_family, sa);
 			break;
 		case SIOCGIFFLAGS:
 			req->ifr_flags = net_iface_get_flags(nd);
-			printk(0, "getting flags %x\n", req->ifr_flags);
 			break;
 		case SIOCSIFFLAGS:
 			flags = req->ifr_flags;
-			printk(0, "setting flags pt1 %x\n", flags);
 			flags &= ~IFACE_FLAGS_READONLY;
 			int old_flags = net_iface_get_flags(nd);
 			flags |= (IFACE_FLAGS_READONLY & old_flags);
-			printk(0, "setting flags pt2 %x (%x %x)\n", flags, IFACE_FLAGS_READONLY, ~IFACE_FLAGS_READONLY);
 			net_iface_set_flags(nd, flags);
 			break;
 		case SIOCADDRT:
@@ -288,7 +271,6 @@ int net_char_ioctl(dev_t min, int cmd, long arg)
 			route->netmask = mask;
 			route->interface = nd;
 			route->flags = rt->flags;
-			printk(0, "add route: %x %x %x %x %s\n", route->destination, route->gateway, route->netmask, route->flags, nd->name);
 			net_route_add_entry(route);
 			break;
 		case SIOCDELRT:
@@ -310,10 +292,10 @@ int net_char_ioctl(dev_t min, int cmd, long arg)
 			net_iface_export_data(nd, stat);
 			break;
 		case SIOCSIFBRDADDR:
-			net_iface_set_broadcast_sockaddr(nd, 0x800, sa);
+			net_iface_set_bcast_addr(nd, sa->sa_family, sa);
 			break;
 		case SIOCGIFBRDADDR:
-			net_iface_get_broadcast_sockaddr(nd, 0x800, sa);
+			net_iface_get_bcast_addr(nd, sa->sa_family, sa);
 			break;
 		default:
 			return -EOPNOTSUPP;

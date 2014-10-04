@@ -48,9 +48,9 @@ void icmp_receive_echo_request(struct net_dev *nd, struct net_packet *netpacket,
 	packet->type = 0;
 	struct ipv4_header *header = netpacket->network_header;
 	header->dest_ip = header->src_ip;
-	union ipv4_address ifaddr;
-	net_iface_get_network_addr(nd, ETHERTYPE_IPV4, ifaddr.addr_bytes);
-	header->src_ip = ifaddr.address;
+	struct sockaddr s;
+	net_iface_get_netaddr(nd, AF_INET, &s);
+	memcpy(&header->src_ip, s.sa_data + 2, 4);
 	ipv4_enqueue_packet(netpacket, header);
 	if(put)
 		net_packet_put(netpacket, 0);

@@ -230,9 +230,9 @@ static void ipv4_accept_packet(struct net_dev *nd, struct net_packet *netpacket,
 		default:
 			memset(&sa_src, 0, sizeof(sa_src));
 			memset(&sa_dest, 0, sizeof(sa_dest));
-			union ipv4_address ifaddr;
-			net_iface_get_network_addr(nd, ETHERTYPE_IPV4, ifaddr.addr_bytes);
-			memcpy(sa_dest.sa_data + 2, &ifaddr.address, 4);
+			struct sockaddr s;
+			net_iface_get_netaddr(nd, AF_INET, &s);
+			memcpy(sa_dest.sa_data + 2, s.sa_data + 2, 4);
 			memcpy(sa_src.sa_data + 2, &src.address, 4);
 			sa_src.sa_family = sa_dest.sa_family = AF_INET;
 			net_tlayer_recvfrom_network(&sa_src, &sa_dest, netpacket, packet->ptype, packet->data, payload_size);
@@ -286,10 +286,15 @@ void ipv4_receive_packet(struct net_dev *nd, struct net_packet *netpacket, void 
 	TRACE(0, "[ipv4]: packet from %x (%d.%d.%d.%d)\n",
 			src.address, src.addr_bytes[0], src.addr_bytes[1], src.addr_bytes[2], src.addr_bytes[3]);
 	union ipv4_address ifaddr;
-	net_iface_get_network_addr(nd, ETHERTYPE_IPV4, ifaddr.addr_bytes);
+	uint32_t mask;
+	struct sockaddr s;
+	net_iface_get_netaddr(nd, AF_INET, &s);
+	memcpy(&ifaddr.address, s.sa_data + 2, 4);
+	net_iface_get_netmask(nd, AF_INET, &s);
+	memcpy(&mask, s.sa_data + 2, 4);
 	if(ifaddr.address == dest.address
 			/* TODO: should we use this automatic broadcast address? */
-			|| (dest.address == BROADCAST_ADDRESS(ifaddr.address, nd->netmask)
+			|| (dest.address == BROADCAST_ADDRESS(ifaddr.address, mask)
 				&& (nd->flags & IFACE_FLAG_ACCBROADCAST))) {
 		/* accepted unicast or broadcast packet for us */
 		TRACE(0, "[ipv4]: got packet for us of size %d!\n", BIG_TO_HOST16(packet->length));
@@ -301,5 +306,4 @@ void ipv4_receive_packet(struct net_dev *nd, struct net_packet *netpacket, void 
 		add_atomic(&nd->dropped, 1);
 	}
 }
-
 

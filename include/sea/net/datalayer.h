@@ -17,5 +17,7 @@ struct data_layer_protocol *net_data_get_protocol(int hwtype);
 void net_data_unregister_protocol(int hwtype);
 void net_data_register_protocol(int hwtype, struct data_layer_protocol *p);
 
+void net_data_init();
+
 #endif
 

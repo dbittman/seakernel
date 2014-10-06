@@ -18,5 +18,7 @@ int net_nlayer_send_packet(void *payload, size_t len, struct sockaddr *dest, str
 void net_nlayer_register_protocol(sa_family_t p, struct nlayer_protocol *np);
 void net_nlayer_unregister_protocol(sa_family_t p);
 
+void net_nlayer_init();
+
 #endif
 

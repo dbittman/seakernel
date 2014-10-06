@@ -37,3 +37,8 @@ void net_data_receive(struct net_dev *nd, struct net_packet *packet)
 		dlp->receive(nd, packet);
 }
 
+void net_data_init()
+{
+	memset(protocols, 0, sizeof(protocols));
+}
+

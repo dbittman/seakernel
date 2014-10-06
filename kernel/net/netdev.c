@@ -60,6 +60,8 @@ void net_init()
 #endif
 	arp_init();
 	net_tlayer_init();
+	net_nlayer_init();
+	net_data_init();
 }
 
 static int kt_packet_rec_thread(struct kthread *kt, void *arg)

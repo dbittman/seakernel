@@ -1,9 +1,13 @@
 #include <sea/loader/module.h>
 #include <sea/types.h>
+#include <sea/errno.h>
 #include <sea/cpu/processor.h>
 #include <sea/tm/process.h>
 #include <sea/cpu/x86msr.h>
 #include <sea/asm/system.h>
+#include <sea/mm/vmm.h>
+
+#include <sea/vsprintf.h>
 
 #include <modules/shiv.h>
 
@@ -83,6 +87,7 @@ int shiv_vmx_on()
 
 	/* enable */
 	vmxon_region = mm_alloc_physical_page();
+	/* magic code */
 	asm(".byte 0xf3, 0x0f, 0xc7, 0x30"::"a"(&vmxon_region), "m"(vmxon_region):"memory", "cc");
 	return 1;
 }

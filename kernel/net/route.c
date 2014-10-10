@@ -6,6 +6,8 @@
 #include <sea/vsprintf.h>
 #include <sea/errno.h>
 #include <sea/mm/kmalloc.h>
+#include <sea/string.h>
+#include <sea/kernel.h>
 /* TODO: make thread-safe */
 static struct llist *table = 0;
 

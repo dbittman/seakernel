@@ -9,6 +9,7 @@
 #include <sea/boot/init.h>
 #include <sea/asm/system.h>
 #include <sea/vsprintf.h>
+#include <sea/loader/symbol.h>
 
 volatile addr_t *kernel_dir=0;
 pml4_t *kernel_dir_phys=0;
@@ -103,6 +104,7 @@ void arch_mm_vm_init_2()
 	kernel_dir_phys = (pml4_t *)primary_cpu->kd_phys;
 	kernel_dir = primary_cpu->kd;
 	asm ("mov %0, %%cr3" : : "r" (kernel_dir[PML4_IDX((PHYSICAL_PML4_INDEX/0x1000))]));
+	loader_add_kernel_symbol(arch_mm_vm_early_map);
 }
 
 void arch_mm_vm_switch_context(addr_t *n/*VIRTUAL ADDRESS*/)

@@ -1,4 +1,6 @@
 #include <sea/cpu/atomic.h>
+#include <sea/string.h>
+#include <sea/kernel.h>
 #include <sea/net/packet.h>
 #include <sea/ll.h>
 #include <sea/tm/process.h>

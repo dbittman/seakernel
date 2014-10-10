@@ -20,6 +20,8 @@
 #include <sea/ll.h>
 #include <sea/errno.h>
 #include <sea/vsprintf.h>
+#include <sea/string.h>
+#include <sea/kernel.h>
 
 #include <limits.h>
 

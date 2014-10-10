@@ -1,3 +1,4 @@
+#include <sea/string.h>
 #include <sea/dm/dev.h>
 #include <modules/pci.h>
 #include <sea/loader/symbol.h>
@@ -16,7 +17,7 @@
 #include <sea/cpu/processor.h>
 #include <sea/errno.h>
 #include <sea/cpu/atomic.h>
-
+#include <sea/types.h>
 int rtl8139_maj=-1;
 typedef struct rtl8139_dev_s
 {
@@ -402,7 +403,7 @@ int rtl8139_unload_device_pci(rtl8139dev_t *dev)
 	return 0;
 }
 
-int rtl8139_rw_main(int rw, int min, char *buf, unsigned int count)
+int rtl8139_rw_main(int rw, int min, char *buf, size_t count)
 {
 	return 0;
 }

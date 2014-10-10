@@ -3,7 +3,8 @@
  */
 
 #include <sea/asm/system.h>
-
+#include <sea/string.h>
+#include <sea/kernel.h>
 #include <sea/net/packet.h>
 #include <sea/net/tlayer.h>
 #include <sea/fs/socket.h>

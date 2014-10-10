@@ -1,3 +1,5 @@
+#include <sea/kernel.h>
+#include <sea/string.h>
 #include <sea/net/packet.h>
 #include <sea/net/interface.h>
 #include <sea/net/nlayer.h>

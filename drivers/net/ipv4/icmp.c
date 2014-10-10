@@ -4,6 +4,7 @@
 #include <modules/ipv4/icmp.h>
 #include <sea/vsprintf.h>
 #include <sea/net/ethertype.h>
+#include <sea/string.h>
 
 static uint16_t icmp_calc_checksum(void *__data, int length)
 {

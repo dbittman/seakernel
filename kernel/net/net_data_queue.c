@@ -1,4 +1,6 @@
 #include <sea/lib/queue.h>
+#include <sea/string.h>
+#include <sea/kernel.h>
 #include <sea/net/data_queue.h>
 #include <sea/net/packet.h>
 #include <sea/fs/socket.h>

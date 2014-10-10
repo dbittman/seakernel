@@ -1,4 +1,6 @@
+#include <sea/kernel.h>
 #include <sea/fs/socket.h>
+#include <sea/string.h>
 #include <sea/fs/file.h>
 #include <sea/fs/inode.h>
 #include <sea/errno.h>

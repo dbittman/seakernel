@@ -6,6 +6,7 @@
 #include <sea/errno.h>
 #include <sea/lib/queue.h>
 #include <sea/net/data_queue.h>
+#include <sea/string.h>
 
 static int recvfrom(struct socket *, void *buffer, size_t length,
 		int flags, struct sockaddr *addr, socklen_t *addr_len);

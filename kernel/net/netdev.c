@@ -1,4 +1,6 @@
 #include <sea/config.h>
+#include <sea/string.h>
+#include <sea/kernel.h>
 #include <sea/net/packet.h>
 #include <sea/net/interface.h>
 #include <sea/mm/kmalloc.h>

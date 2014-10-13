@@ -14,6 +14,111 @@
 uint32_t revision_id; /* this is actually only 31 bits, but... */
 addr_t vmxon_region=0;
 
+#define __pa(x) (addr_t)mm_vm_get_map((addr_t)x,0,0)
+
+static void vmcs_clear(struct vmcs *vmcs)
+{
+	uint64_t phys_addr = __pa(vmcs);
+	uint8_t error;
+
+	asm (ASM_VMX_VMCLEAR_RAX "; setna %0"
+			: "=g"(error) : "a"(&phys_addr), "m"(phys_addr)
+			: "cc", "memory");
+	if (error)
+		printk(4, "vmclear fail: %x/%x\n",
+				vmcs, phys_addr);
+}
+
+static void vcpu_clear(struct vcpu *vcpu)
+{
+	vmcs_clear(vcpu->vmcs);
+	vcpu->launched = 0;
+}
+
+static unsigned long vmcs_readl(unsigned long field)
+{
+	unsigned long value;
+
+	asm (ASM_VMX_VMREAD_RDX_RAX
+			: "=a"(value) : "d"(field) : "cc");
+	return value;
+}
+
+static uint16_t vmcs_read16(unsigned long field)
+{
+	return vmcs_readl(field);
+}
+
+static uint32_t vmcs_read32(unsigned long field)
+{
+	return vmcs_readl(field);
+}
+
+static uint64_t vmcs_read64(unsigned long field)
+{
+	return vmcs_readl(field);
+}
+
+static void vmwrite_error(unsigned long field, unsigned long value)
+{
+	printk(2, "vmwrite error: reg %x value %x (err %d)\n",
+			field, value, vmcs_read32(VM_INSTRUCTION_ERROR));
+}
+
+static void vmcs_writel(unsigned long field, unsigned long value)
+{
+	uint8_t error;
+
+	asm (ASM_VMX_VMWRITE_RAX_RDX "; setna %0"
+			: "=q"(error) : "a"(value), "d"(field) : "cc" );
+	if (unlikely(error))
+		vmwrite_error(field, value);
+}
+
+static void vmcs_write16(unsigned long field, uint16_t value)
+{
+	vmcs_writel(field, value);
+}
+
+static void vmcs_write32(unsigned long field, uint32_t value)
+{
+	vmcs_writel(field, value);
+}
+
+static void vmcs_write64(unsigned long field, uint64_t value)
+{
+	vmcs_writel(field, value);
+}
+
+/*
+ *  * Switches to specified vcpu, until a matching vcpu_put(), but assumes
+ *   * vcpu mutex is already taken.
+ *    */
+static void vmx_vcpu_load(cpu_t *cpu, struct vcpu *vcpu)
+{
+	uint64_t phys_addr = __pa(vcpu->vmcs);
+
+	if(vcpu->cpu != cpu)
+		vcpu_clear(vcpu);
+
+	uint8_t error;
+
+	asm (ASM_VMX_VMPTRLD_RAX "; setna %0"
+				: "=g"(error) : "a"(&phys_addr), "m"(phys_addr)
+				: "cc");
+	if (error)
+		printk(2, "kvm: vmptrld %x/%x fail\n",
+					vcpu->vmcs, phys_addr);
+
+	if (vcpu->cpu != cpu) {
+		vcpu->cpu = cpu;
+		/* TODO: These lines need to be confirmed */
+		vmcs_writel(HOST_TR_BASE, (unsigned long)(&cpu->arch_cpu_data.tss));
+		vmcs_writel(HOST_GDTR_BASE, (unsigned long)(cpu->arch_cpu_data.gdt_ptr.base));
+	}
+}
+
+
 int shiv_check_hardware_support()
 {
 	/* check CPUID.1 ECX.VMX */
@@ -107,8 +212,7 @@ addr_t shiv_build_ept_pml4(addr_t memsz)
 {
 	addr_t pml4 = mm_alloc_physical_page();
 	for(addr_t i=0;i<memsz;i++)
-		arch_mm_vm_early_map(pml4 + PHYS_PAGE_MAP
-				, i, mm_alloc_physical_page(), 7, MAP_NOCLEAR); 
+		arch_mm_vm_early_map((void *)(pml4 + PHYS_PAGE_MAP), i, mm_alloc_physical_page(), 7, MAP_NOCLEAR); 
 	return pml4;
 }
 
@@ -148,6 +252,7 @@ int module_install()
 		printk(4, "[shiv]: CPU doesn't support required features\n");
 		return -EINVAL;
 	}
+
 	if(!shiv_vmx_on())
 	{
 		printk(4, "[shiv]: couldn't enable VMX operation\n");

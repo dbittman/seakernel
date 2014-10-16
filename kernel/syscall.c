@@ -30,7 +30,7 @@ static unsigned int num_syscalls=0;
 int sys_null(long a, long b, long c, long d, long e)
 {
 	#if CONFIG_DEBUG
-	kprintf("[kernel]: Null system call (%d) called in task %d\n%x %x %x %x %x", 
+	kprintf("[kernel]: Null system call (%d) called in task %d\n%x %x %x %x %x",
 			current_task->system, current_task->pid, a, b, c, d, e);
 	#endif
 	return -ENOSYS;
@@ -61,76 +61,150 @@ int sys_syslog(int level, char *buf, int len, int ctl)
 }
 
 static void *syscall_table[129] = {
-	SC sys_setup,
-	
-	SC tm_exit,        SC tm_do_fork,     SC tm_process_wait, SC sys_readpos, 
-	SC sys_writepos,   SC sys_open_posix, SC sys_close,       SC sys_fstat,
-	SC sys_stat,       SC sys_isatty,     SC sys_seek,        SC tm_send_signal, 
-	SC sys_sbrk,       SC sys_times,      SC sys_dup,         SC sys_dup2,
-	
-	SC sys_ioctl,      SC sys_vfork,       SC sys_recv,        SC sys_send, 
-	SC sys_socket,       SC sys_accept,       SC sys_connect,        SC sys_listen,
-	SC sys_bind,       SC execve, 
-	
+	[SYS_SETUP]           = SC sys_setup,
+	[SYS_EXIT]            = SC tm_exit,
+	[SYS_FORK]            = SC tm_do_fork,
+	[SYS_WAIT]            = SC tm_process_wait,
+	[SYS_READ]            = SC sys_readpos,
+	[SYS_WRITE]           = SC sys_writepos,
+	[SYS_OPEN]            = SC sys_open_posix,
+	[SYS_CLOSE]           = SC sys_close,
+	[SYS_FSTAT]           = SC sys_fstat,
+	[SYS_STAT]            = SC sys_stat,
+	[SYS_ISATTY]          = SC sys_isatty,
+	[SYS_SEEK]            = SC sys_seek,
+	[SYS_SIGNAL]          = SC tm_send_signal,
+	[SYS_SBRK]            = SC sys_sbrk,
+	[SYS_TIMES]           = SC sys_times,
+	[SYS_DUP]             = SC sys_dup,
+	[SYS_DUP2]            = SC sys_dup2,
+	[SYS_IOCTL]           = SC sys_ioctl,
+	[SYS_VFORK]           = SC sys_vfork,
+	[SYS_RECV]            = SC sys_recv,
+	[SYS_SEND]            = SC sys_send,
+	[SYS_SOCKET]          = SC sys_socket,
+	[SYS_ACCEPT]          = SC sys_accept,
+	[SYS_CONNECT]         = SC sys_connect,
+	[SYS_LISTEN]          = SC sys_listen,
+	[SYS_BIND]            = SC sys_bind,
+	[SYS_EXECVE]          = SC execve,
 	#if CONFIG_MODULES
-	SC sys_load_module, 
-	SC sys_unload_module, 
-	SC sys_null, 
-	SC loader_unload_all_modules, 
+	[SYS_LMOD]            = SC sys_load_module,
+	[SYS_ULMOD]           = SC sys_unload_module,
+
+	[SYS_ULALLMODS]       = SC loader_unload_all_modules,
 	#else
-	SC sys_null,
-	SC sys_null,
-	SC sys_null,
-	SC sys_null,
+	[SYS_LMOD]            = SC sys_null,
+	[SYS_ULMOD]           = SC sys_null,
+
+	[SYS_ULALLMODS]       = SC sys_null,
 	#endif
-	
-	SC sys_get_pid,    SC /**32*/sys_getppid,
-	
-	SC sys_link,       SC vfs_unlink,     SC vfs_inode_get_ref_count, SC sys_get_pwd, 
-	SC sys_getpath,    SC sys_getsockname,       SC vfs_chroot,              SC sys_chdir,
-	SC sys_mount,      SC vfs_unmount,    SC vfs_read_dir,            SC sys_null, 
-	SC console_create, SC console_switch, SC sys_sockshutdown,                SC sys_getsockopt,
-	
-	SC sys_setsockopt,       SC sys_recvfrom,       SC sys_sendto,      SC sys_sync, 
-	SC vfs_rmdir,      SC sys_fsync,      SC sys_alarm,     SC sys_select,
-	SC sys_null,       SC sys_null,       SC sys_sysconf,   SC sys_setsid, 
-	SC sys_setpgid, 
-	
+	[SYS_GETPID]          = SC sys_get_pid,
+	[SYS_GETPPID]         = SC sys_getppid,
+	[SYS_LINK]            = SC sys_link,
+	[SYS_UNLINK]          = SC vfs_unlink,
+	[SYS_GETREFCOUNT]     = SC vfs_inode_get_ref_count,
+	[SYS_GETPWD]          = SC sys_get_pwd,
+	[SYS_GETPATH]         = SC sys_getpath,
+	[SYS_GETSOCKNAME]     = SC sys_getsockname,
+	[SYS_CHROOT]          = SC vfs_chroot,
+	[SYS_CHDIR]           = SC sys_chdir,
+	[SYS_MOUNT]           = SC sys_mount,
+	[SYS_UMOUNT]          = SC vfs_unmount,
+	[SYS_READDIR]         = SC vfs_read_dir,
+
+	[SYS_CREATE_CONSOLE]  = SC console_create,
+	[SYS_SWITCH_CONSOLE]  = SC console_switch,
+	[SYS_SOCKSHUTDOWN]    = SC sys_sockshutdown,
+	[SYS_GETSOCKOPT]      = SC sys_getsockopt,
+	[SYS_SETSOCKOPT]      = SC sys_setsockopt,
+	[SYS_RECVFROM]        = SC sys_recvfrom,
+	[SYS_SENDTO]          = SC sys_sendto,
+	[SYS_SYNC]            = SC sys_sync,
+	[SYS_RMDIR]           = SC vfs_rmdir,
+	[SYS_FSYNC]           = SC sys_fsync,
+	[SYS_ALARM]           = SC sys_alarm,
+	[SYS_SELECT]          = SC sys_select,
+	[SYS_GETDENTS]        = SC sys_null,
+
+	[SYS_SYSCONF]         = SC sys_sysconf,
+	[SYS_SETSID]          = SC sys_setsid,
+	[SYS_SETPGID]         = SC sys_setpgid,
 	#if CONFIG_SWAP
-	SC sys_swapon, 
-	SC sys_swapoff, 
+	[SYS_SWAPON]          = SC sys_swapon,
+	[SYS_SWAPOFF]         = SC sys_swapoff,
 	#else
-	SC sys_null,
-	SC sys_null,
+	[SYS_SWAPON]          = SC sys_null,
+	[SYS_SWAPOFF]         = SC sys_null,
 	#endif
-	
-	SC /**64*/sys_nice,
-	
-	SC sys_mmap,        SC sys_munmap,     SC sys_msync,      SC sys_task_stat, 
-	SC sys_null,        SC sys_null,       SC tm_delay,       SC kernel_reset,
-	SC kernel_poweroff, SC tm_get_uid,     SC tm_get_gid,     SC tm_set_uid, 
-	SC tm_set_gid,      SC sys_null,       SC sys_task_pstat, SC sys_mount2,
-	
-	SC tm_set_euid,     SC tm_set_egid,       SC sys_pipe,      SC tm_set_signal, 
-	SC tm_get_euid,     SC tm_get_egid,       SC time_get_epoch,      SC sys_null,
-	SC time_get,   SC sys_get_timer_th,  SC sys_isstate,   SC sys_wait3, 
-	SC sys_null,        SC sys_null,          SC sys_getcwdlen, 
-	
+	[SYS_NICE]            = SC sys_nice,
+	[SYS_MMAP]            = SC sys_mmap,
+	[SYS_MUNMAP]          = SC sys_munmap,
+	[SYS_MSYNC]           = SC sys_msync,
+	[SYS_TSTAT]           = SC sys_task_stat,
+
+	[SYS_DELAY]           = SC tm_delay,
+	[SYS_KRESET]          = SC kernel_reset,
+	[SYS_KPOWOFF]         = SC kernel_poweroff,
+	[SYS_GETUID]          = SC tm_get_uid,
+	[SYS_GETGID]          = SC tm_get_gid,
+	[SYS_SETUID]          = SC tm_set_uid,
+	[SYS_SETGID]          = SC tm_set_gid,
+	[SYS_MEMSTAT]         = SC sys_null,
+	[SYS_TPSTAT]          = SC sys_task_pstat,
+	[SYS_MOUNT2]          = SC sys_mount2,
+	[SYS_SETEUID]         = SC tm_set_euid,
+	[SYS_SETEGID]         = SC tm_set_egid,
+	[SYS_PIPE]            = SC sys_pipe,
+	[SYS_SETSIG]          = SC tm_set_signal,
+	[SYS_GETEUID]         = SC tm_get_euid,
+	[SYS_GETEGID]         = SC tm_get_egid,
+	[SYS_GETTIMEEPOCH]    = SC time_get_epoch,
+
+	[SYS_GETTIME]         = SC time_get,
+	[SYS_TIMERTH]         = SC sys_get_timer_th,
+	[SYS_ISSTATE]         = SC sys_isstate,
+	[SYS_WAIT3]           = SC sys_wait3,
+
+
+	[SYS_GETCWDLEN]       = SC sys_getcwdlen,
 	#if CONFIG_SWAP
-	SC /**96*/sys_swaptask,
+	[SYS_SWAPTASK]        = SC /**96*/sys_swaptask,
 	#else
-	SC /**96*/sys_null,
+	[SYS_SWAPTASK]        = SC /**96*/sys_null,
 	#endif
-	
-	SC sys_dirstat,     SC sys_sigact,     SC sys_access,     SC sys_chmod, 
-	SC sys_fcntl,       SC sys_dirstat_fd, SC sys_getdepth,   SC sys_waitpid,
-	SC sys_mknod,       SC sys_symlink,    SC sys_readlink,   SC sys_umask, 
-	SC sys_sigprocmask, SC sys_ftruncate,  SC sys_getnodestr, SC sys_chown,
-	
-	SC sys_utime,        SC sys_gethostname, SC sys_gsetpriority, SC sys_uname, 
-	SC sys_gethost,      SC sys_getserv,     SC sys_setserv,      SC sys_syslog,
-	SC sys_posix_fsstat, SC sys_null,        SC sys_null,         SC sys_null, 
-	SC sys_null,         SC sys_null,        SC sys_waitagain,    SC /**128*/sys_null /* RESERVED*/,
+	[SYS_DIRSTAT]         = SC sys_dirstat,
+	[SYS_SIGACT]          = SC sys_sigact,
+	[SYS_ACCESS]          = SC sys_access,
+	[SYS_CHMOD]           = SC sys_chmod,
+	[SYS_FCNTL]           = SC sys_fcntl,
+	[SYS_DIRSTATFD]       = SC sys_dirstat_fd,
+	[SYS_GETDEPTH]        = SC sys_getdepth,
+	[SYS_WAITPID]         = SC sys_waitpid,
+	[SYS_MKNOD]           = SC sys_mknod,
+	[SYS_SYMLINK]         = SC sys_symlink,
+	[SYS_READLINK]        = SC sys_readlink,
+	[SYS_UMASK]           = SC sys_umask,
+	[SYS_SIGPROCMASK]     = SC sys_sigprocmask,
+	[SYS_FTRUNCATE]       = SC sys_ftruncate,
+	[SYS_GETNODESTR]      = SC sys_getnodestr,
+	[SYS_CHOWN]           = SC sys_chown,
+	[SYS_UTIME]           = SC sys_utime,
+	[SYS_GETHOSTNAME]     = SC sys_gethostname,
+	[SYS_GSPRI]           = SC sys_gsetpriority,
+	[SYS_UNAME]           = SC sys_uname,
+	[SYS_GETHOST]         = SC sys_gethost,
+	[SYS_GETSERV]         = SC sys_getserv,
+	[SYS_SETSERV]         = SC sys_setserv,
+	[SYS_SYSLOG]          = SC sys_syslog,
+	[SYS_POSFSSTAT]       = sys_posix_fsstat,
+
+
+
+
+
+	[SYS_WAITAGAIN] = SC sys_waitagain,
+	[SYS_RET_FROM_SIG] = SC sys_null,
 };
 
 void syscall_init()
@@ -146,14 +220,14 @@ int mm_is_valid_user_pointer(int num, void *p, char flags)
 		return 1;
 	if(addr < TOP_LOWER_KERNEL && addr) {
 		#if CONFIG_DEBUG
-		printk(0, "[kernel]: warning - task %d passed ptr %x to syscall %d (invalid)\n", 
+		printk(0, "[kernel]: warning - task %d passed ptr %x to syscall %d (invalid)\n",
 			   current_task->pid, addr, num);
 		#endif
 		return 0;
 	}
 	if(addr >= TOP_TASK_MEM) {
 		#if CONFIG_DEBUG
-		printk(0, "[kernel]: warning - task %d passed ptr %x to syscall %d (invalid)\n", 
+		printk(0, "[kernel]: warning - task %d passed ptr %x to syscall %d (invalid)\n",
 			   current_task->pid, addr, num);
 		#endif
 		return 0;
@@ -169,18 +243,18 @@ int check_pointers(volatile registers_t *regs)
 {
 	switch(SYSCALL_NUM_AND_RET) {
 		case SYS_READ: case SYS_FSTAT: case SYS_STAT: case SYS_GETPATH:
-		case SYS_READLINK: case SYS_GETNODESTR: 
+		case SYS_READLINK: case SYS_GETNODESTR:
 		case SYS_POSFSSTAT: case SYS_WRITE:
 			return mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_B_, 0);
-			
-		case SYS_TIMES: case SYS_GETPWD: case SYS_PIPE: 
+
+		case SYS_TIMES: case SYS_GETPWD: case SYS_PIPE:
 		case SYS_MEMSTAT: case SYS_GETTIME: case SYS_GETHOSTNAME:
 		case SYS_UNAME: case SYS_MSYNC: case SYS_MUNMAP:
 			return mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_A_, 0);
-			
+
 		case SYS_SETSIG: case SYS_WAITPID:
 			return mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_B_, 1);
-			
+
 		case SYS_SELECT:
 			if(!mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_B_, 1))
 				return 0;
@@ -191,8 +265,8 @@ int check_pointers(volatile registers_t *regs)
 			if(!mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_E_, 1))
 				return 0;
 			break;
-			
-		case SYS_DIRSTAT: 
+
+		case SYS_DIRSTAT:
 			if(!mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_A_, 0))
 				return 0;
 		/* fall through */
@@ -202,13 +276,13 @@ int check_pointers(volatile registers_t *regs)
 			if(!mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_D_, 0))
 				return 0;
 			break;
-			
+
 		case SYS_SIGACT: case SYS_SIGPROCMASK:
 			return mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_C_, 1);
-			
+
 		case SYS_CHOWN: case SYS_CHMOD: case SYS_TIMERTH: case SYS_CHDIR: case SYS_CHROOT:
 			return mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_A_, 1);
-			
+
 		case SYS_LMOD:
 			if(!mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_B_, 1))
 				return 0;
@@ -251,24 +325,24 @@ int syscall_handler(volatile registers_t *regs)
 	current_task->freed = current_task->allocated=0;
 
 	#ifdef SC_DEBUG
-	if(current_task->tty == current_console->tty && SYSCALL_NUM_AND_RET != 5) 
-		printk(SC_DEBUG, "tty %d: syscall %d (from: %x): enter %d\n", 
-				current_task->tty, current_task->pid, 
+	if(current_task->tty == current_console->tty && SYSCALL_NUM_AND_RET != 5)
+		printk(SC_DEBUG, "tty %d: syscall %d (from: %x): enter %d\n",
+				current_task->tty, current_task->pid,
 				current_task->sysregs->eip, SYSCALL_NUM_AND_RET);
 	int or_t = tm_get_ticks();
 	#endif
-	__do_syscall_jump(ret, syscall_table[SYSCALL_NUM_AND_RET], _E_, _D_, 
+	__do_syscall_jump(ret, syscall_table[SYSCALL_NUM_AND_RET], _E_, _D_,
 					  _C_, _B_, _A_);
 	#ifdef SC_DEBUG
-	if((current_task->tty == current_console->tty || 1) && (tm_get_ticks() - or_t >= 10 || 1) 
-		&& (ret < 0 || 1) && (ret == -EINTR || 1) 
+	if((current_task->tty == current_console->tty || 1) && (tm_get_ticks() - or_t >= 10 || 1)
+		&& (ret < 0 || 1) && (ret == -EINTR || 1)
 		&& ((current_task->allocated != 0 || current_task->freed != 0 || 1))
 		&& SYSCALL_NUM_AND_RET != 5)
-		printk(SC_DEBUG, "syscall %d: %d ret %d, took %d ticks (%d al, %d fr)\n", 
+		printk(SC_DEBUG, "syscall %d: %d ret %d, took %d ticks (%d al, %d fr)\n",
 			   current_task->pid, current_task->system, ret, tm_get_ticks() - or_t,
 			   current_task->allocated, current_task->freed);
 	#endif
-	
+
 	cpu_interrupt_set(0);
 	tm_process_exit_system();
 	tm_engage_idle();
@@ -276,7 +350,7 @@ int syscall_handler(volatile registers_t *regs)
 	 * then we need to reschedule. this prevents tasks that do a continuous call
 	 * to write() from starving the resources of other tasks. syscall_count resets
 	 * on each call to tm_tm_schedule() */
-	if(current_task->flags & TF_SCHED 
+	if(current_task->flags & TF_SCHED
 		|| (unsigned)(tm_get_ticks() -current_task->slice) > (unsigned)current_task->cur_ts
 		|| ++current_task->syscall_count > 2)
 	{
@@ -286,7 +360,7 @@ int syscall_handler(volatile registers_t *regs)
 	}
 	/* store the return value in the regs */
 	SYSCALL_NUM_AND_RET = ret;
-	/* if we're going to jump to a signal here, we need to back up our 
+	/* if we're going to jump to a signal here, we need to back up our
 	 * return value so that when we return to the system we have the
 	 * original systemcall returning the proper value.
 	 */

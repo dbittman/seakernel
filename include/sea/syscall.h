@@ -36,6 +36,8 @@ int sys_setup();
 #define SYS_LMOD         27
 #define SYS_ULMOD        28
 /* 29 reserved for module system */
+#define SYS_UNUSED_1     29
+
 #define SYS_ULALLMODS    30
 #define SYS_GETPID       31
 #define SYS_GETPPID      32

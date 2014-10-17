@@ -202,18 +202,36 @@ int shiv_vmx_off()
 
 }
 
-addr_t shiv_alloc_vmx_data_area()
-{
-
-}
-
 /* returns physical address */
 addr_t shiv_build_ept_pml4(addr_t memsz)
 {
 	addr_t pml4 = mm_alloc_physical_page();
-	for(addr_t i=0;i<memsz;i++)
-		arch_mm_vm_early_map((void *)(pml4 + PHYS_PAGE_MAP), i, mm_alloc_physical_page(), 7, MAP_NOCLEAR); 
+	/* hack: limit memory */
+	if(memsz > 1023)
+		memsz = 1023;
+	if(memsz < 255)
+		memsz = 255;
+	addr_t init_code = mm_alloc_physical_page();
+	for(addr_t i=0;i<memsz;i++) {
+		if(i == 255) {
+			/* map in special init code */
+			arch_mm_vm_early_map((void *)(pml4 + PHYS_PAGE_MAP), i, init_code, 7, MAP_NOCLEAR); 
+		} else {
+			arch_mm_vm_early_map((void *)(pml4 + PHYS_PAGE_MAP), i, mm_alloc_physical_page(), 7, MAP_NOCLEAR); 
+		}
+	}
+	uint8_t *vinit = (void *)(pml4 + PHYS_PAGE_MAP);
+	vinit[0x0FFF0] = 0x66;
+	vinit[0x0FFF1] = 0xb8;
+	vinit[0x0FFF2] = 0x12;
+	vinit[0x0FFF3] = 0x00;
+	vinit[0x0FFF4] = 0xf4;
 	return pml4;
+}
+
+void shiv_skip_instruction(struct vcpu *vc)
+{
+
 }
 
 void shiv_vm_exit_handler()
@@ -230,19 +248,52 @@ struct vmcs *shiv_alloc_vmcs()
 
 }
 
-void shiv_init_vmcs(struct vmachine *vm)
+void shiv_init_vmcs(struct vcpu *vm)
 {
+	/* allocate a vmcs for a cpu by calling shiv_alloc_vmcs */
 
+	/* initialize the region as needed */
+}
+
+struct vcpu *shiv_create_vcpu(struct vmachine *vm)
+{
+	/* create structure */
+
+	/* set up guest CPU state as needed */
+
+	/* return vcpu */
 }
 
 int shiv_init_virtual_machine(struct vmachine *vm)
 {
-
+	/* set id */
 }
 
 int shiv_launch_or_resume(struct vmachine *vm)
 {
+	/* LOOP */
+	/* save host state */
 
+	/* launch / resume */
+
+	/* restore host state */
+
+	/* check cause of exit - 1: was is a launch / resume error?
+	 *   if yes, return failure
+	 *   if no, call shiv_vm_exit_handler()
+	 */
+}
+
+struct vmachine *shiv_create_vmachine()
+{
+	struct vmachine *vm = kmalloc(sizeof(*vm));
+	int ret = shiv_init_virtual_machine(vm);
+	if(ret == -1) {
+		kfree(vm);
+		return 0;
+	}
+	vm->vcpu = shiv_create_vcpu(vm);
+	return vm;
 }
 
 int module_install()

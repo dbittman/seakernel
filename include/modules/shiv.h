@@ -278,7 +278,6 @@ struct vmcs {
 };
 
 struct vcpu {
-
 	struct vmcs *vmcs;
 	cpu_t *cpu;
 	int launched;
@@ -286,7 +285,7 @@ struct vcpu {
 
 struct vmachine {
 	int id;
-	struct vmcs *vmcs_phys;
+	struct vcpu *vcpu;
 };
 
 

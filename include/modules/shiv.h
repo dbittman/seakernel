@@ -9,7 +9,7 @@
 
 #include <sea/types.h>
 #include <sea/cpu/processor.h>
-/* many of these definitions are taken from the Linux KVM project */
+/* many of these definitions are taken from the Linux SHIV project */
 
 #define CR0_PE_MASK (1ULL << 0)
 #define CR0_TS_MASK (1ULL << 3)
@@ -31,6 +31,68 @@
 #define CR4_PAE_MASK (1ULL << 5)
 #define CR4_PGE_MASK (1ULL << 7)
 #define CR4_VMXE_MASK (1ULL << 13)
+
+#define CPU_X86_MODE_RMODE 1
+#define CPU_X86_MODE_PMODE 2
+#define CPU_X86_MODE_LMODE 3
+
+#define CR0_PE_MASK (1ULL << 0)
+#define CR0_TS_MASK (1ULL << 3)
+#define CR0_NE_MASK (1ULL << 5)
+#define CR0_WP_MASK (1ULL << 16)
+#define CR0_NW_MASK (1ULL << 29)
+#define CR0_CD_MASK (1ULL << 30)
+#define CR0_PG_MASK (1ULL << 31)
+
+#define CR3_WPT_MASK (1ULL << 3)
+#define CR3_PCD_MASK (1ULL << 4)
+
+#define CR3_RESEVED_BITS 0x07ULL
+#define CR3_L_MODE_RESEVED_BITS (~((1ULL << 40) - 1) | 0x0fe7ULL)
+#define CR3_FLAGS_MASK ((1ULL << 5) - 1)
+
+#define CR4_VME_MASK (1ULL << 0)
+#define CR4_PSE_MASK (1ULL << 4)
+#define CR4_PAE_MASK (1ULL << 5)
+#define CR4_PGE_MASK (1ULL << 7)
+#define CR4_VMXE_MASK (1ULL << 13)
+
+#define SHIV_GUEST_CR0_MASK \
+		(CR0_PG_MASK | CR0_PE_MASK | CR0_WP_MASK | CR0_NE_MASK \
+			 | CR0_NW_MASK | CR0_CD_MASK)
+#define SHIV_VM_CR0_ALWAYS_ON \
+		(CR0_PG_MASK | CR0_PE_MASK | CR0_WP_MASK | CR0_NE_MASK)
+#define SHIV_GUEST_CR4_MASK \
+		(CR4_PSE_MASK | CR4_PAE_MASK | CR4_PGE_MASK | CR4_VMXE_MASK | CR4_VME_MASK)
+#define SHIV_PMODE_VM_CR4_ALWAYS_ON (CR4_VMXE_MASK | CR4_PAE_MASK)
+#define SHIV_RMODE_VM_CR4_ALWAYS_ON (CR4_VMXE_MASK | CR4_PAE_MASK | CR4_VME_MASK)
+
+#define CPU_BASED_VIRTUAL_INTR_PENDING  0x00000004
+#define CPU_BASED_USE_TSC_OFFSETING     0x00000008
+#define CPU_BASED_HLT_EXITING           0x00000080
+#define CPU_BASED_INVDPG_EXITING        0x00000200
+#define CPU_BASED_MWAIT_EXITING         0x00000400
+#define CPU_BASED_RDPMC_EXITING         0x00000800
+#define CPU_BASED_RDTSC_EXITING         0x00001000
+#define CPU_BASED_CR8_LOAD_EXITING      0x00080000
+#define CPU_BASED_CR8_STORE_EXITING     0x00100000
+#define CPU_BASED_TPR_SHADOW            0x00200000
+#define CPU_BASED_MOV_DR_EXITING        0x00800000
+#define CPU_BASED_UNCOND_IO_EXITING     0x01000000
+#define CPU_BASED_ACTIVATE_IO_BITMAP    0x02000000
+#define CPU_BASED_MSR_BITMAPS           0x10000000
+#define CPU_BASED_MONITOR_EXITING       0x20000000
+#define CPU_BASED_PAUSE_EXITING         0x40000000
+
+#define PIN_BASED_EXT_INTR_MASK 0x1
+#define PIN_BASED_NMI_EXITING   0x8
+
+#define MSR_IA32_VMX_BASIC			0x480
+#define MSR_IA32_FEATURE_CONTROL		0x03a
+#define MSR_IA32_VMX_PINBASED_CTLS		0x481
+#define MSR_IA32_VMX_PROCBASED_CTLS		0x482
+#define MSR_IA32_VMX_EXIT_CTLS		0x483
+#define MSR_IA32_VMX_ENTRY_CTLS		0x484
 
 /* VMCS Encodings */
 enum vmcs_field {
@@ -281,6 +343,10 @@ struct vcpu {
 	struct vmcs *vmcs;
 	cpu_t *cpu;
 	int launched;
+	unsigned long cr0, cr4;
+	int mode;
+	unsigned long regs[NR_VCPU_REGS];
+	unsigned long apic_base;
 };
 
 struct vmachine {

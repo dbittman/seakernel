@@ -90,6 +90,19 @@ static void vmcs_write64(unsigned long field, uint64_t value)
 	vmcs_writel(field, value);
 }
 
+static void vmcs_write32_fixedbits(uint32_t msr, uint32_t vmcs_field, uint32_t val)
+{
+	uint32_t msr_high, msr_low;
+
+	uint64_t given = read_msr(msr);
+	msr_high = given >> 32;
+	msr_low = given & 0xFFFFFFFF;
+
+	val &= msr_high;
+	val |= msr_low;
+	vmcs_write32(vmcs_field, val);
+}
+
 /*
  *  * Switches to specified vcpu, until a matching vcpu_put(), but assumes
  *   * vcpu mutex is already taken.
@@ -104,11 +117,11 @@ static void vmx_vcpu_load(cpu_t *cpu, struct vcpu *vcpu)
 	uint8_t error;
 
 	asm (ASM_VMX_VMPTRLD_RAX "; setna %0"
-				: "=g"(error) : "a"(&phys_addr), "m"(phys_addr)
-				: "cc");
+			: "=g"(error) : "a"(&phys_addr), "m"(phys_addr)
+			: "cc");
 	if (error)
 		printk(2, "kvm: vmptrld %x/%x fail\n",
-					vcpu->vmcs, phys_addr);
+				vcpu->vmcs, phys_addr);
 
 	if (vcpu->cpu != cpu) {
 		vcpu->cpu = cpu;
@@ -253,6 +266,201 @@ void shiv_init_vmcs(struct vcpu *vm)
 	/* allocate a vmcs for a cpu by calling shiv_alloc_vmcs */
 
 	/* initialize the region as needed */
+}
+
+/*
+ * Sets up the vmcs for emulated real mode.
+ */
+static int shiv_vcpu_setup(struct vcpu *vcpu)
+{
+	int i;
+	int ret = 0;
+
+	//if (!init_rmode_tss(vcpu->kvm)) {
+	//	ret = -ENOMEM;
+	//	goto out;
+	//}
+
+	memset(vcpu->regs, 0, sizeof(vcpu->regs));
+	vcpu->regs[VCPU_REGS_RDX] = get_rdx_init_val();
+	vcpu->apic_base = 0xfee00000 |
+		/*for vcpu 0*/ MSR_IA32_APICBASE_BSP |
+		MSR_IA32_APICBASE_ENABLE;
+
+	//fx_init(vcpu);
+
+	/*
+	 * GUEST_CS_BASE should really be 0xffff0000, but VT vm86 mode
+	 * insists on having GUEST_CS_BASE == GUEST_CS_SELECTOR << 4.  Sigh.
+	 */
+	vmcs_write16(GUEST_CS_SELECTOR, 0xf000);
+	vmcs_writel(GUEST_CS_BASE, 0x000f0000);
+	vmcs_write32(GUEST_CS_LIMIT, 0xffff);
+	vmcs_write32(GUEST_CS_AR_BYTES, 0x9b);
+
+	seg_setup(VCPU_SREG_DS);
+	seg_setup(VCPU_SREG_ES);
+	seg_setup(VCPU_SREG_FS);
+	seg_setup(VCPU_SREG_GS);
+	seg_setup(VCPU_SREG_SS);
+
+	vmcs_write16(GUEST_TR_SELECTOR, 0);
+	vmcs_writel(GUEST_TR_BASE, 0);
+	vmcs_write32(GUEST_TR_LIMIT, 0xffff);
+	vmcs_write32(GUEST_TR_AR_BYTES, 0x008b);
+
+	vmcs_write16(GUEST_LDTR_SELECTOR, 0);
+	vmcs_writel(GUEST_LDTR_BASE, 0);
+	vmcs_write32(GUEST_LDTR_LIMIT, 0xffff);
+	vmcs_write32(GUEST_LDTR_AR_BYTES, 0x00082);
+
+	vmcs_write32(GUEST_SYSENTER_CS, 0);
+	vmcs_writel(GUEST_SYSENTER_ESP, 0);
+	vmcs_writel(GUEST_SYSENTER_EIP, 0);
+
+	vmcs_writel(GUEST_RFLAGS, 0x02);
+	vmcs_writel(GUEST_RIP, 0xfff0);
+	vmcs_writel(GUEST_RSP, 0);
+
+	//todo: dr0 = dr1 = dr2 = dr3 = 0; dr6 = 0xffff0ff0
+	vmcs_writel(GUEST_DR7, 0x400);
+
+	vmcs_writel(GUEST_GDTR_BASE, 0);
+	vmcs_write32(GUEST_GDTR_LIMIT, 0xffff);
+
+	vmcs_writel(GUEST_IDTR_BASE, 0);
+	vmcs_write32(GUEST_IDTR_LIMIT, 0xffff);
+
+	vmcs_write32(GUEST_ACTIVITY_STATE, 0);
+	vmcs_write32(GUEST_INTERRUPTIBILITY_INFO, 0);
+	vmcs_write32(GUEST_PENDING_DBG_EXCEPTIONS, 0);
+
+	/* I/O */
+	vmcs_write64(IO_BITMAP_A, 0);
+	vmcs_write64(IO_BITMAP_B, 0);
+
+	guest_write_tsc(0);
+
+	vmcs_write64(VMCS_LINK_POINTER, -1ull); /* 22.3.1.5 */
+
+	/* Special registers */
+	vmcs_write64(GUEST_IA32_DEBUGCTL, 0);
+
+	/* Control */
+	vmcs_write32_fixedbits(MSR_IA32_VMX_PINBASED_CTLS,
+			PIN_BASED_VM_EXEC_CONTROL,
+			PIN_BASED_EXT_INTR_MASK   /* 20.6.1 */
+			| PIN_BASED_NMI_EXITING   /* 20.6.1 */
+			);
+	vmcs_write32_fixedbits(MSR_IA32_VMX_PROCBASED_CTLS,
+			CPU_BASED_VM_EXEC_CONTROL,
+			CPU_BASED_HLT_EXITING         /* 20.6.2 */
+			| CPU_BASED_CR8_LOAD_EXITING    /* 20.6.2 */
+			| CPU_BASED_CR8_STORE_EXITING   /* 20.6.2 */
+			| CPU_BASED_UNCOND_IO_EXITING   /* 20.6.2 */
+			| CPU_BASED_MOV_DR_EXITING
+			| CPU_BASED_USE_TSC_OFFSETING   /* 21.3 */
+			);
+
+	//vmcs_write32(EXCEPTION_BITMAP, 1 << PF_VECTOR);
+	vmcs_write32(PAGE_FAULT_ERROR_CODE_MASK, 0);
+	vmcs_write32(PAGE_FAULT_ERROR_CODE_MATCH, 0);
+	//vmcs_write32(CR3_TARGET_COUNT, 0);           /* 22.2.1 */
+
+	vmcs_writel(HOST_CR0, read_cr0());  /* 22.2.3 */
+	vmcs_writel(HOST_CR4, read_cr4());  /* 22.2.3, 22.2.5 */
+	vmcs_writel(HOST_CR3, read_cr3());  /* 22.2.3  FIXME: shadow tables */
+
+	vmcs_write16(HOST_CS_SELECTOR, __KERNEL_CS);  /* 22.2.4 */
+	vmcs_write16(HOST_DS_SELECTOR, __KERNEL_DS);  /* 22.2.4 */
+	vmcs_write16(HOST_ES_SELECTOR, __KERNEL_DS);  /* 22.2.4 */
+	vmcs_write16(HOST_FS_SELECTOR, read_fs());    /* 22.2.4 */
+	vmcs_write16(HOST_GS_SELECTOR, read_gs());    /* 22.2.4 */
+	vmcs_write16(HOST_SS_SELECTOR, __KERNEL_DS);  /* 22.2.4 */
+	
+	//rdmsrl(MSR_FS_BASE, a);
+	//vmcs_writel(HOST_FS_BASE, a); /* 22.2.4 */
+	//rdmsrl(MSR_GS_BASE, a);
+	//vmcs_writel(HOST_GS_BASE, a); /* 22.2.4 */
+
+	vmcs_write16(HOST_TR_SELECTOR, GDT_ENTRY_TSS*8);  /* 22.2.4 */
+
+#if 0
+	get_idt(&dt);
+	vmcs_writel(HOST_IDTR_BASE, dt.base);   /* 22.2.4 */
+#endif
+
+	vmcs_writel(HOST_RIP, (unsigned long)shiv_vmx_return); /* 22.2.5 */
+
+	//rdmsr(MSR_IA32_SYSENTER_CS, host_sysenter_cs, junk);
+	//vmcs_write32(HOST_IA32_SYSENTER_CS, host_sysenter_cs);
+	//rdmsrl(MSR_IA32_SYSENTER_ESP, a);
+	//vmcs_writel(HOST_IA32_SYSENTER_ESP, a);   /* 22.2.3 */
+	//rdmsrl(MSR_IA32_SYSENTER_EIP, a);
+	//vmcs_writel(HOST_IA32_SYSENTER_EIP, a);   /* 22.2.3 */
+/*
+	for (i = 0; i < NR_VMX_MSR; ++i) {
+		u32 index = vmx_msr_index[i];
+		u32 data_low, data_high;
+		u64 data;
+		int j = vcpu->nmsrs;
+
+		if (rdmsr_safe(index, &data_low, &data_high) < 0)
+			continue;
+		if (wrmsr_safe(index, data_low, data_high) < 0)
+			continue;
+		data = data_low | ((u64)data_high << 32);
+		vcpu->host_msrs[j].index = index;
+		vcpu->host_msrs[j].reserved = 0;
+		vcpu->host_msrs[j].data = data;
+		vcpu->guest_msrs[j] = vcpu->host_msrs[j];
+		++vcpu->nmsrs;
+	}
+	printk(KERN_DEBUG "kvm: msrs: %d\n", vcpu->nmsrs);
+*/
+
+	//nr_good_msrs = vcpu->nmsrs - NR_BAD_MSRS;
+#if 0
+	vmcs_writel(VM_ENTRY_MSR_LOAD_ADDR,
+			virt_to_phys(vcpu->guest_msrs + NR_BAD_MSRS));
+	vmcs_writel(VM_EXIT_MSR_STORE_ADDR,
+			virt_to_phys(vcpu->guest_msrs + NR_BAD_MSRS));
+	vmcs_writel(VM_EXIT_MSR_LOAD_ADDR,
+			virt_to_phys(vcpu->host_msrs + NR_BAD_MSRS));
+#endif
+
+	vmcs_write32_fixedbits(MSR_IA32_VMX_EXIT_CTLS, VM_EXIT_CONTROLS,
+			(1 << 9));  /* 22.2,1, 20.7.1 */ /* ??? */
+	
+#if 0
+	vmcs_write32(VM_EXIT_MSR_STORE_COUNT, nr_good_msrs); /* 22.2.2 */
+	vmcs_write32(VM_EXIT_MSR_LOAD_COUNT, nr_good_msrs);  /* 22.2.2 */
+	vmcs_write32(VM_ENTRY_MSR_LOAD_COUNT, nr_good_msrs); /* 22.2.2 */
+#endif
+
+	/* 22.2.1, 20.8.1 */
+	vmcs_write32_fixedbits(MSR_IA32_VMX_ENTRY_CTLS,
+			VM_ENTRY_CONTROLS, 0);
+	vmcs_write32(VM_ENTRY_INTR_INFO_FIELD, 0);  /* 22.2.1 */
+
+	vmcs_writel(VIRTUAL_APIC_PAGE_ADDR, 0);
+	vmcs_writel(TPR_THRESHOLD, 0);
+
+	vmcs_writel(CR0_GUEST_HOST_MASK, SHIV_GUEST_CR0_MASK);
+	vmcs_writel(CR4_GUEST_HOST_MASK, SHIV_GUEST_CR4_MASK);
+
+	vcpu->cr0 = 0x60000010;
+	vmcs_writel(CR0_READ_SHADOW, vcpu->cr0);
+	vmcs_writel(GUEST_CR0,
+			(vcpu->cr0 & ~SHIV_GUEST_CR0_MASK) | SHIV_VM_CR0_ALWAYS_ON);
+	vmcs_writel(CR4_READ_SHADOW, 0);
+	vmcs_writel(GUEST_CR4, SHIV_RMODE_VM_CR4_ALWAYS_ON);
+	vcpu->cr4 = 0;
+
+	return 0;
+
+out:
+	return ret;
 }
 
 struct vcpu *shiv_create_vcpu(struct vmachine *vm)

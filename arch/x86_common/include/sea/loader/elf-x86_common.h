@@ -124,6 +124,7 @@ extern elf32_t kernel_elf;
 struct section_data {
 	addr_t vbase[MAX_SECTIONS];
 	int num;
+	int strtab, shstrtab, symtab;
 };
 
 #endif

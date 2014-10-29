@@ -57,6 +57,7 @@ void arch_cpu_print_stack_trace(unsigned int MaxFrames)
 		if(eip == 0)
 			break;
 		ebp = (addr_t *)(ebp[0]);
+		printk(0, "%x\n", eip);
 		const char *name = elf32_lookup_symbol(eip, &kernel_elf);
 		if(name) kprintf("  <%x>  %s\n", eip, name);
 	}

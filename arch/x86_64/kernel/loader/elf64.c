@@ -94,6 +94,7 @@ size_t arch_loader_calculate_allocation_size(void *buf)
 	for(i = 0; i < header->shnum; i++)
 	{  
 		sh = (elf64_section_header_t*)((uint8_t *)header + header->shoff + (i * header->shsize));
+		total += sh->alignment;
 		total += sh->size;
 	}
 	return total;
@@ -104,6 +105,7 @@ static void arch_loader_copy_sections(elf64_header_t *header, uint8_t *loaded_bu
 	int i;
 	elf64_section_header_t *sh;
 	addr_t address=(addr_t)loaded_buf;
+	sd->symtab = sd->strtab = -1;
 	for(i = 0; i < header->shnum; i++)
 	{
 		sh = (elf64_section_header_t*)((uint8_t *)header + header->shoff + (i * header->shsize));
@@ -119,10 +121,19 @@ static void arch_loader_copy_sections(elf64_header_t *header, uint8_t *loaded_bu
 			void *src = (void *)((addr_t)header + sh->offset);
 			memcpy((void *)address, src, sh->size);
 		}
+
+		/* is this the stringtable or the symboltable? */
+		elf64_section_header_t *shstr = (elf64_section_header_t*)((uint8_t *)header + header->shoff + (header->strndx * header->shsize));
+		if(!strcmp((char *)((uint8_t *)header + shstr->offset + sh->name), ".strtab"))
+			sd->strtab = i;
+		else if(!strcmp((char *)((uint8_t *)header + shstr->offset + sh->name), ".symtab"))
+			sd->symtab = i;
+
 		sd->vbase[i] = address;
 		address += sh->size;
 	}
 	sd->num = header->shnum;
+	sd->shstrtab = header->strndx;
 }
 
 int arch_loader_relocate_elf_module(void * buf, addr_t *entry, addr_t *tm_exiter, void *load_address)
@@ -211,6 +222,8 @@ int arch_loader_relocate_elf_module(void * buf, addr_t *entry, addr_t *tm_exiter
 					}
 				}
 				elf64_write_field(GET_RELOC_TYPE(rela->info), mem_addr, reloc_addr);
+				elf64_symtab_entry_t *ste = &((elf64_symtab_entry_t *)sd.vbase[sd.symtab])[GET_RELOC_SYM(rela->info)];
+				ste->address = *(uint64_t *)mem_addr;
 			}
 		}
 	}

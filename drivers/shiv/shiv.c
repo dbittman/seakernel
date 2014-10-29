@@ -26,7 +26,7 @@ static void vmcs_clear(struct vmcs *vmcs)
 {
 	uint64_t phys_addr = __pa(vmcs);
 	uint8_t error;
-
+	printk(0, "vmcs clear!\n");
 	asm (ASM_VMX_VMCLEAR_RAX "; setna %0"
 			: "=g"(error) : "a"(&phys_addr), "m"(phys_addr)
 			: "cc", "memory");

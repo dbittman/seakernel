@@ -6,8 +6,10 @@
 #include <sea/cpu/x86msr.h>
 #include <sea/asm/system.h>
 #include <sea/mm/vmm.h>
-
+#include <sea/mm/kmalloc.h>
+#include <sea/string.h>
 #include <sea/vsprintf.h>
+#include <sea/kernel.h>
 
 #include <modules/shiv.h>
 
@@ -15,7 +17,11 @@ uint32_t revision_id; /* this is actually only 31 bits, but... */
 addr_t vmxon_region=0;
 
 #define __pa(x) (addr_t)mm_vm_get_map((addr_t)x,0,0)
-
+extern __attribute__((regparm(0))) void vmx_return(void);
+#define __KERNEL_CS 0x8
+#define __KERNEL_DS 0x10
+#define GDT_ENTRY_TSS 5
+#define offsetof(a,b) __builtin_offsetof(a,b)
 static void vmcs_clear(struct vmcs *vmcs)
 {
 	uint64_t phys_addr = __pa(vmcs);
@@ -110,7 +116,9 @@ static void vmcs_write32_fixedbits(uint32_t msr, uint32_t vmcs_field, uint32_t v
 static void vmx_vcpu_load(cpu_t *cpu, struct vcpu *vcpu)
 {
 	uint64_t phys_addr = __pa(vcpu->vmcs);
+	printk(0, "shiv: vmx_vcpu_load\n");
 
+	assert(cpu == primary_cpu);
 	if(vcpu->cpu != cpu)
 		vcpu_clear(vcpu);
 
@@ -122,6 +130,8 @@ static void vmx_vcpu_load(cpu_t *cpu, struct vcpu *vcpu)
 	if (error)
 		printk(2, "kvm: vmptrld %x/%x fail\n",
 				vcpu->vmcs, phys_addr);
+	else
+		vcpu->loaded = 1;
 
 	if (vcpu->cpu != cpu) {
 		vcpu->cpu = cpu;
@@ -247,8 +257,9 @@ void shiv_skip_instruction(struct vcpu *vc)
 
 }
 
-void shiv_vm_exit_handler()
+int shiv_vm_exit_handler(struct vcpu *vcpu)
 {
+	printk(0, "got to exit handler\n");
 	/* check cause of exit */
 
 	/* handle exit reasons */
@@ -258,14 +269,27 @@ void shiv_vm_exit_handler()
 
 struct vmcs *shiv_alloc_vmcs()
 {
-
+	return kmalloc_a(0x1000);
 }
 
-void shiv_init_vmcs(struct vcpu *vm)
+void shiv_init_vmcs(struct vcpu *vc)
 {
+	printk(0, "shiv: init_vmcs\n");
 	/* allocate a vmcs for a cpu by calling shiv_alloc_vmcs */
-
+	vc->vmcs = shiv_alloc_vmcs();
 	/* initialize the region as needed */
+	vc->vmcs->rev_id = revision_id & 0x7FFFFFFF;
+	vmcs_clear(vc->vmcs);
+}
+
+static void seg_setup(int seg)
+{
+	struct vmx_segment_field *sf = &vmx_segment_fields[seg];
+
+	vmcs_write16(sf->selector, 0);
+	vmcs_writel(sf->base, 0);
+	vmcs_write32(sf->limit, 0xffff);
+	vmcs_write32(sf->ar_bytes, 0x93);
 }
 
 /*
@@ -275,14 +299,14 @@ static int shiv_vcpu_setup(struct vcpu *vcpu)
 {
 	int i;
 	int ret = 0;
-
+	printk(0, "shiv: vcpu_setup\n");
 	//if (!init_rmode_tss(vcpu->kvm)) {
 	//	ret = -ENOMEM;
 	//	goto out;
 	//}
 
 	memset(vcpu->regs, 0, sizeof(vcpu->regs));
-	vcpu->regs[VCPU_REGS_RDX] = get_rdx_init_val();
+	vcpu->regs[VCPU_REGS_RDX] = 0x600;
 	vcpu->apic_base = 0xfee00000 |
 		/*for vcpu 0*/ MSR_IA32_APICBASE_BSP |
 		MSR_IA32_APICBASE_ENABLE;
@@ -339,8 +363,6 @@ static int shiv_vcpu_setup(struct vcpu *vcpu)
 	vmcs_write64(IO_BITMAP_A, 0);
 	vmcs_write64(IO_BITMAP_B, 0);
 
-	guest_write_tsc(0);
-
 	vmcs_write64(VMCS_LINK_POINTER, -1ull); /* 22.3.1.5 */
 
 	/* Special registers */
@@ -377,7 +399,7 @@ static int shiv_vcpu_setup(struct vcpu *vcpu)
 	vmcs_write16(HOST_FS_SELECTOR, read_fs());    /* 22.2.4 */
 	vmcs_write16(HOST_GS_SELECTOR, read_gs());    /* 22.2.4 */
 	vmcs_write16(HOST_SS_SELECTOR, __KERNEL_DS);  /* 22.2.4 */
-	
+
 	//rdmsrl(MSR_FS_BASE, a);
 	//vmcs_writel(HOST_FS_BASE, a); /* 22.2.4 */
 	//rdmsrl(MSR_GS_BASE, a);
@@ -390,7 +412,7 @@ static int shiv_vcpu_setup(struct vcpu *vcpu)
 	vmcs_writel(HOST_IDTR_BASE, dt.base);   /* 22.2.4 */
 #endif
 
-	vmcs_writel(HOST_RIP, (unsigned long)shiv_vmx_return); /* 22.2.5 */
+	vmcs_writel(HOST_RIP, (unsigned long)vmx_return); /* 22.2.5 */
 
 	//rdmsr(MSR_IA32_SYSENTER_CS, host_sysenter_cs, junk);
 	//vmcs_write32(HOST_IA32_SYSENTER_CS, host_sysenter_cs);
@@ -398,26 +420,26 @@ static int shiv_vcpu_setup(struct vcpu *vcpu)
 	//vmcs_writel(HOST_IA32_SYSENTER_ESP, a);   /* 22.2.3 */
 	//rdmsrl(MSR_IA32_SYSENTER_EIP, a);
 	//vmcs_writel(HOST_IA32_SYSENTER_EIP, a);   /* 22.2.3 */
-/*
-	for (i = 0; i < NR_VMX_MSR; ++i) {
-		u32 index = vmx_msr_index[i];
-		u32 data_low, data_high;
-		u64 data;
-		int j = vcpu->nmsrs;
+	/*
+	   for (i = 0; i < NR_VMX_MSR; ++i) {
+	   u32 index = vmx_msr_index[i];
+	   u32 data_low, data_high;
+	   u64 data;
+	   int j = vcpu->nmsrs;
 
-		if (rdmsr_safe(index, &data_low, &data_high) < 0)
-			continue;
-		if (wrmsr_safe(index, data_low, data_high) < 0)
-			continue;
-		data = data_low | ((u64)data_high << 32);
-		vcpu->host_msrs[j].index = index;
-		vcpu->host_msrs[j].reserved = 0;
-		vcpu->host_msrs[j].data = data;
-		vcpu->guest_msrs[j] = vcpu->host_msrs[j];
-		++vcpu->nmsrs;
-	}
-	printk(KERN_DEBUG "kvm: msrs: %d\n", vcpu->nmsrs);
-*/
+	   if (rdmsr_safe(index, &data_low, &data_high) < 0)
+	   continue;
+	   if (wrmsr_safe(index, data_low, data_high) < 0)
+	   continue;
+	   data = data_low | ((u64)data_high << 32);
+	   vcpu->host_msrs[j].index = index;
+	   vcpu->host_msrs[j].reserved = 0;
+	   vcpu->host_msrs[j].data = data;
+	   vcpu->guest_msrs[j] = vcpu->host_msrs[j];
+	   ++vcpu->nmsrs;
+	   }
+	   printk(KERN_DEBUG "kvm: msrs: %d\n", vcpu->nmsrs);
+	   */
 
 	//nr_good_msrs = vcpu->nmsrs - NR_BAD_MSRS;
 #if 0
@@ -431,7 +453,7 @@ static int shiv_vcpu_setup(struct vcpu *vcpu)
 
 	vmcs_write32_fixedbits(MSR_IA32_VMX_EXIT_CTLS, VM_EXIT_CONTROLS,
 			(1 << 9));  /* 22.2,1, 20.7.1 */ /* ??? */
-	
+
 #if 0
 	vmcs_write32(VM_EXIT_MSR_STORE_COUNT, nr_good_msrs); /* 22.2.2 */
 	vmcs_write32(VM_EXIT_MSR_LOAD_COUNT, nr_good_msrs);  /* 22.2.2 */
@@ -465,31 +487,205 @@ out:
 
 struct vcpu *shiv_create_vcpu(struct vmachine *vm)
 {
+	printk(0, "shiv: create vcpu\n");
 	/* create structure */
-
+	vm->vcpu = kmalloc(sizeof(*vm->vcpu));
+	vm->vcpu->cpu = primary_cpu;
 	/* set up guest CPU state as needed */
-
+	shiv_init_vmcs(vm->vcpu);
+	vmx_vcpu_load(primary_cpu, vm->vcpu);
+	shiv_vcpu_setup(vm->vcpu);
 	/* return vcpu */
+	return vm->vcpu;
 }
 
 int shiv_init_virtual_machine(struct vmachine *vm)
 {
 	/* set id */
+	return 0;
 }
 
-int shiv_launch_or_resume(struct vmachine *vm)
+int vmx_vcpu_run(struct vcpu *vcpu)
 {
-	/* LOOP */
-	/* save host state */
+	uint8_t fail;
+	uint16_t fs_sel, gs_sel, ldt_sel;
+	int fs_gs_ldt_reload_needed;
+	int r;
 
-	/* launch / resume */
-
-	/* restore host state */
-
-	/* check cause of exit - 1: was is a launch / resume error?
-	 *   if yes, return failure
-	 *   if no, call shiv_vm_exit_handler()
+	assert(vcpu->loaded);
+again:
+	/*
+	 * Set host fs and gs selectors.  Unfortunately, 22.2.3 does not
+	 * allow segment selectors with cpl > 0 or ti == 1.
 	 */
+	fs_sel = read_fs();
+	gs_sel = read_gs();
+	//ldt_sel = read_ldt();
+	//fs_gs_ldt_reload_needed = (fs_sel & 7) | (gs_sel & 7) | ldt_sel;
+	//if (!fs_gs_ldt_reload_needed) {
+		vmcs_write16(HOST_FS_SELECTOR, fs_sel);
+		vmcs_write16(HOST_GS_SELECTOR, gs_sel);
+	//} else {
+//		vmcs_write16(HOST_FS_SELECTOR, 0);
+//		vmcs_write16(HOST_GS_SELECTOR, 0);
+//	}
+
+//	vmcs_writel(HOST_FS_BASE, read_msr(MSR_FS_BASE));
+//	vmcs_writel(HOST_GS_BASE, read_msr(MSR_GS_BASE));
+
+//TODO
+//	if (!vcpu->mmio_read_completed)
+//		do_interrupt_requests(vcpu, kvm_run);
+
+//	if (vcpu->guest_debug.enabled)
+//		kvm_guest_debug_pre(vcpu);
+
+//	fx_save(vcpu->host_fx_image);
+//	fx_restore(vcpu->guest_fx_image);
+
+//	save_msrs(vcpu->host_msrs, vcpu->nmsrs);
+//	load_msrs(vcpu->guest_msrs, NR_BAD_MSRS);
+
+	asm (
+		/* Store host registers */
+		"pushf \n\t"
+		"push %%rax; push %%rbx; push %%rdx;"
+		"push %%rsi; push %%rdi; push %%rbp;"
+		"push %%r8;  push %%r9;  push %%r10; push %%r11;"
+		"push %%r12; push %%r13; push %%r14; push %%r15;"
+		"push %%rcx \n\t"
+		ASM_VMX_VMWRITE_RSP_RDX "\n\t"
+		/* Check if vmlaunch of vmresume is needed */
+		"cmp $0, %1 \n\t"
+		/* Load guest registers.  Don't clobber flags. */
+		"mov %c[cr2](%3), %%rax \n\t"
+		"mov %%rax, %%cr2 \n\t"
+		"mov %c[rax](%3), %%rax \n\t"
+		"mov %c[rbx](%3), %%rbx \n\t"
+		"mov %c[rdx](%3), %%rdx \n\t"
+		"mov %c[rsi](%3), %%rsi \n\t"
+		"mov %c[rdi](%3), %%rdi \n\t"
+		"mov %c[rbp](%3), %%rbp \n\t"
+		"mov %c[r8](%3),  %%r8  \n\t"
+		"mov %c[r9](%3),  %%r9  \n\t"
+		"mov %c[r10](%3), %%r10 \n\t"
+		"mov %c[r11](%3), %%r11 \n\t"
+		"mov %c[r12](%3), %%r12 \n\t"
+		"mov %c[r13](%3), %%r13 \n\t"
+		"mov %c[r14](%3), %%r14 \n\t"
+		"mov %c[r15](%3), %%r15 \n\t"
+		"mov %c[rcx](%3), %%rcx \n\t" /* kills %3 (rcx) */
+		/* Enter guest mode */
+		"jne launched \n\t"
+		ASM_VMX_VMLAUNCH "\n\t"
+		"jmp vmx_return \n\t"
+		"launched: " ASM_VMX_VMRESUME "\n\t"
+		".globl vmx_return \n\t"
+		"vmx_return: "
+		/* Save guest registers, load host registers, keep flags */
+		"xchg %3,     (%%rsp) \n\t"
+		"mov %%rax, %c[rax](%3) \n\t"
+		"mov %%rbx, %c[rbx](%3) \n\t"
+		"pushq (%%rsp); popq %c[rcx](%3) \n\t"
+		"mov %%rdx, %c[rdx](%3) \n\t"
+		"mov %%rsi, %c[rsi](%3) \n\t"
+		"mov %%rdi, %c[rdi](%3) \n\t"
+		"mov %%rbp, %c[rbp](%3) \n\t"
+		"mov %%r8,  %c[r8](%3) \n\t"
+		"mov %%r9,  %c[r9](%3) \n\t"
+		"mov %%r10, %c[r10](%3) \n\t"
+		"mov %%r11, %c[r11](%3) \n\t"
+		"mov %%r12, %c[r12](%3) \n\t"
+		"mov %%r13, %c[r13](%3) \n\t"
+		"mov %%r14, %c[r14](%3) \n\t"
+		"mov %%r15, %c[r15](%3) \n\t"
+		"mov %%cr2, %%rax   \n\t"
+		"mov %%rax, %c[cr2](%3) \n\t"
+		"mov (%%rsp), %3 \n\t"
+
+		"pop  %%rcx; pop  %%r15; pop  %%r14; pop  %%r13; pop  %%r12;"
+		"pop  %%r11; pop  %%r10; pop  %%r9;  pop  %%r8;"
+		"pop  %%rbp; pop  %%rdi; pop  %%rsi;"
+		"pop  %%rdx; pop  %%rbx; pop  %%rax \n\t"
+		"setbe %0 \n\t"
+		"popf \n\t"
+	      : "=q" (fail)
+	      : "r"(vcpu->launched), "d"((unsigned long)HOST_RSP),
+		"c"(vcpu),
+		[rax]"i"(offsetof(struct vcpu, regs[VCPU_REGS_RAX])),
+		[rbx]"i"(offsetof(struct vcpu, regs[VCPU_REGS_RBX])),
+		[rcx]"i"(offsetof(struct vcpu, regs[VCPU_REGS_RCX])),
+		[rdx]"i"(offsetof(struct vcpu, regs[VCPU_REGS_RDX])),
+		[rsi]"i"(offsetof(struct vcpu, regs[VCPU_REGS_RSI])),
+		[rdi]"i"(offsetof(struct vcpu, regs[VCPU_REGS_RDI])),
+		[rbp]"i"(offsetof(struct vcpu, regs[VCPU_REGS_RBP])),
+		[r8 ]"i"(offsetof(struct vcpu, regs[VCPU_REGS_R8 ])),
+		[r9 ]"i"(offsetof(struct vcpu, regs[VCPU_REGS_R9 ])),
+		[r10]"i"(offsetof(struct vcpu, regs[VCPU_REGS_R10])),
+		[r11]"i"(offsetof(struct vcpu, regs[VCPU_REGS_R11])),
+		[r12]"i"(offsetof(struct vcpu, regs[VCPU_REGS_R12])),
+		[r13]"i"(offsetof(struct vcpu, regs[VCPU_REGS_R13])),
+		[r14]"i"(offsetof(struct vcpu, regs[VCPU_REGS_R14])),
+		[r15]"i"(offsetof(struct vcpu, regs[VCPU_REGS_R15])),
+		[cr2]"i"(offsetof(struct vcpu, cr2))
+	      : "cc", "memory" );
+
+	//++kvm_stat.exits;
+
+	//save_msrs(vcpu->guest_msrs, NR_BAD_MSRS);
+	//load_msrs(vcpu->host_msrs, NR_BAD_MSRS);
+
+	//fx_save(vcpu->guest_fx_image);
+	//fx_restore(vcpu->host_fx_image);
+	//vcpu->interrupt_window_open = (vmcs_read32(GUEST_INTERRUPTIBILITY_INFO) & 3) == 0;
+
+	/* TODO: what? */
+	//asm ("mov %0, %%ds; mov %0, %%es" : : "r"(__USER_DS));
+
+	vcpu->exit_type = 0;
+	if (fail) {
+		vcpu->exit_type = SHIV_EXIT_TYPE_FAIL_ENTRY;
+		vcpu->exit_reason = vmcs_read32(VM_INSTRUCTION_ERROR);
+		r = 0;
+	} else {
+		//if (fs_gs_ldt_reload_needed) {
+		//	load_ldt(ldt_sel);
+		//	load_fs(fs_sel);
+			/*
+			 * If we have to reload gs, we must take care to
+			 * preserve our gs base.
+			 */
+		//	local_irq_disable();
+		//	load_gs(gs_sel);
+		//	wrmsrl(MSR_GS_BASE, vmcs_readl(HOST_GS_BASE));
+		//	local_irq_enable();
+
+		//	reload_tss();
+		//}
+		/*
+		 * Profile KVM exit RIPs:
+		 */
+	//	if (unlikely(prof_on == KVM_PROFILING))
+	//		profile_hit(KVM_PROFILING, (void *)vmcs_readl(GUEST_RIP));
+
+		vcpu->launched = 1;
+		vcpu->exit_type = SHIV_EXIT_TYPE_VM_EXIT;
+		r = shiv_vm_exit_handler(vcpu);
+		if (r > 0) {
+			/* Give scheduler a change to reschedule. */
+		//	if (signal_pending(current)) {
+		//		++kvm_stat.signal_exits;
+		//		post_kvm_run_save(vcpu, kvm_run);
+		//		return -EINTR;
+		//	}
+
+			//kvm_resched(vcpu);
+			goto again;
+		}
+	}
+
+	//post_kvm_run_save(vcpu, kvm_run);
+	return r;
 }
 
 struct vmachine *shiv_create_vmachine()
@@ -517,6 +713,9 @@ int module_install()
 		printk(4, "[shiv]: couldn't enable VMX operation\n");
 		return -EINVAL;
 	}
+
+	struct vmachine *vm = shiv_create_vmachine();
+
 	return 0;
 }
 

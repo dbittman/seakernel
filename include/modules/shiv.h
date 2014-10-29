@@ -58,12 +58,12 @@
 #define CR4_VMXE_MASK (1ULL << 13)
 
 #define SHIV_GUEST_CR0_MASK \
-		(CR0_PG_MASK | CR0_PE_MASK | CR0_WP_MASK | CR0_NE_MASK \
-			 | CR0_NW_MASK | CR0_CD_MASK)
+	(CR0_PG_MASK | CR0_PE_MASK | CR0_WP_MASK | CR0_NE_MASK \
+	 | CR0_NW_MASK | CR0_CD_MASK)
 #define SHIV_VM_CR0_ALWAYS_ON \
-		(CR0_PG_MASK | CR0_PE_MASK | CR0_WP_MASK | CR0_NE_MASK)
+	(CR0_PG_MASK | CR0_PE_MASK | CR0_WP_MASK | CR0_NE_MASK)
 #define SHIV_GUEST_CR4_MASK \
-		(CR4_PSE_MASK | CR4_PAE_MASK | CR4_PGE_MASK | CR4_VMXE_MASK | CR4_VME_MASK)
+	(CR4_PSE_MASK | CR4_PAE_MASK | CR4_PGE_MASK | CR4_VMXE_MASK | CR4_VME_MASK)
 #define SHIV_PMODE_VM_CR4_ALWAYS_ON (CR4_VMXE_MASK | CR4_PAE_MASK)
 #define SHIV_RMODE_VM_CR4_ALWAYS_ON (CR4_VMXE_MASK | CR4_PAE_MASK | CR4_VME_MASK)
 
@@ -88,12 +88,14 @@
 #define PIN_BASED_NMI_EXITING   0x8
 
 #define MSR_IA32_VMX_BASIC			0x480
-#define MSR_IA32_FEATURE_CONTROL		0x03a
+//#define MSR_IA32_FEATURE_CONTROL		0x03a
 #define MSR_IA32_VMX_PINBASED_CTLS		0x481
 #define MSR_IA32_VMX_PROCBASED_CTLS		0x482
 #define MSR_IA32_VMX_EXIT_CTLS		0x483
 #define MSR_IA32_VMX_ENTRY_CTLS		0x484
-
+#define MSR_IA32_APICBASE               0x1b
+#define MSR_IA32_APICBASE_BSP           (1<<8)
+#define MSR_IA32_APICBASE_ENABLE        (1<<11)
 /* VMCS Encodings */
 enum vmcs_field {
 	GUEST_ES_SELECTOR               = 0x00000800,
@@ -303,7 +305,6 @@ enum {
 	VCPU_REGS_RBP = 5,
 	VCPU_REGS_RSI = 6,
 	VCPU_REGS_RDI = 7,
-#ifdef CONFIG_X86_64
 	VCPU_REGS_R8 = 8,
 	VCPU_REGS_R9 = 9,
 	VCPU_REGS_R10 = 10,
@@ -312,7 +313,6 @@ enum {
 	VCPU_REGS_R13 = 13,
 	VCPU_REGS_R14 = 14,
 	VCPU_REGS_R15 = 15,
-#endif
 	NR_VCPU_REGS
 };
 
@@ -330,7 +330,8 @@ enum {
 
 
 
-
+#define SHIV_EXIT_TYPE_FAIL_ENTRY 1
+#define SHIV_EXIT_TYPE_VM_EXIT    2
 
 
 struct vmcs {
@@ -342,11 +343,12 @@ struct vmcs {
 struct vcpu {
 	struct vmcs *vmcs;
 	cpu_t *cpu;
-	int launched;
-	unsigned long cr0, cr4;
+	int launched, loaded;
+	unsigned long cr0, cr2, cr4;
 	int mode;
 	unsigned long regs[NR_VCPU_REGS];
 	unsigned long apic_base;
+	uint32_t exit_type, exit_reason;
 };
 
 struct vmachine {
@@ -366,6 +368,73 @@ struct vmachine {
 #define ASM_VMX_VMXOFF            ".byte 0x0f, 0x01, 0xc4"
 #define ASM_VMX_VMXON_RAX         ".byte 0xf3, 0x0f, 0xc7, 0x30"
 
+#define VMX_SEGMENT_FIELD(seg)                                  \
+	[VCPU_SREG_##seg] = {                                   \
+		.selector = GUEST_##seg##_SELECTOR,             \
+		.base = GUEST_##seg##_BASE,                     \
+		.limit = GUEST_##seg##_LIMIT,                   \
+		.ar_bytes = GUEST_##seg##_AR_BYTES,             \
+	}
+
+static struct vmx_segment_field {
+	unsigned selector;
+	unsigned base;
+	unsigned limit;
+	unsigned ar_bytes;
+} vmx_segment_fields[] = {
+	VMX_SEGMENT_FIELD(CS),
+	VMX_SEGMENT_FIELD(DS),
+	VMX_SEGMENT_FIELD(ES),
+	VMX_SEGMENT_FIELD(FS),
+	VMX_SEGMENT_FIELD(GS),
+	VMX_SEGMENT_FIELD(SS),
+	VMX_SEGMENT_FIELD(TR),
+	VMX_SEGMENT_FIELD(LDTR),
+};
+
+static inline unsigned long read_cr0(void)
+{ 
+	        unsigned long cr0;
+			        asm ("movq %%cr0,%0" : "=r" (cr0));
+					        return cr0;
+} 
+
+static inline void write_cr0(unsigned long val) 
+{ 
+	        asm ("movq %0,%%cr0" :: "r" (val));
+} 
+
+static inline unsigned long read_cr3(void)
+{ 
+	        unsigned long cr3;
+			        asm("movq %%cr3,%0" : "=r" (cr3));
+					        return cr3;
+} 
+
+static inline unsigned long read_cr4(void)
+{ 
+	        unsigned long cr4;
+			        asm("movq %%cr4,%0" : "=r" (cr4));
+					        return cr4;
+} 
+
+static inline void write_cr4(unsigned long val)
+{ 
+	        asm ("movq %0,%%cr4" :: "r" (val));
+} 
+static inline u16 read_fs(void)
+{
+	        u16 seg;
+			        asm ("mov %%fs, %0" : "=g"(seg));
+					        return seg;
+}
+
+static inline u16 read_gs(void)
+{
+	        u16 seg;
+			        asm ("mov %%gs, %0" : "=g"(seg));
+					        return seg;
+}
 #endif
 #endif
 

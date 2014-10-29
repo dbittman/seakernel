@@ -106,6 +106,11 @@ static void arch_loader_copy_sections(elf32_header_t *header, uint8_t *loaded_bu
 	{  
 		sh = (elf32_section_header_t*)((uint8_t *)header + header->shoff + (i * header->shsize));
 		
+		if(sh->alignment) {
+			address += sh->alignment;
+			address &= ~(sh->alignment-1);
+		}
+
 		if(sh->type == SHT_NOBITS) {
 			memset((void *)address, 0, sh->size);
 		} else {

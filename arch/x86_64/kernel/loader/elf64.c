@@ -105,9 +105,14 @@ static void arch_loader_copy_sections(elf64_header_t *header, uint8_t *loaded_bu
 	elf64_section_header_t *sh;
 	addr_t address=(addr_t)loaded_buf;
 	for(i = 0; i < header->shnum; i++)
-	{  
+	{
 		sh = (elf64_section_header_t*)((uint8_t *)header + header->shoff + (i * header->shsize));
 		
+		if(sh->alignment) {
+			address += sh->alignment;
+			address &= ~(sh->alignment-1);
+		}
+
 		if(sh->type == SHT_NOBITS) {
 			memset((void *)address, 0, sh->size);
 		} else {
@@ -177,7 +182,11 @@ int arch_loader_relocate_elf_module(void * buf, addr_t *entry, addr_t *tm_exiter
 				
 				mem_addr = sd.vbase[sh->info] + rela->offset;
 				reloc_addr = sd.vbase[symtab->shndx] + symtab->address;
-				
+				uint64_t P = mem_addr;
+				if(sh->address) {
+					printk(KERN_INFO, "[mod]: unsure how to do this...\n");
+					return 0;
+				}
 				if(symtab->shndx == 0)
 				{
 					reloc_addr = loader_find_kernel_function(get_symbol_string(buf, symtab->name));
@@ -192,6 +201,8 @@ int arch_loader_relocate_elf_module(void * buf, addr_t *entry, addr_t *tm_exiter
 						reloc_addr += *(uint64_t *)(mem_addr) + rela->addend;
 					else if(GET_RELOC_TYPE(rela->info) == R_X86_64_32)
 						reloc_addr += *(uint64_t *)(mem_addr) + rela->addend;
+					else if(GET_RELOC_TYPE(rela->info) == R_X86_64_PC32)
+						reloc_addr += *(uint64_t *)(mem_addr) + rela->addend - P;
 					else
 					{
 						printk(KERN_INFO, "[mod]: invalid relocation type (%x)\n", 

@@ -27,6 +27,8 @@ static inline int is_valid_elf(char *buf, short type)
 
 #define SHN_UNDEF   0
 
+typedef struct module_s module_t;
+
 int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int);
 const char *elf32_lookup_symbol (uint32_t addr, elf32_t *elf);
 elf32_t parse_kernel_elf(struct multiboot *mb, elf32_t *);

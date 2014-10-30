@@ -126,8 +126,10 @@ static void arch_loader_copy_sections(elf64_header_t *header, uint8_t *loaded_bu
 		elf64_section_header_t *shstr = (elf64_section_header_t*)((uint8_t *)header + header->shoff + (header->strndx * header->shsize));
 		if(!strcmp((char *)((uint8_t *)header + shstr->offset + sh->name), ".strtab"))
 			sd->strtab = i;
-		else if(!strcmp((char *)((uint8_t *)header + shstr->offset + sh->name), ".symtab"))
+		else if(!strcmp((char *)((uint8_t *)header + shstr->offset + sh->name), ".symtab")) {
+			sd->symlen = sh->size;
 			sd->symtab = i;
+		}
 
 		sd->vbase[i] = address;
 		address += sh->size;
@@ -136,7 +138,7 @@ static void arch_loader_copy_sections(elf64_header_t *header, uint8_t *loaded_bu
 	sd->shstrtab = header->strndx;
 }
 
-int arch_loader_relocate_elf_module(void * buf, addr_t *entry, addr_t *tm_exiter, void *load_address)
+int arch_loader_relocate_elf_module(void * buf, addr_t *entry, addr_t *tm_exiter, void *load_address, struct section_data *sd)
 {
 	uint32_t i, x;
 	uint64_t module_entry=0, reloc_addr, mem_addr, module_exiter=0;
@@ -148,8 +150,7 @@ int arch_loader_relocate_elf_module(void * buf, addr_t *entry, addr_t *tm_exiter
 	int error=0;
 	eh = (elf_header_t *)buf;
 	
-	struct section_data sd;
-	arch_loader_copy_sections(eh, load_address, &sd);
+	arch_loader_copy_sections(eh, load_address, sd);
 	
 	/* grab the functions we'll need */
 	for(i = 0; i < eh->shnum; i++)
@@ -162,10 +163,10 @@ int arch_loader_relocate_elf_module(void * buf, addr_t *entry, addr_t *tm_exiter
 				symtab = (elf64_symtab_entry_t*)((addr_t)buf + sh->offset + x);
 				if(!memcmp((uint8_t*)get_symbol_string(buf, symtab->name), 
 						(uint8_t*)"module_install", 14))
-					module_entry = sd.vbase[symtab->shndx] + symtab->address;
+					module_entry = sd->vbase[symtab->shndx] + symtab->address;
 				if(!memcmp((uint8_t*)get_symbol_string(buf, symtab->name), 
 						(uint8_t*)"module_exit", 11))
-					module_exiter = sd.vbase[symtab->shndx] + symtab->address;
+					module_exiter = sd->vbase[symtab->shndx] + symtab->address;
 			}
 		}
 	}
@@ -191,8 +192,8 @@ int arch_loader_relocate_elf_module(void * buf, addr_t *entry, addr_t *tm_exiter
 				rela = (elf64_rela_t*)((addr_t)buf + sh->offset + x);
 				symtab = fill_symbol_struct(buf, GET_RELOC_SYM(rela->info));
 				
-				mem_addr = sd.vbase[sh->info] + rela->offset;
-				reloc_addr = sd.vbase[symtab->shndx] + symtab->address;
+				mem_addr = sd->vbase[sh->info] + rela->offset;
+				reloc_addr = sd->vbase[symtab->shndx] + symtab->address;
 				uint64_t P = mem_addr;
 				if(sh->address) {
 					printk(KERN_INFO, "[mod]: unsure how to do this...\n");
@@ -222,11 +223,33 @@ int arch_loader_relocate_elf_module(void * buf, addr_t *entry, addr_t *tm_exiter
 					}
 				}
 				elf64_write_field(GET_RELOC_TYPE(rela->info), mem_addr, reloc_addr);
-				elf64_symtab_entry_t *ste = &((elf64_symtab_entry_t *)sd.vbase[sd.symtab])[GET_RELOC_SYM(rela->info)];
-				ste->address = *(uint64_t *)mem_addr;
+				elf64_symtab_entry_t *ste = &((elf64_symtab_entry_t *)sd->vbase[sd->symtab])[GET_RELOC_SYM(rela->info)];
+				ste->address = mem_addr;
 			}
 		}
 	}
 	return 1;
 }
+
+const char *arch_loader_lookup_module_symbol(module_t *mq, addr_t addr, char **modname)
+{
+	/* okay, look up the symbol */
+	for (unsigned int i = 0; i < (mq->sd.symlen/sizeof (elf64_symtab_entry_t)); i++)
+	{
+		elf64_symtab_entry_t *st;
+		st = &((elf64_symtab_entry_t *)mq->sd.vbase[mq->sd.symtab])[i];
+		if (ELF_ST_TYPE(st->info) != 0x2)
+			continue;
+		if ( (addr >= st->address) 
+				&& (addr < (st->address + st->size)) )
+		{
+			const char *name = (const char *) ((uint64_t)(mq->sd.vbase[mq->sd.strtab])
+					+ st->name);
+			*modname = mq->name;
+			return name;
+		}
+	}
+	return 0;
+}
+
 #endif

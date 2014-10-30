@@ -43,7 +43,7 @@ void *arch_loader_parse_elf_module(module_t *mod, uint8_t * buf)
 		return 0;
 	size_t load_size = arch_loader_calculate_allocation_size(buf);
 	void *load = kmalloc(load_size);
-	if(!arch_loader_relocate_elf_module(buf, &module_entry, &module_exiter, load))
+	if(!arch_loader_relocate_elf_module(buf, &module_entry, &module_exiter, load, &mod->sd))
 	{
 		kfree(load);
 		return 0;

@@ -6,6 +6,13 @@
 
 #define MAX_SYMS 600
 
+#define MAX_SECTIONS 32
+struct section_data {
+	addr_t vbase[MAX_SECTIONS];
+	int num;
+	int strtab, shstrtab, symtab, symlen;
+};
+
 typedef struct { 
 	const char *name; 
 	addr_t ptr; 

@@ -59,6 +59,22 @@ void loader_init_kernel_symbols(void)
 	loader_add_kernel_symbol(time_get_epoch);
 }
 
+const char *loader_lookup_module_symbol(addr_t addr, char **modname)
+{
+	mutex_acquire(&mod_mutex);
+	module_t *mq = modules;
+	while(mq) {
+		if((addr_t)addr >= (addr_t)mq->base && (addr_t)addr < ((addr_t)mq->base + mq->length))
+			break;
+		mq = mq->next;
+	}
+	/* Determine if are being depended upon or if we can unload */
+	mutex_release(&mod_mutex);
+	if(!mq || mq->sd.strtab == -1 || mq->sd.symtab == -1)
+		return 0;
+	return arch_loader_lookup_module_symbol(mq, addr, modname);
+}
+
 void loader_do_add_kernel_symbol(const intptr_t func, const char * funcstr)
 {
 	uint32_t i;

@@ -124,8 +124,10 @@ static void arch_loader_copy_sections(elf32_header_t *header, uint8_t *loaded_bu
 		elf32_section_header_t *shstr = (elf32_section_header_t*)((uint8_t *)header + header->shoff + (header->strndx * header->shsize));
 		if(!strcmp((char *)((uint8_t *)header + shstr->offset + sh->name), ".strtab"))
 			sd->strtab = i;
-		else if(!strcmp((char *)((uint8_t *)header + shstr->offset + sh->name), ".symtab"))
+		else if(!strcmp((char *)((uint8_t *)header + shstr->offset + sh->name), ".symtab")) {
+			sd->symlen = sh->size;
 			sd->symtab = i;
+		}
 
 		sd->vbase[i] = address;
 		address += sh->size;
@@ -134,7 +136,7 @@ static void arch_loader_copy_sections(elf32_header_t *header, uint8_t *loaded_bu
 	sd->num = header->shnum;
 }
 
-int arch_loader_relocate_elf_module(void * buf, addr_t *entry, addr_t *tm_exiter, void *load_address)
+int arch_loader_relocate_elf_module(void * buf, addr_t *entry, addr_t *tm_exiter, void *load_address, struct section_data *sd)
 {
 	uint32_t i, x;
 	uint32_t module_entry=0, reloc_addr, mem_addr, module_exiter=0;
@@ -145,8 +147,7 @@ int arch_loader_relocate_elf_module(void * buf, addr_t *entry, addr_t *tm_exiter
 	int error=0;
 	eh = (elf32_header_t *)buf;
 	
-	struct section_data sd;
-	arch_loader_copy_sections(eh, load_address, &sd);
+	arch_loader_copy_sections(eh, load_address, sd);
 	
 	/* grab the functions we'll need */
 	for(i = 0; i < eh->shnum; i++)
@@ -159,10 +160,10 @@ int arch_loader_relocate_elf_module(void * buf, addr_t *entry, addr_t *tm_exiter
 				symtab = (elf32_symtab_entry_t*)((addr_t)buf + sh->offset + x);
 				if(!memcmp((uint8_t*)get_symbol_string(buf, symtab->name), 
 						(uint8_t*)"module_install", 14))
-					module_entry = sd.vbase[symtab->shndx] + symtab->address;
+					module_entry = sd->vbase[symtab->shndx] + symtab->address;
 				if(!memcmp((uint8_t*)get_symbol_string(buf, symtab->name), 
 						(uint8_t*)"module_exit", 11))
-					module_exiter = sd.vbase[symtab->shndx] + symtab->address;
+					module_exiter = sd->vbase[symtab->shndx] + symtab->address;
 			}
 		}
 	}
@@ -185,11 +186,11 @@ int arch_loader_relocate_elf_module(void * buf, addr_t *entry, addr_t *tm_exiter
 		{
 			for(x = 0; x < sh->size; x += sh->sect_size)
 			{
-				reloc = (elf32_reloc_entry_t*)(sd.vbase[i] + x);
+				reloc = (elf32_reloc_entry_t*)(sd->vbase[i] + x);
 				symtab = fill_symbol_struct(buf, GET_RELOC_SYM(reloc->info));
 				
-				mem_addr = reloc->offset + sd.vbase[sh->info];
-				reloc_addr = symtab->address + sd.vbase[symtab->shndx];
+				mem_addr = reloc->offset + sd->vbase[sh->info];
+				reloc_addr = symtab->address + sd->vbase[symtab->shndx];
 				/* external reference (kernel symbol most likely) */
 				if(symtab->shndx == 0)
 				{
@@ -212,8 +213,9 @@ int arch_loader_relocate_elf_module(void * buf, addr_t *entry, addr_t *tm_exiter
 				else if(GET_RELOC_TYPE(reloc->info) == 0x02)
 				{
 					/* we need to make this relative to the memory address */
-					reloc_addr = mem_addr - reloc_addr + 4;
-					*(intptr_t*)mem_addr = -reloc_addr;
+					reloc_addr += *(intptr_t*)mem_addr;
+					reloc_addr -= mem_addr;
+					*(intptr_t*)mem_addr = reloc_addr;
 				}
 				else
 				{
@@ -221,10 +223,34 @@ int arch_loader_relocate_elf_module(void * buf, addr_t *entry, addr_t *tm_exiter
 							GET_RELOC_TYPE(reloc->info));
 					return 0;
 				}
+				elf32_symtab_entry_t *ste = &((elf32_symtab_entry_t *)sd->vbase[sd->symtab])[GET_RELOC_SYM(reloc->info)];
+				ste->address = mem_addr;
 			}
 		}
 	}
 	return 1;
 }
 
+const char *arch_loader_lookup_module_symbol(module_t *mq, addr_t addr, char **modname)
+{
+	/* okay, look up the symbol */
+	for (unsigned int i = 0; i < (mq->sd.symlen/sizeof (elf32_symtab_entry_t)); i++)
+	{
+		elf32_symtab_entry_t *st;
+		st = &((elf32_symtab_entry_t *)mq->sd.vbase[mq->sd.symtab])[i];
+		if (ELF_ST_TYPE(st->info) != 0x2)
+			continue;
+		if ( (addr >= st->address) 
+				&& (addr < (st->address + st->size)) )
+		{
+			const char *name = (const char *) ((uint64_t)(mq->sd.vbase[mq->sd.strtab])
+					+ st->name);
+			*modname = mq->name;
+			return name;
+		}
+	}
+	return 0;
+}
+
 #endif
+

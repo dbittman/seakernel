@@ -118,13 +118,4 @@ const char *elf32_lookup_symbol (uint32_t addr, elf32_t *elf);
 int arch_loader_process_elf32_phdr(char *mem, int fp, addr_t *start, addr_t *end);
 
 extern elf32_t kernel_elf;
-
-#define MAX_SECTIONS 32
-
-struct section_data {
-	addr_t vbase[MAX_SECTIONS];
-	int num;
-	int strtab, shstrtab, symtab;
-};
-
 #endif

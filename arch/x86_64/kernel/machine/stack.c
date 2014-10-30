@@ -50,6 +50,7 @@ void arch_cpu_print_stack_trace(unsigned int MaxFrames)
 {
 	addr_t * ebp;
 	asm("mov %%rbp, %0" : "=r"(ebp));
+	kprintf("        ADDR          MODULE FUNCTION\n");
 	for(unsigned int frame = 0; frame < MaxFrames; ++frame)
 	{
 		if((kernel_state_flags&KSF_MMU) && !mm_vm_get_map((addr_t)ebp, 0, 1)) break;
@@ -57,9 +58,11 @@ void arch_cpu_print_stack_trace(unsigned int MaxFrames)
 		if(eip == 0)
 			break;
 		ebp = (addr_t *)(ebp[0]);
-		printk(0, "%x\n", eip);
 		const char *name = elf32_lookup_symbol(eip, &kernel_elf);
-		if(name) kprintf("  <%x>  %s\n", eip, name);
+		char *modname = 0;
+		if(!name)
+			name = loader_lookup_module_symbol(eip, &modname);
+		if(name) kprintf(" <%16.16x> %8s %s\n", eip, modname ? modname : "kernel", name);
 	}
 }
 

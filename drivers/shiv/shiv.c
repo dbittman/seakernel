@@ -206,7 +206,6 @@ int shiv_vmx_on()
 	/* allow VMXON */
 	cr4 |= (1 << 13);
 	asm("mov %0, %%cr4"::"r"(cr4));
-
 	/* read basic configuration info */
 	v = read_msr(MSR_IA32_VMX_BASIC);
 	revision_id = v & 0x7FFFFFFF;
@@ -215,6 +214,11 @@ int shiv_vmx_on()
 
 	/* enable */
 	vmxon_region = mm_alloc_physical_page();
+	
+	/* write the revision ID to the vmxon region */
+	uint32_t *vmxon_id_ptr = (uint32_t *)(vmxon_region + PHYS_PAGE_MAP);
+	*vmxon_id_ptr = revision_id;
+	
 	/* magic code */
 	asm(".byte 0xf3, 0x0f, 0xc7, 0x30"::"a"(&vmxon_region), "m"(vmxon_region):"memory", "cc");
 	return 1;

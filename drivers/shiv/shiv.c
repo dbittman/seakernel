@@ -238,8 +238,10 @@ addr_t shiv_build_ept_pml4(addr_t memsz)
 		memsz = 1023;
 	if(memsz < 255)
 		memsz = 255;
+	printk(0, "[shiv]: building an EPT of size %d B (%d KB)\n", memsz, memsz / 1024);
 	addr_t init_code = mm_alloc_physical_page();
 	for(addr_t i=0;i<memsz;i++) {
+		printk(0, "map: %d\n", i);
 		if(i == 255) {
 			/* map in special init code */
 			arch_mm_vm_early_map((void *)(pml4 + PHYS_PAGE_MAP), i, init_code, 7, MAP_NOCLEAR); 
@@ -247,6 +249,7 @@ addr_t shiv_build_ept_pml4(addr_t memsz)
 			arch_mm_vm_early_map((void *)(pml4 + PHYS_PAGE_MAP), i, mm_alloc_physical_page(), 7, MAP_NOCLEAR); 
 		}
 	}
+	printk(0, "[shiv]: writing fake bios\n");
 	uint8_t *vinit = (void *)(pml4 + PHYS_PAGE_MAP);
 	vinit[0x0FFF0] = 0x66;
 	vinit[0x0FFF1] = 0xb8;
@@ -386,6 +389,12 @@ static int shiv_vcpu_setup(struct vcpu *vcpu)
 			| CPU_BASED_UNCOND_IO_EXITING   /* 20.6.2 */
 			| CPU_BASED_MOV_DR_EXITING
 			| CPU_BASED_USE_TSC_OFFSETING   /* 21.3 */
+			| CPU_BASED_ACTIVATE_SECONDARY
+			);
+
+	vmcs_write32(SECONDARY_VM_EXEC_CONTROL,
+			SECONDARY_EXEC_CTL_ENABLE_EPT
+			| SECONDARY_EXEC_CTL_UNRESTRICTED
 			);
 
 	//vmcs_write32(EXCEPTION_BITMAP, 1 << PF_VECTOR);
@@ -482,6 +491,10 @@ static int shiv_vcpu_setup(struct vcpu *vcpu)
 	vmcs_writel(CR4_READ_SHADOW, 0);
 	vmcs_writel(GUEST_CR4, SHIV_RMODE_VM_CR4_ALWAYS_ON);
 	vcpu->cr4 = 0;
+	
+	/* set up the EPT */
+	addr_t ept = shiv_build_ept_pml4(0x10000);
+	vmcs_write64(EPT_POINTER, ept);
 
 	return 0;
 

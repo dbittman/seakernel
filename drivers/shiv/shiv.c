@@ -10,6 +10,7 @@
 #include <sea/string.h>
 #include <sea/vsprintf.h>
 #include <sea/kernel.h>
+#include <sea/cpu/interrupt.h>
 
 #include <modules/shiv.h>
 
@@ -229,10 +230,50 @@ int shiv_vmx_off()
 
 }
 
+addr_t ept_mm_alloc_physical_page_zero()
+{
+	addr_t ret = mm_alloc_physical_page();
+	memset((void *)(ret + PHYS_PAGE_MAP), 0, 0x1000);
+	return ret;
+}
+
+int ept_vm_map(pml4_t *pml4, addr_t virt, addr_t phys, unsigned attr, unsigned opt)
+{
+	addr_t vpage = (virt&PAGE_MASK)/0x1000;
+	unsigned vp4 = PML4_IDX(vpage);
+	unsigned vpdpt = PDPT_IDX(vpage);
+	unsigned vdir = PAGE_DIR_IDX(vpage);
+	unsigned vtbl = PAGE_TABLE_IDX(vpage);
+
+	page_dir_t *pd;
+	page_table_t *pt;
+	pdpt_t *pdpt;
+	addr_t x = ept_mm_alloc_physical_page_zero();
+	if(!pml4[vp4])
+		pml4[vp4] = x | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
+	pdpt = (addr_t *)((pml4[vp4]&PAGE_MASK) + PHYS_PAGE_MAP);
+	if(!pdpt[vpdpt])
+		pdpt[vpdpt] = ept_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
+	pd = (addr_t *)((pdpt[vpdpt]&PAGE_MASK) + PHYS_PAGE_MAP);
+	if(!pd[vdir])
+		pd[vdir] = ept_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
+	pt = (addr_t *)((pd[vdir]&PAGE_MASK) + PHYS_PAGE_MAP);
+	
+	pt[vtbl] = (phys & PAGE_MASK) | attr;
+	
+	if(!(opt & MAP_NOCLEAR)) 
+		memset((void *)(virt&PAGE_MASK), 0, 0x1000);
+	
+	return 0;
+}
+
+
 /* returns physical address */
 addr_t shiv_build_ept_pml4(addr_t memsz)
 {
 	addr_t pml4 = mm_alloc_physical_page();
+	uint8_t *vpml4 = (void *)(pml4 + PHYS_PAGE_MAP);
+	memset(vpml4, 0, 0x1000);
 	/* hack: limit memory */
 	if(memsz > 1023)
 		memsz = 1023;
@@ -240,22 +281,21 @@ addr_t shiv_build_ept_pml4(addr_t memsz)
 		memsz = 255;
 	printk(0, "[shiv]: building an EPT of size %d B (%d KB)\n", memsz, memsz / 1024);
 	addr_t init_code = mm_alloc_physical_page();
+	memset((void *)(init_code + PHYS_PAGE_MAP), 0, 0x1000);
 	for(addr_t i=0;i<memsz;i++) {
-		printk(0, "map: %d\n", i);
 		if(i == 255) {
 			/* map in special init code */
-			arch_mm_vm_early_map((void *)(pml4 + PHYS_PAGE_MAP), i, init_code, 7, MAP_NOCLEAR); 
+			ept_vm_map((void *)(pml4 + PHYS_PAGE_MAP), i * 0x1000, init_code, 7, MAP_NOCLEAR); 
 		} else {
-			arch_mm_vm_early_map((void *)(pml4 + PHYS_PAGE_MAP), i, mm_alloc_physical_page(), 7, MAP_NOCLEAR); 
+			ept_vm_map((void *)(pml4 + PHYS_PAGE_MAP), i * 0x1000, mm_alloc_physical_page(), 7, MAP_NOCLEAR); 
 		}
 	}
 	printk(0, "[shiv]: writing fake bios\n");
-	uint8_t *vinit = (void *)(pml4 + PHYS_PAGE_MAP);
-	vinit[0x0FFF0] = 0x66;
-	vinit[0x0FFF1] = 0xb8;
-	vinit[0x0FFF2] = 0x12;
-	vinit[0x0FFF3] = 0x00;
-	vinit[0x0FFF4] = 0xf4;
+	uint8_t *vinit = (void *)(init_code + PHYS_PAGE_MAP);
+	vinit[0xFF0] = 0xb8;
+	vinit[0xFF1] = 0x34;
+	vinit[0xFF2] = 0x12;
+	vinit[0xFF3] = 0xf4;
 	return pml4;
 }
 
@@ -494,6 +534,8 @@ static int shiv_vcpu_setup(struct vcpu *vcpu)
 	
 	/* set up the EPT */
 	addr_t ept = shiv_build_ept_pml4(0x10000);
+	printk(0, "EPT: %x\n", ept);
+	ept |= (3 << 3) | 6;
 	vmcs_write64(EPT_POINTER, ept);
 
 	return 0;
@@ -562,6 +604,8 @@ again:
 
 //	save_msrs(vcpu->host_msrs, vcpu->nmsrs);
 //	load_msrs(vcpu->guest_msrs, NR_BAD_MSRS);
+	
+	printk(0, "[shiv]: okay, here goes...\n");
 
 	asm (
 		/* Store host registers */
@@ -592,6 +636,7 @@ again:
 		"mov %c[r14](%3), %%r14 \n\t"
 		"mov %c[r15](%3), %%r15 \n\t"
 		"mov %c[rcx](%3), %%rcx \n\t" /* kills %3 (rcx) */
+		"xchg %%bx, %%bx\n\t"
 		/* Enter guest mode */
 		"jne launched \n\t"
 		ASM_VMX_VMLAUNCH "\n\t"
@@ -649,6 +694,7 @@ again:
 
 	//++kvm_stat.exits;
 
+
 	//save_msrs(vcpu->guest_msrs, NR_BAD_MSRS);
 	//load_msrs(vcpu->host_msrs, NR_BAD_MSRS);
 
@@ -697,10 +743,12 @@ again:
 		//	}
 
 			//kvm_resched(vcpu);
-			goto again;
+			////////////   goto again;
 		}
 	}
-
+	printk(0, ":: %d %d %d\n", vcpu->exit_type, vcpu->exit_reason, vmcs_readl(VM_EXIT_REASON));
+	cpu_interrupt_set(0);
+	cpu_halt();
 	//post_kvm_run_save(vcpu, kvm_run);
 	return r;
 }
@@ -714,6 +762,7 @@ struct vmachine *shiv_create_vmachine()
 		return 0;
 	}
 	vm->vcpu = shiv_create_vcpu(vm);
+	vmx_vcpu_run(vm->vcpu);
 	return vm;
 }
 

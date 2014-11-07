@@ -411,6 +411,8 @@ void interrupt_init()
 	loader_add_kernel_symbol(interrupt_unregister_handler);
 	loader_do_add_kernel_symbol((addr_t)interrupt_handlers_s1, "interrupt_handlers_s1");
 	loader_do_add_kernel_symbol((addr_t)interrupt_handlers_s2, "interrupt_handlers_s2");
+	loader_add_kernel_symbol(cpu_interrupt_set);
+	loader_add_kernel_symbol(cpu_interrupt_set_flag);
 #endif
 }
 

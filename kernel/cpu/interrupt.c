@@ -138,25 +138,25 @@ static const char *special_names(int i)
 	return "\t";
 }
 
-static void kernel_fault(int fuckoff, addr_t ip)
+static void kernel_fault(int fuckoff, addr_t ip, long err_code)
 {
 	kprintf("Kernel Exception #%d: ", fuckoff);
 	if(kernel_task)
 		printk(5, "Occured in task %d during systemcall %d (F=%d).\n",
 			current_task->pid, current_task->system, current_task->flag);
-	kprintf("return IP = %x\n", ip);
+	kprintf("return IP = %x, errcode = %x (%d)\n", ip, err_code, err_code);
 	panic(PANIC_NOSYNC | (fuckoff == 3 ? PANIC_VERBOSE : 0), exception_messages[fuckoff]);
 }
 
-static void faulted(int fuckoff, int userspace, addr_t ip)
+static void faulted(int fuckoff, int userspace, addr_t ip, long err_code)
 {
 	if(current_task == kernel_task || !current_task || current_task->system || !userspace)
 	{
-		kernel_fault(fuckoff, ip);
+		kernel_fault(fuckoff, ip, err_code);
 	} else
 	{
-		printk(5, "%s occured in task %d (F=%d, ip=%x): He's dead, Jim.\n", 
-				exception_messages[fuckoff], current_task->pid, current_task->flag, ip);
+		printk(5, "%s occured in task %d (F=%d, ip=%x, err=%x (%d)): He's dead, Jim.\n", 
+				exception_messages[fuckoff], current_task->pid, current_task->flag, ip, err_code, err_code);
 		/* we die for different reasons on different interrupts */
 		switch(fuckoff)
 		{
@@ -274,7 +274,7 @@ void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_addres
 	cpu_interrupt_set(0);
 	/* if it went unhandled, kill the process or panic */
 	if(!called)
-		faulted(int_no, !already_in_interrupt, return_address);
+		faulted(int_no, !already_in_interrupt, return_address, regs->err_code);
 	/* restore previous interrupt state */
 	cpu_interrupt_set_flag(previous_interrupt_flag);
 	if(!already_in_interrupt)

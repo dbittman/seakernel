@@ -25,6 +25,7 @@ struct arch_cpu {
 	cpuid_t cpuid;
 	gdt_entry_t gdt[NUM_GDT_ENTRIES];
 	gdt_ptr_t gdt_ptr;
+	idt_ptr_t idt_ptr;
 	tss_entry_t tss;
 };
 

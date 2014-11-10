@@ -11,8 +11,11 @@
 #include <sea/vsprintf.h>
 #include <sea/kernel.h>
 #include <sea/cpu/interrupt.h>
-
+#include <sea/cpu/tables-x86_64.h>
 #include <modules/shiv.h>
+
+extern idt_ptr_t idt_ptr;
+extern gdt_ptr_t gdt_ptr;
 
 uint32_t revision_id; /* this is actually only 31 bits, but... */
 addr_t vmxon_region=0;
@@ -458,12 +461,14 @@ static int shiv_vcpu_setup(struct vcpu *vcpu)
 	//rdmsrl(MSR_GS_BASE, a);
 	//vmcs_writel(HOST_GS_BASE, a); /* 22.2.4 */
 
-	vmcs_write16(HOST_TR_SELECTOR, GDT_ENTRY_TSS*8);  /* 22.2.4 */
+	vmcs_write16(HOST_TR_SELECTOR, (GDT_ENTRY_TSS * 8) | 3);  /* 22.2.4 */
 
-#if 0
-	get_idt(&dt);
-	vmcs_writel(HOST_IDTR_BASE, dt.base);   /* 22.2.4 */
-#endif
+	vmcs_writel(HOST_IDTR_BASE, vcpu->cpu->arch_cpu_data.idt_ptr.base);   /* 22.2.4 */
+	vmcs_writel(HOST_GDTR_BASE, vcpu->cpu->arch_cpu_data.gdt_ptr.base);   /* 22.2.4 */
+	vmcs_writel(HOST_TR_BASE, (unsigned long)(&vcpu->cpu->arch_cpu_data.tss));
+	printk(0, "[shiv]: wrote %x for idt bases\n", vcpu->cpu->arch_cpu_data.idt_ptr.base);
+	printk(0, "[shiv]: wrote %x for gdt base\n", vcpu->cpu->arch_cpu_data.gdt_ptr.base);
+	printk(0, "[shiv]: wrote %x for tr base\n", &vcpu->cpu->arch_cpu_data.tss);
 
 	vmcs_writel(HOST_RIP, (unsigned long)vmx_return); /* 22.2.5 */
 
@@ -562,6 +567,13 @@ int shiv_init_virtual_machine(struct vmachine *vm)
 {
 	/* set id */
 	return 0;
+}
+
+void tss_reload(cpu_t *cpu)
+{
+	cpu->arch_cpu_data.gdt[GDT_ENTRY_TSS].access = 0xE9;
+	asm("mov $0x2B, %%ax\n"
+		"ltr %%ax":::"ax");
 }
 
 int vmx_vcpu_run(struct vcpu *vcpu)
@@ -718,6 +730,9 @@ again:
 			 * If we have to reload gs, we must take care to
 			 * preserve our gs base.
 			 */
+		int old = cpu_interrupt_set(0);
+		tss_reload(vcpu->cpu);
+		cpu_interrupt_set(old);
 		//	local_irq_disable();
 		//	load_gs(gs_sel);
 		//	wrmsrl(MSR_GS_BASE, vmcs_readl(HOST_GS_BASE));
@@ -747,8 +762,6 @@ again:
 		}
 	}
 	printk(0, ":: %d %d %d %x\n", vcpu->exit_type, vcpu->exit_reason, vmcs_readl(VM_EXIT_REASON), vcpu->regs[VCPU_REGS_RAX]);
-	cpu_interrupt_set(0);
-	cpu_halt();
 	//post_kvm_run_save(vcpu, kvm_run);
 	return r;
 }

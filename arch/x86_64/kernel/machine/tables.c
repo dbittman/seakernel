@@ -205,6 +205,7 @@ void load_tables_ap(cpu_t *cpu)
 	/* don't init the IDT again, just flush it into the current processor.
 	 * if init_idt is called, this can cause random GPF */
 	idt_flush((u64int)&idt_ptr);
+	memcpy(&(cpu->arch_cpu_data.idt_ptr), &idt_ptr, sizeof(idt_ptr));
 	write_tss(cpu->arch_cpu_data.gdt, &cpu->arch_cpu_data.tss, 5, 0x10, 0x0);
 	tss_flush();
 }

@@ -746,7 +746,7 @@ again:
 			////////////   goto again;
 		}
 	}
-	printk(0, ":: %d %d %d\n", vcpu->exit_type, vcpu->exit_reason, vmcs_readl(VM_EXIT_REASON));
+	printk(0, ":: %d %d %d %x\n", vcpu->exit_type, vcpu->exit_reason, vmcs_readl(VM_EXIT_REASON), vcpu->regs[VCPU_REGS_RAX]);
 	cpu_interrupt_set(0);
 	cpu_halt();
 	//post_kvm_run_save(vcpu, kvm_run);

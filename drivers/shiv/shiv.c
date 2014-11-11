@@ -122,7 +122,6 @@ static void vmx_vcpu_load(cpu_t *cpu, struct vcpu *vcpu)
 	uint64_t phys_addr = __pa(vcpu->vmcs);
 	printk(0, "shiv: vmx_vcpu_load\n");
 
-	assert(cpu == primary_cpu);
 	if(vcpu->cpu != cpu)
 		vcpu_clear(vcpu);
 
@@ -461,7 +460,8 @@ static int shiv_vcpu_setup(struct vcpu *vcpu)
 	//rdmsrl(MSR_GS_BASE, a);
 	//vmcs_writel(HOST_GS_BASE, a); /* 22.2.4 */
 
-	vmcs_write16(HOST_TR_SELECTOR, (GDT_ENTRY_TSS * 8) | 3);  /* 22.2.4 */
+	vmcs_write16(HOST_TR_SELECTOR, (GDT_ENTRY_TSS * 8));  /* 22.2.4 */
+	printk(0, "[shiv]: wrote %x for tr select\n", (GDT_ENTRY_TSS * 8));
 
 	vmcs_writel(HOST_IDTR_BASE, vcpu->cpu->arch_cpu_data.idt_ptr.base);   /* 22.2.4 */
 	vmcs_writel(HOST_GDTR_BASE, vcpu->cpu->arch_cpu_data.gdt_ptr.base);   /* 22.2.4 */
@@ -554,10 +554,10 @@ struct vcpu *shiv_create_vcpu(struct vmachine *vm)
 	printk(0, "shiv: create vcpu\n");
 	/* create structure */
 	vm->vcpu = kmalloc(sizeof(*vm->vcpu));
-	vm->vcpu->cpu = primary_cpu;
+	vm->vcpu->cpu = current_task->cpu;
 	/* set up guest CPU state as needed */
 	shiv_init_vmcs(vm->vcpu);
-	vmx_vcpu_load(primary_cpu, vm->vcpu);
+	vmx_vcpu_load(current_task->cpu, vm->vcpu);
 	shiv_vcpu_setup(vm->vcpu);
 	/* return vcpu */
 	return vm->vcpu;

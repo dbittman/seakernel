@@ -349,18 +349,12 @@ static int shiv_vcpu_setup(struct vcpu *vcpu)
 	int i;
 	int ret = 0;
 	printk(0, "shiv: vcpu_setup\n");
-	//if (!init_rmode_tss(vcpu->kvm)) {
-	//	ret = -ENOMEM;
-	//	goto out;
-	//}
 
 	memset(vcpu->regs, 0, sizeof(vcpu->regs));
 	vcpu->regs[VCPU_REGS_RDX] = 0x600;
 	vcpu->apic_base = 0xfee00000 |
 		/*for vcpu 0*/ MSR_IA32_APICBASE_BSP |
 		MSR_IA32_APICBASE_ENABLE;
-
-	//fx_init(vcpu);
 
 	/*
 	 * GUEST_CS_BASE should really be 0xffff0000, but VT vm86 mode
@@ -439,10 +433,11 @@ static int shiv_vcpu_setup(struct vcpu *vcpu)
 			| SECONDARY_EXEC_CTL_UNRESTRICTED
 			);
 
-	//vmcs_write32(EXCEPTION_BITMAP, 1 << PF_VECTOR);
+	/* we let all exceptions be handled by the guest, since we're
+	 * doing EPT and unrestricted. */
+	vmcs_write32(EXCEPTION_BITMAP, 0);
 	vmcs_write32(PAGE_FAULT_ERROR_CODE_MASK, 0);
 	vmcs_write32(PAGE_FAULT_ERROR_CODE_MATCH, 0);
-	//vmcs_write32(CR3_TARGET_COUNT, 0);           /* 22.2.1 */
 
 	vmcs_writel(HOST_CR0, read_cr0());  /* 22.2.3 */
 	vmcs_writel(HOST_CR4, read_cr4());  /* 22.2.3, 22.2.5 */
@@ -472,51 +467,15 @@ static int shiv_vcpu_setup(struct vcpu *vcpu)
 
 	vmcs_writel(HOST_RIP, (unsigned long)vmx_return); /* 22.2.5 */
 
-	//rdmsr(MSR_IA32_SYSENTER_CS, host_sysenter_cs, junk);
-	//vmcs_write32(HOST_IA32_SYSENTER_CS, host_sysenter_cs);
-	//rdmsrl(MSR_IA32_SYSENTER_ESP, a);
-	//vmcs_writel(HOST_IA32_SYSENTER_ESP, a);   /* 22.2.3 */
-	//rdmsrl(MSR_IA32_SYSENTER_EIP, a);
-	//vmcs_writel(HOST_IA32_SYSENTER_EIP, a);   /* 22.2.3 */
-	/*
-	   for (i = 0; i < NR_VMX_MSR; ++i) {
-	   u32 index = vmx_msr_index[i];
-	   u32 data_low, data_high;
-	   u64 data;
-	   int j = vcpu->nmsrs;
-
-	   if (rdmsr_safe(index, &data_low, &data_high) < 0)
-	   continue;
-	   if (wrmsr_safe(index, data_low, data_high) < 0)
-	   continue;
-	   data = data_low | ((u64)data_high << 32);
-	   vcpu->host_msrs[j].index = index;
-	   vcpu->host_msrs[j].reserved = 0;
-	   vcpu->host_msrs[j].data = data;
-	   vcpu->guest_msrs[j] = vcpu->host_msrs[j];
-	   ++vcpu->nmsrs;
-	   }
-	   printk(KERN_DEBUG "kvm: msrs: %d\n", vcpu->nmsrs);
-	   */
-
-	//nr_good_msrs = vcpu->nmsrs - NR_BAD_MSRS;
-#if 0
-	vmcs_writel(VM_ENTRY_MSR_LOAD_ADDR,
-			virt_to_phys(vcpu->guest_msrs + NR_BAD_MSRS));
-	vmcs_writel(VM_EXIT_MSR_STORE_ADDR,
-			virt_to_phys(vcpu->guest_msrs + NR_BAD_MSRS));
-	vmcs_writel(VM_EXIT_MSR_LOAD_ADDR,
-			virt_to_phys(vcpu->host_msrs + NR_BAD_MSRS));
-#endif
+	uint32_t se_cs = read_msr(MSR_IA32_SYSENTER_CS) & 0xFFFFFFFF;
+	vmcs_write32(HOST_IA32_SYSENTER_CS, se_cs);
+	uint32_t tmp = read_msr(MSR_IA32_SYSENTER_ESP);
+	vmcs_writel(HOST_IA32_SYSENTER_ESP, tmp);   /* 22.2.3 */
+	tmp = read_msr(MSR_IA32_SYSENTER_EIP);
+	vmcs_writel(HOST_IA32_SYSENTER_EIP, tmp);   /* 22.2.3 */
 
 	vmcs_write32_fixedbits(MSR_IA32_VMX_EXIT_CTLS, VM_EXIT_CONTROLS,
 			(1 << 9));  /* 22.2,1, 20.7.1 */ /* ??? */
-
-#if 0
-	vmcs_write32(VM_EXIT_MSR_STORE_COUNT, nr_good_msrs); /* 22.2.2 */
-	vmcs_write32(VM_EXIT_MSR_LOAD_COUNT, nr_good_msrs);  /* 22.2.2 */
-	vmcs_write32(VM_ENTRY_MSR_LOAD_COUNT, nr_good_msrs); /* 22.2.2 */
-#endif
 
 	/* 22.2.1, 20.8.1 */
 	vmcs_write32_fixedbits(MSR_IA32_VMX_ENTRY_CTLS,
@@ -642,6 +601,12 @@ again:
 //TODO
 //	if (!vcpu->mmio_read_completed)
 //		do_interrupt_requests(vcpu, kvm_run);
+
+	/* the host state must be saved. Registers, flags, and FPU states aren't
+	 * saved, and neither are many MSRs. We back up the MSRs we care about, save
+	 * the FPU state, and push pretty much everything onto the stack. After
+	 * a vmexit, everything gets popped off, the FPU state restored, and the
+	 * MSRs put back. That way, it's all as we left it. */
 
 	fx_save(vcpu, FX_IMAGE_HOST);
 	fx_restore(vcpu, FX_IMAGE_GUEST);

@@ -339,6 +339,18 @@ enum {
 #define SHIV_EXIT_TYPE_FAIL_ENTRY 1
 #define SHIV_EXIT_TYPE_VM_EXIT    2
 
+#define NR_MSRS 8
+
+static uint32_t MSRS[NR_MSRS] = {
+	0xc0000080, /* extended feature register */
+	0xc0000081, /* legacy mode SYSCALL target */
+	0xc0000082, /* long mode SYSCALL target */
+	0xc0000083, /* compat mode SYSCALL target */
+	0xc0000084, /* EFLAGS mask for syscall */
+	0xc0000100, /* 64bit FS base */
+	0xc0000101, /* 64bit GS base */
+	0xc0000102, /* SwapGS GS shadow */
+};
 
 struct vmcs {
 	uint32_t rev_id;
@@ -355,6 +367,8 @@ struct vcpu {
 	unsigned long regs[NR_VCPU_REGS];
 	unsigned long apic_base;
 	uint32_t exit_type, exit_reason;
+	char fpu_save_data[2][512 + 16 /* alignment */];
+	uint64_t msrs[2][NR_MSRS];
 };
 
 struct vmachine {

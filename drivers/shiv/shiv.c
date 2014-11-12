@@ -569,11 +569,53 @@ int shiv_init_virtual_machine(struct vmachine *vm)
 	return 0;
 }
 
+#define FX_IMAGE_GUEST 0
+#define FX_IMAGE_HOST  1
+#define MSR_IMAGE_GUEST 0
+#define MSR_IMAGE_HOST  1
+
+void fx_save(struct vcpu *vcpu, int selector)
+{
+	if(vcpu->cpu->flags & CPU_SSE || vcpu->cpu->flags & CPU_FPU)
+		__asm__ __volatile__("fxsave64 (%0)"
+		:: "r" (ALIGN(vcpu->fpu_save_data[selector], 16)));
+}
+
+void fx_restore(struct vcpu *vcpu, int selector)
+{
+	if(vcpu->cpu->flags & CPU_SSE || vcpu->cpu->flags & CPU_FPU)
+		__asm__ __volatile__("fxrstor64 (%0)"
+		:: "r" (ALIGN(vcpu->fpu_save_data[selector], 16)));
+}
+
 void tss_reload(cpu_t *cpu)
 {
+	/* the vm exit process only loads the selector into the TR register, but doesn't
+	 * actually read the data out of the GDT. So, we have to flush the TSS after each
+	 * exit. */
 	cpu->arch_cpu_data.gdt[GDT_ENTRY_TSS].access = 0xE9;
 	asm("mov $0x2B, %%ax\n"
 		"ltr %%ax":::"ax");
+}
+
+void save_msrs(struct vcpu *vcpu, int selector)
+{
+	int i;
+	for(i=0;i<NR_MSRS;i++) {
+		vcpu->msrs[selector][i] = read_msr(MSRS[i]);
+	}
+}
+
+void restore_msrs(struct vcpu *vcpu, int selector)
+{
+	/* guest msrs are invalid, since they haven't been saved before.
+	 * Only restore after first launch */
+	if(!vcpu->launched && selector == MSR_IMAGE_GUEST)
+		return;
+	int i;
+	for(i=0;i<NR_MSRS;i++) {
+		write_msr(MSRS[i], vcpu->msrs[selector][i]);
+	}
 }
 
 int vmx_vcpu_run(struct vcpu *vcpu)
@@ -591,31 +633,20 @@ again:
 	 */
 	fs_sel = read_fs();
 	gs_sel = read_gs();
-	//ldt_sel = read_ldt();
-	//fs_gs_ldt_reload_needed = (fs_sel & 7) | (gs_sel & 7) | ldt_sel;
-	//if (!fs_gs_ldt_reload_needed) {
-		vmcs_write16(HOST_FS_SELECTOR, fs_sel);
-		vmcs_write16(HOST_GS_SELECTOR, gs_sel);
-	//} else {
-//		vmcs_write16(HOST_FS_SELECTOR, 0);
-//		vmcs_write16(HOST_GS_SELECTOR, 0);
-//	}
+	vmcs_write16(HOST_FS_SELECTOR, fs_sel);
+	vmcs_write16(HOST_GS_SELECTOR, gs_sel);
 
-//	vmcs_writel(HOST_FS_BASE, read_msr(MSR_FS_BASE));
-//	vmcs_writel(HOST_GS_BASE, read_msr(MSR_GS_BASE));
+	vmcs_writel(HOST_FS_BASE, read_msr(0xc0000100 /* 64bit FS base */));
+	vmcs_writel(HOST_GS_BASE, read_msr(0xc0000101 /* 64bit GS base */));
 
 //TODO
 //	if (!vcpu->mmio_read_completed)
 //		do_interrupt_requests(vcpu, kvm_run);
 
-//	if (vcpu->guest_debug.enabled)
-//		kvm_guest_debug_pre(vcpu);
-
-//	fx_save(vcpu->host_fx_image);
-//	fx_restore(vcpu->guest_fx_image);
-
-//	save_msrs(vcpu->host_msrs, vcpu->nmsrs);
-//	load_msrs(vcpu->guest_msrs, NR_BAD_MSRS);
+	fx_save(vcpu, FX_IMAGE_HOST);
+	fx_restore(vcpu, FX_IMAGE_GUEST);
+	save_msrs(vcpu, MSR_IMAGE_HOST);
+	restore_msrs(vcpu, MSR_IMAGE_GUEST);
 	
 	printk(0, "[shiv]: okay, here goes...\n");
 
@@ -706,16 +737,13 @@ again:
 
 	//++kvm_stat.exits;
 
+	fx_save(vcpu, FX_IMAGE_GUEST);
+	fx_restore(vcpu, FX_IMAGE_HOST);
+	
+	save_msrs(vcpu, MSR_IMAGE_GUEST);
+	restore_msrs(vcpu, MSR_IMAGE_HOST);
 
-	//save_msrs(vcpu->guest_msrs, NR_BAD_MSRS);
-	//load_msrs(vcpu->host_msrs, NR_BAD_MSRS);
-
-	//fx_save(vcpu->guest_fx_image);
-	//fx_restore(vcpu->host_fx_image);
 	//vcpu->interrupt_window_open = (vmcs_read32(GUEST_INTERRUPTIBILITY_INFO) & 3) == 0;
-
-	/* TODO: what? */
-	//asm ("mov %0, %%ds; mov %0, %%es" : : "r"(__USER_DS));
 
 	vcpu->exit_type = 0;
 	if (fail) {
@@ -723,46 +751,25 @@ again:
 		vcpu->exit_reason = vmcs_read32(VM_INSTRUCTION_ERROR);
 		r = 0;
 	} else {
-		//if (fs_gs_ldt_reload_needed) {
-		//	load_ldt(ldt_sel);
-		//	load_fs(fs_sel);
-			/*
-			 * If we have to reload gs, we must take care to
-			 * preserve our gs base.
-			 */
 		int old = cpu_interrupt_set(0);
+		/* restore fs and gs */
+		asm ("mov %0, %%gs" : : "rm"(gs_sel));
+		asm ("mov %0, %%fs" : : "rm"(fs_sel));
+		write_msr(0xc0000101 /* 64bit GS base */, vmcs_readl(HOST_GS_BASE));
 		tss_reload(vcpu->cpu);
 		cpu_interrupt_set(old);
-		//	local_irq_disable();
-		//	load_gs(gs_sel);
-		//	wrmsrl(MSR_GS_BASE, vmcs_readl(HOST_GS_BASE));
-		//	local_irq_enable();
-
-		//	reload_tss();
-		//}
-		/*
-		 * Profile KVM exit RIPs:
-		 */
-	//	if (unlikely(prof_on == KVM_PROFILING))
-	//		profile_hit(KVM_PROFILING, (void *)vmcs_readl(GUEST_RIP));
 
 		vcpu->launched = 1;
 		vcpu->exit_type = SHIV_EXIT_TYPE_VM_EXIT;
 		r = shiv_vm_exit_handler(vcpu);
 		if (r > 0) {
-			/* Give scheduler a change to reschedule. */
-		//	if (signal_pending(current)) {
-		//		++kvm_stat.signal_exits;
-		//		post_kvm_run_save(vcpu, kvm_run);
-		//		return -EINTR;
-		//	}
-
-			//kvm_resched(vcpu);
-			////////////   goto again;
+			if(tm_process_got_signal(current_task)) {
+				return -EINTR;
+			}
+			///////goto again;
 		}
 	}
 	printk(0, ":: %d %d %d %x\n", vcpu->exit_type, vcpu->exit_reason, vmcs_readl(VM_EXIT_REASON), vcpu->regs[VCPU_REGS_RAX]);
-	//post_kvm_run_save(vcpu, kvm_run);
 	return r;
 }
 

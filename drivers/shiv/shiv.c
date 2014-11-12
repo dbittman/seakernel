@@ -346,6 +346,7 @@ static void seg_setup(int seg)
  */
 static int shiv_vcpu_setup(struct vcpu *vcpu)
 {
+	/* TODO: preemption timer */
 	int i;
 	int ret = 0;
 	printk(0, "shiv: vcpu_setup\n");
@@ -450,11 +451,6 @@ static int shiv_vcpu_setup(struct vcpu *vcpu)
 	vmcs_write16(HOST_GS_SELECTOR, read_gs());    /* 22.2.4 */
 	vmcs_write16(HOST_SS_SELECTOR, __KERNEL_DS);  /* 22.2.4 */
 
-	//rdmsrl(MSR_FS_BASE, a);
-	//vmcs_writel(HOST_FS_BASE, a); /* 22.2.4 */
-	//rdmsrl(MSR_GS_BASE, a);
-	//vmcs_writel(HOST_GS_BASE, a); /* 22.2.4 */
-
 	vmcs_write16(HOST_TR_SELECTOR, (GDT_ENTRY_TSS * 8));  /* 22.2.4 */
 	printk(0, "[shiv]: wrote %x for tr select\n", (GDT_ENTRY_TSS * 8));
 
@@ -498,7 +494,6 @@ static int shiv_vcpu_setup(struct vcpu *vcpu)
 	
 	/* set up the EPT */
 	addr_t ept = shiv_build_ept_pml4(0x10000);
-	printk(0, "EPT: %x\n", ept);
 	ept |= (3 << 3) | 6;
 	vmcs_write64(EPT_POINTER, ept);
 

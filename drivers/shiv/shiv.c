@@ -13,6 +13,7 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/tables-x86_64.h>
 #include <modules/shiv.h>
+#include <sea/lib/bitmap.h>
 
 extern idt_ptr_t idt_ptr;
 extern gdt_ptr_t gdt_ptr;
@@ -306,6 +307,56 @@ void shiv_skip_instruction(struct vcpu *vc)
 
 }
 
+void shiv_inject_interrupt(struct vcpu *vc, int irq)
+{
+	assert(bitmap_test(vc->irq_field, irq));
+	bitmap_reset(vc->irq_field, irq);
+	if(vc->mode == CPU_X86_MODE_RMODE) {
+		/* rmode interrupt injection requires a bit more work */
+	} else {
+		vmcs_write32(VM_ENTRY_INTR_INFO_FIELD, irq | INTR_TYPE_EXT_INTR | INTR_INFO_VALID_MASK);
+	}
+}
+
+int shiv_vcpu_pending_int(struct vcpu *vc)
+{
+	return bitmap_ffs(vc->irq_field, 256);
+}
+
+void shiv_handle_irqs(struct vcpu *vc)
+{
+	vc->interruptible = ((vmcs_readl(GUEST_RFLAGS) & (1 << 9)/* IF */) && ((vmcs_read32(GUEST_INTERRUPTIBILITY_INFO) & 3) == 0));
+	if (vc->interruptible && (shiv_vcpu_pending_int(vc) != -1)
+			&& !(vmcs_read32(VM_ENTRY_INTR_INFO_FIELD) & INTR_INFO_VALID_MASK)) {
+		shiv_inject_interrupt(vc, shiv_vcpu_pending_int(vc));
+	}
+	uint32_t tmp = vmcs_read32(CPU_BASED_VM_EXEC_CONTROL);
+	if (!vc->interruptible 
+				&& (shiv_vcpu_pending_int(vc) || vc->request_interruptible)) {
+		tmp |= CPU_BASED_VIRTUAL_INTR_PENDING;
+	} else {
+		tmp &= ~CPU_BASED_VIRTUAL_INTR_PENDING;
+	}
+	vmcs_write32(CPU_BASED_VM_EXEC_CONTROL, tmp);
+}
+
+void exit_reason_interrupt(struct vcpu *vc)
+{
+	if((shiv_vcpu_pending_int(vc) == -1) && vc->request_interruptible) {
+		vc->rtu_cause = SHIV_RTU_IRQ_WINDOW_OPEN;
+	}
+	/* if is an external interrupt, set bit in irq_field. Otherwise, read in the error code and etc, and then set bit
+	 * in irq_field */
+}
+
+int exit_reason_halt(struct vcpu *vc)
+{
+	shiv_skip_instruction(vc);
+	if(shiv_vcpu_pending_int(vc))
+		return 1;
+	return 0;
+}
+
 int shiv_vm_exit_handler(struct vcpu *vcpu)
 {
 	printk(0, "got to exit handler\n");
@@ -413,6 +464,9 @@ static int shiv_vcpu_setup(struct vcpu *vcpu)
 	vmcs_write64(GUEST_IA32_DEBUGCTL, 0);
 
 	/* Control */
+	/* we exit on external interrupts, but we do NOT ack them during a VM
+	 * exit. This allows us to handle external interrupts normally
+	 * as soon as we restore host state and re-enable interrupts */
 	vmcs_write32_fixedbits(MSR_IA32_VMX_PINBASED_CTLS,
 			PIN_BASED_VM_EXEC_CONTROL,
 			PIN_BASED_EXT_INTR_MASK   /* 20.6.1 */
@@ -592,10 +646,9 @@ again:
 
 	vmcs_writel(HOST_FS_BASE, read_msr(0xc0000100 /* 64bit FS base */));
 	vmcs_writel(HOST_GS_BASE, read_msr(0xc0000101 /* 64bit GS base */));
+	vcpu->rtu_cause = 0; /* don't automatically return to userspace */
 
-//TODO
-//	if (!vcpu->mmio_read_completed)
-//		do_interrupt_requests(vcpu, kvm_run);
+	shiv_handle_irqs(vcpu);
 
 	/* the host state must be saved. Registers, flags, and FPU states aren't
 	 * saved, and neither are many MSRs. We back up the MSRs we care about, save
@@ -609,9 +662,10 @@ again:
 	restore_msrs(vcpu, MSR_IMAGE_GUEST);
 	
 	printk(0, "[shiv]: okay, here goes...\n");
-
+	int intflag = cpu_interrupt_set(0);
 	asm (
 		/* Store host registers */
+		"cli \n\t"
 		"pushf \n\t"
 		"push %%rax; push %%rbx; push %%rdx;"
 		"push %%rsi; push %%rdi; push %%rbp;"
@@ -673,7 +727,7 @@ again:
 		"pop  %%rbp; pop  %%rdi; pop  %%rsi;"
 		"pop  %%rdx; pop  %%rbx; pop  %%rax \n\t"
 		"setbe %0 \n\t"
-		"popf \n\t"
+		"popf \n\t" /* interrupts are still disabled */
 	      : "=q" (fail)
 	      : "r"(vcpu->launched), "d"((unsigned long)HOST_RSP),
 		"c"(vcpu),
@@ -703,7 +757,7 @@ again:
 	save_msrs(vcpu, MSR_IMAGE_GUEST);
 	restore_msrs(vcpu, MSR_IMAGE_HOST);
 
-	//vcpu->interrupt_window_open = (vmcs_read32(GUEST_INTERRUPTIBILITY_INFO) & 3) == 0;
+	vcpu->interruptible = (vmcs_read32(GUEST_INTERRUPTIBILITY_INFO) & 3) == 0;
 
 	vcpu->exit_type = 0;
 	if (fail) {
@@ -729,6 +783,7 @@ again:
 			///////goto again;
 		}
 	}
+	cpu_interrupt_set(intflag);
 	printk(0, ":: %d %d %d %x\n", vcpu->exit_type, vcpu->exit_reason, vmcs_readl(VM_EXIT_REASON), vcpu->regs[VCPU_REGS_RAX]);
 	return r;
 }

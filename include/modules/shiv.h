@@ -340,6 +340,8 @@ enum {
 #define SHIV_EXIT_TYPE_FAIL_ENTRY 1
 #define SHIV_EXIT_TYPE_VM_EXIT    2
 
+#define SHIV_RTU_IRQ_WINDOW_OPEN  1
+
 #define NR_MSRS 8
 
 static uint32_t MSRS[NR_MSRS] = {
@@ -370,6 +372,9 @@ struct vcpu {
 	uint32_t exit_type, exit_reason;
 	char fpu_save_data[2][512 + 16 /* alignment */];
 	uint64_t msrs[2][NR_MSRS];
+	int interruptible, request_interruptible;
+	uint64_t irq_field[4];
+	int rtu_cause;
 };
 
 struct vmachine {

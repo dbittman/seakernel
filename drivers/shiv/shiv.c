@@ -362,13 +362,20 @@ int exit_reason_halt(struct vcpu *vc)
 	return 0;
 }
 
+void *exitreasons [NUM_EXIT_REASONS] = {
+	[EXIT_REASON_HLT] = exit_reason_halt,
+};
+
 int shiv_vm_exit_handler(struct vcpu *vcpu)
 {
 	printk(0, "got to exit handler\n");
 	/* check cause of exit */
-
+	void *fn = exitreasons[vcpu->exit_reason];
+	if(!fn)
+		panic(0, "[shiv]: exit reason not defined\n");
 	/* handle exit reasons */
-
+	int (*exithandler)(void *) = fn;
+	return exithandler(vcpu);
 	/* return to VM */
 }
 

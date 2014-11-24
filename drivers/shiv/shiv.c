@@ -304,7 +304,12 @@ addr_t shiv_build_ept_pml4(addr_t memsz)
 
 void shiv_skip_instruction(struct vcpu *vc)
 {
-
+	/* so, ignoring an instruction actually takes work. */
+	uint32_t len = vmcs_read32(VM_EXIT_INSTRUCTION_LEN);
+	unsigned long rip = vmcs_readl(GUEST_RIP);
+	rip += len;
+	vmcs_writel(GUEST_RIP, rip);
+	/* something something interrupts TODO */
 }
 
 void shiv_inject_interrupt(struct vcpu *vc, int irq)

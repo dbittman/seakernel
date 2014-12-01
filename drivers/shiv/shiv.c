@@ -283,22 +283,23 @@ addr_t shiv_build_ept_pml4(addr_t memsz)
 	if(memsz < 255)
 		memsz = 255;
 	printk(0, "[shiv]: building an EPT of size %d B (%d KB)\n", memsz, memsz / 1024);
-	addr_t init_code = mm_alloc_physical_page();
-	memset((void *)(init_code + PHYS_PAGE_MAP), 0, 0x1000);
+	addr_t pages[256];
 	for(addr_t i=0;i<memsz;i++) {
-		if(i == 255) {
-			/* map in special init code */
-			ept_vm_map((void *)(pml4 + PHYS_PAGE_MAP), i * 0x1000, init_code, 7, MAP_NOCLEAR); 
-		} else {
-			ept_vm_map((void *)(pml4 + PHYS_PAGE_MAP), i * 0x1000, mm_alloc_physical_page(), 7, MAP_NOCLEAR); 
-		}
+		pages[i] = mm_alloc_physical_page();
+		ept_vm_map((void *)(pml4 + PHYS_PAGE_MAP), i * 0x1000, pages[i], 7, MAP_NOCLEAR); 
 	}
 	printk(0, "[shiv]: writing fake bios\n");
-	uint8_t *vinit = (void *)(init_code + PHYS_PAGE_MAP);
+
+	uint8_t *vinit = (void *)(pages[255] + PHYS_PAGE_MAP);
+	memset(vinit, 0, 0x1000);
 	vinit[0xFF0] = 0xb8;
 	vinit[0xFF1] = 0x34;
 	vinit[0xFF2] = 0x12;
 	vinit[0xFF3] = 0xf4;
+
+	uint32_t *ivt = (void *)(pages[0] + PHYS_PAGE_MAP);
+	ivt[3] = /* something */0;
+
 	return pml4;
 }
 

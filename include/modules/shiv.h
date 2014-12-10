@@ -422,47 +422,71 @@ static struct vmx_segment_field {
 
 static inline unsigned long read_cr0(void)
 { 
-	        unsigned long cr0;
-			        asm ("movq %%cr0,%0" : "=r" (cr0));
-					        return cr0;
+	unsigned long cr0;
+	asm ("movq %%cr0,%0" : "=r" (cr0));
+	return cr0;
 } 
 
 static inline void write_cr0(unsigned long val) 
 { 
-	        asm ("movq %0,%%cr0" :: "r" (val));
+	asm ("movq %0,%%cr0" :: "r" (val));
 } 
 
 static inline unsigned long read_cr3(void)
 { 
-	        unsigned long cr3;
-			        asm("movq %%cr3,%0" : "=r" (cr3));
-					        return cr3;
+	unsigned long cr3;
+	asm("movq %%cr3,%0" : "=r" (cr3));
+	return cr3;
 } 
 
 static inline unsigned long read_cr4(void)
 { 
-	        unsigned long cr4;
-			        asm("movq %%cr4,%0" : "=r" (cr4));
-					        return cr4;
+	unsigned long cr4;
+	asm("movq %%cr4,%0" : "=r" (cr4));
+	return cr4;
 } 
 
 static inline void write_cr4(unsigned long val)
 { 
-	        asm ("movq %0,%%cr4" :: "r" (val));
+	asm ("movq %0,%%cr4" :: "r" (val));
 } 
 static inline u16 read_fs(void)
 {
-	        u16 seg;
-			        asm ("mov %%fs, %0" : "=g"(seg));
-					        return seg;
+	u16 seg;
+	asm ("mov %%fs, %0" : "=g"(seg));
+	return seg;
 }
 
 static inline u16 read_gs(void)
 {
-	        u16 seg;
-			        asm ("mov %%gs, %0" : "=g"(seg));
-					        return seg;
+	u16 seg;
+	asm ("mov %%gs, %0" : "=g"(seg));
+	return seg;
 }
+
+
+
+
+
+
+
+static unsigned char bios[] = {
+	0xfa, 0x0f, 0x01, 0x16, 0x2d, 0x00, 0x0f, 0x20, 0xc0, 0x66, 0x83, 0xc8,
+	0x01, 0x0f, 0x22, 0xc0, 0xea, 0x33, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0x00, 0x9a, 0xcf,
+	0x00, 0xff, 0xff, 0x00, 0x00, 0x00, 0x92, 0xcf, 0x00, 0x17, 0x00, 0x15,
+	0x00, 0x0f, 0x00, 0x66, 0xb8, 0x10, 0x00, 0x8e, 0xd8, 0x8e, 0xd0, 0x8e,
+	0xc0, 0x8e, 0xe0, 0x8e, 0xe8, 0xbd, 0x00, 0x00, 0x09, 0x00, 0x89, 0xec,
+	0xb8, 0x21, 0x43, 0x65, 0x87, 0xf4
+};
+
+
+
+
+
+
+
+
 #endif
 #endif
 

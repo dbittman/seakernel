@@ -278,28 +278,39 @@ addr_t shiv_build_ept_pml4(addr_t memsz)
 	uint8_t *vpml4 = (void *)(pml4 + PHYS_PAGE_MAP);
 	memset(vpml4, 0, 0x1000);
 	/* hack: limit memory */
-	if(memsz > 1023)
-		memsz = 1023;
-	if(memsz < 255)
-		memsz = 255;
-	printk(0, "[shiv]: building an EPT of size %d B (%d KB)\n", memsz, memsz / 1024);
+	if(memsz > 256)
+		memsz = 256;
+	if(memsz < 256)
+		memsz = 256;
+	printk(0, "[shiv]: building an EPT of size %d pages\n", memsz, memsz / 1024);
 	addr_t pages[256];
 	for(addr_t i=0;i<memsz;i++) {
 		pages[i] = mm_alloc_physical_page();
 		ept_vm_map((void *)(pml4 + PHYS_PAGE_MAP), i * 0x1000, pages[i], 7, MAP_NOCLEAR); 
 	}
 	printk(0, "[shiv]: writing fake bios\n");
-
 	uint8_t *vinit = (void *)(pages[255] + PHYS_PAGE_MAP);
 	memset(vinit, 0, 0x1000);
 	vinit[0xFF0] = 0xb8;
 	vinit[0xFF1] = 0x34;
 	vinit[0xFF2] = 0x12;
-	vinit[0xFF3] = 0xf4;
-
+	vinit[0xFF3] = 0xea;
+	vinit[0xff4] = 0;
+	vinit[0xff5] = 0xf0;
+	vinit[0xff6] = 0;
+	vinit[0xff7] = 0xf0;
+#if 0
+	printk(0, "[shiv]: writing interrupt code\n");
 	uint32_t *ivt = (void *)(pages[0] + PHYS_PAGE_MAP);
-	ivt[3] = /* something */0;
-
+	ivt[3] = 0xF000ff00;
+	printk(0, "[shiv]: writing interrupt handler code\n");
+	vinit[0xf00] = 0xb8;
+	vinit[0xf01] = 0x78;
+	vinit[0xf02] = 0x56;
+	vinit[0xf03] = 0xf4; /* hlt */
+	printk(0, "[shiv]: okay\n");
+#endif
+	memcpy(vinit, bios, sizeof(bios));
 	return pml4;
 }
 
@@ -319,6 +330,7 @@ void shiv_inject_interrupt(struct vcpu *vc, int irq)
 	bitmap_reset(vc->irq_field, irq);
 	if(vc->mode == CPU_X86_MODE_RMODE) {
 		/* rmode interrupt injection requires a bit more work */
+		/* TODO: Do they? */
 	} else {
 		vmcs_write32(VM_ENTRY_INTR_INFO_FIELD, irq | INTR_TYPE_EXT_INTR | INTR_INFO_VALID_MASK);
 	}
@@ -351,8 +363,6 @@ void exit_reason_interrupt(struct vcpu *vc)
 	if((shiv_vcpu_pending_int(vc) == -1) && vc->request_interruptible) {
 		vc->rtu_cause = SHIV_RTU_IRQ_WINDOW_OPEN;
 	}
-	/* if is an external interrupt, set bit in irq_field. Otherwise, read in the error code and etc, and then set bit
-	 * in irq_field */
 }
 
 int exit_reason_halt(struct vcpu *vc)
@@ -563,6 +573,7 @@ static int shiv_vcpu_setup(struct vcpu *vcpu)
 	addr_t ept = shiv_build_ept_pml4(0x10000);
 	ept |= (3 << 3) | 6;
 	vmcs_write64(EPT_POINTER, ept);
+	printk(0, "[shiv]: CPU setup!\n");
 
 	return 0;
 
@@ -788,6 +799,8 @@ again:
 
 		vcpu->launched = 1;
 		vcpu->exit_type = SHIV_EXIT_TYPE_VM_EXIT;
+		vcpu->exit_reason = vmcs_readl(VM_EXIT_REASON);
+		printk(0, ":: %d %d %d %x\n", vcpu->exit_type, vcpu->exit_reason, vmcs_readl(VM_EXIT_REASON), vcpu->regs[VCPU_REGS_RAX]);
 		r = shiv_vm_exit_handler(vcpu);
 		if (r > 0) {
 			if(tm_process_got_signal(current_task)) {

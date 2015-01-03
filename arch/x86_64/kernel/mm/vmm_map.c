@@ -59,9 +59,9 @@ int arch_mm_vm_early_map(pml4_t *pml4, addr_t virt, addr_t phys, unsigned attr, 
 	page_dir_t *pd;
 	page_table_t *pt;
 	pdpt_t *pdpt;
-
+	addr_t x = arch_mm_alloc_physical_page_zero();
 	if(!pml4[vp4])
-		pml4[vp4] = arch_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
+		pml4[vp4] = x | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
 	pdpt = (addr_t *)((pml4[vp4]&PAGE_MASK) + PHYS_PAGE_MAP);
 	if(!pdpt[vpdpt])
 		pdpt[vpdpt] = arch_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
@@ -71,9 +71,10 @@ int arch_mm_vm_early_map(pml4_t *pml4, addr_t virt, addr_t phys, unsigned attr, 
 	pt = (addr_t *)((pd[vdir]&PAGE_MASK) + PHYS_PAGE_MAP);
 	
 	pt[vtbl] = (phys & PAGE_MASK) | attr;
-	asm("invlpg (%0)"::"r" (virt));
+	
 	if(!(opt & MAP_NOCLEAR)) 
 		memset((void *)(virt&PAGE_MASK), 0, 0x1000);
 	
 	return 0;
 }
+

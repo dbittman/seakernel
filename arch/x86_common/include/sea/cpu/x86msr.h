@@ -22,5 +22,9 @@ static void write_msr(uint32_t msr, uint64_t value)
 #define MSR_IA32_VMX_EPT_VPID_CAP 0x48C
 #define MSR_IA32_VMX_BASIC 0x480
 
+#define MSR_IA32_SYSENTER_CS            0x00000174
+#define MSR_IA32_SYSENTER_ESP           0x00000175
+#define MSR_IA32_SYSENTER_EIP           0x00000176
+
 #endif
 

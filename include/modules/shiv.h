@@ -61,7 +61,7 @@
 	(CR0_PG_MASK | CR0_PE_MASK | CR0_WP_MASK | CR0_NE_MASK \
 	 | CR0_NW_MASK | CR0_CD_MASK)
 #define SHIV_VM_CR0_ALWAYS_ON \
-	(CR0_PG_MASK | CR0_PE_MASK | CR0_WP_MASK | CR0_NE_MASK)
+	(CR0_WP_MASK | CR0_NE_MASK)
 #define SHIV_GUEST_CR4_MASK \
 	(CR4_PSE_MASK | CR4_PAE_MASK | CR4_PGE_MASK | CR4_VMXE_MASK | CR4_VME_MASK)
 #define SHIV_PMODE_VM_CR4_ALWAYS_ON (CR4_VMXE_MASK | CR4_PAE_MASK)
@@ -83,9 +83,14 @@
 #define CPU_BASED_MSR_BITMAPS           0x10000000
 #define CPU_BASED_MONITOR_EXITING       0x20000000
 #define CPU_BASED_PAUSE_EXITING         0x40000000
+#define CPU_BASED_ACTIVATE_SECONDARY    0x80000000
+
+#define SECONDARY_EXEC_CTL_ENABLE_EPT   (1 << 1)
+#define SECONDARY_EXEC_CTL_UNRESTRICTED (1 << 7)
 
 #define PIN_BASED_EXT_INTR_MASK 0x1
 #define PIN_BASED_NMI_EXITING   0x8
+#define PIN_BASED_PREEMPT_TIMER (1 << 6)
 
 #define MSR_IA32_VMX_BASIC			0x480
 //#define MSR_IA32_FEATURE_CONTROL		0x03a
@@ -129,6 +134,8 @@ enum vmcs_field {
 	TSC_OFFSET_HIGH                 = 0x00002011,
 	VIRTUAL_APIC_PAGE_ADDR          = 0x00002012,
 	VIRTUAL_APIC_PAGE_ADDR_HIGH     = 0x00002013,
+	EPT_POINTER                     = 0x0000201a,
+	EPT_POINTER_HIGH                = 0x0000201b,
 	VMCS_LINK_POINTER               = 0x00002800,
 	VMCS_LINK_POINTER_HIGH          = 0x00002801,
 	GUEST_IA32_DEBUGCTL             = 0x00002802,
@@ -254,6 +261,8 @@ enum vmcs_field {
 #define EXIT_REASON_MSR_WRITE           32
 #define EXIT_REASON_MWAIT_INSTRUCTION   36
 
+#define NUM_EXIT_REASONS                37
+
 /*
  *  * Interruption-information format
  *   */
@@ -333,6 +342,20 @@ enum {
 #define SHIV_EXIT_TYPE_FAIL_ENTRY 1
 #define SHIV_EXIT_TYPE_VM_EXIT    2
 
+#define SHIV_RTU_IRQ_WINDOW_OPEN  1
+
+#define NR_MSRS 8
+
+static uint32_t MSRS[NR_MSRS] = {
+	0xc0000080, /* extended feature register */
+	0xc0000081, /* legacy mode SYSCALL target */
+	0xc0000082, /* long mode SYSCALL target */
+	0xc0000083, /* compat mode SYSCALL target */
+	0xc0000084, /* EFLAGS mask for syscall */
+	0xc0000100, /* 64bit FS base */
+	0xc0000101, /* 64bit GS base */
+	0xc0000102, /* SwapGS GS shadow */
+};
 
 struct vmcs {
 	uint32_t rev_id;
@@ -349,6 +372,11 @@ struct vcpu {
 	unsigned long regs[NR_VCPU_REGS];
 	unsigned long apic_base;
 	uint32_t exit_type, exit_reason;
+	char fpu_save_data[2][512 + 16 /* alignment */];
+	uint64_t msrs[2][NR_MSRS];
+	int interruptible, request_interruptible;
+	uint64_t irq_field[4];
+	int rtu_cause;
 };
 
 struct vmachine {
@@ -394,47 +422,71 @@ static struct vmx_segment_field {
 
 static inline unsigned long read_cr0(void)
 { 
-	        unsigned long cr0;
-			        asm ("movq %%cr0,%0" : "=r" (cr0));
-					        return cr0;
+	unsigned long cr0;
+	asm ("movq %%cr0,%0" : "=r" (cr0));
+	return cr0;
 } 
 
 static inline void write_cr0(unsigned long val) 
 { 
-	        asm ("movq %0,%%cr0" :: "r" (val));
+	asm ("movq %0,%%cr0" :: "r" (val));
 } 
 
 static inline unsigned long read_cr3(void)
 { 
-	        unsigned long cr3;
-			        asm("movq %%cr3,%0" : "=r" (cr3));
-					        return cr3;
+	unsigned long cr3;
+	asm("movq %%cr3,%0" : "=r" (cr3));
+	return cr3;
 } 
 
 static inline unsigned long read_cr4(void)
 { 
-	        unsigned long cr4;
-			        asm("movq %%cr4,%0" : "=r" (cr4));
-					        return cr4;
+	unsigned long cr4;
+	asm("movq %%cr4,%0" : "=r" (cr4));
+	return cr4;
 } 
 
 static inline void write_cr4(unsigned long val)
 { 
-	        asm ("movq %0,%%cr4" :: "r" (val));
+	asm ("movq %0,%%cr4" :: "r" (val));
 } 
 static inline u16 read_fs(void)
 {
-	        u16 seg;
-			        asm ("mov %%fs, %0" : "=g"(seg));
-					        return seg;
+	u16 seg;
+	asm ("mov %%fs, %0" : "=g"(seg));
+	return seg;
 }
 
 static inline u16 read_gs(void)
 {
-	        u16 seg;
-			        asm ("mov %%gs, %0" : "=g"(seg));
-					        return seg;
+	u16 seg;
+	asm ("mov %%gs, %0" : "=g"(seg));
+	return seg;
 }
+
+
+
+
+
+
+
+static unsigned char bios[] = {
+	0xfa, 0x0f, 0x01, 0x16, 0x2d, 0x00, 0x0f, 0x20, 0xc0, 0x66, 0x83, 0xc8,
+	0x01, 0x0f, 0x22, 0xc0, 0xea, 0x33, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0x00, 0x9a, 0xcf,
+	0x00, 0xff, 0xff, 0x00, 0x00, 0x00, 0x92, 0xcf, 0x00, 0x17, 0x00, 0x15,
+	0x00, 0x0f, 0x00, 0x66, 0xb8, 0x10, 0x00, 0x8e, 0xd8, 0x8e, 0xd0, 0x8e,
+	0xc0, 0x8e, 0xe0, 0x8e, 0xe8, 0xbd, 0x00, 0x00, 0x09, 0x00, 0x89, 0xec,
+	0xb8, 0x21, 0x43, 0x65, 0x87, 0xf4
+};
+
+
+
+
+
+
+
+
 #endif
 #endif
 

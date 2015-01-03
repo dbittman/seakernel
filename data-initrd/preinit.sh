@@ -1,6 +1,6 @@
 echo -n "Loading modules..."
 export PATH=$PATH:/:.:/usr/sbin
-MODS="keyboard pci partitions psm ata ahci ext2"
+MODS="shiv keyboard pci partitions psm ata ahci ext2"
 err=0
 failed_mods=""
 for i in $MODS; do

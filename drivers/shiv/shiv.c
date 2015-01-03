@@ -10,8 +10,13 @@
 #include <sea/string.h>
 #include <sea/vsprintf.h>
 #include <sea/kernel.h>
-
+#include <sea/cpu/interrupt.h>
+#include <sea/cpu/tables-x86_64.h>
 #include <modules/shiv.h>
+#include <sea/lib/bitmap.h>
+
+extern idt_ptr_t idt_ptr;
+extern gdt_ptr_t gdt_ptr;
 
 uint32_t revision_id; /* this is actually only 31 bits, but... */
 addr_t vmxon_region=0;
@@ -118,7 +123,6 @@ static void vmx_vcpu_load(cpu_t *cpu, struct vcpu *vcpu)
 	uint64_t phys_addr = __pa(vcpu->vmcs);
 	printk(0, "shiv: vmx_vcpu_load\n");
 
-	assert(cpu == primary_cpu);
 	if(vcpu->cpu != cpu)
 		vcpu_clear(vcpu);
 
@@ -206,7 +210,6 @@ int shiv_vmx_on()
 	/* allow VMXON */
 	cr4 |= (1 << 13);
 	asm("mov %0, %%cr4"::"r"(cr4));
-
 	/* read basic configuration info */
 	v = read_msr(MSR_IA32_VMX_BASIC);
 	revision_id = v & 0x7FFFFFFF;
@@ -215,6 +218,11 @@ int shiv_vmx_on()
 
 	/* enable */
 	vmxon_region = mm_alloc_physical_page();
+	
+	/* write the revision ID to the vmxon region */
+	uint32_t *vmxon_id_ptr = (uint32_t *)(vmxon_region + PHYS_PAGE_MAP);
+	*vmxon_id_ptr = revision_id;
+	
 	/* magic code */
 	asm(".byte 0xf3, 0x0f, 0xc7, 0x30"::"a"(&vmxon_region), "m"(vmxon_region):"memory", "cc");
 	return 1;
@@ -225,45 +233,160 @@ int shiv_vmx_off()
 
 }
 
+addr_t ept_mm_alloc_physical_page_zero()
+{
+	addr_t ret = mm_alloc_physical_page();
+	memset((void *)(ret + PHYS_PAGE_MAP), 0, 0x1000);
+	return ret;
+}
+
+int ept_vm_map(pml4_t *pml4, addr_t virt, addr_t phys, unsigned attr, unsigned opt)
+{
+	addr_t vpage = (virt&PAGE_MASK)/0x1000;
+	unsigned vp4 = PML4_IDX(vpage);
+	unsigned vpdpt = PDPT_IDX(vpage);
+	unsigned vdir = PAGE_DIR_IDX(vpage);
+	unsigned vtbl = PAGE_TABLE_IDX(vpage);
+
+	page_dir_t *pd;
+	page_table_t *pt;
+	pdpt_t *pdpt;
+	addr_t x = ept_mm_alloc_physical_page_zero();
+	if(!pml4[vp4])
+		pml4[vp4] = x | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
+	pdpt = (addr_t *)((pml4[vp4]&PAGE_MASK) + PHYS_PAGE_MAP);
+	if(!pdpt[vpdpt])
+		pdpt[vpdpt] = ept_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
+	pd = (addr_t *)((pdpt[vpdpt]&PAGE_MASK) + PHYS_PAGE_MAP);
+	if(!pd[vdir])
+		pd[vdir] = ept_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
+	pt = (addr_t *)((pd[vdir]&PAGE_MASK) + PHYS_PAGE_MAP);
+	
+	pt[vtbl] = (phys & PAGE_MASK) | attr;
+	
+	if(!(opt & MAP_NOCLEAR)) 
+		memset((void *)(virt&PAGE_MASK), 0, 0x1000);
+	
+	return 0;
+}
+
+
 /* returns physical address */
 addr_t shiv_build_ept_pml4(addr_t memsz)
 {
 	addr_t pml4 = mm_alloc_physical_page();
+	uint8_t *vpml4 = (void *)(pml4 + PHYS_PAGE_MAP);
+	memset(vpml4, 0, 0x1000);
 	/* hack: limit memory */
-	if(memsz > 1023)
-		memsz = 1023;
-	if(memsz < 255)
-		memsz = 255;
-	addr_t init_code = mm_alloc_physical_page();
+	if(memsz > 256)
+		memsz = 256;
+	if(memsz < 256)
+		memsz = 256;
+	printk(0, "[shiv]: building an EPT of size %d pages\n", memsz, memsz / 1024);
+	addr_t pages[256];
 	for(addr_t i=0;i<memsz;i++) {
-		if(i == 255) {
-			/* map in special init code */
-			arch_mm_vm_early_map((void *)(pml4 + PHYS_PAGE_MAP), i, init_code, 7, MAP_NOCLEAR); 
-		} else {
-			arch_mm_vm_early_map((void *)(pml4 + PHYS_PAGE_MAP), i, mm_alloc_physical_page(), 7, MAP_NOCLEAR); 
-		}
+		pages[i] = mm_alloc_physical_page();
+		ept_vm_map((void *)(pml4 + PHYS_PAGE_MAP), i * 0x1000, pages[i], 7, MAP_NOCLEAR); 
 	}
-	uint8_t *vinit = (void *)(pml4 + PHYS_PAGE_MAP);
-	vinit[0x0FFF0] = 0x66;
-	vinit[0x0FFF1] = 0xb8;
-	vinit[0x0FFF2] = 0x12;
-	vinit[0x0FFF3] = 0x00;
-	vinit[0x0FFF4] = 0xf4;
+	printk(0, "[shiv]: writing fake bios\n");
+	uint8_t *vinit = (void *)(pages[255] + PHYS_PAGE_MAP);
+	memset(vinit, 0, 0x1000);
+	vinit[0xFF0] = 0xb8;
+	vinit[0xFF1] = 0x34;
+	vinit[0xFF2] = 0x12;
+	vinit[0xFF3] = 0xea;
+	vinit[0xff4] = 0;
+	vinit[0xff5] = 0xf0;
+	vinit[0xff6] = 0;
+	vinit[0xff7] = 0xf0;
+#if 0
+	printk(0, "[shiv]: writing interrupt code\n");
+	uint32_t *ivt = (void *)(pages[0] + PHYS_PAGE_MAP);
+	ivt[3] = 0xF000ff00;
+	printk(0, "[shiv]: writing interrupt handler code\n");
+	vinit[0xf00] = 0xb8;
+	vinit[0xf01] = 0x78;
+	vinit[0xf02] = 0x56;
+	vinit[0xf03] = 0xf4; /* hlt */
+	printk(0, "[shiv]: okay\n");
+#endif
+	memcpy(vinit, bios, sizeof(bios));
 	return pml4;
 }
 
 void shiv_skip_instruction(struct vcpu *vc)
 {
-
+	/* so, ignoring an instruction actually takes work. */
+	uint32_t len = vmcs_read32(VM_EXIT_INSTRUCTION_LEN);
+	unsigned long rip = vmcs_readl(GUEST_RIP);
+	rip += len;
+	vmcs_writel(GUEST_RIP, rip);
+	/* something something interrupts TODO */
 }
+
+void shiv_inject_interrupt(struct vcpu *vc, int irq)
+{
+	assert(bitmap_test(vc->irq_field, irq));
+	bitmap_reset(vc->irq_field, irq);
+	if(vc->mode == CPU_X86_MODE_RMODE) {
+		/* rmode interrupt injection requires a bit more work */
+		/* TODO: Do they? */
+	} else {
+		vmcs_write32(VM_ENTRY_INTR_INFO_FIELD, irq | INTR_TYPE_EXT_INTR | INTR_INFO_VALID_MASK);
+	}
+}
+
+int shiv_vcpu_pending_int(struct vcpu *vc)
+{
+	return bitmap_ffs(vc->irq_field, 256);
+}
+
+void shiv_handle_irqs(struct vcpu *vc)
+{
+	vc->interruptible = ((vmcs_readl(GUEST_RFLAGS) & (1 << 9)/* IF */) && ((vmcs_read32(GUEST_INTERRUPTIBILITY_INFO) & 3) == 0));
+	if (vc->interruptible && (shiv_vcpu_pending_int(vc) != -1)
+			&& !(vmcs_read32(VM_ENTRY_INTR_INFO_FIELD) & INTR_INFO_VALID_MASK)) {
+		shiv_inject_interrupt(vc, shiv_vcpu_pending_int(vc));
+	}
+	uint32_t tmp = vmcs_read32(CPU_BASED_VM_EXEC_CONTROL);
+	if (!vc->interruptible 
+				&& (shiv_vcpu_pending_int(vc) || vc->request_interruptible)) {
+		tmp |= CPU_BASED_VIRTUAL_INTR_PENDING;
+	} else {
+		tmp &= ~CPU_BASED_VIRTUAL_INTR_PENDING;
+	}
+	vmcs_write32(CPU_BASED_VM_EXEC_CONTROL, tmp);
+}
+
+void exit_reason_interrupt(struct vcpu *vc)
+{
+	if((shiv_vcpu_pending_int(vc) == -1) && vc->request_interruptible) {
+		vc->rtu_cause = SHIV_RTU_IRQ_WINDOW_OPEN;
+	}
+}
+
+int exit_reason_halt(struct vcpu *vc)
+{
+	shiv_skip_instruction(vc);
+	if(shiv_vcpu_pending_int(vc))
+		return 1;
+	return 0;
+}
+
+void *exitreasons [NUM_EXIT_REASONS] = {
+	[EXIT_REASON_HLT] = exit_reason_halt,
+};
 
 int shiv_vm_exit_handler(struct vcpu *vcpu)
 {
 	printk(0, "got to exit handler\n");
 	/* check cause of exit */
-
+	void *fn = exitreasons[vcpu->exit_reason];
+	if(!fn)
+		panic(0, "[shiv]: exit reason not defined\n");
 	/* handle exit reasons */
-
+	int (*exithandler)(void *) = fn;
+	return exithandler(vcpu);
 	/* return to VM */
 }
 
@@ -297,21 +420,16 @@ static void seg_setup(int seg)
  */
 static int shiv_vcpu_setup(struct vcpu *vcpu)
 {
+	/* TODO: preemption timer */
 	int i;
 	int ret = 0;
 	printk(0, "shiv: vcpu_setup\n");
-	//if (!init_rmode_tss(vcpu->kvm)) {
-	//	ret = -ENOMEM;
-	//	goto out;
-	//}
 
 	memset(vcpu->regs, 0, sizeof(vcpu->regs));
 	vcpu->regs[VCPU_REGS_RDX] = 0x600;
 	vcpu->apic_base = 0xfee00000 |
 		/*for vcpu 0*/ MSR_IA32_APICBASE_BSP |
 		MSR_IA32_APICBASE_ENABLE;
-
-	//fx_init(vcpu);
 
 	/*
 	 * GUEST_CS_BASE should really be 0xffff0000, but VT vm86 mode
@@ -369,6 +487,9 @@ static int shiv_vcpu_setup(struct vcpu *vcpu)
 	vmcs_write64(GUEST_IA32_DEBUGCTL, 0);
 
 	/* Control */
+	/* we exit on external interrupts, but we do NOT ack them during a VM
+	 * exit. This allows us to handle external interrupts normally
+	 * as soon as we restore host state and re-enable interrupts */
 	vmcs_write32_fixedbits(MSR_IA32_VMX_PINBASED_CTLS,
 			PIN_BASED_VM_EXEC_CONTROL,
 			PIN_BASED_EXT_INTR_MASK   /* 20.6.1 */
@@ -382,12 +503,19 @@ static int shiv_vcpu_setup(struct vcpu *vcpu)
 			| CPU_BASED_UNCOND_IO_EXITING   /* 20.6.2 */
 			| CPU_BASED_MOV_DR_EXITING
 			| CPU_BASED_USE_TSC_OFFSETING   /* 21.3 */
+			| CPU_BASED_ACTIVATE_SECONDARY
 			);
 
-	//vmcs_write32(EXCEPTION_BITMAP, 1 << PF_VECTOR);
+	vmcs_write32(SECONDARY_VM_EXEC_CONTROL,
+			SECONDARY_EXEC_CTL_ENABLE_EPT
+			| SECONDARY_EXEC_CTL_UNRESTRICTED
+			);
+
+	/* we let all exceptions be handled by the guest, since we're
+	 * doing EPT and unrestricted. */
+	vmcs_write32(EXCEPTION_BITMAP, 0);
 	vmcs_write32(PAGE_FAULT_ERROR_CODE_MASK, 0);
 	vmcs_write32(PAGE_FAULT_ERROR_CODE_MATCH, 0);
-	//vmcs_write32(CR3_TARGET_COUNT, 0);           /* 22.2.1 */
 
 	vmcs_writel(HOST_CR0, read_cr0());  /* 22.2.3 */
 	vmcs_writel(HOST_CR4, read_cr4());  /* 22.2.3, 22.2.5 */
@@ -400,65 +528,27 @@ static int shiv_vcpu_setup(struct vcpu *vcpu)
 	vmcs_write16(HOST_GS_SELECTOR, read_gs());    /* 22.2.4 */
 	vmcs_write16(HOST_SS_SELECTOR, __KERNEL_DS);  /* 22.2.4 */
 
-	//rdmsrl(MSR_FS_BASE, a);
-	//vmcs_writel(HOST_FS_BASE, a); /* 22.2.4 */
-	//rdmsrl(MSR_GS_BASE, a);
-	//vmcs_writel(HOST_GS_BASE, a); /* 22.2.4 */
+	vmcs_write16(HOST_TR_SELECTOR, (GDT_ENTRY_TSS * 8));  /* 22.2.4 */
+	printk(0, "[shiv]: wrote %x for tr select\n", (GDT_ENTRY_TSS * 8));
 
-	vmcs_write16(HOST_TR_SELECTOR, GDT_ENTRY_TSS*8);  /* 22.2.4 */
-
-#if 0
-	get_idt(&dt);
-	vmcs_writel(HOST_IDTR_BASE, dt.base);   /* 22.2.4 */
-#endif
+	vmcs_writel(HOST_IDTR_BASE, vcpu->cpu->arch_cpu_data.idt_ptr.base);   /* 22.2.4 */
+	vmcs_writel(HOST_GDTR_BASE, vcpu->cpu->arch_cpu_data.gdt_ptr.base);   /* 22.2.4 */
+	vmcs_writel(HOST_TR_BASE, (unsigned long)(&vcpu->cpu->arch_cpu_data.tss));
+	printk(0, "[shiv]: wrote %x for idt bases\n", vcpu->cpu->arch_cpu_data.idt_ptr.base);
+	printk(0, "[shiv]: wrote %x for gdt base\n", vcpu->cpu->arch_cpu_data.gdt_ptr.base);
+	printk(0, "[shiv]: wrote %x for tr base\n", &vcpu->cpu->arch_cpu_data.tss);
 
 	vmcs_writel(HOST_RIP, (unsigned long)vmx_return); /* 22.2.5 */
 
-	//rdmsr(MSR_IA32_SYSENTER_CS, host_sysenter_cs, junk);
-	//vmcs_write32(HOST_IA32_SYSENTER_CS, host_sysenter_cs);
-	//rdmsrl(MSR_IA32_SYSENTER_ESP, a);
-	//vmcs_writel(HOST_IA32_SYSENTER_ESP, a);   /* 22.2.3 */
-	//rdmsrl(MSR_IA32_SYSENTER_EIP, a);
-	//vmcs_writel(HOST_IA32_SYSENTER_EIP, a);   /* 22.2.3 */
-	/*
-	   for (i = 0; i < NR_VMX_MSR; ++i) {
-	   u32 index = vmx_msr_index[i];
-	   u32 data_low, data_high;
-	   u64 data;
-	   int j = vcpu->nmsrs;
-
-	   if (rdmsr_safe(index, &data_low, &data_high) < 0)
-	   continue;
-	   if (wrmsr_safe(index, data_low, data_high) < 0)
-	   continue;
-	   data = data_low | ((u64)data_high << 32);
-	   vcpu->host_msrs[j].index = index;
-	   vcpu->host_msrs[j].reserved = 0;
-	   vcpu->host_msrs[j].data = data;
-	   vcpu->guest_msrs[j] = vcpu->host_msrs[j];
-	   ++vcpu->nmsrs;
-	   }
-	   printk(KERN_DEBUG "kvm: msrs: %d\n", vcpu->nmsrs);
-	   */
-
-	//nr_good_msrs = vcpu->nmsrs - NR_BAD_MSRS;
-#if 0
-	vmcs_writel(VM_ENTRY_MSR_LOAD_ADDR,
-			virt_to_phys(vcpu->guest_msrs + NR_BAD_MSRS));
-	vmcs_writel(VM_EXIT_MSR_STORE_ADDR,
-			virt_to_phys(vcpu->guest_msrs + NR_BAD_MSRS));
-	vmcs_writel(VM_EXIT_MSR_LOAD_ADDR,
-			virt_to_phys(vcpu->host_msrs + NR_BAD_MSRS));
-#endif
+	uint32_t se_cs = read_msr(MSR_IA32_SYSENTER_CS) & 0xFFFFFFFF;
+	vmcs_write32(HOST_IA32_SYSENTER_CS, se_cs);
+	uint32_t tmp = read_msr(MSR_IA32_SYSENTER_ESP);
+	vmcs_writel(HOST_IA32_SYSENTER_ESP, tmp);   /* 22.2.3 */
+	tmp = read_msr(MSR_IA32_SYSENTER_EIP);
+	vmcs_writel(HOST_IA32_SYSENTER_EIP, tmp);   /* 22.2.3 */
 
 	vmcs_write32_fixedbits(MSR_IA32_VMX_EXIT_CTLS, VM_EXIT_CONTROLS,
 			(1 << 9));  /* 22.2,1, 20.7.1 */ /* ??? */
-
-#if 0
-	vmcs_write32(VM_EXIT_MSR_STORE_COUNT, nr_good_msrs); /* 22.2.2 */
-	vmcs_write32(VM_EXIT_MSR_LOAD_COUNT, nr_good_msrs);  /* 22.2.2 */
-	vmcs_write32(VM_ENTRY_MSR_LOAD_COUNT, nr_good_msrs); /* 22.2.2 */
-#endif
 
 	/* 22.2.1, 20.8.1 */
 	vmcs_write32_fixedbits(MSR_IA32_VMX_ENTRY_CTLS,
@@ -478,6 +568,12 @@ static int shiv_vcpu_setup(struct vcpu *vcpu)
 	vmcs_writel(CR4_READ_SHADOW, 0);
 	vmcs_writel(GUEST_CR4, SHIV_RMODE_VM_CR4_ALWAYS_ON);
 	vcpu->cr4 = 0;
+	
+	/* set up the EPT */
+	addr_t ept = shiv_build_ept_pml4(0x10000);
+	ept |= (3 << 3) | 6;
+	vmcs_write64(EPT_POINTER, ept);
+	printk(0, "[shiv]: CPU setup!\n");
 
 	return 0;
 
@@ -490,10 +586,10 @@ struct vcpu *shiv_create_vcpu(struct vmachine *vm)
 	printk(0, "shiv: create vcpu\n");
 	/* create structure */
 	vm->vcpu = kmalloc(sizeof(*vm->vcpu));
-	vm->vcpu->cpu = primary_cpu;
+	vm->vcpu->cpu = current_task->cpu;
 	/* set up guest CPU state as needed */
 	shiv_init_vmcs(vm->vcpu);
-	vmx_vcpu_load(primary_cpu, vm->vcpu);
+	vmx_vcpu_load(current_task->cpu, vm->vcpu);
 	shiv_vcpu_setup(vm->vcpu);
 	/* return vcpu */
 	return vm->vcpu;
@@ -503,6 +599,55 @@ int shiv_init_virtual_machine(struct vmachine *vm)
 {
 	/* set id */
 	return 0;
+}
+
+#define FX_IMAGE_GUEST 0
+#define FX_IMAGE_HOST  1
+#define MSR_IMAGE_GUEST 0
+#define MSR_IMAGE_HOST  1
+
+void fx_save(struct vcpu *vcpu, int selector)
+{
+	if(vcpu->cpu->flags & CPU_SSE || vcpu->cpu->flags & CPU_FPU)
+		__asm__ __volatile__("fxsave64 (%0)"
+		:: "r" (ALIGN(vcpu->fpu_save_data[selector], 16)));
+}
+
+void fx_restore(struct vcpu *vcpu, int selector)
+{
+	if(vcpu->cpu->flags & CPU_SSE || vcpu->cpu->flags & CPU_FPU)
+		__asm__ __volatile__("fxrstor64 (%0)"
+		:: "r" (ALIGN(vcpu->fpu_save_data[selector], 16)));
+}
+
+void tss_reload(cpu_t *cpu)
+{
+	/* the vm exit process only loads the selector into the TR register, but doesn't
+	 * actually read the data out of the GDT. So, we have to flush the TSS after each
+	 * exit. */
+	cpu->arch_cpu_data.gdt[GDT_ENTRY_TSS].access = 0xE9;
+	asm("mov $0x2B, %%ax\n"
+		"ltr %%ax":::"ax");
+}
+
+void save_msrs(struct vcpu *vcpu, int selector)
+{
+	int i;
+	for(i=0;i<NR_MSRS;i++) {
+		vcpu->msrs[selector][i] = read_msr(MSRS[i]);
+	}
+}
+
+void restore_msrs(struct vcpu *vcpu, int selector)
+{
+	/* guest msrs are invalid, since they haven't been saved before.
+	 * Only restore after first launch */
+	if(!vcpu->launched && selector == MSR_IMAGE_GUEST)
+		return;
+	int i;
+	for(i=0;i<NR_MSRS;i++) {
+		write_msr(MSRS[i], vcpu->msrs[selector][i]);
+	}
 }
 
 int vmx_vcpu_run(struct vcpu *vcpu)
@@ -520,34 +665,31 @@ again:
 	 */
 	fs_sel = read_fs();
 	gs_sel = read_gs();
-	//ldt_sel = read_ldt();
-	//fs_gs_ldt_reload_needed = (fs_sel & 7) | (gs_sel & 7) | ldt_sel;
-	//if (!fs_gs_ldt_reload_needed) {
-		vmcs_write16(HOST_FS_SELECTOR, fs_sel);
-		vmcs_write16(HOST_GS_SELECTOR, gs_sel);
-	//} else {
-//		vmcs_write16(HOST_FS_SELECTOR, 0);
-//		vmcs_write16(HOST_GS_SELECTOR, 0);
-//	}
+	vmcs_write16(HOST_FS_SELECTOR, fs_sel);
+	vmcs_write16(HOST_GS_SELECTOR, gs_sel);
 
-//	vmcs_writel(HOST_FS_BASE, read_msr(MSR_FS_BASE));
-//	vmcs_writel(HOST_GS_BASE, read_msr(MSR_GS_BASE));
+	vmcs_writel(HOST_FS_BASE, read_msr(0xc0000100 /* 64bit FS base */));
+	vmcs_writel(HOST_GS_BASE, read_msr(0xc0000101 /* 64bit GS base */));
+	vcpu->rtu_cause = 0; /* don't automatically return to userspace */
 
-//TODO
-//	if (!vcpu->mmio_read_completed)
-//		do_interrupt_requests(vcpu, kvm_run);
+	shiv_handle_irqs(vcpu);
 
-//	if (vcpu->guest_debug.enabled)
-//		kvm_guest_debug_pre(vcpu);
+	/* the host state must be saved. Registers, flags, and FPU states aren't
+	 * saved, and neither are many MSRs. We back up the MSRs we care about, save
+	 * the FPU state, and push pretty much everything onto the stack. After
+	 * a vmexit, everything gets popped off, the FPU state restored, and the
+	 * MSRs put back. That way, it's all as we left it. */
 
-//	fx_save(vcpu->host_fx_image);
-//	fx_restore(vcpu->guest_fx_image);
-
-//	save_msrs(vcpu->host_msrs, vcpu->nmsrs);
-//	load_msrs(vcpu->guest_msrs, NR_BAD_MSRS);
-
+	fx_save(vcpu, FX_IMAGE_HOST);
+	fx_restore(vcpu, FX_IMAGE_GUEST);
+	save_msrs(vcpu, MSR_IMAGE_HOST);
+	restore_msrs(vcpu, MSR_IMAGE_GUEST);
+	
+	printk(0, "[shiv]: okay, here goes...\n");
+	int intflag = cpu_interrupt_set(0);
 	asm (
 		/* Store host registers */
+		"cli \n\t"
 		"pushf \n\t"
 		"push %%rax; push %%rbx; push %%rdx;"
 		"push %%rsi; push %%rdi; push %%rbp;"
@@ -575,6 +717,7 @@ again:
 		"mov %c[r14](%3), %%r14 \n\t"
 		"mov %c[r15](%3), %%r15 \n\t"
 		"mov %c[rcx](%3), %%rcx \n\t" /* kills %3 (rcx) */
+		"xchg %%bx, %%bx\n\t"
 		/* Enter guest mode */
 		"jne launched \n\t"
 		ASM_VMX_VMLAUNCH "\n\t"
@@ -608,7 +751,7 @@ again:
 		"pop  %%rbp; pop  %%rdi; pop  %%rsi;"
 		"pop  %%rdx; pop  %%rbx; pop  %%rax \n\t"
 		"setbe %0 \n\t"
-		"popf \n\t"
+		"popf \n\t" /* interrupts are still disabled */
 	      : "=q" (fail)
 	      : "r"(vcpu->launched), "d"((unsigned long)HOST_RSP),
 		"c"(vcpu),
@@ -632,15 +775,13 @@ again:
 
 	//++kvm_stat.exits;
 
-	//save_msrs(vcpu->guest_msrs, NR_BAD_MSRS);
-	//load_msrs(vcpu->host_msrs, NR_BAD_MSRS);
+	fx_save(vcpu, FX_IMAGE_GUEST);
+	fx_restore(vcpu, FX_IMAGE_HOST);
+	
+	save_msrs(vcpu, MSR_IMAGE_GUEST);
+	restore_msrs(vcpu, MSR_IMAGE_HOST);
 
-	//fx_save(vcpu->guest_fx_image);
-	//fx_restore(vcpu->host_fx_image);
-	//vcpu->interrupt_window_open = (vmcs_read32(GUEST_INTERRUPTIBILITY_INFO) & 3) == 0;
-
-	/* TODO: what? */
-	//asm ("mov %0, %%ds; mov %0, %%es" : : "r"(__USER_DS));
+	vcpu->interruptible = (vmcs_read32(GUEST_INTERRUPTIBILITY_INFO) & 3) == 0;
 
 	vcpu->exit_type = 0;
 	if (fail) {
@@ -648,43 +789,28 @@ again:
 		vcpu->exit_reason = vmcs_read32(VM_INSTRUCTION_ERROR);
 		r = 0;
 	} else {
-		//if (fs_gs_ldt_reload_needed) {
-		//	load_ldt(ldt_sel);
-		//	load_fs(fs_sel);
-			/*
-			 * If we have to reload gs, we must take care to
-			 * preserve our gs base.
-			 */
-		//	local_irq_disable();
-		//	load_gs(gs_sel);
-		//	wrmsrl(MSR_GS_BASE, vmcs_readl(HOST_GS_BASE));
-		//	local_irq_enable();
-
-		//	reload_tss();
-		//}
-		/*
-		 * Profile KVM exit RIPs:
-		 */
-	//	if (unlikely(prof_on == KVM_PROFILING))
-	//		profile_hit(KVM_PROFILING, (void *)vmcs_readl(GUEST_RIP));
+		int old = cpu_interrupt_set(0);
+		/* restore fs and gs */
+		asm ("mov %0, %%gs" : : "rm"(gs_sel));
+		asm ("mov %0, %%fs" : : "rm"(fs_sel));
+		write_msr(0xc0000101 /* 64bit GS base */, vmcs_readl(HOST_GS_BASE));
+		tss_reload(vcpu->cpu);
+		cpu_interrupt_set(old);
 
 		vcpu->launched = 1;
 		vcpu->exit_type = SHIV_EXIT_TYPE_VM_EXIT;
+		vcpu->exit_reason = vmcs_readl(VM_EXIT_REASON);
+		printk(0, ":: %d %d %d %x\n", vcpu->exit_type, vcpu->exit_reason, vmcs_readl(VM_EXIT_REASON), vcpu->regs[VCPU_REGS_RAX]);
 		r = shiv_vm_exit_handler(vcpu);
 		if (r > 0) {
-			/* Give scheduler a change to reschedule. */
-		//	if (signal_pending(current)) {
-		//		++kvm_stat.signal_exits;
-		//		post_kvm_run_save(vcpu, kvm_run);
-		//		return -EINTR;
-		//	}
-
-			//kvm_resched(vcpu);
-			goto again;
+			if(tm_process_got_signal(current_task)) {
+				return -EINTR;
+			}
+			///////goto again;
 		}
 	}
-
-	//post_kvm_run_save(vcpu, kvm_run);
+	cpu_interrupt_set(intflag);
+	printk(0, ":: %d %d %d %x\n", vcpu->exit_type, vcpu->exit_reason, vmcs_readl(VM_EXIT_REASON), vcpu->regs[VCPU_REGS_RAX]);
 	return r;
 }
 
@@ -697,6 +823,7 @@ struct vmachine *shiv_create_vmachine()
 		return 0;
 	}
 	vm->vcpu = shiv_create_vcpu(vm);
+	vmx_vcpu_run(vm->vcpu);
 	return vm;
 }
 

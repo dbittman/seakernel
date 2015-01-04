@@ -288,7 +288,6 @@ addr_t shiv_build_ept_pml4(addr_t memsz)
 		pages[i] = mm_alloc_physical_page();
 		ept_vm_map((void *)(pml4 + PHYS_PAGE_MAP), i * 0x1000, pages[i], 7, MAP_NOCLEAR); 
 	}
-	printk(0, "[shiv]: writing fake bios\n");
 	uint8_t *vinit = (void *)(pages[255] + PHYS_PAGE_MAP);
 	memset(vinit, 0, 0x1000);
 	vinit[0xFF0] = 0xb8;
@@ -310,6 +309,7 @@ addr_t shiv_build_ept_pml4(addr_t memsz)
 	vinit[0xf03] = 0xf4; /* hlt */
 	printk(0, "[shiv]: okay\n");
 #endif
+	printk(4, "[shiv]: writing fake bios to location %x\n", 255 * 0x1000);
 	memcpy(vinit, bios, sizeof(bios));
 	return pml4;
 }
@@ -373,8 +373,35 @@ int exit_reason_halt(struct vcpu *vc)
 	return 0;
 }
 
+int exit_reason_cr_access(struct vcpu *vc)
+{
+	printk(4, "CR access!\n");
+	unsigned long exit_qualification, val;
+	int cr;
+	int reg;
+	int err;
+
+	exit_qualification = vmcs_readl(EXIT_QUALIFICATION);
+	cr = exit_qualification & 15;
+	reg = (exit_qualification >> 8) & 15;
+	switch ((exit_qualification >> 4) & 3) {
+	case 0: /* mov to cr */
+		val = vc->regs[reg];
+		switch (cr) {
+		case 0:
+			printk(4, "writing CR0 with %x\n", val);
+			vmcs_writel(GUEST_CR0, val);
+			shiv_skip_instruction(vc);
+			return 1;
+		}
+		break;
+	}
+	return 1;
+}
+
 void *exitreasons [NUM_EXIT_REASONS] = {
 	[EXIT_REASON_HLT] = exit_reason_halt,
+	[EXIT_REASON_CR_ACCESS] = exit_reason_cr_access,
 };
 
 int shiv_vm_exit_handler(struct vcpu *vcpu)
@@ -558,11 +585,11 @@ static int shiv_vcpu_setup(struct vcpu *vcpu)
 	vmcs_writel(VIRTUAL_APIC_PAGE_ADDR, 0);
 	vmcs_writel(TPR_THRESHOLD, 0);
 
-	vmcs_writel(CR0_GUEST_HOST_MASK, SHIV_GUEST_CR0_MASK);
+	//vmcs_writel(CR0_GUEST_HOST_MASK, SHIV_GUEST_CR0_MASK);
 	vmcs_writel(CR4_GUEST_HOST_MASK, SHIV_GUEST_CR4_MASK);
 
 	vcpu->cr0 = 0x60000010;
-	vmcs_writel(CR0_READ_SHADOW, vcpu->cr0);
+	vmcs_writel(CR0_READ_SHADOW, vcpu->cr0 | CR0_PE_MASK | CR0_PG_MASK);
 	vmcs_writel(GUEST_CR0,
 			(vcpu->cr0 & ~SHIV_GUEST_CR0_MASK) | SHIV_VM_CR0_ALWAYS_ON);
 	vmcs_writel(CR4_READ_SHADOW, 0);
@@ -685,7 +712,7 @@ again:
 	save_msrs(vcpu, MSR_IMAGE_HOST);
 	restore_msrs(vcpu, MSR_IMAGE_GUEST);
 	
-	printk(0, "[shiv]: okay, here goes...\n");
+	printk(4, "[shiv]: launching VM\n");
 	int intflag = cpu_interrupt_set(0);
 	asm (
 		/* Store host registers */
@@ -806,7 +833,7 @@ again:
 			if(tm_process_got_signal(current_task)) {
 				return -EINTR;
 			}
-			///////goto again;
+			goto again;
 		}
 	}
 	cpu_interrupt_set(intflag);

@@ -18,6 +18,7 @@ ifeq ($(CONFIG_ARCH), 1)
 endif
 
 # TODO: That no-isolate-erroneous-paths-dereference should not be here
+# no-tree-loop-distribute-patterns is required because of stupid gcc.
 CFLAGS_NOARCH = -std=gnu11 -nostdlib -nodefaultlibs \
                 -ffreestanding \
                 -mno-red-zone \

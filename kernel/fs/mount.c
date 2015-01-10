@@ -59,7 +59,8 @@ void fs_unmount_all()
 	struct llistnode *cur, *next;
 	ll_for_each_entry_safe(mountlist, cur, next, struct mountlst *, m)
 	{
-		vfs_do_unmount(m->i->mount_parent, 1);
+#warning "TODO"
+		//vfs_do_unmount(m->i->mount_parent, 1);
 		ll_remove(mountlist, cur);
 	}
 }

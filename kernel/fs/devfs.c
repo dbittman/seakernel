@@ -13,7 +13,8 @@
 
 struct inode *devfs_root;
 static int devfs_nodescount=1;
-
+#warning "TODO"
+#if 0
 static struct inode_operations devfs_inode_ops = {
  0,
  0,
@@ -96,3 +97,5 @@ void devfs_remove(struct inode *i)
 	i->count=0;
 	iremove(i);
 }
+#endif
+

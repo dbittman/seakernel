@@ -24,7 +24,7 @@ struct mnttab {
 	char   __mt_time_buf[12];
 	char   __mt_dev_buf[256];
 };
-
+#if 0
 int proc_vfs(char rw, struct inode *n, int m, char *buf, int off, int len)
 {
 	int total_len=0;
@@ -137,3 +137,5 @@ int proc_vfs(char rw, struct inode *n, int m, char *buf, int off, int len)
 	}
 	return total_len;
 }
+#endif
+

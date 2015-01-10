@@ -11,7 +11,7 @@
 #include <sea/errno.h>
 #include <sea/mm/kmalloc.h>
 struct inode *procfs_root, *procfs_kprocdir;
-
+#if 0
 int procfs_fsstat(struct inode *i, struct posix_statfs *s)
 {
 	memset(s, 0, sizeof(*s));
@@ -191,3 +191,4 @@ int proc_write(struct inode *i, off_t pos, size_t len, char *buffer)
 	callback = (int(*)(char, struct inode *, int, char *, int, int)) pfs_table[maj];
 	return callback(WRITE, i, min, buffer, pos, len);
 }
+#endif

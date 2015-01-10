@@ -125,7 +125,7 @@ int dm_char_ioctl(dev_t dev, int cmd, long arg)
 
 int dm_chardev_select(struct inode *in, int rw)
 {
-	int dev = in->dev;
+	int dev = in->phys_dev;
 	device_t *dt = dm_get_device(DT_CHAR, MAJOR(dev));
 	if(!dt)
 		return 1;

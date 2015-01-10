@@ -64,14 +64,13 @@ struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int
 	f->pos=0;
 	f->count=1;
 	f->fd_flags &= ~FD_CLOEXEC;
-	add_atomic(&inode->f_count, 1);
 	ret = fs_add_file_pointer((task_t *)current_task, f);
 	if(num) *num = ret;
 	if(S_ISCHR(inode->mode) && !(flags & _FNOCTTY))
-		dm_char_rw(OPEN, inode->dev, 0, 0);
+		dm_char_rw(OPEN, inode->phys_dev, 0, 0);
 	if(flags & _FTRUNC && S_ISREG(inode->mode))
 	{
-		inode->len=0;
+		inode->length=0;
 		inode->ctime = inode->mtime = time_get_epoch();
 		sync_inode_tofs(inode);
 	}
@@ -105,10 +104,8 @@ static int duplicate(task_t *t, int fp, int n)
 		return -EBADF;
 	struct file *new=(struct file *)kmalloc(sizeof(struct file));
 	new->inode = f->inode;
-	assert(new->inode && new->inode->count && new->inode->f_count);
 	new->count=1;
 	add_atomic(&f->inode->count, 1);
-	add_atomic(&f->inode->f_count, 1);
 	new->flags = f->flags;
 	new->fd_flags = f->fd_flags;
 	new->fd_flags &= ~FD_CLOEXEC;

@@ -18,34 +18,39 @@ struct queue *queue_create(struct queue *q, int flags)
 	return q;
 }
 
-void *queue_dequeue(struct queue *q)
+void *queue_remove(struct queue *q, struct queue_item *item)
 {
 	void *ret = 0;
 	struct queue_item *free = 0;
 	mutex_acquire(&q->lock);
-	if(q->head) {
-		struct queue_item *i = q->head;
-		ret = q->head->ent;
-		q->head = q->head->next;
-		free = i;
-		if(!q->head)
-			q->tail = 0;
-	}
+	assert(q->head);
+	q->head = item->next;
+	q->head->prev = 0;
+	if(!q->head)
+		q->tail = 0;
 	sub_atomic(&q->count, 1);
 	mutex_release(&q->lock);
-	if(free)
-		kfree(free);
 	return ret;
 }
 
-void queue_enqueue(struct queue *q, void *ent)
+void *queue_dequeue(struct queue *q)
 {
-	struct queue_item *i = kmalloc(sizeof(struct queue_item));
+	struct queue_item *f = q->head;
+	if(!f)
+		return 0;
+	void *ret = queue_remove(q, f);
+	kfree(f);
+	return ret;
+}
+
+void queue_enqueue_item(struct queue *q, struct queue_item *i, void *ent)
+{
 	mutex_acquire(&q->lock);
 	i->ent = ent;
-	i->next = 0;
+	i->next = i->prev = 0;
 	if(q->tail) {
 		q->tail->next = i;
+		i->prev = q->tail;
 		q->tail = i;
 	} else {
 		assert(!q->head);
@@ -53,6 +58,12 @@ void queue_enqueue(struct queue *q, void *ent)
 	}
 	add_atomic(&q->count, 1);
 	mutex_release(&q->lock);
+}
+
+void queue_enqueue(struct queue *q, void *ent)
+{
+	struct queue_item *i = kmalloc(sizeof(struct queue_item));
+	queue_enqueue_item(q, i, ent);
 }
 
 void *queue_peek(struct queue *q)

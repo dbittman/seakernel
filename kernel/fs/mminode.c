@@ -50,9 +50,9 @@ addr_t fs_inode_map_private_physical_page(struct inode *node, addr_t virt,
 	 * of telling userspace this...eh.
 	 */
 	size_t len = req_len;
-	if(len + offset > (size_t)node->len)
-		len = node->len - offset;
-	if(offset < (size_t)node->len) {
+	if(len + offset > (size_t)node->length)
+		len = node->length - offset;
+	if(offset < (size_t)node->length) {
 		if(node->i_ops) {
 			err = vfs_read_inode(node, offset, len, (void *)virt);
 			if(err < 0 || (size_t)err != len)
@@ -100,9 +100,9 @@ addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt,
 		 * of telling userspace this...eh.
 		 */
 		size_t len = PAGE_SIZE;
-		if(len + offset > (size_t)node->len)
-			len = node->len - offset;
-		if(offset < (size_t)node->len) {
+		if(len + offset > (size_t)node->length)
+			len = node->length - offset;
+		if(offset < (size_t)node->length) {
 			if(node->i_ops && (err=vfs_read_inode(node, offset, len, (void *)virt) < 0))
 				printk(0, "[mminode]: read inode failed with %d\n", err);
 		}
@@ -164,9 +164,9 @@ void fs_inode_sync_physical_page(struct inode *node, addr_t virt, size_t offset,
 		return;
 	/* again, no real good way to notify userspace of a failure */
 	size_t len = req_len;
-	if(len + offset > (size_t)node->len)
-		len = node->len - offset;
-	if(offset >= (size_t)node->len)
+	if(len + offset > (size_t)node->length)
+		len = node->length - offset;
+	if(offset >= (size_t)node->length)
 		return;
 	if(node->i_ops && vfs_write_inode(node, offset, len, (void *)virt) < 0)
 		printk(0, "[mminode]: warning: failed to write back data\n");

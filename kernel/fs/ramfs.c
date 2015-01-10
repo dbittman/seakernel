@@ -7,7 +7,7 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/string.h>
 struct inode *ramfs_root;
-
+#if 0
 static unsigned int ramfs_node_num=0;
 
 int ramfs_op_dummy()
@@ -122,3 +122,4 @@ struct inode *rfs_create(struct inode *__p, char *name, mode_t mode)
 	if(!__p) vfs_add_inode(p, node);
 	return node;
 }
+#endif

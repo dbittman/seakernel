@@ -16,7 +16,7 @@ int sys_isatty(int f)
 	struct file *file = fs_get_file_pointer((task_t *) current_task, f);
 	if(!file) return -EBADF;
 	struct inode *inode = file->inode;
-	if(S_ISCHR(inode->mode) && (MAJOR(inode->dev) == 3 || MAJOR(inode->dev) == 4)) {
+	if(S_ISCHR(inode->mode) && (MAJOR(inode->phys_dev) == 3 || MAJOR(inode->phys_dev) == 4)) {
 		fs_fput((task_t *)current_task, f, 0);
 		return 1;
 	}
@@ -38,19 +38,19 @@ int sys_getpath(int f, char *b, int len)
 static void do_stat(struct inode * inode, struct stat * tmp)
 {
 	assert(inode && tmp);
-	tmp->st_dev = inode->dev;
-	tmp->st_ino = inode->num;
+	tmp->st_dev = inode->phys_dev;
+	tmp->st_ino = inode->id;
 	tmp->st_mode = inode->mode;
 	tmp->st_uid = inode->uid;
 	tmp->st_gid = inode->gid;
-	tmp->st_rdev = inode->dev;
-	tmp->st_size = inode->len;
+	tmp->st_rdev = inode->phys_dev;
+	tmp->st_size = inode->length;
 	tmp->st_blocks = inode->nblocks;
 	tmp->st_nlink = inode->nlink;
 	tmp->st_atime = inode->atime;
 	tmp->st_mtime = inode->mtime;
 	tmp->st_ctime = inode->ctime;
-	tmp->st_blksize = inode->blksize;
+	tmp->st_blksize = inode->blocksize;
 	if(inode->pipe) {
 		tmp->st_blksize = PAGE_SIZE;
 		tmp->st_blocks = PIPE_SIZE / PAGE_SIZE;
@@ -72,17 +72,27 @@ int sys_stat(char *f, struct stat *statbuf, int lin)
 	vfs_iput(i);
 	return 0;
 }
-
+#warning "todo"
 int sys_dirstat(char *dir, unsigned num, char *namebuf, struct stat *statbuf)
 {
 	if(!namebuf || !statbuf || !dir)
 		return -EINVAL;
-	struct inode *i = vfs_read_dir(dir, num);
-	if(!i)
+	
+	struct dirent *ent = fs_resolve_path(dir, 0);
+	if(!dir)
 		return -ESRCH;
-	do_stat(i, statbuf);
-	strncpy(namebuf, i->name, 128);
-	vfs_iput(i);
+	struct inode *ino = fs_dirent_readinode(dir);
+	vfs_dirent_release(dir);
+	if(!ino)
+		return -EIO;
+	
+	ent = fs_readdir(ino, num);
+	memcpy(namebuf, ent->name, 256);//TODO: this is crap
+	
+	
+	//do_stat(i, statbuf);
+	//strncpy(namebuf, i->name, 128);
+	//vfs_iput(i);
 	return 0;
 }
 
@@ -92,14 +102,12 @@ int sys_dirstat_fd(int fd, unsigned num, char *namebuf, struct stat *statbuf)
 		return -EINVAL;
 	struct file *f = fs_get_file_pointer((task_t *)current_task, fd);
 	if(!f) return -EBADF;
-	struct inode *i = vfs_read_idir(f->inode, num);
-	if(!i) {
-		fs_fput((task_t *)current_task, fd, 0);
-		return -ESRCH;
-	}
-	do_stat(i, statbuf);
-	strncpy(namebuf, i->name, 128);
-	vfs_iput(i);
+	
+	
+	struct dirent *ent = fs_readdir(f->inode, num);
+	memcpy(namebuf, ent->name, 256);//TODO: this is crap
+	
+	
 	fs_fput((task_t *)current_task, fd, 0);
 	return 0;
 }

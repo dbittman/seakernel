@@ -56,6 +56,8 @@ int sys_setup(int a)
 void fs_init()
 {
 	fs_init_superblock_table();
+#warning "TODO"
+#if 0
 #if CONFIG_MODULES
 	loader_add_kernel_symbol(vfs_do_iremove);
 	loader_add_kernel_symbol(proc_create_node);
@@ -72,11 +74,12 @@ void fs_init()
 	loader_add_kernel_symbol(sys_fstat);
 	loader_add_kernel_symbol(fs_register_filesystem);
 	loader_add_kernel_symbol(fs_unregister_filesystem);
-	loader_add_kernel_symbol(vfs_iput);
+	loader_add_kernel_symbol(vfs_icache_put);
 	loader_do_add_kernel_symbol((addr_t)(struct inode **)&devfs_root, "devfs_root");
 	loader_add_kernel_symbol(vfs_do_get_idir);
 	loader_add_kernel_symbol(proc_set_callback);
 	loader_add_kernel_symbol(proc_get_major);
+#endif
 #endif
 }
 
@@ -89,7 +92,7 @@ int sys_seek(int fp, off_t pos, unsigned whence)
 		return 0;
 	}
 	if(whence)
-		f->pos = ((whence == SEEK_END) ? f->inode->len+pos : f->pos+pos);
+		f->pos = ((whence == SEEK_END) ? f->inode->length+pos : f->pos+pos);
 	else
 		f->pos=pos;
 	fs_fput((task_t *)current_task, fp, 0);
@@ -101,10 +104,7 @@ int sys_fsync(int f)
 	struct file *file = fs_get_file_pointer((task_t *)current_task, f);
 	if(!file)
 		return -EBADF;
-	/* We don't actually do any buffering of the files themselves
-	 * but we can write out the inode data in case it has changed */
-	if(file->inode)
-		sync_inode_tofs(file->inode);
+	fs_inode_push(file->inode);
 	fs_fput((task_t *)current_task, f, 0);
 	return 0;
 }
@@ -118,13 +118,15 @@ int sys_chdir(char *n, int fd)
 		struct file *file = fs_get_file_pointer((task_t *)current_task, fd);
 		if(!file)
 			return -EBADF;
-		/* we don't need to lock this because we own the inode - we know
-		 * it wont get freed. An atomic operation will do. */
-		add_atomic(&file->inode->count, 1);
-		ret = vfs_ichdir(file->inode);
+		ret = vfs_inode_chdir(file->inode);
 		fs_fput((task_t *)current_task, fd, 0);
-	} else
-		ret = vfs_chdir(n);
+	} else {
+		struct inode *node = fs_resolve_path_inode(n, &ret);
+		if(node) {
+			ret = vfs_inode_chdir(node);
+			vfs_icache_put(node);
+		}
+	}
 	return ret;
 }
 
@@ -132,7 +134,8 @@ int sys_link(char *s, char *d)
 {
 	if(!s || !d) 
 		return -EINVAL;
-	return vfs_link(s, d);
+#warning "todo"
+	//return vfs_link(s, d);
 }
 
 int sys_umask(mode_t mode)
@@ -141,7 +144,8 @@ int sys_umask(mode_t mode)
 	current_task->cmask=mode;
 	return old;
 }
-
+#warning "TODO"
+#if 0
 int sys_getdepth(int fd)
 {
 	struct file *file = fs_get_file_pointer((task_t *)current_task, fd);
@@ -159,7 +163,6 @@ int sys_getdepth(int fd)
 	fs_fput((task_t *)current_task, fd, 0);
 	return x;
 }
-
 int sys_getcwdlen()
 {
 	struct inode *i = current_task->thread->pwd;
@@ -180,32 +183,41 @@ int sys_getcwdlen()
 	}
 	return x;
 }
+#endif
 
 int sys_chmod(char *path, int fd, mode_t mode)
 {
 	if(!path && fd == -1) return -EINVAL;
 	struct inode *i;
 	if(path)
-		i = vfs_get_idir(path, 0);
+		i = fs_resolve_path_inode(path, 0);
 	else {
 		struct file *file = fs_get_file_pointer((task_t *)current_task, fd);
 		if(!file)
 			return -EBADF;
 		i = file->inode;
+		assert(i);
 		fs_fput((task_t *)current_task, fd, 0);
 	}
-	if(!i) return -ENOENT;
+	if(!i)
+		return -ENOENT;
 	if(i->uid != current_task->thread->effective_uid && current_task->thread->effective_uid)
 	{
 		if(path)
-			vfs_iput(i);
+			vfs_icache_put(i);
+		else
+			fs_fput((task_t *)current_task, fd, 0);
 		return -EPERM;
 	}
+	rwlock_acquire(&i->lock, RWL_WRITER);
 	i->mode = (i->mode&~0xFFF) | mode;
 	i->mtime = time_get_epoch();
-	sync_inode_tofs(i);
+	vfs_inode_set_dirty(i);
+	rwlock_release(&i->lock, RWL_WRITER);
 	if(path)
-		vfs_iput(i);
+		vfs_icache_release(i);
+	else
+		fs_fput((task_t *)current_task, fd, 0);
 	return 0;
 }
 
@@ -215,7 +227,7 @@ int sys_chown(char *path, int fd, uid_t uid, gid_t gid)
 		return -EINVAL;
 	struct inode *i;
 	if(path)
-		i = vfs_get_idir(path, 0);
+		i = fs_resolve_path_inode(path, 0);
 	else {
 		struct file *file = fs_get_file_pointer((task_t *)current_task, fd);
 		if(!file)
@@ -227,7 +239,7 @@ int sys_chown(char *path, int fd, uid_t uid, gid_t gid)
 		return -ENOENT;
 	if(current_task->thread->effective_uid && current_task->thread->effective_uid != i->uid) {
 		if(path)
-			vfs_iput(i);
+			vfs_icache_put(i);
 		return -EPERM;
 	}
 	if(uid != -1) i->uid = uid;
@@ -239,9 +251,9 @@ int sys_chown(char *path, int fd, uid_t uid, gid_t gid)
 		i->mode &= ~S_ISGID;
 	}
 	i->mtime = time_get_epoch();
-	sync_inode_tofs(i);
+	vfs_inode_set_dirty(i);
 	if(path) 
-		vfs_iput(i);
+		vfs_icache_put(i);
 	return 0;
 }
 
@@ -249,31 +261,34 @@ int sys_utime(char *path, time_t a, time_t m)
 {
 	if(!path)
 		return -EINVAL;
-	struct inode *i = vfs_get_idir(path, 0);
+	struct inode *i = fs_resolve_path_inode(path, 0);
 	if(!i)
 		return -ENOENT;
 	if(current_task->thread->effective_uid && current_task->thread->effective_uid != i->uid) {
-		vfs_iput(i);
+		vfs_icache_put(i);
 		return -EPERM;
 	}
 	i->mtime = m ? m : (time_t)time_get_epoch();
 	i->atime = a ? a : (time_t)time_get_epoch();
-	sync_inode_tofs(i);
-	vfs_iput(i);
+	vfs_inode_set_dirty(i);
+	vfs_icache_put(i);
 	return 0;
 }
 
+#warning "TODO"
+#if 0
 int sys_getnodestr(char *path, char *node)
 {
 	if(!path || !node)
 		return -EINVAL;
-	struct inode *i = vfs_get_idir(path, 0);
+	struct inode *i = fs_resolve_path_inode(path, 0);
 	if(!i)
 		return -ENOENT;
 	strncpy(node, i->node_str, 128);
-	vfs_iput(i);
+	vfs_icache_put(i);
 	return 0;
 }
+#endif
 
 int sys_ftruncate(int f, off_t length)
 {
@@ -284,9 +299,9 @@ int sys_ftruncate(int f, off_t length)
 		fs_fput((task_t *)current_task, f, 0);
 		return -EACCES;
 	}
-	file->inode->len = length;
+	file->inode->length = length;
 	file->inode->mtime = time_get_epoch();
-	sync_inode_tofs(file->inode);
+	vfs_inode_set_dirty(file->inode);
 	fs_fput((task_t *)current_task, f, 0);
 	return 0;
 }
@@ -296,19 +311,19 @@ int sys_mknod(char *path, mode_t mode, dev_t dev)
 	if(!path) return -EINVAL;
 	struct inode *i = vfs_lget_idir(path, 0);
 	if(i) {
-		vfs_iput(i);
+		vfs_icache_put(i);
 		return -EEXIST;
 	}
 	i = vfs_cget_idir(path, 0, mode);
 	if(!i) return -EACCES;
-	i->dev = dev;
+	i->phys_dev = dev;
 	i->mode = (mode & ~0xFFF) | ((mode&0xFFF) & (~current_task->cmask&0xFFF));
-	sync_inode_tofs(i);
+	vfs_inode_set_dirty(i);
 	if(S_ISFIFO(i->mode)) {
 		i->pipe = dm_create_pipe();
 		i->pipe->type = PIPE_NAMED;
 	}
-	vfs_iput(i);
+	vfs_icache_put(i);
 	return 0;
 }
 
@@ -320,7 +335,7 @@ int sys_readlink(char *_link, char *buf, int nr)
 	if(!i)
 		return -ENOENT;
 	int ret = vfs_read_inode(i, 0, nr, buf);
-	vfs_iput(i);
+	vfs_icache_put(i);
 	return ret;
 }
 
@@ -328,11 +343,11 @@ int sys_symlink(char *p2, char *p1)
 {
 	if(!p2 || !p1)
 		return -EINVAL;
-	struct inode *inode = vfs_get_idir(p1, 0);
+	struct inode *inode = fs_resolve_path_inode(p1, 0);
 	if(!inode) inode = vfs_lget_idir(p1, 0);
 	if(inode)
 	{
-		vfs_iput(inode);
+		vfs_icache_put(inode);
 		return -EEXIST;
 	}
 	inode = vfs_cget_idir(p1, 0, 0x1FF);
@@ -340,17 +355,15 @@ int sys_symlink(char *p2, char *p1)
 		return -EACCES;
 	inode->mode &= 0x1FF;
 	inode->mode |= S_IFLNK;
-	inode->len=0;
+	inode->length=0;
 	int ret=0;
-	if((ret=sync_inode_tofs(inode)) < 0) {
-		vfs_iput(inode);
-		return ret;
-	}
+	vfs_inode_set_dirty(inode);
+	
 	if((ret=vfs_write_inode(inode, 0, strlen(p2), p2)) < 0) {
-		vfs_iput(inode);
+		vfs_icache_put(inode);
 		return ret;
 	}
-	vfs_iput(inode);
+	vfs_icache_put(inode);
 	return 0;
 }
 
@@ -362,11 +375,11 @@ int sys_access(char *path, mode_t mode)
 {
 	if(!path)
 		return -EINVAL;
-	struct inode *i = vfs_get_idir(path, 0);
+	struct inode *i = fs_resolve_path_inode(path, 0);
 	if(!i)
 		return -ENOENT;
 	if(current_task->thread->real_uid == 0) {
-		vfs_iput(i);
+		vfs_icache_put(i);
 		return 0;
 	}
 	int fail=0;
@@ -377,7 +390,7 @@ int sys_access(char *path, mode_t mode)
 		fail += (vfs_inode_get_check_permissions(i, MAY_WRITE, 1) ? 0 : 1);
 	if(mode & X_OK)
 		fail += (vfs_inode_get_check_permissions(i, MAY_EXEC, 1) ? 0 : 1);
-	vfs_iput(i);
+	vfs_icache_put(i);
 	return (fail ? -EACCES : 0);
 }
 

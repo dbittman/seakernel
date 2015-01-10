@@ -51,10 +51,7 @@ addr_t mm_mmap(addr_t address, size_t length, int prot, int flags, int fd, size_
 	struct inode *node;
 	if(flags & MAP_ANONYMOUS) {
 		/* create fake inode */
-		node = kmalloc(sizeof(*node));
-		mutex_create(&node->mappings_lock, 0);
-		rwlock_create(&node->rwl);
-		node->count = 1;
+		node = vfs_inode_create();
 	} else {
 		struct file *f = fs_get_file_pointer(current_task, fd);
 		if(!f)

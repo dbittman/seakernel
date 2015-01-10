@@ -8,5 +8,6 @@
 
 #define and_atomic(ptr, v) (__sync_and_and_fetch(ptr, v))
 #define or_atomic(ptr, v) (__sync_or_and_fetch(ptr, v))
+#define ff_or_atomic(ptr, v) (__sync_fetch_and_or(ptr, v))
 
 #endif

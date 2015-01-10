@@ -25,20 +25,17 @@ static struct inode *create_anon_pipe()
 {
 	struct inode *node;
 	/* create a 'fake' inode */
-	node = (struct inode *)kmalloc(sizeof(struct inode));
-	_strcpy(node->name, "~pipe~");
+	node = vfs_inode_create();
 	node->uid = current_task->thread->effective_uid;
 	node->gid = current_task->thread->effective_gid;
 	node->mode = S_IFIFO | 0x1FF;
 	node->count=2;
-	node->f_count=2;
-	rwlock_create(&node->rwl);
 	
 	pipe_t *pipe = dm_create_pipe();
 	pipe->count=2;
 	pipe->wrcount=1;
 	node->pipe = pipe;
-	node->dynamic = 1;
+	/* TODO: DYNAMIC? */
 	return node;
 }
 
@@ -174,7 +171,7 @@ int dm_write_pipe(struct inode *ino, int flags, char *initialbuffer, size_t tota
 		}
 		
 		memcpy((void *)(pipe->buffer + pipe->write_pos), buffer, length);
-		pipe->length = ino->len;
+		pipe->length = ino->length;
 		pipe->write_pos += length;
 		pipe->pending += length;
 		/* now, unblock the tasks */

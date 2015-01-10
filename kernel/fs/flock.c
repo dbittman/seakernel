@@ -48,7 +48,7 @@ static struct flock *get_flock_blocker(struct inode *file, struct flock *l, int 
 			l->l_pos = pos;
 			break;
 		case SEEK_END:
-			l->l_pos = file->len;
+			l->l_pos = file->length;
 			break;
 	}
 	struct flock *cur = file->flocks;
@@ -114,7 +114,7 @@ static int engage_flock(struct inode *inode, struct flock *l, int pos)
 			l->l_pos = pos;
 			break;
 		case SEEK_END:
-			l->l_pos = inode->len;
+			l->l_pos = inode->length;
 			break;
 	}
 	

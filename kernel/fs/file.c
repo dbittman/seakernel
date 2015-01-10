@@ -114,9 +114,7 @@ void fs_copy_file_handles(task_t *p, task_t *n)
 			fp->count = p->thread->filp[c]->count;
 			add_atomic(&fp->fi->count, 1);
 			struct inode *i = fp->fi->inode;
-			assert(i && i->count && i->f_count);
 			add_atomic(&i->count, 1);
-			add_atomic(&i->f_count, 1);
 			if(i->pipe && !i->pipe->type) {
 				add_atomic(&i->pipe->count, 1);
 				if(fp->fi->flags & _FWRITE)

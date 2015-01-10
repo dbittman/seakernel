@@ -91,7 +91,7 @@ addr_t mm_establish_mapping(struct inode *node, addr_t virt,
 		int prot, int flags, size_t offset, size_t length)
 {
 	assert(node);
-	if(!(flags & MAP_ANONYMOUS) && (offset >= (size_t)node->len)) {
+	if(!(flags & MAP_ANONYMOUS) && (offset >= (size_t)node->length)) {
 		return -EINVAL;
 	}
 	mutex_acquire(&current_task->thread->map_lock);

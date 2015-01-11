@@ -9,6 +9,7 @@
 #include <sea/fs/stat.h>
 #include <sea/lib/hash.h>
 #include <sea/lib/queue.h>
+#include <sea/fs/fs.h>
 #define MAY_EXEC      0100
 #define MAY_WRITE     0200
 #define MAY_READ      0400
@@ -27,14 +28,17 @@ struct dirent {
 	int count;
 	rwlock_t lock;
 	struct inode *parent;
-	int fs_idx, sb_idx;
+	struct filesystem *filesystem;
 	uint32_t ino;
 	char name[DNAME_LEN];
+	size_t namelen;
 };
 
 #define INODE_NEEDREAD 1
 #define INODE_DIRTY    2
 #define INODE_INUSE    4
+
+#define RESOLVE_NOLINK 1
 
 struct inode {
 	int count;
@@ -56,8 +60,8 @@ struct inode {
 	struct hash_table *dirents;
 
 	dev_t phys_dev;
-	int sb_idx, fs_idx;
 
+	struct filesystem *filesystem;
 	struct inode_operations *i_ops;
 	
 	mount_pt_t *mount;
@@ -135,6 +139,7 @@ int sync_inode_tofs(struct inode *i);
 int sys_unlink(const char *);
 int sys_rmdir(const char *);
 int vfs_inode_get_ref_count();
+int sys_umount();
 
 int fs_unlink(struct inode *node, const char *name, size_t namelen);
 int fs_link(struct inode *dir, struct inode *target, const char *name, size_t namelen);
@@ -145,7 +150,10 @@ struct inode *fs_path_resolve_inode(const char *path, int flags, int *error);
 struct inode *fs_dirent_readinode(struct dirent *dir);
 struct dirent *fs_resolve_path(const char *path, int flags);
 void vfs_inode_get(struct inode *node);
-struct inode *vfs_icache_get(int fs_idx, int sb_idx, uint32_t num);
+struct inode *vfs_icache_get(struct filesystem *, uint32_t num);
+int fs_inode_write(struct inode *node, size_t off, size_t count, const char *buf);
+int fs_inode_read(struct inode *node, size_t off, size_t count, char *buf);
+int sys_chroot(char *path);
 void vfs_icache_put(struct inode *node);
 void vfs_inode_set_dirty(struct inode *node);
 #define FS_INODE_POPULATE 1

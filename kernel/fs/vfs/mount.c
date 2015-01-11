@@ -47,7 +47,7 @@ static int mount(char *d, struct inode *p)
 {
 	if(!p)
 		return -EINVAL;
-	struct inode *i = vfs_get_idir(d, 0);
+	struct inode *i = fs_resolve_path_inode(d, 0);
 	if(!i)
 		return -ENOENT;
 	return do_mount(i, p);
@@ -68,7 +68,7 @@ static int s_mount(char *name, int dev, u64 block, char *fsname, char *no)
 	if(!ret) 
 		return 0;
 	vfs_callback_unmount(i, i->sb_idx);
-	vfs_iput(i);
+	vfs_icache_put(i);
 	return ret;
 }
 
@@ -91,11 +91,11 @@ int sys_mount2(char *node, char *to, char *name, char *opts, int flags)
 	if(!node)
 		return -EINVAL;
 	struct inode *i=0;
-	i = vfs_get_idir(node, 0);
+	i = fs_resolve_path_inode(node, 0);
 	if(!i)
 		return -ENOENT;
 	int dev = i->dev;
-	vfs_iput(i);
+	vfs_icache_put(i);
 	return s_mount(to, dev, 0, name, node);
 }
 
@@ -139,15 +139,15 @@ int vfs_unmount(char *n, int flags)
 {
 	if(!n) return -EINVAL;
 	struct inode *i=0;
-	i = vfs_get_idir(n, 0);
+	i = fs_resolve_path_inode(n, 0);
 	if(!i)
 		return -ENOENT;
 	if(!i->mount_parent)
 		return -ENOENT;
-	vfs_iput(i);
+	vfs_icache_put(i);
 	i = i->mount_parent;
 	int ret = vfs_do_unmount(i, flags);
 	if(!ret)
-		vfs_iput(i);
+		vfs_icache_put(i);
 	return ret;
 }

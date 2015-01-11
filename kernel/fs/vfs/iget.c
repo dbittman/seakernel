@@ -43,7 +43,7 @@ static struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, in
 	/* Access? */
 	if(!vfs_inode_is_directory(i))
 		return 0;
-	if(!vfs_inode_get_check_permissions(i, MAY_EXEC, 0))
+	if(!vfs_inode_check_permissions(i, MAY_EXEC, 0))
 		return 0;
 	if(ll_is_active(&i->children)) {
 		struct llistnode *cur;
@@ -51,7 +51,7 @@ static struct inode *do_lookup(struct inode *i, char *path, int aut, int ram, in
 		ll_for_each_entry((&i->children), cur, struct inode *, temp)
 		{
 			/* Check to see if an inode is valid. This is similar to checks in 
-			 * vfs_iput if it can be released If the validness fails, then the inode 
+			 * vfs_icache_put if it can be released If the validness fails, then the inode 
 			 * could very well be being released */
 			if(!strcmp(temp->name, path))
 			{
@@ -99,9 +99,9 @@ static struct inode *lookup(struct inode *i, char *path)
 		/* The link's actual contents contain the path to the linked file */
 		char li[ret->len + 1];
 		memset(li, 0, ret->len+1);
-		vfs_read_inode(ret, 0, ret->len, li);
-		struct inode *linked = vfs_get_idir(li, i);
-		vfs_iput(ret);
+		fs_inode_read(ret, 0, ret->len, li);
+		struct inode *linked = fs_resolve_path_inode(li, i);
+		vfs_icache_put(ret);
 		return linked;
 	}
 	return ret;
@@ -122,7 +122,7 @@ static struct inode *do_add_dirent(struct inode *p, char *name, int mode)
 	if(!vfs_inode_is_directory(p))
 		return 0;
 	if(p->mount) p = p->mount->root;
-	if(!vfs_inode_get_check_permissions(p, MAY_WRITE, 0))
+	if(!vfs_inode_check_permissions(p, MAY_WRITE, 0))
 		return 0;
 	if(p->parent == current_task->thread->root && !strcmp(p->name, "tmp"))
 		mode |= 0x1FF;
@@ -195,8 +195,8 @@ struct inode *vfs_do_get_idir(char *p_path, struct inode *b, int use_link,
 			/* The link's actual contents contain the path to the linked file */
 			char li[ret->len + 1];
 			memset(li, 0, ret->len+1);
-			vfs_read_inode(ret, 0, ret->len, li);
-			struct inode *linked = vfs_get_idir(li, prev);
+			fs_inode_read(ret, 0, ret->len, li);
+			struct inode *linked = fs_resolve_path_inode(li, prev);
 			if(!linked) {
 				if(prev) {
 					rwlock_acquire(&prev->rwl, RWL_WRITER);

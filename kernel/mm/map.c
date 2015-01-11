@@ -128,7 +128,7 @@ addr_t mm_establish_mapping(struct inode *node, addr_t virt,
 static int __do_mm_disestablish_mapping(struct memmap *map)
 {
 	release_virtual_location(&map->vr);
-	vfs_iput(map->node);
+	vfs_icache_put(map->node);
 	map->node = 0;
 	remove_mapping(map);
 	kfree(map);

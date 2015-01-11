@@ -118,7 +118,8 @@ struct net_dev *net_add_device(struct net_dev_calls *fn, void *data)
 	snprintf(nd->name, 16, "nd%d", num);
 	nd->num = num;
 	devices[num] = nd;
-	nd->devnode = devfs_add(devfs_root, nd->name, S_IFCHR, 6, num);
+#warning "TODO"
+	//nd->devnode = devfs_add(devfs_root, nd->name, S_IFCHR, 6, num);
 
 	return nd;
 }

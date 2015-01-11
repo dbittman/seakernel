@@ -115,12 +115,12 @@ int sys_swapon(char *node, unsigned size /*0 for all */)
 	if(size)
 		panic(PANIC_MEM | PANIC_NOSYNC, "swapon got a non-zero value for size");
 	unsigned dev=0;
-	struct inode *in = vfs_get_idir(node, 0);
+	struct inode *in = fs_resolve_path_inode(node, 0);
 	if(in)
 		dev = in->dev;
 	if(!dev)
 	{
-		if(in) vfs_iput(in);
+		if(in) vfs_icache_put(in);
 		printk(6, "[swap]: Could not open device %s\n", node);
 		return -1;
 	}
@@ -131,12 +131,12 @@ int sys_swapon(char *node, unsigned size /*0 for all */)
 		if((in == i) || (in->dev == i->dev))
 		{
 			printk(6, "[swap]: Device %s already mounted!\n", node);
-			vfs_iput(in);
+			vfs_icache_put(in);
 			return -1;
 		}
 		c++;
 	}
-	if(in) vfs_iput(in);
+	if(in) vfs_icache_put(in);
 	unsigned bs=0;
 	if(!size) {
 		size = dm_block_ioctl(dev, -7, (int)&bs);
@@ -171,9 +171,9 @@ int sys_swapoff(char *node, unsigned flags)
 		return -1;
 	}
 	unsigned dev=0;
-	struct inode *in = vfs_get_idir(node, 0);
+	struct inode *in = fs_resolve_path_inode(node, 0);
 	if(in) {
-		vfs_iput(in);
+		vfs_icache_put(in);
 		dev = in->dev;
 	}
 	if(!dev)

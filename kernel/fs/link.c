@@ -2,6 +2,12 @@
 #include <sea/fs/inode.h>
 #include <sea/errno.h>
 #include <sea/cpu/atomic.h>
+
+int fs_inode_delete(struct inode *node)
+{
+
+}
+
 int fs_unlink(struct inode *node, const char *name, size_t namelen)
 {
 	struct dirent *dir = fs_dirent_lookup(node, name, namelen);

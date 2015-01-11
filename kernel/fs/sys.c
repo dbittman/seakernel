@@ -40,9 +40,10 @@ int sys_setup(int a)
 		return 1;
 	}
 	printk(KERN_MILE, "[kernel]: Setting up environment...");
-	current_task->thread->pwd = current_task->thread->root = ramfs_root;
-	devfs_init();
-	proc_init();
+#warning "TODO"
+	//current_task->thread->pwd = current_task->thread->root = ramfs_root;
+	//devfs_init();
+	//proc_init();
 	dm_char_rw(OPEN, GETDEV(3, 1), 0, 0);
 	sys_open("/dev/tty1", O_RDWR);   /* stdin  */
 	sys_open("/dev/tty1", O_WRONLY); /* stdout */
@@ -52,7 +53,7 @@ int sys_setup(int a)
 	printk(KERN_MILE, "done (i/o/e=%x [tty1]: ok)\n", GETDEV(3, 1));
 	return 12;
 }
-
+#warning "REWRITE READDIR, GETCWD"
 void fs_init()
 {
 	fs_init_superblock_table();
@@ -66,8 +67,8 @@ void fs_init()
 	loader_add_kernel_symbol(sys_read);
 	loader_add_kernel_symbol(sys_write);
 	loader_add_kernel_symbol(sys_close);
-	loader_add_kernel_symbol(vfs_read_inode);
-	loader_add_kernel_symbol(vfs_write_inode);
+	loader_add_kernel_symbol(fs_inode_read);
+	loader_add_kernel_symbol(fs_inode_write);
 	loader_add_kernel_symbol(sys_ioctl);
 	loader_add_kernel_symbol(proc_append_buffer);
 	loader_add_kernel_symbol(sys_stat);
@@ -81,6 +82,41 @@ void fs_init()
 	loader_add_kernel_symbol(proc_get_major);
 #endif
 #endif
+}
+
+int sys_unlink(const char *path)
+{
+
+}
+
+int sys_rmdir(const char *path)
+{
+
+}
+
+int sys_mount(char *node, char *to)
+{
+
+}
+
+int sys_mount2(char *node, char *to, char *name, char *opts, int something)
+{
+
+}
+
+int sys_umount()
+{
+
+}
+
+int sys_get_pwd(char *b, int s)
+{
+
+}
+
+int sys_chroot(char *path)
+{
+
 }
 
 int sys_seek(int fp, off_t pos, unsigned whence)
@@ -145,45 +181,12 @@ int sys_umask(mode_t mode)
 	return old;
 }
 #warning "TODO"
-#if 0
 int sys_getdepth(int fd)
 {
-	struct file *file = fs_get_file_pointer((task_t *)current_task, fd);
-	if(!file)
-		return -EBADF;
-	struct inode *i = file->inode;
-	int x=1;
-	while(i != current_task->thread->root && i) {
-		x++;
-		if(i->mount_parent)
-			i = i->mount_parent;
-		else
-			i = i->parent;
-	}
-	fs_fput((task_t *)current_task, fd, 0);
-	return x;
 }
 int sys_getcwdlen()
 {
-	struct inode *i = current_task->thread->pwd;
-	if(!i) return 0;
-	int x=64;
-	while(i && i->parent)
-	{
-		if(i->mount_parent)
-			i = i->mount_parent;
-		x += strlen(i->name)+1;
-		i = i->parent;
-		if(i == current_task->thread->root)
-			break;
-		if(i->mount_parent)
-			i = i->mount_parent;
-		if(i == current_task->thread->root)
-			break;
-	}
-	return x;
 }
-#endif
 
 int sys_chmod(char *path, int fd, mode_t mode)
 {
@@ -215,7 +218,7 @@ int sys_chmod(char *path, int fd, mode_t mode)
 	vfs_inode_set_dirty(i);
 	rwlock_release(&i->lock, RWL_WRITER);
 	if(path)
-		vfs_icache_release(i);
+		vfs_icache_put(i);
 	else
 		fs_fput((task_t *)current_task, fd, 0);
 	return 0;
@@ -295,7 +298,7 @@ int sys_ftruncate(int f, off_t length)
 	struct file *file = fs_get_file_pointer((task_t *)current_task, f);
 	if(!file)
 		return -EBADF;
-	if(!vfs_inode_get_check_permissions(file->inode, MAY_WRITE, 0)) {
+	if(!vfs_inode_check_permissions(file->inode, MAY_WRITE, 0)) {
 		fs_fput((task_t *)current_task, f, 0);
 		return -EACCES;
 	}
@@ -309,14 +312,15 @@ int sys_ftruncate(int f, off_t length)
 int sys_mknod(char *path, mode_t mode, dev_t dev)
 {
 	if(!path) return -EINVAL;
-	struct inode *i = vfs_lget_idir(path, 0);
+	struct inode *i = fs_resolve_path_inode(path, RESOLVE_NOLINK);
 	if(i) {
 		vfs_icache_put(i);
 		return -EEXIST;
 	}
-	i = vfs_cget_idir(path, 0, mode);
+	i = fs_resolve_path_create(path, 0, mode, 0);
 	if(!i) return -EACCES;
 	i->phys_dev = dev;
+#warning "set the dirent file type based off of mode"
 	i->mode = (mode & ~0xFFF) | ((mode&0xFFF) & (~current_task->cmask&0xFFF));
 	vfs_inode_set_dirty(i);
 	if(S_ISFIFO(i->mode)) {
@@ -331,10 +335,10 @@ int sys_readlink(char *_link, char *buf, int nr)
 {
 	if(!_link || !buf)
 		return -EINVAL;
-	struct inode *i = vfs_lget_idir(_link, 0);
+	struct inode *i = fs_resolve_path_inode(_link, RESOLVE_NOLINK);
 	if(!i)
 		return -ENOENT;
-	int ret = vfs_read_inode(i, 0, nr, buf);
+	int ret = fs_inode_read(i, 0, nr, buf);
 	vfs_icache_put(i);
 	return ret;
 }
@@ -344,13 +348,14 @@ int sys_symlink(char *p2, char *p1)
 	if(!p2 || !p1)
 		return -EINVAL;
 	struct inode *inode = fs_resolve_path_inode(p1, 0);
-	if(!inode) inode = vfs_lget_idir(p1, 0);
+	if(!inode) inode = fs_resolve_path_inode(p1, RESOLVE_NOLINK);
 	if(inode)
 	{
 		vfs_icache_put(inode);
 		return -EEXIST;
 	}
-	inode = vfs_cget_idir(p1, 0, 0x1FF);
+#warning "set the dirent file type based off of mode"
+	inode = fs_resolve_path_create(p1, 0, 0x1FF);
 	if(!inode)
 		return -EACCES;
 	inode->mode &= 0x1FF;
@@ -359,7 +364,7 @@ int sys_symlink(char *p2, char *p1)
 	int ret=0;
 	vfs_inode_set_dirty(inode);
 	
-	if((ret=vfs_write_inode(inode, 0, strlen(p2), p2)) < 0) {
+	if((ret=fs_inode_write(inode, 0, strlen(p2), p2)) < 0) {
 		vfs_icache_put(inode);
 		return ret;
 	}
@@ -385,11 +390,11 @@ int sys_access(char *path, mode_t mode)
 	int fail=0;
 	/* access uses the REAL UID to check permissions... */
 	if(mode & R_OK)
-		fail += (vfs_inode_get_check_permissions(i, MAY_READ, 1) ? 0 : 1);
+		fail += (vfs_inode_check_permissions(i, MAY_READ, 1) ? 0 : 1);
 	if(mode & W_OK)
-		fail += (vfs_inode_get_check_permissions(i, MAY_WRITE, 1) ? 0 : 1);
+		fail += (vfs_inode_check_permissions(i, MAY_WRITE, 1) ? 0 : 1);
 	if(mode & X_OK)
-		fail += (vfs_inode_get_check_permissions(i, MAY_EXEC, 1) ? 0 : 1);
+		fail += (vfs_inode_check_permissions(i, MAY_EXEC, 1) ? 0 : 1);
 	vfs_icache_put(i);
 	return (fail ? -EACCES : 0);
 }
@@ -402,7 +407,7 @@ static int select_filedes(int i, int rw)
 		return -EBADF;
 	struct inode *in = file->inode;
 	if(S_ISREG(in->mode) || S_ISDIR(in->mode) || S_ISLNK(in->mode))
-		ready = vfs_callback_select(in, rw);
+		ready = fs_callback_inode_select(in, rw);
 	else if(S_ISCHR(in->mode))
 		ready = dm_chardev_select(in, rw);
 	else if(S_ISBLK(in->mode))

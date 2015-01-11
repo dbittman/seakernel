@@ -68,17 +68,17 @@ int vfs_chroot(char *n)
 	struct inode *i, *old = current_task->thread->root;
 	if(current_task->thread->effective_uid != 0)
 		return -EPERM;
-	i = vfs_get_idir(n, 0);
+	i = fs_resolve_path_inode(n, 0);
 	if(!i)
 		return -ENOENT;
 	if(!vfs_inode_is_directory(i)) {
-		vfs_iput(i);
+		vfs_icache_put(i);
 		return -ENOTDIR;
 	}
 	current_task->thread->root = i;
 	add_atomic(&i->count, 1);
 	vfs_ichdir(i);
-	vfs_iput(old);
+	vfs_icache_put(old);
 	return 0;
 }
 
@@ -88,22 +88,22 @@ int vfs_ichdir(struct inode *i)
 		return -EINVAL;
 	struct inode *old=current_task->thread->pwd;
 	if(!vfs_inode_is_directory(i)) {
-		vfs_iput(i);
+		vfs_icache_put(i);
 		return -ENOTDIR;
 	}
-	if(!vfs_inode_get_check_permissions(i, MAY_EXEC, 0)) {
-		vfs_iput(i);
+	if(!vfs_inode_check_permissions(i, MAY_EXEC, 0)) {
+		vfs_icache_put(i);
 		return -EACCES;
 	}
 	current_task->thread->pwd = i;
-	vfs_iput(old);
+	vfs_icache_put(old);
 	return 0;
 }
 
 int vfs_chdir(char *path)
 {
 	if(!path) return -EINVAL;
-	struct inode *i = vfs_get_idir(path, 0);
+	struct inode *i = fs_resolve_path_inode(path, 0);
 	if(!i) return -ENOENT;
 	return vfs_ichdir(i);
 }
@@ -139,15 +139,15 @@ struct inode *vfs_read_dir(char *n, int num)
 {
 	if(!n) return 0;
 	struct inode *i=0;
-	i = vfs_get_idir(n, 0);
+	i = fs_resolve_path_inode(n, 0);
 	if(!i)
 		return 0;
-	if(!vfs_inode_get_check_permissions(i, MAY_READ, 0)) {
-		vfs_iput(i);
+	if(!vfs_inode_check_permissions(i, MAY_READ, 0)) {
+		vfs_icache_put(i);
 		return 0;
 	}
 	struct inode *ret = do_readdir(i, num);
-	vfs_iput(i);
+	vfs_icache_put(i);
 	return ret;
 }
 
@@ -155,7 +155,7 @@ struct inode *vfs_read_idir(struct inode *i, int num)
 {
 	if(!i)
 		return 0;
-	if(!vfs_inode_get_check_permissions(i, MAY_READ, 0))
+	if(!vfs_inode_check_permissions(i, MAY_READ, 0))
 		return 0;
 	return do_readdir(i, num);
 }
@@ -166,7 +166,7 @@ int vfs_directory_is_empty(struct inode *i)
 		return -EINVAL;
 	if(inode_has_children(i)) return 1;
 	struct inode *ret = do_readdir(i, 0);
-	if(ret) vfs_iput(ret);
+	if(ret) vfs_icache_put(ret);
 	return ret ? 0 : 1;
 }
 

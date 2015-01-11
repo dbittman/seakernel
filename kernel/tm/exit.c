@@ -174,9 +174,9 @@ void tm_exit(int code)
 		/* we're the last thread to share this data. Clean it up */
 		fs_close_all_files(t);
 		if(t->thread->root)
-			vfs_iput(t->thread->root);
+			vfs_icache_put(t->thread->root);
 		if(t->thread->pwd)
-			vfs_iput(t->thread->pwd);
+			vfs_icache_put(t->thread->pwd);
 		mutex_destroy(&t->thread->files_lock);
 		mm_destroy_all_mappings(t);
 		ll_destroy(&(t->thread->mappings));

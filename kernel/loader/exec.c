@@ -79,7 +79,7 @@ int do_exec(task_t *t, char *path, char **argv, char **env, int shebanged /* oh 
 	if(desc < 0 || !efil)
 		return -ENOENT;
 	/* are we allowed to execute it? */
-	if(!vfs_inode_get_check_permissions(efil->inode, MAY_EXEC, 0))
+	if(!vfs_inode_check_permissions(efil->inode, MAY_EXEC, 0))
 	{
 		sys_close(desc);
 		return -EACCES;

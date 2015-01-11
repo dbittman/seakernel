@@ -72,7 +72,7 @@ void fs_do_sync_of_mounted()
 	struct llistnode *cur;
 	ll_for_each_entry(mountlist, cur, struct mountlst *, m)
 	{
-		vfs_callback_fssync(m->i);
+		//vfs_callback_fssync(m->i);
 	}
 	rwlock_release(&mountlist->rwl, RWL_READER);
 }

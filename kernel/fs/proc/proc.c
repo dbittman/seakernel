@@ -115,7 +115,7 @@ struct inode *proc_create_node(struct inode *to, char *name, mode_t mode, int ma
 	
 	return i;
 }
-
+#endif
 int proc_append_buffer(char *buffer, char *data, int off, int len, int req_off, int req_len)
 {
 	/* if we want to add a string, we make things easy because we may not
@@ -138,7 +138,7 @@ int proc_append_buffer(char *buffer, char *data, int off, int len, int req_off, 
 	memcpy(buffer+(off-req_off), data + data_off, len);
 	return len;
 }
-
+#if 0
 void proc_init()
 {
 	procfs_root = (struct inode*)kmalloc(sizeof(struct inode));

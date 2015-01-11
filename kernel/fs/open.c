@@ -27,32 +27,32 @@ struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int
 	mode_t mode = (_mode & ~0xFFF) | ((_mode&0xFFF) & (~(current_task->cmask&0xFFF)));
 	int did_create=0;
 	inode = (flags & _FCREAT) ? 
-				vfs_ctget_idir(name, 0, mode, &did_create) 
-				: vfs_get_idir(name, 0);
+				fs_resolve_path_create(name, 0, mode, &did_create) 
+				: fs_resolve_path_inode(name, 0);
 	if(!inode) {
 		*error = (flags & _FCREAT) ? -EACCES : -ENOENT;
 		return 0;
 	}
 	/* If CREAT and EXCL are set, and the file exists, return */
 	if(flags & _FCREAT && flags & _FEXCL && !did_create) {
-		vfs_iput(inode);
+		vfs_icache_put(inode);
 		*error = -EEXIST;
 		return 0;
 	}
-	if(flags & _FREAD && !vfs_inode_get_check_permissions(inode, MAY_READ, 0)) {
-		vfs_iput(inode);
+	if(flags & _FREAD && !vfs_inode_check_permissions(inode, MAY_READ, 0)) {
+		vfs_icache_put(inode);
 		*error = -EACCES;
 		return 0;
 	}
-	if(flags & _FWRITE && !vfs_inode_get_check_permissions(inode, MAY_WRITE, 0)) {
-		vfs_iput(inode);
+	if(flags & _FWRITE && !vfs_inode_check_permissions(inode, MAY_WRITE, 0)) {
+		vfs_icache_put(inode);
 		*error = -EACCES;
 		return 0;
 	}
 	if((flags & _FNONBLOCK) && (flags & _FWRITE) && S_ISFIFO(inode->mode) && inode->pipe) {
 		/* check if we have readers on this fifo. If not, we return an error */
 		if((inode->pipe->count - inode->pipe->wrcount) == 0) {
-			vfs_iput(inode);
+			vfs_icache_put(inode);
 			*error = -ENXIO;
 			return 0;
 		}
@@ -72,7 +72,7 @@ struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int
 	{
 		inode->length=0;
 		inode->ctime = inode->mtime = time_get_epoch();
-		sync_inode_tofs(inode);
+		vfs_inode_set_dirty(inode);
 	}
 	if(S_ISFIFO(inode->mode) && inode->pipe) {
 		mutex_acquire(inode->pipe->lock);

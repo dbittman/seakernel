@@ -21,7 +21,7 @@ int vfs_inode_get_ref_count(struct inode *i)
 	return i->count;
 }
 
-int vfs_inode_get_check_permissions(struct inode *i, mode_t flag, int real_id)
+int vfs_inode_check_permissions(struct inode *i, mode_t flag, int real_id)
 {
 	if(!i)
 		return 0;
@@ -114,7 +114,7 @@ int vfs_do_iremove(struct inode *i, int flag, int locked)
 		ll_remove(&parent->children, i->node);
 		if(!locked) {
 			rwlock_release(&parent->rwl, RWL_WRITER);
-			vfs_iput(parent);
+			vfs_icache_put(parent);
 		} else
 			sub_atomic(&parent->count, 1);
 	}

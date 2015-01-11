@@ -39,6 +39,7 @@ void fs_initrd_load(struct multiboot *mb)
 
 void fs_initrd_parse()
 {
+#if 0
 	unsigned int i;
 	printk(5, "[vfs]: Processing initrd...");
 	struct inode *node = fs_init_ramfs();
@@ -71,4 +72,6 @@ void fs_initrd_parse()
 	printk(5, "\r[vfs]: Initrd loaded (%d files, %d KB: ok)\n", count, size);
 	/* Reset the indicators to FS-less system */
 	current_task->thread->root = current_task->thread->pwd=0;
+#endif
 }
+

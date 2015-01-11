@@ -34,23 +34,29 @@ struct inode *vfs_inode_create()
 	
 }
 
+void vfs_inode_destroy(struct inode *node)
+{
+
+}
+
 void vfs_inode_get(struct inode *node)
 {
 	assert(add_atomic(&node->count, 1) > 1);
 	assert((node->flags & INODE_INUSE));
 }
 
-struct inode *vfs_icache_get(int fs_idx, int sb_idx, uint32_t num)
+struct inode *vfs_icache_get(struct filesystem *fs, uint32_t num)
 {
 	/* create if it doesn't exist */
 	struct inode *node;
 	int newly_created = 0;
-	uint32_t key[3] = {fs_idx, sb_idx, num};
+	uint32_t key[3] = {fs->id, num};
 	if(hash_table_get_entry(icache, key, sizeof(uint32_t), 3, &node) == -ENOENT) {
 		/* didn't find it. Okay, create one */
 		node = vfs_inode_create();
 		node->flags |= INODE_NEEDREAD;
-		struct inode *ret = hash_table_set_or_get_entry(icache, key, sizeof(uint32_t), 3, node);
+		struct inode *ret;
+		hash_table_set_or_get_entry(icache, key, sizeof(uint32_t), 3, node, &ret);
 		if(ret != node) {
 			vfs_inode_destroy(node);
 		} else {
@@ -94,6 +100,21 @@ void vfs_inode_mount(struct inode *node, struct inode *mount)
 }
 
 void vfs_inode_umount(struct inode *node)
+{
+
+}
+
+int fs_inode_write(struct inode *node, size_t off, size_t count, const char *buf)
+{
+
+}
+
+int fs_inode_read(struct inode *node, size_t off, size_t count, char *buf)
+{
+
+}
+
+int vfs_inode_chdir(struct inode *node)
 {
 
 }

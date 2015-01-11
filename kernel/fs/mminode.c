@@ -54,7 +54,7 @@ addr_t fs_inode_map_private_physical_page(struct inode *node, addr_t virt,
 		len = node->length - offset;
 	if(offset < (size_t)node->length) {
 		if(node->i_ops) {
-			err = vfs_read_inode(node, offset, len, (void *)virt);
+			err = fs_inode_read(node, offset, len, (void *)virt);
 			if(err < 0 || (size_t)err != len)
 				printk(0, "[mminode]: read inode failed with %d\n", err);
 		}
@@ -103,7 +103,7 @@ addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt,
 		if(len + offset > (size_t)node->length)
 			len = node->length - offset;
 		if(offset < (size_t)node->length) {
-			if(node->i_ops && (err=vfs_read_inode(node, offset, len, (void *)virt) < 0))
+			if(node->i_ops && (err=fs_inode_read(node, offset, len, (void *)virt) < 0))
 				printk(0, "[mminode]: read inode failed with %d\n", err);
 		}
 		add_atomic(&node->mapped_pages_count, 1);
@@ -168,7 +168,7 @@ void fs_inode_sync_physical_page(struct inode *node, addr_t virt, size_t offset,
 		len = node->length - offset;
 	if(offset >= (size_t)node->length)
 		return;
-	if(node->i_ops && vfs_write_inode(node, offset, len, (void *)virt) < 0)
+	if(node->i_ops && fs_inode_write(node, offset, len, (void *)virt) < 0)
 		printk(0, "[mminode]: warning: failed to write back data\n");
 }
 

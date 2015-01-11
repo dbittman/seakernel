@@ -9,7 +9,7 @@
 #include <sea/fs/inode.h>
 #include <sea/dm/pipe.h>
 #include <sea/errno.h>
-int vfs_iput(struct inode *i)
+int vfs_icache_put(struct inode *i)
 {
 	assert(i);
 	rwlock_acquire(&i->rwl, RWL_WRITER);
@@ -17,7 +17,7 @@ int vfs_iput(struct inode *i)
 	if(parent == i) parent=0;
 	if(parent) rwlock_acquire(&parent->rwl, RWL_WRITER);
 	if(!i->count && i->dynamic && !(i->pipe && i->pipe->count))
-		panic(0, "vfs_iput with not ref count");
+		panic(0, "vfs_icache_put with not ref count");
 	if(i->count > 0)
 		sub_atomic(&i->count, 1);
 	/* check if there is something preventing us from deleting the inode. */

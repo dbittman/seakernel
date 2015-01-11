@@ -66,7 +66,7 @@ int sys_close(int fp)
 		}
 	}
 	if(!did_unlink)
-		vfs_iput(f->inode);
+		vfs_icache_put(f->inode);
 	*/
 	fs_fput((task_t *)current_task, fp, FPUT_CLOSE);
 	return 0;

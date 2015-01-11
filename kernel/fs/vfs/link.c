@@ -21,7 +21,7 @@ int vfs_do_unlink(struct inode *i)
 		err = -EACCES;
 	if(S_ISDIR(i->mode))
 		err = -EISDIR;
-	if(!vfs_inode_get_check_permissions(i->parent, MAY_WRITE, 0))
+	if(!vfs_inode_check_permissions(i->parent, MAY_WRITE, 0))
 		err = -EACCES;
 	i->mtime = time_get_epoch();	
 	sync_inode_tofs(i);
@@ -33,7 +33,7 @@ int vfs_do_unlink(struct inode *i)
 		 * gets unlinked */
 		i->marked_for_deletion=1;
 		rwlock_release(&i->rwl, RWL_WRITER);
-		vfs_iput(i);
+		vfs_icache_put(i);
 		return 0;
 	}
 	if(i->count > 1 || (i->pipe && i->pipe->count))
@@ -41,7 +41,7 @@ int vfs_do_unlink(struct inode *i)
 	int ret = err ? 0 : vfs_callback_unlink(i);
 	if(err) {
 		rwlock_release(&i->rwl, RWL_WRITER);
-		vfs_iput(i);
+		vfs_icache_put(i);
 	}
 	else
 		iremove_force(i);
@@ -57,39 +57,39 @@ int vfs_link(char *old, char *new)
 	/* check parent dir for new, and permissions */
 	char newdir[strlen(new)+1];
 	strncpy(newdir, new, strlen(new)+1);
-	parent = vfs_get_idir(dirname(newdir), 0);
+	parent = fs_resolve_path_inode(dirname(newdir), 0);
 	if(!parent)
 		return -ENOENT;
-	if(!vfs_inode_get_check_permissions(parent, MAY_WRITE, 0))
+	if(!vfs_inode_check_permissions(parent, MAY_WRITE, 0))
 	{
-		vfs_iput(parent);
+		vfs_icache_put(parent);
 		return -EACCES;
 	}
-	i = vfs_get_idir(old, 0);
+	i = fs_resolve_path_inode(old, 0);
 	if(!i) {
-		vfs_iput(parent);
+		vfs_icache_put(parent);
 		return -ENOENT;
 	}
 	/* check cross-filesystem link */
 	if(i->fs_idx != parent->fs_idx || i->sb_idx != parent->sb_idx)
 	{
-		vfs_iput(parent);
-		vfs_iput(i);
+		vfs_icache_put(parent);
+		vfs_icache_put(i);
 		return -EXDEV;
 	}
-	vfs_iput(parent);
+	vfs_icache_put(parent);
 
-	if((o = vfs_get_idir(new, 0)))
+	if((o = fs_resolve_path_inode(new, 0)))
 		vfs_do_unlink(o);
 
 	if(vfs_inode_is_directory(i) && current_task->thread->effective_uid) {
-		vfs_iput(i);
+		vfs_icache_put(i);
 		return -EPERM;
 	}
 	int ret = vfs_callback_link(i, new);
 	i->mtime = time_get_epoch();
 	sync_inode_tofs(i);
-	vfs_iput(i);
+	vfs_icache_put(i);
 	if(!ret) sys_utime(new, 0, 0);
 	return ret;
 }
@@ -123,14 +123,14 @@ int vfs_rmdir(char *f)
 	if(!vfs_directory_is_empty(i))
 		err = -ENOTEMPTY;
 	rwlock_escalate(&i->rwl, RWL_WRITER);
-	if(!vfs_inode_get_check_permissions(i->parent, MAY_WRITE, 0))
+	if(!vfs_inode_check_permissions(i->parent, MAY_WRITE, 0))
 		err = -EACCES;
 	if(current_task->thread->effective_uid && (i->parent->mode & S_ISVTX) 
 		&& (i->uid != current_task->thread->effective_uid))
 		err = -EACCES;
 	if(i->f_count) {
 		rwlock_release(&i->rwl, RWL_WRITER);
-		vfs_iput(i);
+		vfs_icache_put(i);
 		return 0;
 	}
 	if(i->count > 1)
@@ -138,7 +138,7 @@ int vfs_rmdir(char *f)
 	int ret = err ? 0 : vfs_callback_rmdir(i);
 	if(err) {
 		rwlock_release(&i->rwl, RWL_WRITER);
-		vfs_iput(i);
+		vfs_icache_put(i);
 	}
 	else
 		iremove_force(i);

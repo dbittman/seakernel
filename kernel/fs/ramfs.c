@@ -1,12 +1,247 @@
-#include <sea/mm/vmm.h>
-#include <sea/tm/process.h>
+#include <sea/types.h>
 #include <sea/fs/inode.h>
-#include <sea/cpu/atomic.h>
-#include <sea/fs/ramfs.h>
-#include <sea/errno.h>
+#include <sea/fs/fs.h>
+#include <sea/lib/hash.h>
 #include <sea/mm/kmalloc.h>
-#include <sea/string.h>
-struct inode *ramfs_root;
+
+#include <sea/cpu/atomic.h>
+#include <sea/ll.h>
+#include <sea/errno.h>
+
+struct rfsdirent {
+	char name[DNAME_LEN];
+	size_t namelen;
+	uint32_t ino;
+	struct llistnode *lnode;
+};
+
+struct rfsnode {
+	void *data;
+	size_t length;
+	uint32_t num;
+	mode_t mode;
+	uid_t uid;
+	gid_t gid;
+	uint16_t nlinks;
+	struct llist *ents;
+};
+
+struct rfsinfo {
+	struct hash_table *nodes;
+	uint32_t next_id;
+};
+
+int ramfs_mount(struct filesystem *fs)
+{
+	struct hash_table *h = hash_table_create(0, 0, HASH_TYPE_CHAIN);
+	hash_table_resize(h, HASH_RESIZE_MODE_IGNORE,1000);
+	hash_table_specify_function(h, HASH_FUNCTION_BYTE_SUM);
+	struct rfsnode *root = kmalloc(sizeof(struct rfsnode));
+	root->mode = S_IFDIR | 0755;
+	root->ents = ll_create(0);
+
+	struct rfsinfo *info = kmalloc(sizeof(struct rfsinfo));
+	info->nodes = h;
+	info->next_id = 1;
+
+	fs->data = info;
+	fs->root_inode_id = 0;
+	hash_table_set_entry(h, &fs->root_inode_id, sizeof(fs->root_inode_id), 1, root);
+	return 0;
+}
+
+int ramfs_alloc_inode(struct filesystem *fs, uint32_t *id)
+{
+	struct rfsinfo *info = fs->data;
+	*id = add_atomic(&info->next_id, 1);
+	struct rfsnode *node = kmalloc(sizeof(struct rfsnode));
+	
+	hash_table_set_entry(info->nodes, id, sizeof(*id), 1, node);
+	return 0;
+}
+
+int ramfs_inode_push(struct filesystem *fs, struct inode *node)
+{
+	struct rfsinfo *info = fs->data;
+	struct rfsnode *rfsnode;
+
+	if(hash_table_get_entry(info->nodes, &node->id, sizeof(node->id), 1, (void **)&rfsnode))
+		return -EIO;
+	
+	rfsnode->uid = node->uid;
+	rfsnode->gid = node->gid;
+	rfsnode->mode = node->mode;
+	rfsnode->length = node->length;
+	return 0;
+}
+
+int ramfs_inode_pull(struct filesystem *fs, struct inode *node)
+{
+	struct rfsinfo *info = fs->data;
+	struct rfsnode *rfsnode;
+
+	if(hash_table_get_entry(info->nodes, &node->id, sizeof(node->id), 1, (void **)&rfsnode))
+		return -EIO;
+	
+	node->uid = rfsnode->uid;
+	node->gid = rfsnode->gid;
+	node->mode = rfsnode->mode;
+	node->length = rfsnode->length;
+	node->nlink = rfsnode->nlinks;
+	node->id = rfsnode->num;
+	return 0;
+}
+
+int ramfs_inode_get_dirent(struct filesystem *fs, struct inode *node,
+		const char *name, size_t namelen, struct dirent *dir)
+{
+	struct rfsinfo *info = fs->data;
+	struct rfsnode *rfsnode;
+
+	if(hash_table_get_entry(info->nodes, &node->id, sizeof(node->id), 1, (void **)&rfsnode))
+		return -EIO;
+
+	struct llistnode *ln;
+	struct rfsdirent *rd, *found=0;
+	rwlock_acquire(&rfsnode->ents->rwl, RWL_READER);
+	ll_for_each_entry(rfsnode->ents, ln, struct rfsdirent *, rd) {
+		if(!strncmp(rd->name, name, namelen) && namelen == rd->namelen)
+			found = rd;
+	}
+	rwlock_release(&rfsnode->ents->rwl, RWL_READER);
+	if(!found)
+		return -ENOENT;
+
+	dir->ino = found->ino;
+	memcpy(dir->name, found->name, namelen);
+	dir->namelen = namelen;
+	return 0;
+}
+
+int ramfs_inode_readdir(struct filesystem *fs, struct inode *node, size_t num, struct dirent *dir)
+{
+	struct rfsinfo *info = fs->data;
+	struct rfsnode *rfsnode;
+
+	if(hash_table_get_entry(info->nodes, &node->id, sizeof(node->id), 1, (void **)&rfsnode))
+		return -EIO;
+
+	struct llistnode *ln;
+	struct rfsdirent *rd, *found=0;
+	rwlock_acquire(&rfsnode->ents->rwl, RWL_READER);
+	ll_for_each_entry(rfsnode->ents, ln, struct rfsdirent *, rd) {
+		if(num-- == 0) {
+			found = rd;
+			break;
+		}
+	}
+	rwlock_release(&rfsnode->ents->rwl, RWL_READER);
+	if(!found)
+		return -ENOENT;
+
+	dir->ino = found->ino;
+	memcpy(dir->name, found->name, found->namelen);
+	dir->namelen = found->namelen;
+	return 0;
+}
+
+int ramfs_inode_link(struct filesystem *fs, struct inode *parent, struct inode *target,
+		const char *name, size_t namelen)
+{
+	struct rfsinfo *info = fs->data;
+	struct rfsnode *rfsparent, *rfstarget;
+	if(hash_table_get_entry(info->nodes, &parent->id, sizeof(parent->id), 1, (void **)&rfsparent))
+		return -EIO;
+
+	if(hash_table_get_entry(info->nodes, &target->id, sizeof(target->id), 1, (void **)&rfstarget))
+		return -EIO;
+
+	add_atomic(&rfstarget->nlinks, 1);
+	struct rfsdirent *dir = kmalloc(sizeof(struct rfsdirent));
+	dir->ino = target->id;
+	memcpy(dir->name, name, namelen);
+	dir->namelen = namelen;
+
+	dir->lnode = ll_insert(rfsparent->ents, dir);
+	return 0;
+}
+
+int ramfs_inode_unlink(struct filesystem *fs, struct inode *parent, const char *name,
+		size_t namelen)
+{
+	struct rfsinfo *info = fs->data;
+	struct rfsnode *rfsparent, *rfstarget;
+	if(hash_table_get_entry(info->nodes, &parent->id, sizeof(parent->id), 1, (void **)&rfsparent))
+		return -EIO;
+	
+	struct llistnode *ln;
+	struct rfsdirent *rd, *found=0;
+	rwlock_acquire(&rfsparent->ents->rwl, RWL_READER);
+	ll_for_each_entry(rfsparent->ents, ln, struct rfsdirent *, rd) {
+		if(!strncmp(rd->name, name, namelen) && namelen == rd->namelen)
+			found = rd;
+	}
+	rwlock_release(&rfsparent->ents->rwl, RWL_READER);
+	if(!found)
+		return -ENOENT;
+
+	if(hash_table_get_entry(info->nodes, &found->ino, sizeof(found->ino), 1, (void **)&rfstarget))
+		return -EIO;
+
+	found->ino = 0;
+	int r = sub_atomic(&rfstarget->nlinks, 1);
+	if(!r) {
+		hash_table_delete_entry(info->nodes, &found->ino, sizeof(found->ino), 1);
+		kfree(rfstarget);
+	}
+
+	ll_remove(rfsparent->ents, found->lnode);
+	kfree(found);
+	return 0;
+}
+
+int ramfs_inode_read(struct filesystem *fs, struct inode *node,
+		size_t offset, size_t length, char *buffer)
+{
+	struct rfsinfo *info = fs->data;
+	struct rfsnode *rfsnode;
+
+	size_t amount = length;
+	if(offset + length > node->length)
+		amount = node->length - offset;
+	if(!amount || offset > node->length)
+		return 0;
+
+	if(hash_table_get_entry(info->nodes, &node->id, sizeof(node->id), 1, (void **)&rfsnode))
+		return -EIO;
+
+	memcpy(buffer, (unsigned char *)rfsnode->data + offset, amount);
+	return amount;
+}
+
+int ramfs_inode_write(struct filesystem *fs, struct inode *node,
+		size_t offset, size_t length, const char *buffer)
+{
+	struct rfsinfo *info = fs->data;
+	struct rfsnode *rfsnode;
+
+	size_t end = length + offset;
+#warning "locking"
+	if(end > node->length) {
+		void *newdata = kmalloc(end);
+		memcpy(newdata, rfsnode->data, rfsnode->length);
+		kfree(rfsnode->data);
+		rfsnode->data = newdata;
+		rfsnode->length = end;
+	}
+
+	if(hash_table_get_entry(info->nodes, &node->id, sizeof(node->id), 1, (void **)&rfsnode))
+		return -EIO;
+
+	memcpy((unsigned char *)rfsnode->data + offset, buffer, length);
+	return length;
+}
+
 #if 0
 static unsigned int ramfs_node_num=0;
 

@@ -23,7 +23,7 @@ int sys_isatty(int f)
 	fs_fput((task_t *)current_task, f, 0);
 	return 0;
 }
-
+/*
 int sys_getpath(int f, char *b, int len)
 {
 	if(!b) return -EINVAL;
@@ -34,7 +34,7 @@ int sys_getpath(int f, char *b, int len)
 	fs_fput((task_t *)current_task, f, 0);
 	return ret;
 }
-
+*/
 static void do_stat(struct inode * inode, struct stat * tmp)
 {
 	assert(inode && tmp);
@@ -65,11 +65,11 @@ int sys_stat(char *f, struct stat *statbuf, int lin)
 {
 	if(!f || !statbuf) return -EINVAL;
 	struct inode *i;
-	i = (struct inode *) (lin ? vfs_lget_idir(f, 0) : vfs_get_idir(f, 0));
+	i = (struct inode *) (lin ? fs_resolve_path_inode(f, RESOLVE_NOLINK) : fs_resolve_path_inode(f, 0));
 	if(!i)
 		return -ENOENT;
 	do_stat(i, statbuf);
-	vfs_iput(i);
+	vfs_icache_put(i);
 	return 0;
 }
 #warning "todo"
@@ -92,7 +92,7 @@ int sys_dirstat(char *dir, unsigned num, char *namebuf, struct stat *statbuf)
 	
 	//do_stat(i, statbuf);
 	//strncpy(namebuf, i->name, 128);
-	//vfs_iput(i);
+	//vfs_icache_put(i);
 	return 0;
 }
 
@@ -128,8 +128,8 @@ int sys_posix_fsstat(int fd, struct posix_statfs *sb)
 	struct file *f = fs_get_file_pointer((task_t *)current_task, fd);
 	if(!f) return -EBADF;
 	struct inode *i = f->inode;
+	int r = fs_callback_fs_stat(i->filesystem, sb);
 	fs_fput((task_t *)current_task, fd, 0);
-	if(!i) return -EBADF;
-	return vfs_callback_fsstat(i, sb);
+	return r;
 }
 

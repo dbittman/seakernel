@@ -23,6 +23,7 @@
 #include <sea/string.h>
 #include <sea/tty/terminal.h>
 #include <sea/fs/socket.h>
+#include <sea/mm/kmalloc.h>
 static int system_setup=0;
 /* This function is called once at the start of the init process initialization.
  * It sets the task fs values to possible and useful things, allowing VFS access.
@@ -41,7 +42,25 @@ int sys_setup(int a)
 	}
 	printk(KERN_MILE, "[kernel]: Setting up environment...");
 #warning "TODO"
-	//current_task->thread->pwd = current_task->thread->root = ramfs_root;
+	struct filesystem *fs = kmalloc(sizeof(struct filesystem));
+	ramfs_mount(fs);
+	current_task->thread->pwd = current_task->thread->root = fs_read_root_inode(fs);
+	fs_initrd_parse();
+	
+	kprintf("--TESTING--\n");
+
+	char buf[16];
+	int f = sys_open("/preinit.sh", O_RDWR);
+	kprintf("--> %d\n", f);
+
+	sys_read(f, 0, buf, 15);
+	buf[15] = 0;
+	kprintf("[%s]\n", buf);
+	
+	
+	
+	
+	for(;;);
 	//devfs_init();
 	//proc_init();
 	dm_char_rw(OPEN, GETDEV(3, 1), 0, 0);
@@ -57,6 +76,7 @@ int sys_setup(int a)
 void fs_init()
 {
 	fs_init_superblock_table();
+	vfs_icache_init();
 #warning "TODO"
 #if 0
 #if CONFIG_MODULES

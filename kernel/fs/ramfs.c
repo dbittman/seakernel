@@ -8,6 +8,9 @@
 #include <sea/ll.h>
 #include <sea/errno.h>
 
+struct filesystem_inode_callbacks ramfs_iops;
+struct filesystem_callbacks ramfs_fsops;
+
 struct rfsdirent {
 	char name[DNAME_LEN];
 	size_t namelen;
@@ -46,7 +49,15 @@ int ramfs_mount(struct filesystem *fs)
 
 	fs->data = info;
 	fs->root_inode_id = 0;
+	fs->fs_ops = &ramfs_fsops;
+	fs->fs_inode_ops = &ramfs_iops;
 	hash_table_set_entry(h, &fs->root_inode_id, sizeof(fs->root_inode_id), 1, root);
+
+	struct rfsdirent *dot = kmalloc(sizeof(struct rfsdirent));
+	strncpy(dot->name, ".", 1);
+	dot->namelen = 1;
+	dot->ino = 0;
+	dot->lnode = ll_insert(root->ents, dot);
 	return 0;
 }
 
@@ -54,7 +65,9 @@ int ramfs_alloc_inode(struct filesystem *fs, uint32_t *id)
 {
 	struct rfsinfo *info = fs->data;
 	*id = add_atomic(&info->next_id, 1);
+	kprintf("ALLOC: %d\n", *id);
 	struct rfsnode *node = kmalloc(sizeof(struct rfsnode));
+	node->num = *id;
 	
 	hash_table_set_entry(info->nodes, id, sizeof(*id), 1, node);
 	return 0;
@@ -89,6 +102,7 @@ int ramfs_inode_pull(struct filesystem *fs, struct inode *node)
 	node->length = rfsnode->length;
 	node->nlink = rfsnode->nlinks;
 	node->id = rfsnode->num;
+	kprintf("pulled id=%d\n", node->id);
 	return 0;
 }
 
@@ -105,8 +119,10 @@ int ramfs_inode_get_dirent(struct filesystem *fs, struct inode *node,
 	struct rfsdirent *rd, *found=0;
 	rwlock_acquire(&rfsnode->ents->rwl, RWL_READER);
 	ll_for_each_entry(rfsnode->ents, ln, struct rfsdirent *, rd) {
-		if(!strncmp(rd->name, name, namelen) && namelen == rd->namelen)
+		if(!strncmp(rd->name, name, namelen) && namelen == rd->namelen) {
 			found = rd;
+			break;
+		}
 	}
 	rwlock_release(&rfsnode->ents->rwl, RWL_READER);
 	if(!found)
@@ -150,6 +166,7 @@ int ramfs_inode_link(struct filesystem *fs, struct inode *parent, struct inode *
 {
 	struct rfsinfo *info = fs->data;
 	struct rfsnode *rfsparent, *rfstarget;
+	kprintf("LINK %s -> %d int %d\n", name, target->id, parent->id);
 	if(hash_table_get_entry(info->nodes, &parent->id, sizeof(parent->id), 1, (void **)&rfsparent))
 		return -EIO;
 
@@ -178,8 +195,10 @@ int ramfs_inode_unlink(struct filesystem *fs, struct inode *parent, const char *
 	struct rfsdirent *rd, *found=0;
 	rwlock_acquire(&rfsparent->ents->rwl, RWL_READER);
 	ll_for_each_entry(rfsparent->ents, ln, struct rfsdirent *, rd) {
-		if(!strncmp(rd->name, name, namelen) && namelen == rd->namelen)
+		if(!strncmp(rd->name, name, namelen) && namelen == rd->namelen) {
 			found = rd;
+			break;
+		}
 	}
 	rwlock_release(&rfsparent->ents->rwl, RWL_READER);
 	if(!found)
@@ -241,6 +260,22 @@ int ramfs_inode_write(struct filesystem *fs, struct inode *node,
 	memcpy((unsigned char *)rfsnode->data + offset, buffer, length);
 	return length;
 }
+
+struct filesystem_inode_callbacks ramfs_iops = {
+	.push = ramfs_inode_push,
+	.pull = ramfs_inode_pull,
+	.read = ramfs_inode_read,
+	.write = ramfs_inode_write,
+	.lookup = ramfs_inode_get_dirent,
+	.readdir = ramfs_inode_readdir,
+	.link = ramfs_inode_link,
+	.unlink = ramfs_inode_unlink,
+	.select = 0
+};
+
+struct filesystem_callbacks ramfs_fsops = {
+	.alloc_inode = ramfs_alloc_inode,
+};
 
 #if 0
 static unsigned int ramfs_node_num=0;

@@ -142,6 +142,7 @@ int vfs_inode_get_ref_count();
 int sys_umount();
 
 int fs_unlink(struct inode *node, const char *name, size_t namelen);
+void vfs_icache_init();
 int fs_link(struct inode *dir, struct inode *target, const char *name, size_t namelen);
 struct dirent *fs_dirent_lookup(struct inode *node, const char *name, size_t namelen);
 int fs_inode_pull(struct inode *node);

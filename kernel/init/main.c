@@ -141,7 +141,6 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	fs_init();
 	net_init();
 	/* Load the rest... */
-	fs_initrd_parse();
 	printk(KERN_MILE, "[kernel]: Kernel is setup (kv=%d, bpl=%d: ok)\n", 
 	       CONFIG_VERSION_NUMBER, BITS_PER_LONG);
 	printk(KERN_DEBUG, "[kernel]: structure sizes: task=%d bytes, thread=%d bytes, inode=%d bytes\n",

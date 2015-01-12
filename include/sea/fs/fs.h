@@ -12,6 +12,7 @@ struct filesystem;
 
 struct filesystem_callbacks {
 	int (*alloc_inode)(struct filesystem *, uint32_t *);
+	int (*dealloc_inode)(struct filesystem *, uint32_t);
 	int (*fs_stat)(struct filesystem *, struct posix_statfs *);
 };
 
@@ -33,6 +34,8 @@ struct filesystem_inode_callbacks {
 	int (*select)(struct filesystem *, struct inode *, int rw);
 };
 
+struct fsdriver;
+
 struct filesystem {
 	uint32_t root_inode_id;
 	int id;
@@ -45,6 +48,7 @@ struct filesystem {
 	struct filesystem_inode_callbacks *fs_inode_ops;
 
 	void *data;
+	struct fsdriver *driver;
 };
 
 struct fsdriver {
@@ -55,7 +59,7 @@ struct fsdriver {
 	struct llistnode *ln;
 };
 
-void fs_fssync(struct filesystem *fs);
+int fs_fssync(struct filesystem *fs);
 
 int fs_callback_inode_read(struct inode *node, size_t off, size_t len, char *buf);
 int fs_callback_inode_write(struct inode *node, size_t off, size_t len, const char *buf);
@@ -69,6 +73,7 @@ int fs_callback_inode_getdents(struct inode *node, unsigned, struct dirent_posix
 int fs_callback_inode_select(struct inode *node, int rw);
 int fs_callback_fs_alloc_inode(struct filesystem *fs, uint32_t *id);
 int fs_callback_fs_stat(struct filesystem *fs, struct posix_statfs *p);
+int fs_callback_fs_dealloc_inode(struct filesystem *fs, uint32_t *id);
 
 int ramfs_mount(struct filesystem *fs);
 struct filesystem *fs_filesystem_create();
@@ -76,6 +81,7 @@ void fs_filesystem_destroy(struct filesystem *fs);
 int fs_filesystem_register(struct fsdriver *fd);
 int fs_filesystem_unregister(struct fsdriver *fd);
 void fs_fsm_init();
+int fs_umount(struct filesystem *fs);
 int fs_mount(struct inode *pt, struct filesystem *fs);
 int fs_filesystem_init_mount(struct filesystem *fs, char *node, char *type, int opts);
 #endif

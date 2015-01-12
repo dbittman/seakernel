@@ -18,7 +18,7 @@ void fs_fsm_init()
 	hash_table_specify_function(&fsdrivershash, HASH_FUNCTION_BYTE_SUM);
 }
 
-void fs_fssync(struct filesystem *fs)
+int fs_fssync(struct filesystem *fs)
 {
 
 }
@@ -48,12 +48,14 @@ int fs_filesystem_init_mount(struct filesystem *fs, char *node, char *type, int 
 	if(type) {
 		if(hash_table_get_entry(&fsdrivershash, type, 1, strlen(type), (void **)&fd) == -ENOENT)
 			return -EINVAL;
+		fs->driver = fd;
 		return fd->mount(fs);
 	} else {
 		rwlock_acquire(&fsdriverslist.rwl, RWL_READER);
 		struct llistnode *ln;
 		ll_for_each_entry(&fsdriverslist, ln, struct fsdriver *, fd) {
 			if(!fd->mount(fs)) {
+				fs->driver = fd;
 				rwlock_release(&fsdriverslist.rwl, RWL_READER);
 				return 0;
 			}
@@ -74,9 +76,12 @@ int fs_mount(struct inode *pt, struct filesystem *fs)
 	return 0;
 }
 
-int fs_umount()
+int fs_umount(struct filesystem *fs)
 {
-
+	/* TODO: check if not in use */
+	fs->driver->umount(fs);
+	vfs_inode_umount(fs->point);
+	return 0;
 }
 
 struct filesystem *fs_filesystem_create()

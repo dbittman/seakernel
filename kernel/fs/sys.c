@@ -43,7 +43,16 @@ void devfs_init()
 	devfs = fs_filesystem_create();
 	ramfs_mount(devfs);
 	sys_fs_mount(0, "/dev", "devfs", 0);
-	sys_mknod("/dev/tty1", S_IFCHR | 0777, GETDEV(3, 1));
+	char tty[9];
+#warning "these permissions may be wrong"
+	for(int i=1;i<10;i++) {
+		snprintf(tty, 9, "/dev/tty%d", i);
+		sys_mknod(tty, S_IFCHR | 0644, GETDEV(3, i));
+	}
+	sys_mknod("/dev/tty", S_IFCHR | 0644, GETDEV(4, 0));
+	sys_mknod("/dev/null", S_IFCHR | 0666, GETDEV(0, 0));
+	sys_mknod("/dev/zero", S_IFCHR | 0666, GETDEV(1, 0));
+	sys_mknod("/dev/com0", S_IFCHR | 0600, GETDEV(5, 0));
 }
 
 int sys_setup(int a)
@@ -99,7 +108,21 @@ void fs_init()
 
 int sys_unlink(const char *path)
 {
+	int len = strlen(path) + 1;
+	char tmp[len];
+	memcpy(tmp, path, len);
+	char *del = strrchr(tmp, '/');
+	char *dir = del ? tmp : ".";
+	char *name = del ? del + 1 : tmp;
+	if(dir[0] == 0)
+		dir = "/";
 
+	struct inode *node = fs_resolve_path_inode(dir, 0, 0);
+	if(!node)
+		return -ENOENT;
+	int r = fs_unlink(node, name, strlen(name));
+	vfs_icache_put(node);
+	return r;
 }
 
 int sys_mkdir(const char *path, mode_t mode)
@@ -118,7 +141,7 @@ int sys_mkdir(const char *path, mode_t mode)
 
 int sys_rmdir(const char *path)
 {
-
+	return sys_unlink(path);
 }
 
 int sys_fs_mount(char *node, char *point, char *type, int opts)
@@ -154,14 +177,14 @@ int sys_mount2(char *node, char *to, char *name, char *opts, int something)
 	return sys_fs_mount(node, to, name, 0);
 }
 
-int sys_umount()
+int sys_umount(char *dir, int flags)
 {
-
-}
-
-int sys_get_pwd(char *b, int s)
-{
-
+	struct inode *node = fs_resolve_path_inode(dir, 0, 0);
+	if(!node)
+		return -ENOENT;
+	int r = fs_umount(node->filesystem);
+	vfs_icache_put(node);
+	return r;
 }
 
 int sys_chroot(char *path)
@@ -223,12 +246,30 @@ int sys_chdir(char *n, int fd)
 	return ret;
 }
 
-int sys_link(char *s, char *d)
+int sys_link(char *oldpath, char *newpath)
 {
-	if(!s || !d) 
-		return -EINVAL;
-#warning "todo"
-	//return vfs_link(s, d);
+	struct inode *target = fs_resolve_path_inode(oldpath, 0, 0);
+	if(!target)
+		return -ENOENT;
+
+	int len = strlen(newpath) + 1;
+	char tmp[len];
+	memcpy(tmp, newpath, len);
+	char *del = strrchr(tmp, '/');
+	char *dir = del ? tmp : ".";
+	char *name = del ? del + 1 : tmp;
+	if(dir[0] == 0)
+		dir = "/";
+
+	struct inode *parent = fs_resolve_path_inode(newpath, 0, 0);
+	if(!parent) {
+		vfs_icache_put(target);
+		return -ENOENT;
+	}
+	int r = fs_link(parent, target, name, strlen(name));
+	vfs_icache_put(parent);
+	vfs_icache_put(target);
+	return r;
 }
 
 int sys_umask(mode_t mode)
@@ -236,13 +277,6 @@ int sys_umask(mode_t mode)
 	int old = current_task->cmask;
 	current_task->cmask=mode;
 	return old;
-}
-#warning "TODO"
-int sys_getdepth(int fd)
-{
-}
-int sys_getcwdlen()
-{
 }
 
 int sys_chmod(char *path, int fd, mode_t mode)
@@ -334,21 +368,6 @@ int sys_utime(char *path, time_t a, time_t m)
 	vfs_icache_put(i);
 	return 0;
 }
-
-#warning "TODO"
-#if 0
-int sys_getnodestr(char *path, char *node)
-{
-	if(!path || !node)
-		return -EINVAL;
-	struct inode *i = fs_resolve_path_inode(path, 0, 0);
-	if(!i)
-		return -ENOENT;
-	strncpy(node, i->node_str, 128);
-	vfs_icache_put(i);
-	return 0;
-}
-#endif
 
 int sys_ftruncate(int f, off_t length)
 {

@@ -184,3 +184,8 @@ int vfs_inode_chroot(struct inode *node)
 	return 0;
 }
 
+int fs_icache_sync()
+{
+
+}
+

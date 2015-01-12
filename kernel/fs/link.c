@@ -5,7 +5,7 @@
 
 int fs_inode_delete(struct inode *node)
 {
-
+	#warning "make this a callback - dealloc_inode"
 }
 
 int fs_unlink(struct inode *node, const char *name, size_t namelen)

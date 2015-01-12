@@ -1,5 +1,4 @@
 KOBJS+= kernel/fs/callbacks.o kernel/fs/close.o \
-kernel/fs/devfs.o \
 kernel/fs/fcntl.o \
 kernel/fs/file.o \
 kernel/fs/flock.o \

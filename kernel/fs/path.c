@@ -120,7 +120,17 @@ static struct dirent *do_fs_resolve_path(struct inode *start, const char *path, 
 			}
 			if(delim) {
 				nextnode = fs_dirent_readinode(dir, (flags & RESOLVE_NOLINK));
-				nextnode = fs_resolve_mount(nextnode);
+#warning "should we do this in more places?"
+				if(namelen == 2 && !strncmp("..", name, 2)
+						&& node->id == node->filesystem->root_inode_id) {
+					/* traverse back up through a mount */
+					vfs_inode_get(nextnode->filesystem->point);
+					struct inode *tmp = nextnode;
+					nextnode = nextnode->filesystem->point;
+					vfs_icache_put(tmp);
+				} else {
+					nextnode = fs_resolve_mount(nextnode);
+				}
 				vfs_dirent_release(dir);
 			}
 			vfs_icache_put(node);

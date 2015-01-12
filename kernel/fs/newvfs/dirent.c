@@ -10,6 +10,7 @@ int vfs_dirent_release(struct dirent *dir)
 {
 	if(!sub_atomic(&dir->count, 1))
 		vfs_icache_put(dir->parent);
+	/* TODO: reclaiming */
 }
 
 struct dirent *vfs_dirent_create(struct inode *node)
@@ -23,6 +24,8 @@ struct dirent *vfs_dirent_create(struct inode *node)
 
 void vfs_dirent_destroy(struct dirent *dir)
 {
-
+	assert(!dir->count);
+	rwlock_destroy(&dir->lock);
+	kfree(dir);
 }
 

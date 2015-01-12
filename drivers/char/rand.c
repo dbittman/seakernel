@@ -124,7 +124,7 @@ int module_install()
 	rand_maj = dm_set_available_char_device(rand_rw, rand_ioctl, 0);
 	if(rand_maj == -1)
 		return EINVAL;
-	df = devfs_add(devfs_root, "random", S_IFCHR, rand_maj, 0);
+	sys_mknod("/dev/random", S_IFCHR | 0644, GETDEV(rand_maj, 0));
 	seed=time_get_epoch();
 	a1=seed;
 	/* check for rdrand */
@@ -138,8 +138,7 @@ int module_install()
 
 int module_exit()
 {
-	if(df)
-		devfs_remove(df);
+	sys_unlink("/dev/random");
 	if(rand_maj > 0) dm_unregister_char_device(rand_maj);
 	return 0;
 }

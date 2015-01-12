@@ -43,16 +43,16 @@ int sys_setup();
 #define SYS_GETPPID      32
 #define SYS_LINK         33
 #define SYS_UNLINK       34
-#define SYS_GETREFCOUNT  35
-#define SYS_GETPWD       36
-#define SYS_GETPATH      37
+
+
+
 #define SYS_GETSOCKNAME  38
 #define SYS_CHROOT       39
 #define SYS_CHDIR        40
 #define SYS_MOUNT        41
 #define SYS_UMOUNT       42
-#define SYS_READDIR      43
 
+#define SYS_MKDIR        44
 #define SYS_CREATE_CONSOLE  45
 #define SYS_SWITCH_CONSOLE  46
 #define SYS_SOCKSHUTDOWN 47
@@ -103,15 +103,15 @@ int sys_setup();
 #define SYS_WAIT3        92
 
 
-#define SYS_GETCWDLEN    95
+
 #define SYS_SWAPTASK     96
-#define SYS_DIRSTAT      97
+
 #define SYS_SIGACT       98
 #define SYS_ACCESS       99
 #define SYS_CHMOD        100
 #define SYS_FCNTL        101
-#define SYS_DIRSTATFD    102
-#define SYS_GETDEPTH     103
+
+
 #define SYS_WAITPID      104
 #define SYS_MKNOD        105
 #define SYS_SYMLINK      106
@@ -119,7 +119,7 @@ int sys_setup();
 #define SYS_UMASK        108
 #define SYS_SIGPROCMASK  109
 #define SYS_FTRUNCATE    110
-#define SYS_GETNODESTR   111
+
 #define SYS_CHOWN        112
 #define SYS_UTIME        113
 #define SYS_GETHOSTNAME  114

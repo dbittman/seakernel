@@ -5,23 +5,27 @@
 #include <sea/cpu/atomic.h>
 #include <sea/errno.h>
 #warning "todo: try to use reader locks"
+static struct dirent *do_fs_resolve_path(struct inode *start, const char *path, int flags);
 struct dirent *fs_dirent_lookup(struct inode *node, const char *name, size_t namelen)
 {
-	if(!vfs_inode_check_permissions(node, MAY_EXEC))
+	if(!vfs_inode_check_permissions(node, MAY_EXEC, 0))
 		return 0;
 	rwlock_acquire(&node->lock, RWL_WRITER);
 	struct dirent *dir = vfs_inode_get_dirent(node, name, namelen);
 	if(!dir) {
 		dir = vfs_dirent_create(node);
 		dir->count = 1;
+		strncpy(dir->name, name, namelen);
+		dir->namelen = namelen;
 		int r = fs_callback_inode_lookup(node, name, namelen, dir);
 		if(r) {
+			dir->count = 0;
 			vfs_dirent_destroy(dir);
 			rwlock_release(&node->lock, RWL_WRITER);
 			return 0;
 		}
 		vfs_inode_get(node);
-		vfs_inode_add_dirent(node, name, namelen, dir);
+		vfs_inode_add_dirent(node, dir);
 	} else {
 		if(add_atomic(&dir->count, 1) == 1)
 			vfs_inode_get(node);
@@ -53,28 +57,51 @@ int fs_inode_push(struct inode *node)
 	return r;
 }
 
-struct inode *fs_dirent_readinode(struct dirent *dir)
+struct inode *fs_dirent_readinode(struct dirent *dir, int nofollow)
 {
 	assert(dir);
 	struct inode *node = vfs_icache_get(dir->filesystem, dir->ino);
 	assert(node);
 	if(fs_inode_pull(node))
 		return 0;
+	if(!nofollow && S_ISLNK(node->mode)) {
+		char link[node->length+1]; //TODO: fix possible DoS attack
+		if(fs_inode_read(node, 0, node->length, link) != node->length)
+			return 0;
+		link[node->length]=0;
+		kprintf("resolving %s\n", link);
+		char *newpath = link;
+		struct inode *start = dir->parent, *ln=0;
+		if(link[0] == '/') {
+			newpath++;
+			start = current_task->thread->root;
+		}
+		struct dirent *ln_dir = do_fs_resolve_path(start, link, 0);
+		vfs_icache_put(node);
+		if(ln_dir) {
+			ln = fs_dirent_readinode(ln_dir, 0);
+			vfs_dirent_release(ln_dir);
+		}
+
+
+		node = ln;
+	}
 	return node;
 }
 
-struct dirent *fs_resolve_path(const char *path, int flags)
+struct inode *fs_resolve_mount(struct inode *node)
 {
-	struct inode *start;
-	if(!path)
-		path = ".";
-	kprintf("RES: %s\n", path);
-	if(path[0] == '/') {
-		start = current_task->thread->root;
-		path++;
-	} else {
-		start = current_task->thread->pwd;
+	struct inode *ret = node;
+	if(node && node->mount) {
+		ret = fs_read_root_inode(node->mount);
+		vfs_icache_put(node);
 	}
+	return ret;
+}
+
+static struct dirent *do_fs_resolve_path(struct inode *start, const char *path, int flags)
+{	
+	vfs_inode_get(start);
 	assert(start);
 	if(!*path)
 		path = ".";
@@ -88,14 +115,15 @@ struct dirent *fs_resolve_path(const char *path, int flags)
 			const char *name = path;
 			size_t namelen = delim ? delim - name : strlen(name);
 			dir = fs_dirent_lookup(node, name, namelen);
-			kprintf("lookup %s: %x\n", name, dir);
 			if(!dir) {
 				return 0;
 			}
 			if(delim) {
-				nextnode = fs_dirent_readinode(dir);
+				nextnode = fs_dirent_readinode(dir, (flags & RESOLVE_NOLINK));
+				nextnode = fs_resolve_mount(nextnode);
 				vfs_dirent_release(dir);
 			}
+			vfs_icache_put(node);
 			node = nextnode;
 		}
 		path = delim + 1;
@@ -104,19 +132,33 @@ struct dirent *fs_resolve_path(const char *path, int flags)
 	return dir;
 }
 
+struct dirent *fs_resolve_path(const char *path, int flags)
+{
+	struct inode *start;
+	if(!path)
+		path = ".";
+	if(path[0] == '/') {
+		start = current_task->thread->root;
+		path++;
+	} else {
+		start = current_task->thread->pwd;
+	}
+	return do_fs_resolve_path(start, path, flags);
+}
+
 struct inode *fs_resolve_path_inode(const char *path, int flags, int *error)
 {
 	struct dirent *dir = fs_resolve_path(path, flags);
 	if(!dir) {
-		kprintf("NO DIR\n");
-		//if(error)
-	//		*error = -ENOENT;
+		if(error)
+			*error = -ENOENT;
 		return 0;
 	}
-	struct inode *node = fs_dirent_readinode(dir);
+	struct inode *node = fs_dirent_readinode(dir, (flags & RESOLVE_NOLINK));
+	node = fs_resolve_mount(node);
 	vfs_dirent_release(dir);
-	//if(!node && error)
-	//	*error = -EIO;
+	if(!node && error)
+		*error = -EIO;
 	return node;
 }
 
@@ -131,15 +173,14 @@ struct inode *fs_resolve_path_create(const char *path, int flags, mode_t mode, i
 		*name = 0;
 		name++;
 	}
-	kprintf(":: %s, %s\n", tmp, name);
 	struct inode *dir = fs_resolve_path_inode(tmp, flags, 0);
 	if(!dir)
-		return -ENOENT;
+		return 0;
 
 	struct dirent *test = fs_dirent_lookup(dir, name, strlen(name));
 	if(test) {
-		kprintf("file exists\n");
-		struct inode *ret = fs_dirent_readinode(test);
+		struct inode *ret = fs_dirent_readinode(test, flags & RESOLVE_NOLINK);
+		ret = fs_resolve_mount(ret);
 		vfs_dirent_release(test);
 		if(did_create)
 			*did_create = 0;
@@ -148,28 +189,29 @@ struct inode *fs_resolve_path_create(const char *path, int flags, mode_t mode, i
 
 	uint32_t id;
 	int r = fs_callback_fs_alloc_inode(dir->filesystem, &id);
-	kprintf("alloc: %d\n", r);
 	if(r) {
 		vfs_icache_put(dir);
-		return -EIO;
+		return 0;
 	}
 
 	struct inode *node = vfs_icache_get(dir->filesystem, id);
-	kprintf("*******\nPULLING\n");
 	fs_inode_pull(node);
+	node->mode = mode;
+	vfs_inode_set_dirty(node);
 
 	r = fs_link(dir, node, name, strlen(name));
-	kprintf("link: %d\n", r);
+
+	if(S_ISDIR(mode)) {
+		/* create . and .. */
+		if(fs_link(node, node, ".", 1))
+			r = -EPERM;
+		if(fs_link(node, dir, "..", 2))
+			r = -EMLINK;
+	}
 
 	vfs_icache_put(dir);
 	if(did_create)
 		*did_create = 1;
 	return r == 0 ? node : 0;
-}
-
-struct dirent *fs_readdir(struct inode *node, size_t num)
-{
-#warning "this is crap"
-	return fs_callback_inode_readdir(node, num);
 }
 

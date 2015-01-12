@@ -33,6 +33,25 @@ struct dirent {
 	char name[DNAME_LEN];
 	size_t namelen;
 };
+enum
+{
+	DT_UNKNOWN = 0,
+	DT_FIFO = 1,
+	DT_CHR = 2,
+	DT_DIR = 4,
+	DT_BLK = 6,
+	DT_REG = 8,
+	DT_LNK = 10,
+	DT_SOCK = 12,
+	DT_WHT = 14
+};
+struct dirent_posix {
+	unsigned int d_ino;
+	unsigned int d_off;
+	unsigned short int d_reclen;
+	unsigned char d_type;
+	char d_name[];
+};
 
 #define INODE_NEEDREAD 1
 #define INODE_DIRTY    2
@@ -46,7 +65,7 @@ struct inode {
 	uint32_t flags;
 	struct queue_item lru_item;
 	struct llistnode inuse_item;
-	
+
 	mode_t mode;
 	uid_t uid;
 	gid_t gid;
@@ -61,102 +80,64 @@ struct inode {
 
 	dev_t phys_dev;
 
-	struct filesystem *filesystem;
-	struct inode_operations *i_ops;
-	
-	mount_pt_t *mount;
+	struct filesystem *filesystem, *mount;
+
 	pipe_t *pipe;
 
 	struct flock *flocks;
 	mutex_t *flm;
-	
+
 	struct hash_table *physicals;
 	mutex_t mappings_lock;
 	size_t mapped_pages_count, mapped_entries_count;
-};
-#if 0
-struct __inode {
-	/* Attributes */
-	mode_t mode;
-	uid_t uid;
-	gid_t gid;
-	unsigned short nlink;
-	unsigned char dynamic, marked_for_deletion;
-	unsigned int flags;
-	off_t len;
-	addr_t start;
-	unsigned int nblocks;
-	time_t ctime, atime, mtime;
-	int count, f_count, newlocks;
-	size_t blksize;
-	/* Identification */
-	char name[INAME_LEN];
-	dev_t dev;
-	unsigned long num;
-	unsigned int sb_idx, fs_idx;
-	char node_str[INAME_LEN];
-	/* Pointers */
-	struct inode_operations *i_ops;
-	struct inode *parent;
-	struct llist children;
-	struct llistnode *node;
-	struct inode *mount_parent;
-	pipe_t *pipe;
-	mount_pt_t *mount;
-	/* Locking */
-	rwlock_t rwl;
-	struct flock *flocks;
-	mutex_t *flm;
-
-	/* shared mmappings */
-	struct hash_table *physicals;
-	mutex_t mappings_lock;
-	int mapped_pages_count, mapped_entries_count;
-};
-#endif
-struct inode_operations {
-	int (*read) (struct inode *, off_t, size_t, char *);
-	int (*write) (struct inode *, off_t, size_t, char *);
-	int (*select) (struct inode *, unsigned int);
-	struct inode *(*create) (struct inode *,char *, mode_t);
-	struct inode *(*lookup) (struct inode *,char *);
-	struct inode *(*readdir) (struct inode *, unsigned);
-	int (*link) (struct inode *, char *);
-	int (*unlink) (struct inode *);
-	int (*rmdir) (struct inode *);
-	int (*sync_inode) (struct inode *);
-	int (*unmount)(struct inode *, unsigned int);
-	int (*fsstat)(struct inode *, struct posix_statfs *);
-	int (*fssync)(struct inode *);
-	int (*update)(struct inode *);
 };
 
 int sys_getdepth(int fd);
 int sys_getcwdlen();
 int sys_fcntl(int filedes, int cmd, long attr1, long attr2, long attr3);
-int sync_inode_tofs(struct inode *i);
 
 int sys_unlink(const char *);
 int sys_rmdir(const char *);
-int vfs_inode_get_ref_count();
 int sys_umount();
+int sys_chroot(char *path);
+int sys_mkdir(const char *path, mode_t mode);
+int sys_getdents(int, struct dirent_posix *, unsigned int);
 
 int fs_unlink(struct inode *node, const char *name, size_t namelen);
-void vfs_icache_init();
 int fs_link(struct inode *dir, struct inode *target, const char *name, size_t namelen);
 struct dirent *fs_dirent_lookup(struct inode *node, const char *name, size_t namelen);
-int fs_inode_pull(struct inode *node);
-int fs_inode_push(struct inode *node);
-struct inode *fs_path_resolve_inode(const char *path, int flags, int *error);
-struct inode *fs_dirent_readinode(struct dirent *dir);
-struct dirent *fs_resolve_path(const char *path, int flags);
+
+void vfs_icache_init();
 void vfs_inode_get(struct inode *node);
+struct inode *vfs_inode_create();
 struct inode *vfs_icache_get(struct filesystem *, uint32_t num);
-int fs_inode_write(struct inode *node, size_t off, size_t count, const char *buf);
-int fs_inode_read(struct inode *node, size_t off, size_t count, char *buf);
-int sys_chroot(char *path);
 void vfs_icache_put(struct inode *node);
 void vfs_inode_set_dirty(struct inode *node);
+void vfs_inode_set_needread(struct inode *node);
+int vfs_inode_check_permissions(struct inode *node, int perm, int real);
+void vfs_inode_del_dirent(struct inode *node, struct dirent *dir);
+void vfs_inode_add_dirent(struct inode *node, struct dirent *dir);
+struct dirent *vfs_inode_get_dirent(struct inode *node, const char *name, int namelen);
+struct dirent *vfs_dirent_create(struct inode *node);
+int vfs_dirent_release(struct dirent *dir);
+void vfs_dirent_destroy(struct dirent *dir);
+
+int fs_inode_pull(struct inode *node);
+int fs_inode_push(struct inode *node);
+struct inode *fs_resolve_path_inode(const char *path, int flags, int *error);
+struct inode *fs_dirent_readinode(struct dirent *dir, int);
+struct dirent *fs_resolve_path(const char *path, int flags);
+struct inode *fs_resolve_path_create(const char *path, int flags, mode_t mode, int *did_create);
+struct dirent *fs_readdir(struct inode *node, size_t num);
+struct inode *fs_read_root_inode(struct filesystem *fs);
+int vfs_inode_chdir(struct inode *node);
+int vfs_inode_chroot(struct inode *node);
+void vfs_inode_mount(struct inode *node, struct filesystem *fs);
+
+
+int fs_inode_write(struct inode *node, size_t off, size_t count, const char *buf);
+int fs_inode_read(struct inode *node, size_t off, size_t count, char *buf);
+
 #define FS_INODE_POPULATE 1
 addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt, 
 		size_t offset, int flags, int attrib);

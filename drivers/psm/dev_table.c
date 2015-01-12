@@ -24,7 +24,7 @@ void psm_table_destroy()
 	{
 		if(table[i].magic == PSM_DEVICE_MAGIC)
 		{
-			devfs_remove(table[i].node);
+			sys_unlink(table[table_index].path);
 		}
 	}
 	kfree(table);
@@ -47,16 +47,15 @@ int psm_table_insert(dev_t dev, struct disk_info *di, struct part_info *pt, char
 	memcpy(&table[table_index].info, di, sizeof(struct disk_info));
 	if(pt) memcpy(&table[table_index].part, pt, sizeof(struct part_info));
 	else   memset(&table[table_index].part, 0, sizeof(struct part_info));
-	table[table_index].node = 0;
 	int ret = table_index++;
 	mutex_release(table_lock);
 	return ret;
 }
 
-void psm_table_set_node(int index, struct inode *n)
+void psm_table_set_path(int index, char *path)
 {
 	mutex_acquire(table_lock);
-	table[index].node=n;
+	strncpy(table[index].path, path, 128);
 	mutex_release(table_lock);
 }
 

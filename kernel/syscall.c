@@ -112,6 +112,7 @@ static void *syscall_table[129] = {
 	[SYS_MOUNT]           = SC sys_mount,
 	[SYS_UMOUNT]          = SC sys_umount,
 	//[SYS_READDIR]         = SC vfs_read_dir,
+	[SYS_MKDIR]           = SC sys_mkdir,
 
 	[SYS_CREATE_CONSOLE]  = SC console_create,
 	[SYS_SWITCH_CONSOLE]  = SC console_switch,
@@ -125,7 +126,7 @@ static void *syscall_table[129] = {
 	[SYS_FSYNC]           = SC sys_fsync,
 	[SYS_ALARM]           = SC sys_alarm,
 	[SYS_SELECT]          = SC sys_select,
-	[SYS_GETDENTS]        = SC sys_null,
+	[SYS_GETDENTS]        = SC sys_getdents,
 
 	[SYS_SYSCONF]         = SC sys_sysconf,
 	[SYS_SETSID]          = SC sys_setsid,
@@ -173,7 +174,7 @@ static void *syscall_table[129] = {
 	#else
 	[SYS_SWAPTASK]        = SC /**96*/sys_null,
 	#endif
-	[SYS_DIRSTAT]         = SC sys_dirstat,
+	//[SYS_DIRSTAT]         = SC sys_dirstat,
 	[SYS_SIGACT]          = SC sys_sigact,
 	[SYS_ACCESS]          = SC sys_access,
 	[SYS_CHMOD]           = SC sys_chmod,
@@ -242,12 +243,12 @@ int mm_is_valid_user_pointer(int num, void *p, char flags)
 int check_pointers(volatile registers_t *regs)
 {
 	switch(SYSCALL_NUM_AND_RET) {
-		case SYS_READ: case SYS_FSTAT: case SYS_STAT: case SYS_GETPATH:
-		case SYS_READLINK: case SYS_GETNODESTR:
+		case SYS_READ: case SYS_FSTAT: case SYS_STAT: /*case SYS_GETPATH:*/
+		case SYS_READLINK: /*case SYS_GETNODESTR:*/
 		case SYS_POSFSSTAT: case SYS_WRITE:
 			return mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_B_, 0);
 
-		case SYS_TIMES: case SYS_GETPWD: case SYS_PIPE:
+		case SYS_TIMES: /*case SYS_GETPWD:*/ case SYS_PIPE:
 		case SYS_MEMSTAT: case SYS_GETTIME: case SYS_GETHOSTNAME:
 		case SYS_UNAME: case SYS_MSYNC: case SYS_MUNMAP:
 			return mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_A_, 0);
@@ -266,16 +267,17 @@ int check_pointers(volatile registers_t *regs)
 				return 0;
 			break;
 
-		case SYS_DIRSTAT:
-			if(!mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_A_, 0))
-				return 0;
-		/* fall through */
+		//case SYS_DIRSTAT:
+		//	if(!mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_A_, 0))
+		//		return 0;
+		/* fall through *
 		case SYS_DIRSTATFD:
 			if(!mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_C_, 0))
 				return 0;
 			if(!mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_D_, 0))
 				return 0;
 			break;
+			*/
 
 		case SYS_SIGACT: case SYS_SIGPROCMASK:
 			return mm_is_valid_user_pointer(SYSCALL_NUM_AND_RET, (void *)_C_, 1);

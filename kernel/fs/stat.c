@@ -23,18 +23,7 @@ int sys_isatty(int f)
 	fs_fput((task_t *)current_task, f, 0);
 	return 0;
 }
-/*
-int sys_getpath(int f, char *b, int len)
-{
-	if(!b) return -EINVAL;
-	struct file *file = fs_get_file_pointer((task_t *) current_task, f);
-	if(!file)
-		return -EBADF;
-	int ret = vfs_get_path_string(file->inode, b, len);
-	fs_fput((task_t *)current_task, f, 0);
-	return ret;
-}
-*/
+
 static void do_stat(struct inode * inode, struct stat * tmp)
 {
 	assert(inode && tmp);
@@ -65,51 +54,24 @@ int sys_stat(char *f, struct stat *statbuf, int lin)
 {
 	if(!f || !statbuf) return -EINVAL;
 	struct inode *i;
-	i = (struct inode *) (lin ? fs_resolve_path_inode(f, RESOLVE_NOLINK) : fs_resolve_path_inode(f, 0));
+	i = (struct inode *) (lin ? fs_resolve_path_inode(f, RESOLVE_NOLINK, 0) : fs_resolve_path_inode(f, 0, 0));
 	if(!i)
 		return -ENOENT;
 	do_stat(i, statbuf);
 	vfs_icache_put(i);
 	return 0;
 }
-#warning "todo"
-int sys_dirstat(char *dir, unsigned num, char *namebuf, struct stat *statbuf)
-{
-	if(!namebuf || !statbuf || !dir)
-		return -EINVAL;
-	
-	struct dirent *ent = fs_resolve_path(dir, 0);
-	if(!dir)
-		return -ESRCH;
-	struct inode *ino = fs_dirent_readinode(dir);
-	vfs_dirent_release(dir);
-	if(!ino)
-		return -EIO;
-	
-	ent = fs_readdir(ino, num);
-	memcpy(namebuf, ent->name, 256);//TODO: this is crap
-	
-	
-	//do_stat(i, statbuf);
-	//strncpy(namebuf, i->name, 128);
-	//vfs_icache_put(i);
-	return 0;
-}
 
-int sys_dirstat_fd(int fd, unsigned num, char *namebuf, struct stat *statbuf)
+int sys_getdents(int fd, struct dirent_posix *dirs, unsigned int count)
 {
-	if(!namebuf || !statbuf)
-		return -EINVAL;
 	struct file *f = fs_get_file_pointer((task_t *)current_task, fd);
 	if(!f) return -EBADF;
-	
-	
-	struct dirent *ent = fs_readdir(f->inode, num);
-	memcpy(namebuf, ent->name, 256);//TODO: this is crap
-	
-	
+
+	int r = fs_callback_inode_getdents(f->inode, f->pos, dirs, count);
+	f->pos += r;
+
 	fs_fput((task_t *)current_task, fd, 0);
-	return 0;
+	return r;
 }
 
 int sys_fstat(int fp, struct stat *sb)

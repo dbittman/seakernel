@@ -13,14 +13,14 @@ int fs_unlink(struct inode *node, const char *name, size_t namelen)
 	struct dirent *dir = fs_dirent_lookup(node, name, namelen);
 	if(!dir)
 		return -ENOENT;
-	struct inode *target = fs_dirent_readinode(dir);
+	struct inode *target = fs_dirent_readinode(dir, 1);
 	if(!target)
 		return -EIO;
 	rwlock_acquire(&node->lock, RWL_WRITER);
 #warning "dont-unlink-until-unused"
 	int r = fs_callback_inode_unlink(node, name, namelen);
 	if(!r) {
-		vfs_inode_del_dirent(node, name, namelen);
+		vfs_inode_del_dirent(node, dir);
 		rwlock_release(&node->lock, RWL_WRITER);
 		rwlock_acquire(&target->lock, RWL_WRITER);
 		vfs_inode_set_dirty(target);

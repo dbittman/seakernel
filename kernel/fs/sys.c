@@ -24,6 +24,7 @@
 #include <sea/tty/terminal.h>
 #include <sea/fs/socket.h>
 #include <sea/mm/kmalloc.h>
+#include <sea/fs/fs.h>
 static int system_setup=0;
 /* This function is called once at the start of the init process initialization.
  * It sets the task fs values to possible and useful things, allowing VFS access.
@@ -33,6 +34,18 @@ static int system_setup=0;
  * Beyond that, it can be called by any task at anytime after the first call as
  * a yield call.
  */
+extern void fs_initrd_parse();
+
+struct filesystem *devfs;
+
+void devfs_init()
+{
+	devfs = fs_filesystem_create();
+	ramfs_mount(devfs);
+	sys_fs_mount(0, "/dev", "devfs", 0);
+	sys_mknod("/dev/tty1", S_IFCHR | 0777, GETDEV(3, 1));
+}
+
 int sys_setup(int a)
 {
 	if(system_setup)
@@ -42,26 +55,12 @@ int sys_setup(int a)
 	}
 	printk(KERN_MILE, "[kernel]: Setting up environment...");
 #warning "TODO"
-	struct filesystem *fs = kmalloc(sizeof(struct filesystem));
+	struct filesystem *fs = fs_filesystem_create();
 	ramfs_mount(fs);
 	current_task->thread->pwd = current_task->thread->root = fs_read_root_inode(fs);
 	fs_initrd_parse();
 	
-	kprintf("--TESTING--\n");
-
-	char buf[16];
-	int f = sys_open("/preinit.sh", O_RDWR);
-	kprintf("--> %d\n", f);
-
-	sys_read(f, 0, buf, 15);
-	buf[15] = 0;
-	kprintf("[%s]\n", buf);
-	
-	
-	
-	
-	for(;;);
-	//devfs_init();
+	devfs_init();
 	//proc_init();
 	dm_char_rw(OPEN, GETDEV(3, 1), 0, 0);
 	sys_open("/dev/tty1", O_RDWR);   /* stdin  */
@@ -72,17 +71,13 @@ int sys_setup(int a)
 	printk(KERN_MILE, "done (i/o/e=%x [tty1]: ok)\n", GETDEV(3, 1));
 	return 12;
 }
-#warning "REWRITE READDIR, GETCWD"
+
 void fs_init()
 {
 	fs_init_superblock_table();
 	vfs_icache_init();
-#warning "TODO"
-#if 0
+	fs_fsm_init();
 #if CONFIG_MODULES
-	loader_add_kernel_symbol(vfs_do_iremove);
-	loader_add_kernel_symbol(proc_create_node);
-	loader_add_kernel_symbol(proc_create_node_at_root);
 	loader_add_kernel_symbol(sys_open);
 	loader_add_kernel_symbol(sys_read);
 	loader_add_kernel_symbol(sys_write);
@@ -90,17 +85,15 @@ void fs_init()
 	loader_add_kernel_symbol(fs_inode_read);
 	loader_add_kernel_symbol(fs_inode_write);
 	loader_add_kernel_symbol(sys_ioctl);
-	loader_add_kernel_symbol(proc_append_buffer);
 	loader_add_kernel_symbol(sys_stat);
 	loader_add_kernel_symbol(sys_fstat);
-	loader_add_kernel_symbol(fs_register_filesystem);
-	loader_add_kernel_symbol(fs_unregister_filesystem);
 	loader_add_kernel_symbol(vfs_icache_put);
-	loader_do_add_kernel_symbol((addr_t)(struct inode **)&devfs_root, "devfs_root");
-	loader_add_kernel_symbol(vfs_do_get_idir);
-	loader_add_kernel_symbol(proc_set_callback);
-	loader_add_kernel_symbol(proc_get_major);
-#endif
+	loader_add_kernel_symbol(fs_resolve_path_inode);
+	loader_add_kernel_symbol(sys_mknod);
+	loader_add_kernel_symbol(sys_unlink);
+	loader_add_kernel_symbol(vfs_inode_set_needread);
+	loader_add_kernel_symbol(fs_filesystem_register);
+	loader_add_kernel_symbol(fs_filesystem_unregister);
 #endif
 }
 
@@ -109,19 +102,56 @@ int sys_unlink(const char *path)
 
 }
 
+int sys_mkdir(const char *path, mode_t mode)
+{
+	int c;
+	struct inode *n;
+	if(!(n=fs_resolve_path_create(path, 0, S_IFDIR | mode, &c))) {
+		return -EINVAL;
+	}
+
+	vfs_icache_put(n);
+	if(!c)
+		return -EEXIST;
+	return 0;
+}
+
 int sys_rmdir(const char *path)
 {
 
 }
 
+int sys_fs_mount(char *node, char *point, char *type, int opts)
+{
+	struct filesystem *fs = fs_filesystem_create();
+	int r = fs_filesystem_init_mount(fs, node, type, opts);
+	if(r) {
+		fs_filesystem_destroy(fs);
+		return r;
+	}
+	struct inode *in = fs_resolve_path_inode(point, 0, &r);
+	/* todo check */
+	if(!in) {
+		fs_filesystem_destroy(fs);
+		return r;
+	}
+	r = fs_mount(in, fs);
+	vfs_icache_put(in);
+	if(r) {
+		fs_filesystem_destroy(fs);
+		return r;
+	}
+	return 0;
+}
+
 int sys_mount(char *node, char *to)
 {
-
+	return sys_fs_mount(node, to, 0, 0);
 }
 
 int sys_mount2(char *node, char *to, char *name, char *opts, int something)
 {
-
+	return sys_fs_mount(node, to, name, 0);
 }
 
 int sys_umount()
@@ -136,7 +166,14 @@ int sys_get_pwd(char *b, int s)
 
 int sys_chroot(char *path)
 {
-
+	int r = sys_chdir(path, 0);
+	if(r)
+		return r;
+	struct inode *node = fs_resolve_path_inode(path, 0, 0);
+	if(!node)
+		return -ENOENT;
+	vfs_inode_chroot(node);
+	return 0;
 }
 
 int sys_seek(int fp, off_t pos, unsigned whence)
@@ -177,7 +214,7 @@ int sys_chdir(char *n, int fd)
 		ret = vfs_inode_chdir(file->inode);
 		fs_fput((task_t *)current_task, fd, 0);
 	} else {
-		struct inode *node = fs_resolve_path_inode(n, &ret);
+		struct inode *node = fs_resolve_path_inode(n, 0, &ret);
 		if(node) {
 			ret = vfs_inode_chdir(node);
 			vfs_icache_put(node);
@@ -213,7 +250,7 @@ int sys_chmod(char *path, int fd, mode_t mode)
 	if(!path && fd == -1) return -EINVAL;
 	struct inode *i;
 	if(path)
-		i = fs_resolve_path_inode(path, 0);
+		i = fs_resolve_path_inode(path, 0, 0);
 	else {
 		struct file *file = fs_get_file_pointer((task_t *)current_task, fd);
 		if(!file)
@@ -250,7 +287,7 @@ int sys_chown(char *path, int fd, uid_t uid, gid_t gid)
 		return -EINVAL;
 	struct inode *i;
 	if(path)
-		i = fs_resolve_path_inode(path, 0);
+		i = fs_resolve_path_inode(path, 0, 0);
 	else {
 		struct file *file = fs_get_file_pointer((task_t *)current_task, fd);
 		if(!file)
@@ -284,7 +321,7 @@ int sys_utime(char *path, time_t a, time_t m)
 {
 	if(!path)
 		return -EINVAL;
-	struct inode *i = fs_resolve_path_inode(path, 0);
+	struct inode *i = fs_resolve_path_inode(path, 0, 0);
 	if(!i)
 		return -ENOENT;
 	if(current_task->thread->effective_uid && current_task->thread->effective_uid != i->uid) {
@@ -304,7 +341,7 @@ int sys_getnodestr(char *path, char *node)
 {
 	if(!path || !node)
 		return -EINVAL;
-	struct inode *i = fs_resolve_path_inode(path, 0);
+	struct inode *i = fs_resolve_path_inode(path, 0, 0);
 	if(!i)
 		return -ENOENT;
 	strncpy(node, i->node_str, 128);
@@ -332,11 +369,12 @@ int sys_ftruncate(int f, off_t length)
 int sys_mknod(char *path, mode_t mode, dev_t dev)
 {
 	if(!path) return -EINVAL;
-	struct inode *i = fs_resolve_path_inode(path, RESOLVE_NOLINK);
+	struct inode *i = fs_resolve_path_inode(path, RESOLVE_NOLINK, 0);
 	if(i) {
 		vfs_icache_put(i);
 		return -EEXIST;
 	}
+#warning "fail if exist"
 	i = fs_resolve_path_create(path, 0, mode, 0);
 	if(!i) return -EACCES;
 	i->phys_dev = dev;
@@ -355,7 +393,7 @@ int sys_readlink(char *_link, char *buf, int nr)
 {
 	if(!_link || !buf)
 		return -EINVAL;
-	struct inode *i = fs_resolve_path_inode(_link, RESOLVE_NOLINK);
+	struct inode *i = fs_resolve_path_inode(_link, RESOLVE_NOLINK, 0);
 	if(!i)
 		return -ENOENT;
 	int ret = fs_inode_read(i, 0, nr, buf);
@@ -367,15 +405,15 @@ int sys_symlink(char *p2, char *p1)
 {
 	if(!p2 || !p1)
 		return -EINVAL;
-	struct inode *inode = fs_resolve_path_inode(p1, 0);
-	if(!inode) inode = fs_resolve_path_inode(p1, RESOLVE_NOLINK);
+	struct inode *inode = fs_resolve_path_inode(p1, 0, 0);
+	if(!inode) inode = fs_resolve_path_inode(p1, RESOLVE_NOLINK, 0);
 	if(inode)
 	{
 		vfs_icache_put(inode);
 		return -EEXIST;
 	}
 #warning "set the dirent file type based off of mode"
-	inode = fs_resolve_path_create(p1, 0, 0x1FF);
+	inode = fs_resolve_path_create(p1, 0, 0x1FF, 0);
 	if(!inode)
 		return -EACCES;
 	inode->mode &= 0x1FF;
@@ -400,7 +438,7 @@ int sys_access(char *path, mode_t mode)
 {
 	if(!path)
 		return -EINVAL;
-	struct inode *i = fs_resolve_path_inode(path, 0);
+	struct inode *i = fs_resolve_path_inode(path, 0, 0);
 	if(!i)
 		return -ENOENT;
 	if(current_task->thread->real_uid == 0) {

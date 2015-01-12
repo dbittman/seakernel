@@ -49,6 +49,11 @@ void fs_initrd_parse()
 	 * VFS. This makes parsing directories much easier. */
 	printk(1, "\n");
 	int count=0, size=0;
+	fs_resolve_path_create("/usr", 0, S_IFDIR | 0777, 0);
+	fs_resolve_path_create("/usr/sbin", 0, S_IFDIR | 0777, 0);
+	fs_resolve_path_create("/etc", 0, S_IFDIR | 0777, 0);
+	fs_resolve_path_create("/dev", 0, S_IFDIR | 0777, 0);
+	fs_resolve_path_create("/mnt", 0, S_IFDIR | 0777, 0);
 	for (i = 0; i < initrd_header->nfiles; i++)
 	{
 		printk(1, "\t* Loading '%s': %d bytes...\n", 
@@ -56,8 +61,11 @@ void fs_initrd_parse()
 		file_headers[i].offset += location;
 		char name[128];
 		snprintf(name, 128, "/%s", (char *)&file_headers[i].name);
-		q = fs_resolve_path_create(name, 0, 0x1FF, 0);
-		fs_inode_write(q, 0, file_headers[i].length, (char *)((addr_t)file_headers[i].offset));
+		q = fs_resolve_path_create(name, 0, S_IFREG | 0777, 0);
+		if(q) {
+			fs_inode_write(q, 0, file_headers[i].length, (char *)((addr_t)file_headers[i].offset));
+			vfs_icache_put(q);
+		}
 		count++;
 		size += file_headers[i].length / 1024;
 	}

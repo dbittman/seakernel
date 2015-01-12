@@ -23,11 +23,17 @@ void *queue_remove(struct queue *q, struct queue_item *item)
 	void *ret = 0;
 	struct queue_item *free = 0;
 	mutex_acquire(&q->lock);
-	assert(q->head);
-	q->head = item->next;
-	q->head->prev = 0;
-	if(!q->head)
-		q->tail = 0;
+	assert(q->count > 0 && q->head && q->tail);
+
+	if(item->prev)
+		item->prev->next = item->next;
+	else
+		q->head = item->next;
+	if(item->next)
+		item->next->prev = item->prev;
+	else
+		q->tail = item->prev;
+
 	sub_atomic(&q->count, 1);
 	mutex_release(&q->lock);
 	return ret;

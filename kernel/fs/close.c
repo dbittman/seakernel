@@ -54,20 +54,8 @@ int sys_close(int fp)
 	else if(S_ISBLK(f->inode->mode) && !fp)
 		dm_block_device_rw(CLOSE, f->inode->phys_dev, 0, 0, 0);
 #warning "TODO"
-	/*
-	TODO
-	   int rem_ref = sub_atomic(&f->inode->f_count, 1);
-	int did_unlink = 0;
-	if(!rem_ref)
-	{
-		if(f->inode->marked_for_deletion) {
-			did_unlink = 1;
-			vfs_do_unlink(f->inode);
-		}
-	}
-	if(!did_unlink)
-		vfs_icache_put(f->inode);
-	*/
+	vfs_icache_put(f->inode);
 	fs_fput((task_t *)current_task, fp, FPUT_CLOSE);
 	return 0;
 }
+

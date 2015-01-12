@@ -27,7 +27,7 @@ struct psm_device {
 	uint32_t magic;
 	struct disk_info info;
 	struct part_info part;
-	struct inode *node;
+	char path[128];
 	dev_t dev;
 };
 
@@ -43,7 +43,8 @@ void psm_table_destroy();
 int psm_table_insert(dev_t dev, struct disk_info *di, struct part_info *pt, char *);
 void psm_table_remove(int index);
 void psm_table_get(int index, struct psm_device *d);
-void psm_table_set_node(int index, struct inode *n);
+void psm_table_set_path(int index, char *);
 
 #endif
 #endif
+

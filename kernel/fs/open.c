@@ -27,8 +27,8 @@ struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int
 	mode_t mode = (_mode & ~0xFFF) | ((_mode&0xFFF) & (~(current_task->cmask&0xFFF)));
 	int did_create=0;
 	inode = (flags & _FCREAT) ? 
-				fs_resolve_path_create(name, 0, mode, &did_create) 
-				: fs_resolve_path_inode(name, 0);
+				fs_resolve_path_create(name, 0, S_IFREG | mode, &did_create) 
+				: fs_resolve_path_inode(name, 0, 0);
 	if(!inode) {
 		*error = (flags & _FCREAT) ? -EACCES : -ENOENT;
 		return 0;

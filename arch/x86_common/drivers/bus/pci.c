@@ -33,8 +33,8 @@
 #include <sea/vsprintf.h>
 #define PCI_LOGLEVEL 1
 
-struct inode *proc_pci;
-volatile int proc_pci_maj;
+//struct inode *proc_pci;
+//volatile int proc_pci_maj;
 struct pci_device *pci_list=0;
 mutex_t *pci_mutex;
 int loader_remove_kernel_symbol(char * unres);
@@ -67,10 +67,10 @@ void pci_dm_remove_device(struct pci_device *dev)
 	if(pci_list == dev)
 		pci_list = dev->prev ? dev->prev : dev->next;
 	kfree(dev->pcs);
-	if(dev->node) {
-		rwlock_acquire(&dev->node->rwl, RWL_WRITER);
-		iremove_force(dev->node);
-	}
+	//if(dev->node) {
+	//	rwlock_acquire(&dev->node->rwl, RWL_WRITER);
+	//	iremove_force(dev->node);
+	//}
 	kfree(dev);
 	mutex_release(pci_mutex);
 }
@@ -205,10 +205,10 @@ void pci_scan()
 					int min=0;
 					min = 256*bus + dev*8 + func;
 					snprintf(name, 64, "%x.%x.%x", bus, dev, func);
-					if(proc_pci_maj) (new->node=proc_create_node(proc_pci, 
-						name, S_IFREG, proc_pci_maj, min));
-					if(new->node)
-						new->node->len=sizeof(struct pci_device);
+					//if(proc_pci_maj) (new->node=proc_create_node(proc_pci, 
+					//	name, S_IFREG, proc_pci_maj, min));
+					//if(new->node)
+					//	new->node->len=sizeof(struct pci_device);
 				}
 			}
 		}
@@ -287,7 +287,7 @@ unsigned pci_get_base_address(struct pci_device *device)
 	/* PIO */
 	return tmp & 0xFFFFFFFC;
 }
-
+/*
 int pci_proc_call(char rw, struct inode *inode, int m, char *buf, int off, int len)
 {
 	int c=0;
@@ -316,14 +316,14 @@ int pci_proc_call(char rw, struct inode *inode, int m, char *buf, int off, int l
 	}
 	return 0;
 }
-
+*/
 int module_install()
 {
 	pci_list=0;
 	pci_mutex = mutex_create(0, 0);
-	proc_pci_maj = proc_get_major();
-	proc_pci=proc_create_node_at_root("pci", S_IFDIR, proc_pci_maj, 0);
-	proc_set_callback(proc_pci_maj, pci_proc_call);
+	//proc_pci_maj = proc_get_major();
+	//proc_pci=proc_create_node_at_root("pci", S_IFDIR, proc_pci_maj, 0);
+	//proc_set_callback(proc_pci_maj, pci_proc_call);
 	printk(1, "[pci]: Scanning pci bus\n");
 	pci_scan();
 	
@@ -339,9 +339,9 @@ int module_install()
 int module_exit()
 {
 	pci_destroy_list();
-	rwlock_acquire(&proc_pci->rwl, RWL_WRITER);
-	iremove_force(proc_pci);
-	proc_set_callback(proc_pci_maj, 0);
+	//rwlock_acquire(&proc_pci->rwl, RWL_WRITER);
+	//iremove_force(proc_pci);
+	//proc_set_callback(proc_pci_maj, 0);
 	loader_remove_kernel_symbol("pci_locate_device");
 	loader_remove_kernel_symbol("pci_locate_devices");
 	loader_remove_kernel_symbol("pci_locate_class");

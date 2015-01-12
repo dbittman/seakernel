@@ -39,9 +39,9 @@
 #include <sea/lib/cache.h>
 #include <sea/dm/block.h>
 #include <modules/ext2.h>
-static uint32_t block_free(ext2_fs_t* fs, uint32_t num);
+static uint32_t block_free(struct ext2_info* fs, uint32_t num);
 
-static int get_bg_block(ext2_fs_t* fs, int group_nr)
+static int get_bg_block(struct ext2_info* fs, int group_nr)
 {
 	uint32_t num;
 	unsigned bs = ext2_sb_blocksize(fs->sb);
@@ -50,7 +50,7 @@ static int get_bg_block(ext2_fs_t* fs, int group_nr)
 	return num;
 }
 
-int ext2_bg_read(ext2_fs_t* fs, int group_nr, ext2_blockgroup_t* bg)
+int ext2_bg_read(struct ext2_info* fs, int group_nr, ext2_blockgroup_t* bg)
 {
 	int bg_n = get_bg_block(fs, group_nr);
 	ext2_read_off(fs, bg_n * ext2_sb_blocksize(fs->sb) + 
@@ -59,7 +59,7 @@ int ext2_bg_read(ext2_fs_t* fs, int group_nr, ext2_blockgroup_t* bg)
 	return 1;
 }
 
-int ext2_bg_update(ext2_fs_t* fs, int group_nr, ext2_blockgroup_t* bg)
+int ext2_bg_update(struct ext2_info* fs, int group_nr, ext2_blockgroup_t* bg)
 {
 	int num = get_bg_block(fs, group_nr);
 	ext2_write_off(fs, num * ext2_sb_blocksize(fs->sb) + 
@@ -79,7 +79,7 @@ int ext2_bg_update(ext2_fs_t* fs, int group_nr, ext2_blockgroup_t* bg)
 * @return Pointer auf das Handle fuer diesen Block
 */
 static int inode_get_block(
-ext2_fs_t* fs, uint32_t inode_nr, size_t* offset)
+struct ext2_info* fs, uint32_t inode_nr, size_t* offset)
 {
 	uint32_t    inode_offset;
 	uint32_t    inode_internal = ext2_inode_to_internal(fs, inode_nr);
@@ -97,13 +97,8 @@ ext2_fs_t* fs, uint32_t inode_nr, size_t* offset)
 	inode_offset / bs;
 }
 
-int ext2_inode_read(ext2_fs_t* fs, uint32_t inode_nr, ext2_inode_t* inode)
+int ext2_inode_read(struct ext2_info* fs, uint32_t inode_nr, ext2_inode_t* inode)
 {
-	struct ce_t *c = cache_find_element(fs->cache, inode_nr, 1);
-	if(c) {
-		memcpy(inode, c->data, sizeof (ext2_inode_t));
-		return 1;
-	}
 	size_t offset;
 	int num;
 	if (!(num = inode_get_block(fs, inode_nr, &offset))) {
@@ -113,15 +108,11 @@ int ext2_inode_read(ext2_fs_t* fs, uint32_t inode_nr, ext2_inode_t* inode)
 		(unsigned char *)inode, ext2_sb_inodesize(fs->sb));
 	inode->fs = fs;
 	inode->number = inode_nr;
-	cache_object_clean(fs->cache, inode_nr, 1, sizeof(ext2_inode_t), (void *)inode);
 	return 1;
 }
 
 int ext2_inode_update(ext2_inode_t* inode)
 {
-	struct ce_t *c = cache_find_element(inode->fs->cache, inode->number, 1);
-	if(c)
-		memcpy(c->data, inode, sizeof (ext2_inode_t));
 	size_t offset;
 	int num;
 	if (!(num = inode_get_block(inode->fs, inode->number, &offset))) {
@@ -141,7 +132,7 @@ int ext2_inode_update(ext2_inode_t* inode)
 * @return Blockhandle
 */
 static inline int ibitmap_get_block(
-ext2_fs_t* fs, ext2_blockgroup_t* bg)
+struct ext2_info* fs, ext2_blockgroup_t* bg)
 {
 	return bg->inode_bitmap;
 }
@@ -152,7 +143,7 @@ ext2_fs_t* fs, ext2_blockgroup_t* bg)
 * @return Interne Inodenummer
 */
 
-static uint32_t inode_alloc(ext2_fs_t* fs, uint32_t bgnum)
+static uint32_t inode_alloc(struct ext2_info* fs, uint32_t bgnum)
 {
 	uint32_t* bitmap;
 	uint32_t i, j;
@@ -195,7 +186,26 @@ static uint32_t inode_alloc(ext2_fs_t* fs, uint32_t bgnum)
 	return (bgnum * fs->sb->inodes_per_group) + (i * 32) + j;
 }
 
-int ext2_inode_alloc(ext2_fs_t* fs, ext2_inode_t* inode)
+uint32_t ext2_inode_do_alloc(struct ext2_info *fs)
+{
+	uint32_t number;
+	uint32_t bgnum;
+	mutex_acquire(fs->m_node);
+	for (bgnum = 0; bgnum < ext2_sb_bgcount(fs->sb); bgnum++) {
+		number = inode_alloc(fs, bgnum);
+		if (number) {
+			goto found;
+		}
+	}
+	mutex_release(fs->m_node);
+	return 0;
+	
+	found:
+	mutex_release(fs->m_node);
+	return ext2_inode_from_internal(fs, number);
+}
+
+int ext2_inode_alloc(struct ext2_info* fs, ext2_inode_t* inode)
 {
 	uint32_t number;
 	uint32_t bgnum;
@@ -225,7 +235,7 @@ int ext2_inode_alloc(ext2_fs_t* fs, ext2_inode_t* inode)
 
 int ext2_inode_free(ext2_inode_t* inode)
 {
-	ext2_fs_t* fs = inode->fs;
+	struct ext2_info* fs = inode->fs;
 	uint32_t inode_int = ext2_inode_to_internal(fs, inode->number);
 	int i;
 	mutex_acquire(fs->m_node);
@@ -291,7 +301,7 @@ int ext2_inode_free(ext2_inode_t* inode)
 	return 1;
 }
 
-static int block_alloc_bg(ext2_fs_t* fs, ext2_blockgroup_t* bg)
+static int block_alloc_bg(struct ext2_info* fs, ext2_blockgroup_t* bg)
 {
 	uint32_t i;
 	
@@ -322,13 +332,13 @@ static int block_alloc_bg(ext2_fs_t* fs, ext2_blockgroup_t* bg)
 * @return Blockhandle
 */
 static inline int bbitmap_get_block(
-ext2_fs_t* fs, ext2_blockgroup_t* bg)
+struct ext2_info* fs, ext2_blockgroup_t* bg)
 {
 	return bg->block_bitmap;
 }
 
 
-static uint32_t block_alloc(ext2_fs_t* fs, int set_zero)
+static uint32_t block_alloc(struct ext2_info* fs, int set_zero)
 {
 	uint32_t* bitmap;
 	uint32_t block_num;
@@ -407,7 +417,7 @@ static uint32_t block_alloc(ext2_fs_t* fs, int set_zero)
 	return block_num;
 }
 
-static uint32_t block_free(ext2_fs_t* fs, uint32_t num)
+static uint32_t block_free(struct ext2_info* fs, uint32_t num)
 {
 	uint32_t* bitmap;
 	uint32_t bgnum;
@@ -456,7 +466,7 @@ static uint32_t block_free(ext2_fs_t* fs, uint32_t num)
 static inline int get_indirect_block_level(ext2_inode_t* inode, uint32_t block, 
 	uint32_t* direct_block, uint32_t* indirect_block)
 {
-	ext2_fs_t* fs = inode->fs;
+	struct ext2_info* fs = inode->fs;
 	size_t block_size = ext2_sb_blocksize(fs->sb);
 	
 	if (block < 12) {
@@ -494,7 +504,7 @@ static uint32_t get_block_offset(ext2_inode_t* inode, uint32_t block, int alloc)
 	uint32_t path[4][2];
 	memset(path, 0, sizeof(path));
 	
-	ext2_fs_t* fs = inode->fs;
+	struct ext2_info* fs = inode->fs;
 	block_size = ext2_sb_blocksize(fs->sb);
 	
 	
@@ -591,7 +601,7 @@ static uint32_t get_block_offset(ext2_inode_t* inode, uint32_t block, int alloc)
 int ext2_inode_writeblk(ext2_inode_t* inode, uint32_t block, void* buf);
 int ext2_inode_readblk(ext2_inode_t* inode, uint32_t block, void* buf, size_t count)
 {
-	ext2_fs_t* fs = inode->fs;
+	struct ext2_info* fs = inode->fs;
 	int b;
 	size_t block_size = ext2_sb_blocksize(fs->sb);
 	uint32_t offset;
@@ -612,18 +622,9 @@ int ext2_inode_readblk(ext2_inode_t* inode, uint32_t block, void* buf, size_t co
 	return count;
 }
 
-void force_sync(ext2_fs_t *fs, unsigned b)
-{
-	int off = b*2 + fs->block;
-#if CONFIG_BLOCK_CACHE
-	dm_write_block_cache(fs->dev, off);
-	dm_write_block_cache(fs->dev, off+1);
-#endif
-}
-
 static int writeblk(ext2_inode_t* inode, uint32_t block, const void* buf)
 {
-	ext2_fs_t* fs = inode->fs;
+	struct ext2_info* fs = inode->fs;
 	unsigned b;
 	uint32_t block_offset = get_block_offset(inode, block, 1);
 	size_t   block_size = ext2_sb_blocksize(fs->sb);

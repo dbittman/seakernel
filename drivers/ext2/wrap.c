@@ -14,6 +14,14 @@ int ext2_wrap_alloc_inode(struct filesystem *fs, uint32_t *id)
 	uint32_t i = ext2_inode_do_alloc(info);
 	if(!i)
 		return -EOVERFLOW;
+	ext2_inode_t in;
+	if(!ext2_inode_read(info, i, &in))
+		return -EIO;
+	in.deletion_time = 0;
+	in.mode = 0;
+	in.size = 0;
+	ext2_inode_update(&in);
+
 	*id = i;
 	return 0;
 }
@@ -34,6 +42,7 @@ int ext2_wrap_inode_push(struct filesystem *fs, struct inode *out)
 	in.link_count = out->nlink;
 	in.number = out->id;
 	in.sector_count = out->nblocks;
+	ext2_inode_update(&in);
 	return 0;
 }
 
@@ -73,7 +82,7 @@ int ext2_wrap_inode_get_dirent(struct filesystem *fs, struct inode *node,
 }
 
 int ext2_wrap_inode_getdents(struct filesystem *fs, struct inode *node, unsigned off, struct dirent_posix *dirs,
-		unsigned count)
+		unsigned count, unsigned *nextoff)
 {
 	struct ext2_info *info = fs->data;
 	ext2_inode_t dir;
@@ -81,7 +90,7 @@ int ext2_wrap_inode_getdents(struct filesystem *fs, struct inode *node, unsigned
 		return -EIO;
 	if(dir.deletion_time || !dir.mode)
 		return -ENOENT;
-	int ret = ext2_dir_getdents(&dir, off, dirs, count);
+	int ret = ext2_dir_getdents(&dir, off, dirs, count, nextoff);
 	return ret;
 }
 
@@ -100,7 +109,8 @@ int ext2_wrap_inode_link(struct filesystem *fs, struct inode *parent, struct ino
 		return -EACCES;
 	int ret = ext2_dir_addent(&dir, target->id, ext2_inode_type(target->mode), name, namelen);
 	ext2_inode_update(&dir);
-	vfs_inode_set_needread(parent);
+	parent->length = dir.size;
+	parent->nblocks = dir.sector_count;
 	return ret == 0 ? -EINVAL : 0;
 }
 
@@ -153,13 +163,16 @@ int ext2_wrap_inode_write(struct filesystem *fs, struct inode *node,
 	ext2_inode_t inode;
 	if(!ext2_inode_read(info, node->id, &inode))
 		return -EIO;
+#warning "can we be sure that this data has been 'pushed'?"
 	if(inode.deletion_time || !inode.mode)
 		return -ENOENT;
 	unsigned sz = inode.size;
 	unsigned sc = inode.sector_count;
 	unsigned int ret = ext2_inode_writedata(&inode, offset, length, (unsigned char*)buffer);
-	if(sz != inode.sector_count || sz != inode.size) 
-		vfs_inode_set_needread(node);
+	if(sz != inode.sector_count || sz != inode.size) {
+		node->length = inode.size;
+		node->nblocks = inode.sector_count;
+	}
 	if(ret > length) ret = length;
 	return ret;
 

@@ -67,8 +67,9 @@ int sys_getdents(int fd, struct dirent_posix *dirs, unsigned int count)
 	struct file *f = fs_get_file_pointer((task_t *)current_task, fd);
 	if(!f) return -EBADF;
 
-	int r = fs_callback_inode_getdents(f->inode, f->pos, dirs, count);
-	f->pos += r;
+	unsigned nex;
+	int r = fs_callback_inode_getdents(f->inode, f->pos, dirs, count, &nex);
+	f->pos = nex;
 
 	fs_fput((task_t *)current_task, fd, 0);
 	return r;

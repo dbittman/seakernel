@@ -22,7 +22,7 @@ struct filesystem_inode_callbacks {
 	int (*lookup)(struct filesystem *fs, struct inode *node,
 			const char *name, size_t namelen, struct dirent *dir);
 	int (*getdents)(struct filesystem *fs, struct inode *node, unsigned off,
-			struct dirent_posix *, unsigned count);
+			struct dirent_posix *, unsigned count, unsigned *);
 	int (*link)(struct filesystem *fs, struct inode *parent, struct inode *target,
 			const char *name, size_t namelen);
 	int (*unlink)(struct filesystem *fs, struct inode *parent, const char *name,
@@ -69,7 +69,7 @@ int fs_callback_inode_link(struct inode *node, struct inode *target, const char 
 int fs_callback_inode_unlink(struct inode *node, const char *name, size_t namelen);
 int fs_callback_inode_lookup(struct inode *node, const char *name,
 		size_t namelen, struct dirent *dir);
-int fs_callback_inode_getdents(struct inode *node, unsigned, struct dirent_posix *, unsigned);
+int fs_callback_inode_getdents(struct inode *node, unsigned, struct dirent_posix *, unsigned, unsigned *);
 int fs_callback_inode_select(struct inode *node, int rw);
 int fs_callback_fs_alloc_inode(struct filesystem *fs, uint32_t *id);
 int fs_callback_fs_stat(struct filesystem *fs, struct posix_statfs *p);

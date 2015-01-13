@@ -43,13 +43,13 @@ void devfs_init()
 	devfs = fs_filesystem_create();
 	ramfs_mount(devfs);
 	sys_fs_mount(0, "/dev", "devfs", 0);
-	char tty[9];
+	char tty[16];
 #warning "these permissions may be wrong"
 	for(int i=1;i<10;i++) {
-		snprintf(tty, 9, "/dev/tty%d", i);
-		sys_mknod(tty, S_IFCHR | 0644, GETDEV(3, i));
+		snprintf(tty, 10, "/dev/tty%d", i);
+		sys_mknod(tty, S_IFCHR | 0666, GETDEV(3, i));
 	}
-	sys_mknod("/dev/tty", S_IFCHR | 0644, GETDEV(4, 0));
+	sys_mknod("/dev/tty", S_IFCHR | 0666, GETDEV(4, 0));
 	sys_mknod("/dev/null", S_IFCHR | 0666, GETDEV(0, 0));
 	sys_mknod("/dev/zero", S_IFCHR | 0666, GETDEV(1, 0));
 	sys_mknod("/dev/com0", S_IFCHR | 0600, GETDEV(5, 0));
@@ -112,6 +112,7 @@ int sys_unlink(const char *path)
 	char tmp[len];
 	memcpy(tmp, path, len);
 	char *del = strrchr(tmp, '/');
+	if(del) *del = 0;
 	char *dir = del ? tmp : ".";
 	char *name = del ? del + 1 : tmp;
 	if(dir[0] == 0)
@@ -252,16 +253,18 @@ int sys_link(char *oldpath, char *newpath)
 	if(!target)
 		return -ENOENT;
 
+	kprintf("link: %s -> %s\n", newpath, oldpath);
 	int len = strlen(newpath) + 1;
 	char tmp[len];
 	memcpy(tmp, newpath, len);
 	char *del = strrchr(tmp, '/');
+	if(del) *del = 0;
 	char *dir = del ? tmp : ".";
 	char *name = del ? del + 1 : tmp;
 	if(dir[0] == 0)
 		dir = "/";
 
-	struct inode *parent = fs_resolve_path_inode(newpath, 0, 0);
+	struct inode *parent = fs_resolve_path_inode(dir, 0, 0);
 	if(!parent) {
 		vfs_icache_put(target);
 		return -ENOENT;
@@ -415,6 +418,10 @@ int sys_readlink(char *_link, char *buf, int nr)
 	struct inode *i = fs_resolve_path_inode(_link, RESOLVE_NOLINK, 0);
 	if(!i)
 		return -ENOENT;
+	if(!S_ISLNK(i->mode)) {
+		vfs_icache_put(i);
+		return -EINVAL;
+	}
 	int ret = fs_inode_read(i, 0, nr, buf);
 	vfs_icache_put(i);
 	return ret;
@@ -432,11 +439,10 @@ int sys_symlink(char *p2, char *p1)
 		return -EEXIST;
 	}
 #warning "set the dirent file type based off of mode"
-	inode = fs_resolve_path_create(p1, 0, 0x1FF, 0);
+	inode = fs_resolve_path_create(p1, 0, S_IFLNK | 0x1FF, 0);
 	if(!inode)
 		return -EACCES;
-	inode->mode &= 0x1FF;
-	inode->mode |= S_IFLNK;
+#warning "do we need to set length to zero in all inode allocation cases?"
 	inode->length=0;
 	int ret=0;
 	vfs_inode_set_dirty(inode);

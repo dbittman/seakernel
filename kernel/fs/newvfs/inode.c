@@ -52,6 +52,8 @@ struct inode *vfs_inode_create()
 	hash_table_resize(node->dirents, HASH_RESIZE_MODE_IGNORE,1000);
 	hash_table_specify_function(node->dirents, HASH_FUNCTION_BYTE_SUM);
 #warning "TODO: other inits"
+	node->flags = INODE_INUSE;
+	ll_do_insert(ic_inuse, &node->inuse_item, node);
 
 	return node;
 }
@@ -70,7 +72,6 @@ void vfs_inode_destroy(struct inode *node)
 
 void vfs_inode_get(struct inode *node)
 {
-	//kprintf("getting inode %d\n", node->id);
 	assert(add_atomic(&node->count, 1) > 1);
 	assert((node->flags & INODE_INUSE));
 }
@@ -81,13 +82,12 @@ struct inode *vfs_icache_get(struct filesystem *fs, uint32_t num)
 	struct inode *node;
 	int newly_created = 0;
 	uint32_t key[3] = {fs->id, num};
-	//kprintf("getting inode %d\n", num);
 	if(hash_table_get_entry(icache, key, sizeof(uint32_t), 3, (void**)&node) == -ENOENT) {
 	//	kprintf("create new inode\n");
 		/* didn't find it. Okay, create one */
 		node = vfs_inode_create();
 		node->filesystem = fs;
-		node->flags |= INODE_NEEDREAD;
+		node->flags = INODE_NEEDREAD;
 		node->id = num;
 		struct inode *ret;
 		hash_table_set_or_get_entry(icache, key, sizeof(uint32_t), 3, node, (void**)&ret);
@@ -106,9 +106,10 @@ struct inode *vfs_icache_get(struct filesystem *fs, uint32_t num)
 	/* move to in-use */
 	if(!(ff_or_atomic(&node->flags, INODE_INUSE) & INODE_INUSE)) {
 	//	kprintf("move to inuse\n");
-		if(!newly_created)
+		if(!newly_created) {
 			queue_remove(ic_lru, &node->lru_item);
-		ll_do_insert(ic_inuse, &node->inuse_item, node);
+			ll_do_insert(ic_inuse, &node->inuse_item, node);
+		}
 	}
 
 	return node;
@@ -128,7 +129,6 @@ void vfs_inode_set_dirty(struct inode *node)
 
 void vfs_icache_put(struct inode *node)
 {
-//	kprintf("putting inode %d\n", node->id);
 	assert(node->count > 0);
 	if(!sub_atomic(&node->count, 1)) {
 //		kprintf("moving to lru\n");

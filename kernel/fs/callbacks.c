@@ -59,11 +59,11 @@ int fs_callback_inode_lookup(struct inode *node, const char *name,
 	return -ENOTSUP;
 }
 
-int fs_callback_inode_getdents(struct inode *node, unsigned off, struct dirent_posix *ds, unsigned count)
+int fs_callback_inode_getdents(struct inode *node, unsigned off, struct dirent_posix *ds, unsigned count, unsigned *nextoff)
 {
 	assert(node && node->filesystem);
 	if(node->filesystem->fs_inode_ops->getdents)
-		return node->filesystem->fs_inode_ops->getdents(node->filesystem, node, off, ds, count);
+		return node->filesystem->fs_inode_ops->getdents(node->filesystem, node, off, ds, count, nextoff);
 	return -ENOTSUP;
 }
 

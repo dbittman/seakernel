@@ -10,6 +10,8 @@ struct dirent *fs_dirent_lookup(struct inode *node, const char *name, size_t nam
 {
 	if(!vfs_inode_check_permissions(node, MAY_EXEC, 0))
 		return 0;
+	if(node == current_task->thread->root && !strncmp(name, "..", 2) && namelen == 2)
+		return fs_dirent_lookup(node, ".", 1);
 	rwlock_acquire(&node->lock, RWL_WRITER);
 	struct dirent *dir = vfs_inode_get_dirent(node, name, namelen);
 	if(!dir) {
@@ -69,7 +71,6 @@ struct inode *fs_dirent_readinode(struct dirent *dir, int nofollow)
 		if(fs_inode_read(node, 0, node->length, link) != node->length)
 			return 0;
 		link[node->length]=0;
-		kprintf("resolving %s\n", link);
 		char *newpath = link;
 		struct inode *start = dir->parent, *ln=0;
 		if(link[0] == '/') {
@@ -174,16 +175,17 @@ struct inode *fs_resolve_path_inode(const char *path, int flags, int *error)
 
 struct inode *fs_resolve_path_create(const char *path, int flags, mode_t mode, int *did_create)
 {
-	size_t len = strlen(path);
-	char tmp[len+1];
-	strncpy(tmp, path, len);
-	tmp[len]=0;
-	char *name = strrchr(tmp, '/');
-	if(name) {
-		*name = 0;
-		name++;
-	}
-	struct inode *dir = fs_resolve_path_inode(tmp, flags, 0);
+	int len = strlen(path) + 1;
+	char tmp[len];
+	memcpy(tmp, path, len);
+	char *del = strrchr(tmp, '/');
+	if(del) *del = 0;
+	char *dirpath = del ? tmp : ".";
+	char *name = del ? del + 1 : tmp;
+	if(dirpath[0] == 0)
+		dirpath = "/";
+
+	struct inode *dir = fs_resolve_path_inode(dirpath, flags, 0);
 	if(!dir)
 		return 0;
 
@@ -208,6 +210,8 @@ struct inode *fs_resolve_path_create(const char *path, int flags, mode_t mode, i
 	fs_inode_pull(node);
 	node->mode = mode;
 	vfs_inode_set_dirty(node);
+#warning "find all the times to do this..."
+	fs_inode_push(node);
 
 	r = fs_link(dir, node, name, strlen(name));
 

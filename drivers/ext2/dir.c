@@ -57,7 +57,7 @@ static int __map_type[8] = {
 	[DET_SLINK] = DT_LNK,
 };
 
-int ext2_dir_getdents(ext2_inode_t* inode, unsigned start, struct dirent_posix *dirs, unsigned count)
+int ext2_dir_getdents(ext2_inode_t* inode, unsigned start, struct dirent_posix *dirs, unsigned count, unsigned *nextoff)
 {
 	ext2_dirent_t* entry;
 	int bs = ext2_sb_blocksize(inode->fs->sb);
@@ -80,11 +80,16 @@ int ext2_dir_getdents(ext2_inode_t* inode, unsigned start, struct dirent_posix *
 		if (entry->inode == 0)
 			continue;
 
-		int reclen = ((entry->record_len + 1) & (~15)) + 16;
+		//int reclen = ((entry->record_len + 1) & (~15)) + 16;
+		int report_reclen = sizeof(struct dirent_posix) + entry->name_len + 1;
+		report_reclen = (report_reclen & ~(15)) + 16;
 		struct dirent_posix *rec = (void *)((addr_t)dirs + read);
-		read += reclen;
+		if(read + report_reclen > count)
+			break;
+		read += report_reclen;
 		rec->d_off = tpos;
-		rec->d_reclen = reclen;
+		*nextoff = tpos;
+		rec->d_reclen = report_reclen;
 		rec->d_type = __map_type[entry->type];
 		rec->d_ino = entry->inode;
 		memcpy(rec->d_name, entry->name, entry->name_len);

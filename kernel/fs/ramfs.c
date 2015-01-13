@@ -165,7 +165,7 @@ int ramfs_inode_readdir(struct filesystem *fs, struct inode *node, size_t num, s
 }
 
 int ramfs_inode_getdents(struct filesystem *fs, struct inode *node, unsigned off, struct dirent_posix *dirs,
-		unsigned count)
+		unsigned count, unsigned *nextoff)
 {
 	unsigned read = 0;
 	struct rfsinfo *info = fs->data;
@@ -190,6 +190,7 @@ int ramfs_inode_getdents(struct filesystem *fs, struct inode *node, unsigned off
 			memcpy(dp->d_name, rd->name, rd->namelen);
 			dp->d_name[rd->namelen]=0;
 			dp->d_off = read + reclen;
+			*nextoff = dp->d_off;
 			dp->d_type = DT_REG; //TODO
 			dp->d_ino = rd->ino;
 

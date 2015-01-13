@@ -109,7 +109,9 @@ static struct dirent *do_fs_resolve_path(struct inode *start, const char *path, 
 	
 	struct inode *node = start;
 	struct dirent *dir = 0;
-	while(node) {
+	while(node && *path) {
+		if(dir)
+			vfs_dirent_release(dir);
 		struct inode *nextnode = 0;
 		char *delim = strchr(path, '/');
 		if(delim != path) {
@@ -132,7 +134,6 @@ static struct dirent *do_fs_resolve_path(struct inode *start, const char *path, 
 				} else {
 					nextnode = fs_resolve_mount(nextnode);
 				}
-				vfs_dirent_release(dir);
 			}
 			vfs_icache_put(node);
 			node = nextnode;

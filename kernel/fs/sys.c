@@ -253,7 +253,6 @@ int sys_link(char *oldpath, char *newpath)
 	if(!target)
 		return -ENOENT;
 
-	kprintf("link: %s -> %s\n", newpath, oldpath);
 	int len = strlen(newpath) + 1;
 	char tmp[len];
 	memcpy(tmp, newpath, len);

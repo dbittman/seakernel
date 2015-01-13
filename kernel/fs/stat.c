@@ -55,6 +55,7 @@ int sys_stat(char *f, struct stat *statbuf, int lin)
 	if(!f || !statbuf) return -EINVAL;
 	struct inode *i;
 	i = (struct inode *) (lin ? fs_resolve_path_inode(f, RESOLVE_NOLINK, 0) : fs_resolve_path_inode(f, 0, 0));
+
 	if(!i)
 		return -ENOENT;
 	do_stat(i, statbuf);

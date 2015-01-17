@@ -305,7 +305,7 @@ static int block_alloc_bg(struct ext2_info* fs, ext2_blockgroup_t* bg)
 {
 	uint32_t i;
 	
-	i = fs->block_prev_alloc /fs->sb->blocks_per_group;
+	i = fs->block_prev_alloc / fs->sb->blocks_per_group;
 	if (i < ext2_sb_bgcount(fs->sb)) {
 		ext2_bg_read(fs, i, bg);
 		if (bg->free_blocks) {
@@ -563,7 +563,7 @@ static uint32_t get_block_offset(ext2_inode_t* inode, uint32_t block, int alloc)
 		int was_empty = empty;
 		
 		b = path[i - 1][0];
-		//char buf[ext2_sb_blocksize(inode->fs->sb)];
+		char buf[ext2_sb_blocksize(inode->fs->sb)];
 		ext2_read_block(fs, b, buf);
 		table = (uint32_t *)buf;
 		
@@ -861,3 +861,4 @@ int ext2_inode_truncate(ext2_inode_t* inode, uint32_t size, int noupdate)
 		ext2_inode_writedata(inode, 0, size, tmp);
 	return 1;
 }
+

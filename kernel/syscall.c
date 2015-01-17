@@ -326,7 +326,7 @@ int syscall_handler(volatile registers_t *regs)
 	/* start accounting information! */
 	current_task->freed = current_task->allocated=0;
 
-	#ifdef SC_DEBUG
+	#ifdef SC_DEBUG__
 	if(current_task->tty == current_console->tty && SYSCALL_NUM_AND_RET != 5)
 		printk(SC_DEBUG, "tty %d: syscall %d (from: %x): enter %d\n",
 				current_task->tty, current_task->pid,
@@ -336,12 +336,12 @@ int syscall_handler(volatile registers_t *regs)
 	__do_syscall_jump(ret, syscall_table[SYSCALL_NUM_AND_RET], _E_, _D_,
 					  _C_, _B_, _A_);
 	#ifdef SC_DEBUG
-	if((current_task->tty == current_console->tty || 1) && (tm_get_ticks() - or_t >= 10 || 1)
-		&& (ret < 0 || 1) && (ret == -EINTR || 1)
+	if((current_task->tty == current_console->tty || 1)
+		&& (ret < 0 || 0) && (ret == -EINTR || 1)
 		&& ((current_task->allocated != 0 || current_task->freed != 0 || 1))
 		&& SYSCALL_NUM_AND_RET != 5)
-		printk(SC_DEBUG, "syscall %d: %d ret %d, took %d ticks (%d al, %d fr)\n",
-			   current_task->pid, current_task->system, ret, tm_get_ticks() - or_t,
+		printk(SC_DEBUG, "syscall %d: %d ret %d, took  ticks (%d al, %d fr)\n",
+			   current_task->pid, current_task->system, ret, 
 			   current_task->allocated, current_task->freed);
 	#endif
 

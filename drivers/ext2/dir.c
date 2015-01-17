@@ -543,3 +543,19 @@ int ext2_dir_create(ext2_inode_t* parent, const char* name, ext2_inode_t* newi)
 	return 1;
 }
 
+void ext2_dir_change_dir_count(ext2_inode_t *node, int minus)
+{
+	ext2_blockgroup_t bg;
+	uint32_t bgnum = ext2_inode_to_internal(parent->fs, node->number)
+		/ node->fs->sb->inodes_per_group;
+
+	mutex_acquire(&node->fs->bg_lock);
+	ext2_bg_read(node->fs, bgnum, &bg);
+	if(minus)
+		bg.used_directories--;
+	else
+		bg.used_directories++;
+	ext2_bg_update(node->fs, bgnum, &bg);
+	mutex_release(&node->fs->bg_lock);
+}
+

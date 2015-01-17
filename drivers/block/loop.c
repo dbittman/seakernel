@@ -59,9 +59,9 @@ int loop_rw(int rw, int minor, u64 block, char *buf)
 	if((block * 512 + loop->offset + 512) > loop->limit && loop->limit)
 		return 0;
 	if(rw == READ)
-		ret = vfs_read_inode(loop->node, block*512 + loop->offset, 512, buf);
+		ret = fs_inode_read(loop->node, block*512 + loop->offset, 512, buf);
 	else if(rw == WRITE)
-		ret = vfs_write_inode(loop->node, block*512 + loop->offset, 512, buf);
+		ret = fs_inode_write(loop->node, block*512 + loop->offset, 512, buf);
 	return ret;
 }
 
@@ -73,7 +73,7 @@ int loop_up(int num, char *name)
 	if(loop->node) 
 		return -EBUSY;
 	
-	struct inode *i = vfs_get_idir(name, 0);
+	struct inode *i = fs_resolve_path_inode(name, 0, 0);
 	if(!i)
 		return -ENOENT;
 	loop->offset = loop->limit = loop->ro = 0;
@@ -91,7 +91,7 @@ int loop_down(int num)
 		return -EINVAL;
 	struct inode *i = loop->node;
 	loop->node=0;
-	vfs_iput(i);
+	vfs_icache_put(i);
 	return 0;
 }
 
@@ -143,13 +143,8 @@ int ioctl_main(int min, int cmd, long arg)
 			loop = get_loop(arg);
 			if(loop) return -EEXIST;
 			char tmp[128];
-			snprintf(tmp, 128, "loop%d", arg);
-			struct inode *i = vfs_get_idir(tmp, devfs_root);
-			if(i) {
-				vfs_iput(i);
-				return -EEXIST;
-			}
-			devfs_add(devfs_root, tmp, S_IFBLK, loop_maj, arg);
+			snprintf(tmp, 128, "/dev/loop%d", arg);
+			int r = sys_mknod(tmp, S_IFBLK | 0644, GETDEV(loop_maj, arg));
 			add_loop_device(arg);
 			break;
 		default:
@@ -171,7 +166,7 @@ int module_install()
 		return EINVAL;
 	}
 	loops = ll_create(0);
-	devfs_add(devfs_root, "loop0", S_IFBLK, loop_maj, 0);
+	sys_mknod("/dev/loop0", S_IFBLK | 0644, GETDEV(loop_maj, 0));
 	add_loop_device(0);
 	return 0;
 }

@@ -7,6 +7,7 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/string.h>
 #include <sea/fs/fs.h>
+#include <sea/cpu/atomic.h>
 
 int ext2_wrap_alloc_inode(struct filesystem *fs, uint32_t *id)
 {
@@ -39,8 +40,6 @@ int ext2_wrap_inode_push(struct filesystem *fs, struct inode *out)
 	in.modification_time = out->mtime;
 	in.change_time = out->ctime;
 	in.gid = out->gid;
-	in.link_count = out->nlink;
-	in.number = out->id;
 	in.sector_count = out->nblocks;
 	ext2_inode_update(&in);
 	return 0;
@@ -88,8 +87,6 @@ int ext2_wrap_inode_getdents(struct filesystem *fs, struct inode *node, unsigned
 	ext2_inode_t dir;
 	if(!ext2_inode_read(info, node->id, &dir))
 		return -EIO;
-	if(dir.deletion_time || !dir.mode)
-		return -ENOENT;
 	int ret = ext2_dir_getdents(&dir, off, dirs, count, nextoff);
 	return ret;
 }
@@ -100,17 +97,21 @@ int ext2_wrap_inode_link(struct filesystem *fs, struct inode *parent, struct ino
 	struct ext2_info *info = fs->data;
 	if(info->flags & EXT2_FS_READONLY)
 		return -EROFS;
-	ext2_inode_t dir;
+	ext2_inode_t dir, tar;
 	if(!ext2_inode_read(info, parent->id, &dir))
 		return -EIO;
-	if(dir.deletion_time)
-		return -ENOENT;
-	if(!dir.mode)
-		return -EACCES;
 	int ret = ext2_dir_addent(&dir, target->id, ext2_inode_type(target->mode), name, namelen);
-	ext2_inode_update(&dir);
-	parent->length = dir.size;
-	parent->nblocks = dir.sector_count;
+	if(ret) {
+		ext2_inode_update(&dir);
+		ext2_inode_read(info, target->id, &tar);
+		tar.link_count++;
+		if(tar.link_count == 1 && S_ISDIR(target->mode))
+			ext2_dir_change_dir_count(&tar, 0);
+		ext2_inode_update(&tar);
+		add_atomic(&target->nlink, 1);
+		parent->length = dir.size;
+		parent->nblocks = dir.sector_count;
+	}
 	return ret == 0 ? -EINVAL : 0;
 }
 
@@ -124,10 +125,6 @@ int ext2_wrap_inode_unlink(struct filesystem *fs, struct inode *parent, const ch
 	ext2_inode_t inode;
 	if(!ext2_inode_read(info, parent->id, &inode))
 		return -EIO;
-	if(inode.deletion_time)
-		return -ENOENT;
-	if(!inode.mode)
-		return -EACCES;
 	int ret = ext2_dir_delent(&inode, name, namelen, 1);
 	if(!ret)
 		return -ENOENT;
@@ -143,8 +140,6 @@ int ext2_wrap_inode_read(struct filesystem *fs, struct inode *node,
 		return -EIO;
 	if((unsigned)offset >= inode.size)
 		return 0;
-	if(inode.deletion_time)
-		return -ENOENT;
 	if(!inode.mode)
 		return -EACCES;
 	if((offset + length) >= (unsigned)node->length)
@@ -163,9 +158,6 @@ int ext2_wrap_inode_write(struct filesystem *fs, struct inode *node,
 	ext2_inode_t inode;
 	if(!ext2_inode_read(info, node->id, &inode))
 		return -EIO;
-#warning "can we be sure that this data has been 'pushed'?"
-	if(inode.deletion_time || !inode.mode)
-		return -ENOENT;
 	unsigned sz = inode.size;
 	unsigned sc = inode.sector_count;
 	unsigned int ret = ext2_inode_writedata(&inode, offset, length, (unsigned char*)buffer);
@@ -175,7 +167,6 @@ int ext2_wrap_inode_write(struct filesystem *fs, struct inode *node,
 	}
 	if(ret > length) ret = length;
 	return ret;
-
 }
 
 struct filesystem_inode_callbacks ext2_wrap_iops = {

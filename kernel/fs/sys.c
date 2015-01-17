@@ -103,6 +103,7 @@ void fs_init()
 	loader_add_kernel_symbol(vfs_inode_set_needread);
 	loader_add_kernel_symbol(fs_filesystem_register);
 	loader_add_kernel_symbol(fs_filesystem_unregister);
+	loader_add_kernel_symbol(vfs_inode_set_dirty);
 #endif
 }
 

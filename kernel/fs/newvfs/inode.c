@@ -130,6 +130,7 @@ void vfs_inode_set_dirty(struct inode *node)
 void vfs_icache_put(struct inode *node)
 {
 	assert(node->count > 0);
+	fs_inode_push(node); //TODO: Not sure if we want to do this here
 	if(!sub_atomic(&node->count, 1)) {
 //		kprintf("moving to lru\n");
 		assert(node->flags & INODE_INUSE);
@@ -186,6 +187,15 @@ int vfs_inode_chroot(struct inode *node)
 
 int fs_icache_sync()
 {
-
+	printk(0, "[fs]: syncing inode cache...");
+	rwlock_acquire(&ic_inuse->rwl, RWL_READER);
+	struct llistnode *ln;
+	struct inode *node;
+	ll_for_each_entry(ic_inuse, ln, struct inode *, node) {
+		fs_inode_push(node);
+	}
+	rwlock_release(&ic_inuse->rwl, RWL_READER);
+	printk(0, " done\n");
+	return 0;
 }
 

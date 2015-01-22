@@ -33,7 +33,8 @@ void kernel_shutdown()
 	tm_raise_flag(TF_SHUTDOWN);
 	set_ksf(KSF_SHUTDOWN);
 	sys_sync(PRINT_LEVEL);
-	fs_unmount_all();
+	//fs_unmount_all();
+#warning "TODO"
 #if CONFIG_MODULES
 	loader_unload_all_modules(1);
 #endif

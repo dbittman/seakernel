@@ -41,6 +41,7 @@ struct filesystem *devfs;
 void devfs_init()
 {
 	devfs = fs_filesystem_create();
+	kprintf("DEVFS: %x\n", devfs);
 	ramfs_mount(devfs);
 	sys_fs_mount(0, "/dev", "devfs", 0);
 	char tty[16];
@@ -83,7 +84,6 @@ int sys_setup(int a)
 
 void fs_init()
 {
-	fs_init_superblock_table();
 	vfs_icache_init();
 	fs_fsm_init();
 #if CONFIG_MODULES

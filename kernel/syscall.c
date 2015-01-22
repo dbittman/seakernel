@@ -337,9 +337,9 @@ int syscall_handler(volatile registers_t *regs)
 					  _C_, _B_, _A_);
 	#ifdef SC_DEBUG
 	if((current_task->tty == current_console->tty || 1)
-		&& (ret < 0 || 0) && (ret == -EINTR || 1)
+		&& (ret < 0 || 1) && (ret == -EINTR || 1)
 		&& ((current_task->allocated != 0 || current_task->freed != 0 || 1))
-		&& SYSCALL_NUM_AND_RET != 5)
+		&& SYSCALL_NUM_AND_RET != 4)
 		printk(SC_DEBUG, "syscall %d: %d ret %d, took  ticks (%d al, %d fr)\n",
 			   current_task->pid, current_task->system, ret, 
 			   current_task->allocated, current_task->freed);

@@ -117,7 +117,6 @@ int ext2_bg_read(struct ext2_info* fs, int group_nr, ext2_blockgroup_t* bg);
 int ext2_bg_update(struct ext2_info* fs, int group_nr, ext2_blockgroup_t* bg);
 int ext2_inode_read(struct ext2_info* fs, uint32_t inode_nr, ext2_inode_t* inode);
 int ext2_inode_update(ext2_inode_t* inode);
-struct inode *create_sea_inode(ext2_inode_t *in, char *name);
 struct ext2_info *get_fs(int v);
 int ext2_inode_type(mode_t);
 int ext2_inode_free(ext2_inode_t* inode);

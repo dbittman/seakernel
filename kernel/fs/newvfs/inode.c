@@ -81,8 +81,8 @@ struct inode *vfs_icache_get(struct filesystem *fs, uint32_t num)
 	/* create if it doesn't exist */
 	struct inode *node;
 	int newly_created = 0;
-	uint32_t key[3] = {fs->id, num};
-	if(hash_table_get_entry(icache, key, sizeof(uint32_t), 3, (void**)&node) == -ENOENT) {
+	uint32_t key[2] = {fs->id, num};
+	if(hash_table_get_entry(icache, key, sizeof(uint32_t), 2, (void**)&node) == -ENOENT) {
 	//	kprintf("create new inode\n");
 		/* didn't find it. Okay, create one */
 		node = vfs_inode_create();
@@ -90,7 +90,7 @@ struct inode *vfs_icache_get(struct filesystem *fs, uint32_t num)
 		node->flags = INODE_NEEDREAD;
 		node->id = num;
 		struct inode *ret;
-		hash_table_set_or_get_entry(icache, key, sizeof(uint32_t), 3, node, (void**)&ret);
+		hash_table_set_or_get_entry(icache, key, sizeof(uint32_t), 2, node, (void**)&ret);
 		if(ret != node) {
 			node->flags = node->count = 0;
 			vfs_inode_destroy(node);
@@ -102,6 +102,12 @@ struct inode *vfs_icache_get(struct filesystem *fs, uint32_t num)
 	}
 #warning "need to lock here? (for reclaiming)"
 	add_atomic(&node->count, 1);
+#warning "remove these lines"
+	/* this was added in because a free'd inode that was allocated again had
+	 * old data present. In theory, once the work is compelete, this shouldn't
+	 * ever happen. But we need to fix this */
+	vfs_inode_set_needread(node);
+	fs_inode_pull(node);
 	
 	/* move to in-use */
 	if(!(ff_or_atomic(&node->flags, INODE_INUSE) & INODE_INUSE)) {
@@ -119,12 +125,16 @@ void vfs_inode_set_needread(struct inode *node)
 {
 	assert(!(node->flags & INODE_DIRTY));
 	or_atomic(&node->flags, INODE_NEEDREAD);
+	fs_inode_pull(node);
+#warning "NO"
 }
 
 void vfs_inode_set_dirty(struct inode *node)
 {
 	assert(!(node->flags & INODE_NEEDREAD));
 	or_atomic(&node->flags, INODE_DIRTY);
+#warning "NO"
+	fs_inode_push(node);
 }
 
 void vfs_icache_put(struct inode *node)

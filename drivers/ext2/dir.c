@@ -35,7 +35,7 @@
 
 #include <sea/string.h>
 #include <modules/ext2.h>
-
+#include <sea/fs/inode.h>
 
 #define DET_UNKNOWN 0
 #define DET_REG 1

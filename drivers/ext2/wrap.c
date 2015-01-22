@@ -12,18 +12,11 @@
 int ext2_wrap_alloc_inode(struct filesystem *fs, uint32_t *id)
 {
 	struct ext2_info *info = fs->data;
-	uint32_t i = ext2_inode_do_alloc(info);
-	if(!i)
-		return -EOVERFLOW;
 	ext2_inode_t in;
-	if(!ext2_inode_read(info, i, &in))
-		return -EIO;
-	in.deletion_time = 0;
-	in.mode = 0;
-	in.size = 0;
-	ext2_inode_update(&in);
-
-	*id = i;
+	int r = ext2_inode_alloc(info, &in);
+	if(!r)
+		return -EOVERFLOW;
+	*id = in.number;
 	return 0;
 }
 
@@ -33,6 +26,8 @@ int ext2_wrap_inode_push(struct filesystem *fs, struct inode *out)
 	struct ext2_info *info = fs->data;
 	if(!ext2_inode_read(info, out->id, &in))
 		return -EIO;
+	if(in.size > (unsigned)out->length)
+		ext2_inode_truncate(&in, out->length, 0);
 	in.mode = out->mode;
 	in.uid = out->uid;
 	in.size = out->length;
@@ -147,7 +142,6 @@ int ext2_wrap_inode_read(struct filesystem *fs, struct inode *node,
 	unsigned int ret = ext2_inode_readdata(&inode, offset, length, (unsigned char *)buffer);
 	return (int)ret;
 }
-
 
 int ext2_wrap_inode_write(struct filesystem *fs, struct inode *node,
 		size_t offset, size_t length, const char *buffer)

@@ -16,6 +16,7 @@ struct file {
 	unsigned int flags, fd_flags, count;
 	off_t pos;
 	struct inode * inode;
+	struct dirent *dirent;
 	struct socket *socket;
 };
 
@@ -43,7 +44,6 @@ int fs_do_sys_write(struct file *f, off_t off, char *buf, size_t count);
 int sys_writepos(int fp, char *buf, size_t count);
 int sys_write(int fp, off_t off, char *buf, size_t count);
 int fs_read_file_data(int fp, char *buf, off_t off, size_t length);
-int vfs_iput(struct inode *i);;
 int sys_isatty(int f);
 int sys_ioctl(int fp, int cmd, long arg);
 int sys_open(char *name, int flags);

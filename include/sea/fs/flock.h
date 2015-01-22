@@ -2,6 +2,7 @@
 #define __SEA_FS_FLOCK_H
 #include <sea/fs/inode.h>
 #include <sea/fs/file.h>
+#if 0
 struct flock {
 	short	l_type;		/* F_RDLCK, F_WRLCK, or F_UNLCK */
 	short	l_whence;	/* flag to choose starting offset */
@@ -29,5 +30,5 @@ int fs_fcntl_getlk(struct file *file, long arg);
 int fs_fcntl_setlkw(struct file *file, long arg);
 void vfs_destroy_flocks(struct inode *f);
 
-
+#endif
 #endif

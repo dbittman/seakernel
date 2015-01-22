@@ -1,6 +1,7 @@
 /* Defines kernel-space side of functions for dealing with file locks. 
  * This should be compatible with POSIX (or, mostly so).
  */
+#if 0
 #include <sea/kernel.h>
 #include <sea/tm/process.h>
 #include <sea/fs/inode.h>
@@ -223,3 +224,5 @@ void vfs_destroy_flocks(struct inode *f)
 	if(f->flm) 
 		mutex_destroy(f->flm);
 }
+#endif
+

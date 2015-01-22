@@ -57,9 +57,17 @@ struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int
 			return 0;
 		}
 	}
+	/* TODO: we're doing this twice. Fix this. */
+	struct dirent *dirent = fs_resolve_path(name, 0);
+	if(!dirent) {
+		vfs_icache_put(inode);
+		*error = -ENOENT;
+		return 0;
+	}
 	int ret;
 	f = (struct file *)kmalloc(sizeof(struct file));
 	f->inode = inode;
+	f->dirent = dirent;
 	f->flags = flags;
 	f->pos=0;
 	f->count=1;
@@ -103,9 +111,11 @@ static int duplicate(task_t *t, int fp, int n)
 	if(!f)
 		return -EBADF;
 	struct file *new=(struct file *)kmalloc(sizeof(struct file));
+	vfs_inode_get(f->inode);
+	vfs_dirent_acquire(f->dirent);
 	new->inode = f->inode;
+	new->dirent = f->dirent;
 	new->count=1;
-	add_atomic(&f->inode->count, 1);
 	new->flags = f->flags;
 	new->fd_flags = f->fd_flags;
 	new->fd_flags &= ~FD_CLOEXEC;

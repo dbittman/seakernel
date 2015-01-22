@@ -6,6 +6,7 @@
 #include <sea/loader/module.h>
 #include <modules/psm.h>
 #include <sea/cpu/interrupt.h>
+#include <sea/cpu/registers.h>
 struct ata_controller *primary, *secondary;
 struct pci_device *ata_pci;
 int api=0;

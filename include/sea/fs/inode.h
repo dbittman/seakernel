@@ -24,8 +24,10 @@ typedef struct {
 typedef struct pipe_struct pipe_t;
 
 struct inode;
+#define DIRENT_UNLINK 1
 struct dirent {
 	int count;
+	int flags;
 	rwlock_t lock;
 	struct inode *parent;
 	struct filesystem *filesystem;

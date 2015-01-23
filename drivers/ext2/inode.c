@@ -563,7 +563,7 @@ static uint32_t get_block_offset(ext2_inode_t* inode, uint32_t block, int alloc)
 		int was_empty = empty;
 		
 		b = path[i - 1][0];
-		char buf[ext2_sb_blocksize(inode->fs->sb)];
+		//char buf[ext2_sb_blocksize(inode->fs->sb)];
 		ext2_read_block(fs, b, buf);
 		table = (uint32_t *)buf;
 		

@@ -83,7 +83,7 @@ int ext2_mount(struct filesystem *seafs)
 	return 0;
 }
 
-int ext2_unmount(struct inode *i, int v)
+int ext2_unmount(struct filesystem *fs)
 {
 	return 0;
 }

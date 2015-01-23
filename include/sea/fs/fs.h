@@ -84,5 +84,6 @@ void fs_fsm_init();
 int fs_umount(struct filesystem *fs);
 int fs_mount(struct inode *pt, struct filesystem *fs);
 int fs_filesystem_init_mount(struct filesystem *fs, char *node, char *type, int opts);
+int sys_fs_mount(char *node, char *point, char *type, int opts);
 #endif
 

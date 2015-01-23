@@ -139,6 +139,7 @@ int ext2_dir_create(ext2_inode_t* parent, const char* name, ext2_inode_t* newi);
 int ext2_dir_link(ext2_inode_t* dir, ext2_inode_t* inode, const char* name);
 int ext2_dir_get(ext2_inode_t* inode, char* name, ext2_dirent_t*);
 int ext2_dir_getnum(ext2_inode_t* inode, unsigned number, char *);
+void ext2_dir_change_dir_count(ext2_inode_t *node, int minus);
 
 
 extern struct filesystem_inode_callbacks ext2_wrap_iops;

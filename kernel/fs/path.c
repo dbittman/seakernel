@@ -68,7 +68,7 @@ struct inode *fs_dirent_readinode(struct dirent *dir, int nofollow)
 		return 0;
 	if(!nofollow && S_ISLNK(node->mode)) {
 		char link[node->length+1]; //TODO: fix possible DoS attack
-		if(fs_inode_read(node, 0, node->length, link) != node->length)
+		if((size_t)fs_inode_read(node, 0, node->length, link) != node->length)
 			return 0;
 		link[node->length]=0;
 		char *newpath = link;
@@ -116,7 +116,7 @@ static struct dirent *do_fs_resolve_path(struct inode *start, const char *path, 
 		char *delim = strchr(path, '/');
 		if(delim != path) {
 			const char *name = path;
-			size_t namelen = delim ? delim - name : strlen(name);
+			size_t namelen = delim ? (size_t)(delim - name) : strlen(name);
 			dir = fs_dirent_lookup(node, name, namelen);
 			if(!dir) {
 				return 0;

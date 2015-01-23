@@ -210,7 +210,7 @@ int sys_seek(int fp, off_t pos, unsigned whence)
 		return 0;
 	}
 	if(whence)
-		f->pos = ((whence == SEEK_END) ? f->inode->length+pos : f->pos+pos);
+		f->pos = ((whence == SEEK_END) ? f->inode->length+pos : (size_t)f->pos+pos);
 	else
 		f->pos=pos;
 	fs_fput((task_t *)current_task, fp, 0);

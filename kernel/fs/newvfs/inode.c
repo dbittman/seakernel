@@ -3,6 +3,7 @@
 #include <sea/lib/hash.h>
 #include <sea/cpu/atomic.h>
 #include <sea/mm/kmalloc.h>
+#include <sea/vsprintf.h>
 
 struct hash_table *icache;
 struct llist *ic_inuse;
@@ -167,13 +168,13 @@ void vfs_inode_umount(struct inode *node)
 	vfs_icache_put(node);
 }
 
-int fs_inode_write(struct inode *node, size_t off, size_t count, const char *buf)
+ssize_t fs_inode_write(struct inode *node, size_t off, size_t count, const char *buf)
 {
 	//TODO: check not directory, and update mtime.
 	return fs_callback_inode_write(node, off, count, buf);
 }
 
-int fs_inode_read(struct inode *node, size_t off, size_t count, char *buf)
+ssize_t fs_inode_read(struct inode *node, size_t off, size_t count, char *buf)
 {
 	return fs_callback_inode_read(node, off, count, buf);
 }

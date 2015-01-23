@@ -110,6 +110,8 @@ int fs_link(struct inode *dir, struct inode *target, const char *name, size_t na
 struct dirent *fs_dirent_lookup(struct inode *node, const char *name, size_t namelen);
 
 void vfs_icache_init();
+void vfs_inode_umount(struct inode *node);
+int fs_icache_sync();
 void vfs_inode_get(struct inode *node);
 struct inode *vfs_inode_create();
 struct inode *vfs_icache_get(struct filesystem *, uint32_t num);
@@ -123,6 +125,7 @@ struct dirent *vfs_inode_get_dirent(struct inode *node, const char *name, int na
 struct dirent *vfs_dirent_create(struct inode *node);
 int vfs_dirent_release(struct dirent *dir);
 void vfs_dirent_destroy(struct dirent *dir);
+int vfs_dirent_acquire(struct dirent *dir);
 
 int fs_inode_pull(struct inode *node);
 int fs_inode_push(struct inode *node);
@@ -137,8 +140,8 @@ int vfs_inode_chroot(struct inode *node);
 void vfs_inode_mount(struct inode *node, struct filesystem *fs);
 
 
-int fs_inode_write(struct inode *node, size_t off, size_t count, const char *buf);
-int fs_inode_read(struct inode *node, size_t off, size_t count, char *buf);
+ssize_t fs_inode_write(struct inode *node, size_t off, size_t count, const char *buf);
+ssize_t fs_inode_read(struct inode *node, size_t off, size_t count, char *buf);
 
 #define FS_INODE_POPULATE 1
 addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt, 

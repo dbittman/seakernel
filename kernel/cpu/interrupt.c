@@ -417,23 +417,6 @@ void interrupt_init()
 #endif
 }
 
-int proc_read_int(char *buf, int off, int len)
-{
-	int i, total_len=0;
-	total_len += proc_append_buffer(buf, "ISR \t\t|            COUNT\n", total_len, -1, off, len);
-	for(i=0;i<MAX_INTERRUPTS;i++)
-	{
-		if(int_count[i])
-		{
-			char t[128];
-			snprintf(t, 128, "%3d %s\t| %16d\n", i, special_names(i), int_count[i]);
-			total_len += proc_append_buffer(buf, t, total_len, -1, off, len);
-		}
-	}
-	return total_len;
-}
-
-
 int cpu_interrupt_set(unsigned _new)
 {
 	/* need to make sure we don't get interrupted... */

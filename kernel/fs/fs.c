@@ -18,11 +18,6 @@ void fs_fsm_init()
 	hash_table_specify_function(&fsdrivershash, HASH_FUNCTION_BYTE_SUM);
 }
 
-int fs_fssync(struct filesystem *fs)
-{
-
-}
-
 struct inode *fs_read_root_inode(struct filesystem *fs)
 {
 	struct inode *node = vfs_icache_get(fs, fs->root_inode_id);

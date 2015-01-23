@@ -250,6 +250,7 @@ int sys_chdir(char *n, int fd)
 
 int sys_link(char *oldpath, char *newpath)
 {
+	/* TODO: Atomic? */
 	struct inode *target = fs_resolve_path_inode(oldpath, 0, 0);
 	if(!target)
 		return -ENOENT;
@@ -264,10 +265,16 @@ int sys_link(char *oldpath, char *newpath)
 	if(dir[0] == 0)
 		dir = "/";
 
+
 	struct inode *parent = fs_resolve_path_inode(dir, 0, 0);
 	if(!parent) {
 		vfs_icache_put(target);
 		return -ENOENT;
+	}
+	struct dirent *exist = fs_resolve_path(newpath, 0);
+	if(exist) {
+		vfs_dirent_release(exist);
+		fs_unlink(parent, name, strlen(name));
 	}
 	int r = fs_link(parent, target, name, strlen(name));
 	vfs_icache_put(parent);
@@ -294,7 +301,6 @@ int sys_chmod(char *path, int fd, mode_t mode)
 			return -EBADF;
 		i = file->inode;
 		assert(i);
-		fs_fput((task_t *)current_task, fd, 0);
 	}
 	if(!i)
 		return -ENOENT;

@@ -113,9 +113,9 @@ struct inode *vfs_icache_get(struct filesystem *fs, uint32_t num)
 	if(!(ff_or_atomic(&node->flags, INODE_INUSE) & INODE_INUSE)) {
 	//	kprintf("move to inuse\n");
 		if(!newly_created) {
-			queue_remove(ic_lru, &node->lru_item);
-			ll_do_insert(ic_inuse, &node->inuse_item, node);
+			//queue_remove(ic_lru, &node->lru_item);
 		}
+			//ll_do_insert(ic_inuse, &node->inuse_item, node);
 	}
 
 	return node;
@@ -145,8 +145,9 @@ void vfs_icache_put(struct inode *node)
 //		kprintf("moving to lru\n");
 		assert(node->flags & INODE_INUSE);
 		and_atomic(&node->flags, ~INODE_INUSE);
-		ll_do_remove(ic_inuse, &node->inuse_item, 0);
-		queue_enqueue_item(ic_lru, &node->lru_item, node);
+#warning "fix"
+		//ll_do_remove(ic_inuse, &node->inuse_item, 0);
+		//queue_enqueue_item(ic_lru, &node->lru_item, node);
 	}
 }
 
@@ -197,11 +198,13 @@ int vfs_inode_chroot(struct inode *node)
 
 int fs_icache_sync()
 {
-	printk(0, "[fs]: syncing inode cache...");
+	return 0;
+	printk(0, "[fs]: syncing inode cache...\n");
 	rwlock_acquire(&ic_inuse->rwl, RWL_READER);
 	struct llistnode *ln;
 	struct inode *node;
 	ll_for_each_entry(ic_inuse, ln, struct inode *, node) {
+		printk(0, "%x %d       \r", ln, node->id);
 		fs_inode_push(node);
 	}
 	rwlock_release(&ic_inuse->rwl, RWL_READER);

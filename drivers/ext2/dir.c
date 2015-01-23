@@ -275,6 +275,7 @@ int ext2_dir_addent(ext2_inode_t* dir, uint32_t num, ext2_inode_type_t type, con
 	uint32_t pos = 0, tpos=0, off=0;
 	size_t newentry_len = dirent_size(strlen(name));
 	size_t entry_len = 0;
+	printk(0, "--> adding %s\n", name);
 	if (dir->size) {
 		ext2_inode_readdata(dir, 0, ext2_sb_blocksize(dir->fs->sb), buf);
 		while (pos < dir->size) {

@@ -35,7 +35,6 @@ int ext2_wrap_inode_push(struct filesystem *fs, struct inode *out)
 	in.modification_time = out->mtime;
 	in.change_time = out->ctime;
 	in.gid = out->gid;
-	in.sector_count = out->nblocks;
 	ext2_inode_update(&in);
 	return 0;
 }
@@ -46,6 +45,7 @@ int ext2_wrap_inode_pull(struct filesystem *fs, struct inode *out)
 	struct ext2_info *info = fs->data;
 	if(!ext2_inode_read(info, out->id, &in))
 		return -EIO;
+	//printk(0, "ext2: pull %d\n", out->id);
 	out->mode = in.mode;
 	out->uid = in.uid;
 	out->length = in.size;

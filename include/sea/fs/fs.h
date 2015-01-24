@@ -60,6 +60,7 @@ struct fsdriver {
 };
 
 int fs_fssync(struct filesystem *fs);
+void fs_unmount_all();
 
 int fs_callback_inode_read(struct inode *node, size_t off, size_t len, char *buf);
 int fs_callback_inode_write(struct inode *node, size_t off, size_t len, const char *buf);

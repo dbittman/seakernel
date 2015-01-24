@@ -12,7 +12,6 @@ int vfs_dirent_release(struct dirent *dir)
 	int r = 0;
 	if(!sub_atomic(&dir->count, 1)) {
 		if(dir->flags & DIRENT_UNLINK) {
-			//kprintf("--> FS UNLINK %s\n", dir->name);
 			struct inode *target = fs_dirent_readinode(dir, 1);
 			vfs_inode_del_dirent(dir->parent, dir);
 			r = fs_callback_inode_unlink(dir->parent, dir->name, dir->namelen);

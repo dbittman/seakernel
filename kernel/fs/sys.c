@@ -41,11 +41,10 @@ struct filesystem *devfs;
 void devfs_init()
 {
 	devfs = fs_filesystem_create();
-	kprintf("DEVFS: %x\n", devfs);
 	ramfs_mount(devfs);
 	sys_fs_mount(0, "/dev", "devfs", 0);
 	char tty[16];
-#warning "these permissions may be wrong"
+	/* TODO: fix these permissions */
 	for(int i=1;i<10;i++) {
 		snprintf(tty, 10, "/dev/tty%d", i);
 		sys_mknod(tty, S_IFCHR | 0666, GETDEV(3, i));
@@ -64,14 +63,12 @@ int sys_setup(int a)
 		return 1;
 	}
 	printk(KERN_MILE, "[kernel]: Setting up environment...");
-#warning "TODO"
 	struct filesystem *fs = fs_filesystem_create();
 	ramfs_mount(fs);
 	current_task->thread->pwd = current_task->thread->root = fs_read_root_inode(fs);
 	fs_initrd_parse();
 	
 	devfs_init();
-	//proc_init();
 	dm_char_rw(OPEN, GETDEV(3, 1), 0, 0);
 	sys_open("/dev/tty1", O_RDWR);   /* stdin  */
 	sys_open("/dev/tty1", O_WRONLY); /* stdout */
@@ -198,6 +195,7 @@ int sys_chroot(char *path)
 	if(!node)
 		return -ENOENT;
 	vfs_inode_chroot(node);
+	vfs_icache_put(node);
 	return 0;
 }
 
@@ -402,11 +400,14 @@ int sys_mknod(char *path, mode_t mode, dev_t dev)
 		vfs_icache_put(i);
 		return -EEXIST;
 	}
-#warning "fail if exist"
-	i = fs_resolve_path_create(path, 0, mode, 0);
+	int created;
+	i = fs_resolve_path_create(path, 0, mode, &created);
 	if(!i) return -EACCES;
+	if(!created) {
+		vfs_icache_put(i);
+		return -EEXIST;
+	}
 	i->phys_dev = dev;
-#warning "set the dirent file type based off of mode"
 	i->mode = (mode & ~0xFFF) | ((mode&0xFFF) & (~current_task->cmask&0xFFF));
 	vfs_inode_set_dirty(i);
 	if(S_ISFIFO(i->mode)) {
@@ -444,12 +445,10 @@ int sys_symlink(char *p2, char *p1)
 		vfs_icache_put(inode);
 		return -EEXIST;
 	}
-#warning "set the dirent file type based off of mode"
-	inode = fs_resolve_path_create(p1, 0, S_IFLNK | 0x1FF, 0);
+	/* TODO: permissions of new symlink */
+	inode = fs_resolve_path_create(p1, 0, S_IFLNK | 0777, 0);
 	if(!inode)
 		return -EACCES;
-#warning "do we need to set length to zero in all inode allocation cases?"
-	inode->length=0;
 	int ret=0;
 	vfs_inode_set_dirty(inode);
 	

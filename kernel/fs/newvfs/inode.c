@@ -43,7 +43,6 @@ int vfs_inode_check_permissions(struct inode *node, int perm, int real)
 	return 1;
 }
 
-#warning "fix calls to this from other locations"
 struct inode *vfs_inode_create()
 {
 	struct inode *node = kmalloc(sizeof(struct inode));
@@ -52,7 +51,6 @@ struct inode *vfs_inode_create()
 	node->dirents = hash_table_create(0, 0, HASH_TYPE_CHAIN);
 	hash_table_resize(node->dirents, HASH_RESIZE_MODE_IGNORE,1000);
 	hash_table_specify_function(node->dirents, HASH_FUNCTION_BYTE_SUM);
-#warning "TODO: other inits"
 	node->flags = INODE_INUSE;
 	ll_do_insert(ic_inuse, &node->inuse_item, node);
 
@@ -84,7 +82,6 @@ struct inode *vfs_icache_get(struct filesystem *fs, uint32_t num)
 	int newly_created = 0;
 	uint32_t key[2] = {fs->id, num};
 	if(hash_table_get_entry(icache, key, sizeof(uint32_t), 2, (void**)&node) == -ENOENT) {
-	//	kprintf("create new inode\n");
 		/* didn't find it. Okay, create one */
 		node = vfs_inode_create();
 		node->filesystem = fs;
@@ -112,11 +109,10 @@ struct inode *vfs_icache_get(struct filesystem *fs, uint32_t num)
 	
 	/* move to in-use */
 	if(!(ff_or_atomic(&node->flags, INODE_INUSE) & INODE_INUSE)) {
-	//	kprintf("move to inuse\n");
 		if(!newly_created) {
 			//queue_remove(ic_lru, &node->lru_item);
 		}
-			//ll_do_insert(ic_inuse, &node->inuse_item, node);
+		//ll_do_insert(ic_inuse, &node->inuse_item, node);
 	}
 
 	return node;
@@ -170,17 +166,29 @@ void vfs_inode_umount(struct inode *node)
 
 ssize_t fs_inode_write(struct inode *node, size_t off, size_t count, const char *buf)
 {
-	//TODO: check not directory, and update mtime.
-	return fs_callback_inode_write(node, off, count, buf);
+	if(S_ISDIR(node->mode))
+		return -EISDIR;
+	if(!vfs_inode_check_permissions(node, MAY_WRITE, 0))
+		return -EACCES;
+	ssize_t ret = fs_callback_inode_write(node, off, count, buf);
+	if(ret > 0) {
+		node->mtime = time_get_epoch();
+		vfs_inode_set_dirty(node);
+	}
+	return ret;
 }
 
 ssize_t fs_inode_read(struct inode *node, size_t off, size_t count, char *buf)
 {
+	if(!vfs_inode_check_permissions(node, MAY_READ, 0))
+		return -EACCES;
 	return fs_callback_inode_read(node, off, count, buf);
 }
 
 int vfs_inode_chdir(struct inode *node)
 {
+	if(!S_ISDIR(node->mode))
+		return -ENOTDIR;
 	struct inode *old = current_task->thread->pwd;
 	current_task->thread->pwd = node;
 	vfs_inode_get(node);
@@ -190,6 +198,10 @@ int vfs_inode_chdir(struct inode *node)
 
 int vfs_inode_chroot(struct inode *node)
 {
+	if(!S_ISDIR(node->mode))
+		return -ENOTDIR;
+	if(current_task->thread->effective_uid)
+		return -EPERM;
 	struct inode *old = current_task->thread->root;
 	current_task->thread->root = node;
 	vfs_inode_get(node);

@@ -53,7 +53,6 @@ int sys_close(int fp)
 		dm_char_rw(CLOSE, f->inode->phys_dev, 0, 0);
 	else if(S_ISBLK(f->inode->mode) && !fp)
 		dm_block_device_rw(CLOSE, f->inode->phys_dev, 0, 0, 0);
-#warning "TODO"
 	vfs_dirent_release(f->dirent);
 	vfs_icache_put(f->inode);
 	fs_fput((task_t *)current_task, fp, FPUT_CLOSE);

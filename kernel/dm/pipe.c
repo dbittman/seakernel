@@ -35,7 +35,6 @@ static struct inode *create_anon_pipe()
 	pipe->count=2;
 	pipe->wrcount=1;
 	node->pipe = pipe;
-	/* TODO: DYNAMIC? */
 	return node;
 }
 

@@ -60,6 +60,11 @@ int fs_filesystem_init_mount(struct filesystem *fs, char *node, char *type, int 
 	return -EINVAL;
 }
 
+void fs_unmount_all()
+{
+	/* TODO */
+}
+
 extern struct filesystem *devfs;
 int fs_mount(struct inode *pt, struct filesystem *fs)
 {

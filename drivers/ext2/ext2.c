@@ -33,9 +33,9 @@ int ext2_mount(struct filesystem *seafs)
 	fs->sb->block_size=0;
 	//if(node)
 	//	strncpy(fs->node, node, 16);
-	ext2_read_block(fs, 1, (unsigned char *)fs->sb);
+	int r = ext2_read_block(fs, 1, (unsigned char *)fs->sb);
 	if(fs->sb->magic != EXT2_SB_MAGIC) {
-		return 0;
+		return -EINVAL;
 	}
 	if(fs->sb->state == 2)
 	{
@@ -53,13 +53,13 @@ int ext2_mount(struct filesystem *seafs)
 	if(!(reqf&0x2) || (reqf & 0x1) || (reqf &0x4) || (reqf&0x8))
 	{
 		//printk(5, "[ext2]: Cannot mount %s due to feature flags\n", node);
-		return 0;
+		return -EINVAL;
 	}
 	unsigned rof = fs->sb->features_ro;
 	if(ext2_sb_inodesize(fs->sb) != 128)
 	{
 		printk(5, "[ext2]: Inode size %d is not supported\n", ext2_sb_inodesize(fs->sb));
-		return 0;
+		return -EINVAL;
 	}
 	if(!(rof&0x1) || (rof & 0x2) || (rof&0x4))
 	{
@@ -126,22 +126,20 @@ int module_deps(char *b)
 
 int ext2_inode_type(mode_t mode)
 {
-#warning "fix this (doens't work)"
-	/* We check if its a link first, cause the reg bit is set in link too */
 	if(S_ISLNK(mode))
 		return DET_SLINK;
-	if(mode & 0x8000)
-		return DET_REG;
-	if(mode & 0x4000)
-		return DET_DIR;
-	if(mode & 0xC000)
-		return DET_SOCK;
-	if(mode & 0x2000)
+	if(S_ISCHR(mode))
 		return DET_CHAR;
-	if(mode & 0x6000)
+	if(S_ISBLK(mode))
 		return DET_BLOCK;
-	if(mode & 0x1000)
+	if(S_ISREG(mode))
+		return DET_REG;
+	if(S_ISDIR(mode))
+		return DET_DIR;
+	if(S_ISFIFO(mode))
 		return DET_FIFO;
+	if(S_ISSOCK(mode))
+		return DET_SOCK;
 	return DET_UNKNOWN;
 }
 

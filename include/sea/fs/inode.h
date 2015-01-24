@@ -62,12 +62,20 @@ struct dirent_posix {
 #define RESOLVE_NOLINK 1
 
 struct inode {
-	int count;
 	rwlock_t lock;
-	uint32_t flags;
 	struct queue_item lru_item;
 	struct llistnode inuse_item;
+	struct hash_table *dirents;
+	struct filesystem *filesystem;
+	
+	int count;
+	uint32_t flags;
+	
+	dev_t phys_dev;
+	struct filesystem *mount;
+	pipe_t *pipe;
 
+	/* filesystem data */
 	mode_t mode;
 	uid_t uid;
 	gid_t gid;
@@ -78,17 +86,7 @@ struct inode {
 	size_t nblocks;
 	size_t id;
 
-	struct hash_table *dirents;
-
-	dev_t phys_dev;
-
-	struct filesystem *filesystem, *mount;
-
-	pipe_t *pipe;
-
-	struct flock *flocks;
-	mutex_t *flm;
-
+	/* mmap stuff */
 	struct hash_table *physicals;
 	mutex_t mappings_lock;
 	size_t mapped_pages_count, mapped_entries_count;

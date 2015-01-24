@@ -29,7 +29,6 @@ struct socket_calls *__socket_calls_list[PROT_MAXPROT + 1] = {
 struct socket *socket_create(int *errcode)
 {
 	*errcode = 0;
-#warning "TODO"
 	struct inode *inode = vfs_inode_create();
 	struct file *f = kmalloc(sizeof(struct file));
 	f->inode = inode;

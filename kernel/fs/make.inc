@@ -16,6 +16,5 @@ kernel/fs/link.o \
 kernel/fs/path.o
 
 include kernel/fs/proc/make.inc
-#include kernel/fs/vfs/make.inc
 include kernel/fs/newvfs/make.inc
 

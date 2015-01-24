@@ -8,6 +8,7 @@
 struct hash_table *icache;
 struct llist *ic_inuse;
 struct queue *ic_lru;
+mutex_t *ic_lock;
 
 void vfs_icache_init()
 {
@@ -17,6 +18,7 @@ void vfs_icache_init()
 
 	ic_inuse = ll_create(0);
 	ic_lru = queue_create(0, 0);
+	ic_lock = mutex_create(0, 0);
 }
 
 struct dirent *vfs_inode_get_dirent(struct inode *node, const char *name, int namelen)
@@ -71,8 +73,10 @@ void vfs_inode_destroy(struct inode *node)
 
 void vfs_inode_get(struct inode *node)
 {
+	mutex_acquire(ic_lock);
 	assert(add_atomic(&node->count, 1) > 1);
 	assert((node->flags & INODE_INUSE));
+	mutex_release(ic_lock);
 }
 
 struct inode *vfs_icache_get(struct filesystem *fs, uint32_t num)
@@ -81,39 +85,34 @@ struct inode *vfs_icache_get(struct filesystem *fs, uint32_t num)
 	struct inode *node;
 	int newly_created = 0;
 	uint32_t key[2] = {fs->id, num};
+	mutex_acquire(ic_lock);
 	if(hash_table_get_entry(icache, key, sizeof(uint32_t), 2, (void**)&node) == -ENOENT) {
 		/* didn't find it. Okay, create one */
 		node = vfs_inode_create();
 		node->filesystem = fs;
 		node->flags = INODE_NEEDREAD;
 		node->id = num;
-		struct inode *ret;
-		hash_table_set_or_get_entry(icache, key, sizeof(uint32_t), 2, node, (void**)&ret);
-		if(ret != node) {
-			node->flags = node->count = 0;
-			vfs_inode_destroy(node);
-		} else {
-			newly_created = 1;
-		}
-		/* someone else created this node before us. Okay. */
-		node = ret;
+		hash_table_set_entry(icache, key, sizeof(uint32_t), 2, node);
+		newly_created = 1;
 	}
 #warning "need to lock here? (for reclaiming)"
 	add_atomic(&node->count, 1);
+	
+	/* move to in-use */
+	if(!(ff_or_atomic(&node->flags, INODE_INUSE) & INODE_INUSE)) {
+		if(!newly_created) {
+			queue_remove(ic_lru, &node->lru_item);
+			ll_do_insert(ic_inuse, &node->inuse_item, node);
+		}
+	}
+
 #warning "remove these lines"
 	/* this was added in because a free'd inode that was allocated again had
 	 * old data present. In theory, once the work is compelete, this shouldn't
 	 * ever happen. But we need to fix this */
 	vfs_inode_set_needread(node);
 	fs_inode_pull(node);
-	
-	/* move to in-use */
-	if(!(ff_or_atomic(&node->flags, INODE_INUSE) & INODE_INUSE)) {
-		if(!newly_created) {
-			//queue_remove(ic_lru, &node->lru_item);
-		}
-		//ll_do_insert(ic_inuse, &node->inuse_item, node);
-	}
+	mutex_release(ic_lock);
 
 	return node;
 }
@@ -138,14 +137,15 @@ void vfs_icache_put(struct inode *node)
 {
 	assert(node->count > 0);
 	fs_inode_push(node); //TODO: Not sure if we want to do this here
+	mutex_acquire(ic_lock);
 	if(!sub_atomic(&node->count, 1)) {
-//		kprintf("moving to lru\n");
 		assert(node->flags & INODE_INUSE);
 		and_atomic(&node->flags, ~INODE_INUSE);
-#warning "fix"
-		//ll_do_remove(ic_inuse, &node->inuse_item, 0);
-		//queue_enqueue_item(ic_lru, &node->lru_item, node);
+
+		ll_do_remove(ic_inuse, &node->inuse_item, 0);
+		queue_enqueue_item(ic_lru, &node->lru_item, node);
 	}
+	mutex_release(ic_lock);
 }
 
 void vfs_inode_mount(struct inode *node, struct filesystem *fs)
@@ -211,17 +211,18 @@ int vfs_inode_chroot(struct inode *node)
 
 int fs_icache_sync()
 {
-	return 0;
 	printk(0, "[fs]: syncing inode cache...\n");
 	rwlock_acquire(&ic_inuse->rwl, RWL_READER);
-	struct llistnode *ln;
+	struct llistnode *ln, *prev=0;
 	struct inode *node;
 	ll_for_each_entry(ic_inuse, ln, struct inode *, node) {
-		printk(0, "%x %d       \r", ln, node->id);
+		assert(prev != ln);
+		printk(0, "%x %x %d\n", ln, node, node->id);
 		fs_inode_push(node);
+		prev = ln;
 	}
 	rwlock_release(&ic_inuse->rwl, RWL_READER);
-	printk(0, " done\n");
+	printk(0, "\ndone\n");
 	return 0;
 }
 

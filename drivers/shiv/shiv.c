@@ -298,7 +298,7 @@ addr_t shiv_build_ept_pml4(addr_t memsz)
 	vinit[0xff5] = 0xf0;
 	vinit[0xff6] = 0;
 	vinit[0xff7] = 0xf0;
-#if 0
+
 	printk(0, "[shiv]: writing interrupt code\n");
 	uint32_t *ivt = (void *)(pages[0] + PHYS_PAGE_MAP);
 	ivt[3] = 0xF000ff00;
@@ -306,9 +306,9 @@ addr_t shiv_build_ept_pml4(addr_t memsz)
 	vinit[0xf00] = 0xb8;
 	vinit[0xf01] = 0x78;
 	vinit[0xf02] = 0x56;
-	vinit[0xf03] = 0xf4; /* hlt */
+	vinit[0xf03] = 0xcf; /* hlt */
 	printk(0, "[shiv]: okay\n");
-#endif
+	
 	printk(4, "[shiv]: writing fake bios to location %x\n", 255 * 0x1000);
 	memcpy(vinit, bios, sizeof(bios));
 	return pml4;
@@ -350,19 +350,23 @@ void shiv_handle_irqs(struct vcpu *vc)
 	}
 	uint32_t tmp = vmcs_read32(CPU_BASED_VM_EXEC_CONTROL);
 	if (!vc->interruptible 
-				&& (shiv_vcpu_pending_int(vc) || vc->request_interruptible)) {
+				&& (shiv_vcpu_pending_int(vc) != -1 || vc->request_interruptible)) {
 		tmp |= CPU_BASED_VIRTUAL_INTR_PENDING;
+		kprintf("setting pending int exit (%d, %x, %d)\n", vc->interruptible, shiv_vcpu_pending_int(vc), vc->request_interruptible);
 	} else {
 		tmp &= ~CPU_BASED_VIRTUAL_INTR_PENDING;
 	}
 	vmcs_write32(CPU_BASED_VM_EXEC_CONTROL, tmp);
 }
 
-void exit_reason_interrupt(struct vcpu *vc)
+int exit_reason_interrupt(struct vcpu *vc)
 {
 	if((shiv_vcpu_pending_int(vc) == -1) && vc->request_interruptible) {
 		vc->rtu_cause = SHIV_RTU_IRQ_WINDOW_OPEN;
+		/* TODO: Set RTU value */
+		return 0;
 	}
+	return 1;
 }
 
 int exit_reason_halt(struct vcpu *vc)
@@ -399,9 +403,17 @@ int exit_reason_cr_access(struct vcpu *vc)
 	return 1;
 }
 
+int exit_reason_external_interrupt(struct vcpu *vc)
+{
+	/* TODO: set RTU value */
+	return 0;
+}
+
 void *exitreasons [NUM_EXIT_REASONS] = {
 	[EXIT_REASON_HLT] = exit_reason_halt,
 	[EXIT_REASON_CR_ACCESS] = exit_reason_cr_access,
+	[EXIT_REASON_PENDING_INTERRUPT] = exit_reason_interrupt,
+	[EXIT_REASON_EXTERNAL_INTERRUPT] = exit_reason_external_interrupt,
 };
 
 int shiv_vm_exit_handler(struct vcpu *vcpu)
@@ -410,7 +422,7 @@ int shiv_vm_exit_handler(struct vcpu *vcpu)
 	/* check cause of exit */
 	void *fn = exitreasons[vcpu->exit_reason];
 	if(!fn)
-		panic(0, "[shiv]: exit reason not defined\n");
+		panic(0, "[shiv]: exit reason not defined (%d)\n", vcpu->exit_reason);
 	/* handle exit reasons */
 	int (*exithandler)(void *) = fn;
 	return exithandler(vcpu);

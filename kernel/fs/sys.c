@@ -104,7 +104,7 @@ void fs_init()
 #endif
 }
 
-int sys_unlink(const char *path)
+static int do_sys_unlink(const char *path, int allow_dir)
 {
 	int len = strlen(path) + 1;
 	char tmp[len];
@@ -119,9 +119,25 @@ int sys_unlink(const char *path)
 	struct inode *node = fs_resolve_path_inode(dir, 0, 0);
 	if(!node)
 		return -ENOENT;
+	if(S_ISDIR(node->mode) && !allow_dir)
+		return -EPERM;
 	int r = fs_unlink(node, name, strlen(name));
 	vfs_icache_put(node);
 	return r;
+}
+
+int sys_unlink(const char *path)
+{
+	struct inode *dir = fs_resolve_path_inode(path, 0, 0);
+	if(!dir)
+		return -ENOENT;
+	int r = fs_unlink(dir, "..", 2);
+	if(r)
+		return r;
+	r = fs_unlink(dir, ".", 1);
+	if(r)
+		return r;
+	return do_sys_unlink(path, 0);
 }
 
 int sys_mkdir(const char *path, mode_t mode)
@@ -140,7 +156,7 @@ int sys_mkdir(const char *path, mode_t mode)
 
 int sys_rmdir(const char *path)
 {
-	return sys_unlink(path);
+	return do_sys_unlink(path, 1);
 }
 
 int sys_fs_mount(char *node, char *point, char *type, int opts)
@@ -274,7 +290,9 @@ int sys_link(char *oldpath, char *newpath)
 		vfs_dirent_release(exist);
 		fs_unlink(parent, name, strlen(name));
 	}
-	int r = fs_link(parent, target, name, strlen(name));
+	int r = -ENOSPC;
+	if(parent->nlink > 1)
+		r = fs_link(parent, target, name, strlen(name));
 	vfs_icache_put(parent);
 	vfs_icache_put(target);
 	return r;

@@ -16,7 +16,12 @@ int vfs_dirent_release(struct dirent *dir)
 			vfs_inode_del_dirent(dir->parent, dir);
 			r = fs_callback_inode_unlink(dir->parent, dir->name, dir->namelen);
 			if(!r) {
-				vfs_inode_set_needread(target);
+				if(sub_atomic(&target->nlink, 1) == 1 && S_ISDIR(target->mode)) {
+					sub_atomic(&dir->parent->nlink, 1);
+					sub_atomic(&target->nlink, 1);
+				}
+				if(!target->nlink)
+					vfs_inode_unset_dirty(target);
 			}
 		}
 		vfs_icache_put(dir->parent);

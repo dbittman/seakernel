@@ -64,7 +64,7 @@ struct dirent_posix {
 struct inode {
 	rwlock_t lock;
 	struct queue_item lru_item;
-	struct llistnode inuse_item;
+	struct llistnode inuse_item, dirty_item;
 	struct hash_table *dirents;
 	struct filesystem *filesystem;
 	
@@ -115,6 +115,7 @@ struct inode *vfs_inode_create();
 struct inode *vfs_icache_get(struct filesystem *, uint32_t num);
 void vfs_icache_put(struct inode *node);
 void vfs_inode_set_dirty(struct inode *node);
+void vfs_inode_unset_dirty(struct inode *node);
 void vfs_inode_set_needread(struct inode *node);
 int vfs_inode_check_permissions(struct inode *node, int perm, int real);
 void vfs_inode_del_dirent(struct inode *node, struct dirent *dir);

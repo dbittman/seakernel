@@ -56,7 +56,7 @@ int fs_inode_push(struct inode *node)
 	if(node->flags & INODE_DIRTY) {
 		r = fs_callback_inode_push(node);
 		if(!r)
-			and_atomic(&node->flags, ~INODE_DIRTY);
+			vfs_inode_unset_dirty(node);
 	}
 	return r;
 }
@@ -68,8 +68,6 @@ struct inode *fs_dirent_readinode(struct dirent *dir, int nofollow)
 		return 0;
 	struct inode *node = vfs_icache_get(dir->filesystem, dir->ino);
 	assert(node);
-	if(fs_inode_pull(node))
-		return 0;
 	if(!nofollow && S_ISLNK(node->mode)) {
 		size_t maxlen = node->length;
 		if(maxlen > 1024)
@@ -215,14 +213,15 @@ struct inode *fs_resolve_path_create(const char *path, int flags, mode_t mode, i
 	}
 
 	struct inode *node = vfs_icache_get(dir->filesystem, id);
-	fs_inode_pull(node);
 	node->mode = mode;
 	node->length = 0;
 	vfs_inode_set_dirty(node);
 	/* need to push first (maybe) to set the mode so that the dirent
 	 * filetype gets written right */
-	fs_inode_push(node);
+#warning "this shouldn't be needed"
+	//fs_inode_push(node);
 
+#warning "check if directory was unlinked, and don't allow link if so"
 	r = fs_link(dir, node, name, strlen(name));
 
 	if(!r && S_ISDIR(mode)) {

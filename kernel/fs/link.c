@@ -22,6 +22,10 @@ int fs_link(struct inode *dir, struct inode *target, const char *name, size_t na
 	rwlock_acquire(&dir->lock, RWL_WRITER);
 	if(!vfs_inode_check_permissions(dir, MAY_WRITE, 0))
 		return -EACCES;
+	if(!S_ISDIR(dir->mode))
+		return -ENOTDIR;
+	/* trying to create an entry in a directory that had rmdir called on it */
+#warning "put this in places called from userspace, not kernel space"
 	int r = fs_callback_inode_link(dir, target, name, namelen);
 	rwlock_release(&dir->lock, RWL_WRITER);
 	if(r)

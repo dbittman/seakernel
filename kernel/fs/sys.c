@@ -101,11 +101,14 @@ void fs_init()
 	loader_add_kernel_symbol(fs_filesystem_register);
 	loader_add_kernel_symbol(fs_filesystem_unregister);
 	loader_add_kernel_symbol(vfs_inode_set_dirty);
+	loader_add_kernel_symbol(vfs_icache_get);
+	loader_add_kernel_symbol(vfs_icache_put);
 #endif
 }
 
 static int do_sys_unlink(const char *path, int allow_dir)
 {
+	printk(0, "do_unlink: %s %d\n", path, allow_dir);
 	int len = strlen(path) + 1;
 	char tmp[len];
 	memcpy(tmp, path, len);
@@ -119,8 +122,6 @@ static int do_sys_unlink(const char *path, int allow_dir)
 	struct inode *node = fs_resolve_path_inode(dir, 0, 0);
 	if(!node)
 		return -ENOENT;
-	if(S_ISDIR(node->mode) && !allow_dir)
-		return -EPERM;
 	int r = fs_unlink(node, name, strlen(name));
 	vfs_icache_put(node);
 	return r;
@@ -128,15 +129,6 @@ static int do_sys_unlink(const char *path, int allow_dir)
 
 int sys_unlink(const char *path)
 {
-	struct inode *dir = fs_resolve_path_inode(path, 0, 0);
-	if(!dir)
-		return -ENOENT;
-	int r = fs_unlink(dir, "..", 2);
-	if(r)
-		return r;
-	r = fs_unlink(dir, ".", 1);
-	if(r)
-		return r;
 	return do_sys_unlink(path, 0);
 }
 

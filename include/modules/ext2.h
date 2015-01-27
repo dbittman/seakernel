@@ -9,6 +9,7 @@
 #include <sea/cpu/time.h>
 #include <modules/ext2_sb.h>
 #include <sea/ll.h>
+#include <sea/fs/fs.h>
 #include <sea/mutex.h>
 #define EXT2_FS_READONLY 1
 struct ext2_info {
@@ -16,6 +17,7 @@ struct ext2_info {
 	int flags;
 	ext2_superblock_t *sb;
 	mutex_t *m_node, *m_block, fs_lock, bg_lock;
+	struct filesystem *filesys;
 	unsigned long block_prev_alloc;
 };
 

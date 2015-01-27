@@ -14,13 +14,14 @@ int vfs_dirent_release(struct dirent *dir)
 		if(dir->flags & DIRENT_UNLINK) {
 			struct inode *target = fs_dirent_readinode(dir, 1);
 			vfs_inode_del_dirent(dir->parent, dir);
+			printk(0, "unlinking %s\n", dir->name);
 			r = fs_callback_inode_unlink(dir->parent, dir->name, dir->namelen);
 			if(!r) {
-				if(sub_atomic(&target->nlink, 1) == 1 && S_ISDIR(target->mode)) {
-					sub_atomic(&dir->parent->nlink, 1);
-					sub_atomic(&target->nlink, 1);
-				}
-				if(!target->nlink)
+				//if(sub_atomic(&target->nlink, 1) == 1 && S_ISDIR(target->mode)) {
+				//	sub_atomic(&dir->parent->nlink, 1);
+				//	sub_atomic(&target->nlink, 1);
+				//}
+				if(!target->nlink && (target->flags & INODE_DIRTY))
 					vfs_inode_unset_dirty(target);
 			}
 		}

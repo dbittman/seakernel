@@ -21,18 +21,7 @@ int ext2_mount(struct filesystem *seafs)
 	mutex_create(&fs->fs_lock, 0);
 	fs->m_node = mutex_create(0, 0);
 	fs->m_block = mutex_create(0, 0);
-
-	//struct inode *in = vfs_get_idir(node, 0);
-	//if(in && dev == -1)
-//		dev = in->dev;
-//	if(in && (int)in->dev != dev)
-//		printk(4, "[ext2]: Odd...node device is different from given device...\n");
-//	vfs_iput(in);
-//	fs->block = block;
-//	fs->dev = dev;
 	fs->sb->block_size=0;
-	//if(node)
-	//	strncpy(fs->node, node, 16);
 	int r = ext2_read_block(fs, 1, (unsigned char *)fs->sb);
 	if(fs->sb->magic != EXT2_SB_MAGIC) {
 		return -EINVAL;
@@ -78,6 +67,7 @@ int ext2_mount(struct filesystem *seafs)
 		printk(0, "[ext2]: Hmm...directories have a hash index. I'll look into that later...\n");
 	seafs->root_inode_id = 2;
 	seafs->data = fs;
+	fs->filesys = seafs;
 	seafs->fs_ops = &ext2_wrap_fsops;
 	seafs->fs_inode_ops = &ext2_wrap_iops;
 	return 0;

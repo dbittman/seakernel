@@ -216,7 +216,9 @@ int ext2_dir_delent(ext2_inode_t* dir, const char* name, int namelen, int dofree
 			mutex_acquire(&dir->fs->fs_lock);
 			--inode.link_count;
 			if (inode.link_count == 0) {
-				if (EXT2_INODE_IS_DIR(&inode)) {
+				struct inode *target = vfs_icache_get(dir->fs->filesys, entry->inode);
+				assert(target);
+				if (S_ISDIR(target->mode)) {
 					bgnum = ext2_inode_to_internal(inode.fs, inode.number) /
 					inode.fs->sb->inodes_per_group;
 					ext2_bg_read(inode.fs, bgnum, &bg);
@@ -224,6 +226,7 @@ int ext2_dir_delent(ext2_inode_t* dir, const char* name, int namelen, int dofree
 					ext2_bg_update(inode.fs, bgnum, &bg);
 					ext2_inode_read(dir->fs, dir->number, dir);
 				}
+				vfs_icache_put(target);
 				ext2_inode_free(&inode);
 			}
 			if (!ext2_inode_update(&inode)) {

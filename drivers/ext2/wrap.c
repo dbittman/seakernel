@@ -23,7 +23,6 @@ int ext2_wrap_alloc_inode(struct filesystem *fs, uint32_t *id)
 int ext2_wrap_inode_push(struct filesystem *fs, struct inode *out)
 {
 	ext2_inode_t in;
-	printk(0, "pushing inode %d\n", out->id);
 	struct ext2_info *info = fs->data;
 	if(!ext2_inode_read(info, out->id, &in))
 		return -EIO;
@@ -46,8 +45,6 @@ int ext2_wrap_inode_pull(struct filesystem *fs, struct inode *out)
 	struct ext2_info *info = fs->data;
 	if(!ext2_inode_read(info, out->id, &in))
 		return -EIO;
-	//printk(0, "ext2: pull %d\n", out->id);
-	printk(0, "pulling inode %d\n", out->id);
 	out->mode = in.mode;
 	out->uid = in.uid;
 	out->length = in.size;

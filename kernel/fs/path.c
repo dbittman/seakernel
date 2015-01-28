@@ -216,10 +216,6 @@ struct inode *fs_resolve_path_create(const char *path, int flags, mode_t mode, i
 	node->mode = mode;
 	node->length = 0;
 	vfs_inode_set_dirty(node);
-	/* need to push first (maybe) to set the mode so that the dirent
-	 * filetype gets written right */
-#warning "this shouldn't be needed"
-	//fs_inode_push(node);
 
 #warning "check if directory was unlinked, and don't allow link if so"
 	r = fs_link(dir, node, name, strlen(name));

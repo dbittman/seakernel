@@ -108,7 +108,6 @@ void fs_init()
 
 static int do_sys_unlink(const char *path, int allow_dir)
 {
-	printk(0, "do_unlink: %s %d\n", path, allow_dir);
 	int len = strlen(path) + 1;
 	char tmp[len];
 	memcpy(tmp, path, len);

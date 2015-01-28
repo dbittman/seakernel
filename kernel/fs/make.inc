@@ -1,9 +1,10 @@
 KOBJS+= kernel/fs/callbacks.o kernel/fs/close.o \
+kernel/fs/dirent.o \
 kernel/fs/fcntl.o \
 kernel/fs/file.o \
-kernel/fs/flock.o \
 kernel/fs/fs.o \
 kernel/fs/initrd.o \
+kernel/fs/inode.o \
 kernel/fs/mminode.o \
 kernel/fs/open.o \
 kernel/fs/ramfs.o \
@@ -15,6 +16,5 @@ kernel/fs/sys.o \
 kernel/fs/link.o \
 kernel/fs/path.o
 
-include kernel/fs/proc/make.inc
-include kernel/fs/newvfs/make.inc
+#include kernel/fs/proc/make.inc
 

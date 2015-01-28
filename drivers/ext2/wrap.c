@@ -102,7 +102,7 @@ int ext2_wrap_inode_link(struct filesystem *fs, struct inode *parent, struct ino
 		ext2_inode_update(&dir);
 		ext2_inode_read(info, target->id, &tar);
 		tar.link_count++;
-		if(target->nlink == 1 && S_ISDIR(target->mode))
+		if(tar.link_count == 1 && S_ISDIR(target->mode))
 			ext2_dir_change_dir_count(&tar, 0);
 		ext2_inode_update(&tar);
 		add_atomic(&target->nlink, 1);

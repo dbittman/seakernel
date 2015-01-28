@@ -222,6 +222,7 @@ int ext2_dir_delent(ext2_inode_t* dir, const char* name, int namelen, int dofree
 					bgnum = ext2_inode_to_internal(inode.fs, inode.number) /
 					inode.fs->sb->inodes_per_group;
 					ext2_bg_read(inode.fs, bgnum, &bg);
+					kprintf("subbing %d:%s (was %d)\n", entry->inode, name, bg.used_directories);
 					bg.used_directories--;
 					ext2_bg_update(inode.fs, bgnum, &bg);
 					ext2_inode_read(dir->fs, dir->number, dir);

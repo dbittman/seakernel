@@ -115,7 +115,8 @@ void fs_copy_file_handles(task_t *p, task_t *n)
 			add_atomic(&fp->fi->count, 1);
 			struct inode *i = fp->fi->inode;
 			vfs_inode_get(i);
-			vfs_dirent_acquire(fp->fi->dirent);
+			if(fp->fi->dirent)
+				vfs_dirent_acquire(fp->fi->dirent);
 			if(i->pipe && !i->pipe->type) {
 				add_atomic(&i->pipe->count, 1);
 				if(fp->fi->flags & _FWRITE)

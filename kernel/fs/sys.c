@@ -44,12 +44,11 @@ void devfs_init()
 	ramfs_mount(devfs);
 	sys_fs_mount(0, "/dev", "devfs", 0);
 	char tty[16];
-	/* TODO: fix these permissions */
 	for(int i=1;i<10;i++) {
 		snprintf(tty, 10, "/dev/tty%d", i);
-		sys_mknod(tty, S_IFCHR | 0666, GETDEV(3, i));
+		sys_mknod(tty, S_IFCHR | 0600, GETDEV(3, i));
 	}
-	sys_mknod("/dev/tty", S_IFCHR | 0666, GETDEV(4, 0));
+	sys_mknod("/dev/tty", S_IFCHR | 0600, GETDEV(4, 0));
 	sys_mknod("/dev/null", S_IFCHR | 0666, GETDEV(0, 0));
 	sys_mknod("/dev/zero", S_IFCHR | 0666, GETDEV(1, 0));
 	sys_mknod("/dev/com0", S_IFCHR | 0600, GETDEV(5, 0));
@@ -94,7 +93,7 @@ void fs_init()
 	loader_add_kernel_symbol(sys_stat);
 	loader_add_kernel_symbol(sys_fstat);
 	loader_add_kernel_symbol(vfs_icache_put);
-	loader_add_kernel_symbol(fs_resolve_path_inode);
+	loader_add_kernel_symbol(fs_path_resolve_inode);
 	loader_add_kernel_symbol(sys_mknod);
 	loader_add_kernel_symbol(sys_unlink);
 	loader_add_kernel_symbol(vfs_inode_set_needread);
@@ -118,9 +117,10 @@ static int do_sys_unlink(const char *path, int allow_dir)
 	if(dir[0] == 0)
 		dir = "/";
 
-	struct inode *node = fs_resolve_path_inode(dir, 0, 0);
+	int result;
+	struct inode *node = fs_path_resolve_inode(dir, 0, &result);
 	if(!node)
-		return -ENOENT;
+		return result;
 	int r = fs_unlink(node, name, strlen(name));
 	vfs_icache_put(node);
 	return r;
@@ -135,8 +135,8 @@ int sys_mkdir(const char *path, mode_t mode)
 {
 	int c;
 	struct inode *n;
-	if(!(n=fs_resolve_path_create(path, 0, S_IFDIR | mode, &c))) {
-		return -EINVAL;
+	if(!(n=fs_path_resolve_create(path, 0, S_IFDIR | mode, &c))) {
+		return c;
 	}
 
 	vfs_icache_put(n);
@@ -158,7 +158,7 @@ int sys_fs_mount(char *node, char *point, char *type, int opts)
 		fs_filesystem_destroy(fs);
 		return r;
 	}
-	struct inode *in = fs_resolve_path_inode(point, 0, &r);
+	struct inode *in = fs_path_resolve_inode(point, 0, &r);
 	/* todo check */
 	if(!in) {
 		fs_filesystem_destroy(fs);
@@ -185,9 +185,10 @@ int sys_mount2(char *node, char *to, char *name, char *opts, int something)
 
 int sys_umount(char *dir, int flags)
 {
-	struct inode *node = fs_resolve_path_inode(dir, 0, 0);
+	int result;
+	struct inode *node = fs_path_resolve_inode(dir, 0, &result);
 	if(!node)
-		return -ENOENT;
+		return result;
 	int r = fs_umount(node->filesystem);
 	vfs_icache_put(node);
 	return r;
@@ -198,9 +199,9 @@ int sys_chroot(char *path)
 	int r = sys_chdir(path, 0);
 	if(r)
 		return r;
-	struct inode *node = fs_resolve_path_inode(path, 0, 0);
+	struct inode *node = fs_path_resolve_inode(path, 0, &r);
 	if(!node)
-		return -ENOENT;
+		return r;
 	vfs_inode_chroot(node);
 	vfs_icache_put(node);
 	return 0;
@@ -244,7 +245,7 @@ int sys_chdir(char *n, int fd)
 		ret = vfs_inode_chdir(file->inode);
 		fs_fput((task_t *)current_task, fd, 0);
 	} else {
-		struct inode *node = fs_resolve_path_inode(n, 0, &ret);
+		struct inode *node = fs_path_resolve_inode(n, 0, &ret);
 		if(node) {
 			ret = vfs_inode_chdir(node);
 			vfs_icache_put(node);
@@ -255,10 +256,10 @@ int sys_chdir(char *n, int fd)
 
 int sys_link(char *oldpath, char *newpath)
 {
-	/* TODO: Atomic? */
-	struct inode *target = fs_resolve_path_inode(oldpath, 0, 0);
+	int result;
+	struct inode *target = fs_path_resolve_inode(oldpath, 0, &result);
 	if(!target)
-		return -ENOENT;
+		return result;
 
 	int len = strlen(newpath) + 1;
 	char tmp[len];
@@ -270,13 +271,12 @@ int sys_link(char *oldpath, char *newpath)
 	if(dir[0] == 0)
 		dir = "/";
 
-
-	struct inode *parent = fs_resolve_path_inode(dir, 0, 0);
+	struct inode *parent = fs_path_resolve_inode(dir, 0, &result);
 	if(!parent) {
 		vfs_icache_put(target);
-		return -ENOENT;
+		return result;
 	}
-	struct dirent *exist = fs_resolve_path(newpath, 0);
+	struct dirent *exist = fs_path_resolve(newpath, 0, &result);
 	if(exist) {
 		vfs_dirent_release(exist);
 		fs_unlink(parent, name, strlen(name));
@@ -300,8 +300,9 @@ int sys_chmod(char *path, int fd, mode_t mode)
 {
 	if(!path && fd == -1) return -EINVAL;
 	struct inode *i;
+	int result;
 	if(path)
-		i = fs_resolve_path_inode(path, 0, 0);
+		i = fs_path_resolve_inode(path, 0, &result);
 	else {
 		struct file *file = fs_get_file_pointer((task_t *)current_task, fd);
 		if(!file)
@@ -310,7 +311,7 @@ int sys_chmod(char *path, int fd, mode_t mode)
 		assert(i);
 	}
 	if(!i)
-		return -ENOENT;
+		return result;
 	if(i->uid != current_task->thread->effective_uid && current_task->thread->effective_uid)
 	{
 		if(path)
@@ -336,8 +337,9 @@ int sys_chown(char *path, int fd, uid_t uid, gid_t gid)
 	if(!path && fd == -1)
 		return -EINVAL;
 	struct inode *i;
+	int result;
 	if(path)
-		i = fs_resolve_path_inode(path, 0, 0);
+		i = fs_path_resolve_inode(path, 0, &result);
 	else {
 		struct file *file = fs_get_file_pointer((task_t *)current_task, fd);
 		if(!file)
@@ -346,7 +348,7 @@ int sys_chown(char *path, int fd, uid_t uid, gid_t gid)
 		fs_fput((task_t *)current_task, fd, 0);
 	}
 	if(!i)
-		return -ENOENT;
+		return result;
 	if(current_task->thread->effective_uid && current_task->thread->effective_uid != i->uid) {
 		if(path)
 			vfs_icache_put(i);
@@ -371,9 +373,10 @@ int sys_utime(char *path, time_t a, time_t m)
 {
 	if(!path)
 		return -EINVAL;
-	struct inode *i = fs_resolve_path_inode(path, 0, 0);
+	int result;
+	struct inode *i = fs_path_resolve_inode(path, 0, &result);
 	if(!i)
-		return -ENOENT;
+		return result;
 	if(current_task->thread->effective_uid && current_task->thread->effective_uid != i->uid) {
 		vfs_icache_put(i);
 		return -EPERM;
@@ -404,14 +407,17 @@ int sys_ftruncate(int f, off_t length)
 int sys_mknod(char *path, mode_t mode, dev_t dev)
 {
 	if(!path) return -EINVAL;
-	struct inode *i = fs_resolve_path_inode(path, RESOLVE_NOLINK, 0);
+	int result;
+	struct inode *i = fs_path_resolve_inode(path, RESOLVE_NOLINK, &result);
+	if(!i && result != -ENOENT)
+		return result;
 	if(i) {
 		vfs_icache_put(i);
 		return -EEXIST;
 	}
 	int created;
-	i = fs_resolve_path_create(path, 0, mode, &created);
-	if(!i) return -EACCES;
+	i = fs_path_resolve_create(path, 0, mode, &created);
+	if(!i) return created;
 	if(!created) {
 		vfs_icache_put(i);
 		return -EEXIST;
@@ -431,9 +437,10 @@ int sys_readlink(char *_link, char *buf, int nr)
 {
 	if(!_link || !buf)
 		return -EINVAL;
-	struct inode *i = fs_resolve_path_inode(_link, RESOLVE_NOLINK, 0);
+	int res;
+	struct inode *i = fs_path_resolve_inode(_link, RESOLVE_NOLINK, &res);
 	if(!i)
-		return -ENOENT;
+		return res;
 	if(!S_ISLNK(i->mode)) {
 		vfs_icache_put(i);
 		return -EINVAL;
@@ -447,17 +454,23 @@ int sys_symlink(char *p2, char *p1)
 {
 	if(!p2 || !p1)
 		return -EINVAL;
-	struct inode *inode = fs_resolve_path_inode(p1, 0, 0);
-	if(!inode) inode = fs_resolve_path_inode(p1, RESOLVE_NOLINK, 0);
+	int res;
+	struct inode *inode = fs_path_resolve_inode(p1, 0, &res);
+	if(!inode) {
+		if(res != -ENOENT)
+			return res;
+		inode = fs_path_resolve_inode(p1, RESOLVE_NOLINK, &res);
+		if(!inode && res != -ENOENT)
+			return res;
+	}
 	if(inode)
 	{
 		vfs_icache_put(inode);
 		return -EEXIST;
 	}
-	/* TODO: permissions of new symlink */
-	inode = fs_resolve_path_create(p1, 0, S_IFLNK | 0777, 0);
+	inode = fs_path_resolve_create(p1, 0, S_IFLNK | 0755, &res);
 	if(!inode)
-		return -EACCES;
+		return res;
 	int ret=0;
 	vfs_inode_set_dirty(inode);
 	
@@ -477,9 +490,10 @@ int sys_access(char *path, mode_t mode)
 {
 	if(!path)
 		return -EINVAL;
-	struct inode *i = fs_resolve_path_inode(path, 0, 0);
+	int res;
+	struct inode *i = fs_path_resolve_inode(path, 0, &res);
 	if(!i)
-		return -ENOENT;
+		return res;
 	if(current_task->thread->real_uid == 0) {
 		vfs_icache_put(i);
 		return 0;

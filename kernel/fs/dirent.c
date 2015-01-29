@@ -27,6 +27,45 @@ int vfs_dirent_release(struct dirent *dir)
 	return r;
 }
 
+#warning "return errors"
+struct inode *fs_dirent_readinode(struct dirent *dir, int nofollow)
+{
+	assert(dir);
+	if(!vfs_inode_check_permissions(dir->parent, MAY_EXEC, 0))
+		return 0;
+	struct inode *node = vfs_icache_get(dir->filesystem, dir->ino);
+	assert(node);
+	if(!nofollow && S_ISLNK(node->mode)) {
+		size_t maxlen = node->length;
+		if(maxlen > 1024)
+			maxlen = 1024;
+		char link[maxlen+1];
+		if((size_t)fs_inode_read(node, 0, maxlen, link) != maxlen) {
+			vfs_icache_put(node);
+			return 0;
+		}
+		link[maxlen]=0;
+		char *newpath = link;
+		struct inode *start = dir->parent, *ln=0;
+		if(link[0] == '/') {
+			newpath++;
+			start = current_task->thread->root;
+		}
+		int err;
+		struct dirent *ln_dir = do_fs_path_resolve(start, link, &err);
+		vfs_icache_put(node);
+		if(ln_dir) {
+			ln = fs_dirent_readinode(ln_dir, 0);
+			vfs_dirent_release(ln_dir);
+		} else {
+			vfs_icache_put(node);
+			return 0;
+		}
+		node = ln;
+	}
+	return node;
+}
+
 struct dirent *vfs_dirent_create(struct inode *node)
 {
 	struct dirent *d = kmalloc(sizeof(struct dirent));

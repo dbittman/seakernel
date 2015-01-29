@@ -54,10 +54,11 @@ int sys_stat(char *f, struct stat *statbuf, int lin)
 {
 	if(!f || !statbuf) return -EINVAL;
 	struct inode *i;
-	i = (struct inode *) (lin ? fs_resolve_path_inode(f, RESOLVE_NOLINK, 0) : fs_resolve_path_inode(f, 0, 0));
+	int res;
+	i = (struct inode *) (lin ? fs_path_resolve_inode(f, RESOLVE_NOLINK, &res) : fs_path_resolve_inode(f, 0, &res));
 
 	if(!i)
-		return -ENOENT;
+		return res;
 	do_stat(i, statbuf);
 	vfs_icache_put(i);
 	return 0;

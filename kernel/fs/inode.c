@@ -149,6 +149,30 @@ void vfs_icache_put(struct inode *node)
 	mutex_release(ic_lock);
 }
 
+#warning "locking?"
+int fs_inode_pull(struct inode *node)
+{
+	int r = 0;
+	if(node->flags & INODE_NEEDREAD) {
+		r = fs_callback_inode_pull(node);
+		if(!r)
+			and_atomic(&node->flags, ~INODE_NEEDREAD);
+	}
+	return r;
+}
+
+int fs_inode_push(struct inode *node)
+{
+	int r = 0;
+	if(node->flags & INODE_DIRTY) {
+		r = fs_callback_inode_push(node);
+		if(!r)
+			vfs_inode_unset_dirty(node);
+	}
+	return r;
+}
+
+
 void vfs_inode_mount(struct inode *node, struct filesystem *fs)
 {
 	assert(!node->mount);

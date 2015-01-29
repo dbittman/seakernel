@@ -31,9 +31,10 @@ int fs_filesystem_init_mount(struct filesystem *fs, char *node, char *type, int 
 	fs->opts = opts;
 	if(!strcmp(fs->type, "devfs"))
 		return 0;
-	struct inode *i = fs_resolve_path_inode(node, 0, 0);
+	int err;
+	struct inode *i = fs_path_resolve_inode(node, 0, &err);
 	if(!i)
-		return -ENOENT;
+		return err;
 	fs->dev = i->phys_dev;
 	vfs_icache_put(i);
 	struct fsdriver *fd = 0;

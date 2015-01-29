@@ -15,6 +15,19 @@
 #include <sea/errno.h>
 #include <sea/mm/kmalloc.h>
 
+static struct inode *__fs_do_open_resolve__(char *path, int *err, struct dirent **dir)
+{
+	struct dirent *de = fs_path_resolve(path, 0, err);
+	if(!de)
+		return 0;
+	*dir = de;
+	struct inode *node = fs_dirent_readinode(de, 0);
+	if(!node) {
+		*err = -EIO;
+	}
+	return node;
+}
+
 struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int *num)
 {
 	if(!name) {
@@ -22,30 +35,37 @@ struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int
 		return 0;
 	}
 	++flags;
-	struct inode *inode;
+	struct inode *inode=0;
+	struct dirent *dirent=0;
 	struct file *f;
 	mode_t mode = (_mode & ~0xFFF) | ((_mode&0xFFF) & (~(current_task->cmask&0xFFF)));
-	int did_create=0;
-	inode = (flags & _FCREAT) ? 
-				fs_resolve_path_create(name, 0, S_IFREG | mode, &did_create) 
-				: fs_resolve_path_inode(name, 0, 0);
-	if(!inode) {
-		*error = (flags & _FCREAT) ? -EACCES : -ENOENT;
+	
+	inode = (flags & _FCREAT) ?
+				do_fs_path_resolve_create(name, 0, 
+						S_IFREG | mode, error, &dirent)
+				: __fs_do_open_resolve__(name, error, &dirent);
+
+	if(!inode || !dirent) {
+		if(inode) vfs_icache_put(inode);
+		if(dirent) vfs_dirent_release(dirent);
 		return 0;
 	}
 	/* If CREAT and EXCL are set, and the file exists, return */
-	if(flags & _FCREAT && flags & _FEXCL && !did_create) {
+	if(flags & _FCREAT && flags & _FEXCL && !*error) {
 		vfs_icache_put(inode);
+		vfs_dirent_release(dirent);
 		*error = -EEXIST;
 		return 0;
 	}
 	if(flags & _FREAD && !vfs_inode_check_permissions(inode, MAY_READ, 0)) {
 		vfs_icache_put(inode);
+		vfs_dirent_release(dirent);
 		*error = -EACCES;
 		return 0;
 	}
 	if(flags & _FWRITE && !vfs_inode_check_permissions(inode, MAY_WRITE, 0)) {
 		vfs_icache_put(inode);
+		vfs_dirent_release(dirent);
 		*error = -EACCES;
 		return 0;
 	}
@@ -53,16 +73,10 @@ struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int
 		/* check if we have readers on this fifo. If not, we return an error */
 		if((inode->pipe->count - inode->pipe->wrcount) == 0) {
 			vfs_icache_put(inode);
+			vfs_dirent_release(dirent);
 			*error = -ENXIO;
 			return 0;
 		}
-	}
-	/* TODO: we're doing this twice. Fix this. */
-	struct dirent *dirent = fs_resolve_path(name, 0);
-	if(!dirent) {
-		vfs_icache_put(inode);
-		*error = -ENOENT;
-		return 0;
 	}
 	int ret;
 	f = (struct file *)kmalloc(sizeof(struct file));
@@ -112,7 +126,8 @@ static int duplicate(task_t *t, int fp, int n)
 		return -EBADF;
 	struct file *new=(struct file *)kmalloc(sizeof(struct file));
 	vfs_inode_get(f->inode);
-	vfs_dirent_acquire(f->dirent);
+	if(f->dirent)
+		vfs_dirent_acquire(f->dirent);
 	new->inode = f->inode;
 	new->dirent = f->dirent;
 	new->count=1;

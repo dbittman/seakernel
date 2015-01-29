@@ -128,10 +128,17 @@ int vfs_dirent_acquire(struct dirent *dir);
 
 int fs_inode_pull(struct inode *node);
 int fs_inode_push(struct inode *node);
-struct inode *fs_resolve_path_inode(const char *path, int flags, int *error);
+
 struct inode *fs_dirent_readinode(struct dirent *dir, int);
-struct dirent *fs_resolve_path(const char *path, int flags);
-struct inode *fs_resolve_path_create(const char *path, int flags, mode_t mode, int *did_create);
+
+struct inode *do_fs_path_resolve_create(const char *path,
+		int flags, mode_t mode, int *result, struct dirent **dirent);
+struct inode *fs_path_resolve_create(const char *path,
+		int flags, mode_t mode, int *result);
+struct dirent *fs_path_resolve(const char *path, int flags, int *result);
+struct dirent *do_fs_path_resolve(struct inode *start, const char *path, int *result);
+struct inode *fs_path_resolve_inode(const char *path, int flags, int *error);
+
 struct dirent *fs_readdir(struct inode *node, size_t num);
 struct inode *fs_read_root_inode(struct filesystem *fs);
 int vfs_inode_chdir(struct inode *node);

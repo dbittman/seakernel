@@ -73,9 +73,10 @@ int loop_up(int num, char *name)
 	if(loop->node) 
 		return -EBUSY;
 	
-	struct inode *i = fs_resolve_path_inode(name, 0, 0);
+	int res;
+	struct inode *i = fs_path_resolve_inode(name, 0, &res);
 	if(!i)
-		return -ENOENT;
+		return res;
 	loop->offset = loop->limit = loop->ro = 0;
 	loop->node = i;
 	

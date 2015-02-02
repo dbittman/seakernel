@@ -24,9 +24,11 @@
 #include <sea/errno.h>
 #include <sea/vsprintf.h>
 #include <sea/fs/socket.h>
+#include <sea/lib/timer.h>
 
 static unsigned int num_syscalls=0;
 //#define SC_DEBUG 1
+#define SC_TIMING 1
 int sys_null(long a, long b, long c, long d, long e)
 {
 	#if CONFIG_DEBUG
@@ -208,9 +210,13 @@ static void *syscall_table[129] = {
 	[SYS_RET_FROM_SIG] = SC sys_null,
 };
 
+struct timer systimers[129];
+
 void syscall_init()
 {
 	num_syscalls = sizeof(syscall_table)/sizeof(void *);
+	for(int i=0;i<129;i++)
+		timer_create(&systimers[i], 0);
 }
 
 int mm_is_valid_user_pointer(int num, void *p, char flags)
@@ -325,25 +331,29 @@ int syscall_handler(volatile registers_t *regs)
 	cpu_interrupt_set(1);
 	/* start accounting information! */
 	current_task->freed = current_task->allocated=0;
-
+	
 	#ifdef SC_DEBUG
 	if(current_task->tty == current_console->tty && SYSCALL_NUM_AND_RET != 5 && 0)
 		printk(SC_DEBUG, "tty %d: syscall %d (from: %x): enter %d\n",
 				current_task->tty, current_task->pid,
 				current_task->sysregs->eip, SYSCALL_NUM_AND_RET);
-	int or_t = tm_get_ticks();
 	#endif
+#ifdef SC_TIMING
+	int timer_did_start = timer_start(&systimers[SYSCALL_NUM_AND_RET]);
+#endif
 	__do_syscall_jump(ret, syscall_table[SYSCALL_NUM_AND_RET], _E_, _D_,
 					  _C_, _B_, _A_);
+#ifdef SC_TIMING
+	if(!(SYSCALL_NUM_AND_RET == SYS_FORK && ret == 0)) {
+		if(timer_did_start) timer_stop(&systimers[SYSCALL_NUM_AND_RET]);
+	}
+#endif
 	#ifdef SC_DEBUG
-	int td = tm_get_ticks() - or_t;
 	if((current_task->tty == current_console->tty || 1)
 		&& (ret < 0 || 0) && (ret == -EINTR || 1)
-		&& ((current_task->allocated != 0 || current_task->freed != 0 || 1))
-		&& (td > 0 || 1))
-		printk(SC_DEBUG, "syscall pid %3d: #%3d ret %4d, took %4d ticks (%d al, %d fr)\n",
+		&& ((current_task->allocated != 0 || current_task->freed != 0 || 1)))
+		printk(SC_DEBUG, "syscall pid %3d: #%3d ret %4d (%d al, %d fr)\n",
 			   current_task->pid, current_task->system, ret,
-			   td,
 			   current_task->allocated, current_task->freed);
 	#endif
 

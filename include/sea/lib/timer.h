@@ -16,5 +16,10 @@ struct timer {
 	double mean;
 };
 
+void timer_stop(struct timer *t);
+int timer_start(struct timer *t);
+void timer_destroy(struct timer *t);
+struct timer *timer_create(struct timer *t, int flags);
+
 #endif
 

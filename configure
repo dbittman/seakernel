@@ -56,6 +56,7 @@ data-initrd/etc/fstab           : /etc/fstab
 data-initrd/bin32/bash            : /sh
 data-initrd/bin32/modprobe        : /modprobe
 data-initrd/bin32/mount           : /mount
+data-initrd/bin32/umount           : /umount
 data-initrd/bin32/chroot          : /chroot
 
 drivers/built/ata               : /ata
@@ -79,6 +80,7 @@ data-initrd/etc/fstab           : /etc/fstab
 data-initrd/bin64/bash            : /sh
 data-initrd/bin64/modprobe        : /modprobe
 data-initrd/bin64/mount           : /mount
+data-initrd/bin64/umount           : /umount
 data-initrd/bin64/chroot          : /chroot
 
 drivers/built/ata               : /ata

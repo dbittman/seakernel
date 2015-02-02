@@ -67,9 +67,9 @@ void fs_unmount_all()
 extern struct filesystem *devfs;
 int fs_mount(struct inode *pt, struct filesystem *fs)
 {
+	/* TODO: make sure we don't mount a FS twice */
 	if(!strcmp(fs->type, "devfs")) {
-		vfs_inode_mount(pt, devfs);
-		return 0;
+		fs = devfs;
 	}
 	vfs_inode_mount(pt, fs);
 	return 0;
@@ -78,7 +78,9 @@ int fs_mount(struct inode *pt, struct filesystem *fs)
 int fs_umount(struct filesystem *fs)
 {
 	/* TODO: check if not in use */
-	fs->driver->umount(fs);
+	assert(fs);
+	if(fs->driver && fs->driver->umount)
+		fs->driver->umount(fs);
 	vfs_inode_umount(fs->point);
 	return 0;
 }

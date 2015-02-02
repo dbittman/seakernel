@@ -32,6 +32,7 @@ else
 		sh
 	else
 		printf "dev "
+		umount /dev
 		mount -t devfs \* /mnt/dev
 		printf "proc "
 		mount -t procfs \* /mnt/proc

@@ -50,7 +50,7 @@ struct inode *fs_resolve_mount(struct inode *node)
 
 #warning "return errors"
 struct dirent *do_fs_path_resolve(struct inode *start, const char *path, int *result)
-{	
+{
 	vfs_inode_get(start);
 	assert(start);
 	if(!*path)

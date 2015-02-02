@@ -137,33 +137,6 @@ int ramfs_inode_get_dirent(struct filesystem *fs, struct inode *node,
 	return 0;
 }
 
-int ramfs_inode_readdir(struct filesystem *fs, struct inode *node, size_t num, struct dirent *dir)
-{
-	struct rfsinfo *info = fs->data;
-	struct rfsnode *rfsnode;
-
-	if(hash_table_get_entry(info->nodes, &node->id, sizeof(node->id), 1, (void **)&rfsnode))
-		return -EIO;
-
-	struct llistnode *ln;
-	struct rfsdirent *rd, *found=0;
-	rwlock_acquire(&rfsnode->ents->rwl, RWL_READER);
-	ll_for_each_entry(rfsnode->ents, ln, struct rfsdirent *, rd) {
-		if(num-- == 0) {
-			found = rd;
-			break;
-		}
-	}
-	rwlock_release(&rfsnode->ents->rwl, RWL_READER);
-	if(!found)
-		return -ENOENT;
-
-	dir->ino = found->ino;
-	memcpy(dir->name, found->name, found->namelen);
-	dir->namelen = found->namelen;
-	return 0;
-}
-
 int ramfs_inode_getdents(struct filesystem *fs, struct inode *node, unsigned off, struct dirent_posix *dirs,
 		unsigned count, unsigned *nextoff)
 {
@@ -219,6 +192,7 @@ int ramfs_inode_link(struct filesystem *fs, struct inode *parent, struct inode *
 	dir->ino = target->id;
 	memcpy(dir->name, name, namelen);
 	dir->namelen = namelen;
+	parent->length += 512;
 
 	dir->lnode = ll_insert(rfsparent->ents, dir);
 	return 0;

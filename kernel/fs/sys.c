@@ -41,6 +41,7 @@ struct filesystem *devfs;
 void devfs_init()
 {
 	devfs = fs_filesystem_create();
+	kprintf("devfs: %x\n", devfs);
 	ramfs_mount(devfs);
 	sys_fs_mount(0, "/dev", "devfs", 0);
 	char tty[16];
@@ -189,6 +190,7 @@ int sys_umount(char *dir, int flags)
 	struct inode *node = fs_path_resolve_inode(dir, 0, &result);
 	if(!node)
 		return result;
+	kprintf("%s --> %x\n", dir,  node->filesystem);
 	int r = fs_umount(node->filesystem);
 	vfs_icache_put(node);
 	return r;

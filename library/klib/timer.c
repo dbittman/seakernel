@@ -40,6 +40,7 @@ void timer_stop(struct timer *t)
 	unsigned long long end = tm_get_ticks();
 	unsigned long long diff = end - t->start_time;
 	assert(t->flags & TIMER_RUNNING);
+	/* recalculate mean */
 	t->mean = ((t->mean * t->runs) + diff) / (++t->runs);
 	if(t->max < diff)
 		t->max = diff;

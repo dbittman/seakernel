@@ -356,7 +356,6 @@ int syscall_handler(volatile registers_t *regs)
 			   current_task->pid, current_task->system, ret,
 			   current_task->allocated, current_task->freed);
 	#endif
-
 	cpu_interrupt_set(0);
 	tm_process_exit_system();
 	tm_engage_idle();

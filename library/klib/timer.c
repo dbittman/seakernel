@@ -1,5 +1,6 @@
 #include <sea/tm/schedule.h>
 #include <sea/cpu/atomic.h>
+#include <sea/cpu/time.h>
 #include <sea/lib/timer.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/kernel.h>
@@ -31,15 +32,16 @@ int timer_start(struct timer *t)
 			panic(0, "tried to start timer when timer was running");
 		return 0;
 	}
-	t->start_time = tm_get_ticks();
+	t->start_time = arch_hpt_get_nanoseconds();
 	return 1;
 }
 
 void timer_stop(struct timer *t)
 {
-	unsigned long long end = tm_get_ticks();
-	unsigned long long diff = end - t->start_time;
+	unsigned long long end = arch_hpt_get_nanoseconds();
 	assert(t->flags & TIMER_RUNNING);
+	unsigned long long diff = end - t->start_time;
+	t->last = diff;
 	/* recalculate mean */
 	t->mean = ((t->mean * t->runs) + diff) / (++t->runs);
 	if(t->max < diff)

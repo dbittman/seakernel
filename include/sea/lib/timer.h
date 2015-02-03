@@ -12,7 +12,7 @@ struct timer {
 	unsigned int magic;
 	unsigned long runs;
 	unsigned long long start_time;
-	unsigned long long max, min;
+	unsigned long long max, min, last;
 	double mean;
 };
 

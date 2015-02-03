@@ -190,7 +190,6 @@ int sys_umount(char *dir, int flags)
 	struct inode *node = fs_path_resolve_inode(dir, 0, &result);
 	if(!node)
 		return result;
-	kprintf("%s --> %x\n", dir,  node->filesystem);
 	int r = fs_umount(node->filesystem);
 	vfs_icache_put(node);
 	return r;

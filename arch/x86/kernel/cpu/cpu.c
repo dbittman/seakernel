@@ -63,4 +63,5 @@ void arch_cpu_processor_init_1()
 void arch_cpu_processor_init_2()
 {
 	acpi_init();
+	x86_hpet_init();
 }

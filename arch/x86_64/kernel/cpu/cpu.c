@@ -40,6 +40,7 @@ void arch_cpu_processor_init_1()
 void arch_cpu_processor_init_2()
 {
 	acpi_init();
+	x86_hpet_init();
 #if CONFIG_SMP
 	mutex_create(&ipi_mutex, MT_NOSCHED);
 	memset(cpu_array, 0, sizeof(cpu_t) * CONFIG_MAX_CPUS);

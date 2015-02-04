@@ -14,6 +14,7 @@ KOBJS+= kernel/fs/callbacks.o \
 		kernel/fs/stat.o \
 		kernel/fs/sync.o \
 		kernel/fs/sys.o \
+		kernel/fs/sysfs.o \
 		kernel/fs/link.o \
 		kernel/fs/path.o
 

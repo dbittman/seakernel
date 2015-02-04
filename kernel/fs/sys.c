@@ -25,6 +25,7 @@
 #include <sea/fs/socket.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/fs/fs.h>
+#include <sea/fs/kerfs.h>
 static int system_setup=0;
 /* This function is called once at the start of the init process initialization.
  * It sets the task fs values to possible and useful things, allowing VFS access.
@@ -55,6 +56,8 @@ void devfs_init()
 	sys_mknod("/dev/com0", S_IFCHR | 0600, GETDEV(5, 0));
 }
 
+int test = 12345;
+
 int sys_setup(int a)
 {
 	if(system_setup)
@@ -63,6 +66,9 @@ int sys_setup(int a)
 		return 1;
 	}
 	printk(KERN_MILE, "[kernel]: Setting up environment...");
+	kerfs_init();
+	
+
 	struct filesystem *fs = fs_filesystem_create();
 	ramfs_mount(fs);
 	current_task->thread->pwd = current_task->thread->root = fs_read_root_inode(fs);
@@ -73,6 +79,8 @@ int sys_setup(int a)
 	sys_open("/dev/tty1", O_RDWR);   /* stdin  */
 	sys_open("/dev/tty1", O_WRONLY); /* stdout */
 	sys_open("/dev/tty1", O_WRONLY); /* stderr */
+	kerfs_register_parameter("/dev/test", &test, sizeof(test), 0, KERFS_TYPE_INTEGER);
+	kerfs_register_report("/dev/syscall", kerfs_syscall_report);
 	current_task->tty=1;
 	system_setup=1;
 	printk(KERN_MILE, "done (i/o/e=%x [tty1]: ok)\n", GETDEV(3, 1));

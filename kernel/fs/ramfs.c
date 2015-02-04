@@ -8,6 +8,7 @@
 #include <sea/ll.h>
 #include <sea/errno.h>
 #include <sea/dm/dev.h>
+#include <sea/fs/kerfs.h>
 
 struct filesystem_inode_callbacks ramfs_iops;
 struct filesystem_callbacks ramfs_fsops;
@@ -241,6 +242,9 @@ int ramfs_inode_read(struct filesystem *fs, struct inode *node,
 	struct rfsinfo *info = fs->data;
 	struct rfsnode *rfsnode;
 
+	if(node->phys_dev && S_ISREG(node->mode))
+		return kerfs_read(node, offset, length, buffer);
+
 	size_t amount = length;
 	if(offset + length > node->length)
 		amount = node->length - offset;
@@ -259,6 +263,9 @@ int ramfs_inode_write(struct filesystem *fs, struct inode *node,
 {
 	struct rfsinfo *info = fs->data;
 	struct rfsnode *rfsnode;
+	
+	if(node->phys_dev && S_ISREG(node->mode))
+		return kerfs_write(node, offset, length, buffer);
 
 	if(hash_table_get_entry(info->nodes, &node->id, sizeof(node->id), 1, (void **)&rfsnode))
 		return -EIO;

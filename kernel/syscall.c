@@ -211,12 +211,15 @@ static void *syscall_table[129] = {
 };
 
 struct timer systimers[129];
+unsigned int syscounts[129];
 
 void syscall_init()
 {
 	num_syscalls = sizeof(syscall_table)/sizeof(void *);
-	for(int i=0;i<129;i++)
+	for(int i=0;i<129;i++) {
 		timer_create(&systimers[i], 0);
+		syscounts[i]=0;
+	}
 }
 
 int mm_is_valid_user_pointer(int num, void *p, char flags)
@@ -331,6 +334,7 @@ int syscall_handler(volatile registers_t *regs)
 	cpu_interrupt_set(1);
 	/* start accounting information! */
 	current_task->freed = current_task->allocated=0;
+	syscounts[SYSCALL_NUM_AND_RET]++;
 	
 	#ifdef SC_DEBUG
 	if(current_task->tty == current_console->tty && SYSCALL_NUM_AND_RET != 5 && 0)
@@ -386,5 +390,28 @@ int syscall_handler(volatile registers_t *regs)
 		tm_lower_flag(TF_JUMPIN);
 	}
 	return ret;
+}
+
+int kerfs_syscall_report(size_t offset, size_t length, char *buf)
+{
+	int dl = 0;
+	char tmp[10000];
+	for(int i=0;i<129;i++) {
+		if(!syscounts[i])
+			continue;
+		char line[256];
+		int r = snprintf(line, 256, "%3d:\t%5d\t%9d\t%9d\t%9d\n", i,
+				syscounts[i], systimers[i].min,
+				systimers[i].max, systimers[i].mean);
+		assert(dl+r < 10000);
+		memcpy(tmp + dl, line, r);
+		dl += r;	
+	}
+	if(offset > dl)
+		return 0;
+	if(offset + length > dl)
+		length = dl - offset;
+	memcpy(buf, tmp + offset, length);
+	return length;
 }
 

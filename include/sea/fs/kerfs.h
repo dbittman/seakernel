@@ -13,6 +13,7 @@ int kerfs_read(struct inode *node, size_t offset, size_t length, char *buffer);
 int kerfs_write(struct inode *node, size_t offset, size_t length, char *buffer);
 int kerfs_register_parameter(char *path, void *param, size_t size, int flags, int type);
 int kerfs_syscall_report(size_t offset, size_t length, char *buf);
+int kerfs_int_report(size_t offset, size_t length, char *buf);;
 
 #endif
 

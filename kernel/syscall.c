@@ -396,13 +396,14 @@ int kerfs_syscall_report(size_t offset, size_t length, char *buf)
 {
 	int dl = 0;
 	char tmp[10000];
+	dl = snprintf(tmp, 100, " SC   # CALLS\t      MIN\t      MAX\t     MEAN\n");
 	for(int i=0;i<129;i++) {
 		if(!syscounts[i])
 			continue;
 		char line[256];
 		int r = snprintf(line, 256, "%3d:\t%5d\t%9d\t%9d\t%9d\n", i,
-				syscounts[i], systimers[i].min,
-				systimers[i].max, systimers[i].mean);
+				syscounts[i], (uint32_t)systimers[i].min / 1000,
+				(uint32_t)systimers[i].max / 1000, (uint32_t)systimers[i].mean / 1000);
 		assert(dl+r < 10000);
 		memcpy(tmp + dl, line, r);
 		dl += r;	

@@ -81,6 +81,7 @@ int sys_setup(int a)
 	sys_open("/dev/tty1", O_WRONLY); /* stderr */
 	kerfs_register_parameter("/dev/test", &test, sizeof(test), 0, KERFS_TYPE_INTEGER);
 	kerfs_register_report("/dev/syscall", kerfs_syscall_report);
+	kerfs_register_report("/dev/int", kerfs_int_report);
 	current_task->tty=1;
 	system_setup=1;
 	printk(KERN_MILE, "done (i/o/e=%x [tty1]: ok)\n", GETDEV(3, 1));

@@ -3,6 +3,8 @@
 #include <sea/loader/symbol.h>
 #include <sea/dm/char.h>
 #include <sea/loader/module.h>
+#include <sea/cpu/interrupt.h>
+#include <sea/mm/kmalloc.h>
 #define NUM_RX_DESCRIPTORS	768
 #define NUM_TX_DESCRIPTORS	768
 
@@ -114,7 +116,8 @@ int i825xx_load_device_pci(struct pci_device *device)
 	device->flags |= PCI_ENGAGED;
 	device->flags |= PCI_DRIVEN;
 	dev->inter = device->pcs->interrupt_line;
-	interrupt_register_handler(dev->inter, (isr_t)&i825xx_int);
+	/* TODO setup interrupt handler */
+	//interrupt_register_handler(dev->inter, (isr_t)&i825xx_int);
 	return 0;
 }
 
@@ -127,7 +130,7 @@ int i825xx_unload_device_pci(i825xxdev_t *dev)
 	device->flags &= ~PCI_ENGAGED;
 	device->flags &= ~PCI_DRIVEN;
 	iremove_force(dev->node);
-	interrupt_unregister_handler(dev->inter, (isr_t)&i825xx_int);
+	//interrupt_unregister_handler(dev->inter, (isr_t)&i825xx_int);
 	delete_device(dev);
 	return 0;
 }

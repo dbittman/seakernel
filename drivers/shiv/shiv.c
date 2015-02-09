@@ -341,6 +341,18 @@ int shiv_vcpu_pending_int(struct vcpu *vc)
 	return bitmap_ffs(vc->irq_field, 256);
 }
 
+int shiv_userspace_inject_interrupt(struct vcpu *vc, int irq)
+{
+	bitmap_set(vc->irq_field, irq);
+	return 0;
+}
+
+int shiv_userspace_request_interruptible(struct vcpu *vc)
+{
+	shiv->request_interruptible = 1;
+	return 0;
+}
+
 void shiv_handle_irqs(struct vcpu *vc)
 {
 	vc->interruptible = ((vmcs_readl(GUEST_RFLAGS) & (1 << 9)/* IF */) && ((vmcs_read32(GUEST_INTERRUPTIBILITY_INFO) & 3) == 0));
@@ -864,6 +876,42 @@ struct vmachine *shiv_create_vmachine()
 	vm->vcpu = shiv_create_vcpu(vm);
 	vmx_vcpu_run(vm->vcpu);
 	return vm;
+}
+
+struct vmachine *shiv_get_vmachine(int min)
+{
+	panic(0, "...");
+}
+
+int shiv_ioctl(int min, int cmd, int arg)
+{
+	struct vmachine *vm = shiv_get_vmachine(min);
+	switch(cmd) {
+		case VM_CREATE:
+
+			break;
+		case VM_DESTROY:
+
+			break;
+		case VM_LAUNCH:
+
+			break;
+		case VM_REQ_INT:
+
+			break;
+		case VM_INJ_INT:
+
+			break;
+		case VM_STATUS:
+
+			break;
+		case VM_STOP:
+
+			break;
+		default:
+			kprintf("unknown SHIV ioctl\n");
+			break;
+	}
 }
 
 int module_install()

@@ -43,7 +43,17 @@ void vfs_inode_del_dirent(struct inode *node, struct dirent *dir)
 
 int vfs_inode_check_permissions(struct inode *node, int perm, int real)
 {
-	return 1;
+	uid_t u = real ? current_task->thread->real_uid : current_task->thread->effective_uid;
+	gid_t g = real ? current_task->thread->real_gid : current_task->thread->effective_gid;
+	if(u == 0)
+		return 1;
+	if(u == node->uid && (perm & node->mode))
+		return 1;
+	perm = perm >> 3;
+	if(g == node->gid && (perm & node->mode))
+		return 1;
+	perm = perm >> 3;
+	return perm & node->mode;
 }
 
 struct inode *vfs_inode_create()

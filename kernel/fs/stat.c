@@ -70,6 +70,10 @@ int sys_getdents(int fd, struct dirent_posix *dirs, unsigned int count)
 	if(!f) return -EBADF;
 
 	unsigned nex;
+	if(!vfs_inode_check_permissions(f->inode, MAY_READ, 0)) {
+		fs_fput((task_t *)current_task, fd, 0);
+		return -EACCES;
+	}
 	int r = fs_callback_inode_getdents(f->inode, f->pos, dirs, count, &nex);
 	f->pos = nex;
 

@@ -131,6 +131,10 @@ static int do_sys_unlink(const char *path, int allow_dir)
 	struct inode *node = fs_path_resolve_inode(dir, 0, &result);
 	if(!node)
 		return result;
+	if(!vfs_inode_check_permissions(node, MAY_WRITE, 0)) {
+		vfs_icache_put(node);
+		return -EACCES;
+	}
 	int r = fs_unlink(node, name, strlen(name));
 	vfs_icache_put(node);
 	return r;
@@ -162,6 +166,8 @@ int sys_rmdir(const char *path)
 
 int sys_fs_mount(char *node, char *point, char *type, int opts)
 {
+	if(current_task->thread->effective_uid)
+		return -EPERM;
 	struct filesystem *fs = fs_filesystem_create();
 	int r = fs_filesystem_init_mount(fs, node, type, opts);
 	if(r) {
@@ -195,6 +201,8 @@ int sys_mount2(char *node, char *to, char *name, char *opts, int something)
 
 int sys_umount(char *dir, int flags)
 {
+	if(current_task->thread->effective_uid)
+		return -EPERM;
 	int result;
 	struct inode *node = fs_path_resolve_inode(dir, 0, &result);
 	if(!node)
@@ -206,6 +214,8 @@ int sys_umount(char *dir, int flags)
 
 int sys_chroot(char *path)
 {
+	if(current_task->thread->effective_uid)
+		return -EPERM;
 	int r = sys_chdir(path, 0);
 	if(r)
 		return r;
@@ -252,11 +262,19 @@ int sys_chdir(char *n, int fd)
 		struct file *file = fs_get_file_pointer((task_t *)current_task, fd);
 		if(!file)
 			return -EBADF;
+		if(!vfs_inode_check_permissions(file->inode, MAY_EXEC, 0)) {
+			fs_fput((task_t *)current_task, fd, 0);
+			return -EACCES;
+		}
 		ret = vfs_inode_chdir(file->inode);
 		fs_fput((task_t *)current_task, fd, 0);
 	} else {
 		struct inode *node = fs_path_resolve_inode(n, 0, &ret);
 		if(node) {
+			if(!vfs_inode_check_permissions(node, MAY_EXEC, 0)) {
+				vfs_icache_put(node);
+				return -EACCES;
+			}
 			ret = vfs_inode_chdir(node);
 			vfs_icache_put(node);
 		}
@@ -285,6 +303,11 @@ int sys_link(char *oldpath, char *newpath)
 	if(!parent) {
 		vfs_icache_put(target);
 		return result;
+	}
+	if(!vfs_inode_check_permissions(parent, MAY_WRITE, 0)) {
+		vfs_icache_put(parent);
+		vfs_icache_put(target);
+		return -EACCES;
 	}
 	struct dirent *exist = fs_path_resolve(newpath, 0, &result);
 	if(exist) {
@@ -605,3 +628,4 @@ int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 	}
 	return ret;
 }
+

@@ -132,7 +132,7 @@ int ext2_dir_change_type(ext2_inode_t* inode, char *name,
 
 uint32_t ext2_inode_do_alloc(struct ext2_info *fs);
 int ext2_dir_addent(ext2_inode_t* dir, uint32_t num, ext2_inode_type_t type, const char* name, int);
-int ext2_dir_delent(ext2_inode_t* dir, const char* name, int namelen, int dofree);
+int ext2_dir_delent(ext2_inode_t* dir, const char* name, int namelen, int dofree, struct inode *);
 int ext2_dir_get_inode(ext2_inode_t* inode, const char *name, int namelen);
 int ext2_dir_getdents(ext2_inode_t* inode, unsigned start, struct dirent_posix *dirs, unsigned count, unsigned *);
 

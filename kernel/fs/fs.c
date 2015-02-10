@@ -37,6 +37,8 @@ int fs_filesystem_init_mount(struct filesystem *fs, char *node, char *type, int 
 		return err;
 	fs->dev = i->phys_dev;
 	vfs_icache_put(i);
+	if(!strcmp(fs->type, "tmpfs"))
+		return ramfs_mount(fs);
 	struct fsdriver *fd = 0;
 
 	if(type) {

@@ -62,7 +62,7 @@ struct dirent_posix {
 #define RESOLVE_NOLINK 1
 
 struct inode {
-	rwlock_t lock;
+	rwlock_t lock, metalock;
 	struct queue_item lru_item;
 	struct llistnode inuse_item, dirty_item;
 	struct hash_table *dirents;
@@ -79,7 +79,7 @@ struct inode {
 	mode_t mode;
 	uid_t uid;
 	gid_t gid;
-	uint16_t nlink;
+	short nlink;
 	size_t length;
 	time_t ctime, atime, mtime;
 	size_t blocksize;

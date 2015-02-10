@@ -10,24 +10,27 @@ int vfs_dirent_acquire(struct dirent *dir)
 int vfs_dirent_release(struct dirent *dir)
 {
 	int r = 0;
+	rwlock_acquire(&dir->parent->lock, RWL_WRITER);
 	if(!sub_atomic(&dir->count, 1)) {
 		if(dir->flags & DIRENT_UNLINK) {
 			struct inode *target = fs_dirent_readinode(dir, 1);
 			vfs_inode_del_dirent(dir->parent, dir);
-			r = fs_callback_inode_unlink(dir->parent, dir->name, dir->namelen);
+			r = fs_callback_inode_unlink(dir->parent, dir->name, dir->namelen, target);
 			if(!r) {
+				assert(sub_atomic(&target->nlink, 1) >= 0);
 				if(!target->nlink && (target->flags & INODE_DIRTY))
 					vfs_inode_unset_dirty(target);
 			}
 		}
+		rwlock_release(&dir->parent->lock, RWL_WRITER);
 		vfs_icache_put(dir->parent);
-	}
+	} else
+		rwlock_release(&dir->parent->lock, RWL_WRITER);
 	/* TODO: reclaiming */
 
 	return r;
 }
 
-#warning "return errors"
 struct inode *fs_dirent_readinode(struct dirent *dir, int nofollow)
 {
 	assert(dir);

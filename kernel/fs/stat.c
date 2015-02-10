@@ -74,7 +74,9 @@ int sys_getdents(int fd, struct dirent_posix *dirs, unsigned int count)
 		fs_fput((task_t *)current_task, fd, 0);
 		return -EACCES;
 	}
+	rwlock_acquire(&f->inode->lock, RWL_READER);
 	int r = fs_callback_inode_getdents(f->inode, f->pos, dirs, count, &nex);
+	rwlock_release(&f->inode->lock, RWL_READER);
 	f->pos = nex;
 
 	fs_fput((task_t *)current_task, fd, 0);

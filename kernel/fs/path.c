@@ -48,7 +48,6 @@ struct inode *fs_resolve_mount(struct inode *node)
 	return ret;
 }
 
-#warning "return errors"
 struct dirent *do_fs_path_resolve(struct inode *start, const char *path, int *result)
 {
 	vfs_inode_get(start);
@@ -189,17 +188,18 @@ struct inode *do_fs_path_resolve_create(const char *path,
 	struct inode *node = vfs_icache_get(dir->filesystem, id);
 	node->mode = mode;
 	node->length = 0;
+	node->ctime = node->mtime = time_get_epoch();
 	vfs_inode_set_dirty(node);
 	
-	r = fs_link(dir, node, name, strlen(name));
-
-	if(!r && S_ISDIR(mode)) {
+	if(S_ISDIR(mode)) {
 		/* create . and .. */
 		if(fs_link(node, node, ".", 1))
 			r = -EPERM;
 		if(fs_link(node, dir, "..", 2))
 			r = -EMLINK;
 	}
+
+	r = fs_link(dir, node, name, strlen(name));
 
 	if(result)
 		*result = !r ? 1 : r;

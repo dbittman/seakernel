@@ -45,6 +45,7 @@ int ramfs_mount(struct filesystem *fs)
 	struct rfsnode *root = kmalloc(sizeof(struct rfsnode));
 	root->mode = S_IFDIR | 0755;
 	root->ents = ll_create(0);
+	root->nlinks = 2;
 
 	struct rfsinfo *info = kmalloc(sizeof(struct rfsinfo));
 	info->nodes = h;
@@ -59,6 +60,11 @@ int ramfs_mount(struct filesystem *fs)
 	struct rfsdirent *dot = kmalloc(sizeof(struct rfsdirent));
 	strncpy(dot->name, ".", 1);
 	dot->namelen = 1;
+	dot->ino = 0;
+	dot->lnode = ll_insert(root->ents, dot);
+	dot = kmalloc(sizeof(struct rfsdirent));
+	strncpy(dot->name, "..", 2);
+	dot->namelen = 2;
 	dot->ino = 0;
 	dot->lnode = ll_insert(root->ents, dot);
 	return 0;
@@ -116,8 +122,9 @@ int ramfs_inode_get_dirent(struct filesystem *fs, struct inode *node,
 	struct rfsinfo *info = fs->data;
 	struct rfsnode *rfsnode;
 
-	if(hash_table_get_entry(info->nodes, &node->id, sizeof(node->id), 1, (void **)&rfsnode))
+	if(hash_table_get_entry(info->nodes, &node->id, sizeof(node->id), 1, (void **)&rfsnode)) {
 		return -EIO;
+	}
 
 	struct llistnode *ln;
 	struct rfsdirent *rd, *found=0;
@@ -200,7 +207,7 @@ int ramfs_inode_link(struct filesystem *fs, struct inode *parent, struct inode *
 }
 
 int ramfs_inode_unlink(struct filesystem *fs, struct inode *parent, const char *name,
-		size_t namelen)
+		size_t namelen, struct inode *target)
 {
 	struct rfsinfo *info = fs->data;
 	struct rfsnode *rfsparent, *rfstarget;
@@ -226,7 +233,7 @@ int ramfs_inode_unlink(struct filesystem *fs, struct inode *parent, const char *
 	found->ino = 0;
 	int r = sub_atomic(&rfstarget->nlinks, 1);
 	if(!r) {
-		hash_table_delete_entry(info->nodes, &found->ino, sizeof(found->ino), 1);
+		hash_table_delete_entry(info->nodes, &target->id, sizeof(found->ino), 1);
 		ll_destroy(rfstarget->ents);
 		kfree(rfstarget);
 	}

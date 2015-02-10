@@ -57,7 +57,7 @@ void devfs_init()
 }
 
 int test = 12345;
-
+struct fsdriver ramfs_driver;
 int sys_setup(int a)
 {
 	if(system_setup)
@@ -75,6 +75,13 @@ int sys_setup(int a)
 	fs_initrd_parse();
 	
 	devfs_init();
+
+	ramfs_driver.name = "tmpfs";
+	ramfs_driver.mount = ramfs_mount;
+	ramfs_driver.umount = 0;
+	ramfs_driver.flags = 0;
+	//fs_filesystem_register(&ramfs_driver);
+
 	dm_char_rw(OPEN, GETDEV(3, 1), 0, 0);
 	sys_open("/dev/tty1", O_RDWR);   /* stdin  */
 	sys_open("/dev/tty1", O_WRONLY); /* stdout */
@@ -179,6 +186,10 @@ int sys_fs_mount(char *node, char *point, char *type, int opts)
 	if(!in) {
 		fs_filesystem_destroy(fs);
 		return r;
+	}
+	if(!S_ISDIR(in->mode)) {
+		fs_filesystem_destroy(fs);
+		return -ENOTDIR;
 	}
 	r = fs_mount(in, fs);
 	vfs_icache_put(in);
@@ -353,11 +364,11 @@ int sys_chmod(char *path, int fd, mode_t mode)
 			fs_fput((task_t *)current_task, fd, 0);
 		return -EPERM;
 	}
-	rwlock_acquire(&i->lock, RWL_WRITER);
+	//rwlock_acquire(&i->lock, RWL_WRITER);
 	i->mode = (i->mode&~0xFFF) | mode;
 	i->mtime = time_get_epoch();
 	vfs_inode_set_dirty(i);
-	rwlock_release(&i->lock, RWL_WRITER);
+	//rwlock_release(&i->lock, RWL_WRITER);
 	if(path)
 		vfs_icache_put(i);
 	else

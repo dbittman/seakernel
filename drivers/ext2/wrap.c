@@ -26,6 +26,7 @@ int ext2_wrap_inode_push(struct filesystem *fs, struct inode *out)
 	struct ext2_info *info = fs->data;
 	if(!ext2_inode_read(info, out->id, &in))
 		return -EIO;
+	rwlock_acquire(&out->metalock, RWL_READER);
 	if(in.size > (unsigned)out->length)
 		ext2_inode_truncate(&in, out->length, 0);
 	in.mode = out->mode;
@@ -36,6 +37,7 @@ int ext2_wrap_inode_push(struct filesystem *fs, struct inode *out)
 	in.change_time = out->ctime;
 	in.gid = out->gid;
 	ext2_inode_update(&in);
+	rwlock_release(&out->metalock, RWL_READER);
 	return 0;
 }
 
@@ -45,6 +47,7 @@ int ext2_wrap_inode_pull(struct filesystem *fs, struct inode *out)
 	struct ext2_info *info = fs->data;
 	if(!ext2_inode_read(info, out->id, &in))
 		return -EIO;
+	rwlock_acquire(&out->metalock, RWL_READER);
 	out->mode = in.mode;
 	out->uid = in.uid;
 	out->length = in.size;
@@ -55,6 +58,7 @@ int ext2_wrap_inode_pull(struct filesystem *fs, struct inode *out)
 	out->nlink = in.link_count;
 	out->id = in.number;
 	out->nblocks = in.sector_count;
+	rwlock_release(&out->metalock, RWL_READER);
 	return 0;
 }
 
@@ -102,15 +106,19 @@ int ext2_wrap_inode_link(struct filesystem *fs, struct inode *parent, struct ino
 		if(tar.link_count == 1 && S_ISDIR(target->mode))
 			ext2_dir_change_dir_count(&tar, 0);
 		ext2_inode_update(&tar);
-		add_atomic(&target->nlink, 1);
+		/* special case: linking a . entry to a directory -> parent == target */
+		if(parent != target)
+			rwlock_acquire(&parent->metalock, RWL_WRITER);
 		parent->length = dir.size;
 		parent->nblocks = dir.sector_count;
+		if(parent != target)
+			rwlock_release(&parent->metalock, RWL_WRITER);
 	}
 	return ret == 0 ? -EINVAL : 0;
 }
 
 int ext2_wrap_inode_unlink(struct filesystem *fs, struct inode *parent, const char *name,
-		size_t namelen)
+		size_t namelen, struct inode *target)
 {
 	struct ext2_info *info = fs->data;
 	
@@ -119,7 +127,7 @@ int ext2_wrap_inode_unlink(struct filesystem *fs, struct inode *parent, const ch
 	ext2_inode_t inode;
 	if(!ext2_inode_read(info, parent->id, &inode))
 		return -EIO;
-	int ret = ext2_dir_delent(&inode, name, namelen, 1);
+	int ret = ext2_dir_delent(&inode, name, namelen, 1, target);
 	if(!ret)
 		return -ENOENT;
 	return 0;
@@ -157,8 +165,10 @@ int ext2_wrap_inode_write(struct filesystem *fs, struct inode *node,
 	unsigned sc = inode.sector_count;
 	unsigned int ret = ext2_inode_writedata(&inode, offset, length, (unsigned char*)buffer);
 	if(sz != inode.sector_count || sz != inode.size) {
+		rwlock_acquire(&node->metalock, RWL_WRITER);
 		node->length = inode.size;
 		node->nblocks = inode.sector_count;
+		rwlock_release(&node->metalock, RWL_WRITER);
 	}
 	if(ret > length) ret = length;
 	return ret;

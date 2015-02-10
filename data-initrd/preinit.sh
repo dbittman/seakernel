@@ -33,11 +33,9 @@ else
 	else
 		printf "dev "
 		umount /dev
-		mount -t devfs \* /mnt/dev
-		printf "proc "
-		mount -t procfs \* /mnt/proc
+		mount -t devfs /dev/null /mnt/dev
 		printf "tmp "
-		mount -t tmpfs \* /mnt/tmp
+		mount -t tmpfs /mnt/dev/null /mnt/tmp
 		printf "done\n"
 		if ! chroot /mnt /bin/sh /etc/rc/boot ; then
 			printf "** chroot failed, dropping to initrd shell **\n"

@@ -194,7 +194,7 @@ int ext2_dir_addent(ext2_inode_t* dir, uint32_t num, ext2_inode_type_t type, con
 	return 1;
 }
 
-int ext2_dir_delent(ext2_inode_t* dir, const char* name, int namelen, int dofree)
+int ext2_dir_delent(ext2_inode_t* dir, const char* name, int namelen, int dofree, struct inode *target)
 {
 	ext2_dirent_t* prev_entry = NULL;
 	ext2_dirent_t* entry;
@@ -213,11 +213,10 @@ int ext2_dir_delent(ext2_inode_t* dir, const char* name, int namelen, int dofree
 		{
 			if (!ext2_inode_read(dir->fs, entry->inode, &inode))
 				return 0;
+#warning "GET RID OF THESE LOCKS"
 			mutex_acquire(&dir->fs->fs_lock);
 			--inode.link_count;
 			if (inode.link_count == 0) {
-				struct inode *target = vfs_icache_get(dir->fs->filesys, entry->inode);
-				assert(target);
 				if (S_ISDIR(target->mode)) {
 					bgnum = ext2_inode_to_internal(inode.fs, inode.number) /
 					inode.fs->sb->inodes_per_group;

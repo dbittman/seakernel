@@ -42,11 +42,11 @@ int fs_callback_inode_link(struct inode *node, struct inode *target, const char 
 	return -ENOTSUP;
 }
 
-int fs_callback_inode_unlink(struct inode *node, const char *name, size_t namelen)
+int fs_callback_inode_unlink(struct inode *node, const char *name, size_t namelen, struct inode * target)
 {
 	assert(node && node->filesystem);
 	if(node->filesystem->fs_inode_ops->unlink)
-		return node->filesystem->fs_inode_ops->unlink(node->filesystem, node, name, namelen);
+		return node->filesystem->fs_inode_ops->unlink(node->filesystem, node, name, namelen, target);
 	return -ENOTSUP;
 }
 

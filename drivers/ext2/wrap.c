@@ -24,9 +24,11 @@ int ext2_wrap_inode_push(struct filesystem *fs, struct inode *out)
 {
 	ext2_inode_t in;
 	struct ext2_info *info = fs->data;
-	if(!ext2_inode_read(info, out->id, &in))
+	rwlock_acquire(&out->metalock, RWL_WRITER);
+	if(!ext2_inode_read(info, out->id, &in)) {
+		rwlock_release(&out->metalock, RWL_READER);
 		return -EIO;
-	rwlock_acquire(&out->metalock, RWL_READER);
+	}
 	if(in.size > (unsigned)out->length)
 		ext2_inode_truncate(&in, out->length, 0);
 	in.mode = out->mode;
@@ -37,7 +39,7 @@ int ext2_wrap_inode_push(struct filesystem *fs, struct inode *out)
 	in.change_time = out->ctime;
 	in.gid = out->gid;
 	ext2_inode_update(&in);
-	rwlock_release(&out->metalock, RWL_READER);
+	rwlock_release(&out->metalock, RWL_WRITER);
 	return 0;
 }
 
@@ -45,9 +47,11 @@ int ext2_wrap_inode_pull(struct filesystem *fs, struct inode *out)
 {
 	ext2_inode_t in;
 	struct ext2_info *info = fs->data;
-	if(!ext2_inode_read(info, out->id, &in))
-		return -EIO;
 	rwlock_acquire(&out->metalock, RWL_READER);
+	if(!ext2_inode_read(info, out->id, &in)) {
+		rwlock_release(&out->metalock, RWL_READER);
+		return -EIO;
+	}
 	out->mode = in.mode;
 	out->uid = in.uid;
 	out->length = in.size;
@@ -103,9 +107,9 @@ int ext2_wrap_inode_link(struct filesystem *fs, struct inode *parent, struct ino
 		ext2_inode_update(&dir);
 		ext2_inode_read(info, target->id, &tar);
 		tar.link_count++;
+		ext2_inode_update(&tar);
 		if(tar.link_count == 1 && S_ISDIR(target->mode))
 			ext2_dir_change_dir_count(&tar, 0);
-		ext2_inode_update(&tar);
 		/* special case: linking a . entry to a directory -> parent == target */
 		if(parent != target)
 			rwlock_acquire(&parent->metalock, RWL_WRITER);
@@ -121,7 +125,6 @@ int ext2_wrap_inode_unlink(struct filesystem *fs, struct inode *parent, const ch
 		size_t namelen, struct inode *target)
 {
 	struct ext2_info *info = fs->data;
-	
 	if(info->flags & EXT2_FS_READONLY)
 		return -EROFS;
 	ext2_inode_t inode;
@@ -157,19 +160,22 @@ int ext2_wrap_inode_write(struct filesystem *fs, struct inode *node,
 	if(info->flags & EXT2_FS_READONLY)
 		return -EROFS;
 	ext2_inode_t inode;
-	if(!ext2_inode_read(info, node->id, &inode))
+	rwlock_acquire(&node->metalock, RWL_WRITER);
+	if(!ext2_inode_read(info, node->id, &inode)) {
+		rwlock_release(&node->metalock, RWL_WRITER);
 		return -EIO;
+	}
+	assert(inode.link_count);
 	unsigned sz = inode.size;
 	/* this is needed in case we haven't pushed, and it's a symlink */
 	inode.mode = node->mode;
 	unsigned sc = inode.sector_count;
 	unsigned int ret = ext2_inode_writedata(&inode, offset, length, (unsigned char*)buffer);
 	if(sz != inode.sector_count || sz != inode.size) {
-		rwlock_acquire(&node->metalock, RWL_WRITER);
 		node->length = inode.size;
 		node->nblocks = inode.sector_count;
-		rwlock_release(&node->metalock, RWL_WRITER);
 	}
+	rwlock_release(&node->metalock, RWL_WRITER);
 	if(ret > length) ret = length;
 	return ret;
 }

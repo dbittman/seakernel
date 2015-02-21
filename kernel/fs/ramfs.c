@@ -277,7 +277,7 @@ int ramfs_inode_write(struct filesystem *fs, struct inode *node,
 	if(hash_table_get_entry(info->nodes, &node->id, sizeof(node->id), 1, (void **)&rfsnode))
 		return -EIO;
 	size_t end = length + offset;
-#warning "locking"
+	rwlock_acquire(&node->metalock, RWL_WRITER);
 	if(end > node->length) {
 		void *newdata = kmalloc(end);
 		if(rfsnode->data) {
@@ -288,6 +288,7 @@ int ramfs_inode_write(struct filesystem *fs, struct inode *node,
 		rfsnode->length = end;
 		node->length = end;
 	}
+	rwlock_release(&node->metalock, RWL_WRITER);
 
 
 	memcpy((unsigned char *)rfsnode->data + offset, buffer, length);

@@ -4,8 +4,7 @@
 #include <sea/rwlock.h>
 #include <sea/cpu/atomic.h>
 #include <sea/errno.h>
-#warning "todo: try to use reader locks"
-#warning "return errors"
+
 struct dirent *fs_dirent_lookup(struct inode *node, const char *name, size_t namelen)
 {
 	if(!vfs_inode_check_permissions(node, MAY_READ, 0))

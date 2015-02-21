@@ -163,9 +163,9 @@ int ext2_dir_addent(ext2_inode_t* dir, uint32_t num, ext2_inode_type_t type, con
 				newentry->record_len = entry->record_len - entry_len;
 				newentry->type = type;
 				entry->record_len = entry_len;
-				mutex_acquire(&dir->fs->fs_lock);
+				//mutex_acquire(&dir->fs->fs_lock);
 				ext2_inode_writedata(dir, off, ext2_sb_blocksize(dir->fs->sb), buf);
-				mutex_release(&dir->fs->fs_lock);
+				//mutex_release(&dir->fs->fs_lock);
 				return 1;
 			} else
 			pos += entry->record_len;
@@ -188,9 +188,9 @@ int ext2_dir_addent(ext2_inode_t* dir, uint32_t num, ext2_inode_type_t type, con
 	newentry->inode = num;
 	newentry->record_len = newentry_len;
 	newentry->type = type;
-	mutex_acquire(&dir->fs->fs_lock);
+	//mutex_acquire(&dir->fs->fs_lock);
 	int r = ext2_inode_writedata(dir, pos, newentry_len, newbuf);
-	mutex_release(&dir->fs->fs_lock);
+	//mutex_release(&dir->fs->fs_lock);
 	return 1;
 }
 
@@ -211,31 +211,27 @@ int ext2_dir_delent(ext2_inode_t* dir, const char* name, int namelen, int dofree
 			!strncmp((const char *)name, (const char *)entry->name, 
 				entry->name_len) && entry->inode)
 		{
-			if (!ext2_inode_read(dir->fs, entry->inode, &inode))
+			rwlock_acquire(&target->metalock, RWL_WRITER);
+			if (!ext2_inode_read(dir->fs, entry->inode, &inode)) {
+				rwlock_release(&target->metalock, RWL_WRITER);
 				return 0;
-#warning "GET RID OF THESE LOCKS"
-			mutex_acquire(&dir->fs->fs_lock);
+			}
+			//mutex_acquire(&dir->fs->fs_lock);
 			--inode.link_count;
 			if (inode.link_count == 0) {
 				if (S_ISDIR(target->mode)) {
-					bgnum = ext2_inode_to_internal(inode.fs, inode.number) /
-					inode.fs->sb->inodes_per_group;
-					ext2_bg_read(inode.fs, bgnum, &bg);
-					bg.used_directories--;
-					ext2_bg_update(inode.fs, bgnum, &bg);
+					ext2_dir_change_dir_count(&inode, 1);
 					ext2_inode_read(dir->fs, dir->number, dir);
 				}
 				vfs_icache_put(target);
 				ext2_inode_free(&inode);
 			}
-			if (!ext2_inode_update(&inode)) {
-				mutex_release(&dir->fs->fs_lock);
-				return 0;
-			}
+			ext2_inode_update(&inode);
+			rwlock_release(&target->metalock, RWL_WRITER);
 			
 			entry->inode = 0;
 			ext2_inode_writedata(dir, off, ext2_sb_blocksize(dir->fs->sb), buf);
-			mutex_release(&dir->fs->fs_lock);
+			//mutex_release(&dir->fs->fs_lock);
 			return 1;
 		}
 		
@@ -259,13 +255,13 @@ void ext2_dir_change_dir_count(ext2_inode_t *node, int minus)
 	uint32_t bgnum = ext2_inode_to_internal(parent->fs, node->number)
 		/ node->fs->sb->inodes_per_group;
 
-	mutex_acquire(&node->fs->bg_lock);
+	mutex_acquire(node->fs->fs_lock);
 	ext2_bg_read(node->fs, bgnum, &bg);
 	if(minus)
 		bg.used_directories--;
 	else
 		bg.used_directories++;
 	ext2_bg_update(node->fs, bgnum, &bg);
-	mutex_release(&node->fs->bg_lock);
+	mutex_release(node->fs->fs_lock);
 }
 

@@ -17,10 +17,7 @@ int ext2_mount(struct filesystem *seafs)
 	struct ext2_info *fs = kmalloc(sizeof(struct ext2_info));
 	fs->sb = kmalloc(1024);
 	fs->dev = seafs->dev;
-	mutex_create(&fs->bg_lock, 0);
-	mutex_create(&fs->fs_lock, 0);
-	fs->m_node = mutex_create(0, 0);
-	fs->m_block = mutex_create(0, 0);
+	fs->fs_lock = mutex_create(0, 0);
 	fs->sb->block_size=0;
 	int r = ext2_read_block(fs, 1, (unsigned char *)fs->sb);
 	if(fs->sb->magic != EXT2_SB_MAGIC) {

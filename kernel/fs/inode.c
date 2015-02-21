@@ -161,7 +161,6 @@ void vfs_icache_put(struct inode *node)
 	mutex_release(ic_lock);
 }
 
-#warning "locking?"
 int fs_inode_pull(struct inode *node)
 {
 	int r = 0;

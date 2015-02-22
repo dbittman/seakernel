@@ -1,4 +1,4 @@
-OFILES=shiv.o 
+OFILES=shiv.o vtx.o
 NAME=shiv
 OUTPUT=$(NAME).m
 DEPTHDOTS=../..

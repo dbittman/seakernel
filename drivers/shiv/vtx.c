@@ -394,7 +394,7 @@ int exit_reason_io(struct vcpu *vc)
 		vc->run.io.value = vc->regs[VCPU_REGS_RAX];
 
 	printk(5, "--> IO instruction [%x]: %d %d %d %x %x\n",
-			(uint32_t)vmcs_readl(GUEST_RIP),
+			vmcs_readl(GUEST_RIP),
 			vc->run.io.in,
 			vc->run.io.rep,
 			vc->run.io.size,

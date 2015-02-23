@@ -30,6 +30,7 @@ void __KT_try_handle_stage2_interrupts();
 static inline int __KT_clear_args()
 {
 	/* Clear out the alloc'ed arguments */
+#warning "TODO"
 	return 0;
 	if(next_pid > (unsigned)(init_pid+1) && init_pid)
 	{

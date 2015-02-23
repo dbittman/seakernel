@@ -89,7 +89,7 @@ void set_lapic_timer(unsigned tmp)
 	 * it will not generate an interrupt! */
 	LAPIC_WRITE(LAPIC_LVTT, 32 | 0x20000);
 	LAPIC_WRITE(LAPIC_TDCR, 3);
-	LAPIC_WRITE(LAPIC_TICR, tmp);
+	LAPIC_WRITE(LAPIC_TICR, tmp * 2);
 }
 
 void calibrate_lapic_timer(unsigned freq)

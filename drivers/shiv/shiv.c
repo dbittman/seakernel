@@ -34,7 +34,6 @@ int shiv_userspace_request_interruptible(struct vcpu *vc)
 	return 0;
 }
 
-
 struct vmachine *shiv_create_vmachine()
 {
 	struct vmachine *vm = kmalloc(sizeof(*vm));
@@ -44,7 +43,6 @@ struct vmachine *shiv_create_vmachine()
 		return 0;
 	}
 	vm->vcpu = shiv_create_vcpu(vm);
-	//vmx_vcpu_run(vm->vcpu);
 	return vm;
 }
 
@@ -57,11 +55,12 @@ int shiv_maj;
 
 int shiv_ioctl(int min, int cmd, long arg)
 {
-	printk(0, "--> IOCTL %d %d\n", min, cmd);
+	//printk(0, "--> IOCTL %d %d\n", min, cmd);
 	struct vmachine *vm = min == 0 ? 0 : shiv_get_vmachine(min);
 	if(min && !vm)
 		return -ENOENT;
 	struct vmioctl *ctl = (void *)arg;
+	int r;
 	switch(cmd) {
 		case VM_CREATE:
 			if(vm)
@@ -81,9 +80,18 @@ int shiv_ioctl(int min, int cmd, long arg)
 
 			break;
 		case VM_LAUNCH:
-			vmx_vcpu_run(vm->vcpu);
-			assert(vm->vcpu->run.rtu_cause);
-			memcpy(&ctl->run, &vm->vcpu->run, sizeof(ctl->run));
+			r = vmx_vcpu_run(vm->vcpu);
+			if(r == -EINTR)
+				return r;
+			if(vm->vcpu->exit_type == SHIV_EXIT_TYPE_VM_EXIT) {
+				assert(vm->vcpu->run.rtu_cause);
+				memcpy(&ctl->run, &vm->vcpu->run, sizeof(ctl->run));
+			} else {
+				ctl->run.rtu_cause = SHIV_RTU_ENTRY_ERROR;
+				ctl->run.error = vm->vcpu->exit_reason;
+			}
+			
+			return r;
 			break;
 		case VM_REQ_INT:
 			shiv_userspace_request_interruptible(vm->vcpu);
@@ -104,7 +112,7 @@ int shiv_ioctl(int min, int cmd, long arg)
 			mm_vm_unmap_only(ctl->us_vaddr, 0);
 			break;
 		default:
-			kprintf("unknown SHIV ioctl\n");
+			kprintf("unknown SHIV ioctl (%d)\n", cmd);
 			break;
 	}
 	return 0;
@@ -127,9 +135,6 @@ int module_install()
 	
 	shiv_maj = dm_set_available_char_device(0, shiv_ioctl, 0);
 	devfs_add(devfs_root, "shivctl", S_IFCHR, shiv_maj, 0);
-
-	//struct vmachine *vm = shiv_create_vmachine();
-
 	return 0;
 }
 

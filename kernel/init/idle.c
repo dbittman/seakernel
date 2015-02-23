@@ -30,6 +30,7 @@ void __KT_try_handle_stage2_interrupts();
 static inline int __KT_clear_args()
 {
 	/* Clear out the alloc'ed arguments */
+	return 0;
 	if(next_pid > (unsigned)(init_pid+1) && init_pid)
 	{
 		printk(1, "[idle]: clearing unused kernel memory...\n");
@@ -56,7 +57,7 @@ int kt_kernel_idle_task()
 	strncpy((char *)current_task->command, "[kidle]", 128);
 	/* First stage is to wait until we can clear various allocated things
 	 * that we wont need anymore */
-	while(!__KT_clear_args())
+	while(!__KT_clear_args() || 1)
 	{
 		tm_schedule();
 		cpu_interrupt_set(1);
@@ -84,3 +85,4 @@ int kt_kernel_idle_task()
 		cpu_interrupt_set(1);
 	}
 }
+

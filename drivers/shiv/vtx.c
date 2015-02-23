@@ -364,7 +364,6 @@ int exit_reason_interrupt(struct vcpu *vc)
 {
 	if((shiv_vcpu_pending_int(vc) == -1) && vc->request_interruptible) {
 		vc->run.rtu_cause = SHIV_RTU_IRQ_WINDOW_OPEN;
-		/* TODO: Set RTU value */
 		return 0;
 	}
 	return 1;
@@ -394,7 +393,8 @@ int exit_reason_io(struct vcpu *vc)
 	else
 		vc->run.io.value = vc->regs[VCPU_REGS_RAX];
 
-	printk(5, "--> IO instruction: %d %d %d %x %x\n",
+	printk(5, "--> IO instruction [%x]: %d %d %d %x %x\n",
+			(uint32_t)vmcs_readl(GUEST_RIP),
 			vc->run.io.in,
 			vc->run.io.rep,
 			vc->run.io.size,
@@ -402,7 +402,7 @@ int exit_reason_io(struct vcpu *vc)
 			vc->run.io.value);
 
 	shiv_skip_instruction(vc);
-	return 1;
+	return 0;
 }
 
 int exit_reason_cr_access(struct vcpu *vc)
@@ -433,8 +433,7 @@ int exit_reason_cr_access(struct vcpu *vc)
 
 int exit_reason_external_interrupt(struct vcpu *vc)
 {
-	/* TODO: set RTU value */
-	return 0;
+	return -EINTR;
 }
 
 void *exitreasons [NUM_EXIT_REASONS] = {
@@ -447,7 +446,7 @@ void *exitreasons [NUM_EXIT_REASONS] = {
 
 int shiv_vm_exit_handler(struct vcpu *vcpu)
 {
-	printk(0, "got to exit handler\n");
+	//printk(0, "got to exit handler\n");
 	/* check cause of exit */
 	void *fn = exitreasons[vcpu->exit_reason];
 	if(!fn)
@@ -562,6 +561,7 @@ int shiv_vcpu_setup(struct vcpu *vcpu)
 			PIN_BASED_VM_EXEC_CONTROL,
 			PIN_BASED_EXT_INTR_MASK   /* 20.6.1 */
 			| PIN_BASED_NMI_EXITING   /* 20.6.1 */
+	/*		| PIN_BASED_PREEMPT_TIMER */
 			);
 	vmcs_write32_fixedbits(MSR_IA32_VMX_PROCBASED_CTLS,
 			CPU_BASED_VM_EXEC_CONTROL,
@@ -752,8 +752,8 @@ again:
 	fx_restore(vcpu, FX_IMAGE_GUEST);
 	save_msrs(vcpu, MSR_IMAGE_HOST);
 	restore_msrs(vcpu, MSR_IMAGE_GUEST);
-	
-	printk(4, "[shiv]: launching VM\n");
+
+	//printk(4, "[shiv]: launching VM\n");
 	int intflag = cpu_interrupt_set(0);
 	asm (
 		/* Store host registers */
@@ -868,7 +868,7 @@ again:
 		vcpu->launched = 1;
 		vcpu->exit_type = SHIV_EXIT_TYPE_VM_EXIT;
 		vcpu->exit_reason = vmcs_readl(VM_EXIT_REASON);
-		printk(0, ":: %d %d %d %x\n", vcpu->exit_type, vcpu->exit_reason, vmcs_readl(VM_EXIT_REASON), vcpu->regs[VCPU_REGS_RAX]);
+		//printk(0, ":: %d %d %d %x\n", vcpu->exit_type, vcpu->exit_reason, vmcs_readl(VM_EXIT_REASON), vcpu->regs[VCPU_REGS_RAX]);
 		r = shiv_vm_exit_handler(vcpu);
 		if (r > 0) {
 			if(tm_process_got_signal(current_task)) {
@@ -878,8 +878,7 @@ again:
 		}
 	}
 	cpu_interrupt_set(intflag);
-	printk(0, ":: %d %d %d %x\n", vcpu->exit_type, vcpu->exit_reason, vmcs_readl(VM_EXIT_REASON), vcpu->regs[VCPU_REGS_RAX]);
+	//printk(0, ":: %d %d %d %x\n", vcpu->exit_type, vcpu->exit_reason, vmcs_readl(VM_EXIT_REASON), vcpu->regs[VCPU_REGS_RAX]);
 	return r;
 }
-
 

@@ -254,7 +254,9 @@ enum vmcs_field {
 #define EXIT_REASON_MSR_WRITE           32
 #define EXIT_REASON_MWAIT_INSTRUCTION   36
 
-#define NUM_EXIT_REASONS                37
+#define EXIT_REASON_PREEMPT_TIMER       52
+
+#define NUM_EXIT_REASONS                65
 
 /*
  *  * Interruption-information format

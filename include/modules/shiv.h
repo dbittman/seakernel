@@ -9,7 +9,6 @@
 
 #include <sea/types.h>
 #include <sea/cpu/processor.h>
-/* many of these definitions are taken from the Linux SHIV project */
 
 #define SHIV_EXIT_TYPE_FAIL_ENTRY 1
 #define SHIV_EXIT_TYPE_VM_EXIT    2
@@ -25,10 +24,10 @@ struct sl_io {
 
 struct slaunch {
 	struct sl_io io;
-	int rtu_cause;
+	int rtu_cause, error;
 };
 
-
+#define SHIV_RTU_ENTRY_ERROR      0
 #define SHIV_RTU_IRQ_WINDOW_OPEN  1
 #define SHIV_RTU_IO_INSTRUCTION   2
 struct vcpu {

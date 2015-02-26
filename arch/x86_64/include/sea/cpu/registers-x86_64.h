@@ -11,4 +11,6 @@ typedef volatile struct __attribute__((packed))
 	volatile   uint64_t eip, cs, eflags, useresp, ss;
 } registers_t;
 
+void arch_cpu_print_reg_state(registers_t *);
+
 #endif

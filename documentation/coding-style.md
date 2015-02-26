@@ -107,11 +107,11 @@ kernel objects. They have certain rules:
   * The create function either allocates new memory for the object and
     initializes it, or it initializes the object passed to it in the first
 	argument. This way, you can create objects in two ways:
-    1.    struct mutex mut;
-	      mutex_create(&mut);
-	      /* use mut */
-	2.    struct mutex \*mut;
-	      mut = mutex_create(NULL);
+    1.    `struct mutex mut;`
+	      `mutex_create(&mut);`
+	      `/* use mut */`
+	2.    `struct mutex *mut;`
+	      `mut = mutex_create(NULL);`
     This is handy for those times that you really don't want to allocate extra
 	memory if you don't need to (for example, your mutex is inside another, larger
 	data structure).

@@ -43,7 +43,8 @@ void timer_stop(struct timer *t)
 	unsigned long long diff = end - t->start_time;
 	t->last = diff;
 	/* recalculate mean */
-	t->mean = ((t->mean * t->runs) + diff) / (++t->runs);
+	size_t oldruns = t->runs++;
+	t->mean = ((t->mean * oldruns) + diff) / (t->runs);
 	if(t->max < diff)
 		t->max = diff;
 	if(t->min > diff)

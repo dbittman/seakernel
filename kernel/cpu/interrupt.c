@@ -466,7 +466,7 @@ int cpu_interrupt_get_flag()
 
 int kerfs_int_report(size_t offset, size_t length, char *buf)
 {
-	int dl = 0;
+	size_t dl = 0;
 	char tmp[10000];
 	dl = snprintf(tmp, 100, "INT: # CALLS\tMIN\t      MAX\t    MEAN\n");
 	for(int i=0;i<256;i++) {

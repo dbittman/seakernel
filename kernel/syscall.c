@@ -394,7 +394,7 @@ int syscall_handler(volatile registers_t *regs)
 
 int kerfs_syscall_report(size_t offset, size_t length, char *buf)
 {
-	int dl = 0;
+	size_t dl = 0;
 	char tmp[10000];
 	dl = snprintf(tmp, 100, " SC   # CALLS\t      MIN\t      MAX\t     MEAN\n");
 	for(int i=0;i<129;i++) {

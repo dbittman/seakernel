@@ -86,7 +86,7 @@ int kerfs_read(struct inode *node, size_t offset, size_t length, char *buffer)
 	return length;
 }
 
-int kerfs_write(struct inode *node, size_t offset, size_t length, char *buffer)
+int kerfs_write(struct inode *node, size_t offset, size_t length, const char *buffer)
 {
 	struct kerfs_node *kn;
 	if(hash_table_get_entry(table, &node->phys_dev, sizeof(node->phys_dev), 1, (void **)&kn) < 0)

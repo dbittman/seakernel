@@ -90,6 +90,42 @@ Function Names
   * Entry points into the kernel (such as for system calls, interrupts, etc)
     should end with \_entry.
 
+Kernel Objects
+--------------
+A kernel object designed to be used by other code must have its own source file
+and include file. A linked list, a mutex, and a hash table are all examples of
+kernel objects. They have certain rules:
+  * The must implement 2 functions as minimum: {object}\_create, and
+    {object}\_destroy. For example, mutex's are created with mutex_create and
+	destroyed with mutex_destroy. The create function must return a pointer to
+	an object, and must take in as minimum a pointer to an object of the same
+	type, though it may also take additional arguments.
+	For example, the mutex_create function's prototype is:
+        struct mutex *mutex_create(struct mutex *mut, int flags);
+	The destroy function takes in a pointer to an object, and returns void. It
+	always succeeds or panics.
+  * The create function either allocates new memory for the object and
+    initializes it, or it initializes the object passed to it in the first
+	argument. This way, you can create objects in two ways:
+    1.    struct mutex mut;
+	      mutex_create(&mut);
+	      /* use mut */
+	2.    struct mutex \*mut;
+	      mut = mutex_create(NULL);
+    This is handy for those times that you really don't want to allocate extra
+	memory if you don't need to (for example, your mutex is inside another, larger
+	data structure).
+  * The destruction function should do any clean up that is needed, and free
+    the memory passed to it if it was allcated at the time that the create
+	function was called. This is accomplished by setting a flag inside the
+	object if it was allocated during the create call.
+  * All functions associated with this object must be named {object}\_functionname.
+
+Note that these bare kernel objects do not do reference counting. If you have
+a more complicated object that needs reference counting, that currently must be
+done manually (though I am considering writing generalized helper code to make
+this easier).
+
 Drivers
 -------
 The organization of drivers/ is not yet finalized.
@@ -102,6 +138,15 @@ Restrictions on Classic Coding Techniques
 -----------------------------------------
 Recursion is EXTREMELY frowned upon. The kernel has a limited size stack, and
 we don't want to overrun it because, well, we're the *kernel*.
+
+Unless interacting with userspace code, functions should rarely fail in a non
+catastrophic way. System calls need to return errors, but most kernel code
+needs to succeed or panic. If you try to decrease the reference count on an
+inode and you find that it's already zero, that's not an error. That's a
+complete and total, burn the house down, crash, explode, die type failure.
+It should *never ever ever* happen if your code is correct. If this happens,
+call panic. Other examples of this would be trying to relock a mutex, trying
+to delete non-existant entries from lists, or thinking about using PHP.
 
 make.inc
 --------

@@ -34,7 +34,7 @@ more readable and easier to port. More on this later.
 include contains include files. Under include is a directory 'sea'.
 This directory contains include files that may be used in kernel code. These
 files may not define achitecture dependent things directly, but must instead
-include a file that exists under arch/<arch>/include if it needs to use or
+include a file that exists under arch/{arch}/include if it needs to use or
 define such a thing.
 
 kernel contains kernel source code. Inside this directory are more directories
@@ -48,8 +48,8 @@ Architecture Dependent Code
 ---------------------------
 There is a *firm* seperation between architecture dependent code and
 architecture independent code. Code must:
-  * Never define architecture dependent code outside of arch/<arch>.
-  * Never define architecture independent code insode of arch/<arch>.
+  * Never define architecture dependent code outside of arch/{arch}.
+  * Never define architecture independent code insode of arch/{arch}.
   * Never call architecture dependent code from another subsystem. Instead,
     call an architecture independent wrapper function. For example, if you
 	need to map a page inside the virtual file system code, do NOT call
@@ -60,7 +60,7 @@ architecture independent code. Code must:
   * Minimize archtecture dependent code. If it can be made portable, make it
     portable.
 
-Under arch/<arch>, there is a near-mirror layout to the top level directory.
+Under arch/{arch}, there is a near-mirror layout to the top level directory.
 Each arch contains at least the directories kernel, include, and library.
 Inside kernel and include are mirrors of the top-level versions. The same
 structure rules apply in here.
@@ -68,19 +68,19 @@ structure rules apply in here.
 Function Names
 --------------
   * Functions that are designed to be called by outside of the same file
-    should be named as <short-subsystem-string>_<function-name>. For example,
+    should be named as {short-subsystem-string}_{function-name}. For example,
 	the function to resolve a path is named fs_path_resolve: fs is the
 	subsystem's short name, and path_resolve is a descriptive name.
   * Functions should descripbe what they're doing well. They should be named
     for the thing that they are acting on and what they're doing. I prefer to
-	name them as <noun>_<verb>, so a function to create a process will be named
+	name them as {noun}_{verb}, so a function to create a process will be named
 	process_create. This way all functions that are acting on a certain thing
 	start the same way, and makes it easier to group them together and organize
 	whats happening in my mind. If I need a more complicated grammar to parse
 	your function name, it's probably a bad name.
   * The exception to the above is for functions that implement libc functions,
     functions that are very close to them, and system calls. System calls
-	should be named as sys_<name>. memset is a libc function, and so is named
+	should be named as sys_{name}. memset is a libc function, and so is named
 	as such. kprintf obviously wants to be printf, so it isn't restricted.
   * If your function doesn't need to be called from elsewhere, declare it
     static.

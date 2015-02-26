@@ -86,10 +86,11 @@ int cp_ioctl(int min, int cmd, long arg)
 {
 	struct cp_ioctl_arg *ia = (struct cp_ioctl_arg *)arg;
 	if(cmd == 1) {
-		struct inode *node = vfs_get_idir(ia->devname, 0);
-		if(!node) return -ENOENT;
-		printk(1, "[crypt-part]: creating crypto device for %s (dev=%x)\n", ia->devname, node->dev);
-		if(crypto_create_dev(node->dev, ia))
+		int err;
+		struct inode *node = fs_path_resolve_inode(ia->devname, 0, &err);
+		if(!node) return err;
+		printk(1, "[crypt-part]: creating crypto device for %s (dev=%x)\n", ia->devname, node->phys_dev);
+		if(crypto_create_dev(node->phys_dev, ia))
 			return 0;
 	}
 	return -EINVAL;

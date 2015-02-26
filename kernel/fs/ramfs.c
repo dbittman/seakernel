@@ -145,6 +145,30 @@ int ramfs_inode_get_dirent(struct filesystem *fs, struct inode *node,
 	return 0;
 }
 
+int __get_dirent_type(struct filesystem *fs, struct rfsdirent *rd)
+{
+	struct inode node;
+	node.id = rd->ino;
+	ramfs_inode_pull(fs, &node);
+	if(S_ISDIR(node.mode)) {
+		return DT_DIR;
+	} else if(S_ISREG(node.mode)) {
+		return DT_REG;
+	} else if(S_ISLNK(node.mode)) {
+		return DT_LNK;
+	} else if(S_ISFIFO(node.mode)) {
+		return DT_FIFO;
+	} else if(S_ISSOCK(node.mode)) {
+		return DT_SOCK;
+	} else if(S_ISCHR(node.mode)) {
+		return DT_CHR;
+	} else if(S_ISBLK(node.mode)) {
+		return DT_BLK;
+	} else {
+		return DT_UNKNOWN;
+	}
+}
+
 int ramfs_inode_getdents(struct filesystem *fs, struct inode *node, unsigned off, struct dirent_posix *dirs,
 		unsigned count, unsigned *nextoff)
 {
@@ -172,7 +196,7 @@ int ramfs_inode_getdents(struct filesystem *fs, struct inode *node, unsigned off
 			dp->d_name[rd->namelen]=0;
 			dp->d_off = read + reclen;
 			*nextoff = dp->d_off;
-			dp->d_type = DT_REG; //TODO
+			dp->d_type = __get_dirent_type(fs, rd);
 			dp->d_ino = rd->ino;
 
 			rec += reclen;

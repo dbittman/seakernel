@@ -34,7 +34,8 @@ int fs_link(struct inode *dir, struct inode *target, const char *name, size_t na
 	rwlock_acquire(&dir->lock, RWL_WRITER);
 	rwlock_acquire(&target->metalock, RWL_WRITER);
 	int r = fs_callback_inode_link(dir, target, name, namelen);
-	add_atomic(&target->nlink, 1);
+	if(!r)
+		add_atomic(&target->nlink, 1);
 	rwlock_release(&target->metalock, RWL_WRITER);
 	rwlock_release(&dir->lock, RWL_WRITER);
 	if(r)

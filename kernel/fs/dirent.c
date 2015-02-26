@@ -61,7 +61,6 @@ struct inode *fs_dirent_readinode(struct dirent *dir, int nofollow)
 			ln = fs_dirent_readinode(ln_dir, 0);
 			vfs_dirent_release(ln_dir);
 		} else {
-			vfs_icache_put(node);
 			return 0;
 		}
 		node = ln;

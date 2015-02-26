@@ -183,7 +183,6 @@ int fs_inode_push(struct inode *node)
 	return r;
 }
 
-
 void vfs_inode_mount(struct inode *node, struct filesystem *fs)
 {
 	assert(!node->mount);
@@ -253,7 +252,7 @@ int fs_icache_sync()
 	struct inode *node;
 	ll_for_each_entry_safe(ic_dirty, ln, next, struct inode *, node) {
 		assert(prev != ln);
-		printk(0, "%x %x %d\n", ln, node, node->id);
+		printk(0, "%d\r", node->id);
 		if(node->flags & INODE_DIRTY)
 			fs_callback_inode_push(node);
 		ll_do_remove(ic_dirty, &node->dirty_item, 1);

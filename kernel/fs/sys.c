@@ -73,14 +73,7 @@ int sys_setup(int a)
 	ramfs_mount(fs);
 	current_task->thread->pwd = current_task->thread->root = fs_read_root_inode(fs);
 	fs_initrd_parse();
-	
 	devfs_init();
-
-	ramfs_driver.name = "tmpfs";
-	ramfs_driver.mount = ramfs_mount;
-	ramfs_driver.umount = 0;
-	ramfs_driver.flags = 0;
-	//fs_filesystem_register(&ramfs_driver);
 
 	dm_char_rw(OPEN, GETDEV(3, 1), 0, 0);
 	sys_open("/dev/tty1", O_RDWR);   /* stdin  */
@@ -182,7 +175,6 @@ int sys_fs_mount(char *node, char *point, char *type, int opts)
 		return r;
 	}
 	struct inode *in = fs_path_resolve_inode(point, 0, &r);
-	/* todo check */
 	if(!in) {
 		fs_filesystem_destroy(fs);
 		return r;

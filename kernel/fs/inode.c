@@ -4,6 +4,7 @@
 #include <sea/cpu/atomic.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
+#include <sea/fs/dir.h>
 
 struct hash_table *icache;
 struct llist *ic_inuse, *ic_dirty;

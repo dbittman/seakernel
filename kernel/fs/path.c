@@ -4,6 +4,7 @@
 #include <sea/rwlock.h>
 #include <sea/cpu/atomic.h>
 #include <sea/errno.h>
+#include <sea/fs/dir.h>
 
 struct dirent *fs_dirent_lookup(struct inode *node, const char *name, size_t namelen)
 {

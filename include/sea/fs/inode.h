@@ -14,46 +14,12 @@
 #define MAY_WRITE     0200
 #define MAY_READ      0400
 
-#define NAME_LEN 256
-#define DNAME_LEN 256
 typedef struct {
 	struct inode *root;
 	struct inode *parent;
 } mount_pt_t;
 
 typedef struct pipe_struct pipe_t;
-
-struct inode;
-#define DIRENT_UNLINK 1
-struct dirent {
-	int count;
-	int flags;
-	rwlock_t lock;
-	struct inode *parent;
-	struct filesystem *filesystem;
-	uint32_t ino;
-	char name[DNAME_LEN];
-	size_t namelen;
-};
-enum
-{
-	DT_UNKNOWN = 0,
-	DT_FIFO = 1,
-	DT_CHR = 2,
-	DT_DIR = 4,
-	DT_BLK = 6,
-	DT_REG = 8,
-	DT_LNK = 10,
-	DT_SOCK = 12,
-	DT_WHT = 14
-};
-struct dirent_posix {
-	unsigned int d_ino;
-	unsigned int d_off;
-	unsigned short int d_reclen;
-	unsigned char d_type;
-	char d_name[];
-};
 
 #define INODE_NEEDREAD 1
 #define INODE_DIRTY    2
@@ -92,20 +58,15 @@ struct inode {
 	size_t mapped_pages_count, mapped_entries_count;
 };
 
-int sys_getdepth(int fd);
-int sys_getcwdlen();
 int sys_fcntl(int filedes, int cmd, long attr1, long attr2, long attr3);
 
 int sys_unlink(const char *);
 int sys_rmdir(const char *);
 int sys_umount();
 int sys_chroot(char *path);
-int sys_mkdir(const char *path, mode_t mode);
-int sys_getdents(int, struct dirent_posix *, unsigned int);
 
 int fs_unlink(struct inode *node, const char *name, size_t namelen);
 int fs_link(struct inode *dir, struct inode *target, const char *name, size_t namelen);
-struct dirent *fs_dirent_lookup(struct inode *node, const char *name, size_t namelen);
 
 void vfs_icache_init();
 void vfs_inode_umount(struct inode *node);
@@ -120,16 +81,9 @@ void vfs_inode_set_needread(struct inode *node);
 int vfs_inode_check_permissions(struct inode *node, int perm, int real);
 void vfs_inode_del_dirent(struct inode *node, struct dirent *dir);
 void vfs_inode_add_dirent(struct inode *node, struct dirent *dir);
-struct dirent *vfs_inode_get_dirent(struct inode *node, const char *name, int namelen);
-struct dirent *vfs_dirent_create(struct inode *node);
-int vfs_dirent_release(struct dirent *dir);
-void vfs_dirent_destroy(struct dirent *dir);
-int vfs_dirent_acquire(struct dirent *dir);
 
 int fs_inode_pull(struct inode *node);
 int fs_inode_push(struct inode *node);
-
-struct inode *fs_dirent_readinode(struct dirent *dir, int);
 
 struct inode *do_fs_path_resolve_create(const char *path,
 		int flags, mode_t mode, int *result, struct dirent **dirent);
@@ -139,13 +93,11 @@ struct dirent *fs_path_resolve(const char *path, int flags, int *result);
 struct dirent *do_fs_path_resolve(struct inode *start, const char *path, int *result);
 struct inode *fs_path_resolve_inode(const char *path, int flags, int *error);
 
-struct dirent *fs_readdir(struct inode *node, size_t num);
 struct inode *fs_read_root_inode(struct filesystem *fs);
 int vfs_inode_chdir(struct inode *node);
 int vfs_inode_chroot(struct inode *node);
 void vfs_inode_mount(struct inode *node, struct filesystem *fs);
 struct inode *fs_resolve_mount(struct inode *node);
-
 
 ssize_t fs_inode_write(struct inode *node, size_t off, size_t count, const char *buf);
 ssize_t fs_inode_read(struct inode *node, size_t off, size_t count, char *buf);

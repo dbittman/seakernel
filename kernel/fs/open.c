@@ -14,6 +14,7 @@
 #include <sea/dm/pipe.h>
 #include <sea/errno.h>
 #include <sea/mm/kmalloc.h>
+#include <sea/fs/dir.h>
 
 static struct inode *__fs_do_open_resolve__(char *path, int *err, struct dirent **dir)
 {

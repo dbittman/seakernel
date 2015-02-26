@@ -3,7 +3,7 @@
 #include <sea/fs/fs.h>
 #include <sea/lib/hash.h>
 #include <sea/mm/kmalloc.h>
-
+#include <sea/fs/dir.h>
 #include <sea/cpu/atomic.h>
 #include <sea/ll.h>
 #include <sea/errno.h>

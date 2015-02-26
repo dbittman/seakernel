@@ -2,6 +2,7 @@
 #include <sea/fs/inode.h>
 #include <sea/errno.h>
 #include <sea/cpu/atomic.h>
+#include <sea/fs/dir.h>
 
 static int do_fs_unlink(struct inode *node, const char *name, size_t namelen, int rec)
 {

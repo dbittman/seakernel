@@ -13,6 +13,7 @@
 #include <sea/dm/pipe.h>
 #include <sea/errno.h>
 #include <sea/fs/socket.h>
+#include <sea/fs/dir.h>
 int sys_close(int fp)
 {
 	struct file *f = fs_get_file_pointer((task_t *) current_task, fp);

@@ -1,6 +1,7 @@
 #include <sea/fs/inode.h>
 #include <sea/cpu/atomic.h>
 #include <sea/mm/kmalloc.h>
+#include <sea/fs/dir.h>
 int vfs_dirent_acquire(struct dirent *dir)
 {
 	add_atomic(&dir->count, 1);

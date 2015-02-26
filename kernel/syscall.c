@@ -25,6 +25,7 @@
 #include <sea/vsprintf.h>
 #include <sea/fs/socket.h>
 #include <sea/lib/timer.h>
+#include <sea/fs/dir.h>
 
 static unsigned int num_syscalls=0;
 //#define SC_DEBUG 1

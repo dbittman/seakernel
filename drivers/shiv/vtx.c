@@ -342,6 +342,7 @@ int shiv_vcpu_pending_int(struct vcpu *vc)
 {
 	return bitmap_ffs(vc->irq_field, 256);
 }
+
 void shiv_handle_irqs(struct vcpu *vc)
 {
 	vc->interruptible = ((vmcs_readl(GUEST_RFLAGS) & (1 << 9)/* IF */) && ((vmcs_read32(GUEST_INTERRUPTIBILITY_INFO) & 3) == 0));
@@ -841,8 +842,6 @@ again:
 		[cr2]"i"(offsetof(struct vcpu, cr2))
 	      : "cc", "memory" );
 
-	//++kvm_stat.exits;
-
 	fx_save(vcpu, FX_IMAGE_GUEST);
 	fx_restore(vcpu, FX_IMAGE_HOST);
 	
@@ -868,7 +867,6 @@ again:
 		vcpu->launched = 1;
 		vcpu->exit_type = SHIV_EXIT_TYPE_VM_EXIT;
 		vcpu->exit_reason = vmcs_readl(VM_EXIT_REASON);
-		//printk(0, ":: %d %d %d %x\n", vcpu->exit_type, vcpu->exit_reason, vmcs_readl(VM_EXIT_REASON), vcpu->regs[VCPU_REGS_RAX]);
 		r = shiv_vm_exit_handler(vcpu);
 		if (r > 0) {
 			if(tm_process_got_signal(current_task)) {
@@ -878,7 +876,6 @@ again:
 		}
 	}
 	cpu_interrupt_set(intflag);
-	//printk(0, ":: %d %d %d %x\n", vcpu->exit_type, vcpu->exit_reason, vmcs_readl(VM_EXIT_REASON), vcpu->regs[VCPU_REGS_RAX]);
 	return r;
 }
 

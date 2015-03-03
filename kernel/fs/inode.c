@@ -162,6 +162,17 @@ void vfs_icache_put(struct inode *node)
 	mutex_release(ic_lock);
 }
 
+void fs_inode_reclaim_lru()
+{
+	mutex_acquire(ic_lock);
+	struct inode *remove = queue_dequeue(ic_lru);
+	assert(!remove->count);
+	assert(!(remove->flags & INODE_INUSE));
+	assert(!remove->dirents->count);
+	vfs_inode_destroy(remove);
+	mutex_release(ic_lock);
+}
+
 int fs_inode_pull(struct inode *node)
 {
 	int r = 0;

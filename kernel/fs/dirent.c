@@ -2,6 +2,16 @@
 #include <sea/cpu/atomic.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/fs/dir.h>
+
+struct queue *dirent_lru;
+mutex_t *dirent_cache_lock;
+
+void vfs_dirent_init()
+{
+	dirent_lru = queue_create(0, 0);
+	dirent_cache_lock = mutex_create(0, 0);
+}
+
 int vfs_dirent_acquire(struct dirent *dir)
 {
 	add_atomic(&dir->count, 1);

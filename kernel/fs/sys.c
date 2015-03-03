@@ -91,6 +91,7 @@ int sys_setup(int a)
 void fs_init()
 {
 	vfs_icache_init();
+	vfs_dirent_init();
 	fs_fsm_init();
 #if CONFIG_MODULES
 	loader_add_kernel_symbol(sys_open);

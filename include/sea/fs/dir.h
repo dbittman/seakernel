@@ -46,5 +46,6 @@ struct dirent *vfs_dirent_create(struct inode *node);
 int vfs_dirent_release(struct dirent *dir);
 void vfs_dirent_destroy(struct dirent *dir);
 int vfs_dirent_acquire(struct dirent *dir);
+void vfs_dirent_init();
 
 #endif

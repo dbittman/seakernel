@@ -21,25 +21,50 @@ int vfs_dirent_acquire(struct dirent *dir)
 int vfs_dirent_release(struct dirent *dir)
 {
 	int r = 0;
-	rwlock_acquire(&dir->parent->lock, RWL_WRITER);
+	vfs_inode_get(dir->parent);
+	struct inode *parent = dir->parent;
+	rwlock_acquire(&parent->lock, RWL_WRITER);
 	if(!sub_atomic(&dir->count, 1)) {
 		if(dir->flags & DIRENT_UNLINK) {
 			struct inode *target = fs_dirent_readinode(dir, 1);
-			vfs_inode_del_dirent(dir->parent, dir);
-			r = fs_callback_inode_unlink(dir->parent, dir->name, dir->namelen, target);
+			vfs_inode_del_dirent(parent, dir);
+			r = fs_callback_inode_unlink(parent, dir->name, dir->namelen, target);
 			if(!r) {
 				assert(sub_atomic(&target->nlink, 1) >= 0);
 				if(!target->nlink && (target->flags & INODE_DIRTY))
 					vfs_inode_unset_dirty(target);
 			}
+			vfs_dirent_destroy(dir);
+		} else {
+			/* add to LRU */
+			queue_enqueue_item(dirent_lru, &dir->lru_item, dir);
 		}
-		rwlock_release(&dir->parent->lock, RWL_WRITER);
-		vfs_icache_put(dir->parent);
+		rwlock_release(&parent->lock, RWL_WRITER);
+		vfs_icache_put(parent); /* once for the dir->parent pointer */
+		vfs_icache_put(parent); /* once for the parent pointer in this function */
 	} else
-		rwlock_release(&dir->parent->lock, RWL_WRITER);
-	/* TODO: reclaiming */
+		rwlock_release(&parent->lock, RWL_WRITER);
 
 	return r;
+}
+
+void fs_dirent_remove_lru(struct dirent *dir)
+{
+	queue_remove(dirent_lru, &dir->lru_item);
+}
+
+void fs_dirent_reclaim_lru()
+{
+	struct dirent *dir = queue_dequeue(dirent_lru);
+	struct inode *parent = dir->parent;
+	vfs_inode_get(parent);
+	rwlock_acquire(&parent->lock, RWL_WRITER);
+	if(dir && dir->count == 0) {
+		/* reclaim this node */
+		vfs_dirent_destroy(dir);
+	}
+	rwlock_release(&parent->lock, RWL_WRITER);
+	vfs_icache_put(parent);
 }
 
 struct inode *fs_dirent_readinode(struct dirent *dir, int nofollow)

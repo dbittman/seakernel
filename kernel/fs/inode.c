@@ -62,7 +62,7 @@ struct inode *vfs_inode_create()
 	struct inode *node = kmalloc(sizeof(struct inode));
 	rwlock_create(&node->lock);
 	rwlock_create(&node->metalock);
-	
+
 	node->dirents = hash_table_create(0, 0, HASH_TYPE_CHAIN);
 	hash_table_resize(node->dirents, HASH_RESIZE_MODE_IGNORE,1000);
 	hash_table_specify_function(node->dirents, HASH_FUNCTION_BYTE_SUM);
@@ -110,7 +110,7 @@ struct inode *vfs_icache_get(struct filesystem *fs, uint32_t num)
 		newly_created = 1;
 	}
 	add_atomic(&node->count, 1);
-	
+
 	/* move to in-use */
 	if(!(ff_or_atomic(&node->flags, INODE_INUSE) & INODE_INUSE)) {
 		if(!newly_created) {
@@ -166,10 +166,12 @@ void fs_inode_reclaim_lru()
 {
 	mutex_acquire(ic_lock);
 	struct inode *remove = queue_dequeue(ic_lru);
-	assert(!remove->count);
-	assert(!(remove->flags & INODE_INUSE));
-	assert(!remove->dirents->count);
-	vfs_inode_destroy(remove);
+	if(remove) {
+		assert(!remove->count);
+		assert(!(remove->flags & INODE_INUSE));
+		assert(!remove->dirents->count);
+		vfs_inode_destroy(remove);
+	}
 	mutex_release(ic_lock);
 }
 

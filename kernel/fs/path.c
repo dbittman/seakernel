@@ -31,8 +31,10 @@ struct dirent *fs_dirent_lookup(struct inode *node, const char *name, size_t nam
 		vfs_inode_get(node);
 		vfs_inode_add_dirent(node, dir);
 	} else {
-		if(add_atomic(&dir->count, 1) == 1)
+		if(add_atomic(&dir->count, 1) == 1) {
+			fs_dirent_remove_lru(dir);
 			vfs_inode_get(node);
+		}
 	}
 	rwlock_release(&node->lock, RWL_WRITER);
 	return dir;

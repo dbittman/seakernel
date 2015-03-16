@@ -84,7 +84,7 @@ all_s: make.deps $(MODULES)
 	echo "Building modules, pass 2..."
 	
 	for i in "$(SUBDIRS)"; do \
-		if [[ $$i != "" ]]; then \
+		if [ $$i != "" ]; then \
 			export MCFLAGS="$(MCFLAGS)" ;\
 			$(MAKE) -s -C $$i ;\
 		fi ;\
@@ -96,7 +96,7 @@ all_s: make.deps $(MODULES)
 		cp -f $$i built/$$MOD ;\
 	done
 	@-for i in "$(SUBDIRS)"; do \
-		if [[ $$i != "" ]]; then \
+		if [ $$i != "" ]; then \
 		cp -f $$i/$$(basename $$i).m built/$$(basename $$i) ;\
 		fi ;\
 	done

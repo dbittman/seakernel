@@ -80,8 +80,6 @@ void vfs_inode_destroy(struct inode *node)
 	assert(!node->dirents->count);
 	hash_table_destroy(node->dirents);
 	assert(!(node->flags & INODE_INUSE));
-	/* TODO: test queue */
-
 	kfree(node);
 }
 

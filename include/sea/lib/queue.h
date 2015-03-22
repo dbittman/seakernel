@@ -23,6 +23,7 @@ void queue_enqueue_item(struct queue *q, struct queue_item *i, void *ent);
 void *queue_remove(struct queue *q, struct queue_item *item);
 void *queue_peek(struct queue *q);
 void queue_destroy(struct queue *q);
+struct queue_item *queue_dequeue_item(struct queue *q);
 
 #define queue_count(q) q->count
 

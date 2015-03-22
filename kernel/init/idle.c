@@ -79,6 +79,9 @@ int kt_kernel_idle_task()
 	/* Now enter the main idle loop, waiting to do periodic cleanup */
 	printk(0, "[idle]: entering background loop\n");
 	for(;;) {
+
+		//fs_dirent_reclaim_lru();
+
 		current_task->freed = current_task->allocated = 0;
 		task=__KT_try_releasing_tasks();
 		__KT_try_handle_stage2_interrupts();

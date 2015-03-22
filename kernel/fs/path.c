@@ -5,41 +5,6 @@
 #include <sea/cpu/atomic.h>
 #include <sea/errno.h>
 #include <sea/fs/dir.h>
-
-struct dirent *fs_dirent_lookup(struct inode *node, const char *name, size_t namelen)
-{
-	if(!vfs_inode_check_permissions(node, MAY_READ, 0))
-		return 0;
-	if(!S_ISDIR(node->mode))
-		return 0;
-	if(node == current_task->thread->root && !strncmp(name, "..", 2) && namelen == 2)
-		return fs_dirent_lookup(node, ".", 1);
-	rwlock_acquire(&node->lock, RWL_WRITER);
-	struct dirent *dir = vfs_inode_get_dirent(node, name, namelen);
-	if(!dir) {
-		dir = vfs_dirent_create(node);
-		dir->count = 1;
-		strncpy(dir->name, name, namelen);
-		dir->namelen = namelen;
-		int r = fs_callback_inode_lookup(node, name, namelen, dir);
-		if(r) {
-			dir->count = 0;
-			vfs_dirent_destroy(dir);
-			rwlock_release(&node->lock, RWL_WRITER);
-			return 0;
-		}
-		vfs_inode_get(node);
-		vfs_inode_add_dirent(node, dir);
-	} else {
-		if(add_atomic(&dir->count, 1) == 1) {
-			fs_dirent_remove_lru(dir);
-			vfs_inode_get(node);
-		}
-	}
-	rwlock_release(&node->lock, RWL_WRITER);
-	return dir;
-}
-
 struct inode *fs_resolve_mount(struct inode *node)
 {
 	struct inode *ret = node;

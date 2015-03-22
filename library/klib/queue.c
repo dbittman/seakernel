@@ -39,9 +39,8 @@ void *queue_remove(struct queue *q, struct queue_item *item)
 	return ret;
 }
 
-void *queue_dequeue(struct queue *q)
+struct queue_item *queue_dequeue_item(struct queue *q)
 {
-	void *ret = 0;
 	mutex_acquire(&q->lock);
 	struct queue_item *item = q->head;
 	if(!item) {
@@ -61,9 +60,18 @@ void *queue_dequeue(struct queue *q)
 		q->tail = item->prev;
 
 	sub_atomic(&q->count, 1);
-	ret = item->ent;
-	kfree(item);
 	mutex_release(&q->lock);
+	return item;
+}
+
+void *queue_dequeue(struct queue *q)
+{
+	struct queue_item *i = queue_dequeue_item(q);
+	void *ret = 0;
+	if(i) {
+		ret = i->ent;
+		kfree(i);
+	}
 	return ret;
 }
 

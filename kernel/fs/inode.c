@@ -163,11 +163,19 @@ void vfs_icache_put(struct inode *node)
 void fs_inode_reclaim_lru()
 {
 	mutex_acquire(ic_lock);
-	struct inode *remove = queue_dequeue(ic_lru);
+	struct queue_item *qi = queue_dequeue_item(ic_lru);
+	if(!qi) {
+		mutex_release(ic_lock);
+		return;
+	}
+	struct inode *remove = qi->ent;
 	if(remove) {
 		assert(!remove->count);
 		assert(!(remove->flags & INODE_INUSE));
 		assert(!remove->dirents->count);
+		uint32_t key[2] = {remove->filesystem->id, remove->id};
+		hash_table_delete_entry(icache, key, sizeof(uint32_t), 2);
+		fs_inode_push(remove);
 		vfs_inode_destroy(remove);
 	}
 	mutex_release(ic_lock);

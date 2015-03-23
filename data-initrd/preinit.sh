@@ -31,9 +31,11 @@ else
 		echo "Failed to mount root filesystem, falling back to initrd shell..."
 		sh
 	else
-		umount /dev
+		/mnt/bin/umount /dev
 		chroot /mnt /bin/sh -c <<EOF "
+			printf "dev"
 			mount -t devfs /dev/null /dev
+			printf "tmp"
 			mount -t tmpfs /dev/null /tmp
 			. /etc/rc/boot; exit 0"
 EOF

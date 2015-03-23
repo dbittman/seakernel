@@ -319,6 +319,26 @@ int ramfs_inode_write(struct filesystem *fs, struct inode *node,
 	return length;
 }
 
+extern struct filesystem *devfs;
+int ramfs_fs_stat(struct filesystem *fs, struct posix_statfs *stat)
+{
+	if(fs == devfs)
+		stat->f_type = 0x1373;
+	else
+		stat->f_type = 0x858458f6;
+	stat->f_bsize  = 4096;
+	stat->f_blocks = 0;
+	stat->f_bfree  = 0;
+	stat->f_bavail = 0;
+	stat->f_files  = ((struct rfsinfo *)fs->data)->nodes->count;
+	stat->f_ffree  = 0;
+	stat->f_fsid   = fs->id;
+	stat->f_namelen= 0;
+	stat->f_frsize = 0;
+	stat->f_flags  = 0;
+	return 0;
+}
+
 struct filesystem_inode_callbacks ramfs_iops = {
 	.push = ramfs_inode_push,
 	.pull = ramfs_inode_pull,
@@ -333,5 +353,6 @@ struct filesystem_inode_callbacks ramfs_iops = {
 
 struct filesystem_callbacks ramfs_fsops = {
 	.alloc_inode = ramfs_alloc_inode,
+	.fs_stat     = ramfs_fs_stat,
 };
 

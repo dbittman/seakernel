@@ -29,7 +29,7 @@ static int __kfs_mnt_rp_write(struct filesystem *fs, char *buf)
 	char *point = fs->pointname;
 	if(root == current_task->thread->root)
 		point = "/";
-	return snprintf(buf, 256, "%s %s %s 0x%x 0 0\n", fs->nodename, point, fs->type, fs->opts);
+	return snprintf(buf, 256, "%s %s %s active,0x%x 0 0\n", fs->nodename, point, fs->type, fs->opts);
 }
 
 int kerfs_mount_report(size_t offset, size_t length, char *buf)

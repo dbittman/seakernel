@@ -181,6 +181,23 @@ int ext2_wrap_inode_write(struct filesystem *fs, struct inode *node,
 	return ret;
 }
 
+int ext2_fs_stat(struct filesystem *fs, struct posix_statfs *stat)
+{
+	struct ext2_info *info = fs->data;
+	stat->f_type = 0xef53;
+	stat->f_bsize  = ext2_sb_blocksize(info->sb);
+	stat->f_blocks = info->sb->block_count;
+	stat->f_bfree  = info->sb->free_blocks;
+	stat->f_bavail = info->sb->free_blocks - info->sb->reserved_blocks;
+	stat->f_files  = ext2_sb_bgcount(info->sb) * info->sb->inodes_per_group;
+	stat->f_ffree  = info->sb->free_inodes;
+	stat->f_fsid   = fs->id;
+	stat->f_namelen= 255;
+	stat->f_frsize = 0;
+	stat->f_flags  = 0;
+	return 0;
+}
+
 struct filesystem_inode_callbacks ext2_wrap_iops = {
 	.push = ext2_wrap_inode_push,
 	.pull = ext2_wrap_inode_pull,
@@ -195,5 +212,6 @@ struct filesystem_inode_callbacks ext2_wrap_iops = {
 
 struct filesystem_callbacks ext2_wrap_fsops = {
 	.alloc_inode = ext2_wrap_alloc_inode,
+	.fs_stat = ext2_fs_stat,
 };
 

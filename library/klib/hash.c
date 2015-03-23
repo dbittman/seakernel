@@ -196,5 +196,6 @@ void hash_table_destroy(struct hash_table *h)
 	kfree(h->entries);
 	rwlock_destroy(&h->lock);
 	h->magic=0;
-	kfree(h);
+	if(h->flags & HASH_ALLOC)
+		kfree(h);
 }

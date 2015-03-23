@@ -49,6 +49,7 @@ struct filesystem {
 
 	void *data;
 	struct fsdriver *driver;
+	struct llistnode *listnode;
 };
 
 struct fsdriver {

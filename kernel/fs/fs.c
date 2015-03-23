@@ -10,9 +10,13 @@ static uint32_t fsids = 0;
 static struct hash_table fsdrivershash;
 static struct llist fsdriverslist;
 
+static struct llist fslist;
+extern struct filesystem *devfs;
+
 void fs_fsm_init()
 {
 	ll_create(&fsdriverslist);
+	ll_create(&fslist);
 	hash_table_create(&fsdrivershash, 0, HASH_TYPE_CHAIN);
 	hash_table_resize(&fsdrivershash, HASH_RESIZE_MODE_IGNORE,10);
 	hash_table_specify_function(&fsdrivershash, HASH_FUNCTION_BYTE_SUM);
@@ -63,15 +67,22 @@ int fs_filesystem_init_mount(struct filesystem *fs, char *node, char *type, int 
 
 void fs_unmount_all()
 {
-	/* TODO */
+	struct llistnode *ln, *next;
+	struct filesystem *fs;
+	rwlock_acquire(&fslist.rwl, RWL_WRITER);
+	ll_for_each_entry_safe(&fslist, ln, next, struct filesystem *, fs) {
+		if(fs != devfs)
+			fs_umount(fs);
+	}
+	rwlock_release(&fslist.rwl, RWL_WRITER);
 }
 
-extern struct filesystem *devfs;
 int fs_mount(struct inode *pt, struct filesystem *fs)
 {
-	/* TODO: make sure we don't mount a FS twice */
 	if(!strcmp(fs->type, "devfs")) {
 		fs = devfs;
+	} else {
+		fs->listnode = ll_insert(&fslist, fs);
 	}
 	vfs_inode_mount(pt, fs);
 	return 0;
@@ -79,7 +90,6 @@ int fs_mount(struct inode *pt, struct filesystem *fs)
 
 int fs_umount(struct filesystem *fs)
 {
-	/* TODO: check if not in use */
 	assert(fs);
 	if(fs->driver && fs->driver->umount)
 		fs->driver->umount(fs);

@@ -160,9 +160,9 @@ int module_install()
 
 int module_exit()
 {
-	dm_unregister_block_device(psm_major);
 	loader_remove_kernel_symbol("psm_register_disk_device");
 	loader_remove_kernel_symbol("psm_unregister_disk_device");
 	psm_table_destroy();
+	dm_unregister_block_device(psm_major);
 	return 0;
 }

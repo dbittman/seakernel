@@ -5,6 +5,7 @@
 #include <sea/cpu/atomic.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/errno.h>
+#include <sea/vsprintf.h>
 static uint32_t fsids = 0;
 
 static struct hash_table fsdrivershash;
@@ -22,6 +23,44 @@ void fs_fsm_init()
 	hash_table_specify_function(&fsdrivershash, HASH_FUNCTION_BYTE_SUM);
 }
 
+static int __kfs_mnt_rp_write(struct filesystem *fs, char *buf)
+{
+	struct inode *root = fs_read_root_inode(fs);
+	char *point = fs->pointname;
+	if(root == current_task->thread->root)
+		point = "/";
+	return snprintf(buf, 256, "%s %s %s 0x%x 0 0\n", fs->nodename, point, fs->type, fs->opts);
+}
+
+int kerfs_mount_report(size_t offset, size_t length, char *buf)
+{
+	size_t dl = 0;
+	char tmp[10000];
+
+	rwlock_acquire(&fslist.rwl, RWL_READER);
+	struct llistnode *ln;
+	struct filesystem *fs;
+	ll_for_each_entry(&fslist, ln, struct filesystem *, fs) {
+		char line[256];
+		int r = __kfs_mnt_rp_write(fs, line);
+		assert(dl+r < 10000);
+		memcpy(tmp + dl, line, r);
+		dl += r;	
+	}
+	rwlock_release(&fslist.rwl, RWL_READER);
+	char line[256];
+	int r = __kfs_mnt_rp_write(devfs, line);
+	assert(dl+r < 10000);
+	memcpy(tmp + dl, line, r);
+	dl += r;	
+	if(offset > dl)
+		return 0;
+	if(offset + length > dl)
+		length = dl - offset;
+	memcpy(buf, tmp + offset, length);
+	return length;
+}
+
 struct inode *fs_read_root_inode(struct filesystem *fs)
 {
 	struct inode *node = vfs_icache_get(fs, fs->root_inode_id);
@@ -29,12 +68,22 @@ struct inode *fs_read_root_inode(struct filesystem *fs)
 	return node;
 }
 
-int fs_filesystem_init_mount(struct filesystem *fs, char *node, char *type, int opts)
+int fs_filesystem_init_mount(struct filesystem *fs, char *point, char *node, char *type, int opts)
 {
-	strncpy(fs->type, type, 128);
+	if(type)
+		strncpy(fs->type, type, 128);
 	fs->opts = opts;
-	if(!strcmp(fs->type, "devfs"))
-		return 0;
+	fs->pointname = kmalloc(strlen(point) + 1);
+	strncpy(fs->pointname, point, strlen(point));
+	if(!strcmp(fs->type, "devfs") || !strcmp(fs->type, "tmpfs")) {
+		fs->nodename = kmalloc(strlen(fs->type) + 1);
+		strncpy(fs->nodename, fs->type, strlen(fs->type));
+		if(fs->type[0] == 'd')
+			return 0;
+	} else {
+		fs->nodename = kmalloc(strlen(node) + 1);
+		strncpy(fs->nodename, node, strlen(node));
+	}
 	int err;
 	struct inode *i = fs_path_resolve_inode(node, 0, &err);
 	if(!i)
@@ -56,6 +105,7 @@ int fs_filesystem_init_mount(struct filesystem *fs, char *node, char *type, int 
 		ll_for_each_entry(&fsdriverslist, ln, struct fsdriver *, fd) {
 			if(!fd->mount(fs)) {
 				fs->driver = fd;
+				strncpy(fs->type, fd->name, 128);
 				rwlock_release(&fsdriverslist.rwl, RWL_READER);
 				return 0;
 			}
@@ -106,6 +156,10 @@ struct filesystem *fs_filesystem_create()
 
 void fs_filesystem_destroy(struct filesystem *fs)
 {
+	if(fs->nodename)
+		kfree(fs->nodename);
+	if(fs->pointname)
+		kfree(fs->pointname);
 	kfree(fs);
 }
 

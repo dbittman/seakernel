@@ -42,9 +42,18 @@ struct filesystem *devfs;
 void devfs_init()
 {
 	devfs = fs_filesystem_create();
-	kprintf("devfs: %x\n", devfs);
+	fs_filesystem_init_mount(devfs, "/dev", "devfs", "devfs", 0);
 	ramfs_mount(devfs);
-	sys_fs_mount(0, "/dev", "devfs", 0);
+	int r;
+	struct inode *in = fs_path_resolve_inode("/dev", 0, &r);
+	if(!in) {
+		panic(0, "/dev does not exist");
+	}
+	if(!S_ISDIR(in->mode)) {
+		panic(0, "/dev is not a directory");
+	}
+	r = fs_mount(in, devfs);
+	vfs_icache_put(in);
 	char tty[16];
 	for(int i=1;i<10;i++) {
 		snprintf(tty, 10, "/dev/tty%d", i);
@@ -56,8 +65,6 @@ void devfs_init()
 	sys_mknod("/dev/com0", S_IFCHR | 0600, GETDEV(5, 0));
 }
 
-int test = 12345;
-struct fsdriver ramfs_driver;
 int sys_setup(int a)
 {
 	if(system_setup)
@@ -79,9 +86,10 @@ int sys_setup(int a)
 	sys_open("/dev/tty1", O_RDWR);   /* stdin  */
 	sys_open("/dev/tty1", O_WRONLY); /* stdout */
 	sys_open("/dev/tty1", O_WRONLY); /* stderr */
-	kerfs_register_parameter("/dev/test", &test, sizeof(test), 0, KERFS_TYPE_INTEGER);
+	//kerfs_register_parameter("/dev/test", &test, sizeof(test), 0, KERFS_TYPE_INTEGER);
 	kerfs_register_report("/dev/syscall", kerfs_syscall_report);
 	kerfs_register_report("/dev/int", kerfs_int_report);
+	kerfs_register_report("/dev/mounts", kerfs_mount_report);
 	current_task->tty=1;
 	system_setup=1;
 	printk(KERN_MILE, "done (i/o/e=%x [tty1]: ok)\n", GETDEV(3, 1));
@@ -170,7 +178,7 @@ int sys_fs_mount(char *node, char *point, char *type, int opts)
 	if(current_task->thread->effective_uid)
 		return -EPERM;
 	struct filesystem *fs = fs_filesystem_create();
-	int r = fs_filesystem_init_mount(fs, node, type, opts);
+	int r = fs_filesystem_init_mount(fs, point, node, type, opts);
 	if(r) {
 		fs_filesystem_destroy(fs);
 		return r;

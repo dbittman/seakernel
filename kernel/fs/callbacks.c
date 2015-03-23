@@ -19,7 +19,7 @@ int fs_callback_inode_write(struct inode *node, size_t off, size_t len, const ch
 
 int fs_callback_inode_pull(struct inode *node)
 {
-	assert(node && node->filesystem);
+	assert(node && node->filesystem && node->filesystem->fs_inode_ops);
 	if(node->filesystem->fs_inode_ops->pull)
 		return node->filesystem->fs_inode_ops->pull(node->filesystem, node);
 	return -ENOTSUP;

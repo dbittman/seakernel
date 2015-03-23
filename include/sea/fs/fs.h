@@ -50,6 +50,9 @@ struct filesystem {
 	void *data;
 	struct fsdriver *driver;
 	struct llistnode *listnode;
+
+	char *pointname;
+	char *nodename;
 };
 
 struct fsdriver {
@@ -76,6 +79,7 @@ int fs_callback_inode_select(struct inode *node, int rw);
 int fs_callback_fs_alloc_inode(struct filesystem *fs, uint32_t *id);
 int fs_callback_fs_stat(struct filesystem *fs, struct posix_statfs *p);
 int fs_callback_fs_dealloc_inode(struct filesystem *fs, uint32_t *id);
+int kerfs_mount_report(size_t offset, size_t length, char *buf);
 
 int ramfs_mount(struct filesystem *fs);
 struct filesystem *fs_filesystem_create();
@@ -85,7 +89,7 @@ int fs_filesystem_unregister(struct fsdriver *fd);
 void fs_fsm_init();
 int fs_umount(struct filesystem *fs);
 int fs_mount(struct inode *pt, struct filesystem *fs);
-int fs_filesystem_init_mount(struct filesystem *fs, char *node, char *type, int opts);
+int fs_filesystem_init_mount(struct filesystem *fs, char *point, char *node, char *type, int opts);
 int sys_fs_mount(char *node, char *point, char *type, int opts);
 #endif
 

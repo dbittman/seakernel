@@ -5,6 +5,7 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
 #include <sea/fs/dir.h>
+#include <sea/dm/pipe.h>
 
 struct hash_table *icache;
 struct llist *ic_inuse, *ic_dirty;

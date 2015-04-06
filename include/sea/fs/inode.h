@@ -24,7 +24,7 @@ typedef struct pipe_struct pipe_t;
 #define INODE_NEEDREAD 1
 #define INODE_DIRTY    2
 #define INODE_INUSE    4
-#define INODE_NOLRU    8
+#define INODE_NOLRU    8 /* On calling vfs_icache_put, don't move to LRU, immediately destroy */
 
 #define RESOLVE_NOLINK 1
 

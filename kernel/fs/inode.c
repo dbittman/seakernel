@@ -74,6 +74,7 @@ struct inode *vfs_inode_create()
 	return node;
 }
 
+/* you probably do not want to call this function directly. Use vfs_icache_put instead. */
 void vfs_inode_destroy(struct inode *node)
 {
 	if(node->pipe) {

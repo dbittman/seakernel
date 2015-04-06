@@ -1,4 +1,5 @@
 #include <sea/fs/inode.h>
+#include <sea/kernel.h>
 #include <sea/errno.h>
 
 int fs_callback_inode_read(struct inode *node, size_t off, size_t len, char *buf)

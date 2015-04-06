@@ -1,3 +1,4 @@
+#include <sea/kernel.h>
 #include <sea/types.h>
 #include <sea/fs/inode.h>
 #include <sea/tm/process.h>

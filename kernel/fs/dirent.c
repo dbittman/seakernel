@@ -1,3 +1,4 @@
+#include <sea/kernel.h>
 #include <sea/fs/inode.h>
 #include <sea/cpu/atomic.h>
 #include <sea/mm/kmalloc.h>

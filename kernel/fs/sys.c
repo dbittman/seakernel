@@ -15,7 +15,7 @@
 #include <sea/fs/proc.h>
 #include <sea/fs/callback.h>
 #include <sea/fs/ramfs.h>
-#include <sea/dm/pipe.h>
+#include <sea/fs/pipe.h>
 #include <sea/tm/schedule.h>
 #include <sea/sys/fcntl.h>
 #include <sea/errno.h>
@@ -472,7 +472,7 @@ int sys_mknod(char *path, mode_t mode, dev_t dev)
 	i->mode = (mode & ~0xFFF) | ((mode&0xFFF) & (~current_task->cmask&0xFFF));
 	vfs_inode_set_dirty(i);
 	if(S_ISFIFO(i->mode)) {
-		i->pipe = dm_create_pipe();
+		i->pipe = fs_pipe_create();
 		i->pipe->type = PIPE_NAMED;
 	}
 	vfs_icache_put(i);
@@ -570,7 +570,7 @@ static int select_filedes(int i, int rw)
 	else if(S_ISBLK(in->mode))
 		ready = dm_blockdev_select(in, rw);
 	else if(S_ISFIFO(in->mode))
-		ready = dm_pipedev_select(in, rw);
+		ready = fs_pipe_select(in, rw);
 	else if(S_ISSOCK(in->mode))
 		ready = socket_select(file, rw);
 	fs_fput((task_t *)current_task, i, 0);

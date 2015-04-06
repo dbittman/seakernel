@@ -1,6 +1,6 @@
 #include <sea/dm/dev.h>
 #include <sea/fs/inode.h>
-#include <sea/dm/pipe.h>
+#include <sea/fs/pipe.h>
 #include <sea/tm/process.h>
 #include <sea/fs/file.h>
 #include <sea/cpu/interrupt.h>
@@ -10,7 +10,7 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/string.h>
 
-pipe_t *dm_create_pipe()
+pipe_t *fs_pipe_create()
 {
 	pipe_t *pipe = (pipe_t *)kmalloc(sizeof(pipe_t));
 	pipe->length = PIPE_SIZE;
@@ -32,7 +32,7 @@ static struct inode *create_anon_pipe()
 	node->mode = S_IFIFO | 0x1FF;
 	node->count=2;
 	
-	pipe_t *pipe = dm_create_pipe();
+	pipe_t *pipe = fs_pipe_create();
 	pipe->count=2;
 	pipe->wrcount=1;
 	node->pipe = pipe;
@@ -65,7 +65,7 @@ int sys_pipe(int *files)
 	return 0;
 }
 
-void dm_free_pipe(struct inode *i)
+void fs_pipe_free(struct inode *i)
 {
 	if(!i || !i->pipe) return;
 	kfree((void *)i->pipe->buffer);
@@ -76,7 +76,7 @@ void dm_free_pipe(struct inode *i)
 	i->pipe=0;
 }
 
-int dm_read_pipe(struct inode *ino, int flags, char *buffer, size_t length)
+int fs_pipe_read(struct inode *ino, int flags, char *buffer, size_t length)
 {
 	if(!ino || !buffer)
 		return -EINVAL;
@@ -129,7 +129,7 @@ int dm_read_pipe(struct inode *ino, int flags, char *buffer, size_t length)
 	return count;
 }
 
-int dm_write_pipe(struct inode *ino, int flags, char *initialbuffer, size_t totallength)
+int fs_pipe_write(struct inode *ino, int flags, char *initialbuffer, size_t totallength)
 {
 	if(!ino || !initialbuffer)
 		return -EINVAL;
@@ -185,7 +185,7 @@ int dm_write_pipe(struct inode *ino, int flags, char *initialbuffer, size_t tota
 	return totallength;
 }
 
-int dm_pipedev_select(struct inode *in, int rw)
+int fs_pipe_select(struct inode *in, int rw)
 {
 	if(rw != READ)
 		return 1;

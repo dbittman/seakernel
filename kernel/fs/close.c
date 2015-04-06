@@ -10,7 +10,7 @@
 #include <sea/rwlock.h>
 #include <sea/cpu/atomic.h>
 #include <sea/fs/file.h>
-#include <sea/dm/pipe.h>
+#include <sea/fs/pipe.h>
 #include <sea/errno.h>
 #include <sea/fs/socket.h>
 #include <sea/fs/dir.h>
@@ -41,7 +41,7 @@ int sys_close(int fp)
 		if(!f->inode->pipe->count && f->inode->pipe->type != PIPE_NAMED) {
 			assert(!f->inode->pipe->read_blocked->num);
 			assert(!f->inode->pipe->write_blocked->num);
-			dm_free_pipe(f->inode);
+			fs_pipe_free(f->inode);
 			f->inode->pipe = 0;
 		} else {
 			tm_remove_all_from_blocklist(f->inode->pipe->read_blocked);

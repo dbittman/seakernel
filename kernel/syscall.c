@@ -17,7 +17,7 @@
 #include <sea/fs/dir.h>
 #include <sea/tm/schedule.h>
 #include <sea/cpu/interrupt.h>
-#include <sea/dm/pipe.h>
+#include <sea/fs/pipe.h>
 #include <sea/loader/exec.h>
 #include <sea/cpu/atomic.h>
 #include <sea/mm/map.h>

@@ -5,7 +5,7 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
 #include <sea/fs/dir.h>
-#include <sea/dm/pipe.h>
+#include <sea/fs/pipe.h>
 
 struct hash_table *icache;
 struct llist *ic_inuse, *ic_dirty;
@@ -78,7 +78,7 @@ struct inode *vfs_inode_create()
 void vfs_inode_destroy(struct inode *node)
 {
 	if(node->pipe) {
-		dm_free_pipe(node);
+		fs_pipe_free(node);
 	}
 	rwlock_destroy(&node->lock);
 	rwlock_destroy(&node->metalock);

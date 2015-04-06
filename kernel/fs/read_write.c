@@ -9,7 +9,7 @@
 #include <sea/dm/char.h>
 #include <sea/dm/block.h>
 #include <sea/fs/file.h>
-#include <sea/dm/pipe.h>
+#include <sea/fs/pipe.h>
 #include <sea/errno.h>
 #include <sea/vsprintf.h>
 int fs_do_sys_read_flags(struct file *f, off_t off, char *buf, size_t count)
@@ -19,7 +19,7 @@ int fs_do_sys_read_flags(struct file *f, off_t off, char *buf, size_t count)
 	struct inode *inode = f->inode;
 	int mode = inode->mode;
 	if(S_ISFIFO(mode))
-		return dm_read_pipe(inode, f->flags, buf, count);
+		return fs_pipe_read(inode, f->flags, buf, count);
 	else if(S_ISCHR(mode))
 		return dm_char_rw(READ, inode->phys_dev, buf, count);
 	else if(S_ISBLK(mode))
@@ -70,7 +70,7 @@ int fs_do_sys_write_flags(struct file *f, off_t off, char *buf, size_t count)
 		return -EINVAL;
 	struct inode *inode = f->inode;
 	if(S_ISFIFO(inode->mode))
-		return dm_write_pipe(inode, f->flags, buf, count);
+		return fs_pipe_write(inode, f->flags, buf, count);
 	else if(S_ISCHR(inode->mode))
 		return dm_char_rw(WRITE, inode->phys_dev, buf, count);
 	else if(S_ISBLK(inode->mode))

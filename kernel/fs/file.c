@@ -5,7 +5,7 @@
 #include <sea/cpu/atomic.h>
 #include <sea/fs/file.h>
 #include <sea/tm/process.h>
-#include <sea/dm/pipe.h>
+#include <sea/fs/pipe.h>
 #include <sea/sys/fcntl.h>
 #include <sea/vsprintf.h>
 #include <sea/mm/kmalloc.h>

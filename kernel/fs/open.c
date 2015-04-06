@@ -11,7 +11,7 @@
 #include <sea/dm/block.h>
 #include <sea/cpu/atomic.h>
 #include <sea/fs/file.h>
-#include <sea/dm/pipe.h>
+#include <sea/fs/pipe.h>
 #include <sea/errno.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/fs/dir.h>

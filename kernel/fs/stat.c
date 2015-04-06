@@ -9,7 +9,7 @@
 #include <sea/fs/file.h>
 #include <sea/fs/dir.h>
 #include <sea/fs/callback.h>
-#include <sea/dm/pipe.h>
+#include <sea/fs/pipe.h>
 #include <sea/errno.h>
 int sys_isatty(int f)
 {

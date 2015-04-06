@@ -8,6 +8,7 @@ KOBJS+= kernel/fs/callbacks.o \
 		kernel/fs/inode.o \
 		kernel/fs/mminode.o \
 		kernel/fs/open.o \
+		kernel/fs/pipe.o \
 		kernel/fs/ramfs.o \
 		kernel/fs/read_write.o \
 		kernel/fs/socket.o \

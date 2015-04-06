@@ -4,6 +4,11 @@
 #include <sea/cpu/atomic.h>
 #include <sea/fs/dir.h>
 
+/* note that this function doesn't actually delete the dirent. It just sets a flag that
+ * says "hey, this was deleted". See vfs_dirent_release for more details. An important
+ * aspect is that on unlinking a directory, it does unlink the . and .. entries, even
+ * though the directory won't actually be deleted until vfs_dirent_release gets called
+ * and the last reference is released. */
 static int do_fs_unlink(struct inode *node, const char *name, size_t namelen, int rec)
 {
 	if(!vfs_inode_check_permissions(node, MAY_WRITE, 0))

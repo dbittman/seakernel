@@ -18,6 +18,11 @@ int vfs_dirent_acquire(struct dirent *dir)
 	return 0;
 }
 
+/* this function is called when a reference to a dirent is released. There is one
+ * special thing to note: according to POSIX, an unlinked dirent is only actually
+ * deleted when the last reference to it is dropped. Because of that, unlink just
+ * sets a flag which tells this function to do the actual deletion. In either case,
+ * this function doesn't deallocate anything, it just moves it to an LRU queue. */
 int vfs_dirent_release(struct dirent *dir)
 {
 	int r = 0;
@@ -76,6 +81,8 @@ void fs_dirent_reclaim_lru()
 	mutex_release(dirent_cache_lock);
 }
 
+/* This function returns the directory entry associated with the name 'name' under
+ * the inode 'node'. It must be careful to lookup the entry in the cache first. */
 struct dirent *fs_dirent_lookup(struct inode *node, const char *name, size_t namelen)
 {
 	if(!vfs_inode_check_permissions(node, MAY_READ, 0))
@@ -113,6 +120,8 @@ struct dirent *fs_dirent_lookup(struct inode *node, const char *name, size_t nam
 	return dir;
 }
 
+/* this entry returns the inode pointed to by the given directory entry. It also
+ * handles redirecting for symbolic links */
 struct inode *fs_dirent_readinode(struct dirent *dir, int nofollow)
 {
 	assert(dir);
@@ -121,10 +130,12 @@ struct inode *fs_dirent_readinode(struct dirent *dir, int nofollow)
 	struct inode *node = vfs_icache_get(dir->filesystem, dir->ino);
 	assert(node);
 	if(!nofollow && S_ISLNK(node->mode)) {
+		/* handle symbolic links */
 		size_t maxlen = node->length;
 		if(maxlen > 1024)
 			maxlen = 1024;
 		char link[maxlen+1];
+		/* read in the link target */
 		if((size_t)fs_inode_read(node, 0, maxlen, link) != maxlen) {
 			vfs_icache_put(node);
 			return 0;
@@ -136,6 +147,8 @@ struct inode *fs_dirent_readinode(struct dirent *dir, int nofollow)
 			newpath++;
 			start = current_task->thread->root;
 		}
+		/* resolve the path. WARNING: TODO: this is currently
+		 * recursive WITHOUT A LIMITATION. This needs to be fixed. */
 		int err;
 		struct dirent *ln_dir = do_fs_path_resolve(start, link, &err);
 		vfs_icache_put(node);

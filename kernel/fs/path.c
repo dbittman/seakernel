@@ -5,6 +5,8 @@
 #include <sea/cpu/atomic.h>
 #include <sea/errno.h>
 #include <sea/fs/dir.h>
+
+/* translate a mount point to the root node of the mounted filesystem */
 struct inode *fs_resolve_mount(struct inode *node)
 {
 	struct inode *ret = node;
@@ -15,6 +17,12 @@ struct inode *fs_resolve_mount(struct inode *node)
 	return ret;
 }
 
+/* this is the main workhorse for the virtual filesystem. Given a start point and
+ * a path string, it resolves the path into a directory entry. This is simply a
+ * matter of looping through the path (seperated at '/', of course), and reading
+ * the successive directory entries and inodes (see vfs_dirent_lookup and
+ * vfs_dirent_readinode). The one thing it needs to pay attention to is the case
+ * of traversing backwards up through a mount point. */
 struct dirent *do_fs_path_resolve(struct inode *start, const char *path, int *result)
 {
 	vfs_inode_get(start);
@@ -60,6 +68,9 @@ struct dirent *do_fs_path_resolve(struct inode *start, const char *path, int *re
 	return dir;
 }
 
+/* most of these function are convenience functions for calling do_fs_path_resolve. This one,
+ * for example, is the default, get-the-dirent-using-normal-unix-path-rules ('/' starts at
+ * root, etc) */
 struct dirent *fs_path_resolve(const char *path, int flags, int *result)
 {
 	struct inode *start;
@@ -74,6 +85,9 @@ struct dirent *fs_path_resolve(const char *path, int flags, int *result)
 	return do_fs_path_resolve(start, path, result);
 }
 
+/* this one does the extra step of getting the inode pointed to by the dirent.
+ * Since most fs functions just want this inode and don't care about the directory
+ * entry that was used to point to it, this is used quite frequently. */
 struct inode *fs_path_resolve_inode(const char *path, int flags, int *error)
 {
 	struct dirent *dir = fs_path_resolve(path, 0, error);
@@ -87,9 +101,14 @@ struct inode *fs_path_resolve_inode(const char *path, int flags, int *error)
 	return node;
 }
 
+/* this is possibly the lengthiest function in the VFS (possibly in the entire kernel!).
+ * It resolves a path until the last name in the path string, and then tries to create
+ * a new file with that name. It requires a lot of in-sequence checks for permission,
+ * existance, is-a-directory, and so forth. */
 struct inode *do_fs_path_resolve_create(const char *path,
 		int flags, mode_t mode, int *result, struct dirent **dirent)
 {
+	/* step 1: split the path up into directory to create in, and name of new file. */
 	int len = strlen(path) + 1;
 	char tmp[len];
 	memcpy(tmp, path, len);
@@ -102,6 +121,7 @@ struct inode *do_fs_path_resolve_create(const char *path,
 	if(dirent) *dirent=0;
 	if(result) *result=0;
 
+	/* step 2: resolve the target directory */
 	struct inode *dir = fs_path_resolve_inode(dirpath, flags, result);
 	if(!dir)
 		return 0;
@@ -110,8 +130,10 @@ struct inode *do_fs_path_resolve_create(const char *path,
 		return 0;
 	}
 
+	/* step 3: try to look up the file that we're trying to create */
 	struct dirent *test = fs_dirent_lookup(dir, name, strlen(name));
 	if(test) {
+		/* if it was found, return it and its inode. */
 		if(dirent)
 			*dirent = test;
 		struct inode *ret = fs_dirent_readinode(test, flags & RESOLVE_NOLINK);
@@ -132,7 +154,7 @@ struct inode *do_fs_path_resolve_create(const char *path,
 		return ret;
 	}
 	
-	/* didn't find the entry. Create one */
+	/* didn't find the entry. Step 4: Create one */
 	if(!vfs_inode_check_permissions(dir, MAY_WRITE, 0)) {
 		if(result) *result = -EACCES;
 		vfs_icache_put(dir);
@@ -145,6 +167,7 @@ struct inode *do_fs_path_resolve_create(const char *path,
 	}
 
 	uint32_t id;
+	/* step 4a: allocate an inode */
 	int r = fs_callback_fs_alloc_inode(dir->filesystem, &id);
 	if(r) {
 		if(result) *result = r;
@@ -152,12 +175,14 @@ struct inode *do_fs_path_resolve_create(const char *path,
 		return 0;
 	}
 
+	/* step 4b: read in that inode, and set some initial values (like creation time) */
 	struct inode *node = vfs_icache_get(dir->filesystem, id);
 	node->mode = mode;
 	node->length = 0;
 	node->ctime = node->mtime = time_get_epoch();
 	vfs_inode_set_dirty(node);
 	
+	/* if we're making a directory, create the . and .. entries */
 	if(S_ISDIR(mode)) {
 		/* create . and .. */
 		if(fs_link(node, node, ".", 1))
@@ -166,6 +191,7 @@ struct inode *do_fs_path_resolve_create(const char *path,
 			r = -EMLINK;
 	}
 
+	/* step 4c: create the link for the directory entry to the inode */
 	r = fs_link(dir, node, name, strlen(name));
 
 	if(result)

@@ -23,6 +23,7 @@ void vfs_icache_init()
 	ic_lock = mutex_create(0, 0);
 }
 
+/* these three just handle the dirent cache. They don't actually look anything up */
 struct dirent *vfs_inode_get_dirent(struct inode *node, const char *name, int namelen)
 {
 	struct dirent *dir;
@@ -87,6 +88,7 @@ void vfs_inode_destroy(struct inode *node)
 	kfree(node);
 }
 
+/* increase a refcount on an inode which is already owned (has a non-zero refcount). */
 void vfs_inode_get(struct inode *node)
 {
 	mutex_acquire(ic_lock);
@@ -95,6 +97,7 @@ void vfs_inode_get(struct inode *node)
 	mutex_release(ic_lock);
 }
 
+/* read in an inode from the inode cache, OR pull it in from the FS */
 struct inode *vfs_icache_get(struct filesystem *fs, uint32_t num)
 {
 	/* create if it doesn't exist */
@@ -126,12 +129,14 @@ struct inode *vfs_icache_get(struct filesystem *fs, uint32_t num)
 	return node;
 }
 
+/* indicates that the inode needs to be read from the filesystem */
 void vfs_inode_set_needread(struct inode *node)
 {
 	assert(!(node->flags & INODE_DIRTY));
 	or_atomic(&node->flags, INODE_NEEDREAD);
 }
 
+/* indicates that the inode needs to be written back to the filesystem */
 void vfs_inode_set_dirty(struct inode *node)
 {
 	assert(!(node->flags & INODE_NEEDREAD));
@@ -142,6 +147,7 @@ void vfs_inode_set_dirty(struct inode *node)
 	}
 }
 
+/* indicates that an inode no longer needs to be written to the filesystem */
 void vfs_inode_unset_dirty(struct inode *node)
 {
 	assert(node->flags & INODE_DIRTY);
@@ -150,6 +156,7 @@ void vfs_inode_unset_dirty(struct inode *node)
 	and_atomic(&node->flags, ~INODE_DIRTY);
 }
 
+/* drop a reference to an inode. */
 void vfs_icache_put(struct inode *node)
 {
 	assert(node->count > 0);
@@ -189,6 +196,7 @@ void fs_inode_reclaim_lru()
 	mutex_release(ic_lock);
 }
 
+/* read an inode from the filesystem */
 int fs_inode_pull(struct inode *node)
 {
 	int r = 0;
@@ -200,6 +208,7 @@ int fs_inode_pull(struct inode *node)
 	return r;
 }
 
+/* write an inode to a filesystem */
 int fs_inode_push(struct inode *node)
 {
 	int r = 0;
@@ -272,6 +281,7 @@ int vfs_inode_chroot(struct inode *node)
 	return 0;
 }
 
+/* it's important to sync the inode cache back to the disk... */
 int fs_icache_sync()
 {
 	printk(0, "[fs]: syncing inode cache (%d)\n", ic_dirty->num);

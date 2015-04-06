@@ -86,7 +86,6 @@ int sys_setup(int a)
 	sys_open("/dev/tty1", O_RDWR);   /* stdin  */
 	sys_open("/dev/tty1", O_WRONLY); /* stdout */
 	sys_open("/dev/tty1", O_WRONLY); /* stderr */
-	//kerfs_register_parameter("/dev/test", &test, sizeof(test), 0, KERFS_TYPE_INTEGER);
 	kerfs_register_report("/dev/syscall", kerfs_syscall_report);
 	kerfs_register_report("/dev/int", kerfs_int_report);
 	kerfs_register_report("/dev/mounts", kerfs_mount_report);

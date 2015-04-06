@@ -208,7 +208,6 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 				assert(!p || p == entry->page);
 				if(entry->page)
 					mm_free_physical_page(entry->page);
-				sub_atomic(&node->mapped_pages_count, 1);
 				entry->page = 0;
 				mutex_destroy(&entry->lock);
 				kfree(entry);

@@ -74,12 +74,16 @@ struct inode *vfs_inode_create()
 
 void vfs_inode_destroy(struct inode *node)
 {
+	if(node->pipe) {
+		dm_free_pipe(node);
+	}
 	rwlock_destroy(&node->lock);
 	rwlock_destroy(&node->metalock);
 	assert(!node->count);
 	assert(!node->dirents->count);
 	hash_table_destroy(node->dirents);
 	assert(!(node->flags & INODE_INUSE));
+	fs_inode_destroy_physicals(node);
 	kfree(node);
 }
 
@@ -155,7 +159,11 @@ void vfs_icache_put(struct inode *node)
 		and_atomic(&node->flags, ~INODE_INUSE);
 
 		ll_do_remove(ic_inuse, &node->inuse_item, 0);
-		queue_enqueue_item(ic_lru, &node->lru_item, node);
+		if(node->flags & INODE_NOLRU) {
+			vfs_inode_destroy(node);
+		} else {
+			queue_enqueue_item(ic_lru, &node->lru_item, node);
+		}
 	}
 	mutex_release(ic_lock);
 }

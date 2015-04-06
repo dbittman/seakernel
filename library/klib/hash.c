@@ -199,3 +199,4 @@ void hash_table_destroy(struct hash_table *h)
 	if(h->flags & HASH_ALLOC)
 		kfree(h);
 }
+

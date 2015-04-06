@@ -43,8 +43,9 @@ static void remove_file_pointer(task_t *t, int n)
 		return;
 	t->thread->filp[n] = 0;
 	sub_atomic(&f->fi->count, 1);
-	if(!f->fi->count)
+	if(!f->fi->count) {
 		kfree(f->fi);
+	}
 	kfree(f);
 }
 

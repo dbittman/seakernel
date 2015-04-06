@@ -164,8 +164,6 @@ void tm_exit(int code)
 		t->exit_reason.cause = 0;
 	t->exit_reason.ret = code;
 	t->exit_reason.pid = t->pid;
-	/* Clear out system resources */
-	mm_free_thread_specific_directory();
 	/* tell our parent that we're dead */
 	if(t->parent)
 		tm_do_send_signal(t->parent->pid, SIGCHILD, 1);
@@ -181,11 +179,14 @@ void tm_exit(int code)
 		mm_destroy_all_mappings(t);
 		ll_destroy(&(t->thread->mappings));
 		mutex_destroy(&t->thread->map_lock);
+		valloc_destroy(&t->thread->mmf_valloc);
 		
 		void *addr = t->thread;
 		t->thread = 0;
 		kfree(addr);
 	}
+	/* Clear out system resources */
+	mm_free_thread_specific_directory();
 	/* don't do this while the state is dead, as we may step on the toes of waitpid.
 	 * this fixes all tasks that are children of current_task, or are waiting
 	 * on current_task. For those waiting, it signals the task. For those that

@@ -127,7 +127,7 @@ struct task_struct
 	registers_t reg_b; /* backup */
 	registers_t *regs, *sysregs;
 	unsigned phys_mem_usage;
-	unsigned freed, allocated;
+	unsigned freed, allocated, kalloc;
 	volatile unsigned wait_again, path_loc_start;
 	unsigned num_swapped;
 	

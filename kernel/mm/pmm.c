@@ -272,3 +272,36 @@ int mm_free_dma_buffer(struct dma_region *d)
 	return 0;
 }
 
+int kerfs_pmm_report(size_t offset, size_t length, char *buf)
+{
+	size_t dl = 0;
+	char tmp[10000];
+	dl = snprintf(tmp, 100, "Total: %d KB, Used: %d KB (%d%%)\nContiguous region bitmap:\n",
+			pm_num_pages * 4, pm_used_pages * 4,
+			(pm_used_pages * 100) / pm_num_pages);
+	for(int i=0;i<512;i++) {
+		char line[256];
+		int val = 0;
+		for(int j=0;j<8;j++) {
+			val += pmm_contiguous_index[i+j];
+		}
+		char c = '-';
+		if(val > 0 && val <=60) {
+			c = '+';
+		} else if (val > 60) {
+			c = '*';
+		}
+		int r = snprintf(line, 256, "%c", c);
+		assert(dl+r < 10000);
+		memcpy(tmp + dl, line, r);
+		dl += r;	
+	}
+	dl += snprintf(tmp + dl, 12, "\n");
+	if(offset > dl)
+		return 0;
+	if(offset + length > dl)
+		length = dl - offset;
+	memcpy(buf, tmp + offset, length);
+	return length;
+}
+

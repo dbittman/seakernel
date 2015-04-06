@@ -26,6 +26,7 @@ static struct inode *create_anon_pipe()
 	struct inode *node;
 	/* create a 'fake' inode */
 	node = vfs_inode_create();
+	node->flags |= INODE_NOLRU;
 	node->uid = current_task->thread->effective_uid;
 	node->gid = current_task->thread->effective_gid;
 	node->mode = S_IFIFO | 0x1FF;

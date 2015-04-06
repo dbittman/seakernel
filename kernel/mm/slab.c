@@ -26,6 +26,21 @@ static unsigned num_slab=0, num_scache=0;
 static void release_slab(struct slab *slab);
 static mutex_t scache_lock;
 
+int kerfs_kmalloc_report(size_t offset, size_t length, char *buf)
+{
+	size_t dl = 0;
+	char tmp[10000];
+	dl = snprintf(tmp, 100, "Pages Used: %d, Slab Count: %d, Scache Count: %d\n",
+			pages_used, num_slab,
+			num_scache);
+	if(offset > dl)
+		return 0;
+	if(offset + length > dl)
+		length = dl - offset;
+	memcpy(buf, tmp + offset, length);
+	return length;
+}
+
 static struct valloc_region *alloc_slab(struct valloc_region *vr, unsigned np)
 {
 	assert(np && vr);

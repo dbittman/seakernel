@@ -30,6 +30,7 @@ struct socket *socket_create(int *errcode)
 {
 	*errcode = 0;
 	struct inode *inode = vfs_inode_create();
+	inode->flags |= INODE_NOLRU;
 	struct file *f = kmalloc(sizeof(struct file));
 	f->inode = inode;
 	inode->count = 1;

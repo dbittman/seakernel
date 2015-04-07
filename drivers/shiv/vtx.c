@@ -483,6 +483,11 @@ static void seg_setup(int seg)
 	vmcs_write32(sf->ar_bytes, 0x93);
 }
 
+void vmcs_set_cr3_target(int n, uint64_t cr3)
+{
+	vmcs_writel(CR3_TARGET_VALUE0 + n*2, cr3);
+}
+
 /*
  * Sets up the vmcs for emulated real mode.
  */
@@ -491,6 +496,7 @@ int shiv_vcpu_setup(struct vcpu *vcpu)
 	/* TODO: preemption timer */
 	int i;
 	int ret = 0;
+	int use_ept = vcpu->flags & SHIV_VCPU_FLAG_USE_EPT;
 	printk(0, "shiv: vcpu_setup\n");
 
 	memset(vcpu->regs, 0, sizeof(vcpu->regs));
@@ -575,10 +581,11 @@ int shiv_vcpu_setup(struct vcpu *vcpu)
 			| CPU_BASED_ACTIVATE_SECONDARY
 			);
 
-	vmcs_write32(SECONDARY_VM_EXEC_CONTROL,
-			SECONDARY_EXEC_CTL_ENABLE_EPT
-			| SECONDARY_EXEC_CTL_UNRESTRICTED
-			);
+	uint32_t secondary_flags = SECONDARY_EXEC_CTL_UNRESTRICTED;
+	if(use_ept) {
+		secondary_flags |= SECONDARY_EXEC_CTL_ENABLE_EPT;
+	}
+	vmcs_write32(SECONDARY_VM_EXEC_CONTROL, secondary_flags);
 
 	/* we let all exceptions be handled by the guest, since we're
 	 * doing EPT and unrestricted. */
@@ -638,10 +645,12 @@ int shiv_vcpu_setup(struct vcpu *vcpu)
 	vmcs_writel(GUEST_CR4, SHIV_RMODE_VM_CR4_ALWAYS_ON);
 	vcpu->cr4 = 0;
 	
-	/* set up the EPT */
-	addr_t ept = shiv_build_ept_pml4(vcpu, 0x10000);
-	ept |= (3 << 3) | 6;
-	vmcs_write64(EPT_POINTER, ept);
+	if(use_ept) {
+		/* set up the EPT */
+		addr_t ept = shiv_build_ept_pml4(vcpu, 0x10000);
+		ept |= (3 << 3) | 6;
+		vmcs_write64(EPT_POINTER, ept);
+	}
 	printk(0, "[shiv]: CPU setup!\n");
 
 	return 0;
@@ -650,12 +659,13 @@ out:
 	return ret;
 }
 
-struct vcpu *shiv_create_vcpu(struct vmachine *vm)
+struct vcpu *shiv_create_vcpu(struct vmachine *vm, int flags)
 {
 	printk(0, "shiv: create vcpu\n");
 	/* create structure */
 	vm->vcpu = kmalloc(sizeof(*vm->vcpu));
 	vm->vcpu->cpu = current_task->cpu;
+	vm->vcpu->flags = flags;
 	/* set up guest CPU state as needed */
 	shiv_init_vmcs(vm->vcpu);
 	vmx_vcpu_load(current_task->cpu, vm->vcpu);

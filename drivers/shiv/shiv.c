@@ -42,7 +42,7 @@ struct vmachine *shiv_create_vmachine()
 		kfree(vm);
 		return 0;
 	}
-	vm->vcpu = shiv_create_vcpu(vm);
+	vm->vcpu = shiv_create_vcpu(vm, SHIV_VCPU_FLAG_USE_EPT);
 	return vm;
 }
 

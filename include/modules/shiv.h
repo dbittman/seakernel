@@ -30,8 +30,12 @@ struct slaunch {
 #define SHIV_RTU_ENTRY_ERROR      0
 #define SHIV_RTU_IRQ_WINDOW_OPEN  1
 #define SHIV_RTU_IO_INSTRUCTION   2
+
+#define SHIV_VCPU_FLAG_USE_EPT    1
+
 struct vcpu {
 	struct vmcs *vmcs;
+	int flags;
 	cpu_t *cpu;
 	int launched, loaded;
 	unsigned long cr0, cr2, cr4;
@@ -75,7 +79,7 @@ struct vmioctl {
 int shiv_check_hardware_support();
 int shiv_vmx_on();
 int shiv_vcpu_setup(struct vcpu *vcpu);
-struct vcpu *shiv_create_vcpu(struct vmachine *vm);
+struct vcpu *shiv_create_vcpu(struct vmachine *vm, int);
 int shiv_init_virtual_machine(struct vmachine *vm);
 int vmx_vcpu_run(struct vcpu *vcpu);
 int shiv_userspace_inject_interrupt(struct vcpu *vc, int irq);

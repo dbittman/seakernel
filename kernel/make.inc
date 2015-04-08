@@ -6,6 +6,7 @@ KOBJS+= kernel/config.o \
 		kernel/rwlock.o \
 		kernel/syscall.o \
 		kernel/tqueue.o \
+		kernel/trace.o \
 		kernel/vsprintf.o
 
 include kernel/cache/make.inc

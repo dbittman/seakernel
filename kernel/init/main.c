@@ -21,6 +21,8 @@
 #include <sea/vsprintf.h>
 #include <stdarg.h>
 #include <sea/mm/kmalloc.h>
+#include <sea/trace.h>
+
 
 static struct multiboot *mtboot;
 addr_t initial_boot_stack=0;
@@ -140,6 +142,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	dm_init();
 	fs_init();
 	net_init();
+	trace_init();
 	/* Load the rest... */
 	fs_initrd_parse();
 	printk(KERN_MILE, "[kernel]: Kernel is setup (kv=%d, bpl=%d: ok)\n", 

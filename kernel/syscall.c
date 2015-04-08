@@ -356,7 +356,7 @@ int syscall_handler(volatile registers_t *regs)
 	#ifdef SC_DEBUG
 	if((current_task->tty == current_console->tty || 1)
 		&& (ret < 0 || 1) && (ret == -EINTR || 1)
-		&& ((current_task->allocated != 0 || current_task->freed != 0 || current_task->kalloc != 0)))
+		&& ((current_task->allocated != 0 || current_task->freed != 0 || current_task->kalloc != 0) || 1))
 		printk(SC_DEBUG, "syscall pid %3d: #%3d ret %4d (%d al, %d fr, %d ka)\n",
 			   current_task->pid, current_task->system, ret,
 			   current_task->allocated, current_task->freed, current_task->kalloc);

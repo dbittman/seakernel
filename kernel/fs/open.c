@@ -89,6 +89,13 @@ struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int
 	f->count=1;
 	f->fd_flags &= ~FD_CLOEXEC;
 	ret = fs_add_file_pointer((task_t *)current_task, f);
+	if(ret == -1) {
+		kfree(f);
+		vfs_icache_put(inode);
+		vfs_dirent_release(dirent);
+		*error = -EMFILE;
+		return 0;
+	}
 	if(num) *num = ret;
 	if(S_ISCHR(inode->mode) && !(flags & _FNOCTTY))
 		dm_char_rw(OPEN, inode->phys_dev, 0, 0);
@@ -126,7 +133,17 @@ static int duplicate(task_t *t, int fp, int n)
 	struct file *f = fs_get_file_pointer(t, fp);
 	if(!f)
 		return -EBADF;
+	int ret = 0;
 	struct file *new=(struct file *)kmalloc(sizeof(struct file));
+	if(n)
+		ret = fs_add_file_pointer_after(t, new, n);
+	else
+		ret = fs_add_file_pointer(t, new);
+	if(ret == -1) {
+		kfree(new);
+		fs_fput(t, fp, 0);
+		return -EMFILE;
+	}
 	vfs_inode_get(f->inode);
 	if(f->dirent)
 		vfs_dirent_acquire(f->dirent);
@@ -143,11 +160,6 @@ static int duplicate(task_t *t, int fp, int n)
 		tm_remove_all_from_blocklist(f->inode->pipe->read_blocked);
 		tm_remove_all_from_blocklist(f->inode->pipe->write_blocked);
 	}
-	int ret = 0;
-	if(n)
-		ret = fs_add_file_pointer_after(t, new, n);
-	else
-		ret = fs_add_file_pointer(t, new);
 	fs_fput((task_t *)t, fp, 0);
 	fs_fput((task_t *)t, ret, 0);
 	return ret;

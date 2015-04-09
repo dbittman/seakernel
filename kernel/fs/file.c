@@ -70,9 +70,9 @@ int fs_add_file_pointer_do(task_t *t, struct file_ptr *f, int after)
 	while(after < FILP_HASH_LEN && t->thread->filp[after])
 		after++;
 	if(after >= FILP_HASH_LEN) {
-		printk(1, "[vfs]: task %d ran out of files (syscall=%d). killed.\n", 
+		printk(1, "[vfs]: task %d ran out of files (syscall=%d)\n", 
 				t->pid, t == current_task ? (int)t->system : -1);
-		tm_kill_process(t->pid);
+		return -1;
 	}
 	t->thread->filp[after] = f;
 	f->num = after;
@@ -85,8 +85,13 @@ int fs_add_file_pointer(task_t *t, struct file *f)
 	mutex_acquire(&t->thread->files_lock);
 	fp->fi = f;
 	int r = fs_add_file_pointer_do(t, fp, 0);
-	fp->num = r;
-	fp->count = 2; /* once for being open, once for being used by the function that calls this */
+	if(r >= 0) {
+		fp->num = r;
+		fp->count = 2; /* once for being open, once for being 
+						  used by the function that calls this */
+	} else {
+		kfree(fp);
+	}
 	mutex_release(&t->thread->files_lock);
 	return r;
 }
@@ -97,8 +102,13 @@ int fs_add_file_pointer_after(task_t *t, struct file *f, int x)
 	mutex_acquire(&t->thread->files_lock);
 	fp->fi = f;
 	int r = fs_add_file_pointer_do(t, fp, x);
-	fp->num = r;
-	fp->count = 2; /* once for being open, once for being used by the function that calls this */
+	if(r >= 0) {
+		fp->num = r;
+		fp->count = 2; /* once for being open, once for being
+						  used by the function that calls this */
+	} else {
+		kfree(fp);
+	}
 	mutex_release(&t->thread->files_lock);
 	return r;
 }
@@ -143,3 +153,4 @@ void fs_close_all_files(task_t *t)
 		}
 	}
 }
+

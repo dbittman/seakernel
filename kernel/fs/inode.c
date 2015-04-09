@@ -65,6 +65,7 @@ struct inode *vfs_inode_create()
 	struct inode *node = kmalloc(sizeof(struct inode));
 	rwlock_create(&node->lock);
 	rwlock_create(&node->metalock);
+	mutex_create(&node->mappings_lock, 0);
 
 	node->dirents = hash_table_create(0, 0, HASH_TYPE_CHAIN);
 	hash_table_resize(node->dirents, HASH_RESIZE_MODE_IGNORE,1000);
@@ -83,6 +84,7 @@ void vfs_inode_destroy(struct inode *node)
 	}
 	rwlock_destroy(&node->lock);
 	rwlock_destroy(&node->metalock);
+	mutex_destroy(&node->mappings_lock);
 	assert(!node->count);
 	assert(!node->dirents->count);
 	hash_table_destroy(node->dirents);

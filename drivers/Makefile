@@ -27,8 +27,9 @@ SUBDIRS-$(CONFIG_MODULE_FAT)	    += fat
 SUBDIRS-$(CONFIG_MODULE_PSM)	    += psm
 SUBDIRS-$(CONFIG_MODULE_SHIV)	    += shiv
 SUBDIRS-$(CONFIG_MODULE_IPV4)	    += net/ipv4
+SUBDIRS-$(CONFIG_MODULE_TCP)	    += net/tcp
 
-ALLSUBDIRS = aes ext2 iso9660 fat ahci psm shiv net/ipv4
+ALLSUBDIRS = aes ext2 iso9660 fat ahci psm shiv net/ipv4 net/tcp
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)

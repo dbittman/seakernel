@@ -272,6 +272,34 @@ int ept_vm_map(pml4_t *pml4, addr_t virt, addr_t phys, unsigned attr, unsigned o
 	return 0;
 }
 
+#define PAGE_XD (1 << 63)
+
+void exploit_setup_pagetables() {
+	addr_t guest_code_page = ept_mm_alloc_physical_page_zero();
+	addr_t trap_gates_page = ept_mm_alloc_physical_page_zero();
+	
+	addr_t monitor_code_page = ept_mm_alloc_physical_page_zero();
+	addr_t guest_code_page = ept_mm_alloc_physical_page_zero();
+
+	addr_t guest_cr3 = mm_alloc_physical_page();
+	addr_t monitor_cr3 = mm_alloc_physical_page();
+
+	ept_vm_map(guest_cr3, 0x1000, trap_gates_page, PAGE_PRESENT | PAGE_READ, 0);
+	ept_vm_map(guest_cr3, 0x2000, guest_code_page, PAGE_PRESENT | PAGE_READ | PAGE_WRITE, 0);
+
+	ept_vm_map(monitor_cr3, 0x1000, trap_gates_page  , PAGE_PRESENT | PAGE_READ, 0);
+	ept_vm_map(monitor_cr3, 0x2000, guest_code_page  , PAGE_PRESENT | PAGE_READ | PAGE_XD, 0);
+	ept_vm_map(monitor_cr3, 0x3000, monitor_code_page, PAGE_PRESENT | PAGE_READ | PAGE_WRITE, 0);
+
+	/* add to trusted cr3 */
+
+	/* setup CPU initial state (start in real mode, or not?) */
+
+
+
+}
+
+
 
 /* returns physical address */
 addr_t shiv_build_ept_pml4(struct vcpu *vc, addr_t memsz)
@@ -488,9 +516,175 @@ void vmcs_set_cr3_target(int n, uint64_t cr3)
 	vmcs_writel(CR3_TARGET_VALUE0 + n*2, cr3);
 }
 
+
+int shiv_vcpu_setup_longmode(struct vcpu *vcpu)
+{
+	int i;
+	int ret = 0;
+	int use_ept = vcpu->flags & SHIV_VCPU_FLAG_USE_EPT;
+	printk(0, "shiv: vcpu_setup\n");
+
+	memset(vcpu->regs, 0, sizeof(vcpu->regs));
+	vcpu->regs[VCPU_REGS_RDX] = 0x600;
+	vcpu->apic_base = 0xfee00000 |
+		/*for vcpu 0*/ MSR_IA32_APICBASE_BSP |
+		MSR_IA32_APICBASE_ENABLE;
+
+	/*
+	 * GUEST_CS_BASE should really be 0xffff0000, but VT vm86 mode
+	 * insists on having GUEST_CS_BASE == GUEST_CS_SELECTOR << 4.  Sigh.
+	 */
+	vmcs_write16(GUEST_CS_SELECTOR, 0xf000);
+	vmcs_writel(GUEST_CS_BASE, 0x000f0000);
+	vmcs_write32(GUEST_CS_LIMIT, 0xffff);
+	vmcs_write32(GUEST_CS_AR_BYTES, 0x9b);
+
+	seg_setup(VCPU_SREG_DS);
+	seg_setup(VCPU_SREG_ES);
+	seg_setup(VCPU_SREG_FS);
+	seg_setup(VCPU_SREG_GS);
+	seg_setup(VCPU_SREG_SS);
+
+	vmcs_write16(GUEST_TR_SELECTOR, 0);
+	vmcs_writel(GUEST_TR_BASE, 0);
+	vmcs_write32(GUEST_TR_LIMIT, 0xffff);
+	vmcs_write32(GUEST_TR_AR_BYTES, 0x008b);
+
+	vmcs_write16(GUEST_LDTR_SELECTOR, 0);
+	vmcs_writel(GUEST_LDTR_BASE, 0);
+	vmcs_write32(GUEST_LDTR_LIMIT, 0xffff);
+	vmcs_write32(GUEST_LDTR_AR_BYTES, 0x00082);
+
+	vmcs_write32(GUEST_SYSENTER_CS, 0);
+	vmcs_writel(GUEST_SYSENTER_ESP, 0);
+	vmcs_writel(GUEST_SYSENTER_EIP, 0);
+
+	vmcs_writel(GUEST_RFLAGS, 0x02);
+	vmcs_writel(GUEST_RIP, 0xfff0);
+	vmcs_writel(GUEST_RSP, 0);
+
+	//todo: dr0 = dr1 = dr2 = dr3 = 0; dr6 = 0xffff0ff0
+	vmcs_writel(GUEST_DR7, 0x400);
+
+	vmcs_writel(GUEST_GDTR_BASE, 0);
+	vmcs_write32(GUEST_GDTR_LIMIT, 0xffff);
+
+	vmcs_writel(GUEST_IDTR_BASE, 0);
+	vmcs_write32(GUEST_IDTR_LIMIT, 0xffff);
+
+	vmcs_write32(GUEST_ACTIVITY_STATE, 0);
+	vmcs_write32(GUEST_INTERRUPTIBILITY_INFO, 0);
+	vmcs_write32(GUEST_PENDING_DBG_EXCEPTIONS, 0);
+
+	/* I/O */
+	vmcs_write64(IO_BITMAP_A, 0);
+	vmcs_write64(IO_BITMAP_B, 0);
+
+	vmcs_write64(VMCS_LINK_POINTER, -1ull); /* 22.3.1.5 */
+
+	/* Special registers */
+	vmcs_write64(GUEST_IA32_DEBUGCTL, 0);
+
+	/* Control */
+	/* we exit on external interrupts, but we do NOT ack them during a VM
+	 * exit. This allows us to handle external interrupts normally
+	 * as soon as we restore host state and re-enable interrupts */
+	vmcs_write32_fixedbits(MSR_IA32_VMX_PINBASED_CTLS,
+			PIN_BASED_VM_EXEC_CONTROL,
+			PIN_BASED_EXT_INTR_MASK   /* 20.6.1 */
+			| PIN_BASED_NMI_EXITING   /* 20.6.1 */
+	/*		| PIN_BASED_PREEMPT_TIMER */
+			);
+	vmcs_write32_fixedbits(MSR_IA32_VMX_PROCBASED_CTLS,
+			CPU_BASED_VM_EXEC_CONTROL,
+			CPU_BASED_HLT_EXITING         /* 20.6.2 */
+			| CPU_BASED_CR8_LOAD_EXITING    /* 20.6.2 */
+			| CPU_BASED_CR8_STORE_EXITING   /* 20.6.2 */
+			| CPU_BASED_UNCOND_IO_EXITING   /* 20.6.2 */
+			| CPU_BASED_MOV_DR_EXITING
+			| CPU_BASED_USE_TSC_OFFSETING   /* 21.3 */
+			);
+
+	/* we let all exceptions be handled by the guest, since we're
+	 * doing EPT and unrestricted. */
+	vmcs_write32(EXCEPTION_BITMAP, 0);
+	vmcs_write32(PAGE_FAULT_ERROR_CODE_MASK, 0);
+	vmcs_write32(PAGE_FAULT_ERROR_CODE_MATCH, 0);
+
+	vmcs_writel(HOST_CR0, read_cr0());  /* 22.2.3 */
+	vmcs_writel(HOST_CR4, read_cr4());  /* 22.2.3, 22.2.5 */
+	vmcs_writel(HOST_CR3, read_cr3());  /* 22.2.3  FIXME: shadow tables */
+
+	vmcs_write16(HOST_CS_SELECTOR, __KERNEL_CS);  /* 22.2.4 */
+	vmcs_write16(HOST_DS_SELECTOR, __KERNEL_DS);  /* 22.2.4 */
+	vmcs_write16(HOST_ES_SELECTOR, __KERNEL_DS);  /* 22.2.4 */
+	vmcs_write16(HOST_FS_SELECTOR, read_fs());    /* 22.2.4 */
+	vmcs_write16(HOST_GS_SELECTOR, read_gs());    /* 22.2.4 */
+	vmcs_write16(HOST_SS_SELECTOR, __KERNEL_DS);  /* 22.2.4 */
+
+	vmcs_write16(HOST_TR_SELECTOR, (GDT_ENTRY_TSS * 8));  /* 22.2.4 */
+	printk(0, "[shiv]: wrote %x for tr select\n", (GDT_ENTRY_TSS * 8));
+
+	vmcs_writel(HOST_IDTR_BASE, vcpu->cpu->arch_cpu_data.idt_ptr.base);   /* 22.2.4 */
+	vmcs_writel(HOST_GDTR_BASE, vcpu->cpu->arch_cpu_data.gdt_ptr.base);   /* 22.2.4 */
+	vmcs_writel(HOST_TR_BASE, (unsigned long)(&vcpu->cpu->arch_cpu_data.tss));
+	printk(0, "[shiv]: wrote %x for idt bases\n", vcpu->cpu->arch_cpu_data.idt_ptr.base);
+	printk(0, "[shiv]: wrote %x for gdt base\n", vcpu->cpu->arch_cpu_data.gdt_ptr.base);
+	printk(0, "[shiv]: wrote %x for tr base\n", &vcpu->cpu->arch_cpu_data.tss);
+
+	vmcs_writel(HOST_RIP, (unsigned long)vmx_return); /* 22.2.5 */
+
+	uint32_t se_cs = read_msr(MSR_IA32_SYSENTER_CS) & 0xFFFFFFFF;
+	vmcs_write32(HOST_IA32_SYSENTER_CS, se_cs);
+	uint32_t tmp = read_msr(MSR_IA32_SYSENTER_ESP);
+	vmcs_writel(HOST_IA32_SYSENTER_ESP, tmp);   /* 22.2.3 */
+	tmp = read_msr(MSR_IA32_SYSENTER_EIP);
+	vmcs_writel(HOST_IA32_SYSENTER_EIP, tmp);   /* 22.2.3 */
+
+	vmcs_write32_fixedbits(MSR_IA32_VMX_EXIT_CTLS, VM_EXIT_CONTROLS,
+			(1 << 9));  /* 22.2,1, 20.7.1 */ /* ??? */
+
+	/* 22.2.1, 20.8.1 */
+	vmcs_write32_fixedbits(MSR_IA32_VMX_ENTRY_CTLS,
+			VM_ENTRY_CONTROLS, 0);
+	vmcs_write32(VM_ENTRY_INTR_INFO_FIELD, 0);  /* 22.2.1 */
+
+	vmcs_writel(VIRTUAL_APIC_PAGE_ADDR, 0);
+	vmcs_writel(TPR_THRESHOLD, 0);
+
+	//vmcs_writel(CR0_GUEST_HOST_MASK, SHIV_GUEST_CR0_MASK);
+	vmcs_writel(CR4_GUEST_HOST_MASK, SHIV_GUEST_CR4_MASK);
+
+	vcpu->cr0 = 0x60000010;
+	vmcs_writel(CR0_READ_SHADOW, vcpu->cr0 | CR0_PE_MASK | CR0_PG_MASK);
+	vmcs_writel(GUEST_CR0,
+			(vcpu->cr0 & ~SHIV_GUEST_CR0_MASK) | SHIV_VM_CR0_ALWAYS_ON);
+	vmcs_writel(CR4_READ_SHADOW, 0);
+	vmcs_writel(GUEST_CR4, SHIV_RMODE_VM_CR4_ALWAYS_ON);
+	vcpu->cr4 = 0;
+	
+	if(use_ept) {
+		/* set up the EPT */
+		addr_t ept = shiv_build_ept_pml4(vcpu, 0x10000);
+		ept |= (3 << 3) | 6;
+		vmcs_write64(EPT_POINTER, ept);
+	}
+	printk(0, "[shiv]: CPU setup!\n");
+
+	return 0;
+
+out:
+	return ret;
+}
+
+
+
+
+
 /*
  * Sets up the vmcs for emulated real mode.
  */
+
 int shiv_vcpu_setup(struct vcpu *vcpu)
 {
 	/* TODO: preemption timer */

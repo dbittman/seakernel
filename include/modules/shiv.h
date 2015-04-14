@@ -32,6 +32,7 @@ struct slaunch {
 #define SHIV_RTU_IO_INSTRUCTION   2
 
 #define SHIV_VCPU_FLAG_USE_EPT    1
+#define SHIV_VCPU_FLAG_RESTRICTED 2
 
 struct vcpu {
 	struct vmcs *vmcs;

@@ -272,7 +272,8 @@ int ept_vm_map(pml4_t *pml4, addr_t virt, addr_t phys, unsigned attr, unsigned o
 	return 0;
 }
 
-#define PAGE_XD (1 << 63)
+//#define PAGE_XD (1 << 63)
+#define PAGE_XD 0
 
 void exploit_setup_pagetables(addr_t *gcr3, addr_t *mcr3) {
 	addr_t guest_code_page = ept_mm_alloc_physical_page_zero();
@@ -280,17 +281,16 @@ void exploit_setup_pagetables(addr_t *gcr3, addr_t *mcr3) {
 	addr_t trap_gates_page = ept_mm_alloc_physical_page_zero();
 	
 	addr_t monitor_code_page = ept_mm_alloc_physical_page_zero();
-	addr_t guest_code_page = ept_mm_alloc_physical_page_zero();
 
 	addr_t guest_cr3 = mm_alloc_physical_page();
 	addr_t monitor_cr3 = mm_alloc_physical_page();
 
-	ept_vm_map(guest_cr3, 0x1000, trap_gates_page, PAGE_PRESENT | PAGE_READ, 0);
-	ept_vm_map(guest_cr3, 0x2000, guest_code_page, PAGE_PRESENT | PAGE_READ | PAGE_WRITE, 0);
+	ept_vm_map((pml4_t *)guest_cr3, 0x1000, trap_gates_page, PAGE_PRESENT, 0);
+	ept_vm_map((pml4_t *)guest_cr3, 0x2000, guest_code_page, PAGE_PRESENT| PAGE_WRITE, 0);
 
-	ept_vm_map(monitor_cr3, 0x1000, trap_gates_page  , PAGE_PRESENT | PAGE_READ, 0);
-	ept_vm_map(monitor_cr3, 0x2000, guest_code_page  , PAGE_PRESENT | PAGE_READ | PAGE_XD, 0);
-	ept_vm_map(monitor_cr3, 0x3000, monitor_code_page, PAGE_PRESENT | PAGE_READ | PAGE_WRITE, 0);
+	ept_vm_map(monitor_cr3, 0x1000, trap_gates_page  , PAGE_PRESENT, 0);
+	ept_vm_map(monitor_cr3, 0x2000, guest_code_page  , PAGE_PRESENT | PAGE_XD, 0);
+	ept_vm_map(monitor_cr3, 0x3000, monitor_code_page, PAGE_PRESENT | PAGE_WRITE, 0);
 
 	/* copy in system's GDT */
 	memcpy(guest_code, &primary_cpu->arch_cpu_data.gdt, 0x38);
@@ -504,14 +504,24 @@ void shiv_init_vmcs(struct vcpu *vc)
 	vmcs_clear(vc->vmcs);
 }
 
+static void seg_setup_long(int seg)
+{
+	struct vmx_segment_field *sf = &vmx_segment_fields[seg];
+
+	vmcs_write16(sf->selector, 0x10);
+	vmcs_writel(sf->base, 0);
+	vmcs_write32(sf->limit, 0xffff);
+	vmcs_write32(sf->ar_bytes, 0x93);
+}
+
 static void seg_setup(int seg)
 {
 	struct vmx_segment_field *sf = &vmx_segment_fields[seg];
 
-	vmcs_write16(sf->selector, 10);
+	vmcs_write16(sf->selector, 0);
 	vmcs_writel(sf->base, 0);
-	vmcs_write32(sf->limit, 0xffffffff);
-	vmcs_write32(sf->ar_bytes, 0x93);
+	vmcs_write32(sf->limit, 0xffff);
+	vmcs_write32(sf->ar_bytes, 0x8093);
 }
 
 void vmcs_set_cr3_target(int n, uint64_t cr3)
@@ -519,6 +529,10 @@ void vmcs_set_cr3_target(int n, uint64_t cr3)
 	vmcs_writel(CR3_TARGET_VALUE0 + n*2, cr3);
 }
 
+void vmcs_set_cr3(uint64_t cr3)
+{
+	vmcs_writel(GUEST_CR3, cr3);
+}
 
 int shiv_vcpu_setup_longmode(struct vcpu *vcpu)
 {
@@ -535,24 +549,24 @@ int shiv_vcpu_setup_longmode(struct vcpu *vcpu)
 
 	vmcs_write16(GUEST_CS_SELECTOR, 0x8);
 	vmcs_writel(GUEST_CS_BASE, 0x0);
-	vmcs_write32(GUEST_CS_LIMIT, 0xffffffff);
-	vmcs_write32(GUEST_CS_AR_BYTES, 0x9b);
+	vmcs_write32(GUEST_CS_LIMIT, 0xffff);
+	vmcs_write32(GUEST_CS_AR_BYTES, 0xA09b);
 
-	seg_setup(VCPU_SREG_DS);
-	seg_setup(VCPU_SREG_ES);
-	seg_setup(VCPU_SREG_FS);
-	seg_setup(VCPU_SREG_GS);
-	seg_setup(VCPU_SREG_SS);
+	seg_setup_long(VCPU_SREG_DS);
+	seg_setup_long(VCPU_SREG_ES);
+	seg_setup_long(VCPU_SREG_FS);
+	seg_setup_long(VCPU_SREG_GS);
+	seg_setup_long(VCPU_SREG_SS);
 
-	//vmcs_write16(GUEST_TR_SELECTOR, 0);
-	//vmcs_writel(GUEST_TR_BASE, 0);
-	//vmcs_write32(GUEST_TR_LIMIT, 0xffff);
-	//vmcs_write32(GUEST_TR_AR_BYTES, 0x008b);
+	vmcs_write16(GUEST_TR_SELECTOR, 0);
+	vmcs_writel(GUEST_TR_BASE, 0);
+	vmcs_write32(GUEST_TR_LIMIT, 0xffff);
+	vmcs_write32(GUEST_TR_AR_BYTES, 0x008b);
 
-	//vmcs_write16(GUEST_LDTR_SELECTOR, 0);
-	//vmcs_writel(GUEST_LDTR_BASE, 0);
-	//vmcs_write32(GUEST_LDTR_LIMIT, 0xffff);
-	//vmcs_write32(GUEST_LDTR_AR_BYTES, 0x00082);
+	vmcs_write16(GUEST_LDTR_SELECTOR, 0);
+	vmcs_writel(GUEST_LDTR_BASE, 0);
+	vmcs_write32(GUEST_LDTR_LIMIT, 0xffff);
+	vmcs_write32(GUEST_LDTR_AR_BYTES, 0x00082);
 
 	vmcs_write32(GUEST_SYSENTER_CS, 0);
 	vmcs_writel(GUEST_SYSENTER_ESP, 0);
@@ -603,6 +617,7 @@ int shiv_vcpu_setup_longmode(struct vcpu *vcpu)
 			| CPU_BASED_USE_TSC_OFFSETING   /* 21.3 */
 			);
 
+
 	/* we let all exceptions be handled by the guest, since we're
 	 * doing EPT and unrestricted. */
 	vmcs_write32(EXCEPTION_BITMAP, 0);
@@ -640,11 +655,12 @@ int shiv_vcpu_setup_longmode(struct vcpu *vcpu)
 	vmcs_writel(HOST_IA32_SYSENTER_EIP, tmp);   /* 22.2.3 */
 
 	vmcs_write32_fixedbits(MSR_IA32_VMX_EXIT_CTLS, VM_EXIT_CONTROLS,
-			(1 << 9));  /* 22.2,1, 20.7.1 */ /* ??? */
+			(1 << 9) | (1 << 20) | (1 << 21)
+		);  /* 22.2,1, 20.7.1 */ /* ??? */
 
 	/* 22.2.1, 20.8.1 */
 	vmcs_write32_fixedbits(MSR_IA32_VMX_ENTRY_CTLS,
-			VM_ENTRY_CONTROLS, 0);
+			VM_ENTRY_CONTROLS, (1 << 9));
 	vmcs_write32(VM_ENTRY_INTR_INFO_FIELD, 0);  /* 22.2.1 */
 
 	vmcs_writel(VIRTUAL_APIC_PAGE_ADDR, 0);
@@ -657,10 +673,13 @@ int shiv_vcpu_setup_longmode(struct vcpu *vcpu)
 	vmcs_writel(CR0_READ_SHADOW, vcpu->cr0 | CR0_PE_MASK | CR0_PG_MASK);
 	vmcs_writel(GUEST_CR0,
 			(vcpu->cr0) | SHIV_VM_CR0_ALWAYS_ON);
-	vmcs_writel(CR4_READ_SHADOW, 0);
-	vmcs_writel(GUEST_CR4, 0x620);
-	vcpu->cr4 = 0x620;
+	vmcs_writel(CR4_READ_SHADOW, 0x2620);
+	vmcs_writel(GUEST_CR4, 0x2620);
+	vcpu->cr4 = 0x2620;
 	
+	vmcs_write64(GUEST_IA32_EFER, 0x500);
+	vmcs_write64(HOST_IA32_EFER, 0x500);
+
 	if(use_ept) {
 		/* set up the EPT */
 		addr_t ept = shiv_build_ept_pml4(vcpu, 0x10000);
@@ -861,7 +880,11 @@ struct vcpu *shiv_create_vcpu(struct vmachine *vm, int flags)
 	/* set up guest CPU state as needed */
 	shiv_init_vmcs(vm->vcpu);
 	vmx_vcpu_load(current_task->cpu, vm->vcpu);
-	shiv_vcpu_setup(vm->vcpu);
+	if(flags & SHIV_VCPU_FLAG_RESTRICTED) {
+		shiv_vcpu_setup_longmode(vm->vcpu);
+	} else {
+		shiv_vcpu_setup(vm->vcpu);
+	}
 	/* return vcpu */
 	return vm->vcpu;
 }

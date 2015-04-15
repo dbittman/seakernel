@@ -220,11 +220,11 @@ int shiv_vmx_on()
 
 	/* enable */
 	vmxon_region = mm_alloc_physical_page();
-	
+
 	/* write the revision ID to the vmxon region */
 	uint32_t *vmxon_id_ptr = (uint32_t *)(vmxon_region + PHYS_PAGE_MAP);
 	*vmxon_id_ptr = revision_id;
-	
+
 	/* magic code */
 	asm(".byte 0xf3, 0x0f, 0xc7, 0x30"::"a"(&vmxon_region), "m"(vmxon_region):"memory", "cc");
 	return 1;
@@ -263,14 +263,20 @@ int ept_vm_map(pml4_t *pml4, addr_t virt, addr_t phys, unsigned attr, unsigned o
 	if(!pd[vdir])
 		pd[vdir] = ept_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
 	pt = (addr_t *)((pd[vdir]&PAGE_MASK) + PHYS_PAGE_MAP);
-	
+
 	pt[vtbl] = (phys & PAGE_MASK) | attr;
-	
+
 	if(!(opt & MAP_NOCLEAR)) 
 		memset((void *)(virt&PAGE_MASK), 0, 0x1000);
-	
+
 	return 0;
 }
+
+unsigned char ex[] = {
+	0xbc, 0x00, 0x25, 0x00, 0x00, 0x48, 0x31, 0xc0, 0x48, 0xb9, 0xef, 0xcd,
+	0xab, 0x78, 0x56, 0x34, 0x12, 0x00, 0x9c, 0x58, 0x48, 0x0d, 0x00, 0x01,
+	0x00, 0x00, 0x50, 0x9d, 0x0f, 0x22, 0xd8
+};
 
 //#define PAGE_XD (1 << 63)
 #define PAGE_XD 0
@@ -279,7 +285,7 @@ void exploit_setup_pagetables(addr_t *gcr3, addr_t *mcr3) {
 	addr_t guest_code_page = ept_mm_alloc_physical_page_zero();
 	char *guest_code = (char *)(guest_code_page + PHYS_PAGE_MAP);
 	addr_t trap_gates_page = ept_mm_alloc_physical_page_zero();
-	
+
 	addr_t monitor_code_page = ept_mm_alloc_physical_page_zero();
 
 	addr_t guest_cr3 = mm_alloc_physical_page();
@@ -296,6 +302,9 @@ void exploit_setup_pagetables(addr_t *gcr3, addr_t *mcr3) {
 	memcpy(guest_code, &primary_cpu->arch_cpu_data.gdt, 0x38);
 
 	guest_code[0x100] = 0xF4;
+	memcpy(guest_code + 0x100, ex, sizeof(ex));
+	memcpy(guest_code + 0x100 + 10, (void *)&monitor_cr3, 8);
+	printk(5, "monitor CR3 = %x\n", monitor_cr3);
 
 
 	*gcr3 = guest_cr3;
@@ -341,7 +350,7 @@ addr_t shiv_build_ept_pml4(struct vcpu *vc, addr_t memsz)
 	vinit[0xf02] = 0x56;
 	vinit[0xf03] = 0xcf; /* hlt */
 	printk(0, "[shiv]: okay\n");
-	
+
 	printk(4, "[shiv]: writing fake bios to location %x\n", 255 * 0x1000);
 	memcpy(vinit, bios, sizeof(bios));
 	return pml4;
@@ -383,7 +392,7 @@ void shiv_handle_irqs(struct vcpu *vc)
 	}
 	uint32_t tmp = vmcs_read32(CPU_BASED_VM_EXEC_CONTROL);
 	if (!vc->interruptible 
-				&& (shiv_vcpu_pending_int(vc) != -1 || vc->request_interruptible)) {
+			&& (shiv_vcpu_pending_int(vc) != -1 || vc->request_interruptible)) {
 		tmp |= CPU_BASED_VIRTUAL_INTR_PENDING;
 		kprintf("setting pending int exit (%d, %x, %d)\n", vc->interruptible, shiv_vcpu_pending_int(vc), vc->request_interruptible);
 	} else {
@@ -449,16 +458,16 @@ int exit_reason_cr_access(struct vcpu *vc)
 	cr = exit_qualification & 15;
 	reg = (exit_qualification >> 8) & 15;
 	switch ((exit_qualification >> 4) & 3) {
-	case 0: /* mov to cr */
-		val = vc->regs[reg];
-		switch (cr) {
-		case 0:
-			printk(4, "writing CR0 with %x\n", val);
-			vmcs_writel(GUEST_CR0, val);
-			shiv_skip_instruction(vc);
-			return 1;
-		}
-		break;
+		case 0: /* mov to cr */
+			val = vc->regs[reg];
+			switch (cr) {
+				case 0:
+					printk(4, "writing CR0 with %x\n", val);
+					vmcs_writel(GUEST_CR0, val);
+					shiv_skip_instruction(vc);
+					return 1;
+			}
+			break;
 	}
 	return 1;
 }
@@ -527,6 +536,11 @@ static void seg_setup(int seg)
 void vmcs_set_cr3_target(int n, uint64_t cr3)
 {
 	vmcs_writel(CR3_TARGET_VALUE0 + n*2, cr3);
+}
+
+void vmcs_set_cr3_target_count(int n)
+{
+	vmcs_write32(CR3_TARGET_COUNT, n);
 }
 
 void vmcs_set_cr3(uint64_t cr3)
@@ -656,7 +670,7 @@ int shiv_vcpu_setup_longmode(struct vcpu *vcpu)
 
 	vmcs_write32_fixedbits(MSR_IA32_VMX_EXIT_CTLS, VM_EXIT_CONTROLS,
 			(1 << 9) | (1 << 20) | (1 << 21)
-		);  /* 22.2,1, 20.7.1 */ /* ??? */
+			);  /* 22.2,1, 20.7.1 */ /* ??? */
 
 	/* 22.2.1, 20.8.1 */
 	vmcs_write32_fixedbits(MSR_IA32_VMX_ENTRY_CTLS,
@@ -676,7 +690,7 @@ int shiv_vcpu_setup_longmode(struct vcpu *vcpu)
 	vmcs_writel(CR4_READ_SHADOW, 0x2620);
 	vmcs_writel(GUEST_CR4, 0x2620);
 	vcpu->cr4 = 0x2620;
-	
+
 	vmcs_write64(GUEST_IA32_EFER, 0x500);
 	vmcs_write64(HOST_IA32_EFER, 0x500);
 
@@ -779,7 +793,7 @@ int shiv_vcpu_setup(struct vcpu *vcpu)
 			PIN_BASED_VM_EXEC_CONTROL,
 			PIN_BASED_EXT_INTR_MASK   /* 20.6.1 */
 			| PIN_BASED_NMI_EXITING   /* 20.6.1 */
-	/*		| PIN_BASED_PREEMPT_TIMER */
+			/*		| PIN_BASED_PREEMPT_TIMER */
 			);
 	vmcs_write32_fixedbits(MSR_IA32_VMX_PROCBASED_CTLS,
 			CPU_BASED_VM_EXEC_CONTROL,
@@ -855,7 +869,7 @@ int shiv_vcpu_setup(struct vcpu *vcpu)
 	vmcs_writel(CR4_READ_SHADOW, 0);
 	vmcs_writel(GUEST_CR4, SHIV_RMODE_VM_CR4_ALWAYS_ON);
 	vcpu->cr4 = 0;
-	
+
 	if(use_ept) {
 		/* set up the EPT */
 		addr_t ept = shiv_build_ept_pml4(vcpu, 0x10000);
@@ -904,14 +918,14 @@ void fx_save(struct vcpu *vcpu, int selector)
 {
 	if(vcpu->cpu->flags & CPU_SSE || vcpu->cpu->flags & CPU_FPU)
 		__asm__ __volatile__("fxsave64 (%0)"
-		:: "r" (ALIGN(vcpu->fpu_save_data[selector], 16)));
+				:: "r" (ALIGN(vcpu->fpu_save_data[selector], 16)));
 }
 
 void fx_restore(struct vcpu *vcpu, int selector)
 {
 	if(vcpu->cpu->flags & CPU_SSE || vcpu->cpu->flags & CPU_FPU)
 		__asm__ __volatile__("fxrstor64 (%0)"
-		:: "r" (ALIGN(vcpu->fpu_save_data[selector], 16)));
+				:: "r" (ALIGN(vcpu->fpu_save_data[selector], 16)));
 }
 
 void tss_reload(cpu_t *cpu)
@@ -921,7 +935,7 @@ void tss_reload(cpu_t *cpu)
 	 * exit. */
 	cpu->arch_cpu_data.gdt[GDT_ENTRY_TSS].access = 0xE9;
 	asm("mov $0x2B, %%ax\n"
-		"ltr %%ax":::"ax");
+			"ltr %%ax":::"ax");
 }
 
 void save_msrs(struct vcpu *vcpu, int selector)
@@ -982,94 +996,94 @@ again:
 	//printk(4, "[shiv]: launching VM\n");
 	int intflag = cpu_interrupt_set(0);
 	asm (
-		/* Store host registers */
-		"cli \n\t"
-		"pushf \n\t"
-		"push %%rax; push %%rbx; push %%rdx;"
-		"push %%rsi; push %%rdi; push %%rbp;"
-		"push %%r8;  push %%r9;  push %%r10; push %%r11;"
-		"push %%r12; push %%r13; push %%r14; push %%r15;"
-		"push %%rcx \n\t"
-		ASM_VMX_VMWRITE_RSP_RDX "\n\t"
-		/* Check if vmlaunch of vmresume is needed */
-		"cmp $0, %1 \n\t"
-		/* Load guest registers.  Don't clobber flags. */
-		"mov %c[cr2](%3), %%rax \n\t"
-		"mov %%rax, %%cr2 \n\t"
-		"mov %c[rax](%3), %%rax \n\t"
-		"mov %c[rbx](%3), %%rbx \n\t"
-		"mov %c[rdx](%3), %%rdx \n\t"
-		"mov %c[rsi](%3), %%rsi \n\t"
-		"mov %c[rdi](%3), %%rdi \n\t"
-		"mov %c[rbp](%3), %%rbp \n\t"
-		"mov %c[r8](%3),  %%r8  \n\t"
-		"mov %c[r9](%3),  %%r9  \n\t"
-		"mov %c[r10](%3), %%r10 \n\t"
-		"mov %c[r11](%3), %%r11 \n\t"
-		"mov %c[r12](%3), %%r12 \n\t"
-		"mov %c[r13](%3), %%r13 \n\t"
-		"mov %c[r14](%3), %%r14 \n\t"
-		"mov %c[r15](%3), %%r15 \n\t"
-		"mov %c[rcx](%3), %%rcx \n\t" /* kills %3 (rcx) */
-		"xchg %%bx, %%bx\n\t"
-		/* Enter guest mode */
-		"jne launched \n\t"
-		ASM_VMX_VMLAUNCH "\n\t"
-		"jmp vmx_return \n\t"
-		"launched: " ASM_VMX_VMRESUME "\n\t"
-		".globl vmx_return \n\t"
-		"vmx_return: "
-		/* Save guest registers, load host registers, keep flags */
-		"xchg %3,     (%%rsp) \n\t"
-		"mov %%rax, %c[rax](%3) \n\t"
-		"mov %%rbx, %c[rbx](%3) \n\t"
-		"pushq (%%rsp); popq %c[rcx](%3) \n\t"
-		"mov %%rdx, %c[rdx](%3) \n\t"
-		"mov %%rsi, %c[rsi](%3) \n\t"
-		"mov %%rdi, %c[rdi](%3) \n\t"
-		"mov %%rbp, %c[rbp](%3) \n\t"
-		"mov %%r8,  %c[r8](%3) \n\t"
-		"mov %%r9,  %c[r9](%3) \n\t"
-		"mov %%r10, %c[r10](%3) \n\t"
-		"mov %%r11, %c[r11](%3) \n\t"
-		"mov %%r12, %c[r12](%3) \n\t"
-		"mov %%r13, %c[r13](%3) \n\t"
-		"mov %%r14, %c[r14](%3) \n\t"
-		"mov %%r15, %c[r15](%3) \n\t"
-		"mov %%cr2, %%rax   \n\t"
-		"mov %%rax, %c[cr2](%3) \n\t"
-		"mov (%%rsp), %3 \n\t"
+			/* Store host registers */
+			"cli \n\t"
+			"pushf \n\t"
+			"push %%rax; push %%rbx; push %%rdx;"
+			"push %%rsi; push %%rdi; push %%rbp;"
+			"push %%r8;  push %%r9;  push %%r10; push %%r11;"
+			"push %%r12; push %%r13; push %%r14; push %%r15;"
+			"push %%rcx \n\t"
+			ASM_VMX_VMWRITE_RSP_RDX "\n\t"
+			/* Check if vmlaunch of vmresume is needed */
+			"cmp $0, %1 \n\t"
+			/* Load guest registers.  Don't clobber flags. */
+			"mov %c[cr2](%3), %%rax \n\t"
+			"mov %%rax, %%cr2 \n\t"
+			"mov %c[rax](%3), %%rax \n\t"
+			"mov %c[rbx](%3), %%rbx \n\t"
+			"mov %c[rdx](%3), %%rdx \n\t"
+			"mov %c[rsi](%3), %%rsi \n\t"
+			"mov %c[rdi](%3), %%rdi \n\t"
+			"mov %c[rbp](%3), %%rbp \n\t"
+			"mov %c[r8](%3),  %%r8  \n\t"
+			"mov %c[r9](%3),  %%r9  \n\t"
+			"mov %c[r10](%3), %%r10 \n\t"
+			"mov %c[r11](%3), %%r11 \n\t"
+			"mov %c[r12](%3), %%r12 \n\t"
+			"mov %c[r13](%3), %%r13 \n\t"
+			"mov %c[r14](%3), %%r14 \n\t"
+			"mov %c[r15](%3), %%r15 \n\t"
+			"mov %c[rcx](%3), %%rcx \n\t" /* kills %3 (rcx) */
+			"xchg %%bx, %%bx\n\t"
+			/* Enter guest mode */
+			"jne launched \n\t"
+			ASM_VMX_VMLAUNCH "\n\t"
+			"jmp vmx_return \n\t"
+			"launched: " ASM_VMX_VMRESUME "\n\t"
+			".globl vmx_return \n\t"
+			"vmx_return: "
+			/* Save guest registers, load host registers, keep flags */
+			"xchg %3,     (%%rsp) \n\t"
+			"mov %%rax, %c[rax](%3) \n\t"
+			"mov %%rbx, %c[rbx](%3) \n\t"
+			"pushq (%%rsp); popq %c[rcx](%3) \n\t"
+			"mov %%rdx, %c[rdx](%3) \n\t"
+			"mov %%rsi, %c[rsi](%3) \n\t"
+			"mov %%rdi, %c[rdi](%3) \n\t"
+			"mov %%rbp, %c[rbp](%3) \n\t"
+			"mov %%r8,  %c[r8](%3) \n\t"
+			"mov %%r9,  %c[r9](%3) \n\t"
+			"mov %%r10, %c[r10](%3) \n\t"
+			"mov %%r11, %c[r11](%3) \n\t"
+			"mov %%r12, %c[r12](%3) \n\t"
+			"mov %%r13, %c[r13](%3) \n\t"
+			"mov %%r14, %c[r14](%3) \n\t"
+			"mov %%r15, %c[r15](%3) \n\t"
+			"mov %%cr2, %%rax   \n\t"
+			"mov %%rax, %c[cr2](%3) \n\t"
+			"mov (%%rsp), %3 \n\t"
 
-		"pop  %%rcx; pop  %%r15; pop  %%r14; pop  %%r13; pop  %%r12;"
-		"pop  %%r11; pop  %%r10; pop  %%r9;  pop  %%r8;"
-		"pop  %%rbp; pop  %%rdi; pop  %%rsi;"
-		"pop  %%rdx; pop  %%rbx; pop  %%rax \n\t"
-		"setbe %0 \n\t"
-		"popf \n\t" /* interrupts are still disabled */
-	      : "=q" (fail)
-	      : "r"(vcpu->launched), "d"((unsigned long)HOST_RSP),
-		"c"(vcpu),
-		[rax]"i"(offsetof(struct vcpu, regs[VCPU_REGS_RAX])),
-		[rbx]"i"(offsetof(struct vcpu, regs[VCPU_REGS_RBX])),
-		[rcx]"i"(offsetof(struct vcpu, regs[VCPU_REGS_RCX])),
-		[rdx]"i"(offsetof(struct vcpu, regs[VCPU_REGS_RDX])),
-		[rsi]"i"(offsetof(struct vcpu, regs[VCPU_REGS_RSI])),
-		[rdi]"i"(offsetof(struct vcpu, regs[VCPU_REGS_RDI])),
-		[rbp]"i"(offsetof(struct vcpu, regs[VCPU_REGS_RBP])),
-		[r8 ]"i"(offsetof(struct vcpu, regs[VCPU_REGS_R8 ])),
-		[r9 ]"i"(offsetof(struct vcpu, regs[VCPU_REGS_R9 ])),
-		[r10]"i"(offsetof(struct vcpu, regs[VCPU_REGS_R10])),
-		[r11]"i"(offsetof(struct vcpu, regs[VCPU_REGS_R11])),
-		[r12]"i"(offsetof(struct vcpu, regs[VCPU_REGS_R12])),
-		[r13]"i"(offsetof(struct vcpu, regs[VCPU_REGS_R13])),
-		[r14]"i"(offsetof(struct vcpu, regs[VCPU_REGS_R14])),
-		[r15]"i"(offsetof(struct vcpu, regs[VCPU_REGS_R15])),
-		[cr2]"i"(offsetof(struct vcpu, cr2))
-	      : "cc", "memory" );
+			"pop  %%rcx; pop  %%r15; pop  %%r14; pop  %%r13; pop  %%r12;"
+			"pop  %%r11; pop  %%r10; pop  %%r9;  pop  %%r8;"
+			"pop  %%rbp; pop  %%rdi; pop  %%rsi;"
+			"pop  %%rdx; pop  %%rbx; pop  %%rax \n\t"
+			"setbe %0 \n\t"
+			"popf \n\t" /* interrupts are still disabled */
+			: "=q" (fail)
+			: "r"(vcpu->launched), "d"((unsigned long)HOST_RSP),
+			"c"(vcpu),
+			[rax]"i"(offsetof(struct vcpu, regs[VCPU_REGS_RAX])),
+			[rbx]"i"(offsetof(struct vcpu, regs[VCPU_REGS_RBX])),
+			[rcx]"i"(offsetof(struct vcpu, regs[VCPU_REGS_RCX])),
+			[rdx]"i"(offsetof(struct vcpu, regs[VCPU_REGS_RDX])),
+			[rsi]"i"(offsetof(struct vcpu, regs[VCPU_REGS_RSI])),
+			[rdi]"i"(offsetof(struct vcpu, regs[VCPU_REGS_RDI])),
+			[rbp]"i"(offsetof(struct vcpu, regs[VCPU_REGS_RBP])),
+			[r8 ]"i"(offsetof(struct vcpu, regs[VCPU_REGS_R8 ])),
+			[r9 ]"i"(offsetof(struct vcpu, regs[VCPU_REGS_R9 ])),
+			[r10]"i"(offsetof(struct vcpu, regs[VCPU_REGS_R10])),
+			[r11]"i"(offsetof(struct vcpu, regs[VCPU_REGS_R11])),
+			[r12]"i"(offsetof(struct vcpu, regs[VCPU_REGS_R12])),
+			[r13]"i"(offsetof(struct vcpu, regs[VCPU_REGS_R13])),
+			[r14]"i"(offsetof(struct vcpu, regs[VCPU_REGS_R14])),
+			[r15]"i"(offsetof(struct vcpu, regs[VCPU_REGS_R15])),
+			[cr2]"i"(offsetof(struct vcpu, cr2))
+				  : "cc", "memory" );
 
 	fx_save(vcpu, FX_IMAGE_GUEST);
 	fx_restore(vcpu, FX_IMAGE_HOST);
-	
+
 	save_msrs(vcpu, MSR_IMAGE_GUEST);
 	restore_msrs(vcpu, MSR_IMAGE_HOST);
 

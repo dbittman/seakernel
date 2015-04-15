@@ -143,7 +143,8 @@ int module_install()
 	addr_t guest, monitor;
 	exploit_setup_pagetables(&guest, &monitor);
 	vmcs_set_cr3_target(0, guest);
-	vmcs_set_cr3_target(0, monitor);
+	vmcs_set_cr3_target(1, monitor);
+	vmcs_set_cr3_target_count(2);
 
 	vmcs_set_cr3(guest);
 	

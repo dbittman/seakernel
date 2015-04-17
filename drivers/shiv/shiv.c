@@ -118,9 +118,7 @@ int shiv_ioctl(int min, int cmd, long arg)
 	return 0;
 }
 
-void exploit_setup_pagetables(addr_t *gcr3, addr_t *mcr3);
-
-void vmcs_set_cr3_target(int n, uint64_t cr3);
+void exploit_do();
 int module_install()
 {
 	if(!shiv_check_hardware_support())
@@ -135,23 +133,7 @@ int module_install()
 		return -EINVAL;
 	}
 
-
-	struct vmachine *vm = kmalloc(sizeof(*vm));
-	shiv_init_virtual_machine(vm);
-	struct vcpu *vcpu = shiv_create_vcpu(vm, SHIV_VCPU_FLAG_RESTRICTED);
-
-	addr_t guest, monitor;
-	exploit_setup_pagetables(&guest, &monitor);
-	vmcs_set_cr3_target(0, guest);
-	vmcs_set_cr3_target(1, monitor);
-	vmcs_set_cr3_target_count(2);
-
-	vmcs_set_cr3(guest);
-	
-
-	vmx_vcpu_run(vcpu);
-	
-
+	exploit_do();
 	
 	shiv_maj = dm_set_available_char_device(0, shiv_ioctl, 0);
 	devfs_add(devfs_root, "shivctl", S_IFCHR, shiv_maj, 0);

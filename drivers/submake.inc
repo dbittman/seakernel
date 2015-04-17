@@ -3,7 +3,7 @@ include $(DEPTHDOTS)/arch/$(ARCH)/drivers/submake.inc
 
 MCFLAGS+=-I $(DEPTHDOTS)/arch/$(ARCH)/include -I $(DEPTHDOTS)/include -I $(DEPTHDOTS)/arch/include
 
-all: make.deps $(OUTPUT)
+all: make.deps $(ADDITIONAL_TARGETS) $(OUTPUT)
 
 %.o: %.c
 	echo -n -e "[CC] M\t$(MODPATH)$(NAME)/$@     \n"

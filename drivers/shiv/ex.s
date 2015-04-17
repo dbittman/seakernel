@@ -2,16 +2,13 @@
 [ORG 0x2100]
 
 cli
-mov esp, 0x2500 ; we'll need a stack for the interrupt handler
-xor rax, rax
-mov rcx, [0x1000] ; read the monitor's CR3 from somewhere in the trap code
+mov rsp, 0x2500 ; we'll need a stack for the interrupt handler
+mov rax, qword [0x1000] ; read the monitor's CR3 from somewhere in the trap code
 lidt [idtr] ; load the interrupt table
 pushfq ; get the flags
-pop rax
-or rax, 100000000b ; set TF
-push rax
+or qword [rsp], 100000000b ; set TF
 popf ; set the flags
-mov cr3, rcx ; change address spaces
+mov cr3, rax ; change address spaces
 ; <--- TF triggers interrupt here
 hlt
 

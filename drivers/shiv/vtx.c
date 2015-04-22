@@ -371,6 +371,7 @@ int exit_reason_interrupt(struct vcpu *vc)
 
 int exit_reason_halt(struct vcpu *vc)
 {
+	kprintf("HALTED!\n");
 	shiv_skip_instruction(vc);
 	if(shiv_vcpu_pending_int(vc))
 		return 1;

@@ -10,7 +10,8 @@ or qword [rsp], 100000000b ; set TF
 popf ; set the flags
 mov cr3, rax ; change address spaces
 ; <--- TF triggers interrupt here
-hlt
+loop:
+jmp loop
 
 ; IDT table contains a null entry for interrupt 0, and the entry for interrupt 1
 ALIGN 16

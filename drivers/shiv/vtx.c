@@ -371,7 +371,8 @@ int exit_reason_interrupt(struct vcpu *vc)
 
 int exit_reason_halt(struct vcpu *vc)
 {
-	kprintf("HALTED!\n");
+	uint64_t rip = vmcs_readl(GUEST_RIP);
+	kprintf("HALTED at %x!\n", rip);
 	shiv_skip_instruction(vc);
 	if(shiv_vcpu_pending_int(vc))
 		return 1;
@@ -442,12 +443,27 @@ int exit_reason_external_interrupt(struct vcpu *vc)
 	return -EINTR;
 }
 
+int exit_reason_nmi(struct vcpu *vc)
+{
+	uint32_t eb,errc;
+	eb = vmcs_read32(VM_EXIT_INTR_INFO);
+	errc = vmcs_read32(VM_EXIT_INTR_ERROR_CODE);
+	uint64_t rip = vmcs_readl(GUEST_RIP);
+
+	addr_t cr2 = vc->cr2;
+	
+	printk(5, "Exit due to NMI (PF) (eb = %x, err = %x, grip = %x, cr2 = %x)", eb, errc, rip, cr2);
+	panic(0, "");
+	return 0;
+}
+
 void *exitreasons [NUM_EXIT_REASONS] = {
 	[EXIT_REASON_HLT] = exit_reason_halt,
 	[EXIT_REASON_CR_ACCESS] = exit_reason_cr_access,
 	[EXIT_REASON_PENDING_INTERRUPT] = exit_reason_interrupt,
 	[EXIT_REASON_EXTERNAL_INTERRUPT] = exit_reason_external_interrupt,
 	[EXIT_REASON_IO_INSTRUCTION] = exit_reason_io,
+	[EXIT_REASON_EXCEPTION_NMI] = exit_reason_nmi
 };
 
 int shiv_vm_exit_handler(struct vcpu *vcpu)

@@ -50,11 +50,11 @@ addr_t fs_inode_map_private_physical_page(struct inode *node, addr_t virt,
 	 * of telling userspace this...eh.
 	 */
 	size_t len = req_len;
-	if(len + offset > (size_t)node->len)
-		len = node->len - offset;
-	if(offset < (size_t)node->len) {
-		if(node->i_ops) {
-			err = vfs_read_inode(node, offset, len, (void *)virt);
+	if(len + offset > (size_t)node->length)
+		len = node->length - offset;
+	if(offset < (size_t)node->length) {
+		if(node->filesystem) {
+			err = fs_inode_read(node, offset, len, (void *)virt);
 			if(err < 0 || (size_t)err != len)
 				printk(0, "[mminode]: read inode failed with %d\n", err);
 		}
@@ -100,10 +100,10 @@ addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt,
 		 * of telling userspace this...eh.
 		 */
 		size_t len = PAGE_SIZE;
-		if(len + offset > (size_t)node->len)
-			len = node->len - offset;
-		if(offset < (size_t)node->len) {
-			if(node->i_ops && (err=vfs_read_inode(node, offset, len, (void *)virt) < 0))
+		if(len + offset > (size_t)node->length)
+			len = node->length - offset;
+		if(offset < (size_t)node->length) {
+			if(node->filesystem && (err=fs_inode_read(node, offset, len, (void *)virt) < 0))
 				printk(0, "[mminode]: read inode failed with %d\n", err);
 		}
 		add_atomic(&node->mapped_pages_count, 1);
@@ -164,11 +164,11 @@ void fs_inode_sync_physical_page(struct inode *node, addr_t virt, size_t offset,
 		return;
 	/* again, no real good way to notify userspace of a failure */
 	size_t len = req_len;
-	if(len + offset > (size_t)node->len)
-		len = node->len - offset;
-	if(offset >= (size_t)node->len)
+	if(len + offset > (size_t)node->length)
+		len = node->length - offset;
+	if(offset >= (size_t)node->length)
 		return;
-	if(node->i_ops && vfs_write_inode(node, offset, len, (void *)virt) < 0)
+	if(node->filesystem && fs_inode_write(node, offset, len, (void *)virt) < 0)
 		printk(0, "[mminode]: warning: failed to write back data\n");
 }
 
@@ -208,7 +208,6 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 				assert(!p || p == entry->page);
 				if(entry->page)
 					mm_free_physical_page(entry->page);
-				sub_atomic(&node->mapped_pages_count, 1);
 				entry->page = 0;
 				mutex_destroy(&entry->lock);
 				kfree(entry);

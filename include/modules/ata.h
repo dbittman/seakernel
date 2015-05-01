@@ -10,6 +10,7 @@
 #include <sea/vsprintf.h>
 #include <sea/errno.h>
 #include <sea/cpu/cpu-io.h>
+#include <sea/cpu/registers.h>
 /* Most of these definitions and support functions have been borrowed from CDI */
 #define PCI_CLASS_ATA           0x01
 #define PCI_SUBCLASS_ATA        0x01
@@ -126,11 +127,6 @@ struct ata_controller {
     struct ata_device *         selected;
 };
 
-struct dev_rec
-{
-	struct inode *node;
-	struct dev_rec *next;
-};
 extern struct dev_rec *nodes;
 static inline uint16_t ata_reg_base(struct ata_controller* controller,
     uint8_t reg)

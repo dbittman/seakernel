@@ -26,7 +26,6 @@ typedef struct rtl8139_dev_s
 	int inter_id, inter;
 	struct pci_device *device;
 	struct dma_region rx_reg, tx_buffer[4];
-	struct inode *node;
 	mutex_t tx_lock;
 	int tx_num;
 	unsigned short hwaddr[3];
@@ -377,8 +376,7 @@ rtl8139dev_t *rtl8139_load_device_pci(struct pci_device *device)
 		return 0;
 	}
 
-	struct inode *i = devfs_add(devfs_root, "rtl8139", S_IFCHR, rtl8139_maj, 0);
-	dev->node = i;
+	sys_mknod("/dev/rtl8139", S_IFCHR | 0600, GETDEV(rtl8139_maj, 0));
 	device->flags |= PCI_ENGAGED;
 	device->flags |= PCI_DRIVEN;
 	dev->inter = device->pcs->interrupt_line;
@@ -398,7 +396,8 @@ int rtl8139_unload_device_pci(rtl8139dev_t *dev)
 	device->flags &= ~PCI_ENGAGED;
 	device->flags &= ~PCI_DRIVEN;
 	mutex_destroy(&dev->tx_lock);
-	devfs_remove(dev->node);
+	/* TODO */
+	//devfs_remove(dev->node);
 	interrupt_unregister_handler(dev->inter, dev->inter_id);
 	return 0;
 }

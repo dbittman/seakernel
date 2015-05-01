@@ -3,7 +3,6 @@
 #include <sea/config.h>
 #ifdef CONFIG_MODULE_PCI
 #include <sea/types.h>
-#include <sea/fs/inode.h>
 
 struct pci_config_space
 {
@@ -64,7 +63,6 @@ struct pci_device
     unsigned char flags;
     unsigned error;
     char pad;
-    struct inode *node;
     struct pci_device *next, *prev;
 };
 struct pci_device *pci_locate_device(unsigned short vendor, unsigned short device);

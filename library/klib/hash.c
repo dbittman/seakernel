@@ -49,6 +49,11 @@ static int __hash_table_get(struct hash_table *h, void **e, size_t size, void *k
 	return h->resolver->get(e, h->fn, size, key, elem_sz, len, value);
 }
 
+static int __hash_table_set_or_get(struct hash_table *h, void **e, size_t size, void *key, size_t elem_sz, size_t len, void *value, void **result)
+{
+	return h->resolver->set_or_get(e, h->fn, size, key, elem_sz, len, value, result);
+}
+
 static int __hash_table_set(struct hash_table *h, void **e, size_t size, void *key, size_t elem_sz, size_t len, void *value)
 {
 	return h->resolver->set(e, h->fn, size, key, elem_sz, len, value);
@@ -135,6 +140,18 @@ int hash_table_get_entry(struct hash_table *h, void *key, size_t key_element_siz
 	return ret;
 }
 
+int hash_table_set_or_get_entry(struct hash_table *h, void *key, size_t key_element_size, size_t key_len, void *value, void **result)
+{
+	if(!h || !key || !h->entries || h->magic != HASH_MAGIC) panic(0, "invalid hash table for hash_table_set_entry");
+	rwlock_acquire(&h->lock, RWL_WRITER);
+	int ret = __hash_table_set_or_get(h, h->entries, h->size, key, key_element_size, key_len, value, result);
+	if(ret == 0)
+		h->count++;
+	rwlock_release(&h->lock, RWL_WRITER);
+	return ret;
+}
+
+
 int hash_table_set_entry(struct hash_table *h, void *key, size_t key_element_size, size_t key_len, void *value)
 {
 	if(!h || !key || !h->entries || h->magic != HASH_MAGIC) panic(0, "invalid hash table for hash_table_set_entry");
@@ -179,5 +196,7 @@ void hash_table_destroy(struct hash_table *h)
 	kfree(h->entries);
 	rwlock_destroy(&h->lock);
 	h->magic=0;
-	kfree(h);
+	if(h->flags & HASH_ALLOC)
+		kfree(h);
 }
+

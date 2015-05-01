@@ -8,14 +8,11 @@
 #include <sea/fs/flock.h>
 #include <sea/fs/stat.h>
 #include <sea/lib/hash.h>
-
+#include <sea/lib/queue.h>
+#include <sea/fs/fs.h>
 #define MAY_EXEC      0100
 #define MAY_WRITE     0200
 #define MAY_READ      0400
-
-#define INAME_LEN 256
-
-#define inode_has_children(i) (i->children.head && ll_is_active((&i->children)))
 
 typedef struct {
 	struct inode *root;
@@ -24,99 +21,87 @@ typedef struct {
 
 typedef struct pipe_struct pipe_t;
 
+#define INODE_NEEDREAD 1
+#define INODE_DIRTY    2
+#define INODE_INUSE    4
+#define INODE_NOLRU    8 /* On calling vfs_icache_put, don't move to LRU, immediately destroy */
+
+#define RESOLVE_NOLINK 1
+
 struct inode {
-	/* Attributes */
+	rwlock_t lock, metalock;
+	struct queue_item lru_item;
+	struct llistnode inuse_item, dirty_item;
+	struct hash_table *dirents;
+	struct filesystem *filesystem;
+	
+	int count;
+	uint32_t flags;
+	
+	dev_t phys_dev;
+	struct filesystem *mount;
+	pipe_t *pipe;
+
+	/* filesystem data */
 	mode_t mode;
 	uid_t uid;
 	gid_t gid;
-	unsigned short nlink;
-	unsigned char dynamic, marked_for_deletion;
-	unsigned int flags;
-	off_t len;
-	addr_t start;
-	unsigned int nblocks;
+	short nlink;
+	size_t length;
 	time_t ctime, atime, mtime;
-	int count, f_count, newlocks;
-	size_t blksize;
-	/* Identification */
-	char name[INAME_LEN];
-	dev_t dev;
-	unsigned long num;
-	unsigned int sb_idx, fs_idx;
-	char node_str[INAME_LEN];
-	/* Pointers */
-	struct inode_operations *i_ops;
-	struct inode *parent;
-	struct llist children;
-	struct llistnode *node;
-	struct inode *mount_parent;
-	pipe_t *pipe;
-	mount_pt_t *mount;
-	/* Locking */
-	rwlock_t rwl;
-	struct flock *flocks;
-	mutex_t *flm;
+	size_t blocksize;
+	size_t nblocks;
+	size_t id;
 
-	/* shared mmappings */
+	/* mmap stuff */
 	struct hash_table *physicals;
 	mutex_t mappings_lock;
-	int mapped_pages_count, mapped_entries_count;
+	size_t mapped_pages_count, mapped_entries_count;
 };
 
-struct inode_operations {
-	int (*read) (struct inode *, off_t, size_t, char *);
-	int (*write) (struct inode *, off_t, size_t, char *);
-	int (*select) (struct inode *, unsigned int);
-	struct inode *(*create) (struct inode *,char *, mode_t);
-	struct inode *(*lookup) (struct inode *,char *);
-	struct inode *(*readdir) (struct inode *, unsigned);
-	int (*link) (struct inode *, char *);
-	int (*unlink) (struct inode *);
-	int (*rmdir) (struct inode *);
-	int (*sync_inode) (struct inode *);
-	int (*unmount)(struct inode *, unsigned int);
-	int (*fsstat)(struct inode *, struct posix_statfs *);
-	int (*fssync)(struct inode *);
-	int (*update)(struct inode *);
-};
-
-#define iremove_recur(i)  vfs_do_iremove(i, 2, 0)
-#define iremove(i)        vfs_do_iremove(i, 0, 0)
-#define iremove_nofree(i) vfs_do_iremove(i, 3, 0)
-#define iremove_force(i)  vfs_do_iremove(i, 1, 0)
-
-#define vfs_get_idir(path,in_st)         vfs_do_get_idir(path, in_st, 0, 0, 0)
-#define vfs_lget_idir(path,in_st)        vfs_do_get_idir(path, in_st, 1, 0, 0)
-#define vfs_clget_idir(path,in_st,x)     vfs_do_get_idir(path, in_st, 1, x, 0)
-#define vfs_cget_idir(path,in_st,x)      vfs_do_get_idir(path, in_st, 1, x, 0)
-#define vfs_ctget_idir(path,in_st,x,res) vfs_do_get_idir(path, in_st, 1, x, res)
-
-#define vfs_add_inode(a,b) vfs_do_add_inode(a, b, 0)
-
-struct inode *vfs_do_get_idir(char *p_path, struct inode *b, int use_link, 
-	int create, int *did_create);
-
-int vfs_sync_inode_tofs(struct inode *i);
-struct inode *sys_create(char *path);
-int vfs_link(char *old, char *);
-int vfs_unlink(char *f);
-int vfs_do_unlink(struct inode *i);
-int vfs_rmdir(char *f);
-
-int vfs_inode_is_directory(struct inode *i);
-int vfs_inode_get_ref_count(struct inode *i);
-int vfs_inode_get_check_permissions(struct inode *i, mode_t flag, int use_real_id);
-int vfs_do_add_inode(struct inode *b, struct inode *i, int locked);
-int vfs_do_iremove(struct inode *i, int flag, int locked);
-int vfs_free_inode(struct inode *i, int recur);
-
-int vfs_read_inode(struct inode *i, off_t off, size_t  len, char *b);
-int vfs_write_inode(struct inode *i, off_t off, size_t len, char *b);
-
-int sys_getdepth(int fd);
-int sys_getcwdlen();
 int sys_fcntl(int filedes, int cmd, long attr1, long attr2, long attr3);
-int sync_inode_tofs(struct inode *i);
+
+int sys_unlink(const char *);
+int sys_rmdir(const char *);
+int sys_umount();
+int sys_chroot(char *path);
+
+int fs_unlink(struct inode *node, const char *name, size_t namelen);
+int fs_link(struct inode *dir, struct inode *target, const char *name, size_t namelen);
+
+void vfs_icache_init();
+void vfs_inode_umount(struct inode *node);
+int fs_icache_sync();
+void vfs_inode_get(struct inode *node);
+struct inode *vfs_inode_create();
+struct inode *vfs_icache_get(struct filesystem *, uint32_t num);
+void vfs_icache_put(struct inode *node);
+void vfs_inode_set_dirty(struct inode *node);
+void vfs_inode_unset_dirty(struct inode *node);
+void vfs_inode_set_needread(struct inode *node);
+int vfs_inode_check_permissions(struct inode *node, int perm, int real);
+void vfs_inode_del_dirent(struct inode *node, struct dirent *dir);
+void vfs_inode_add_dirent(struct inode *node, struct dirent *dir);
+
+int fs_inode_pull(struct inode *node);
+int fs_inode_push(struct inode *node);
+
+struct inode *do_fs_path_resolve_create(const char *path,
+		int flags, mode_t mode, int *result, struct dirent **dirent);
+struct inode *fs_path_resolve_create(const char *path,
+		int flags, mode_t mode, int *result);
+struct dirent *fs_path_resolve(const char *path, int flags, int *result);
+struct dirent *do_fs_path_resolve(struct inode *start, const char *path, int *result);
+struct inode *fs_path_resolve_inode(const char *path, int flags, int *error);
+
+struct inode *fs_read_root_inode(struct filesystem *fs);
+int vfs_inode_chdir(struct inode *node);
+int vfs_inode_chroot(struct inode *node);
+void vfs_inode_mount(struct inode *node, struct filesystem *fs);
+struct inode *fs_resolve_mount(struct inode *node);
+
+ssize_t fs_inode_write(struct inode *node, size_t off, size_t count, const char *buf);
+ssize_t fs_inode_read(struct inode *node, size_t off, size_t count, char *buf);
 
 #define FS_INODE_POPULATE 1
 addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt, 

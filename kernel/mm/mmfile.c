@@ -51,10 +51,9 @@ addr_t mm_mmap(addr_t address, size_t length, int prot, int flags, int fd, size_
 	struct inode *node;
 	if(flags & MAP_ANONYMOUS) {
 		/* create fake inode */
-		node = kmalloc(sizeof(*node));
-		mutex_create(&node->mappings_lock, 0);
-		rwlock_create(&node->rwl);
+		node = vfs_inode_create();
 		node->count = 1;
+		node->flags = INODE_INUSE;
 	} else {
 		struct file *f = fs_get_file_pointer(current_task, fd);
 		if(!f)
@@ -72,14 +71,14 @@ addr_t mm_mmap(addr_t address, size_t length, int prot, int flags, int fd, size_
 			fs_fput(current_task, fd, 0);
 			return -ENODEV;
 		}
+		vfs_inode_get(f->inode);
 		node = f->inode;
-		add_atomic(&f->inode->count, 1);
 		fs_fput(current_task, fd, 0);
 	}
 	/* a mapping replaces any other mapping that it overwrites, according to opengroup */
 	mm_mapping_munmap(address, length);
 	addr_t mapped_address = mm_establish_mapping(node, address, prot, flags, offset, length);
-	vfs_iput(node);
+	vfs_icache_put(node);
 	return mapped_address;
 }
 

@@ -5,10 +5,11 @@
 #include <sea/cpu/atomic.h>
 #include <sea/fs/file.h>
 #include <sea/tm/process.h>
-#include <sea/dm/pipe.h>
+#include <sea/fs/pipe.h>
 #include <sea/sys/fcntl.h>
 #include <sea/vsprintf.h>
 #include <sea/mm/kmalloc.h>
+#include <sea/fs/dir.h>
 static struct file_ptr *get_file_handle(task_t *t, int n)
 {
 	if(n >= FILP_HASH_LEN) return 0;
@@ -42,8 +43,9 @@ static void remove_file_pointer(task_t *t, int n)
 		return;
 	t->thread->filp[n] = 0;
 	sub_atomic(&f->fi->count, 1);
-	if(!f->fi->count)
+	if(!f->fi->count) {
 		kfree(f->fi);
+	}
 	kfree(f);
 }
 
@@ -68,9 +70,9 @@ int fs_add_file_pointer_do(task_t *t, struct file_ptr *f, int after)
 	while(after < FILP_HASH_LEN && t->thread->filp[after])
 		after++;
 	if(after >= FILP_HASH_LEN) {
-		printk(1, "[vfs]: task %d ran out of files (syscall=%d). killed.\n", 
+		printk(1, "[vfs]: task %d ran out of files (syscall=%d)\n", 
 				t->pid, t == current_task ? (int)t->system : -1);
-		tm_kill_process(t->pid);
+		return -1;
 	}
 	t->thread->filp[after] = f;
 	f->num = after;
@@ -83,8 +85,13 @@ int fs_add_file_pointer(task_t *t, struct file *f)
 	mutex_acquire(&t->thread->files_lock);
 	fp->fi = f;
 	int r = fs_add_file_pointer_do(t, fp, 0);
-	fp->num = r;
-	fp->count = 2; /* once for being open, once for being used by the function that calls this */
+	if(r >= 0) {
+		fp->num = r;
+		fp->count = 2; /* once for being open, once for being 
+						  used by the function that calls this */
+	} else {
+		kfree(fp);
+	}
 	mutex_release(&t->thread->files_lock);
 	return r;
 }
@@ -95,8 +102,13 @@ int fs_add_file_pointer_after(task_t *t, struct file *f, int x)
 	mutex_acquire(&t->thread->files_lock);
 	fp->fi = f;
 	int r = fs_add_file_pointer_do(t, fp, x);
-	fp->num = r;
-	fp->count = 2; /* once for being open, once for being used by the function that calls this */
+	if(r >= 0) {
+		fp->num = r;
+		fp->count = 2; /* once for being open, once for being
+						  used by the function that calls this */
+	} else {
+		kfree(fp);
+	}
 	mutex_release(&t->thread->files_lock);
 	return r;
 }
@@ -114,9 +126,9 @@ void fs_copy_file_handles(task_t *p, task_t *n)
 			fp->count = p->thread->filp[c]->count;
 			add_atomic(&fp->fi->count, 1);
 			struct inode *i = fp->fi->inode;
-			assert(i && i->count && i->f_count);
-			add_atomic(&i->count, 1);
-			add_atomic(&i->f_count, 1);
+			vfs_inode_get(i);
+			if(fp->fi->dirent)
+				vfs_dirent_acquire(fp->fi->dirent);
 			if(i->pipe && !i->pipe->type) {
 				add_atomic(&i->pipe->count, 1);
 				if(fp->fi->flags & _FWRITE)
@@ -141,3 +153,4 @@ void fs_close_all_files(task_t *t)
 		}
 	}
 }
+

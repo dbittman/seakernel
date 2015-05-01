@@ -102,7 +102,7 @@ int net_route_find_del_entry(uint32_t dest, struct net_dev *nd)
 	}
 	return del ? 0 : -ENOENT;
 }
-
+#if 0
 static void write_addr(char *str, uint32_t addr)
 {
 	snprintf(str, 32, "%d.%d.%d.%d", (addr) & 0xFF, (addr >> 8) & 0xFF, (addr >> 16) & 0xFF, (addr >> 24) & 0xFF);
@@ -158,5 +158,5 @@ int proc_read_route(char *buf, int off, int len)
 	rwlock_release(&table->rwl, RWL_READER);
 	return total_len;
 }
-
+#endif
 

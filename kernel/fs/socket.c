@@ -29,13 +29,12 @@ struct socket_calls *__socket_calls_list[PROT_MAXPROT + 1] = {
 struct socket *socket_create(int *errcode)
 {
 	*errcode = 0;
-	struct inode *inode = kmalloc(sizeof(struct inode));
+	struct inode *inode = vfs_inode_create();
+	inode->flags |= INODE_NOLRU;
 	struct file *f = kmalloc(sizeof(struct file));
 	f->inode = inode;
 	inode->count = 1;
-	inode->f_count = 1;
 	inode->mode |= S_IFSOCK;
-	rwlock_create(&inode->rwl);
 	f->count = 1;
 	int fd = fs_add_file_pointer(current_task, f);
 	if(fd < 0)

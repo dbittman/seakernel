@@ -10,15 +10,16 @@
 #include <sea/rwlock.h>
 #include <sea/cpu/atomic.h>
 #include <sea/fs/file.h>
-#include <sea/dm/pipe.h>
+#include <sea/fs/pipe.h>
 #include <sea/errno.h>
 #include <sea/fs/socket.h>
+#include <sea/fs/dir.h>
 int sys_close(int fp)
 {
 	struct file *f = fs_get_file_pointer((task_t *) current_task, fp);
 	if(!f)
 		return -EBADF;
-	assert(f->inode && f->inode->f_count);
+	assert(f->inode);
 	/* handle sockets calling close. We just translate it to a call to shutdown.
 	 * be aware that shutdown does end up calling close! */
 	if(f->socket) {
@@ -40,7 +41,7 @@ int sys_close(int fp)
 		if(!f->inode->pipe->count && f->inode->pipe->type != PIPE_NAMED) {
 			assert(!f->inode->pipe->read_blocked->num);
 			assert(!f->inode->pipe->write_blocked->num);
-			dm_free_pipe(f->inode);
+			fs_pipe_free(f->inode);
 			f->inode->pipe = 0;
 		} else {
 			tm_remove_all_from_blocklist(f->inode->pipe->read_blocked);
@@ -50,20 +51,13 @@ int sys_close(int fp)
 	}
 	/* close devices */
 	if(S_ISCHR(f->inode->mode) && !fp)
-		dm_char_rw(CLOSE, f->inode->dev, 0, 0);
+		dm_char_rw(CLOSE, f->inode->phys_dev, 0, 0);
 	else if(S_ISBLK(f->inode->mode) && !fp)
-		dm_block_device_rw(CLOSE, f->inode->dev, 0, 0, 0);
-	int rem_ref = sub_atomic(&f->inode->f_count, 1);
-	int did_unlink = 0;
-	if(!rem_ref)
-	{
-		if(f->inode->marked_for_deletion) {
-			did_unlink = 1;
-			vfs_do_unlink(f->inode);
-		}
-	}
-	if(!did_unlink)
-		vfs_iput(f->inode);
+		dm_block_device_rw(CLOSE, f->inode->phys_dev, 0, 0, 0);
+	if(f->dirent)
+		vfs_dirent_release(f->dirent);
+	vfs_icache_put(f->inode);
 	fs_fput((task_t *)current_task, fp, FPUT_CLOSE);
 	return 0;
 }
+

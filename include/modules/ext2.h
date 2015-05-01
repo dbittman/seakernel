@@ -9,20 +9,17 @@
 #include <sea/cpu/time.h>
 #include <modules/ext2_sb.h>
 #include <sea/ll.h>
+#include <sea/fs/fs.h>
 #include <sea/mutex.h>
-typedef struct e2_vol_data {
-	int flag;
-	unsigned long long dev, block;
-	char node[16];
+#define EXT2_FS_READONLY 1
+struct ext2_info {
+	dev_t dev;
+	int flags;
 	ext2_superblock_t *sb;
-	unsigned block_prev_alloc;
-	struct inode *root;
-	char read_only;
-	mutex_t *m_node, *m_block, *m_inode, ac_lock;
-	mutex_t fs_lock, bg_lock;
-	cache_t *cache;
-	struct llistnode *llnode;
-} ext2_fs_t;
+	mutex_t *fs_lock;
+	struct filesystem *filesys;
+	unsigned long block_prev_alloc;
+};
 
 typedef char ext2_inode_type_t;
 
@@ -45,7 +42,7 @@ typedef struct ext2_inode {
 	unsigned size_up;
 	unsigned char pad[20];
 	unsigned number;
-	ext2_fs_t *fs;
+	struct ext2_info *fs;
 } __attribute__((packed)) ext2_inode_t;
 
 #define IF_SECDEL 0x1
@@ -107,9 +104,8 @@ typedef struct ext2_blockgroup {
 	uint32_t reserved[3];
 } __attribute__((packed)) ext2_blockgroup_t;
 
-extern struct inode_operations e2fs_inode_ops;
-int ext2_write_block(ext2_fs_t *fs, u64 block, unsigned char *buf);
-int ext2_read_block(ext2_fs_t *fs, u64 block, unsigned char *buf);
+int ext2_write_block(struct ext2_info *fs, u64 block, unsigned char *buf);
+int ext2_read_block(struct ext2_info *fs, u64 block, unsigned char *buf);
 
 int ext2_inode_readblk(ext2_inode_t* inode, uint32_t block, void* buf, size_t count);
 
@@ -119,30 +115,38 @@ int ext2_inode_readdata(
 int ext2_inode_writedata(
 	ext2_inode_t* inode, uint32_t start, size_t len, const unsigned char* buf);
 int ext2_inode_truncate(ext2_inode_t* inode, uint32_t size, int);
-int ext2_bg_read(ext2_fs_t* fs, int group_nr, ext2_blockgroup_t* bg);
-int ext2_bg_update(ext2_fs_t* fs, int group_nr, ext2_blockgroup_t* bg);
-int ext2_inode_read(ext2_fs_t* fs, uint32_t inode_nr, ext2_inode_t* inode);
+int ext2_bg_read(struct ext2_info* fs, int group_nr, ext2_blockgroup_t* bg);
+int ext2_bg_update(struct ext2_info* fs, int group_nr, ext2_blockgroup_t* bg);
+int ext2_inode_read(struct ext2_info* fs, uint32_t inode_nr, ext2_inode_t* inode);
 int ext2_inode_update(ext2_inode_t* inode);
-struct inode *create_sea_inode(ext2_inode_t *in, char *name);
-ext2_fs_t *get_fs(int v);
-int ext2_inode_type(ext2_inode_t *in);
+struct ext2_info *get_fs(int v);
+int ext2_inode_type(mode_t);
 int ext2_inode_free(ext2_inode_t* inode);
 void ext2_inode_release(ext2_inode_t* inode);
-int ext2_inode_alloc(ext2_fs_t* fs, ext2_inode_t* inode);
-int ext2_sb_update(ext2_fs_t *fs, ext2_superblock_t *sb);
-int ext2_write_off(ext2_fs_t *fs, off_t off, unsigned char *buf, size_t len);
-int ext2_read_off(ext2_fs_t *fs, off_t off, unsigned char *buf, size_t len);
+int ext2_inode_alloc(struct ext2_info* fs, ext2_inode_t* inode);
+int ext2_sb_update(struct ext2_info *fs, ext2_superblock_t *sb);
+int ext2_write_off(struct ext2_info *fs, off_t off, unsigned char *buf, size_t len);
+int ext2_read_off(struct ext2_info *fs, off_t off, unsigned char *buf, size_t len);
 int ext2_dir_change_type(ext2_inode_t* inode, char *name,
 			       unsigned new_type);
 
+uint32_t ext2_inode_do_alloc(struct ext2_info *fs);
+int ext2_dir_addent(ext2_inode_t* dir, uint32_t num, ext2_inode_type_t type, const char* name, int);
+int ext2_dir_delent(ext2_inode_t* dir, const char* name, int namelen, int dofree, struct inode *);
+int ext2_dir_get_inode(ext2_inode_t* inode, const char *name, int namelen);
+int ext2_dir_getdents(ext2_inode_t* inode, unsigned start, struct dirent_posix *dirs, unsigned count, unsigned *);
 
 int ext2_dir_unlink(ext2_inode_t* dir, const char* name, int);
 int ext2_dir_create(ext2_inode_t* parent, const char* name, ext2_inode_t* newi);
 int ext2_dir_link(ext2_inode_t* dir, ext2_inode_t* inode, const char* name);
 int ext2_dir_get(ext2_inode_t* inode, char* name, ext2_dirent_t*);
 int ext2_dir_getnum(ext2_inode_t* inode, unsigned number, char *);
+void ext2_dir_change_dir_count(ext2_inode_t *node, int minus);
 
 
+extern struct filesystem_inode_callbacks ext2_wrap_iops;
+extern struct filesystem_callbacks ext2_wrap_fsops;
 
 #endif
 #endif
+

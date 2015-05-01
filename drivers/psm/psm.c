@@ -62,8 +62,10 @@ int psm_enumerate_partitions(int id, dev_t dev, struct disk_info *di)
 		pi.num = i+1;
 		int minor = psm_table_insert(dev, di, &pi, name);
 		printk(KERN_DEBUG, "[psm]: register (%d, %d): partition %s\n", MAJOR(dev), MINOR(dev), name);
-		struct inode *node = devfs_add(devfs_root, name, S_IFBLK, psm_major, minor);
-		psm_table_set_node(minor, node);
+		char path[strlen(name) + strlen("/dev/") + 1];
+		snprintf(path, strlen(name) + strlen("/dev/") + 1, "/dev/%s", name);
+		sys_mknod(path, S_IFBLK | 0644, GETDEV(psm_major, minor));
+		psm_table_set_path(minor, path);
 		i++;
 	}
 	return i;
@@ -76,8 +78,10 @@ int psm_register_disk_device(int identifier, dev_t dev, struct disk_info *info)
 	int minor = psm_table_insert(dev, info, 0, name);
 	/* create raw device node */
 	printk(KERN_DEBUG, "[psm]: register (%d, %d): %s\n", MAJOR(dev), MINOR(dev), name);
-	struct inode *node = devfs_add(devfs_root, name, S_IFBLK, psm_major, minor);
-	psm_table_set_node(minor, node);
+	char path[strlen(name) + strlen("/dev/") + 1];
+	snprintf(path, strlen(name) + strlen("/dev/") + 1, "/dev/%s", name);
+	sys_mknod(path, S_IFBLK | 0644, GETDEV(psm_major, minor));
+	psm_table_set_path(minor, path);
 	/* enumerate partitions and create partitions nodes */
 	if(!(info->flags & PSM_DISK_INFO_NOPART))
 		psm_enumerate_partitions(identifier, dev, info);
@@ -156,9 +160,9 @@ int module_install()
 
 int module_exit()
 {
-	dm_unregister_block_device(psm_major);
 	loader_remove_kernel_symbol("psm_register_disk_device");
 	loader_remove_kernel_symbol("psm_unregister_disk_device");
 	psm_table_destroy();
+	dm_unregister_block_device(psm_major);
 	return 0;
 }

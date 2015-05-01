@@ -60,7 +60,7 @@ int module_install()
 int module_exit()
 {
 	/* shutdown the ipv4 sending thread */
-	kthread_join(ipv4_send_thread, 0);
+	kthread_join(ipv4_send_thread, KT_JOIN_NONBLOCK);
 	/* unregister everything */
 	net_nlayer_unregister_protocol(PF_INET);
 	socket_set_calls(1, 0);

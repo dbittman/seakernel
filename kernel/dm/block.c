@@ -363,7 +363,7 @@ int dm_block_device_select(dev_t dev, int rw)
 
 int dm_blockdev_select(struct inode *in, int rw)
 {
-	return dm_block_device_select(in->dev, rw);
+	return dm_block_device_select(in->phys_dev, rw);
 }
 
 void dm_send_sync_block()

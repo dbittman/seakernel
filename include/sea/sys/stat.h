@@ -8,7 +8,7 @@ struct task_stat {
 	int uid, gid, state;
 	unsigned char system;
 	int tty;
-	struct inode *exe;
+	void *exe;
 	char **argv;
 	unsigned mem_usage;
 	char cmd[128];

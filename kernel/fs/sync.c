@@ -11,7 +11,7 @@ int sys_sync(int disp)
 {
 	if(disp == -1)
 		disp = PRINT_LEVEL;
-	fs_do_sync_of_mounted();
+	fs_icache_sync();
 	cache_sync_all();
 	dm_sync();
 	return 0;

@@ -79,7 +79,7 @@ int do_exec(task_t *t, char *path, char **argv, char **env, int shebanged /* oh 
 	if(desc < 0 || !efil)
 		return -ENOENT;
 	/* are we allowed to execute it? */
-	if(!vfs_inode_get_check_permissions(efil->inode, MAY_EXEC, 0))
+	if(!vfs_inode_check_permissions(efil->inode, MAY_EXEC, 0))
 	{
 		sys_close(desc);
 		return -EACCES;
@@ -139,7 +139,7 @@ int do_exec(task_t *t, char *path, char **argv, char **env, int shebanged /* oh 
 	 * file descs, free up the page directory and clear up the resources 
 	 * of the task */
 	if(EXEC_LOG)
-		printk(0, "Executing (task %d, cpu %d, tty %d, cwd=%s): %s\n", t->pid, t->cpu->snum, t->tty, current_task->thread->pwd->name, path);
+		printk(0, "Executing (task %d, cpu %d, tty %d): %s\n", t->pid, t->cpu->snum, t->tty, path);
 	preexec(t, desc);
 	
 	/* load in the new image */

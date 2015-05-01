@@ -18,6 +18,7 @@
 #include <sea/fs/proc.h>
 #include <sea/vsprintf.h>
 #include <sea/syscall.h>
+#include <sea/lib/timer.h>
 
 /* okay, these aren't architecture independent exactly, but they're fine for now */
 static char *exception_messages[] =
@@ -65,6 +66,8 @@ static char *exception_messages[] =
  */
 static isr_s1_handler_t interrupt_handlers_s1[MAX_INTERRUPTS][MAX_HANDLERS];
 static isr_s2_handler_t interrupt_handlers_s2[MAX_INTERRUPTS][MAX_HANDLERS];
+static struct timer s1_timers[256];
+static struct timer s2_timers[256];
 static unsigned int stage2_count[256];
 volatile long int_count[256];
 static mutex_t isr_lock, s2_lock;
@@ -214,12 +217,14 @@ void cpu_interrupt_syscall_entry(registers_t *regs, int syscall_num)
 			{
 				if(stage2_count[i])
 				{
+					int started = timer_start(&s2_timers[i]);
 					int  a =sub_atomic(&stage2_count[i], 1);
 					for(int j=0;j<MAX_HANDLERS;j++) {
 						if(interrupt_handlers_s2[i][j]) {
 							(interrupt_handlers_s2[i][j])(i);
 						}
 					}
+					if(started) timer_stop(&s2_timers[i]);
 				}
 			}
 			mutex_release(&s2_lock);
@@ -253,6 +258,7 @@ void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_addres
 	 * and kill the process or kernel panic */
 	char called=0;
 	char need_second_stage = 0;
+	int started = timer_start(&s1_timers[int_no]);
 	for(int i=0;i<MAX_HANDLERS;i++)
 	{
 		if(interrupt_handlers_s1[int_no][i] || interrupt_handlers_s2[int_no][i])
@@ -265,6 +271,7 @@ void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_addres
 				need_second_stage = 1;
 		}
 	}
+	if(started) timer_stop(&s1_timers[int_no]);
 	if(need_second_stage) {
 		/* we need to run a second stage handler. Indicate that here... */
 		add_atomic(&stage2_count[int_no], 1);
@@ -310,6 +317,7 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 	/* now, run through the stage1 handlers, and see if we need any
 	 * stage2 handlers to run later */
 	char need_second_stage = 0;
+	int s1started = timer_start(&s1_timers[int_no]);
 	for(int i=0;i<MAX_HANDLERS;i++)
 	{
 		if(interrupt_handlers_s1[int_no][i])
@@ -317,6 +325,7 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 		if(interrupt_handlers_s2[int_no][i]) 
 			need_second_stage = 1;
 	}
+	if(s1started) timer_stop(&s1_timers[int_no]);
 	/* if we need a second stage handler, increment the count for this 
 	 * interrupt number, and indicate that handlers should check for
 	 * second stage handlers. */
@@ -338,12 +347,14 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 			{
 				/* decrease the count for this interrupt number, and loop through
 				 * all the second stage handlers and run them */
+				int started = timer_start(&s2_timers[i]);
 				int a = sub_atomic(&stage2_count[i], 1);
 				for(int j=0;j<MAX_HANDLERS;j++) {
 					if(interrupt_handlers_s2[i][j]) {
 						(interrupt_handlers_s2[i][j])(i);
 					}
 				}
+				if(started) timer_stop(&s2_timers[i]);
 			}
 		}
 		mutex_release(&s2_lock);
@@ -379,12 +390,14 @@ void __KT_try_handle_stage2_interrupts()
 		{
 			if(stage2_count[i])
 			{
+				int started = timer_start(&s2_timers[i]);
 				a = sub_atomic(&stage2_count[i], 1);
 				for(int j=0;j<MAX_HANDLERS;j++) {
 					if(interrupt_handlers_s2[i][j]) {
 						(interrupt_handlers_s2[i][j])(i);
 					}
 				}
+				if(started) timer_stop(&s2_timers[i]);
 			}
 		}
 		mutex_release(&s2_lock);
@@ -397,6 +410,8 @@ void interrupt_init()
 	for(int i=0;i<MAX_INTERRUPTS;i++)
 	{
 		stage2_count[i] = 0;
+		timer_create(&s1_timers[i], 0);
+		timer_create(&s2_timers[i], 0);
 		for(int j=0;j<MAX_HANDLERS;j++)
 		{
 			interrupt_handlers_s1[i][j] = 0;
@@ -416,23 +431,6 @@ void interrupt_init()
 	loader_add_kernel_symbol(cpu_interrupt_set_flag);
 #endif
 }
-
-int proc_read_int(char *buf, int off, int len)
-{
-	int i, total_len=0;
-	total_len += proc_append_buffer(buf, "ISR \t\t|            COUNT\n", total_len, -1, off, len);
-	for(i=0;i<MAX_INTERRUPTS;i++)
-	{
-		if(int_count[i])
-		{
-			char t[128];
-			snprintf(t, 128, "%3d %s\t| %16d\n", i, special_names(i), int_count[i]);
-			total_len += proc_append_buffer(buf, t, total_len, -1, off, len);
-		}
-	}
-	return total_len;
-}
-
 
 int cpu_interrupt_set(unsigned _new)
 {
@@ -464,5 +462,40 @@ int cpu_interrupt_get_flag()
 {
 	cpu_t *cpu = current_task ? current_task->cpu : 0;
 	return (cpu ? (cpu->flags&CPU_INTER) : 0);
+}
+
+int kerfs_int_report(size_t offset, size_t length, char *buf)
+{
+	size_t dl = 0;
+	char tmp[10000];
+	dl = snprintf(tmp, 100, "INT: # CALLS\tMIN\t      MAX\t    MEAN\n");
+	for(int i=0;i<256;i++) {
+		if(!int_count[i])
+			continue;
+		char line[256];
+		int r = snprintf(line, 256, "%3d: %-5d\n   "
+				"| 1 -> %9d\t%9d\t%9d\n   "
+				"| 2 -> %9d\t%9d\t%9d\n\n",
+				i, int_count[i], 
+				s1_timers[i].runs > 0 ?
+					(uint32_t)s1_timers[i].min / 1000 : 
+					0,
+				(uint32_t)s1_timers[i].max / 1000,
+				(uint32_t)s1_timers[i].mean / 1000,
+				s2_timers[i].runs > 0 ? 
+					(uint32_t)s2_timers[i].min / 1000 : 
+					0,
+				(uint32_t)s2_timers[i].max / 1000,
+				(uint32_t)s2_timers[i].mean / 1000);
+		assert(dl+r < 10000);
+		memcpy(tmp + dl, line, r);
+		dl += r;	
+	}
+	if(offset > dl)
+		return 0;
+	if(offset + length > dl)
+		length = dl - offset;
+	memcpy(buf, tmp + offset, length);
+	return length;
 }
 

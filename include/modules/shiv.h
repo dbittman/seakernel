@@ -86,6 +86,96 @@ int vmx_vcpu_run(struct vcpu *vcpu);
 int shiv_userspace_inject_interrupt(struct vcpu *vc, int irq);
 int shiv_userspace_request_interruptible(struct vcpu *vc);
 
+
+#define ASM_VMX_VMCLEAR_RAX       ".byte 0x66, 0x0f, 0xc7, 0x30"
+#define ASM_VMX_VMLAUNCH          ".byte 0x0f, 0x01, 0xc2"
+#define ASM_VMX_VMRESUME          ".byte 0x0f, 0x01, 0xc3"
+#define ASM_VMX_VMPTRLD_RAX       ".byte 0x0f, 0xc7, 0x30"
+#define ASM_VMX_VMREAD_RDX_RAX    ".byte 0x0f, 0x78, 0xd0"
+#define ASM_VMX_VMWRITE_RAX_RDX   ".byte 0x0f, 0x79, 0xd0"
+#define ASM_VMX_VMWRITE_RSP_RDX   ".byte 0x0f, 0x79, 0xd4"
+#define ASM_VMX_VMXOFF            ".byte 0x0f, 0x01, 0xc4"
+#define ASM_VMX_VMXON_RAX         ".byte 0xf3, 0x0f, 0xc7, 0x30"
+
+#define VMX_SEGMENT_FIELD(seg)                                  \
+	[VCPU_SREG_##seg] = {                                   \
+		.selector = GUEST_##seg##_SELECTOR,             \
+		.base = GUEST_##seg##_BASE,                     \
+		.limit = GUEST_##seg##_LIMIT,                   \
+		.ar_bytes = GUEST_##seg##_AR_BYTES,             \
+	}
+
+static struct vmx_segment_field {
+	unsigned selector;
+	unsigned base;
+	unsigned limit;
+	unsigned ar_bytes;
+} vmx_segment_fields[] = {
+	VMX_SEGMENT_FIELD(CS),
+	VMX_SEGMENT_FIELD(DS),
+	VMX_SEGMENT_FIELD(ES),
+	VMX_SEGMENT_FIELD(FS),
+	VMX_SEGMENT_FIELD(GS),
+	VMX_SEGMENT_FIELD(SS),
+	VMX_SEGMENT_FIELD(TR),
+	VMX_SEGMENT_FIELD(LDTR),
+};
+
+static inline unsigned long read_cr0(void)
+{ 
+	unsigned long cr0;
+	asm ("movq %%cr0,%0" : "=r" (cr0));
+	return cr0;
+} 
+
+static inline void write_cr0(unsigned long val) 
+{ 
+	asm ("movq %0,%%cr0" :: "r" (val));
+} 
+
+static inline unsigned long read_cr3(void)
+{ 
+	unsigned long cr3;
+	asm("movq %%cr3,%0" : "=r" (cr3));
+	return cr3;
+} 
+
+static inline unsigned long read_cr4(void)
+{ 
+	unsigned long cr4;
+	asm("movq %%cr4,%0" : "=r" (cr4));
+	return cr4;
+} 
+
+static inline void write_cr4(unsigned long val)
+{ 
+	asm ("movq %0,%%cr4" :: "r" (val));
+} 
+static inline u16 read_fs(void)
+{
+	u16 seg;
+	asm ("mov %%fs, %0" : "=g"(seg));
+	return seg;
+}
+
+static inline u16 read_gs(void)
+{
+	u16 seg;
+	asm ("mov %%gs, %0" : "=g"(seg));
+	return seg;
+}
+
+static unsigned char bios[] = {
+  0xfa, 0xb8, 0x00, 0xf0, 0x8e, 0xd8, 0x0f, 0x01, 0x16, 0x38, 0xf0, 0x0f,
+  0x20, 0xc0, 0x66, 0x83, 0xc8, 0x01, 0x0f, 0x22, 0xc0, 0x66, 0xea, 0x40,
+  0xf0, 0x0f, 0x00, 0x08, 0x00, 0x90, 0x90, 0x90, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0x00, 0x9a, 0xcf, 0x00,
+  0xff, 0xff, 0x00, 0x00, 0x00, 0x92, 0xcf, 0x00, 0x17, 0x00, 0x20, 0xf0,
+  0x0f, 0x00, 0x90, 0x90, 0x66, 0xb8, 0x10, 0x00, 0x8e, 0xd8, 0x8e, 0xd0,
+  0x8e, 0xc0, 0x8e, 0xe0, 0x8e, 0xe8, 0xbd, 0x00, 0x00, 0x09, 0x00, 0x89,
+  0xec, 0xb8, 0x21, 0x43, 0x65, 0x87, 0xf4
+};
+
 #endif
 #endif
 

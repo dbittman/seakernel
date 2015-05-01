@@ -30,7 +30,7 @@ static void __copy_mappings(task_t *ch, task_t *pa)
 		struct memmap *n = kmalloc(sizeof(*map));
 		memcpy(n, map, sizeof(*n));
 		/* of course, we have another reference to the backing inode */
-		add_atomic(&n->node->count, 1);
+		vfs_inode_get(n->node);
 		if(map->flags & MAP_SHARED) {
 			/* and if it's shared, tell the inode that another processor
 			 * cares about some section of memory */
@@ -52,11 +52,11 @@ static void copy_thread_data(task_t *task, task_t *parent)
 	assert(parent->thread->magic == THREAD_MAGIC);
 	if(parent->thread->root) {
 		task->thread->root = parent->thread->root;
-		add_atomic(&task->thread->root->count, 1);
+		vfs_inode_get(parent->thread->root);
 	}
 	if(parent->thread->pwd) {
 		task->thread->pwd = parent->thread->pwd;
-		add_atomic(&task->thread->pwd->count, 1);
+		vfs_inode_get(parent->thread->pwd);
 	}
 	memcpy((void *)task->thread->signal_act, (void *)parent->thread->signal_act, 128 * 
 		sizeof(struct sigaction));

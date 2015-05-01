@@ -93,6 +93,7 @@ int kthread_wait(struct kthread *kt, int flags)
 int kthread_join(struct kthread *kt, int flags)
 {
 	or_atomic(&kt->flags, KT_JOIN);
+	tm_process_resume(kt->process); /* in case it's sleeping */
 	if(!(flags & KT_JOIN_NONBLOCK))
 		kthread_wait(kt, 0);
 	if(kt->flags & KT_EXITED)

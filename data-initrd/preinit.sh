@@ -31,16 +31,19 @@ else
 		echo "Failed to mount root filesystem, falling back to initrd shell..."
 		sh
 	else
-		printf "dev "
-		mount -t devfs \* /mnt/dev
-		printf "proc "
-		mount -t procfs \* /mnt/proc
-		printf "tmp "
-		mount -t tmpfs \* /mnt/tmp
-		printf "done\n"
-		if ! chroot /mnt /bin/sh /etc/rc/boot ; then
+		/mnt/bin/umount /dev
+		chroot /mnt /bin/sh -c <<EOF "
+			printf "dev"
+			mount -t devfs /dev/null /dev
+			printf "tmp"
+			mount -t tmpfs /dev/null /tmp
+			. /etc/rc/boot; exit 0"
+EOF
+		if [ $? != 0 ] ; then
 			printf "** chroot failed, dropping to initrd shell **\n"
 			sh
+			exit 1
 		fi
 	fi
 fi
+

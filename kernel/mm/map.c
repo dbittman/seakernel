@@ -91,7 +91,7 @@ addr_t mm_establish_mapping(struct inode *node, addr_t virt,
 		int prot, int flags, size_t offset, size_t length)
 {
 	assert(node);
-	if(!(flags & MAP_ANONYMOUS) && (offset >= (size_t)node->len)) {
+	if(!(flags & MAP_ANONYMOUS) && (offset >= (size_t)node->length)) {
 		return -EINVAL;
 	}
 	mutex_acquire(&current_task->thread->map_lock);
@@ -109,7 +109,7 @@ addr_t mm_establish_mapping(struct inode *node, addr_t virt,
 	if(vr.start)
 		memcpy(&(map->vr), &vr, sizeof(struct valloc_region));
 	
-	add_atomic(&node->count, 1);
+	vfs_inode_get(node);
 	record_mapping(map);
 	/* unmap the region of previous pages */
 	for(addr_t s=virt;s < (virt + length);s+=PAGE_SIZE)
@@ -128,7 +128,7 @@ addr_t mm_establish_mapping(struct inode *node, addr_t virt,
 static int __do_mm_disestablish_mapping(struct memmap *map)
 {
 	release_virtual_location(&map->vr);
-	vfs_iput(map->node);
+	vfs_icache_put(map->node);
 	map->node = 0;
 	remove_mapping(map);
 	kfree(map);
@@ -292,7 +292,7 @@ int mm_mapping_munmap(addr_t start, size_t length)
 						&map->vr, &n->vr, map->length / PAGE_SIZE);
 			}
 			/* remember to increase the count of the inode... */
-			add_atomic(&n->node->count, 1);
+			vfs_inode_get(n->node);
 			record_mapping(n);
 		}
 		if(map->length == 0)

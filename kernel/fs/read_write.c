@@ -9,7 +9,7 @@
 #include <sea/dm/char.h>
 #include <sea/dm/block.h>
 #include <sea/fs/file.h>
-#include <sea/dm/pipe.h>
+#include <sea/fs/pipe.h>
 #include <sea/errno.h>
 #include <sea/vsprintf.h>
 int fs_do_sys_read_flags(struct file *f, off_t off, char *buf, size_t count)
@@ -19,17 +19,16 @@ int fs_do_sys_read_flags(struct file *f, off_t off, char *buf, size_t count)
 	struct inode *inode = f->inode;
 	int mode = inode->mode;
 	if(S_ISFIFO(mode))
-		return dm_read_pipe(inode, f->flags, buf, count);
+		return fs_pipe_read(inode, f->flags, buf, count);
 	else if(S_ISCHR(mode))
-		return dm_char_rw(READ, inode->dev, buf, count);
+		return dm_char_rw(READ, inode->phys_dev, buf, count);
 	else if(S_ISBLK(mode))
-		return dm_block_device_rw(READ, inode->dev, off, buf, count);
+		return dm_block_device_rw(READ, inode->phys_dev, off, buf, count);
 	/* We read the data for a link as well. If we have gotten to the point
 	 * where we have the inode for the link we probably want to read the link 
 	 * itself */
 	else if(S_ISDIR(mode) || S_ISREG(mode) || S_ISLNK(mode))
-		return vfs_read_inode(inode, off, count, buf);
-	printk(1, "sys_read (%s): invalid mode %x\n", inode->name, inode->mode);
+		return fs_inode_read(inode, off, count, buf);
 	return -EINVAL;
 }
 
@@ -71,15 +70,14 @@ int fs_do_sys_write_flags(struct file *f, off_t off, char *buf, size_t count)
 		return -EINVAL;
 	struct inode *inode = f->inode;
 	if(S_ISFIFO(inode->mode))
-		return dm_write_pipe(inode, f->flags, buf, count);
+		return fs_pipe_write(inode, f->flags, buf, count);
 	else if(S_ISCHR(inode->mode))
-		return dm_char_rw(WRITE, inode->dev, buf, count);
+		return dm_char_rw(WRITE, inode->phys_dev, buf, count);
 	else if(S_ISBLK(inode->mode))
-		return (dm_block_device_rw(WRITE, inode->dev, off, buf, count));
+		return (dm_block_device_rw(WRITE, inode->phys_dev, off, buf, count));
 	/* Again, we want to write to the link because we have that node */
 	else if(S_ISDIR(inode->mode) || S_ISREG(inode->mode) || S_ISLNK(inode->mode))
-		return vfs_write_inode(inode, off, count, buf);
-	printk(1, "sys_write (%s): invalid mode %x\n", inode->name, inode->mode);
+		return fs_inode_write(inode, off, count, buf);
 	return -EINVAL;
 }
 
@@ -103,7 +101,7 @@ int sys_writepos(int fp, char *buf, size_t count)
 	}
 	assert(f->inode);
 	if(f->flags & _FAPPEND)
-		f->pos = f->inode->len;
+		f->pos = f->inode->length;
 	int ret=fs_do_sys_write(f, f->pos, buf, count);
 	if(ret > 0)
 		f->pos += ret;

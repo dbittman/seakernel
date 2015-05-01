@@ -16,7 +16,7 @@ int sys_ioctl(int fp, int cmd, long arg)
 	struct file *f = fs_get_file_pointer((task_t *)current_task, fp);
 	if(!f) return -EBADF;
 	assert(f->inode);
-	int ret = dm_ioctl(f->inode->mode, f->inode->dev, cmd, arg);
+	int ret = dm_ioctl(f->inode->mode, f->inode->phys_dev, cmd, arg);
 	fs_fput((task_t *)current_task, fp, 0);
 	return ret;
 }
@@ -48,6 +48,7 @@ int sys_fcntl(int filedes, int cmd, long attr1, long attr2, long attr3)
 			printk(5, "Task attempted to access socket controls on non-socket descriptor!\n");
 			tm_kill_process(current_task->pid);
 			break;
+#if 0
 		case F_SETLK: 
 			ret = fs_fcntl_setlk(f, attr1);
 			break;
@@ -57,6 +58,7 @@ int sys_fcntl(int filedes, int cmd, long attr1, long attr2, long attr3)
 		case F_SETLKW:
 			ret = fs_fcntl_setlkw(f, attr1);
 			break;
+#endif
 		default:
 			printk(5, "Task tried calling fcntl with invalid commands!\n");
 			ret = -EINVAL;

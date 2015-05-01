@@ -18,6 +18,37 @@ int hash_chain_get(void **h, int (*fn)(int, void *, size_t, size_t, int), size_t
 	return 0;
 }
 
+int hash_chain_set_or_get(void **h, int (*fn)(int, void *, size_t, size_t, int), size_t size, void *key, size_t elem_sz, size_t len, void *value, void **result)
+{
+	assert(fn && value);
+	size_t loc = fn(size, key, elem_sz, len, 0);
+	assert(loc < size);
+	struct hash_table_chain_node *n = h[loc], *prev=0;
+	while(n) {
+		if(!__hash_table_compare_keys(n->key, n->elem_sz, n->len, key, elem_sz, len)) {
+			*result = n->entry;
+			return -EEXIST;
+		}
+		prev = n;
+		n = n->next;
+	}
+	n = kmalloc(sizeof(struct hash_table_chain_node));
+	n->key = kmalloc(elem_sz * len);
+	memcpy(n->key, key, elem_sz * len);
+	n->elem_sz = elem_sz;
+	n->len = len;
+	n->entry = value;
+	
+	if(!prev)
+		h[loc] = n;
+	else
+		prev->next = n;
+	struct hash_table_chain_node *head = h[loc];
+	head->num_in_chain++;
+	*result = value;
+	return 0;
+}
+
 int hash_chain_set(void **h, int (*fn)(int, void *, size_t, size_t, int), size_t size, void *key, size_t elem_sz, size_t len, void *value)
 {
 	assert(fn && value);
@@ -104,6 +135,7 @@ struct hash_collision_resolver __hash_chain_resolver = {
 	"chain",
 	hash_chain_get,
 	hash_chain_set,
+	hash_chain_set_or_get,
 	hash_chain_del,
 	hash_chain_enumerate
 };

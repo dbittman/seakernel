@@ -127,3 +127,4 @@ void acpi_init()
 	loader_add_kernel_symbol(find_RSDT_entry);
 #endif
 }
+

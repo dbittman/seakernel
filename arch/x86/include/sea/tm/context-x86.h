@@ -1,8 +1,6 @@
 #ifndef __CONTEXT_X86_H
 #define __CONTEXT_X86_H
 /* Functions for scheduling tasks */
-#include <sea/kernel.h>
-//#include <sea/mm/vmm.h>
 #include <sea/tm/process.h>
 #include <sea/cpu/processor.h>
 #include <sea/asm/system.h>

@@ -118,7 +118,9 @@ struct net_dev *net_add_device(struct net_dev_calls *fn, void *data)
 	snprintf(nd->name, 16, "nd%d", num);
 	nd->num = num;
 	devices[num] = nd;
-	nd->devnode = devfs_add(devfs_root, nd->name, S_IFCHR, 6, num);
+	char path[8 + strlen(nd->name)];
+	snprintf(path, 8+strlen(nd->name), "/dev/%s", nd->name);
+	sys_mknod(path, S_IFCHR | 0600, GETDEV(6, num));
 
 	return nd;
 }

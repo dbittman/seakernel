@@ -74,7 +74,7 @@ int shiv_ioctl(int min, int cmd, long arg)
 			char tmp[7] = "shiv";
 			tmp[4] = min + '0';
 			tmp[5]=0;
-			devfs_add(devfs_root, tmp, S_IFCHR, shiv_maj, min);
+			sys_mknod(tmp, S_IFCHR | 0640, GETDEV(shiv_maj, min));
 			break;
 		case VM_DESTROY:
 
@@ -154,7 +154,7 @@ int module_install()
 
 	
 	shiv_maj = dm_set_available_char_device(0, shiv_ioctl, 0);
-	devfs_add(devfs_root, "shivctl", S_IFCHR, shiv_maj, 0);
+	sys_mknod("shivctl", S_IFCHR | 0640, GETDEV(shiv_maj, 0));
 	return 0;
 }
 

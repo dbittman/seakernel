@@ -56,7 +56,7 @@ int ramfs_mount(struct filesystem *fs)
 	fs->root_inode_id = 0;
 	fs->fs_ops = &ramfs_fsops;
 	fs->fs_inode_ops = &ramfs_iops;
-	hash_table_set_entry(h, &fs->root_inode_id, sizeof(fs->root_inode_id), 1, root);
+	int r = hash_table_set_entry(h, &fs->root_inode_id, sizeof(fs->root_inode_id), 1, root);
 
 	struct rfsdirent *dot = kmalloc(sizeof(struct rfsdirent));
 	strncpy(dot->name, ".", 1);

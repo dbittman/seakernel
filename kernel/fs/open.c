@@ -118,8 +118,9 @@ int sys_open_posix(char *name, int flags, mode_t mode)
 {
 	int error=0, num;
 	struct file *f = fs_do_sys_open(name, flags, mode, &error, &num);
-	if(!f)
+	if(!f) {
 		return error;
+	}
 	return num;
 }
 

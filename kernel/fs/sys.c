@@ -48,7 +48,7 @@ void devfs_init()
 	int r;
 	struct inode *in = fs_path_resolve_inode("/dev", 0, &r);
 	if(!in) {
-		panic(0, "/dev does not exist");
+		panic(0, "/dev does not exist (%d)", -r);
 	}
 	if(!S_ISDIR(in->mode)) {
 		panic(0, "/dev is not a directory");
@@ -75,7 +75,6 @@ int sys_setup(int a)
 	}
 	printk(KERN_MILE, "[kernel]: Setting up environment...");
 	kerfs_init();
-	
 
 	struct filesystem *fs = fs_filesystem_create();
 	ramfs_mount(fs);

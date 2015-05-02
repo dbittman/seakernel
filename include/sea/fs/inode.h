@@ -36,7 +36,7 @@ struct inode {
 	struct filesystem *filesystem;
 	
 	int count;
-	uint32_t flags;
+	int flags;
 	
 	dev_t phys_dev;
 	struct filesystem *mount;
@@ -51,7 +51,7 @@ struct inode {
 	time_t ctime, atime, mtime;
 	size_t blocksize;
 	size_t nblocks;
-	size_t id;
+	uint32_t id;
 
 	/* mmap stuff */
 	struct hash_table *physicals;

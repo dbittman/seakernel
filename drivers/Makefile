@@ -1,7 +1,7 @@
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),config)
 ifneq ($(MAKECMDGOALS),defconfig)
-include $(BUILDDIR)/../sea_defines.inc
+include $(shell realpath -m $(BUILDDIR)/../sea_defines.inc)
 endif
 endif
 include ../make.inc

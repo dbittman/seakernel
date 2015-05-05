@@ -1,19 +1,25 @@
+.PHONY: do_deps
 do_deps:
-	@-rm make.deps 2> /dev/null
-	for i in $(DOBJS) ; do \
+	@echo "# Automatically generated" > $(DEPSFILE)
+	@for i in $(DOBJS) ; do \
 		echo -n -e "\e[2K[DP]    calculating deps: `basename $$i`\r"; \
-		echo -n $$i >> make.deps ; \
-		$(CC) $(DCFLAGS) -MM `echo $$i | sed -e "s@^\(.*\)\.${OBJ_EXT}@\1.c@"` | sed -e "s@^\(.*\)\.o:@:@" >> make.deps; \
+		echo -n $$i >> $(DEPSFILE) ; \
+		if ! $(CC) $(DCFLAGS) -MM `echo $$i | sed -e "s@^${BUILDDIR}\/\(.*\)\.${OBJ_EXT}@\1.c@"` | sed -e "s@^\(.*\)\.o:@:@" >> $(DEPSFILE); then \
+			rm $(DEPSFILE) ; \
+			break ; \
+		fi ; \
 	done
-	echo -e "\e[2K[DP]    calculating deps: done"
+	@echo -e "\e[2K[DP]    calculating deps: done"
 
-make.deps: $(ADHEADS)
-	@touch make.deps
-	@${MAKE} -s do_deps
+$(DEPSFILE): $(BUILDDIR) $(ADHEADS)
+	@if [ ! -f $(DEPSFILE) ]; then \
+		touch $(DEPSFILE) ; \
+		${MAKE} -s do_deps ; \
+	fi
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
--include make.deps
+-include $(DEPSFILE)
 endif
 endif
 

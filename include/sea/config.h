@@ -1,7 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include <../sea_defines.h>
+#include <sea_defines.h>
 
 #include <sea/version.h>
 

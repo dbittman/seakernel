@@ -1,8 +1,11 @@
 # seakernel makefile
+.DEFAULT_GOAL = all
+.DEFAULT = all
+export BUILDDIR = build/$(BUILDCFG)
 ARCH=__none__
 ifneq ($(MAKECMDGOALS),config)
 ifneq ($(MAKECMDGOALS),defconfig)
-include sea_defines.inc
+include $(BUILDDIR)/sea_defines.inc
 endif
 endif
 
@@ -25,7 +28,6 @@ CFLAGS_NOARCH = -std=gnu11 -nostdlib -nodefaultlibs \
                 -mpush-args -mno-accumulate-outgoing-args \
                 -Iarch/${ARCH}/include \
                 -Iinclude \
-				-Iarch/include \
                 -D__KERNEL__ \
                 -Wall -Wextra -Wformat-security -Wformat-nonliteral \
 	        -Wno-strict-aliasing -Wshadow -Wpointer-arith -Wcast-align \
@@ -48,10 +50,13 @@ ifeq ($(CONFIG_WERROR),y)
 endif
 
 include make.inc
+include version
 	        
 ifneq ($(ARCH),__none__)
 include arch/${ARCH}/make.inc
 endif
+
+CFLAGS_NOARCH += -I$(BUILDDIR)/arch/include -I$(BUILDDIR) -include $(BUILDDIR)/sea_defines.h
 
 export ARCH_TC
 export ARCH
@@ -69,33 +74,37 @@ VERSION_H = include/sea/version.h
 include kernel/make.inc
 include drivers/make.inc
 include arch/make.inc
+include library/make.inc
 
-all: $(VERSION_H) $(ADHEADS) make.deps
-	$(MAKE) -s kernel
+ADHEADS := $(addprefix $(BUILDDIR)/, $(ADHEADS))
+DEPSFILE=$(BUILDDIR)/make.deps
+KERNEL_STAGE1 = $(BUILDDIR)/skernel.1
+KERNEL = $(BUILDDIR)/skernel
+
+all: $(BUILDDIR) $(DEPSFILE) $(VERSION_H) $(ADHEADS) $(KERNEL) modules
+
+$(BUILDDIR):
+	@mkdir -p $(BUILDDIR)
 
 ifneq ($(MAKECMDGOALS),config)
-ifneq ($(MAKECMDGOALS),defconfig)
-ifneq ($(MAKECMDGOALS),clean)
-DOBJS=$(KOBJS)
-DCFLAGS=$(CFLAGS)
-export OBJ_EXT=o
-include tools/make/deps.inc
-endif
-endif
+  ifneq ($(MAKECMDGOALS),defconfig)
+    ifneq ($(MAKECMDGOALS),clean)
+      DOBJS=$(KOBJS)
+      DCFLAGS=$(CFLAGS)
+      export OBJ_EXT=o
+      include tools/make/deps.inc
+    endif
+  endif
 endif
 
-deps:
-	@touch make.deps
-	@${MAKE} -s do_deps
-	@${MAKE} -s -C library deps
-	@${MAKE} -s -C drivers deps
-.PHONY: library/klib.a
+KOBJS := $(addprefix $(BUILDDIR)/, $(KOBJS))
+AOBJS := $(addprefix $(BUILDDIR)/, $(AOBJS))
+
+.PHONY: clean,kernel,modules,all,distclean,help,love,gcc-print-optimizers,deps,help
 .NOTPARALLEL: $(VERSION_H)
 .NOTPARALLEL: $(ADHEADS)
-library/klib.a:
-	$(MAKE) -s -C library
 
-$(VERSION_H):
+$(VERSION_H): version
 	@echo "[GH]    $(VERSION_H)"
 	@echo "/* auto generated during build */" > $(VERSION_H)
 	@echo "#ifndef __SEA_VERSION_H" >> $(VERSION_H)
@@ -105,55 +114,49 @@ $(VERSION_H):
 	@echo "#define CONFIG_VERSION_NUMBER $(VERSION_NUMBER)" >> $(VERSION_H)
 	@echo "#endif" >> $(VERSION_H)
 
-
 $(ADHEADS):
-	@mkdir -p arch/include/sea/arch-include
+	@mkdir -p $(BUILDDIR)/arch/include/sea/arch-include
 	@echo "[GH]    $@"
 	@tools/arch-dep-header-gen.sh $@ > $@
 
-skernel.1: $(VERSION_H) $(ADHEADS) $(AOBJS) $(KOBJS) library/klib.a
-	echo "[LD]	skernel"
-	$(CC) $(CFLAGS) $(LDFLAGS) -o skernel.1 $(AOBJS) $(KOBJS) library/klib.a -lgcc -static-libgcc -static
+$(KERNEL_STAGE1): $(VERSION_H) $(ADHEADS) $(AOBJS) $(KOBJS)
+	@echo "[LD]	${KERNEL}"
+	@$(CC) $(CFLAGS) $(LDFLAGS) -o $(KERNEL_STAGE1) $(AOBJS) $(KOBJS) -lgcc -static-libgcc -static
 
-skernel: skernel.1
-	cp skernel.1 skernel
-	if [ "${ARCH}" = "x86_64" ]; then \
-		objcopy -I elf64-x86-64 -O elf32-i386 skernel ;\
+$(KERNEL): $(KERNEL_STAGE1)
+	@cp ${KERNEL_STAGE1} ${KERNEL}
+	@if [ "${ARCH}" = "x86_64" ]; then \
+		objcopy -I elf64-x86-64 -O elf32-i386 ${KERNEL} ;\
 	fi
 
 initrd.img: modules
-	echo "Building initrd..."
-	./tools/ird.rb initrd-${ARCH_TC}.conf > /dev/null ;\
+	@echo "Building initrd..."
+	@./tools/ird.rb initrd-${ARCH_TC}.conf > /dev/null ;\
 
-modules: $(VERSION_H) $(ADHEADS) library/klib.a
-	echo Building modules, pass 1...
-	$(MAKE) -C drivers
+modules: $(VERSION_H) $(ADHEADS)
+	@echo Building modules, pass 1...
+	@$(MAKE) -s -C drivers BUILDDIR=../$(BUILDDIR)/drivers
 
-kernel: make.deps skernel initrd.img
+kernel: $(KERNEL)
+
+deps: do_deps
+	@make -s -C drivers do_deps BUILDDIR=../$(BUILDDIR)/drivers
 
 install: kernel
 	@echo "installing kernel..."
 	@cp -f skernel /sys/kernel
 	@echo "installing initrd..."
 	@cp -f initrd.img /sys/initrd
-	@make -C drivers install VERSION=${VERSION}
+	@make -C drivers install VERSION=${VERSION} BUILDDIR=../$(BUILDDIR)/drivers
 
 clean:
-	@-rm -f $(VERSION_H) $(ADHEADS) $(AOBJS) $(KOBJS) $(CLEAN) initrd.img skernel make.deps skernel.1
-	@-$(MAKE) -s -C library clean &> /dev/null
-	@-$(MAKE) -s -C drivers clean &> /dev/null
-
-distclean: 
-	@-$(MAKE) -s clean
-	@-rm -f sea_defines.{h,inc} 
-	@-rm -f initrd.conf make.inc
-	@-rm -f tools/{confed,mkird}
-	@-rm -f make.deps drivers/make.deps
+	@find $(BUILDDIR)/* ! -name sea_defines.h ! -name sea_defines.inc ! -name .config.cfg -delete
 
 config: 
 	@tools/conf.rb config.cfg
 	@echo post-processing configuration...
 	@tools/config.rb .config.cfg
+	@mv .config.cfg sea_defines.{h,inc} $(BUILDDIR)/
 	@echo "run make clean to remove old objects if architecture has changed"
 	
 defconfig:
@@ -182,4 +185,13 @@ help:
 	@echo -e " all,os:\tcompiles the kernel"
 	@echo
 
-include tools/make/rules.inc
+$(BUILDDIR)/%.o: %.s
+	@echo -n -e "[AS]\t$@            \n"
+	@mkdir -p $$(dirname $@)
+	@nasm $(ASFLAGS) $< -o $@
+	
+$(BUILDDIR)/%.o: %.c $(ADHEAD) $(VERSION_H)
+	@echo -n -e "[CC]\t$@            \n"
+	@mkdir -p $$(dirname $@)
+	@$(CC) -c $(CFLAGS) -o $@ $<
+

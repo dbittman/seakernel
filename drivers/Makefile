@@ -1,7 +1,7 @@
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),config)
 ifneq ($(MAKECMDGOALS),defconfig)
-include ../sea_defines.inc
+include $(BUILDDIR)/../sea_defines.inc
 endif
 endif
 include ../make.inc
@@ -37,20 +37,21 @@ include ../arch/$(ARCH)/drivers/make.inc
 endif
 endif
 
-MODULES += $(MODULES-y)
+MODULES += $(addprefix $(BUILDDIR)/, $(MODULES-y))
 SUBDIRS = "$(SUBDIRS-y)"
 VERSION=${KERNEL_VERSION}
-
+DEPSFILE=$(BUILDDIR)/make.deps
 # note the use of mcmodel=large
 # I believe, but don't quote me on this, that
 # this flag is needed if we want to access relocations
 # that require 64bit fields...
 MCFLAGS:=        -std=gnu11 \
-		-D__KERNEL__ -mno-red-zone -ffreestanding -include `realpath ../sea_defines.h`\
+		-D__KERNEL__ -mno-red-zone -ffreestanding -include `realpath $(BUILDDIR)/../sea_defines.h`\
 		-nostdlib \
 		-I`realpath ../arch/${ARCH}/include` \
 		-I`realpath ../include` \
-		-I`realpath ../arch/include`\
+		-I`realpath $(BUILDDIR)/../arch/include`\
+		-I`realpath $(BUILDDIR)/..`\
 		-Wall -Wextra -Wformat-security -Wformat-nonliteral -Wshadow \
 		-Wpointer-arith -Wcast-align -Wno-unused -Wnested-externs \
 		-Winline -Wno-long-long -Wno-unused-parameter \
@@ -58,7 +59,7 @@ MCFLAGS:=        -std=gnu11 \
 		-mno-mmx -mno-sse -mno-sse2 -mno-sse3 -mno-3dnow \
 		-fno-omit-frame-pointer \
 		-fno-tree-loop-distribute-patterns \
-		-fno-common 
+		-fno-common
 
 ifeq ($(ARCH), x86_64)
 MCFLAGS += -mcmodel=large
@@ -77,67 +78,46 @@ endif
 export MCFLAGS
 export CC
 export LD
-
-all:
-	@$(MAKE) -s all_s
-
-all_s: make.deps $(MODULES)
-	echo "Building modules, pass 2..."
+all: $(BUILDDIR) $(DEPSFILE) $(MODULES)
+	@echo "Building modules, pass 2..."
+	@-mkdir -p $(BUILDDIR)/built
+	@-rm -rf $(BUILDDIR)/built/*
 	
-	for i in "$(SUBDIRS)"; do \
+	@for i in "$(SUBDIRS)"; do \
 		if [ $$i != "" ]; then \
 			export MCFLAGS="$(MCFLAGS)" ;\
 			$(MAKE) -s -C $$i ;\
 		fi ;\
 	done
-	@-mkdir -p built
-	@-rm -rf built/*
 	@-for i in $(MODULES); do \
 		MOD=`basename $$i | sed -e "s@^\(.*\)\.m@\1@"` ; \
-		cp -f $$i built/$$MOD ;\
+		cp -f $$i $(BUILDDIR)/built/$$MOD ;\
 	done
-	@-for i in "$(SUBDIRS)"; do \
-		if [ $$i != "" ]; then \
-		cp -f $$i/$$(basename $$i).m built/$$(basename $$i) ;\
-		fi ;\
-	done
-	@cp modules.deps built/
+
+$(BUILDDIR):
+	@mkdir -p $(BUILDDIR)
 
 install: $(MODULES)
 	@-for i in $(MODULES); do \
 		MOD=`basename $$i | sed -e "s@^\(.*\)\.m@\1@"` ; \
-		cp -vf built/$$MOD /sys/modules-${VERSION}/$$MOD ;\
+		cp -vf $(BUILDDIR)/built/$$MOD /sys/modules-${VERSION}/$$MOD ;\
 	done
 	@-for i in "$(SUBDIRS)"; do \
-		cp -f built/$$i /sys/modules-${VERSION}/$$i ;\
+		cp -f $(BUILDDIR)/built/$$i /sys/modules-${VERSION}/$$i ;\
 	done
 	@-cp modules.deps /sys/modules-${VERSION}/modules.deps
 
-%.m: %.c
-	echo -n -e "[CC] M \t$<                 \n"
-	$(CC) $(MCFLAGS) $< -c -o $@.o
-	echo -n -e "[LD] M \t$@                 \n"
-	$(CC) $(MCFLAGS) $(LDFLAGS_ARCH) $@.o -o $@ -Wl,-r,-Tlink.ld ../library/klib.a -lgcc -static
+$(BUILDDIR)/%.m: %.c
+	@mkdir -p $$(dirname $@)
+	@echo -n -e "[CC] M \t$@                 \n"
+	@$(CC) $(MCFLAGS) $< -c -o $@.o
+	@$(CC) $(MCFLAGS) $(LDFLAGS_ARCH) $@.o -o $@ -Wl,-r,-Tlink.ld -lgcc -static
 
 clean:
-	@-find -name "*.m" | xargs rm -f
-	@-find -name "*.o" | xargs rm -f
-	@-find -name "*.m.1" | xargs rm -f
-	@-find -name "make.deps" | xargs rm -f
-	@-find $$(find ../arch -name drivers | grep -v kernel) -name "*.m" | xargs rm -f
-	@-find $$(find ../arch -name drivers | grep -v kernel) -name "*.o" | xargs rm -f
-	@-find $$(find ../arch -name drivers | grep -v kernel) -name "make.deps" | xargs rm -f
-	@-for i in $$(find $$(find ../arch -name drivers | grep -v kernel) -name "Makefile"); do \
-		-$(MAKE) -s -C $$(dirname $$i) clean 2>/dev/null ;\
-	done
-	@-rm -rf built/* $(MODULES) $(MODULES:.m=.m.o)
-	@-find ../arch -name "*.m" | xargs rm -f
-	@-find ../arch -name "*.m.o" | xargs rm -f
-	@-for i in $(ALLSUBDIRS); do \
-		-$(MAKE) -s -C $$i clean 2>/dev/null ;\
-	done
+	@-rm -rf $(BUILDDIR)
 
 export OBJ_EXT=m
 export DOBJS=${MODULES}
 export DCFLAGS=${MCFLAGS}
 include ../tools/make/deps.inc
+

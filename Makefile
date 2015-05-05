@@ -1,11 +1,15 @@
 # seakernel makefile
 .DEFAULT_GOAL = all
 .DEFAULT = all
-export BUILDDIR = build/$(BUILDCFG)
+BUILDCFG ?= default
+BUILDCONTAINER = build
+export BUILDDIR = $(BUILDCONTAINER)/$(BUILDCFG)
 ARCH=__none__
 ifneq ($(MAKECMDGOALS),config)
 ifneq ($(MAKECMDGOALS),defconfig)
+ifneq ($(MAKECMDGOALS),all)
 include $(BUILDDIR)/sea_defines.inc
+endif
 endif
 endif
 
@@ -81,7 +85,22 @@ DEPSFILE=$(BUILDDIR)/make.deps
 KERNEL_STAGE1 = $(BUILDDIR)/skernel.1
 KERNEL = $(BUILDDIR)/skernel
 
-all: $(BUILDDIR) $(DEPSFILE) $(VERSION_H) $(ADHEADS) $(KERNEL) modules
+all:
+	@if [ "$(BUILDCFGS)" == "" ]; then \
+		echo "===== Building Configuration" $(BUILDCFG) "->" $(BUILDDIR) "=====" ;\
+		$(MAKE) -s do_all ;\
+	else \
+		dirs=($(shell ls -d $(addprefix $(BUILDCONTAINER)/, $(BUILDCFGS)))) ;\
+		cd $(BUILDCONTAINER) ;\
+		cfgs=($$(ls -d $(BUILDCFGS))) ;\
+		cd .. ;\
+		for ((i=0;i<$${#dirs[@]};++i)); do \
+			echo "===== Building Configuration" $${cfgs[$$i]} "->" $${dirs[$$i]} "=====" ;\
+			BUILDCFG=$${cfgs[$$i]} $(MAKE) -s do_all ;\
+		done ;\
+	fi
+
+do_all: $(BUILDDIR) $(DEPSFILE) $(VERSION_H) $(ADHEADS) $(KERNEL) modules
 
 $(BUILDDIR):
 	@mkdir -p $(BUILDDIR)
@@ -89,11 +108,13 @@ $(BUILDDIR):
 ifneq ($(MAKECMDGOALS),config)
   ifneq ($(MAKECMDGOALS),defconfig)
     ifneq ($(MAKECMDGOALS),clean)
+    ifneq ($(MAKECMDGOALS),all)
       DOBJS=$(KOBJS)
       DCFLAGS=$(CFLAGS)
       export OBJ_EXT=o
       include tools/make/deps.inc
     endif
+  endif
   endif
 endif
 
@@ -101,8 +122,8 @@ KOBJS := $(addprefix $(BUILDDIR)/, $(KOBJS))
 AOBJS := $(addprefix $(BUILDDIR)/, $(AOBJS))
 
 .PHONY: clean,kernel,modules,all,distclean,help,love,gcc-print-optimizers,deps,help
-.NOTPARALLEL: $(VERSION_H)
-.NOTPARALLEL: $(ADHEADS)
+#.NOTPARALLEL: $(VERSION_H)
+#.NOTPARALLEL: $(ADHEADS)
 
 $(VERSION_H): version
 	@echo "[GH]    $(VERSION_H)"
@@ -152,7 +173,7 @@ install: kernel
 clean:
 	@find $(BUILDDIR)/* ! -name sea_defines.h ! -name sea_defines.inc ! -name .config.cfg -delete
 
-config: 
+config:
 	@tools/conf.rb config.cfg
 	@echo post-processing configuration...
 	@tools/config.rb .config.cfg

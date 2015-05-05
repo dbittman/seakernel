@@ -1,0 +1,17 @@
+#!/bin/sh
+
+BUILDDIR=build
+
+if [ "$1" == "" ]; then
+	echo "usage: cfg-rm name"
+	echo "delete a build configuration"
+	exit 1
+fi
+
+if [ ! -e $BUILDDIR/$1 ]; then
+	echo "build configuration $1 doesn't exist"
+	exit 1
+fi
+
+rm -rf $BUILDDIR/$1
+

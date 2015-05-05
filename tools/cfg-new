@@ -1,0 +1,17 @@
+#!/bin/sh
+
+BUILDDIR=build
+
+if [ "$1" == "" ]; then
+	echo "usage: cfg-new name"
+	echo "Create new build configuration named 'name'"
+	exit 1
+fi
+
+if [ -e $BUILDDIR/$1 ]; then
+	echo cannot create new build configuration "(file exists)"
+	exit 1
+fi
+
+mkdir -p $BUILDDIR/$1
+

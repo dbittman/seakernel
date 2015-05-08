@@ -94,13 +94,7 @@ $(BUILDDIR)/built:
 	@mkdir -p $(BUILDDIR)/built
 
 install: $(MODULES)
-	@-for i in $(MODULES); do \
-		MOD=`basename $$i | sed -e "s@^\(.*\)\.m@\1@"` ; \
-		cp -vf $(BUILDDIR)/built/$$MOD /sys/modules-${VERSION}/$$MOD ;\
-	done
-	@-for i in "$(SUBDIRS)"; do \
-		cp -f $(BUILDDIR)/built/$$i /sys/modules-${VERSION}/$$i ;\
-	done
+	@cp $(BUILDDIR)/built/* /sys/modules-${VERSION}
 	@-cp modules.deps /sys/modules-${VERSION}/modules.deps
 
 $(BUILDDIR)/%.m: %.c

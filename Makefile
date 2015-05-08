@@ -154,16 +154,12 @@ modules: $(VERSION_H) $(ADHEADS)
 	@echo Building modules, pass 1...
 	@$(MAKE) -s -C drivers BUILDDIR=../$(BUILDDIR)/drivers
 
-kernel: $(KERNEL)
-
 deps: do_deps
 	@make -s -C drivers do_deps BUILDDIR=../$(BUILDDIR)/drivers
 
-install: kernel
+install: $(KERNEL) modules
 	@echo "installing kernel..."
-	@cp -f skernel /sys/kernel
-	@echo "installing initrd..."
-	@cp -f initrd.img /sys/initrd
+	@cp -f $(KERNEL) /sys/kernel
 	@make -C drivers install VERSION=${VERSION} BUILDDIR=../$(BUILDDIR)/drivers
 
 clean:

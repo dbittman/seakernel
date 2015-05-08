@@ -150,10 +150,6 @@ $(KERNEL): $(KERNEL_STAGE1)
 		objcopy -I elf64-x86-64 -O elf32-i386 ${KERNEL} ;\
 	fi
 
-initrd.img: modules
-	@echo "Building initrd..."
-	@./tools/ird.rb initrd-${ARCH_TC}.conf > /dev/null ;\
-
 modules: $(VERSION_H) $(ADHEADS)
 	@echo Building modules, pass 1...
 	@$(MAKE) -s -C drivers BUILDDIR=../$(BUILDDIR)/drivers

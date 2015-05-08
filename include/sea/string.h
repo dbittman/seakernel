@@ -17,6 +17,7 @@ char *strncpy(char * dest, const char * src, size_t count);
 size_t strnlen(const char *s, size_t count);
 char *strrchr(const char *s, int c);
 int strtoint(char *s);
+int strtoint_oct(char *s);
 int memcmp(const void * mem1, const void * mem2, const uint32_t count);
 
 #endif

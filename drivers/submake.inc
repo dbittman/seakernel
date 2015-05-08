@@ -9,7 +9,7 @@ DEPSFILE = $($(OUTDIR)/make.deps)
 
 OFILES := $(addprefix $(OUTDIR)/, $(OFILES))
 
-all: $(OUTDIR) $(DEPSFILE) $(OUTDIR)/$(OUTPUT)
+all: $(OUTDIR) $(DEPSFILE) $(OUTDIR)/$(OUTPUT) $(OUTDIR)/../built/$(NAME)
 
 $(OUTDIR):
 	@mkdir -p $(OUTDIR)
@@ -24,7 +24,7 @@ $(OUTDIR)/$(OUTPUT) $(OUTDIR)/../built/$(NAME): $(OFILES)
 	@cp $(OUTDIR)/$(OUTPUT) $(OUTDIR)/../built/$(NAME)
 
 clean:
-	@-rm -f *.o $(OUTPUT).stage1 $(OUTPUT) $(DEPSFILE)
+	@-rm -f *.o $(DEPSFILE) $(OUTDIR)/$(OUTPUT) $(OURDIR)/../built/$(NAME)
 
 deps:
 	@echo "[DP]    $(MODPATH)$(NAME) make.deps"

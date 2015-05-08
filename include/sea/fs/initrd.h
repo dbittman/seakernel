@@ -4,19 +4,25 @@
 #include <sea/boot/multiboot.h>
 #include <sea/types.h>
 
-typedef struct __attribute__((packed))
-{
-	u32int nfiles;
-} initrd_header_t;
-
-typedef struct __attribute__((packed))
-{
-	u8int magic;
-	s8int name[256];
-	char pad[3];
-	u32int offset;
-	u32int length; 
-} initrd_file_header_t;
+struct ustar_header {
+	char name[100];
+	char mode[8];
+	char uid[8];
+	char gid[8];
+	char size[12];
+	char mtime[12];
+	char checksum[8];
+	char typeflag[1];
+	char linkname[100];
+	char magic[6];
+	char version[2];
+	char uname[32];
+	char gname[32];
+	char devmajor[8];
+	char devminor[8];
+	char prefix[155];
+	char pad[12];
+};
 
 void fs_initrd_load(struct multiboot *mb);
 void fs_initrd_parse();

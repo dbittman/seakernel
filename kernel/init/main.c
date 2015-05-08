@@ -195,7 +195,6 @@ void init()
 	 * we will need */
 	ret = u_execve("/sh", (char **)stuff_to_pass, (char **)init_env);
 	ret = u_execve("/bin/sh", (char **)stuff_to_pass, (char **)init_env);
-	ret = u_execve("/usr/bin/sh", (char **)stuff_to_pass, (char **)init_env);
 	printf("Failed to start the init process. Halting.\n");
 	u_exit(0);
 }

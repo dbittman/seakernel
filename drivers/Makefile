@@ -78,24 +78,20 @@ endif
 export MCFLAGS
 export CC
 export LD
-all: $(BUILDDIR) $(DEPSFILE) $(MODULES)
+all: $(BUILDDIR) $(BUILDDIR)/built $(DEPSFILE) $(MODULES)
 	@echo "Building modules, pass 2..."
-	@-mkdir -p $(BUILDDIR)/built
-	@-rm -rf $(BUILDDIR)/built/*
-	
 	@for i in "$(SUBDIRS)"; do \
 		if [ $$i != "" ]; then \
 			export MCFLAGS="$(MCFLAGS)" ;\
 			$(MAKE) -s -C $$i ;\
 		fi ;\
 	done
-	@-for i in $(MODULES); do \
-		MOD=`basename $$i | sed -e "s@^\(.*\)\.m@\1@"` ; \
-		cp -f $$i $(BUILDDIR)/built/$$MOD ;\
-	done
 
 $(BUILDDIR):
 	@mkdir -p $(BUILDDIR)
+
+$(BUILDDIR)/built:
+	@mkdir -p $(BUILDDIR)/built
 
 install: $(MODULES)
 	@-for i in $(MODULES); do \
@@ -112,6 +108,7 @@ $(BUILDDIR)/%.m: %.c
 	@echo -n -e "[CC] M \t$@                 \n"
 	@$(CC) $(MCFLAGS) $< -c -o $@.o
 	@$(CC) $(MCFLAGS) $(LDFLAGS_ARCH) $@.o -o $@ -Wl,-r,-Tlink.ld -lgcc -static
+	@cp $@ $(BUILDDIR)/built/$(basename $(notdir $@))
 
 clean:
 	@-rm -rf $(BUILDDIR)

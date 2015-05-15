@@ -42,6 +42,13 @@ void fs_initrd_parse()
 		printk(1, "\t* Loading '%s': %d bytes...\n", 
 				uh->name, len);
 		switch(uh->typeflag[0]) {
+			int r;
+			case '2':
+				printk(1, "\t\t- symlink -> %s\n", uh->linkname);
+				if((r = sys_symlink(uh->linkname, uh->name))) {
+					panic(0, "failed to create symbolic link: %s -> %s: %d", uh->name, uh->linkname, r);
+				}
+				break;
 			case '5':
 				uh->name[strlen(uh->name) - 1] = 0;
 				q = fs_path_resolve_create(uh->name, 0, S_IFDIR | 0777, &err);
@@ -54,9 +61,10 @@ void fs_initrd_parse()
 				panic(0, "initrd: unknown file type %c", uh->typeflag[0]);
 		}
 
-		if(!q)
+		if(!q && uh->typeflag[0] != '2')
 			panic(0, "initrd: failed to create entry %s (%d)", uh->name, err);
-		vfs_icache_put(q);
+		if(q)
+			vfs_icache_put(q);
 
 		uh = (struct ustar_header *)((addr_t)uh + 512 /* header length */ + recordlen);
 	}

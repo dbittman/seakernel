@@ -65,6 +65,7 @@ struct inode *fs_read_root_inode(struct filesystem *fs)
 {
 	struct inode *node = vfs_icache_get(fs, fs->root_inode_id);
 	assert(node);
+	assert(node->filesystem);
 	return node;
 }
 

@@ -107,6 +107,7 @@ struct inode *vfs_icache_get(struct filesystem *fs, uint32_t num)
 {
 	/* create if it doesn't exist */
 	struct inode *node;
+	assert(fs);
 	int newly_created = 0;
 	uint32_t key[2] = {fs->id, num};
 	mutex_acquire(ic_lock);
@@ -119,10 +120,12 @@ struct inode *vfs_icache_get(struct filesystem *fs, uint32_t num)
 		hash_table_set_entry(icache, key, sizeof(uint32_t), 2, node);
 		newly_created = 1;
 	}
+	assert(node->filesystem == fs);
 	add_atomic(&node->count, 1);
 
 	/* move to in-use */
 	if(!(ff_or_atomic(&node->flags, INODE_INUSE) & INODE_INUSE)) {
+		add_atomic(&fs->usecount, 1);
 		if(!newly_created) {
 			queue_remove(ic_lru, &node->lru_item);
 			ll_do_insert(ic_inuse, &node->inuse_item, node);
@@ -169,6 +172,9 @@ void vfs_icache_put(struct inode *node)
 	if(!sub_atomic(&node->count, 1)) {
 		assert(node->flags & INODE_INUSE);
 		and_atomic(&node->flags, ~INODE_INUSE);
+		if(node->filesystem) {
+			assert(sub_atomic(&node->filesystem->usecount, 1) >= 0);
+		}
 
 		ll_do_remove(ic_inuse, &node->inuse_item, 0);
 		if(node->flags & INODE_NOLRU) {

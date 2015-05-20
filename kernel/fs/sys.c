@@ -222,6 +222,10 @@ int sys_umount(char *dir, int flags)
 		return result;
 	if(!node->mount)
 		return -ENOENT; //TODO: proper errno
+	if(node->mount->usecount > 0) {
+		kprintf("USE: %d\n", node->mount->usecount);
+		return -EBUSY;
+	}
 	int r = fs_umount(node->mount);
 	vfs_icache_put(node);
 	return r;

@@ -53,6 +53,7 @@ struct filesystem {
 
 	char *pointname;
 	char *nodename;
+	int usecount;
 };
 
 struct fsdriver {

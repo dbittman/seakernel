@@ -95,7 +95,8 @@ struct inode *fs_path_resolve_inode(const char *path, int flags, int *error)
 	if(!dir)
 		return 0;
 	struct inode *node = fs_dirent_readinode(dir, (flags & RESOLVE_NOLINK));
-	node = fs_resolve_mount(node);
+	if(!(flags & RESOLVE_NOMOUNT))
+		node = fs_resolve_mount(node);
 	vfs_dirent_release(dir);
 	if(!node && error)
 		*error = -EIO;

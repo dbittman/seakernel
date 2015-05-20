@@ -217,10 +217,12 @@ int sys_umount(char *dir, int flags)
 	if(current_task->thread->effective_uid)
 		return -EPERM;
 	int result;
-	struct inode *node = fs_path_resolve_inode(dir, 0, &result);
+	struct inode *node = fs_path_resolve_inode(dir, RESOLVE_NOMOUNT, &result);
 	if(!node)
 		return result;
-	int r = fs_umount(node->filesystem);
+	if(!node->mount)
+		return -ENOENT; //TODO: proper errno
+	int r = fs_umount(node->mount);
 	vfs_icache_put(node);
 	return r;
 }

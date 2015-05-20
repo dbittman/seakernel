@@ -26,7 +26,8 @@ typedef struct pipe_struct pipe_t;
 #define INODE_INUSE    4
 #define INODE_NOLRU    8 /* On calling vfs_icache_put, don't move to LRU, immediately destroy */
 
-#define RESOLVE_NOLINK 1
+#define RESOLVE_NOLINK  1
+#define RESOLVE_NOMOUNT 2
 
 struct inode {
 	rwlock_t lock, metalock;

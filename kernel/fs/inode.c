@@ -29,18 +29,21 @@ void vfs_icache_init()
 struct dirent *vfs_inode_get_dirent(struct inode *node, const char *name, int namelen)
 {
 	struct dirent *dir;
+	assert(node->count);
 	int r = hash_table_get_entry(node->dirents, (void *)name, 1, namelen, (void**)&dir);
 	return r == -ENOENT ? 0 : dir;
 }
 
 void vfs_inode_add_dirent(struct inode *node, struct dirent *dir)
 {
+	assert(node->count);
 	int r = hash_table_set_entry(node->dirents, dir->name, 1, dir->namelen, dir);
 	assert(!r);
 }
 
 void vfs_inode_del_dirent(struct inode *node, struct dirent *dir)
 {
+	assert(node->count);
 	int r = hash_table_delete_entry(node->dirents, dir->name, 1, dir->namelen);
 	assert(!r);
 }

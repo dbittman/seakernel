@@ -46,7 +46,6 @@ int vfs_dirent_release(struct dirent *dir)
 			queue_enqueue_item(dirent_lru, &dir->lru_item, dir);
 		}
 		rwlock_release(&parent->lock, RWL_WRITER);
-		//vfs_icache_put(parent); /* once for the parent pointer in this function */
 		/* TODO: Do we do this here or in LRU reclaim? */
 		vfs_icache_put(parent); /* for the dir->parent pointer */
 	} else
@@ -114,7 +113,6 @@ struct dirent *fs_dirent_lookup(struct inode *node, const char *name, size_t nam
 	} else {
 		if(add_atomic(&dir->count, 1) == 1) {
 			fs_dirent_remove_lru(dir);
-			//TODO: Pretty sure we don't need this here
 			vfs_inode_get(node);
 		}
 	}

@@ -223,7 +223,6 @@ int sys_umount(char *dir, int flags)
 	if(!node->mount)
 		return -ENOENT; //TODO: proper errno
 	if(node->mount->usecount > 0) {
-		kprintf("USE: %d\n", node->mount->usecount);
 		return -EBUSY;
 	}
 	int r = fs_umount(node->mount);

@@ -49,6 +49,6 @@ void vfs_dirent_destroy(struct dirent *dir);
 int vfs_dirent_acquire(struct dirent *dir);
 void vfs_dirent_init();
 void fs_dirent_remove_lru(struct dirent *dir);
-void fs_dirent_reclaim_lru();
+size_t fs_dirent_reclaim_lru();
 
 #endif

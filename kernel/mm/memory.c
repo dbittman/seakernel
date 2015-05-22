@@ -13,6 +13,7 @@
 #include <sea/mm/vmm.h>
 #include <sea/mm/dma.h>
 #include <sea/mm/kmalloc.h>
+#include <sea/mm/reclaim.h>
 #include <sea/vsprintf.h>
 
 static void process_memorymap(struct multiboot *mboot)
@@ -97,6 +98,7 @@ void mm_init(struct multiboot *m)
 	primary_cpu->flags |= CPU_PAGING;
 	set_ksf(KSF_MMU);
 	/* hey, look at that, we have happy memory times! */
+	mm_reclaim_init();
 #if CONFIG_SWAP
 	init_swap();
 #endif

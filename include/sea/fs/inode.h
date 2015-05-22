@@ -94,6 +94,7 @@ struct inode *fs_path_resolve_create(const char *path,
 struct dirent *fs_path_resolve(const char *path, int flags, int *result);
 struct dirent *do_fs_path_resolve(struct inode *start, const char *path, int *result);
 struct inode *fs_path_resolve_inode(const char *path, int flags, int *error);
+size_t fs_inode_reclaim_lru();
 
 struct inode *fs_read_root_inode(struct filesystem *fs);
 int vfs_inode_chdir(struct inode *node);

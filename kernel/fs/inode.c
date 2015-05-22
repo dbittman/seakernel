@@ -4,6 +4,7 @@
 #include <sea/lib/hash.h>
 #include <sea/cpu/atomic.h>
 #include <sea/mm/kmalloc.h>
+#include <sea/mm/reclaim.h>
 #include <sea/vsprintf.h>
 #include <sea/fs/dir.h>
 #include <sea/fs/pipe.h>
@@ -23,6 +24,8 @@ void vfs_icache_init()
 	ic_dirty = ll_create(0);
 	ic_lru = queue_create(0, 0);
 	ic_lock = mutex_create(0, 0);
+
+	mm_reclaim_register(fs_inode_reclaim_lru, sizeof(struct inode));
 }
 
 /* these three just handle the dirent cache. They don't actually look anything up */
@@ -189,16 +192,23 @@ void vfs_icache_put(struct inode *node)
 	mutex_release(ic_lock);
 }
 
-void fs_inode_reclaim_lru()
+size_t fs_inode_reclaim_lru()
 {
+	int released = 0;
 	mutex_acquire(ic_lock);
 	struct queue_item *qi = queue_dequeue_item(ic_lru);
 	if(!qi) {
 		mutex_release(ic_lock);
-		return;
+		return 0;
 	}
 	struct inode *remove = qi->ent;
 	assert(remove);
+	/* there's a subtlety here: If this reclaim and the dirent reclaim
+	 * run at the same time, there could be an issue. Since the inode
+	 * in the dirent reclaim may have a zero-count, we have to make sure
+	 * that it doesn't free the inode in the middle of the dirent being freed.
+	 * that's why the rwlock is acquired in both. */
+	rwlock_acquire(&remove->lock, RWL_WRITER);
 	if(!remove->dirents->count) {
 		assert(!remove->count);
 		assert(!(remove->flags & INODE_INUSE));
@@ -207,11 +217,14 @@ void fs_inode_reclaim_lru()
 		hash_table_delete_entry(icache, key, sizeof(uint32_t), 2);
 		fs_inode_push(remove);
 		vfs_inode_destroy(remove);
+		released = 1;
 	} else {
 		/* TODO: In theory, we should just free all of these, but I'm lazy */
 		queue_enqueue_item(ic_lru, qi, remove);
+		rwlock_release(&remove->lock, RWL_WRITER);
 	}
 	mutex_release(ic_lock);
+	return released ? sizeof(struct inode) : 0;
 }
 
 /* read an inode from the filesystem */

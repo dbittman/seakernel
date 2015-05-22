@@ -2,6 +2,7 @@
 #include <sea/fs/inode.h>
 #include <sea/cpu/atomic.h>
 #include <sea/mm/kmalloc.h>
+#include <sea/mm/reclaim.h>
 #include <sea/fs/dir.h>
 
 struct queue *dirent_lru;
@@ -24,6 +25,7 @@ void vfs_dirent_init()
 {
 	dirent_lru = queue_create(0, 0);
 	dirent_cache_lock = mutex_create(0, 0);
+	mm_reclaim_register(fs_dirent_reclaim_lru, sizeof(struct dirent));
 }
 
 int vfs_dirent_acquire(struct dirent *dir)
@@ -73,26 +75,27 @@ void fs_dirent_remove_lru(struct dirent *dir)
 	queue_remove(dirent_lru, &dir->lru_item);
 }
 
-void fs_dirent_reclaim_lru()
+size_t fs_dirent_reclaim_lru()
 {
 	mutex_acquire(dirent_cache_lock);
 	struct queue_item *qi = queue_dequeue_item(dirent_lru);
 	if(!qi) {
 		mutex_release(dirent_cache_lock);
-		return;
+		return 0;
 	}
 	struct dirent *dir = qi->ent;
 	struct inode *parent = dir->parent;
-	vfs_inode_get(parent);
 	rwlock_acquire(&parent->lock, RWL_WRITER);
+	add_atomic(&parent->count, 1);
 	if(dir && dir->count == 0) {
 		/* reclaim this node */
 		vfs_inode_del_dirent(parent, dir);
 		vfs_dirent_destroy(dir);
 	}
+	sub_atomic(&parent->count, 1);
 	rwlock_release(&parent->lock, RWL_WRITER);
-	vfs_icache_put(parent);
 	mutex_release(dirent_cache_lock);
+	return sizeof(struct dirent);
 }
 
 /* This function returns the directory entry associated with the name 'name' under

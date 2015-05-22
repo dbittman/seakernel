@@ -82,6 +82,7 @@ int kt_kernel_idle_task()
 		__KT_try_handle_stage2_interrupts();
 		tm_schedule();
 		cpu_interrupt_set(1);
+		//mm_reclaim();
 	}
 }
 

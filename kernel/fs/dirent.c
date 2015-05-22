@@ -7,6 +7,19 @@
 struct queue *dirent_lru;
 mutex_t *dirent_cache_lock;
 
+/* Refcounting correctness rules note:
+ * The dirent->parent pointer may be invalid after
+ * vfs_dirent_release drops the direct down to count zero.
+ * Therefore, any time that the dir->parent pointer is accessed, 
+ * it must be from a dirent that has a non-zero count, which
+ * is required anyway.
+ *
+ * The only time a directory entry may be acquired from a time
+ * where it had zero count is when the inode it's being gotten
+ * from has a non-zero count. The only time an inode may be
+ * read from a directory entry is when the dirent has a non-zero count.
+ */
+
 void vfs_dirent_init()
 {
 	dirent_lru = queue_create(0, 0);
@@ -27,7 +40,6 @@ int vfs_dirent_acquire(struct dirent *dir)
 int vfs_dirent_release(struct dirent *dir)
 {
 	int r = 0;
-	//vfs_inode_get(dir->parent);
 	struct inode *parent = dir->parent;
 	rwlock_acquire(&parent->lock, RWL_WRITER);
 	if(!sub_atomic(&dir->count, 1)) {
@@ -46,7 +58,9 @@ int vfs_dirent_release(struct dirent *dir)
 			queue_enqueue_item(dirent_lru, &dir->lru_item, dir);
 		}
 		rwlock_release(&parent->lock, RWL_WRITER);
-		/* TODO: Do we do this here or in LRU reclaim? */
+		/* So, here's the thing. Technically, we still have a pointer that points
+		 * to parent: in dir->parent. We just have to make sure that each time
+		 * we use this pointer, we don't screw up */
 		vfs_icache_put(parent); /* for the dir->parent pointer */
 	} else
 		rwlock_release(&parent->lock, RWL_WRITER);
@@ -74,7 +88,6 @@ void fs_dirent_reclaim_lru()
 	if(dir && dir->count == 0) {
 		/* reclaim this node */
 		vfs_inode_del_dirent(parent, dir);
-		//vfs_icache_put(parent); /* for the dir->parent pointer */
 		vfs_dirent_destroy(dir);
 	}
 	rwlock_release(&parent->lock, RWL_WRITER);

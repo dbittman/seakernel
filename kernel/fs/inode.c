@@ -198,7 +198,8 @@ void fs_inode_reclaim_lru()
 		return;
 	}
 	struct inode *remove = qi->ent;
-	if(remove) {
+	assert(remove);
+	if(!remove->dirents->count) {
 		assert(!remove->count);
 		assert(!(remove->flags & INODE_INUSE));
 		assert(!remove->dirents->count);
@@ -206,6 +207,9 @@ void fs_inode_reclaim_lru()
 		hash_table_delete_entry(icache, key, sizeof(uint32_t), 2);
 		fs_inode_push(remove);
 		vfs_inode_destroy(remove);
+	} else {
+		/* TODO: In theory, we should just free all of these, but I'm lazy */
+		queue_enqueue_item(ic_lru, qi, remove);
 	}
 	mutex_release(ic_lock);
 }

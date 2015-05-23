@@ -87,12 +87,12 @@ void vfs_inode_add_dirent(struct inode *node, struct dirent *dir);
 int fs_inode_pull(struct inode *node);
 int fs_inode_push(struct inode *node);
 
-struct inode *do_fs_path_resolve_create(const char *path,
+struct inode *fs_path_resolve_create_get(const char *path,
 		int flags, mode_t mode, int *result, struct dirent **dirent);
 struct inode *fs_path_resolve_create(const char *path,
 		int flags, mode_t mode, int *result);
 struct dirent *fs_path_resolve(const char *path, int flags, int *result);
-struct dirent *do_fs_path_resolve(struct inode *start, const char *path, int *result);
+struct dirent *fs_do_path_resolve(struct inode *start, const char *path, int *result);
 struct inode *fs_path_resolve_inode(const char *path, int flags, int *error);
 size_t fs_inode_reclaim_lru();
 

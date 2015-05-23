@@ -167,7 +167,7 @@ struct inode *fs_dirent_readinode(struct dirent *dir, int nofollow)
 		/* resolve the path. WARNING: TODO: this is currently
 		 * recursive WITHOUT A LIMITATION. This needs to be fixed. */
 		int err;
-		struct dirent *ln_dir = do_fs_path_resolve(start, link, &err);
+		struct dirent *ln_dir = fs_do_path_resolve(start, link, &err);
 		vfs_icache_put(node);
 		if(ln_dir) {
 			ln = fs_dirent_readinode(ln_dir, 0);

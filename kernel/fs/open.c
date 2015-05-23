@@ -43,7 +43,7 @@ struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int
 	mode_t mode = (_mode & ~0xFFF) | ((_mode&0xFFF) & (~(current_task->cmask&0xFFF)));
 	
 	inode = (flags & _FCREAT) ?
-				do_fs_path_resolve_create(name, 0, 
+				fs_path_resolve_create_get(name, 0, 
 						S_IFREG | mode, error, &dirent)
 				: __fs_do_open_resolve__(name, error, &dirent);
 

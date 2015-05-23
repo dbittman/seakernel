@@ -24,7 +24,7 @@ struct inode *fs_resolve_mount(struct inode *node)
  * the successive directory entries and inodes (see vfs_dirent_lookup and
  * vfs_dirent_readinode). The one thing it needs to pay attention to is the case
  * of traversing backwards up through a mount point. */
-struct dirent *do_fs_path_resolve(struct inode *start, const char *path, int *result)
+struct dirent *fs_do_path_resolve(struct inode *start, const char *path, int *result)
 {
 	vfs_inode_get(start);
 	assert(start);
@@ -83,7 +83,7 @@ struct dirent *fs_path_resolve(const char *path, int flags, int *result)
 	} else {
 		start = current_task->thread->pwd;
 	}
-	return do_fs_path_resolve(start, path, result);
+	return fs_do_path_resolve(start, path, result);
 }
 
 /* this one does the extra step of getting the inode pointed to by the dirent.
@@ -107,7 +107,7 @@ struct inode *fs_path_resolve_inode(const char *path, int flags, int *error)
  * It resolves a path until the last name in the path string, and then tries to create
  * a new file with that name. It requires a lot of in-sequence checks for permission,
  * existance, is-a-directory, and so forth. */
-struct inode *do_fs_path_resolve_create(const char *path,
+struct inode *fs_path_resolve_create_get(const char *path,
 		int flags, mode_t mode, int *result, struct dirent **dirent)
 {
 	/* step 1: split the path up into directory to create in, and name of new file. */
@@ -215,6 +215,6 @@ struct inode *do_fs_path_resolve_create(const char *path,
 struct inode *fs_path_resolve_create(const char *path,
 		int flags, mode_t mode, int *result)
 {
-	return do_fs_path_resolve_create(path, flags, mode, result, 0);
+	return fs_path_resolve_create_get(path, flags, mode, result, 0);
 }
 

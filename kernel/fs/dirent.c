@@ -146,37 +146,6 @@ struct inode *fs_dirent_readinode(struct dirent *dir, int nofollow)
 		return 0;
 	struct inode *node = vfs_icache_get(dir->filesystem, dir->ino);
 	assert(node);
-	if(!nofollow && S_ISLNK(node->mode)) {
-		/* handle symbolic links */
-		size_t maxlen = node->length;
-		if(maxlen > 1024)
-			maxlen = 1024;
-		char link[maxlen+1];
-		/* read in the link target */
-		if((size_t)fs_inode_read(node, 0, maxlen, link) != maxlen) {
-			vfs_icache_put(node);
-			return 0;
-		}
-		link[maxlen]=0;
-		char *newpath = link;
-		struct inode *start = dir->parent, *ln=0;
-		if(link[0] == '/') {
-			newpath++;
-			start = current_task->thread->root;
-		}
-		/* resolve the path. WARNING: TODO: this is currently
-		 * recursive WITHOUT A LIMITATION. This needs to be fixed. */
-		int err;
-		struct dirent *ln_dir = fs_do_path_resolve(start, link, &err);
-		vfs_icache_put(node);
-		if(ln_dir) {
-			ln = fs_dirent_readinode(ln_dir, 0);
-			vfs_dirent_release(ln_dir);
-		} else {
-			return 0;
-		}
-		node = ln;
-	}
 	return node;
 }
 

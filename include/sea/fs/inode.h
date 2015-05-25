@@ -92,10 +92,10 @@ struct inode *fs_path_resolve_create_get(const char *path,
 struct inode *fs_path_resolve_create(const char *path,
 		int flags, mode_t mode, int *result);
 struct dirent *fs_path_resolve(const char *path, int flags, int *result);
-struct dirent *fs_do_path_resolve(struct inode *start, const char *path, int, int *result);
+struct dirent *fs_do_path_resolve(struct inode *start, const char *path, int *result);
 struct inode *fs_path_resolve_inode(const char *path, int flags, int *error);
 
-struct dirent *fs_resolve_symlink(struct dirent *dir, struct inode *node, int *level, int *err);
+struct dirent *fs_resolve_symlink(struct dirent *dir, struct inode *node, int *err);
 int fs_resolve_iter_symlink(struct dirent **dir, struct inode **node);
 size_t fs_inode_reclaim_lru();
 

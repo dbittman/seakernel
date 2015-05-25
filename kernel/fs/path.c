@@ -18,7 +18,7 @@ struct inode *fs_resolve_mount(struct inode *node)
 	return ret;
 }
 
-struct dirent *fs_resolve_symlink(struct dirent *dir, struct inode *node, int *err)
+struct dirent *fs_resolve_symlink(struct dirent *dir, struct inode *node, int start_level, int *err)
 {
 	/* some functions won't have a concept of symlink level yet */
 	if(S_ISLNK(node->mode)) {
@@ -39,26 +39,23 @@ struct dirent *fs_resolve_symlink(struct dirent *dir, struct inode *node, int *e
 			newpath++;
 			start = current_task->thread->root;
 		}
-		struct dirent *ln_dir = fs_do_path_resolve(start, newpath, err);
-		if(!ln_dir) {
-			return 0;
-		}
-		return ln_dir;
+		return fs_do_path_resolve(start, newpath, start_level, err);
+	} else {
+		return dir;
 	}
-	return dir;
 }
 
-int fs_resolve_iter_symlink(struct dirent **dir, struct inode **node)
+int fs_resolve_iter_symlink(struct dirent **dir, struct inode **node, int start_level)
 {
 	struct inode *oldnode = *node;
 	struct dirent *olddir = *dir;
 	struct dirent *newdir = 0;
 	struct inode *newnode = 0;
 	int err;
-	int level = 0;
+	int level = start_level;
 
 	while(level++ < 32) {
-		newdir = fs_resolve_symlink(olddir, oldnode, &err);
+		newdir = fs_resolve_symlink(olddir, oldnode, level, &err);
 		if(S_ISLNK(oldnode->mode)) {
 			vfs_icache_put(oldnode);
 			vfs_dirent_release(olddir);
@@ -93,7 +90,7 @@ int fs_resolve_iter_symlink(struct dirent **dir, struct inode **node)
  * the successive directory entries and inodes (see vfs_dirent_lookup and
  * vfs_dirent_readinode). The one thing it needs to pay attention to is the case
  * of traversing backwards up through a mount point. */
-struct dirent *fs_do_path_resolve(struct inode *start, const char *path, int *result)
+struct dirent *fs_do_path_resolve(struct inode *start, const char *path, int sym_start_level, int *result)
 {
 	vfs_inode_get(start);
 	assert(start);
@@ -127,8 +124,7 @@ struct dirent *fs_do_path_resolve(struct inode *start, const char *path, int *re
 					nextnode = nextnode->filesystem->point;
 					vfs_icache_put(tmp);
 				} else if(nextnode) {
-#warning "CHECK REFCOUNTING HERE"
-					if((*result = fs_resolve_iter_symlink(&dir, &nextnode))) {
+					if((*result = fs_resolve_iter_symlink(&dir, &nextnode, sym_start_level))) {
 						vfs_icache_put(node);
 						return 0;
 					}
@@ -140,7 +136,6 @@ struct dirent *fs_do_path_resolve(struct inode *start, const char *path, int *re
 		}
 		path = delim + 1;
 	}
-	
 	return dir;
 }
 
@@ -158,7 +153,7 @@ struct dirent *fs_path_resolve(const char *path, int flags, int *result)
 	} else {
 		start = current_task->thread->pwd;
 	}
-	return fs_do_path_resolve(start, path, result);
+	return fs_do_path_resolve(start, path, 0, result);
 }
 
 /* this one does the extra step of getting the inode pointed to by the dirent.
@@ -176,7 +171,7 @@ struct inode *fs_path_resolve_inode(const char *path, int flags, int *error)
 		return 0;
 	}
 	if(!(flags & RESOLVE_NOLINK)) {
-		if((*error = fs_resolve_iter_symlink(&dir, &node)))
+		if((*error = fs_resolve_iter_symlink(&dir, &node, 0)))
 			return 0;
 	}
 	if(!(flags & RESOLVE_NOMOUNT))

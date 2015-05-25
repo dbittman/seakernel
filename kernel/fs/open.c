@@ -22,7 +22,12 @@ static struct inode *__fs_do_open_resolve__(char *path, int *err, struct dirent 
 	if(!de)
 		return 0;
 	struct inode *node = fs_dirent_readinode(de, 0);
-	if((*err = fs_resolve_iter_symlink(&de, &node)))
+	if(!node) {
+		vfs_dirent_release(de);
+		*err = -EIO;
+		return 0;
+	}
+	if((*err = fs_resolve_iter_symlink(&de, &node, 0)))
 		return 0;
 	*dir = de;
 	node = fs_resolve_mount(node);

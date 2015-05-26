@@ -100,12 +100,15 @@ struct dirent *fs_do_path_resolve(struct inode *start, const char *path, int sym
 	
 	struct inode *node = start;
 	struct dirent *dir = 0;
+	struct inode *nextnode = 0;
 	while(node && *path) {
-		if(dir)
+		if(dir) {
 			vfs_dirent_release(dir);
-		struct inode *nextnode = 0;
+			dir = 0;
+		}
 		char *delim = strchr(path, '/');
 		if(delim != path) {
+			nextnode = 0;
 			const char *name = path;
 			size_t namelen = delim ? (size_t)(delim - name) : strlen(name);
 			dir = fs_dirent_lookup(node, name, namelen);
@@ -136,6 +139,8 @@ struct dirent *fs_do_path_resolve(struct inode *start, const char *path, int sym
 		}
 		path = delim + 1;
 	}
+	if(nextnode)
+		vfs_icache_put(nextnode);
 	return dir;
 }
 

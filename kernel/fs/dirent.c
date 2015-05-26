@@ -47,6 +47,7 @@ int vfs_dirent_release(struct dirent *dir)
 	if(!sub_atomic(&dir->count, 1)) {
 		if(dir->flags & DIRENT_UNLINK) {
 			struct inode *target = fs_dirent_readinode(dir, 1);
+#warning "FIX HANDLING OF NULL RETURN FROM READINODE"
 			vfs_inode_del_dirent(parent, dir);
 			r = fs_callback_inode_unlink(parent, dir->name, dir->namelen, target);
 			if(!r) {
@@ -54,6 +55,7 @@ int vfs_dirent_release(struct dirent *dir)
 				if(!target->nlink && (target->flags & INODE_DIRTY))
 					vfs_inode_unset_dirty(target);
 			}
+			vfs_icache_put(target);
 			vfs_dirent_destroy(dir);
 		} else {
 			/* add to LRU */

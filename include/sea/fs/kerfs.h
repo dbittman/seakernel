@@ -17,6 +17,22 @@ int kerfs_syscall_report(size_t offset, size_t length, char *buf);
 int kerfs_int_report(size_t offset, size_t length, char *buf);
 int kerfs_kmalloc_report(size_t offset, size_t length, char *buf);
 int kerfs_pmm_report(size_t offset, size_t length, char *buf);
+int kerfs_icache_report(size_t offset, size_t length, char *buf);
+
+#define KERFS_PRINTF(offset,length,buf,current,format...) \
+	do { \
+		char line[1024]; \
+		int add = snprintf(line, 1024, format); \
+		if(current + add > offset && current < (offset + length)) { \
+			size_t linestart = current > offset ? 0 : (offset - current); \
+			size_t bufstart  = current > offset ? (current - offset) : 0; \
+			size_t amount = add - linestart; \
+			if(amount > ((offset + length) - current)) \
+				amount = (offset + length) - current; \
+			memcpy(buf + bufstart, line + linestart, amount); \
+			current += amount; \
+		} \
+	} while(0);
 
 #endif
 

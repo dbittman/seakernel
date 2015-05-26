@@ -8,6 +8,7 @@
 #include <sea/vsprintf.h>
 #include <sea/fs/dir.h>
 #include <sea/fs/pipe.h>
+#include <sea/fs/kerfs.h>
 
 struct hash_table *icache;
 struct llist *ic_inuse, *ic_dirty;
@@ -331,5 +332,29 @@ int fs_icache_sync()
 	rwlock_release(&ic_dirty->rwl, RWL_WRITER);
 	printk(0, "\ndone\n");
 	return 0;
+}
+
+int kerfs_icache_report(size_t offset, size_t length, char *buf)
+{
+	size_t current = 0;
+	KERFS_PRINTF(offset, length, buf, current,
+			"    ID FSID FS-TYPE FLAGS REFCOUNT DIRENTS\n");
+	rwlock_acquire(&ic_dirty->rwl, RWL_READER);
+	struct llistnode *ln;
+	struct inode *node;
+	ll_for_each_entry(ic_inuse, ln, struct inode *, node) {
+		KERFS_PRINTF(offset, length, buf, current,
+				"%6d %4d %7s %5x %8d %7d\n",
+				node->id, node->filesystem ? node->filesystem->id : -1,
+				node->filesystem ? node->filesystem->type : "???",
+				node->flags, node->count, node->dirents->count);
+	}
+	rwlock_release(&ic_dirty->rwl, RWL_READER);
+	KERFS_PRINTF(offset, length, buf, current,
+			"    ID FSID FS-TYPE FLAGS REFCOUNT DIRENTS\n");
+	KERFS_PRINTF(offset, length, buf, current,
+			"IN USE %d, DIRTY %d, LRU LEN %d, TOTAL CACHED %d\n",
+			ic_inuse->num, ic_dirty->num, ic_lru->count, icache->count);
+	return current;
 }
 

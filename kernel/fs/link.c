@@ -21,6 +21,7 @@ static int do_fs_unlink(struct inode *node, const char *name, size_t namelen, in
 		do_fs_unlink(target, "..", 2, 0);
 		do_fs_unlink(target, ".", 1, 0);
 	}
+	vfs_icache_put(target);
 	or_atomic(&dir->flags, DIRENT_UNLINK);
 	vfs_dirent_release(dir);
 	return 0;

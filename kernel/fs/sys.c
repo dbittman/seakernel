@@ -91,6 +91,7 @@ int sys_setup(int a)
 	kerfs_register_report("/dev/mounts", kerfs_mount_report);
 	kerfs_register_report("/dev/pmm", kerfs_pmm_report);
 	kerfs_register_report("/dev/kmm", kerfs_kmalloc_report);
+	kerfs_register_report("/dev/fs_icache", kerfs_icache_report);
 	current_task->tty=1;
 	system_setup=1;
 	printk(KERN_MILE, "done (i/o/e=%x [tty1]: ok)\n", GETDEV(3, 1));

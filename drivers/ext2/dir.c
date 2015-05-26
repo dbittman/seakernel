@@ -224,7 +224,6 @@ int ext2_dir_delent(ext2_inode_t* dir, const char* name, int namelen, int dofree
 					ext2_dir_change_dir_count(&inode, 1);
 					ext2_inode_read(dir->fs, dir->number, dir);
 				}
-				vfs_icache_put(target);
 				ext2_inode_free(&inode);
 			}
 			ext2_inode_update(&inode);

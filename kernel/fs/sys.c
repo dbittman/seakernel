@@ -221,7 +221,7 @@ int sys_umount(char *dir, int flags)
 	if(!node)
 		return result;
 	if(!node->mount)
-		return -ENOENT; //TODO: proper errno
+		return -EINVAL;
 	if(node->mount->usecount > 0) {
 		return -EBUSY;
 	}

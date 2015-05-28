@@ -17,7 +17,7 @@ void mm_reclaim_register(size_t (*fn)(void), size_t size)
 	ll_insert(&reclaimers, rec);
 }
 
-void mm_reclaim_size(size_t size)
+size_t mm_reclaim_size(size_t size)
 {
 	size_t amount = 0, thisround = 1;
 	while(amount < size && thisround != 0) {
@@ -34,6 +34,7 @@ void mm_reclaim_size(size_t size)
 		}
 		rwlock_release(&reclaimers.rwl, RWL_READER);
 	}
+	return amount;
 }
 
 void mm_reclaim(void)
@@ -44,7 +45,7 @@ void mm_reclaim(void)
 	ll_for_each_entry(&reclaimers, node, struct reclaimer *, rec) {
 		size_t amount = rec->fn();
 		if(amount)
-		printk(0, "reclaimed %d bytes\n", amount);
+			printk(0, "reclaimed %d bytes\n", amount);
 		if(amount > 0)
 			break;
 	}

@@ -344,10 +344,24 @@ int kerfs_icache_report(size_t offset, size_t length, char *buf)
 	struct inode *node;
 	ll_for_each_entry(ic_inuse, ln, struct inode *, node) {
 		KERFS_PRINTF(offset, length, buf, current,
-				"%6d %4d %7s %5x %8d %7d\n",
+				"%6d %4d %7s %5x %8d %7d",
 				node->id, node->filesystem ? node->filesystem->id : -1,
 				node->filesystem ? node->filesystem->type : "???",
 				node->flags, node->count, node->dirents->count);
+		struct dirent *dirent;
+		int n = 0, used = 0;
+		rwlock_acquire(&node->lock, RWL_READER);
+		while(!hash_table_enumerate_entries(node->dirents, n++, 0, 0, 0, (void **)&dirent)) {
+			if(dirent->count > 0)
+				used++;
+		}
+		rwlock_release(&node->lock, RWL_READER);
+		if(used > 0) {
+			KERFS_PRINTF(offset, length, buf, current,
+					" (%d)\n", used);
+		} else {
+			KERFS_PRINTF(offset, length, buf, current, "\n");
+		}
 	}
 	rwlock_release(&ic_dirty->rwl, RWL_READER);
 	KERFS_PRINTF(offset, length, buf, current,

@@ -26,12 +26,18 @@ static unsigned num_slab=0, num_scache=0;
 static void release_slab(struct slab *slab);
 static mutex_t scache_lock;
 
+int slab_get_usage(void)
+{
+	return (pages_used * 100) / ((slab_end - slab_start) / PAGE_SIZE);
+}
+
 int kerfs_kmalloc_report(size_t offset, size_t length, char *buf)
 {
 	size_t dl = 0;
 	char tmp[10000];
-	dl = snprintf(tmp, 100, "Pages Used: %d, Slab Count: %d, Scache Count: %d\n",
-			pages_used, num_slab,
+	dl = snprintf(tmp, 100, "Pages Used: %d (~%d%%), Slab Count: %d, Scache Count: %d\n",
+			pages_used, (pages_used * 100) / ((slab_end - slab_start) / PAGE_SIZE),
+			num_slab,
 			num_scache);
 	if(offset > dl)
 		return 0;

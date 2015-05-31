@@ -8,6 +8,7 @@
 int slab_get_usage(void);
 int __KT_pager(struct kthread *kt, void *arg)
 {
+	/* TODO: Need a good, clean API for this */
 	current_task->priority = 10000;
 	int active = 0;
 	while(!kthread_is_joining(kt)) {
@@ -22,6 +23,7 @@ int __KT_pager(struct kthread *kt, void *arg)
 					printk(0, "[mm]: activating memory reclaimer\n");
 			}
 		} else {
+			/* TODO: Need a good clean API for this */
 			tm_delay(1000);
 			if(active > 0) active /= 2;
 		}

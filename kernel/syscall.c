@@ -26,6 +26,7 @@
 #include <sea/fs/socket.h>
 #include <sea/lib/timer.h>
 #include <sea/fs/dir.h>
+#include <sea/fs/kerfs.h>
 
 static unsigned int num_syscalls=0;
 //#define SC_DEBUG 1
@@ -395,25 +396,17 @@ int syscall_handler(volatile registers_t *regs)
 
 int kerfs_syscall_report(size_t offset, size_t length, char *buf)
 {
-	size_t dl = 0;
-	char tmp[10000];
-	dl = snprintf(tmp, 100, " SC   # CALLS\t      MIN\t      MAX\t     MEAN\n");
+	size_t current = 0;
+	KERFS_PRINTF(offset, length, buf, current,
+			" SC   # CALLS\t      MIN\t      MAX\t     MEAN\n");
 	for(int i=0;i<129;i++) {
 		if(!syscounts[i])
 			continue;
-		char line[256];
-		int r = snprintf(line, 256, "%3d:\t%5d\t%9d\t%9d\t%9d\n", i,
+		KERFS_PRINTF(offset, length, buf, current,
+				"%3d:\t%5d\t%9d\t%9d\t%9d\n", i,
 				syscounts[i], (uint32_t)systimers[i].min / 1000,
 				(uint32_t)systimers[i].max / 1000, (uint32_t)systimers[i].mean / 1000);
-		assert(dl+r < 10000);
-		memcpy(tmp + dl, line, r);
-		dl += r;	
 	}
-	if(offset > dl)
-		return 0;
-	if(offset + length > dl)
-		length = dl - offset;
-	memcpy(buf, tmp + offset, length);
-	return length;
+	return current;
 }
 

@@ -31,6 +31,8 @@ int kerfs_icache_report(size_t offset, size_t length, char *buf);
 				amount = (offset + length) - current; \
 			memcpy(buf + bufstart, line + linestart, amount); \
 			current += amount; \
+		} else if(current + add <= offset) { \
+			offset -= add; \
 		} \
 	} while(0);
 

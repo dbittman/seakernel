@@ -14,6 +14,7 @@
 #include <sea/cpu/atomic.h>
 #include <sea/mm/slab.h>
 #include <sea/mm/valloc.h>
+#include <sea/fs/kerfs.h>
 #include <sea/vsprintf.h>
 
 static addr_t slab_start=0, slab_end=0;
@@ -33,18 +34,13 @@ int slab_get_usage(void)
 
 int kerfs_kmalloc_report(size_t offset, size_t length, char *buf)
 {
-	size_t dl = 0;
-	char tmp[10000];
-	dl = snprintf(tmp, 100, "Pages Used: %d (~%d%%), Slab Count: %d, Scache Count: %d\n",
+	size_t current = 0;
+	KERFS_PRINTF(offset, length, buf, current,
+			"Pages Used: %d (~%d%%), Slab Count: %d, Scache Count: %d\n",
 			pages_used, (pages_used * 100) / ((slab_end - slab_start) / PAGE_SIZE),
 			num_slab,
 			num_scache);
-	if(offset > dl)
-		return 0;
-	if(offset + length > dl)
-		length = dl - offset;
-	memcpy(buf, tmp + offset, length);
-	return length;
+	return current;
 }
 
 static struct valloc_region *alloc_slab(struct valloc_region *vr, unsigned np)

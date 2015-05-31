@@ -19,6 +19,7 @@
 #include <sea/vsprintf.h>
 #include <sea/syscall.h>
 #include <sea/lib/timer.h>
+#include <sea/fs/kerfs.h>
 
 /* okay, these aren't architecture independent exactly, but they're fine for now */
 static char *exception_messages[] =
@@ -466,14 +467,14 @@ int cpu_interrupt_get_flag()
 
 int kerfs_int_report(size_t offset, size_t length, char *buf)
 {
-	size_t dl = 0;
-	char tmp[10000];
-	dl = snprintf(tmp, 100, "INT: # CALLS\tMIN\t      MAX\t    MEAN\n");
+	size_t current = 0;
+	KERFS_PRINTF(offset, length, buf, current,
+			"INT: # CALLS\tMIN\t      MAX\t    MEAN\n");
 	for(int i=0;i<256;i++) {
 		if(!int_count[i])
 			continue;
-		char line[256];
-		int r = snprintf(line, 256, "%3d: %-5d\n   "
+		KERFS_PRINTF(offset, length, buf, current,
+				"%3d: %-5d\n   "
 				"| 1 -> %9d\t%9d\t%9d\n   "
 				"| 2 -> %9d\t%9d\t%9d\n\n",
 				i, int_count[i], 
@@ -487,15 +488,7 @@ int kerfs_int_report(size_t offset, size_t length, char *buf)
 					0,
 				(uint32_t)s2_timers[i].max / 1000,
 				(uint32_t)s2_timers[i].mean / 1000);
-		assert(dl+r < 10000);
-		memcpy(tmp + dl, line, r);
-		dl += r;	
 	}
-	if(offset > dl)
-		return 0;
-	if(offset + length > dl)
-		length = dl - offset;
-	memcpy(buf, tmp + offset, length);
-	return length;
+	return current;
 }
 

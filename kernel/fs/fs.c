@@ -1,6 +1,7 @@
 #include <sea/types.h>
 #include <sea/fs/fs.h>
 #include <sea/fs/inode.h>
+#include <sea/fs/kerfs.h>
 #include <sea/kernel.h>
 #include <sea/cpu/atomic.h>
 #include <sea/mm/kmalloc.h>
@@ -23,42 +24,30 @@ void fs_fsm_init()
 	hash_table_specify_function(&fsdrivershash, HASH_FUNCTION_BYTE_SUM);
 }
 
-static int __kfs_mnt_rp_write(struct filesystem *fs, char *buf)
+static void __kfs_mnt_rp_write(struct filesystem *fs, size_t *offset, size_t length, char *buf, size_t *current)
 {
 	struct inode *root = fs_read_root_inode(fs);
 	char *point = fs->pointname;
 	if(root == current_task->thread->root)
 		point = "/";
-	return snprintf(buf, 256, "%s %s %s active,0x%x 0 0\n", fs->nodename, point, fs->type, fs->opts);
+	KERFS_PRINTF((*offset), length, buf, (*current),
+			"%s %s %s active,0x%x 0 0\n",
+			fs->nodename, point, fs->type, fs->opts);
 }
 
 int kerfs_mount_report(size_t offset, size_t length, char *buf)
 {
-	size_t dl = 0;
-	char tmp[10000];
+	size_t current = 0;
 
 	rwlock_acquire(&fslist.rwl, RWL_READER);
 	struct llistnode *ln;
 	struct filesystem *fs;
 	ll_for_each_entry(&fslist, ln, struct filesystem *, fs) {
-		char line[256];
-		int r = __kfs_mnt_rp_write(fs, line);
-		assert(dl+r < 10000);
-		memcpy(tmp + dl, line, r);
-		dl += r;	
+		__kfs_mnt_rp_write(fs, &offset, length, buf, &current);
 	}
 	rwlock_release(&fslist.rwl, RWL_READER);
-	char line[256];
-	int r = __kfs_mnt_rp_write(devfs, line);
-	assert(dl+r < 10000);
-	memcpy(tmp + dl, line, r);
-	dl += r;	
-	if(offset > dl)
-		return 0;
-	if(offset + length > dl)
-		length = dl - offset;
-	memcpy(buf, tmp + offset, length);
-	return length;
+	__kfs_mnt_rp_write(devfs, &offset, length, buf, &current);
+	return current;
 }
 
 struct inode *fs_read_root_inode(struct filesystem *fs)

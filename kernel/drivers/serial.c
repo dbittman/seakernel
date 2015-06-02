@@ -78,3 +78,9 @@ void serial_init()
 	loader_add_kernel_symbol(serial_console_puts_nolock);
 #endif
 }
+
+void serial_disable(void)
+{
+	serial_enable = 0;
+}
+

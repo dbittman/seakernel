@@ -17,6 +17,7 @@
 #include <sea/dm/dev.h>
 #include <sea/fs/initrd.h>
 #include <sea/cpu/interrupt.h>
+#include <sea/serial.h>
 #include <sea/cpu/atomic.h>
 #include <sea/vsprintf.h>
 #include <stdarg.h>
@@ -82,6 +83,8 @@ void parse_kernel_cmd(char *buf)
 				int logl = strtoint(lev);
 				printk(1, "[kernel]: Setting loglevel to %d\n", logl);
 				PRINT_LEVEL = logl;
+			} else if(!strncmp("noserial", a, 8)) {
+				serial_disable();
 			} else {
 				stuff_to_pass[argc_STP] = (char *)kmalloc(strlen(a)+1);
 				_strcpy(stuff_to_pass[argc_STP++], a);

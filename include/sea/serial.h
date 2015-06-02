@@ -6,4 +6,6 @@ char arch_serial_read(int p);
 void arch_serial_init(int *serial_debug_port_minor, int *serial_enable);
 char arch_serial_received(int minor);
 
+void serial_disable(void);
+
 #endif

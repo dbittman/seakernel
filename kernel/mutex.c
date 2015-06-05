@@ -1,8 +1,8 @@
-/* mutex.c - Handles mutual exclusion locks 
+/* mutex.c - Handles mutual exclusion locks
  * copyright 2013 Daniel Bittman
- * 
+ *
  * These are much simpler than RWlocks. They only use 1 bit and can be
- * in only two states: locked or unlocked. 
+ * in only two states: locked or unlocked.
  */
 #include <sea/cpu/atomic.h>
 #include <sea/mutex.h>
@@ -12,7 +12,7 @@
 #include <sea/tm/schedule.h>
 #include <sea/asm/system.h>
 #include <sea/mm/kmalloc.h>
-/* a task may relock a mutex if it is inside an interrupt handler, 
+/* a task may relock a mutex if it is inside an interrupt handler,
  * and has previously locked the same mutex outside of the interrupt
  * handler. this allows for a task to handle an event that requires
  * a mutex to be locked in the handler whilst having locked the mutex
@@ -34,7 +34,7 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 	if(kernel_state_flags & KSF_SHUTDOWN) return;
 	/* are we re-locking ourselves? */
 	if(current_task && m->lock && ((m->pid == (int)current_task->pid) && ((m->lock & MT_LCK_INT) || !(current_task->flags & TF_IN_INT))))
-		panic(0, "task %d tried to relock mutex %x (%s:%d)", m->pid, m->lock, file, line);	
+		panic(0, "task %d tried to relock mutex %x (%s:%d)", m->pid, m->lock, file, line);
 	/* check for a potential deadlock */
 	if(current_task
 #if CONFIG_SMP

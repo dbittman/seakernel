@@ -3,6 +3,7 @@
 
 #include <sea/types.h>
 #include <sea/loader/elf.h>
+#include <sea/ll.h>
 
 #include <sea/loader/symbol.h>
 #define _MOD_FAIL  0
@@ -17,7 +18,7 @@ typedef struct module_s {
 	char name[128];
 	char path[128];
 	struct section_data sd;
-	struct module_s *next;
+	struct llistnode listnode;
 } module_t;
 
 void loader_unload_all_modules();
@@ -28,6 +29,5 @@ int sys_unload_module(char *path, int flags);
 int loader_module_is_loaded(char *name);
 const char *loader_lookup_module_symbol(addr_t addr, char **);
 const char *arch_loader_lookup_module_symbol(module_t *, addr_t addr, char **);
-extern module_t *modules;
 
 #endif

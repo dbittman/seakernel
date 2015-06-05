@@ -1,4 +1,3 @@
-
 #include <sea/kernel.h>
 #if (CONFIG_MODULES)
 #include <sea/fs/inode.h>
@@ -13,9 +12,11 @@
 #include <sea/errno.h>
 #include <sea/cpu/cpu-io.h>
 #include <sea/vsprintf.h>
+#include <sea/fs/kerfs.h>
 #include <sea/mm/kmalloc.h>
-module_t *modules=0;
-static mutex_t mod_mutex;
+#include <sea/ll.h>
+
+struct llist module_list;
 static mutex_t sym_mutex;
 static kernel_symbol_t export_syms[MAX_SYMS];
 
@@ -24,6 +25,7 @@ void loader_init_kernel_symbols(void)
 	uint32_t i;
 	for(i = 0; i < MAX_SYMS; i++)
 		export_syms[i].ptr = 0;
+	ll_create(&module_list);
 	mutex_create(&sym_mutex, 0);
 	/* symbol functions */
 	loader_add_kernel_symbol(loader_find_kernel_function);
@@ -67,25 +69,27 @@ void loader_init_kernel_symbols(void)
 	loader_add_kernel_symbol(__rwlock_escalate);
 	loader_add_kernel_symbol(rwlock_create);
 	loader_add_kernel_symbol(rwlock_destroy);
-	
+
 	/* these systems export these, but have no initialization function */
 	loader_add_kernel_symbol(time_get_epoch);
 }
 
 const char *loader_lookup_module_symbol(addr_t addr, char **modname)
 {
-	mutex_acquire(&mod_mutex);
-	module_t *mq = modules;
-	while(mq) {
-		if((addr_t)addr >= (addr_t)mq->base && (addr_t)addr < ((addr_t)mq->base + mq->length))
+	rwlock_acquire(&module_list.rwl, RWL_READER);
+	struct llistnode *node;
+	module_t *mq, *found = 0;
+	ll_for_each_entry(&module_list, node, module_t *, mq) {
+		if((addr_t)addr >= (addr_t)mq->base && (addr_t)addr < ((addr_t)mq->base + mq->length)) {
+			found = mq;
 			break;
-		mq = mq->next;
+		}
 	}
 	/* Determine if are being depended upon or if we can unload */
-	mutex_release(&mod_mutex);
-	if(!mq || mq->sd.strtab == -1 || mq->sd.symtab == -1)
+	rwlock_release(&module_list.rwl, RWL_READER);
+	if(!found || found->sd.strtab == -1 || found->sd.symtab == -1)
 		return 0;
-	return arch_loader_lookup_module_symbol(mq, addr, modname);
+	return arch_loader_lookup_module_symbol(found, addr, modname);
 }
 
 void loader_do_add_kernel_symbol(const intptr_t func, const char * funcstr)
@@ -112,9 +116,9 @@ intptr_t loader_find_kernel_function(char * unres)
 	mutex_acquire(&sym_mutex);
 	for(i = 0; i < MAX_SYMS; i++)
 	{
-		if(export_syms[i].ptr && 
+		if(export_syms[i].ptr &&
 			strlen(export_syms[i].name) == strlen(unres) &&
-			!memcmp((uint8_t*)export_syms[i].name, (uint8_t*)unres, 
+			!memcmp((uint8_t*)export_syms[i].name, (uint8_t*)unres,
 					(int)strlen(unres))) {
 			mutex_release(&sym_mutex);
 			return export_syms[i].ptr;
@@ -130,9 +134,9 @@ int loader_remove_kernel_symbol(char * unres)
 	mutex_acquire(&sym_mutex);
 	for(i = 0; i < MAX_SYMS; i++)
 	{
-		if(export_syms[i].ptr && 
+		if(export_syms[i].ptr &&
 			strlen(export_syms[i].name) == strlen(unres) &&
-			!memcmp((uint8_t*)export_syms[i].name, (uint8_t*)unres, 
+			!memcmp((uint8_t*)export_syms[i].name, (uint8_t*)unres,
 					(int)strlen(unres)))
 		{
 			export_syms[i].ptr=0;
@@ -146,17 +150,17 @@ int loader_remove_kernel_symbol(char * unres)
 
 int loader_module_is_loaded(char *name)
 {
-	mutex_acquire(&mod_mutex);
-	module_t *m = modules;
-	while(m) {
+	struct llistnode *node;
+	module_t *m;
+	rwlock_acquire(&module_list.rwl, RWL_READER);
+	ll_for_each_entry(&module_list, node, module_t *, m) {
 		if(!strcmp(m->name, name))
 		{
-			mutex_release(&mod_mutex);
+			rwlock_release(&module_list.rwl, RWL_READER);
 			return 1;
 		}
-		m=m->next;
 	}
-	mutex_release(&mod_mutex);
+	rwlock_release(&module_list.rwl, RWL_READER);
 	return 0;
 }
 
@@ -204,11 +208,7 @@ static int load_module(char *path, char *args, int flags)
 		kfree(tmp);
 		return -ENOEXEC;
 	}
-	mutex_acquire(&mod_mutex);
-	module_t *old = modules;
-	modules = tmp;
-	tmp->next = old;
-	mutex_release(&mod_mutex);
+	ll_do_insert(&module_list, &tmp->listnode, tmp);
 	printk(0, "[mod]: loaded module '%s' @[%x - %x]\n", path, tmp->base, tmp->base + len);
 	return ((int (*)(char *))tmp->entry)(args);
 }
@@ -216,39 +216,32 @@ static int load_module(char *path, char *args, int flags)
 static int do_unload_module(char *name, int flags)
 {
 	/* Is it going to work? */
-	mutex_acquire(&mod_mutex);
-	module_t *mq = modules;
-	while(mq) {
-		if((!strcmp(mq->name, name) || !strcmp(mq->path, name)))
+	struct llistnode *node;
+	module_t *m, *module = 0;
+	rwlock_acquire(&module_list.rwl, RWL_READER);
+	ll_for_each_entry(&module_list, node, module_t *, m) {
+		if(!strcmp(m->name, name)) {
+			module = m;
 			break;
-		mq = mq->next;
+		}
 	}
-	
-	if(!mq) {
-		mutex_release(&mod_mutex);
+	rwlock_release(&module_list.rwl, RWL_READER);
+
+	if(!module) {
 		return -ENOENT;
 	}
 	/* Determine if are being depended upon or if we can unload */
-	mutex_release(&mod_mutex);
 	/* Call the unloader */
 	printk(KERN_INFO, "[mod]: Unloading Module '%s'\n", name);
 	int ret = 0;
-	if(mq->exiter)
-		ret = ((int (*)())mq->exiter)();
+	if(module->exiter)
+		ret = ((int (*)())module->exiter)();
 	/* Clear out the resources */
-	kfree(mq->base);
-	mutex_acquire(&mod_mutex);
-	module_t *a = modules;
-	if(a == mq)
-		modules = mq->next;
-	else
-	{
-		while(a && a->next != mq)a=a->next;
-		assert(a);
-		a->next = mq->next;
-	}
-	mutex_release(&mod_mutex);
-	kfree(mq);
+	kfree(module->base);
+
+	ll_do_remove(&module_list, &module->listnode, 0);
+
+	kfree(module);
 	return ret;
 }
 
@@ -271,21 +264,20 @@ void loader_unload_all_modules()
 		}
 		kprintf("[mod]: Unloading modules pass #%d...\n", pass++);
 		int i;
-		module_t *mq = modules;
-		while(mq) {
-			int r = do_unload_module(mq->name, 0);
-			if(r < 0 && r != -ENOENT) {
+		/* okay, so this only ever gets called during the shutdown of the system, so
+		 * don't both locking the module list */
+		struct llistnode *node, *next;
+		module_t *m;
+		ll_for_each_entry_safe(&module_list, node, next, module_t *, m) {
+			int r = do_unload_module(m->name, 0);
+			if(r < 0 && r != -ENOENT)
 				todo++;
-				mq = mq->next;
-			} else
-				mq = modules;
 		}
 	}
 }
 
 void loader_init_modules()
 {
-	mutex_create(&mod_mutex, 0);
 }
 
 int sys_load_module(char *path, char *args, int flags)
@@ -301,4 +293,23 @@ int sys_unload_module(char *path, int flags)
 		return -EPERM;
 	return do_unload_module(path, flags);
 }
+
+int kerfs_module_report(size_t offset, size_t length, char *buf)
+{
+	size_t current = 0;
+	KERFS_PRINTF(offset, length, buf, current,
+			"    MODULE SIZE(KB) ADDRESS\n");
+	struct llistnode *node;
+	module_t *m;
+	rwlock_acquire(&module_list.rwl, RWL_READER);
+	ll_for_each_entry(&module_list, node, module_t *, m) {
+		KERFS_PRINTF(offset, length, buf, current,
+				"%10s %8d %x\n",
+				m->name, m->length / 1024, (addr_t)m->base);
+	}
+	rwlock_release(&module_list.rwl, RWL_READER);
+
+	return current;
+}
+
 #endif

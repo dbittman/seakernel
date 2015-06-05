@@ -337,7 +337,7 @@ int syscall_handler(volatile registers_t *regs)
 	/* start accounting information! */
 	current_task->freed = current_task->allocated = current_task->kalloc = 0;
 	syscounts[SYSCALL_NUM_AND_RET]++;
-	
+
 	#ifdef SC_DEBUG
 	if(current_task->tty == current_console->tty && SYSCALL_NUM_AND_RET != 0 && 0)
 		printk(SC_DEBUG, "tty %d: syscall %d (from: %x): enter %d\n",

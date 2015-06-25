@@ -1,5 +1,6 @@
 #include <sea/tm/ticker.h>
 #include <sea/mm/kmalloc.h>
+#include <sea/types.h>
 struct ticker *ticker_create(struct ticker *ticker, int flags)
 {
 	if(!ticker) {
@@ -9,6 +10,7 @@ struct ticker *ticker_create(struct ticker *ticker, int flags)
 		ticker->flags = flags;
 	}
 	ticker->tick = 0;
+	return ticker;
 }
 
 void ticker_tick(struct ticker *ticker, uint64_t nanoseconds)

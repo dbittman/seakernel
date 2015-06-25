@@ -108,7 +108,7 @@ void heap_insert(struct heap *heap, uint64_t key, void *data)
 	rwlock_release(&heap->rwl, RWL_WRITER);
 }
 
-int heap_peak(struct heap *heap, uint64_t *key, void **data)
+int heap_peek(struct heap *heap, uint64_t *key, void **data)
 {
 	rwlock_acquire(&heap->rwl, RWL_READER);
 	if(!heap->count) {

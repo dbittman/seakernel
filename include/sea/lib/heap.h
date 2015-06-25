@@ -21,5 +21,12 @@ struct heap {
 	rwlock_t rwl;
 	struct heapnode *array;
 };
+
+struct heap *heap_create(struct heap *heap, int flags, int heapmode);
+void heap_insert(struct heap *heap, uint64_t key, void *data);
+int heap_peek(struct heap *heap, uint64_t *key, void **data);
+int heap_pop(struct heap *heap, uint64_t *key, void **data);
+void heap_destroy(struct heap *heap);
+
 #endif
 

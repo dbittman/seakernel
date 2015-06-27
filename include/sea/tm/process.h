@@ -8,6 +8,7 @@
 #include <sea/mm/context.h>
 #include <sea/sys/stat.h>
 #include <sea/mm/valloc.h>
+#include <sea/tm/async_call.h>
 
 #define KERN_STACK_SIZE 0x16000
 
@@ -53,6 +54,7 @@
 #define TF_KILLREADY 0x400000 /* task is ready to be killed */
 #define TF_DIDEXEC          0x800000 /* task exec'd after a fork */
 #define TF_FORK_COPIEDUSER 0x1000000
+#define TF_TIMEOUT_EXPIRED 0x2000000
 
 #define PRIO_PROCESS 1
 #define PRIO_PGRP    2
@@ -90,6 +92,46 @@ struct thread_shared_data {
 };
 
 typedef struct __cpu_t__ cpu_t;
+
+struct thread {
+	unsigned magic;
+	pid_t tid;
+	int cpuid;
+	int state, flags;
+	int system;
+	int priority, timeslice;
+	void *kernel_stack;
+
+	sigset_t signal_mask;
+	unsigned signal;
+	registers_t *sysregs, *regs, regs_b;
+	time_t stime, utime, t_cutime, t_cstime;
+
+	struct llistnode blocknode, activenode, pnode;
+	struct llist *blocklist;
+	struct async_call block_timeout;
+	struct process *process;
+};
+
+struct process {
+	unsigned magic;
+	vmm_context_t *pd;
+	pid_t pid;
+	int flags;
+
+	struct llistnode listnode;
+
+	addr_t heap_start, heap_end, he_red;
+	char command[128];
+	char **argv, **env;
+	int cmask;
+	int tty;
+
+	sigset_t signal_mask;
+	unsigned signal;
+	struct process *parent;
+	struct llist threadlist;
+};
 
 struct task_struct
 {

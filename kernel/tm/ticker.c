@@ -2,6 +2,7 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/types.h>
 #include <sea/lib/heap.h>
+#include <sea/tm/async_call.h>
 
 struct ticker *ticker_create(struct ticker *ticker, int flags)
 {
@@ -33,13 +34,18 @@ void ticker_tick(struct ticker *ticker, uint64_t nanoseconds)
 			 * we need to in case something bubbled up
 			 * through the heap between the call to
 			 * peak and now */
-			/* heap_pop(&ticker->heap, &key, &data); */
-			/* /1* handle the time-event *1/ */
-			/* struct asynccall *call = (struct async_call *)data; */
-			/* call->function(call); */
-			
+			heap_pop(&ticker->heap, &key, &data);
+			/* handle the time-event */
+			struct async_call *call = (struct async_call *)data;
+			async_call_execute(call);
+			async_call_destroy(call);
 		}
 	}
+}
+
+void ticker_insert(struct ticker *ticker, time_t nanoseconds, struct async_call *call)
+{
+	heap_insert(&ticker->heap, nanoseconds + ticker->tick, call);
 }
 
 void ticker_destroy(struct ticker *ticker)

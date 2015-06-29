@@ -4,7 +4,8 @@
 #include <sea/types.h>
 #include <sea/rwlock.h>
 
-#define HEAP_KMALLOC 1
+#define HEAP_KMALLOC  1
+#define HEAP_LOCKLESS 2
 #define HEAPMODE_MAX 0
 #define HEAPMODE_MIN 1
 

@@ -93,26 +93,6 @@ struct thread_shared_data {
 
 typedef struct __cpu_t__ cpu_t;
 
-struct thread {
-	unsigned magic;
-	pid_t tid;
-	int cpuid;
-	int state, flags;
-	int system;
-	int priority, timeslice;
-	void *kernel_stack;
-
-	sigset_t signal_mask;
-	unsigned signal;
-	registers_t *sysregs, *regs, regs_b;
-	time_t stime, utime, t_cutime, t_cstime;
-
-	struct llistnode blocknode, activenode, pnode;
-	struct llist *blocklist;
-	struct async_call block_timeout;
-	struct process *process;
-};
-
 struct process {
 	unsigned magic;
 	vmm_context_t *pd;
@@ -121,7 +101,7 @@ struct process {
 
 	struct llistnode listnode;
 
-	addr_t heap_start, heap_end, he_red;
+	addr_t heap_start, heap_end;
 	char command[128];
 	char **argv, **env;
 	int cmask;

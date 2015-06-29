@@ -3,6 +3,7 @@
 #include <sea/types.h>
 #include <sea/lib/heap.h>
 #include <sea/tm/async_call.h>
+#include <sea/mutex.h>
 
 struct ticker *ticker_create(struct ticker *ticker, int flags)
 {
@@ -13,7 +14,8 @@ struct ticker *ticker_create(struct ticker *ticker, int flags)
 		ticker->flags = flags;
 	}
 	ticker->tick = 0;
-	heap_create(&ticker->heap, 0, HEAPMODE_MIN);
+	heap_create(&ticker->heap, HEAP_LOCKLESS, HEAPMODE_MIN);
+	mutex_create(&ticker->lock, MT_NOSCHED);
 	return ticker;
 }
 
@@ -22,12 +24,7 @@ void ticker_tick(struct ticker *ticker, uint64_t nanoseconds)
 	ticker->tick += nanoseconds;
 	uint64_t key;
 	void *data;
-	/* this is not exactly thread safe. But it doesn't matter!
-	 * if something happens to work it's way in and replace the
-	 * head element, then if the previous key was less than tick
-	 * then it would be removed as well anyway. Which can happen
-	 * on the next tick if need be.
-	 */
+	mutex_acquire(&heap->lock);
 	if(heap_peek(&ticker->heap, &key, &data) == 0) {
 		if(key < ticker->tick) {
 			/* get the data again, since it's cheap and
@@ -41,15 +38,20 @@ void ticker_tick(struct ticker *ticker, uint64_t nanoseconds)
 			async_call_destroy(call);
 		}
 	}
+	mutex_release(&heap->lock);
 }
 
 void ticker_insert(struct ticker *ticker, time_t nanoseconds, struct async_call *call)
 {
+	mutex_acquire(&heap->lock);
 	heap_insert(&ticker->heap, nanoseconds + ticker->tick, call);
+	mutex_release(&heap->lock);
 }
 
 void ticker_destroy(struct ticker *ticker)
 {
+	heap_destroy(&ticker->heap);
+	mutex_destroy(&ticker->lock);
 	if(ticker->flags & TICKER_KMALLOC) {
 		kfree(ticker);
 	}

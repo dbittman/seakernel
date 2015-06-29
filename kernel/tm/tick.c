@@ -68,8 +68,8 @@ static void do_tick()
 		inc_parent_times(current_task->parent, 
 			current_task->system ? __SYS : __USR);
 	}
-	__tm_check_alarms();
-	do_run_scheduler();
+	/* TODO: alarm() */
+	/* TODO: maybe set flag to schedule */
 }
 
 void tm_timer_handler(registers_t *r)

@@ -95,7 +95,7 @@ struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int
 	f->pos=0;
 	f->count=1;
 	f->fd_flags &= ~FD_CLOEXEC;
-	ret = fs_add_file_pointer((task_t *)current_task, f);
+	ret = fs_add_file_pointer(current_process, f);
 	if(ret == -1) {
 		kfree(f);
 		vfs_icache_put(inode);
@@ -117,7 +117,7 @@ struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int
 		add_atomic(&inode->pipe->count, 1);
 		mutex_release(inode->pipe->lock);
 	}
-	fs_fput((task_t *)current_task, ret, 0);
+	fs_fput(current_process, ret, 0);
 	return f;
 }
 
@@ -136,7 +136,7 @@ int sys_open(char *name, int flags)
 	return sys_open_posix(name, flags, 0);
 }
 
-static int duplicate(task_t *t, int fp, int n)
+static int duplicate(struct process *t, int fp, int n)
 {
 	struct file *f = fs_get_file_pointer(t, fp);
 	if(!f)
@@ -168,17 +168,17 @@ static int duplicate(task_t *t, int fp, int n)
 		tm_remove_all_from_blocklist(f->inode->pipe->read_blocked);
 		tm_remove_all_from_blocklist(f->inode->pipe->write_blocked);
 	}
-	fs_fput((task_t *)t, fp, 0);
-	fs_fput((task_t *)t, ret, 0);
+	fs_fput(t, fp, 0);
+	fs_fput(t, ret, 0);
 	return ret;
 }
 
 int sys_dup(int f)
 {
-	return duplicate((task_t *)current_task, f, 0);
+	return duplicate(current_process, f, 0);
 }
 
 int sys_dup2(int f, int n)
 {
-	return duplicate((task_t *)current_task, f, n);
+	return duplicate(current_process, f, n);
 }

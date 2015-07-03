@@ -35,7 +35,7 @@ int sys_get_timer_th(int *t)
 }
 
 /* Iterate through the parents of tasks and update their times */
-static void inc_parent_times(task_t *t, int u, int s)
+static void inc_parent_times(struct process *t, int u, int s)
 {
 	while(t && t != kernel_task) {
 		t->t_cutime += u;
@@ -57,16 +57,16 @@ static void do_run_scheduler()
 #define __USR 1, 0
 static void do_tick()
 {
-	if(!current_task || (kernel_state_flags&KSF_PANICING))
+	if(!current_thread || (kernel_state_flags&KSF_PANICING))
 		return;
-	if(!(current_task->cpu->flags & CPU_TASK))
+	if(!(current_thread->cpu->flags & CPU_TASK))
 		return;
-	if(current_task) {
-		current_task->system 
-			? (++current_task->stime) 
-			: (++current_task->utime);
-		inc_parent_times(current_task->parent, 
-			current_task->system ? __SYS : __USR);
+	if(current_thread) {
+		current_thread->system 
+			? (++current_process->stime) 
+			: (++current_process->utime);
+		inc_parent_times(current_process->parent, 
+			current_thread->system ? __SYS : __USR);
 	}
 	/* TODO: alarm() */
 	/* TODO: maybe set flag to schedule */
@@ -83,7 +83,8 @@ void tm_timer_handler(registers_t *r)
 		tm_engage_idle();
 	do_tick();
 }
-
+/* TODO */
+#if 0
 void tm_delay(int t)
 {
 	if((kernel_state_flags & KSF_SHUTDOWN))
@@ -117,3 +118,5 @@ void tm_delay_sleep(int t)
 	}
 	cpu_interrupt_set(old);
 }
+#endif
+

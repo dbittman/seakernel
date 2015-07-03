@@ -36,7 +36,7 @@ struct socket *socket_create(int *errcode)
 	inode->count = 1;
 	inode->mode |= S_IFSOCK;
 	f->count = 1;
-	int fd = fs_add_file_pointer(current_task, f);
+	int fd = fs_add_file_pointer(current_process, f);
 	if(fd < 0)
 		*errcode = -ENFILE;
 	struct socket *sock = kmalloc(sizeof(struct socket));
@@ -45,19 +45,19 @@ struct socket *socket_create(int *errcode)
 	sock->fd = fd;
 	queue_create(&sock->rec_data_queue, 0);
 	f->socket = sock;
-	fs_fput(current_task, fd, 0);
+	fs_fput(current_process, fd, 0);
 	return sock;
 }
 
 static struct socket *get_socket(int fd, int *err)
 {
 	*err = 0;
-	struct file *f = fs_get_file_pointer(current_task, fd);
+	struct file *f = fs_get_file_pointer(current_process, fd);
 	if(!f) {
 		*err = -EBADF;
 		return 0;
 	}
-	fs_fput(current_task, fd, 0);
+	fs_fput(current_process, fd, 0);
 	if(!f->socket) {
 		*err = -ENOTSOCK;
 		return 0;
@@ -326,7 +326,7 @@ ssize_t sys_recv(int socket, void *buffer, size_t length, int flags)
 	size_t nbytes = 0;
 	while(nbytes == 0) {
 		/* TODO: better blocking */
-		if(nbytes == 0 && tm_process_got_signal(current_task))
+		if(nbytes == 0 && tm_thread_got_signal(current_thread))
 			return -EINTR;
 		nbytes += net_data_queue_copy_out(sock, &sock->rec_data_queue, buffer, length, (flags & MSG_PEEK), 0);
 		if(!nbytes) {
@@ -378,11 +378,10 @@ int sys_recvfrom(struct socket_fromto_info *m)
 		ret = sock->calls->recvfrom(sock, m->buffer, m->len, m->flags, m->addr, m->addr_len);
 	if(ret)
 		return ret;
-	TRACE(0, "[socket]: recvfrom (%x)\n", &current_task->sigd);
 	size_t nbytes = 0;
 	while(nbytes == 0) {
 		/* TODO: better blocking */
-		if(nbytes == 0 && tm_process_got_signal(current_task))
+		if(nbytes == 0 && tm_thread_got_signal(current_thread))
 			return -EINTR;
 		nbytes += net_data_queue_copy_out(sock, &sock->rec_data_queue,
 				m->buffer, m->len, (m->flags & MSG_PEEK), m->addr);

@@ -25,12 +25,12 @@ struct file_ptr {
 	struct file *fi;
 };
 
-struct file *fs_get_file_pointer(task_t *t, int n);
-void fs_fput(task_t *t, int fd, char flags);
-int fs_add_file_pointer(task_t *t, struct file *f);
-int fs_add_file_pointer_after(task_t *t, struct file *f, int x);
-void fs_copy_file_handles(task_t *p, task_t *n);
-void fs_close_all_files(task_t *t);
+struct file *fs_get_file_pointer(struct process *t, int n);
+void fs_fput(struct process *, int fd, char flags);
+int fs_add_file_pointer(struct process *t, struct file *f);
+int fs_add_file_pointer_after(struct process *t, struct file *f, int x);
+void fs_copy_file_handles(struct process *p, struct process *n);
+void fs_close_all_files(struct process *t);
 
 struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int *num);
 

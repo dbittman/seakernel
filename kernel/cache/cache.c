@@ -248,7 +248,7 @@ void cache_sync(cache_t *c)
 		do_cache_sync_element(c, obj, 1);
 		rwlock_release(c->rwl, RWL_WRITER);
 		
-		if(tm_process_got_signal(current_task))
+		if(tm_thread_got_signal(current_thread))
 			return;
 		i++;
 	}

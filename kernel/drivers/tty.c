@@ -31,7 +31,7 @@ int tty_open(int min)
 		 * will probably need to be changed later */
 		console_initialize_vterm(&consoles[min], consoles[0].driver);
 	}
-	current_task->tty = min;
+	current_process->tty = min;
 	return 0;
 }
 
@@ -58,7 +58,7 @@ void tty_putch(struct vterm *con, int ch)
 	con->rend->putch(con, ch);
 }
 
-void __tty_found_task_raise_action(task_t *t, int arg)
+void __tty_found_task_raise_action(struct thread *t, int arg)
 {
 	if(t->flags & TF_BGROUND) return;
 	t->sigd = arg;
@@ -98,8 +98,8 @@ int tty_read(int min, char *buf, size_t len)
 		mutex_acquire(&con->inlock);
 		while(!con->inpos) {
 			mutex_release(&con->inlock);
-			tm_add_to_blocklist_and_block(&con->input_block, (task_t *)current_task);
-			if(tm_process_got_signal(current_task))
+			tm_add_to_blocklist_and_block(&con->input_block, current_thread);
+			if(tm_thread_got_signal(current_thread))
 				return -EINTR;
 			mutex_acquire(&con->inlock);
 		}
@@ -148,7 +148,7 @@ int tty_write(int min, char *buf, size_t len)
 	/* putch handles printable characters and control characters. 
 	 * We handle escape codes */
 	while(i<len) {
-		if(tm_process_got_signal(current_task)) {
+		if(tm_thread_got_signal(current_thread)) {
 			mutex_release(&con->wlock);
 			return -EINTR;
 		}
@@ -186,7 +186,7 @@ int ttyx_ioctl(int min, int cmd, long arg)
 	struct vterm *con = &consoles[min];
 	if(!con->flag)
 		return -ENOENT;
-	task_t *t=0;
+	struct thread *t=0;
 	struct sgttyb *g=0;
 	struct winsize *s;
 	switch(cmd)
@@ -199,7 +199,7 @@ int ttyx_ioctl(int min, int cmd, long arg)
 			con->b = arg/16;
 			break;
 		case 2:
-			current_task->tty = min;
+			current_process->tty = min;
 			break;
 		case 3:
 			if(con->rend->clear_cursor)
@@ -333,8 +333,8 @@ int ttyx_ioctl(int min, int cmd, long arg)
 			return 0;
 			break;
 		default:
-			if(cmd >= 128 && cmd < 256 && ((current_task->system == SYS_LMOD)
-					|| (current_task->pid < init_pid)))
+			if(cmd >= 128 && cmd < 256 && ((current_thread->system == SYS_LMOD)
+					|| (current_thread->pid < init_pid)))
 			{
 				addr_t q = tty_calltable ? tty_calltable[cmd-128] : 0;
 				if(q)
@@ -355,7 +355,7 @@ int ttyx_ioctl(int min, int cmd, long arg)
 
 int tty_ioctl(int min, int cmd, long arg)
 {
-	return ttyx_ioctl(current_task->tty, cmd, arg);
+	return ttyx_ioctl(current_process->tty, cmd, arg);
 }
 
 int ttyx_rw(int rw, int min, char *buf, size_t count)
@@ -379,9 +379,7 @@ int ttyx_rw(int rw, int min, char *buf, size_t count)
 
 int tty_rw(int rw, int m, char *buf, size_t c)
 {
- 	if(!current_task) 
-		return -ESRCH;
-	return ttyx_rw(rw, m=current_task->tty, buf, c);
+	return ttyx_rw(rw, m=current_process->tty, buf, c);
 }
 
 int ttyx_select(int min, int rw)
@@ -394,7 +392,7 @@ int ttyx_select(int min, int rw)
 
 int tty_select(int min, int rw)
 {
-	return ttyx_select(min=current_task->tty, rw);
+	return ttyx_select(min=current_process->tty, rw);
 }
 
 void tty_init(struct vterm **k)

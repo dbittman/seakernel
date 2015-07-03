@@ -6,6 +6,8 @@
 #include <sea/tm/process.h>
 #define TQ_ALLOC 1
 
+/* TODO: Redesign task queue system */
+
 #define TSEARCH_FINDALL           0x1
 #define TSEARCH_PID               0x2
 #define TSEARCH_UID               0x4
@@ -36,7 +38,6 @@ void tqueue_remove_entry(struct tqueue *tq, void *item);
 void tqueue_remove_nolock(struct tqueue *tq, struct llistnode *i);
 void tqueue_remove(struct tqueue *tq, struct llistnode *i);
 void *tqueue_next(struct tqueue *tq);
-task_t *tm_search_tqueue(struct tqueue *tq, unsigned flags, unsigned long value, void (*action)(task_t *, int), int arg, int *);
 extern struct tqueue *primary_queue;
 extern struct llist *kill_queue;
 #endif

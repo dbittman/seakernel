@@ -1,8 +1,9 @@
-KOBJS+= kernel/tm/exit.o \
-		kernel/tm/fork.o \
+KOBJS+= kernel/tm/blocking.o \
+		kernel/tm/newexit.o \
+		kernel/tm/newfork.o \
 		kernel/tm/kthread.o \
 		kernel/tm/process.o \
-		kernel/tm/schedule.o \
+		kernel/tm/newsched.o \
 		kernel/tm/signal.o \
 		kernel/tm/task.o \
 		kernel/tm/tick.o \

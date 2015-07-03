@@ -16,9 +16,6 @@ void __rwlock_acquire(rwlock_t *lock, unsigned flags, char *file, int line)
 {
 	assert(lock->magic == RWLOCK_MAGIC);
 	if(kernel_state_flags & KSF_SHUTDOWN) return;
-#ifdef RWL_DEBUG
-	  printk(0, "TRACE: %d: acquire rwl %x (%d) (%d): %s:%d\n", current_task->pid, lock, lock->locks, flags, file, line);
-#endif
 	while(1) 
 	{
 		/* if we're trying to get a writer lock, we need to wait until the
@@ -53,9 +50,6 @@ void __rwlock_escalate(rwlock_t *lock, unsigned flags, char *file, int line)
 	assert(lock->magic == RWLOCK_MAGIC);
 	if(kernel_state_flags & KSF_SHUTDOWN) return;
 	assert(lock->locks);
-#ifdef RWL_DEBUG
-	printk(0, "TRACE: %d: escalate rwl %x (%d) (%d): %s:%d\n", current_task->pid, lock, lock->locks, flags, file, line);
-#endif
 	if(lock->locks == 1 && (flags & RWL_READER)) {
 		/* change from a writer lock to a reader lock. This is easy. */
 		add_atomic(&lock->locks, 2);
@@ -88,9 +82,6 @@ void rwlock_release(rwlock_t *lock, unsigned flags)
 	assert(lock->magic == RWLOCK_MAGIC);
 	if(kernel_state_flags & KSF_SHUTDOWN) return;
 	assert(lock->locks);
-#ifdef RWL_DEBUG
-	printk(0, "TRACE: release rwl (%d) (%d)\n", lock->locks, flags);
-#endif
 	if(flags & RWL_READER) {
 		assert(lock->locks >= 2);
 		sub_atomic(&lock->locks, 2);

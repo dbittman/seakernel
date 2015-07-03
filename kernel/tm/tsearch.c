@@ -4,7 +4,7 @@
 #include <sea/tm/tqueue.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/string.h>
-
+#if 0
 #define FOUND_ACTION \
 	if(action) \
 		action(tmp, arg); \
@@ -83,3 +83,5 @@ task_t *tm_search_tqueue(struct tqueue *tq, unsigned flags, unsigned long value,
 	cpu_interrupt_set(old);
 	return t;
 }
+#endif
+

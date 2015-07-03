@@ -33,9 +33,9 @@ static inline  unsigned get_boot_flag()
 	return *(unsigned *)(BOOTFLAG_ADDR);
 }
 
-void cpu_k_task_entry(task_t *me)
+void cpu_k_task_entry(struct thread *me)
 {
-	/* final part: set the current_task pointer to 'me', and set the 
+	/* final part: set the current_thread pointer to 'me', and set the 
 	 * task flags that allow the cpu to start executing */
 	page_directory[PAGE_DIR_IDX(SMP_CUR_TASK / PAGE_SIZE)] = (unsigned)me;
 	cpu_smp_task_idle(me);
@@ -77,7 +77,7 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	while(!kernel_task) asm("cli; pause");
 	printk(0, "[cpu%d]: enable tasks...\n", apicid);
 	/* initialize tasking for this CPU */
-	task_t *task = tm_task_create();
+	/* TODO: thread initialization */
 	task->pid = add_atomic(&next_pid, 1)-1;
 	task->pd = (void *)cpu->kd;
 	task->stack_end=STACK_LOCATION;

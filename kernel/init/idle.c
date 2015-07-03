@@ -50,8 +50,8 @@ int kt_kernel_idle_task()
 {
 	int task, cache;
 	kthread_create(&kthread_pager, "[kpager]", 0, __KT_pager, 0);
-	current_task->flags |= TF_KTASK;
-	strncpy((char *)current_task->command, "[kidle]", 128);
+	current_thread->flags |= TF_KTASK;
+	strncpy((char *)current_process->command, "[kidle]", 128);
 	/* First stage is to wait until we can clear various allocated things
 	 * that we wont need anymore */
 	while(!__KT_clear_args())
@@ -75,7 +75,6 @@ int kt_kernel_idle_task()
 	/* Now enter the main idle loop, waiting to do periodic cleanup */
 	printk(0, "[idle]: entering background loop\n");
 	for(;;) {
-		current_task->freed = current_task->allocated = 0;
 		task=__KT_try_releasing_tasks();
 		__KT_try_handle_stage2_interrupts();
 		tm_schedule();

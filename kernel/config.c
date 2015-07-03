@@ -51,7 +51,7 @@ long sys_sysconf(int cmd)
 			break;
 		default:
 			printk(1, "[sysconf]: %d gave unknown specifier: %d\n", 
-					current_task->pid, cmd);
+					current_process->pid, cmd);
 	}
 	return ret;
 }

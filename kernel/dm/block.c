@@ -377,7 +377,7 @@ void dm_send_sync_block()
 		if(cd->ioctl)
 			cd->ioctl(0, -1, 0);
 		i++;
-		if(tm_process_got_signal(current_task))
+		if(tm_thread_got_signal(current_thread))
 			return;
 	}
 }

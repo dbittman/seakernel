@@ -108,7 +108,7 @@ struct dirent *fs_dirent_lookup(struct inode *node, const char *name, size_t nam
 		return 0;
 	if(!S_ISDIR(node->mode))
 		return 0;
-	if(node == current_task->thread->root && !strncmp(name, "..", 2) && namelen == 2)
+	if(node == current_process->root && !strncmp(name, "..", 2) && namelen == 2)
 		return fs_dirent_lookup(node, ".", 1);
 	mutex_acquire(dirent_cache_lock);
 	rwlock_acquire(&node->lock, RWL_WRITER);

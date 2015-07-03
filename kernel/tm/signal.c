@@ -77,7 +77,7 @@ static int __can_send_signal(task_t *from, task_t *to)
 		return 1;
 	}
 }
-
+/* TODO: thread */
 int tm_do_send_signal(int pid, int __sig, int p)
 {
 	if(!current_task)
@@ -151,6 +151,8 @@ void tm_remove_process_from_alarm(task_t *t)
 	}
 }
 
+/* TODO */
+#if 0
 int sys_alarm(int a)
 {
 	if(a)
@@ -183,6 +185,7 @@ int sys_alarm(int a)
 	}
 	return 0;
 }
+#endif
 
 int sys_sigact(int sig, const struct sigaction *act, struct sigaction *oact)
 {
@@ -231,13 +234,13 @@ int sys_sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict os
 }
 
 
-int tm_signal_will_be_fatal(task_t *t, int sig)
+int tm_signal_will_be_fatal(struct thread *t, int sig)
 {
 	/* will the signal be fatal? Well, if it's SIGKILL then....yes */
 	if(sig == SIGKILL) return 1;
 	/* if there is a user-space handler, then it will be called, and
 	 * so will not be fatal (probably) */
-	if(t->thread->signal_act[t->sigd]._sa_func._sa_handler)
+	if(t->signal_act[t->sigd]._sa_func._sa_handler)
 		return 0;
 	/* of the default handlers, these signals don't kill the process */
 	if(sig == SIGUSLEEP || sig == SIGISLEEP || sig == SIGSTOP || sig == SIGCHILD)
@@ -245,14 +248,14 @@ int tm_signal_will_be_fatal(task_t *t, int sig)
 	return 1;
 }
 
-int tm_process_got_signal(task_t *t)
+int tm_thread_got_signal(struct thread *t)
 {
 	if(kernel_state_flags & KSF_SHUTDOWN)
 		return 0;
 	int sn = t->cursig ? t->cursig : t->sigd;
 	if(!sn) return 0;
 	/* if the SA_RESTART flag is set, then return false */
-	if(t->thread->signal_act[sn].sa_flags & SA_RESTART) return 0;
+	if(t->signal_act[sn].sa_flags & SA_RESTART) return 0;
 	/* otherwise, return if we have a signal */
 	return (sn);
 }

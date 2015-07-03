@@ -3,6 +3,9 @@
 #include <sea/mm/vmm.h>
 #include <sea/tm/process.h>
 #include <sea/mm/kmalloc.h>
+#warning "MEMORY RELEASING"
+#if 0
+
 __attribute__ ((noinline)) static void self_free_table(int t)
 {
 	addr_t virt = t*1024*PAGE_SIZE;
@@ -61,3 +64,5 @@ void arch_mm_free_thread_specific_directory()
 		pd[i]=0;
 	}
 }
+#endif
+

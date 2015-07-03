@@ -3,10 +3,12 @@
 #include <sea/boot/init.h>
 #include <sea/mm/vmm.h>
 #include <sea/cpu/atomic.h>
+#include <sea/tm/thread.h>
 #define SIGSTACK (STACK_LOCATION - (STACK_SIZE + PAGE_SIZE + 8))
 
-int arch_tm_userspace_signal_initializer(task_t *t, struct sigaction *sa)
+int arch_tm_userspace_signal_initializer(struct sigaction *sa)
 {
+	struct thread *t = current_thread;
 	volatile registers_t *iret = t->regs;
 	if(!iret) return 0;
 	/* user-space signal handing design:

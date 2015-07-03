@@ -1,17 +1,6 @@
 #include <sea/tm/thread.h>
 #include <sea/tm/process.h>
-struct thread *thread_create(pid_t tid)
-{
+#include <sea/lib/hash.h>
 
-}
-
-void thread_add_to_process(struct thread *thr, struct process *proc)
-{
-
-}
-
-void thread_remove_from_process(struct thread *thr, struct process *proc)
-{
-
-}
+struct hash_table *thread_table;
 

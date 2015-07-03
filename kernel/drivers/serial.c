@@ -53,7 +53,7 @@ int serial_rw(int rw, int min, char *b, size_t c)
 		while(i--) {
 			while(arch_serial_received(serial_debug_port_minor) == 0)
 			{
-				if(tm_process_got_signal(current_task))
+				if(tm_thread_got_signal(current_thread))
 					return -EINTR;
 			}
 			*(b) = arch_serial_read(serial_debug_port_minor);

@@ -18,8 +18,10 @@ static inline void _set_lowercase(char *b)
 	}
 }
 
-static void __panic_print_extra_data(int flags, task_t *t)
+static void __panic_print_extra_data(int flags, struct thread *t)
 {
+	/* TODO */
+#if 0
 	if(t) 
 		printk_safe(9,"current_task=%x:%d(%s), sys=%d, flags=%x, F=%x. Stack trace:\n", t, 
 				t->pid, t->command, t->system, t->flags, t->flag);
@@ -53,7 +55,7 @@ static void __panic_print_extra_data(int flags, task_t *t)
 					, t->cpu, t->cpu->snum, a);
 		}
 	}
-
+#endif
 }
 
 void panic(int flags, char *fmt, ...)
@@ -75,7 +77,7 @@ void panic(int flags, char *fmt, ...)
 		}
 	}
 	set_ksf(KSF_PANICING);
-	task_t *t = current_task;
+	struct thread *t = current_thread;
 	
 	printk_safe(9, "\n\n*** kernel panic - ");	
 	char buf[512];

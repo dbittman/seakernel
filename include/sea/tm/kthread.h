@@ -8,7 +8,7 @@ struct kthread {
 	unsigned pid;
 	int (*entry)(struct kthread *, void *);
 	void *arg;
-	task_t *process;
+	struct thread *thr;
 };
 
 #define KT_ALLOC   1

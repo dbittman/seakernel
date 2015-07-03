@@ -54,6 +54,7 @@ void cpu_copy_fixup_stack(addr_t new, addr_t old, size_t len)
 #if CONFIG_SMP
 cpu_t *cpu_get(unsigned id)
 {
+	/* TODO: fix this FUCKING RETARDED nonsense */
 	for(unsigned int i=0;i<cpu_array_num;i++)
 	{
 		if(cpu_array[i].snum == id) return &cpu_array[i];
@@ -76,3 +77,18 @@ void cpu_timer_install(int freq)
 	tm_set_current_frequency_indicator(freq);
 	arch_cpu_timer_install(freq);
 }
+
+struct cpu *cpu_get_current(void)
+{
+	tm_disable_preemption();
+	struct cpu *cpu = current_thread->cpu;
+	add_atomic(&cpu->gc_count, 1);
+	return cpu;
+}
+
+void cpu_put_current(struct cpu *cpu)
+{
+	if(sub_atomic(&cpu->gc_count, 1) == 0)
+		tm_enable_preemption();
+}
+

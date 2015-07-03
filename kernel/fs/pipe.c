@@ -27,8 +27,8 @@ static struct inode *create_anon_pipe()
 	/* create a 'fake' inode */
 	node = vfs_inode_create();
 	node->flags |= INODE_NOLRU;
-	node->uid = current_task->thread->effective_uid;
-	node->gid = current_task->thread->effective_gid;
+	node->uid = current_process->effective_uid;
+	node->gid = current_process->effective_gid;
 	node->mode = S_IFIFO | 0x1FF;
 	node->count=2;
 	
@@ -50,18 +50,18 @@ int sys_pipe(int *files)
 	f->flags = _FREAD;
 	f->pos=0;
 	f->count=1;
-	int read = fs_add_file_pointer((task_t *)current_task, f);
+	int read = fs_add_file_pointer(current_process, f);
 	/* this is the writing descriptor */
 	f = (struct file *)kmalloc(sizeof(struct file));
 	f->inode = inode;
 	f->flags = _FREAD | _FWRITE;
 	f->count=1;
 	f->pos=0;
-	int write = fs_add_file_pointer((task_t *)current_task, f);
+	int write = fs_add_file_pointer(current_process, f);
 	files[0]=read;
 	files[1]=write;
-	fs_fput((task_t *)current_task, read, 0);
-	fs_fput((task_t *)current_task, write, 0);
+	fs_fput(current_process, read, 0);
+	fs_fput(current_process, write, 0);
 	return 0;
 }
 
@@ -98,11 +98,11 @@ int fs_pipe_read(struct inode *ino, int flags, char *buffer, size_t length)
 		/* we need to block, but also release the lock. Disable interrupts
 		 * so we don't schedule before we want to */
 		int old = cpu_interrupt_set(0);
-		tm_add_to_blocklist(pipe->read_blocked, (task_t *)current_task);
+		tm_add_to_blocklist(pipe->read_blocked, current_thread);
 		mutex_release(pipe->lock);
 		while(!tm_schedule());
 		cpu_interrupt_set(old);
-		if(tm_process_got_signal(current_task))
+		if(tm_thread_got_signal(current_thread))
 			return -EINTR;
 		mutex_acquire(pipe->lock);
 	}
@@ -154,18 +154,18 @@ int fs_pipe_write(struct inode *ino, int flags, char *initialbuffer, size_t tota
 		/* we're writing to a pipe with no reading process! */
 		if((pipe->count - pipe->wrcount) == 0 && pipe->type != PIPE_NAMED) {
 			mutex_release(pipe->lock);
-			current_task->sigd = SIGPIPE;
+			current_thread->sigd = SIGPIPE;
 			return -EPIPE;
 		}
 		/* IO block until we can write to it */
 		while((pipe->write_pos+length)>=PIPE_SIZE) {
 			int old = cpu_interrupt_set(0);
 			tm_remove_all_from_blocklist(pipe->read_blocked);
-			tm_add_to_blocklist(pipe->write_blocked, (task_t *)current_task);
+			tm_add_to_blocklist(pipe->write_blocked, current_thread);
 			mutex_release(pipe->lock);
 			while(!tm_schedule());
 			cpu_interrupt_set(old);
-			if(tm_process_got_signal(current_task))
+			if(tm_thread_got_signal(current_thread))
 				return -EINTR;
 			mutex_acquire(pipe->lock);
 		}
@@ -196,3 +196,4 @@ int fs_pipe_select(struct inode *in, int rw)
 		return 0;
 	return 1;
 }
+

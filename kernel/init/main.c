@@ -149,8 +149,8 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	/* Load the rest... */
 	printk(KERN_MILE, "[kernel]: Kernel is setup (kv=%d, bpl=%d: ok)\n", 
 	       CONFIG_VERSION_NUMBER, BITS_PER_LONG);
-	printk(KERN_DEBUG, "[kernel]: structure sizes: task=%d bytes, thread=%d bytes, inode=%d bytes\n",
-			sizeof(task_t), sizeof(struct thread_shared_data), sizeof(struct inode));
+	printk(KERN_DEBUG, "[kernel]: structure sizes: process=%d bytes, thread=%d bytes, inode=%d bytes\n",
+			sizeof(struct process), sizeof(struct thread), sizeof(struct inode));
 	cpu_interrupt_set(1);
 	if(!tm_fork())
 		init();
@@ -188,7 +188,7 @@ void init()
 	add_init_env("SHELL=/bin/sh");
 	int ret=0;
 	int pid;
-	init_pid = current_task->pid+1;
+	init_pid = current_process->pid+1;
 	cpu_interrupt_set_flag(1);
 	tm_switch_to_user_mode();
 	/* We have to be careful now. If we try to call any kernel functions

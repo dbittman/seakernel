@@ -193,10 +193,6 @@ addr_t mm_alloc_physical_page()
 		ret = pm_location;
 		pm_location+=PAGE_SIZE;
 	}
-	if(current_task) {
-		current_task->allocated++;
-		current_task->phys_mem_usage++;
-	}
 	assert(ret);
 	return ret;
 }
@@ -211,10 +207,6 @@ void mm_free_physical_page(addr_t addr)
 		return;
 	}
 	assert(addr);
-	if(current_task) {
-		current_task->freed++;
-		current_task->phys_mem_usage--;
-	}
 	mutex_acquire(&pm_mutex);
 	/* if we can put this back in contiguous memory, that's fine. */
 	if(mm_should_page_append_to_contiguous(addr))

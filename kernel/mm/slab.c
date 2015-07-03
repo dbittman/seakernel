@@ -456,9 +456,7 @@ void __mm_do_kfree_slab(void *ptr)
 {
 	if(!((addr_t)ptr >= slab_start && (addr_t)ptr < slab_end))
 	{
-		panic(PANIC_NOSYNC, "kfree got invalid address %x, pid=%d, sys=%d\n", 
-			ptr, current_task ? current_task->pid : 0, 
-			current_task ? current_task->system : 0);
+		panic(PANIC_NOSYNC, "kfree got invalid address");
 		return;
 	}
 	struct slab *slab=0;

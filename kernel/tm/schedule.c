@@ -11,7 +11,7 @@
 #include <sea/asm/system.h>
 #include <sea/syscall.h>
 
-static int GET_MAX_TS(task_t *t)
+static int GET_MAX_TS(struct thread *t)
 {
 	if(t->flags & TF_EXITING)
 		return 1;
@@ -22,7 +22,7 @@ static int GET_MAX_TS(task_t *t)
 	return x;
 }
 
-static __attribute__((always_inline)) inline void update_task(task_t *t)
+static __attribute__((always_inline)) inline void update_task(struct thread *t)
 {
 	/* task's tm_delay ran out */
 	if((t->state == TASK_USLEEP || t->state == TASK_ISLEEP) && t->tick <= tm_get_ticks() && t->tick)

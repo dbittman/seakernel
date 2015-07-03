@@ -17,10 +17,6 @@
 
 int arch_mm_vm_unmap_only(addr_t virt, unsigned locked)
 {
-#if CONFIG_SWAP
-	if(current_task && num_swapdev && current_task->num_swapped)
-		swap_in_page((task_t *)current_task, virt & PAGE_MASK);
-#endif
 	if(kernel_task && (virt&PAGE_MASK) != PDIR_DATA && !locked)
 		mutex_acquire(&pd_cur_data->lock);
 	page_tables[(virt&PAGE_MASK)/0x1000] = 0;
@@ -42,10 +38,6 @@ int arch_mm_vm_unmap(addr_t virt, unsigned locked)
 {
 	/* This gives the virtual address of the table needed, and sets
 	 * the correct place as zero */
-#if CONFIG_SWAP
-	if(current_task && num_swapdev && current_task->num_swapped)
-		swap_in_page((task_t *)current_task, virt & PAGE_MASK);
-#endif
 	if(kernel_task && (virt&PAGE_MASK) != PDIR_DATA && !locked)
 		mutex_acquire(&pd_cur_data->lock);
 	addr_t p = page_tables[(virt&PAGE_MASK)/0x1000];

@@ -10,14 +10,14 @@
 #include <sea/vsprintf.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/fs/dir.h>
-static struct file_ptr *get_file_handle(task_t *t, int n)
+static struct file_ptr *get_file_handle(struct process *t, int n)
 {
 	if(n >= FILP_HASH_LEN) return 0;
 	struct file_ptr *f = t->thread->filp[n];
 	return f;
 }
 
-struct file *fs_get_file_pointer(task_t *t, int n)
+struct file *fs_get_file_pointer(struct process *t, int n)
 {
 	mutex_acquire(&t->thread->files_lock);
 	struct file_ptr *fp = get_file_handle(t, n);
@@ -33,7 +33,7 @@ struct file *fs_get_file_pointer(task_t *t, int n)
 	return ret;
 }
 
-static void remove_file_pointer(task_t *t, int n)
+static void remove_file_pointer(struct process *t, int n)
 {
 	if(n > FILP_HASH_LEN) return;
 	if(!t || !t->thread->filp)
@@ -49,7 +49,7 @@ static void remove_file_pointer(task_t *t, int n)
 	kfree(f);
 }
 
-void fs_fput(task_t *t, int fd, char flags)
+void fs_fput(struct process *t, int fd, char flags)
 {
 	mutex_acquire(&t->thread->files_lock);
 	struct file_ptr *fp = get_file_handle(t, fd);
@@ -64,14 +64,14 @@ void fs_fput(task_t *t, int fd, char flags)
  * list being sorted, and since this is the only function that adds to it, 
  * we can assume it is. This allows for relatively efficient determining of 
  * a filedes without limit. */
-int fs_add_file_pointer_do(task_t *t, struct file_ptr *f, int after)
+int fs_add_file_pointer_do(struct process *t, struct file_ptr *f, int after)
 {
 	assert(t && f);
 	while(after < FILP_HASH_LEN && t->thread->filp[after])
 		after++;
 	if(after >= FILP_HASH_LEN) {
 		printk(1, "[vfs]: task %d ran out of files (syscall=%d)\n", 
-				t->pid, t == current_task ? (int)t->system : -1);
+				t->pid, t == current_process ? (int)t->system : -1);
 		return -1;
 	}
 	t->thread->filp[after] = f;
@@ -79,7 +79,7 @@ int fs_add_file_pointer_do(task_t *t, struct file_ptr *f, int after)
 	return after;
 }
 
-int fs_add_file_pointer(task_t *t, struct file *f)
+int fs_add_file_pointer(struct process *t, struct file *f)
 {
 	struct file_ptr *fp = (struct file_ptr *)kmalloc(sizeof(struct file_ptr));
 	mutex_acquire(&t->thread->files_lock);
@@ -96,7 +96,7 @@ int fs_add_file_pointer(task_t *t, struct file *f)
 	return r;
 }
 
-int fs_add_file_pointer_after(task_t *t, struct file *f, int x)
+int fs_add_file_pointer_after(struct process *t, struct file *f, int x)
 {
 	struct file_ptr *fp = (struct file_ptr *)kmalloc(sizeof(struct file_ptr));
 	mutex_acquire(&t->thread->files_lock);
@@ -113,7 +113,7 @@ int fs_add_file_pointer_after(task_t *t, struct file *f, int x)
 	return r;
 }
 
-void fs_copy_file_handles(task_t *p, task_t *n)
+void fs_copy_file_handles(struct process *p, struct process *n)
 {
 	if(!p || !n)
 		return;
@@ -142,7 +142,7 @@ void fs_copy_file_handles(task_t *p, task_t *n)
 	}
 }
 
-void fs_close_all_files(task_t *t)
+void fs_close_all_files(struct process *t)
 {
 	int q=0;
 	for(;q<FILP_HASH_LEN;q++)

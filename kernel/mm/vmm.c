@@ -16,7 +16,7 @@ void mm_free_thread_shared_directory()
 	arch_mm_free_thread_shared_directory();
 }
 
-void mm_destroy_task_page_directory(task_t *p)
+void mm_destroy_task_page_directory(struct process *p)
 {
 	arch_mm_destroy_task_page_directory(p);
 }

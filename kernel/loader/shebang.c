@@ -87,6 +87,6 @@ int loader_do_shebang(int desc, char **argv, char **env)
 		allargs[i+1] = (i < intargc) ? chomp(list[i]) : chomp(argv[i - intargc]);
 	allargs[i+1] = 0;
 
-	return do_exec(current_task, interp, allargs, env, 1);
+	return do_exec(current_process, interp, allargs, env, 1);
 }
 

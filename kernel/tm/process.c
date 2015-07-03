@@ -3,15 +3,18 @@
 #include <sea/kernel.h>
 #include <sea/tm/process.h>
 #include <sea/tm/schedule.h>
-void tm_process_enter_system(int sys)
+#include <sea/lib/hash.h>
+struct hash_table *process_table;
+
+void tm_thread_enter_system(int sys)
 {
-	current_task->system=(!sys ? -1 : sys);
-	current_task->cur_ts/=2;
+	current_thread->system=(!sys ? -1 : sys);
+	current_thread->cur_ts/=2;
 }
 
-void tm_process_exit_system()
+void tm_thread_exit_system()
 {
-	current_task->last = current_task->system;
-	current_task->system=0;
+	current_thread->last = current_task->system;
+	current_thread->system=0;
 }
 

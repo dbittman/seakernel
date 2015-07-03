@@ -28,7 +28,7 @@ static void __kfs_mnt_rp_write(struct filesystem *fs, size_t *offset, size_t len
 {
 	struct inode *root = fs_read_root_inode(fs);
 	char *point = fs->pointname;
-	if(root == current_task->thread->root)
+	if(root == current_process->root)
 		point = "/";
 	KERFS_PRINTF((*offset), length, buf, (*current),
 			"%s %s %s active,0x%x 0 0\n",

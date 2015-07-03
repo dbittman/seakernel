@@ -4,6 +4,7 @@
 #include <sea/mm/vmm.h>
 #include <sea/tm/tqueue.h>
 #include <sea/tm/process.h>
+#include <sea/tm/thread.h>
 #include <sea/mutex.h>
 
 #include <sea/config.h>
@@ -27,14 +28,14 @@
 #define CPU_FXSAVE 0x200
 #define CPU_NEEDRESCHED 0x400
 
-typedef struct __cpu_t__ {
+struct cpu {
 	unsigned knum, snum; /* knum: cpu number to the kernel, snum: cpu number to the hardware */
 	unsigned flags;
 	cpuid_t cpuid;
 	volatile page_dir_t *kd;
 	volatile addr_t kd_phys;
 	struct tqueue *active_queue;
-	task_t *ktask, *cur;
+	struct thread *idle_thread, *current_thread /* TODO: do we need this? */;
 	mutex_t lock;
 	unsigned numtasks;
 	unsigned stack[CPU_STACK_TEMP_SIZE];
@@ -42,9 +43,9 @@ typedef struct __cpu_t__ {
 	struct arch_cpu arch_cpu_data;
 
 	struct __cpu_t__ *next, *prev;
-} cpu_t;
+};
 
-void cpu_smp_task_idle(task_t *me);
+void cpu_smp_task_idle(struct thread *me);
 int cpu_get_num_running_processors();
 int cpu_get_num_halted_processors();
 int cpu_get_num_secondary_processors();

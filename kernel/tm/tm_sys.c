@@ -8,12 +8,12 @@
 int sys_sbrk(long inc)
 {
 	assert(current_task);
-	if(inc < 0 && current_task->heap_start < current_task->heap_end) {
+	if(inc < 0 && current_process->heap_start < current_process->heap_end) {
 		int dec = -inc;
-		addr_t new_end = current_task->heap_end - dec;
-		if(new_end < current_task->heap_start)
-			new_end = current_task->heap_start;
-		addr_t old_end = current_task->heap_end;
+		addr_t new_end = current_process->heap_end - dec;
+		if(new_end < current_process->heap_start)
+			new_end = current_process->heap_start;
+		addr_t old_end = current_process->heap_end;
 		addr_t free_start = (new_end&PAGE_MASK) + PAGE_SIZE;
 		addr_t free_end = old_end&PAGE_MASK;
 		while(free_start <= free_end) {
@@ -21,20 +21,20 @@ int sys_sbrk(long inc)
 				mm_vm_unmap(free_start, 0);
 			free_start += PAGE_SIZE;
 		}
-		current_task->heap_end = new_end;
+		current_process->heap_end = new_end;
 		assert(new_end + dec == old_end);
 		return old_end;
 	}
 	if(!inc)
-		return current_task->heap_end;
-	addr_t end = current_task->heap_end;
+		return current_process->heap_end;
+	addr_t end = current_process->heap_end;
 	assert(end);
 	if(end + inc >= TOP_TASK_MEM)
-		tm_send_signal(current_task->pid, SIGSEGV);
-	current_task->heap_end += inc;
-	current_task->he_red = end + inc;
+		tm_send_signal(current_thread->tid, SIGSEGV);
+	current_process->heap_end += inc;
+	current_process->he_red = end + inc;
 	addr_t page = end & PAGE_MASK;
-	for(;page <=(current_task->heap_end&PAGE_MASK);page += PAGE_SIZE)
+	for(;page <=(current_process->heap_end&PAGE_MASK);page += PAGE_SIZE)
 		user_map_if_not_mapped(page);
 	return end;
 }
@@ -50,7 +50,7 @@ int sys_gsetpriority(int set, int which, int id, int val)
 {
 	if(set)
 		return -ENOSYS;
-	return current_task->priority;
+	return current_thread->priority;
 }
 
 void __sys_nice_search_action(task_t *t, int val)
@@ -60,6 +60,8 @@ void __sys_nice_search_action(task_t *t, int val)
 
 int sys_nice(int which, int who, int val, int flags)
 {
+	/* TODO: threads? */
+#if 0
 	if(!flags || which == PRIO_PROCESS)
 	{
 		if(who && (unsigned)who != current_task->pid)
@@ -80,6 +82,7 @@ int sys_nice(int which, int who, int val, int flags)
 	if(which == PRIO_USER)
 		tm_search_tqueue(primary_queue, TSEARCH_UID | TSEARCH_EUID | TSEARCH_FINDALL | TSEARCH_EXCLUSIVE, who, __sys_nice_search_action, val, &c);
 	return c ? 0 : -ESRCH;
+#endif
 }
 
 int sys_setsid(int ex, int cmd)
@@ -87,7 +90,7 @@ int sys_setsid(int ex, int cmd)
 	if(cmd) {
 		return -ENOTSUP;
 	}
-	current_task->tty=0;
+	current_process->tty=0;
 	return 0;
 }
 
@@ -98,47 +101,47 @@ int sys_setpgid(int a, int b)
 
 int sys_get_pid()
 {
-	return current_task->pid;
+	return current_process->pid;
 }
 
 int sys_getppid()
 {
-	return current_task->parent->pid;
+	return current_process->parent->pid;
 }
 
 int tm_set_gid(int n)
 {
-	if(current_task->thread->real_gid && current_task->thread->effective_gid) {
-		if(n == current_task->thread->real_gid || n == current_task->thread->saved_gid)
-			current_task->thread->effective_gid = n;
+	if(current_process->real_gid && current_process->effective_gid) {
+		if(n == current_process->real_gid || n == current_process->saved_gid)
+			current_process->effective_gid = n;
 		else
 			return -EPERM;
 	} else {
-		current_task->thread->effective_gid = current_task->thread->real_gid = current_task->thread->saved_gid = n;
+		current_process->effective_gid = current_process->real_gid = current_process->saved_gid = n;
 	}
 	return 0;
 }
 
 int tm_set_uid(int n)
 {
-	if(current_task->thread->real_uid && current_task->thread->effective_uid) {
-		if(n == current_task->thread->real_uid || n == current_task->thread->saved_uid)
-			current_task->thread->effective_uid = n;
+	if(current_process->real_uid && current_process->effective_uid) {
+		if(n == current_process->real_uid || n == current_process->saved_uid)
+			current_process->effective_uid = n;
 		else
 			return -EPERM;
 	} else {
-		current_task->thread->effective_uid = current_task->thread->real_uid = current_task->thread->saved_uid = n;
+		current_process->effective_uid = current_process->real_uid = current_process->saved_uid = n;
 	}
 	return 0;
 }
 
 int tm_set_euid(int n)
 {
-	if(!current_task->thread->real_uid 
-		|| !current_task->thread->effective_uid
-		|| (n == current_task->thread->real_uid)
-		|| (n == current_task->thread->saved_uid)) {
-		current_task->thread->effective_uid = n;
+	if(!current_process->real_uid 
+		|| !current_process->effective_uid
+		|| (n == current_process->real_uid)
+		|| (n == current_process->saved_uid)) {
+		current_process->effective_uid = n;
 	} else
 		return -EPERM;
 	return 0;
@@ -146,11 +149,11 @@ int tm_set_euid(int n)
 
 int tm_set_egid(int n)
 {
-	if(!current_task->thread->real_gid 
-		|| !current_task->thread->effective_gid
-		|| (n == current_task->thread->real_gid)
-		|| (n == current_task->thread->saved_gid)) {
-		current_task->thread->effective_gid = n;
+	if(!current_process->real_gid 
+		|| !current_process->effective_gid
+		|| (n == current_process->real_gid)
+		|| (n == current_process->saved_gid)) {
+		current_process->effective_gid = n;
 	} else
 		return -EPERM;
 	return 0;
@@ -158,36 +161,36 @@ int tm_set_egid(int n)
 
 int tm_get_gid()
 {
-	return current_task->thread->real_gid;
+	return current_process->real_gid;
 }
 
 int tm_get_uid()
 {
-	return current_task->thread->real_uid;
+	return current_process->real_uid;
 }
 
 int tm_get_egid()
 {
-	return current_task->thread->effective_gid;
+	return current_process->effective_gid;
 }
 
 int tm_get_euid()
 {
-	return current_task->thread->effective_uid;
+	return current_process->effective_uid;
 }
 
 int sys_times(struct tms *buf)
 {
 	if(buf) {
-		buf->tms_utime = current_task->utime;
-		buf->tms_stime = current_task->stime;
-		buf->tms_cstime = current_task->t_cstime;
-		buf->tms_cutime = current_task->t_cutime;
+		buf->tms_utime = current_process->utime;
+		buf->tms_stime = current_process->stime;
+		buf->tms_cstime = current_process->t_cstime;
+		buf->tms_cutime = current_process->t_cutime;
 	}
 	return tm_get_ticks();
 }
 
-static void do_sys_task_stat(struct task_stat *s, task_t *t)
+static void do_sys_thread_stat(struct task_stat *s, struct thread *t)
 {
 	assert(s && t);
 	s->stime = t->stime;
@@ -206,16 +209,18 @@ static void do_sys_task_stat(struct task_stat *s, task_t *t)
 	s->mem_usage = (t->pid && !(t->flags & TF_KTASK)) ? t->phys_mem_usage * 4 : 0;
 }
 
+/* TODO */
 int sys_task_pstat(unsigned int pid, struct task_stat *s)
 {
 	if(!s) return -EINVAL;
-	task_t *t=tm_get_process_by_pid(pid);
+	//task_t *t=tm_get_process_by_pid(pid);
 	if(!t)
 		return -ESRCH;
 	do_sys_task_stat(s, t);
 	return 0;
 }
 
+/* TODO */
 int sys_task_stat(unsigned int num, struct task_stat *s)
 {
 	if(!s) return -EINVAL;
@@ -225,3 +230,4 @@ int sys_task_stat(unsigned int num, struct task_stat *s)
 	do_sys_task_stat(s, t);
 	return 0;
 }
+

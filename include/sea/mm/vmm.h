@@ -18,7 +18,7 @@ extern addr_t initial_boot_stack;
 vmm_context_t *mm_vm_clone(vmm_context_t *pd, char cow);
 vmm_context_t *mm_vm_copy(vmm_context_t *pd);
 void mm_free_thread_shared_directory();
-void mm_destroy_task_page_directory(task_t *p);
+void mm_destroy_task_page_directory(struct process *p);
 void mm_free_thread_specific_directory();
 void mm_vm_init(addr_t id_map_to);
 void mm_vm_init_2();

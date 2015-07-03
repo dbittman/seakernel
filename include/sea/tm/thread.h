@@ -7,6 +7,20 @@
 #include <sea/tm/async_call.h>
 #include <sea/tm/signal.h>
 #include <sea/cpu/registers.h>
+#include <sea/lib/hash.h>
+
+#define KERN_STACK_SIZE 0x16000
+#define THREAD_MAGIC 0xBABECAFE
+#define PRIO_PROCESS 1
+#define PRIO_PGRP    2
+#define PRIO_USER    3
+
+#define THREAD_RUNNING 0
+#define THREAD_INTERRUPTIBLE 1
+#define THREAD_UNINTERRUPTIBLE 2
+
+#define tm_thread_raise_flag(t,f) or_atomic(&(t->flags), f)
+#define tm_thread_lower_flag(t,f) and_atomic(&(t->flags), ~f)
 
 struct thread {
 	unsigned magic;
@@ -16,6 +30,7 @@ struct thread {
 	int system;
 	int priority, timeslice;
 	void *kernel_stack;
+	unsigned long stack_pointer;
 
 	sigset_t signal_mask;
 	unsigned signal;
@@ -27,6 +42,8 @@ struct thread {
 	struct async_call block_timeout;
 	struct process *process;
 };
+
+struct hash_table *thread_table;
 
 #endif
 

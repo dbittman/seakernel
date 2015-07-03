@@ -76,10 +76,6 @@ static int vm_copy_dir(page_dir_t *from, page_dir_t *new, char flags)
 page_dir_t *arch_mm_vm_clone(page_dir_t *pd, char cow)
 {
 	/* Create new directory and copy it */
-#if CONFIG_SWAP
-	if(current_task && current_task->num_swapped)
-		swap_in_all_the_pages(current_task);
-#endif
 	addr_t new_p;
 	page_dir_t *new = (page_dir_t *)kmalloc_ap(PAGE_SIZE, &new_p);
 	if(kernel_task)
@@ -133,10 +129,6 @@ page_dir_t *arch_mm_vm_clone(page_dir_t *pd, char cow)
  * linked so it can be accessed by both threads */
 page_dir_t *arch_mm_vm_copy(page_dir_t *pd)
 {
-#if CONFIG_SWAP
-	if(current_task && current_task->num_swapped)
-		swap_in_all_the_pages(current_task);
-#endif
 	addr_t new_p;
 	page_dir_t *new = (page_dir_t *)kmalloc_ap(PAGE_SIZE, &new_p);
 	if(kernel_task)

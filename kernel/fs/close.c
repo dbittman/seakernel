@@ -16,14 +16,14 @@
 #include <sea/fs/dir.h>
 int sys_close(int fp)
 {
-	struct file *f = fs_get_file_pointer((task_t *) current_task, fp);
+	struct file *f = fs_get_file_pointer(current_process, fp);
 	if(!f)
 		return -EBADF;
 	assert(f->inode);
 	/* handle sockets calling close. We just translate it to a call to shutdown.
 	 * be aware that shutdown does end up calling close! */
 	if(f->socket) {
-		fs_fput(current_task, fp, 0);
+		fs_fput(current_process, fp, 0);
 		sys_sockshutdown(fp, SHUT_RDWR);
 		return 0;
 	}
@@ -57,7 +57,7 @@ int sys_close(int fp)
 	if(f->dirent)
 		vfs_dirent_release(f->dirent);
 	vfs_icache_put(f->inode);
-	fs_fput((task_t *)current_task, fp, FPUT_CLOSE);
+	fs_fput(current_process, fp, FPUT_CLOSE);
 	return 0;
 }
 

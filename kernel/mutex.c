@@ -28,6 +28,8 @@ int mutex_is_locked(mutex_t *m)
 	return m->lock;
 }
 
+/* TODO: rewrite a lot of this... (do we need the interrupt thing?) */
+
 void __mutex_acquire(mutex_t *m, char *file, int line)
 {
 	assert(m->magic == MUTEX_MAGIC);

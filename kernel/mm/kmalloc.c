@@ -27,7 +27,6 @@ static addr_t do_kmalloc(size_t sz, char align, char *file, int line)
 		panic(PANIC_MEM | PANIC_NOSYNC, "No kernel-level allocator installed!");
 	mutex_acquire(&km_m);
 	addr_t ret = do_kmalloc_wrap(sz, align);
-	current_task->kalloc += sz;
 	mutex_release(&km_m);
 	if(!ret || ret >= KMALLOC_ADDR_END || ret < KMALLOC_ADDR_START)
 		panic(PANIC_MEM | PANIC_NOSYNC, "kmalloc returned impossible address");

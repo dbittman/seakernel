@@ -28,13 +28,13 @@ struct kthread *kthread_create(struct kthread *kt, const char *name, int flags,
 		 * they have root-like abilities. They are also constantly 'in the system',
 		 * and so they have their syscall num set to -1. Also, no regs are set, since
 		 * we can't do any weird iret calls or anything. */
-		current_task->parent = 0;
-		current_task->thread->real_uid = current_task->thread->effective_uid = 
-			current_task->thread->real_gid = current_task->thread->effective_gid = 0;
-		current_task->flags |= TF_KTASK;
-		current_task->system = -1;
-		current_task->regs = current_task->sysregs = 0;
-		strncpy((char *)current_task->command, name, 128);
+		current_process->parent = 0;
+		current_process->real_uid = current_process->effective_uid = 
+			current_process->real_gid = current_process->effective_gid = 0;
+		current_thread->flags |= TF_KTASK;
+		current_thread->system = -1;
+		current_thread->regs = current_thread->sysregs = 0;
+		strncpy((char *)current_process->command, name, 128);
 		
 		/* free up the directory save for the stack and the kernel stuff, since we
 		 * don't need it */
@@ -45,7 +45,7 @@ struct kthread *kthread_create(struct kthread *kt, const char *name, int flags,
 		 * being a valid pointer */
 		int code = kt->code;
 		or_atomic(&kt->flags, KT_EXITED);
-		if(current_task->flags & TF_FORK_COPIEDUSER) {
+		if(current_thread->flags & TF_FORK_COPIEDUSER) {
 			/* HACK: this will cause the stack to switch over to the kernel stack
 			 * when exit is called, allowing us to free the whole page directory.
 			 * There is probably a better way to do this, but it would require a
@@ -103,7 +103,7 @@ int kthread_join(struct kthread *kt, int flags)
 
 void kthread_kill(struct kthread *kt, int flags)
 {
-	if(kt->pid && kt->pid == current_task->pid)
+	if(kt->tid && kt->tid == current_thread->tid)
 		panic(0, "kthread tried to commit suicide");
 	if(!kt->pid)
 		panic(0, "cannot kill unknown kthread");

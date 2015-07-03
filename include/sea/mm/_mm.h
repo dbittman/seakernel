@@ -13,7 +13,7 @@ addr_t __mm_do_kmalloc_slab(size_t sz, char align);
 vmm_context_t *arch_mm_vm_clone(vmm_context_t *pd, char cow);
 vmm_context_t *arch_mm_vm_copy(vmm_context_t *pd);
 void arch_mm_free_thread_shared_directory();
-void arch_mm_destroy_task_page_directory(task_t *p);
+void arch_mm_destroy_task_page_directory(struct process *p);
 void arch_mm_free_thread_specific_directory();
 
 void arch_mm_copy_page_physical(addr_t a, addr_t b);

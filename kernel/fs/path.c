@@ -37,7 +37,7 @@ struct dirent *fs_resolve_symlink(struct dirent *dir, struct inode *node, int st
 		struct inode *start = dir->parent, *ln=0;
 		if(link[0] == '/') {
 			newpath++;
-			start = current_task->thread->root;
+			start = current_process->root;
 		}
 		return fs_do_path_resolve(start, newpath, start_level, err);
 	} else {
@@ -153,10 +153,10 @@ struct dirent *fs_path_resolve(const char *path, int flags, int *result)
 	if(!path)
 		path = ".";
 	if(path[0] == '/') {
-		start = current_task->thread->root;
+		start = current_process->root;
 		path++;
 	} else {
-		start = current_task->thread->pwd;
+		start = current_process->pwd;
 	}
 	return fs_do_path_resolve(start, path, 0, result);
 }

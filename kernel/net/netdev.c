@@ -90,7 +90,7 @@ static int kt_packet_rec_thread(struct kthread *kt, void *arg)
 			nd->rx_thread_lastwork = tm_get_ticks();
 		} else {
 			if(tm_get_ticks() > nd->rx_thread_lastwork + TICKS_SECONDS(5))
-				tm_process_pause(current_task);
+				tm_thread_pause(current_thread);
 			else
 				tm_schedule();
 		}
@@ -290,7 +290,7 @@ int net_char_ioctl(dev_t min, int cmd, long arg)
 			req->ifr_mtu = nd->mtu;
 			break;
 		case SIOCSIFMTU:
-			if(current_task->thread->effective_uid != 0)
+			if(current_process->effective_uid != 0)
 				return -EPERM;
 			nd->mtu = req->ifr_mtu;
 			break;

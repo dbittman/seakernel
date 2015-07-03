@@ -21,10 +21,11 @@
 /* Prepares a process to recieve a new executable. Desc is the descriptor of 
  * the executable. We keep it open through here so that we dont have to 
  * re-open it. */
-void arch_loader_exec_initializer(task_t *t, unsigned argc, addr_t eip);
+void arch_loader_exec_initializer(unsigned argc, addr_t eip);
 
-static task_t *preexec(task_t *t, int desc)
+static void preexec(int desc)
 {
+	struct thread *t = current_thread;
 	if(t->magic != TASK_MAGIC)
 		panic(0, "Invalid task in exec (%d)", t->pid);
 	/* unmap all mappings, specified by POSIX */
@@ -36,7 +37,6 @@ static task_t *preexec(task_t *t, int desc)
 		mm_vm_set_attrib(a, PAGE_PRESENT | PAGE_WRITE);
 	t->sigd=0;
 	memset((void *)t->thread->signal_act, 0, sizeof(struct sigaction) * 128);
-	return 0;
 }
 
 static void free_dp(char **mem, int num)
@@ -53,7 +53,7 @@ static int __is_shebang(char *mem)
 	return (mem[0] == '#' && mem[1] == '!');
 }
 
-int do_exec(task_t *t, char *path, char **argv, char **env, int shebanged /* oh my */)
+int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 {
 	unsigned int i=0;
 	addr_t end, eip;
@@ -61,7 +61,6 @@ int do_exec(task_t *t, char *path, char **argv, char **env, int shebanged /* oh 
 	int desc;
 	char **backup_argv=0, **backup_env=0;
 	/* Sanity */
-	assert(t && t!=kernel_task && t == current_task);
 	if(t->magic != TASK_MAGIC)
 		panic(0, "Invalid task in exec (%d)", t->pid);
 	if(!path || !*path)
@@ -251,6 +250,6 @@ int do_exec(task_t *t, char *path, char **argv, char **env, int shebanged /* oh 
 
 int execve(char *path, char **argv, char **env)
 {
-	return do_exec((task_t *)current_task, path, argv, env, 0);
+	return do_exec(path, argv, env, 0);
 }
 

@@ -29,7 +29,7 @@ void kernel_shutdown()
 			< cpu_get_num_secondary_processors())
 		cpu_pause();
 #endif
-	current_task->thread->effective_uid=current_task->thread->real_uid=0;
+	current_process->effective_uid=current_process->real_uid=0;
 	tm_raise_flag(TF_SHUTDOWN);
 	set_ksf(KSF_SHUTDOWN);
 	sys_sync(PRINT_LEVEL);
@@ -42,7 +42,7 @@ void kernel_shutdown()
 
 void kernel_reset()
 {
-	if(current_task->thread->effective_uid)
+	if(current_process->effective_uid)
 		return;
 	kernel_shutdown();
 	kprintf("Rebooting system...\n");
@@ -51,7 +51,7 @@ void kernel_reset()
 
 void kernel_poweroff()
 {
-	if(current_task->thread->effective_uid)
+	if(current_process->effective_uid)
 		return;
 	kernel_shutdown();
 	cpu_interrupt_set(0);

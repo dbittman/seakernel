@@ -55,25 +55,25 @@ addr_t mm_mmap(addr_t address, size_t length, int prot, int flags, int fd, size_
 		node->count = 1;
 		node->flags = INODE_INUSE;
 	} else {
-		struct file *f = fs_get_file_pointer(current_task, fd);
+		struct file *f = fs_get_file_pointer(current_process, fd);
 		if(!f)
 			return -EBADF;
 		/* check permissions */
 		if(!(f->flags & _FREAD)) {
-			fs_fput(current_task, fd, 0);
+			fs_fput(current_process, fd, 0);
 			return -EACCES;
 		}
 		if(!(flags & MAP_PRIVATE) && (prot & PROT_WRITE) && !(f->flags & _FWRITE)) {
-			fs_fput(current_task, fd, 0);
+			fs_fput(current_process, fd, 0);
 			return -EACCES;
 		}
 		if(!S_ISREG(f->inode->mode)) {
-			fs_fput(current_task, fd, 0);
+			fs_fput(current_process, fd, 0);
 			return -ENODEV;
 		}
 		vfs_inode_get(f->inode);
 		node = f->inode;
-		fs_fput(current_task, fd, 0);
+		fs_fput(current_process, fd, 0);
 	}
 	/* a mapping replaces any other mapping that it overwrites, according to opengroup */
 	mm_mapping_munmap(address, length);

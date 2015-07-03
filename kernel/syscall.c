@@ -35,7 +35,7 @@ int sys_null(long a, long b, long c, long d, long e)
 {
 	#if CONFIG_DEBUG
 	kprintf("[kernel]: Null system call (%d) called in task %d\n%x %x %x %x %x",
-			current_task->system, current_task->pid, a, b, c, d, e);
+			current_thread->system, current_thread->tid, a, b, c, d, e);
 	#endif
 	return -ENOSYS;
 }
@@ -233,14 +233,14 @@ int mm_is_valid_user_pointer(int num, void *p, char flags)
 	if(addr < TOP_LOWER_KERNEL && addr) {
 		#if CONFIG_DEBUG
 		printk(0, "[kernel]: warning - task %d passed ptr %x to syscall %d (invalid)\n",
-			   current_task->pid, addr, num);
+			   current_thread->tid, addr, num);
 		#endif
 		return 0;
 	}
 	if(addr >= TOP_TASK_MEM) {
 		#if CONFIG_DEBUG
 		printk(0, "[kernel]: warning - task %d passed ptr %x to syscall %d (invalid)\n",
-			   current_task->pid, addr, num);
+			   current_thread->tid, addr, num);
 		#endif
 		return 0;
 	}
@@ -318,8 +318,6 @@ int check_pointers(volatile registers_t *regs)
 
 int syscall_handler(volatile registers_t *regs)
 {
-	assert(current_task->magic == TASK_MAGIC);
-	assert(current_task->thread->magic == THREAD_MAGIC);
 	/* SYSCALL_NUM_AND_RET is defined to be the correct register in the syscall regs struct. */
 	if(unlikely(SYSCALL_NUM_AND_RET >= num_syscalls))
 		return -ENOSYS;
@@ -335,7 +333,6 @@ int syscall_handler(volatile registers_t *regs)
 	 * expect handlers to disable them if needed */
 	cpu_interrupt_set(1);
 	/* start accounting information! */
-	current_task->freed = current_task->allocated = current_task->kalloc = 0;
 	syscounts[SYSCALL_NUM_AND_RET]++;
 
 	#ifdef SC_DEBUG
@@ -369,9 +366,7 @@ int syscall_handler(volatile registers_t *regs)
 	 * then we need to reschedule. this prevents tasks that do a continuous call
 	 * to write() from starving the resources of other tasks. syscall_count resets
 	 * on each call to tm_tm_schedule() */
-	if(current_task->flags & TF_SCHED
-		|| (unsigned)(tm_get_ticks() -current_task->slice) > (unsigned)current_task->cur_ts
-		|| ++current_task->syscall_count > 2)
+	if(NEED_RESCHEDULE)
 	{
 		/* clear out the flag. Either way in the if statement, we've rescheduled. */
 		tm_lower_flag(TF_SCHED);
@@ -383,11 +378,12 @@ int syscall_handler(volatile registers_t *regs)
 	 * return value so that when we return to the system we have the
 	 * original systemcall returning the proper value.
 	 */
-	if((current_task->flags & TF_INSIG) && (current_task->flags & TF_JUMPIN)) {
+	/* TODO: fix this */
+	if((current_thread->flags & TF_INSIG) && (current_thread->flags & TF_JUMPIN)) {
 #if CONFIG_ARCH == TYPE_ARCH_X86
-		current_task->reg_b.eax=ret;
+		current_thread->reg_b.eax=ret;
 #elif CONFIG_ARCH == TYPE_ARCH_X86_64
-		current_task->reg_b.rax=ret;
+		current_thread->reg_b.rax=ret;
 #endif
 		tm_lower_flag(TF_JUMPIN);
 	}

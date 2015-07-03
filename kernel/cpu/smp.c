@@ -4,7 +4,7 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/tm/schedule.h>
 #if CONFIG_SMP
-void cpu_smp_task_idle(task_t *me)
+void cpu_smp_task_idle(struct thread *me)
 {
 	cpu_t *cpu = me->cpu;
 	cpu->flags |= CPU_TASK;

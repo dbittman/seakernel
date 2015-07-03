@@ -110,37 +110,34 @@ static const char *special_names(int i)
 static void kernel_fault(int fuckoff, addr_t ip, long err_code, registers_t *regs)
 {
 	kprintf("Kernel Exception #%d: ", fuckoff);
-	/* if(kernel_task) */
-	/* 	printk(5, "Occured in task %d during systemcall %d (F=%d).\n", */
-	/* 		current_task->pid, current_task->system, current_task->flag); */
-	/* kprintf("return IP = %x, errcode = %x (%d)\n", ip, err_code, err_code); */
 	arch_cpu_print_reg_state(regs);
 	panic(PANIC_NOSYNC | (fuckoff == 3 ? PANIC_VERBOSE : 0), exception_messages[fuckoff]);
 }
 
 static void faulted(int fuckoff, int userspace, addr_t ip, long err_code, registers_t *regs)
 {
-	if(current_task == kernel_task || !current_task || current_task->system || !userspace)
+	/* TODO: do we need to check all of these? */
+	if(!current_task || current_task->system || !userspace)
 	{
 		kernel_fault(fuckoff, ip, err_code, regs);
 	} else
 	{
-		printk(5, "%s occured in task %d (F=%d, ip=%x, err=%x (%d)): He's dead, Jim.\n", 
-				exception_messages[fuckoff], current_task->pid, current_task->flag, ip, err_code, err_code);
+		printk(5, "%s occured in task %d (ip=%x, err=%x (%d)): He's dead, Jim.\n", 
+				exception_messages[fuckoff], current_thread->tid, ip, err_code, err_code);
 		/* we die for different reasons on different interrupts */
 		switch(fuckoff)
 		{
 			case 0: case 5: case 6: case 13:
-				current_task->sigd = SIGILL;
+				current_thread->sigd = SIGILL;
 				break;
 			case 1: case 3: case 4:
-				current_task->sigd = SIGTRAP;
+				current_thread->sigd = SIGTRAP;
 				break;
 			case 8: case 18:
-				current_task->sigd = SIGABRT;
+				current_thread->sigd = SIGABRT;
 				break;
 			default:
-				tm_kill_process(current_task->pid);
+				tm_kill_thread(current_thread);
 				break;
 		}
 		/* the above signals WILL be handled, since at the end of tm_tm_schedule(), it checks
@@ -164,6 +161,9 @@ void cpu_interrupt_syscall_entry(registers_t *regs, int syscall_num)
 		assert(!cpu_interrupt_get_flag());
 	}
 
+	if(current_thread->flags & CPU_NEED_RESCHED)
+		tm_schedule();
+
 	cpu_interrupt_set(0);
 	current_thread->sysregs = current_thread->regs = 0;
 	cpu_interrupt_set_flag(1);
@@ -178,7 +178,7 @@ void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_addres
 	/* check if we're interrupting kernel code, and set the interrupt
 	 * handling flag */
 	char already_in_interrupt = 0;
-	if(current_task->flags & TF_IN_INT)
+	if(current_thread->flags & TF_IN_INT)
 		already_in_interrupt = 1;
 	tm_raise_flag(TF_IN_INT);
 	/* run the stage1 handlers, and see if we need any stage2s. And if we
@@ -199,6 +199,9 @@ void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_addres
 	/* if it went unhandled, kill the process or panic */
 	if(!called)
 		faulted(int_no, !already_in_interrupt, return_address, regs->err_code, regs);
+
+	if(current_thread->flags & CPU_NEED_RESCHED)
+		tm_schedule();
 	/* restore previous interrupt state */
 	cpu_interrupt_set_flag(previous_interrupt_flag);
 	if(!already_in_interrupt)
@@ -217,16 +220,16 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 	add_atomic(&int_count[int_no], 1);
 	/* save the registers so we can screw with iret later if we need to */
 	char clear_regs=0;
-	if(current_task && !current_task->regs) {
+	if(current_thread && !current_thread->regs) {
 		/* of course, if we are already inside an interrupt, we shouldn't
 		 * overwrite those. Also, we remember if we've saved this set of registers
 		 * for later use */
 		clear_regs=1;
-		current_task->regs = regs;
+		current_thread->regs = regs;
 	}
 	/* check if we're interrupting kernel code */
 	char already_in_interrupt = 0;
-	if(current_task->flags & TF_IN_INT)
+	if(current_thread->flags & TF_IN_INT)
 		already_in_interrupt = 1;
 	/* ...and set the flag so we know we're in an interrupt */
 	tm_raise_flag(TF_IN_INT);
@@ -239,12 +242,14 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 			(interrupt_handlers_s1[int_no][i].fn)(regs);
 	}
 	if(s1started) timer_stop(&s1_timers[int_no]);
+	if(current_thread->flags & CPU_NEED_RESCHED)
+		tm_schedule();
 	assert(!cpu_interrupt_get_flag());
 	/* ok, now lets clean up */
 	cpu_interrupt_set(0);
 	/* clear the registers if we saved the ones from this interrupt */
-	if(current_task && clear_regs)
-		current_task->regs=0;
+	if(current_thread && clear_regs)
+		current_thread->regs=0;
 	/* restore the flag in the cpu struct. The assembly routine will
 	 * call iret, which will also restore the EFLAG state to what
 	 * it was before, including the interrupts-enabled bit in eflags */
@@ -279,6 +284,7 @@ int cpu_interrupt_set(unsigned _new)
 {
 	/* need to make sure we don't get interrupted... */
 	arch_interrupt_disable();
+	struct cpu *current_cpu = cpu_get_current();
 	unsigned old = current_cpu->flags & CPU_INTER;
 	if(!_new) {
 		arch_interrupt_disable();
@@ -287,20 +293,25 @@ int cpu_interrupt_set(unsigned _new)
 		arch_interrupt_enable();
 		current_cpu->flags |= CPU_INTER;
 	}
+	cpu_put_current(current_cpu);
 	return old;
 }
 
 void cpu_interrupt_set_flag(int flag)
 {
+	struct cpu *current_cpu = cpu_get_current();
 	if(flag)
 		current_cpu->flags |= CPU_INTER; /* TODO: make these atomic */
 	else
 		current_cpu->flags &= ~CPU_INTER;
+	cpu_put_current(cpu);
 }
 
 int cpu_interrupt_get_flag()
 {
-	return current_cpu->flags&CPU_INTER;
+	struct cpu *current_cpu = cpu_get_current();
+	int flag = current_cpu->flags&CPU_INTER;
+	cpu_put_current(cpu);
 }
 
 int kerfs_int_report(size_t offset, size_t length, char *buf)

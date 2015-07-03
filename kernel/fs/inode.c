@@ -54,8 +54,8 @@ void vfs_inode_del_dirent(struct inode *node, struct dirent *dir)
 
 int vfs_inode_check_permissions(struct inode *node, int perm, int real)
 {
-	uid_t u = real ? current_task->thread->real_uid : current_task->thread->effective_uid;
-	gid_t g = real ? current_task->thread->real_gid : current_task->thread->effective_gid;
+	uid_t u = real ? current_process->real_uid : current_process->effective_uid;
+	gid_t g = real ? current_process->real_gid : current_process->effective_gid;
 	if(u == 0)
 		return 1;
 	if(u == node->uid && (perm & node->mode))
@@ -293,8 +293,8 @@ int vfs_inode_chdir(struct inode *node)
 {
 	if(!S_ISDIR(node->mode))
 		return -ENOTDIR;
-	struct inode *old = current_task->thread->pwd;
-	current_task->thread->pwd = node;
+	struct inode *old = current_process->pwd;
+	current_process->pwd = node;
 	vfs_inode_get(node);
 	vfs_icache_put(old);
 	return 0;
@@ -304,10 +304,10 @@ int vfs_inode_chroot(struct inode *node)
 {
 	if(!S_ISDIR(node->mode))
 		return -ENOTDIR;
-	if(current_task->thread->effective_uid)
+	if(current_process->effective_uid)
 		return -EPERM;
-	struct inode *old = current_task->thread->root;
-	current_task->thread->root = node;
+	struct inode *old = current_process->root;
+	current_process->root = node;
 	vfs_inode_get(node);
 	vfs_icache_put(old);
 	return 0;

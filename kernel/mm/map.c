@@ -46,7 +46,7 @@ static int acquire_virtual_location(struct valloc_region *vr, addr_t *virt, int 
 	int npages = ((length-1)/PAGE_SIZE) + 1;
 	*virt = 0;
 	vr->start = 0;
-	valloc_allocate(&(current_task->thread->mmf_valloc), vr, npages);
+	valloc_allocate(&(current_process->mmf_valloc), vr, npages);
 	return 1;
 }
 
@@ -54,17 +54,17 @@ static void release_virtual_location(struct valloc_region *vr)
 {
 	if(!vr)
 		return;
-	valloc_deallocate(&(current_task->thread->mmf_valloc), vr);
+	valloc_deallocate(&(current_process->mmf_valloc), vr);
 }
 
 static void record_mapping(struct memmap *map)
 {
-	map->entry = ll_insert(&current_task->thread->mappings, map);
+	map->entry = ll_insert(&current_process->mappings, map);
 }
 
 static void remove_mapping(struct memmap *map)
 {
-	ll_remove(&current_task->thread->mappings, map->entry);
+	ll_remove(&current_process->mappings, map->entry);
 }
 
 static void disengage_mapping_region(struct memmap *map, addr_t start, size_t offset, size_t length)
@@ -94,7 +94,7 @@ addr_t mm_establish_mapping(struct inode *node, addr_t virt,
 	if(!(flags & MAP_ANONYMOUS) && (offset >= (size_t)node->length)) {
 		return -EINVAL;
 	}
-	mutex_acquire(&current_task->thread->map_lock);
+	mutex_acquire(&current_process->map_lock);
 	/* get a virtual region to use */
 	struct valloc_region vr;
 	int ret = acquire_virtual_location(&vr, &virt, flags & MAP_FIXED, length);
@@ -121,7 +121,7 @@ addr_t mm_establish_mapping(struct inode *node, addr_t virt,
 	 * wait for a pagefault to bring in the pages */
 	if((flags & MAP_SHARED))
 		fs_inode_map_region(map->node, map->offset, map->length);
-	mutex_release(&current_task->thread->map_lock);
+	mutex_release(&current_process->map_lock);
 	return virt;
 }
 
@@ -137,10 +137,10 @@ static int __do_mm_disestablish_mapping(struct memmap *map)
 
 int mm_disestablish_mapping(struct memmap *map)
 {
-	mutex_acquire(&current_task->thread->map_lock);
+	mutex_acquire(&current_process->map_lock);
 	disengage_mapping(map);
 	int ret = __do_mm_disestablish_mapping(map);
-	mutex_release(&current_task->thread->map_lock);
+	mutex_release(&current_process->map_lock);
 	return ret;
 }
 
@@ -164,11 +164,11 @@ int mm_sync_mapping(struct memmap *map, addr_t start, size_t length, int flags)
  * most programs aren't going to have a large number of mapped regions...probably */
 static struct memmap *find_mapping(addr_t address)
 {
-	assert(mutex_is_locked(&current_task->thread->map_lock));
+	assert(mutex_is_locked(&current_process->map_lock));
 	struct llistnode *n;
 	struct memmap *map;
 	/* don't worry about the list's lock, we already have a lock */
-	ll_for_each_entry(&current_task->thread->mappings, n, struct memmap *, map) {
+	ll_for_each_entry(&current_process->mappings, n, struct memmap *, map) {
 		/* check if address is in range. A special case to note: 'length' may not
 		 * be page aligned, but here we act as if it were rounded up. 'length' refers
 		 * to file length, but in a partial page, memory mapping is still valid for
@@ -208,10 +208,10 @@ static int load_file_data(struct memmap *map, addr_t fault_address)
  * either fail, or load the data correctly. */
 int mm_page_fault_test_mappings(addr_t address, int pf_cause)
 {
-	mutex_acquire(&current_task->thread->map_lock);
+	mutex_acquire(&current_process->map_lock);
 	struct memmap *map = find_mapping(address);
 	if(!map) {
-		mutex_release(&current_task->thread->map_lock);
+		mutex_release(&current_process->map_lock);
 		return -1;
 	}
 	/* check protections */
@@ -222,17 +222,17 @@ int mm_page_fault_test_mappings(addr_t address, int pf_cause)
 	
 	if(load_file_data(map, address) != -1)
 	{
-		mutex_release(&current_task->thread->map_lock);
+		mutex_release(&current_process->map_lock);
 		return 0;
 	}
 out:
-	mutex_release(&current_task->thread->map_lock);
+	mutex_release(&current_process->map_lock);
 	return -1;
 }
 
 int mm_mapping_msync(addr_t start, size_t length, int flags)
 {
-	mutex_acquire(&current_task->thread->map_lock);
+	mutex_acquire(&current_process->map_lock);
 	for(addr_t addr = start; addr < (start + length); addr += PAGE_SIZE)
 	{
 		struct memmap *map = find_mapping(addr);
@@ -241,7 +241,7 @@ int mm_mapping_msync(addr_t start, size_t length, int flags)
 			page_len = length - (addr - start);
 		mm_sync_mapping(map, addr, page_len, flags);
 	}
-	mutex_release(&current_task->thread->map_lock);
+	mutex_release(&current_process->map_lock);
 	return 0;
 }
 
@@ -250,7 +250,7 @@ int mm_mapping_msync(addr_t start, size_t length, int flags)
 int mm_mapping_munmap(addr_t start, size_t length)
 {
 	/* TODO: support non-page-aligned length */
-	mutex_acquire(&current_task->thread->map_lock);
+	mutex_acquire(&current_process->map_lock);
 	for(addr_t addr = start; addr < (start + length); addr += PAGE_SIZE)
 	{
 		struct memmap *map = find_mapping(addr);
@@ -288,7 +288,7 @@ int mm_mapping_munmap(addr_t start, size_t length)
 			 * the counts on the pages haven't actually changed */
 			if(map->vr.start) {
 				/* split virtual node */
-				valloc_split_region(&(current_task->thread->mmf_valloc), 
+				valloc_split_region(&(current_process->mmf_valloc), 
 						&map->vr, &n->vr, map->length / PAGE_SIZE);
 			}
 			/* remember to increase the count of the inode... */
@@ -298,14 +298,14 @@ int mm_mapping_munmap(addr_t start, size_t length)
 		if(map->length == 0)
 			__do_mm_disestablish_mapping(map);
 	}
-	mutex_release(&current_task->thread->map_lock);
+	mutex_release(&current_process->map_lock);
 	return 0;
 }
 
 /* called by exit and exec */
-void mm_destroy_all_mappings(task_t *t)
+void mm_destroy_all_mappings(struct process *t)
 {
-	mutex_acquire(&current_task->thread->map_lock);
+	mutex_acquire(&current_process->map_lock);
 	struct llistnode *cur, *next;
 	struct memmap *map;
 	ll_for_each_entry_safe(&(t->thread->mappings), cur, next, struct memmap *, map) {
@@ -313,6 +313,6 @@ void mm_destroy_all_mappings(task_t *t)
 		__do_mm_disestablish_mapping(map);
 	}
 	assert(t->thread->mappings.num == 0);
-	mutex_release(&current_task->thread->map_lock);
+	mutex_release(&current_process->map_lock);
 }
 

@@ -1,7 +1,6 @@
 #ifndef __SEA_MM_VMM_H
 #define __SEA_MM_VMM_H
 
-#include <sea/mm/context.h>
 #include <sea/tm/process.h>
 #include <sea/mm/pmm.h>
 #include <sea/arch-include/mm-memory.h>
@@ -12,6 +11,7 @@ struct pd_data {
 
 extern struct pd_data *pd_cur_data;
 
+struct process;
 extern volatile vmm_context_t *kernel_dir, *current_dir;
 extern int id_tables;
 extern addr_t initial_boot_stack;

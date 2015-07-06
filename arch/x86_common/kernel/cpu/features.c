@@ -7,7 +7,7 @@
 #else
 #include <sea/cpu/cpu-x86_64.h>
 #endif
-void x86_cpu_init_fpu(cpu_t *me)
+void x86_cpu_init_fpu(struct cpu *me)
 {
 	if(me->cpuid.features_edx & 0x01)
 	{
@@ -21,7 +21,7 @@ void x86_cpu_init_fpu(cpu_t *me)
 	}
 }
 
-void x86_cpu_init_sse(cpu_t *me)
+void x86_cpu_init_sse(struct cpu *me)
 {
 	unsigned long cr0, cr4;
 	if(me->cpuid.features_edx & 0x06000001) /* test for SSE2, SSE, and FPU */

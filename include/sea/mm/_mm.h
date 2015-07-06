@@ -3,7 +3,6 @@
 
 #include <sea/types.h>
 #include <sea/tm/process.h>
-#include <sea/mm/context.h>
 
 unsigned __mm_slab_init(addr_t start, addr_t end);
 void __mm_do_kfree_slab(void *ptr);

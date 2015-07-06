@@ -293,8 +293,8 @@ int vfs_inode_chdir(struct inode *node)
 {
 	if(!S_ISDIR(node->mode))
 		return -ENOTDIR;
-	struct inode *old = current_process->pwd;
-	current_process->pwd = node;
+	struct inode *old = current_process->cwd;
+	current_process->cwd = node;
 	vfs_inode_get(node);
 	vfs_icache_put(old);
 	return 0;

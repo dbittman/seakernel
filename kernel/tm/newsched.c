@@ -44,10 +44,12 @@ static void finish_schedule()
 void tm_schedule()
 {
 	/* TODO: global preempt disable, or just on this CPU? */
-	if(cpu->flags & CPU_PREEMPT_DISABLED || current_thread->flags & THREAD_PREEMPT_DISABLED)
-		return;
-	/* TODO: do we need to call a preempt_disable function */
 	int old = cpu_interrupt_set(0);
+	if(__current_cpu->flags & CPU_DISABLE_PREEMPT) {
+		cpu_interrupt_set(old);
+		return;
+	}
+	/* TODO: do we need to call a preempt_disable function */
 	prepare_schedule();
 	struct thread *next = get_next_thread();
 

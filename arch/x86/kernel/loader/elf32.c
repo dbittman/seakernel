@@ -243,7 +243,7 @@ const char *arch_loader_lookup_module_symbol(module_t *mq, addr_t addr, char **m
 		if ( (addr >= st->address) 
 				&& (addr < (st->address + st->size)) )
 		{
-			const char *name = (const char *) ((uint64_t)(mq->sd.vbase[mq->sd.strtab])
+			const char *name = (const char *) ((uint32_t)(mq->sd.vbase[mq->sd.strtab])
 					+ st->name);
 			*modname = mq->name;
 			return name;

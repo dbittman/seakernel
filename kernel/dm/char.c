@@ -2,6 +2,7 @@
 #include <sea/kernel.h>
 #include <sea/mm/vmm.h>
 #include <sea/tm/process.h>
+#include <sea/tm/thread.h>
 #include <sea/dm/char.h>
 #include <sea/tty/terminal.h>
 #include <sea/errno.h>

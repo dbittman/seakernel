@@ -78,7 +78,7 @@ page_dir_t *arch_mm_vm_clone(page_dir_t *pd, char cow)
 	/* Create new directory and copy it */
 	addr_t new_p;
 	page_dir_t *new = (page_dir_t *)kmalloc_ap(PAGE_SIZE, &new_p);
-	if(kernel_task)
+	if(primary_cpu->idle_thread)
 		mutex_acquire(&pd_cur_data->lock);
 	vm_copy_dir(pd, new, cow ? 2 : 0);
 	/* Now set the self refs (DIR_PHYS, TBL_PHYS) */
@@ -117,7 +117,7 @@ page_dir_t *arch_mm_vm_clone(page_dir_t *pd, char cow)
 	mutex_create(&info->lock, MT_NOSCHED);
 	mm_vm_unmap_only((unsigned)tmp, 1);
 	new[PAGE_DIR_IDX(PDIR_DATA/PAGE_SIZE)] = tmp_p | PAGE_PRESENT | PAGE_WRITE;
-	if(kernel_task)
+	if(primary_cpu->idle_thread)
 		mutex_release(&pd_cur_data->lock);
 	return new;
 }
@@ -131,13 +131,13 @@ page_dir_t *arch_mm_vm_copy(page_dir_t *pd)
 {
 	addr_t new_p;
 	page_dir_t *new = (page_dir_t *)kmalloc_ap(PAGE_SIZE, &new_p);
-	if(kernel_task)
+	if(primary_cpu->idle_thread)
 		mutex_acquire(&pd_cur_data->lock);
 	pd_cur_data->count++;
 #if CONFIG_SMP
 	/* if pd_cur_data could be accessed by multiple CPUs, we need to
 	 * flush them */
-	if(kernel_task && pd_cur_data->count > 2)
+	if(primary_cpu->idle_thread && pd_cur_data->count > 2)
 		x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
 #endif
 	/* link as much as we can (flag & 1) */
@@ -162,7 +162,7 @@ page_dir_t *arch_mm_vm_copy(page_dir_t *pd)
 	/* map the current accounting page into the new directory */
 	int account = PAGE_DIR_IDX(PDIR_DATA/PAGE_SIZE);
 	new[account] = pd[account];
-	if(kernel_task)
+	if(primary_cpu->idle_thread)
 		mutex_release(&pd_cur_data->lock);
 	return new;
 }

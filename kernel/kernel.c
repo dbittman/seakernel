@@ -30,7 +30,7 @@ void kernel_shutdown()
 		cpu_pause();
 #endif
 	current_process->effective_uid=current_process->real_uid=0;
-	tm_raise_flag(TF_SHUTDOWN);
+	tm_thread_raise_flag(current_thread, TF_SHUTDOWN);
 	set_ksf(KSF_SHUTDOWN);
 	sys_sync(PRINT_LEVEL);
 	fs_unmount_all();

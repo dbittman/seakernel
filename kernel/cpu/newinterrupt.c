@@ -5,7 +5,10 @@
 #include <sea/kernel.h>
 #include <sea/vsprintf.h>
 #include <sea/tm/process.h>
+#include <sea/tm/schedule.h>
 #include <sea/fs/kerfs.h>
+#include <sea/cpu/atomic.h>
+#include <sea/loader/symbol.h>
 struct interrupt_handler {
 	void (*fn)(int nr, int flags);
 };
@@ -117,7 +120,7 @@ static void kernel_fault(int fuckoff, addr_t ip, long err_code, registers_t *reg
 static void faulted(int fuckoff, int userspace, addr_t ip, long err_code, registers_t *regs)
 {
 	/* TODO: do we need to check all of these? */
-	if(!current_task || current_task->system || !userspace)
+	if(!current_thread || current_thread->system || !userspace)
 	{
 		kernel_fault(fuckoff, ip, err_code, regs);
 	} else
@@ -128,13 +131,13 @@ static void faulted(int fuckoff, int userspace, addr_t ip, long err_code, regist
 		switch(fuckoff)
 		{
 			case 0: case 5: case 6: case 13:
-				current_thread->sigd = SIGILL;
+				current_thread->signal = SIGILL;
 				break;
 			case 1: case 3: case 4:
-				current_thread->sigd = SIGTRAP;
+				current_thread->signal = SIGTRAP;
 				break;
 			case 8: case 18:
-				current_thread->sigd = SIGABRT;
+				current_thread->signal = SIGABRT;
 				break;
 			default:
 				tm_kill_thread(current_thread);
@@ -146,13 +149,14 @@ static void faulted(int fuckoff, int userspace, addr_t ip, long err_code, regist
 	}
 }
 
+extern void syscall_handler(registers_t *regs);
 void cpu_interrupt_syscall_entry(registers_t *regs, int syscall_num)
 {
 	cpu_interrupt_set(0);
 	add_atomic(&interrupt_counts[0x80], 1);
 	if(current_thread->flags & TF_IN_INT) /* TODO: Better way of determining this? */
 		panic(0, "attempted to enter syscall while handling an interrupt");
-	tm_raise_flag(TF_IN_INT);
+	tm_thread_raise_flag(current_thread, TF_IN_INT);
 	if(syscall_num == 128) {
 		/* TODO: RETURN SIGNAL HANDLING */
 	} else {
@@ -161,51 +165,54 @@ void cpu_interrupt_syscall_entry(registers_t *regs, int syscall_num)
 		assert(!cpu_interrupt_get_flag());
 	}
 
-	if(current_thread->flags & CPU_NEED_RESCHED)
+	if(current_thread->flags & TF_SCHED)
 		tm_schedule();
 
 	cpu_interrupt_set(0);
 	current_thread->sysregs = current_thread->regs = 0;
 	cpu_interrupt_set_flag(1);
-	tm_lower_flag(TF_IN_INT);
+	tm_thread_lower_flag(current_thread, TF_IN_INT);
 }
 
 void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_address)
 {
 	/* this is explained in the IRQ handler */
 	int previous_interrupt_flag = cpu_interrupt_set(0);
-	add_atomic(&interrupt_count[int_no], 1);
+	add_atomic(&interrupt_counts[int_no], 1);
 	/* check if we're interrupting kernel code, and set the interrupt
 	 * handling flag */
 	char already_in_interrupt = 0;
 	if(current_thread->flags & TF_IN_INT)
 		already_in_interrupt = 1;
-	tm_raise_flag(TF_IN_INT);
+	tm_thread_raise_flag(current_thread, TF_IN_INT);
+	int flags = 0;
+	if(already_in_interrupt)
+		flags |= INTR_INTR;
 	/* run the stage1 handlers, and see if we need any stage2s. And if we
 	 * don't handle it at all, we need to actually fault to handle the error
 	 * and kill the process or kernel panic */
-	int started = timer_start(&s1_timers[int_no]);
+	int started = timer_start(&interrupt_timers[int_no]);
 	char called = 0;
 	for(int i=0;i<MAX_HANDLERS;i++)
 	{
 		if(interrupt_handlers[int_no][i].fn)
 		{
-			interrupt_handlers_s1[int_no][i].fn(regs);
+			interrupt_handlers[int_no][i].fn(int_no, flags);
 			called = 1;
 		}
 	}
-	if(started) timer_stop(&s1_timers[int_no]);
+	if(started) timer_stop(&interrupt_timers[int_no]);
 	cpu_interrupt_set(0);
 	/* if it went unhandled, kill the process or panic */
 	if(!called)
 		faulted(int_no, !already_in_interrupt, return_address, regs->err_code, regs);
 
-	if(current_thread->flags & CPU_NEED_RESCHED)
+	if(current_thread->flags & TF_SCHED)
 		tm_schedule();
 	/* restore previous interrupt state */
 	cpu_interrupt_set_flag(previous_interrupt_flag);
 	if(!already_in_interrupt)
-		tm_lower_flag(TF_IN_INT);
+		tm_thread_lower_flag(current_thread, TF_IN_INT);
 }
 
 void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
@@ -232,17 +239,20 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 	if(current_thread->flags & TF_IN_INT)
 		already_in_interrupt = 1;
 	/* ...and set the flag so we know we're in an interrupt */
-	tm_raise_flag(TF_IN_INT);
+	tm_thread_raise_flag(current_thread, TF_IN_INT);
+	int flags = 0;
+	if(already_in_interrupt)
+		flags |= INTR_INTR;
 	/* now, run through the stage1 handlers, and see if we need any
 	 * stage2 handlers to run later */
-	int s1started = timer_start(&s1_timers[int_no]);
+	int s1started = timer_start(&interrupt_timers[int_no]);
 	for(int i=0;i<MAX_HANDLERS;i++)
 	{
-		if(interrupt_handlers_s1[int_no][i].fn)
-			(interrupt_handlers_s1[int_no][i].fn)(regs);
+		if(interrupt_handlers[int_no][i].fn)
+			(interrupt_handlers[int_no][i].fn)(int_no, flags);
 	}
-	if(s1started) timer_stop(&s1_timers[int_no]);
-	if(current_thread->flags & CPU_NEED_RESCHED)
+	if(s1started) timer_stop(&interrupt_timers[int_no]);
+	if(current_thread->flags & TF_SCHED)
 		tm_schedule();
 	assert(!cpu_interrupt_get_flag());
 	/* ok, now lets clean up */
@@ -256,7 +266,7 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 	cpu_interrupt_set_flag(previous_interrupt_flag);
 	/* and clear the state flag if this is going to return to user-space code */
 	if(!already_in_interrupt)
-		tm_lower_flag(TF_IN_INT);
+		tm_thread_lower_flag(current_thread, TF_IN_INT);
 }
 
 void interrupt_init()
@@ -274,7 +284,7 @@ void interrupt_init()
 #if CONFIG_MODULES
 	loader_add_kernel_symbol(interrupt_register_handler);
 	loader_add_kernel_symbol(interrupt_unregister_handler);
-	loader_do_add_kernel_symbol((addr_t)interrupt_handlers, "interrupt_handlers_s1");
+	loader_do_add_kernel_symbol((addr_t)interrupt_handlers, "interrupt_handlers");
 	loader_add_kernel_symbol(cpu_interrupt_set);
 	loader_add_kernel_symbol(cpu_interrupt_set_flag);
 #endif
@@ -284,16 +294,14 @@ int cpu_interrupt_set(unsigned _new)
 {
 	/* need to make sure we don't get interrupted... */
 	arch_interrupt_disable();
-	struct cpu *current_cpu = cpu_get_current();
-	unsigned old = current_cpu->flags & CPU_INTER;
+	unsigned old = __current_cpu->flags & CPU_INTER;
 	if(!_new) {
+		__current_cpu->flags &= ~CPU_INTER;
 		arch_interrupt_disable();
-		current_cpu->flags &= ~CPU_INTER;
 	} else {
+		__current_cpu->flags |= CPU_INTER;
 		arch_interrupt_enable();
-		current_cpu->flags |= CPU_INTER;
 	}
-	cpu_put_current(current_cpu);
 	return old;
 }
 
@@ -304,14 +312,14 @@ void cpu_interrupt_set_flag(int flag)
 		current_cpu->flags |= CPU_INTER; /* TODO: make these atomic */
 	else
 		current_cpu->flags &= ~CPU_INTER;
-	cpu_put_current(cpu);
+	cpu_put_current(current_cpu);
 }
 
 int cpu_interrupt_get_flag()
 {
 	struct cpu *current_cpu = cpu_get_current();
 	int flag = current_cpu->flags&CPU_INTER;
-	cpu_put_current(cpu);
+	cpu_put_current(current_cpu);
 }
 
 int kerfs_int_report(size_t offset, size_t length, char *buf)

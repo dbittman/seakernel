@@ -88,7 +88,7 @@ void panic(int flags, char *fmt, ...)
 	printk_safe(9,buf);
 	printk_safe(9," ***\n");
 	
-	if(t && t->pid && !(flags & PANIC_NOSYNC))
+	if(t && t->process->pid && !(flags & PANIC_NOSYNC))
 	{
 		printk_safe(9,"[panic]: syncing...");
 		sys_sync();

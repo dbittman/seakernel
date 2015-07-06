@@ -6,6 +6,7 @@
 #include <sea/kernel.h>
 #include <sea/lib/cache.h>
 #include <sea/tm/process.h>
+#include <sea/tm/thread.h>
 #include <sea/ll.h>
 #include <sea/cpu/atomic.h>
 #include <sea/loader/symbol.h>

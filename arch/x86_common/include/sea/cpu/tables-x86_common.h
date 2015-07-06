@@ -3,6 +3,16 @@
 
 #include <sea/types.h>
 #include <sea/config.h>
+
+#if CONFIG_ARCH == TYPE_ARCH_X86
+#include <sea/cpu/tss-x86.h>
+#include <sea/cpu/tables-x86.h>
+#elif CONFIG_ARCH == TYPE_ARCH_X86_64
+#include <sea/cpu/tss-x86_64.h>
+#include <sea/cpu/tables-x86_64.h>
+#endif
+
+
 extern void isr0 ();
 extern void isr1 ();
 extern void isr2 ();

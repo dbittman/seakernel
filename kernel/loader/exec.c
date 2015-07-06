@@ -26,17 +26,15 @@ void arch_loader_exec_initializer(unsigned argc, addr_t eip);
 static void preexec(int desc)
 {
 	struct thread *t = current_thread;
-	if(t->magic != TASK_MAGIC)
-		panic(0, "Invalid task in exec (%d)", t->pid);
 	/* unmap all mappings, specified by POSIX */
-	mm_destroy_all_mappings(t);
+	mm_destroy_all_mappings(t->process);
 	mm_free_thread_shared_directory();
 	/* we need to re-create the vmem for memory mappings */
-	valloc_create(&(t->thread->mmf_valloc), MMF_BEGIN, MMF_END, PAGE_SIZE, VALLOC_USERMAP);
-	for(addr_t a = MMF_BEGIN;a < (MMF_BEGIN + (size_t)t->thread->mmf_valloc.nindex);a+=PAGE_SIZE)
+	valloc_create(&(t->process->mmf_valloc), MMF_BEGIN, MMF_END, PAGE_SIZE, VALLOC_USERMAP);
+	for(addr_t a = MMF_BEGIN;a < (MMF_BEGIN + (size_t)t->process->mmf_valloc.nindex);a+=PAGE_SIZE)
 		mm_vm_set_attrib(a, PAGE_PRESENT | PAGE_WRITE);
-	t->sigd=0;
-	memset((void *)t->thread->signal_act, 0, sizeof(struct sigaction) * 128);
+	t->signal = 0;
+	memset((void *)t->signal_act, 0, sizeof(struct sigaction) * 128);
 }
 
 static void free_dp(char **mem, int num)
@@ -61,13 +59,11 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 	int desc;
 	char **backup_argv=0, **backup_env=0;
 	/* Sanity */
-	if(t->magic != TASK_MAGIC)
-		panic(0, "Invalid task in exec (%d)", t->pid);
 	if(!path || !*path)
 		return -EINVAL;
 	/* Load the file, and make sure that it is valid and accessible */
 	if(EXEC_LOG == 2) 
-		printk(0, "[%d]: Checking executable file (%s)\n", t->pid, path);
+		printk(0, "[%d]: Checking executable file (%s)\n", current_process->pid, path);
 	struct file *efil;
 	int err_open, num;
 	efil=fs_do_sys_open(path, O_RDONLY, 0, &err_open, &num);
@@ -105,7 +101,7 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 	}
 	
 	if(EXEC_LOG == 2) 
-		printk(0, "[%d]: Copy data\n", t->pid);
+		printk(0, "[%d]: Copy data\n", current_process->pid);
 	/* okay, lets back up argv and env so that we can
 	 * clear out the address space and not lose data...
 	 * If this call if coming from a shebang, then we don't check the pointers,
@@ -138,19 +134,19 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 	 * file descs, free up the page directory and clear up the resources 
 	 * of the task */
 	if(EXEC_LOG)
-		printk(0, "Executing (task %d, cpu %d, tty %d): %s\n", t->pid, t->cpu->snum, t->tty, path);
-	preexec(t, desc);
+		printk(0, "Executing (task %d, cpu %d, tty %d): %s\n", current_process->pid, current_thread->cpu->snum, current_process->tty, path);
+	preexec(desc);
 	
 	/* load in the new image */
-	strncpy((char *)t->command, path, 128);
+	strncpy((char *)current_process->command, path, 128);
 	if(!loader_parse_elf_executable(mem, desc, &eip, &end))
 		eip=0;
 	/* do setuid and setgid */
 	if(efil->inode->mode & S_ISUID) {
-		t->thread->effective_uid = efil->inode->uid;
+		current_process->effective_uid = efil->inode->uid;
 	}
 	if(efil->inode->mode & S_ISGID) {
-		t->thread->effective_gid = efil->inode->gid;
+		current_process->effective_gid = efil->inode->gid;
 	}
 	/* we don't need the file anymore, close it out */
 	sys_close(desc);
@@ -162,7 +158,7 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 	}
 	
 	if(EXEC_LOG == 2) 
-		printk(0, "[%d]: Updating task values\n", t->pid);
+		printk(0, "[%d]: Updating task values\n", current_process->pid);
 	/* Setup the task with the proper values (libc malloc stack) */
 	addr_t end_l = end;
 	end = (end&PAGE_MASK);
@@ -219,32 +215,29 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 		kfree(backup_env);
 	}
 	end = (env_start + alen) & PAGE_MASK;
-	t->env = env;
-	t->argv = argv;
+	current_process->env = env;
+	current_process->argv = argv;
 	kfree(path);
 	
 	/* set the heap locations, and map in the start */
-	t->heap_start = t->heap_end = end + PAGE_SIZE;
-	if(other_bitsize)
-		tm_process_raise_flag(t, TF_OTHERBS);
-	user_map_if_not_mapped_noclear(t->heap_start);
+	current_process->heap_start = current_process->heap_end = end + PAGE_SIZE;
+	user_map_if_not_mapped_noclear(current_process->heap_start);
 	/* Zero the heap and stack */
 	memset((void *)end_l, 0, PAGE_SIZE-(end_l%PAGE_SIZE));
 	memset((void *)(end+PAGE_SIZE), 0, PAGE_SIZE);
 	memset((void *)(STACK_LOCATION - STACK_SIZE), 0, STACK_SIZE);
 	/* Release everything */
 	if(EXEC_LOG == 2) 
-		printk(0, "[%d]: Performing call\n", t->pid);
+		printk(0, "[%d]: Performing call\n", current_process->pid);
 	
 	/* now, we just need to deal with the syscall return stuff. When the syscall
 	 * returns, it'll just jump into the entry point of the new process */
 	cpu_interrupt_set(0);
-	tm_process_lower_flag(t, TF_SCHED);
+	tm_thread_lower_flag(current_thread, TF_SCHED);
 	/* the kernel cares if it has executed something or not */
 	if(!(kernel_state_flags & KSF_HAVEEXECED))
 		set_ksf(KSF_HAVEEXECED);
-	t->flags |= TF_DIDEXEC;
-	arch_loader_exec_initializer(t, argc, eip);
+	arch_loader_exec_initializer(argc, eip);
 	return 0;
 }
 

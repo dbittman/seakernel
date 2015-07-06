@@ -14,5 +14,9 @@ struct ticker {
 	mutex_t lock;
 };
 
+struct ticker *ticker_create(struct ticker *ticker, int flags);
+void ticker_tick(struct ticker *ticker, uint64_t nanoseconds);
+void ticker_insert(struct ticker *ticker, time_t nanoseconds, struct async_call *call);
+void ticker_destroy(struct ticker *ticker);
 #endif
 

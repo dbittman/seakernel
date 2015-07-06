@@ -30,6 +30,8 @@ void __KT_try_handle_stage2_interrupts();
 static inline int __KT_clear_args()
 {
 	/* Clear out the alloc'ed arguments */
+	/* TODO */
+#if 0
 	if(next_pid > (unsigned)(init_pid+1) && init_pid)
 	{
 		printk(1, "[idle]: clearing unused kernel memory...\n");
@@ -41,7 +43,8 @@ static inline int __KT_clear_args()
 		}
 		return 1;
 	}
-	return 0;
+#endif
+	return 1;
 }
 
 struct kthread kthread_pager;

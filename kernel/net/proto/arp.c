@@ -69,7 +69,8 @@ static struct arp_entry *__arp_get_outstanding_requests_entry(int prot_type, uin
 	struct llistnode *node;
 	struct arp_entry *entry;
 	ll_for_each_entry(outstanding, node, struct arp_entry *, entry) {
-		if(check_time && (tm_get_ticks() > (entry->timestamp + TICKS_SECONDS(1)))) {
+		/* TODO: same here, this needs to be fixed */
+		if(check_time && (tm_get_ticks() > (entry->timestamp + ONE_SECOND))) {
 			ll_remove(outstanding, entry->node);
 			kfree(entry);
 			continue;

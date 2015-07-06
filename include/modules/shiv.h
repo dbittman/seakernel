@@ -37,7 +37,7 @@ struct slaunch {
 struct vcpu {
 	struct vmcs *vmcs;
 	int flags;
-	cpu_t *cpu;
+	struct cpu *cpu;
 	int launched, loaded;
 	unsigned long cr0, cr2, cr4;
 	int mode;

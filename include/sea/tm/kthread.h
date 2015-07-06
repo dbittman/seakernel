@@ -2,13 +2,14 @@
 #define __SEA_TM_KTHREAD_H
 
 #include <sea/tm/process.h>
+#include <sea/types.h>
 
 struct kthread {
 	int flags, code;
-	unsigned pid;
+	pid_t tid;
 	int (*entry)(struct kthread *, void *);
 	void *arg;
-	struct thread *thr;
+	struct thread *thread;
 };
 
 #define KT_ALLOC   1

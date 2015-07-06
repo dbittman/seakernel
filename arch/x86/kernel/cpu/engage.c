@@ -38,14 +38,14 @@ void cpu_k_task_entry(struct thread *me)
 	/* final part: set the current_thread pointer to 'me', and set the 
 	 * task flags that allow the cpu to start executing */
 	page_directory[PAGE_DIR_IDX(SMP_CUR_TASK / PAGE_SIZE)] = (unsigned)me;
-	cpu_smp_task_idle(me);
+	cpu_smp_task_idle(me->cpu);
 }
 
 /* it's important that this doesn't get inlined... */
 __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 {
 	/* get the cpu again... */
-	cpu_t *cpu = cpu_get(apicid);
+	struct cpu *cpu = cpu_get(apicid);
 	cpu->flags |= CPU_UP;
 	/* call the CPU features init code */
 	parse_cpuid(cpu);
@@ -74,10 +74,11 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	flush_pd();
 	mutex_release(&cpu_stage1_lock);
 	printk(0, "[cpu%d]: waiting for tasking...\n", apicid);
-	while(!kernel_task) asm("cli; pause");
+	while(!primary_cpu->idle_thread) asm("cli; pause");
 	printk(0, "[cpu%d]: enable tasks...\n", apicid);
 	/* initialize tasking for this CPU */
 	/* TODO: thread initialization */
+#if 0
 	task->pid = add_atomic(&next_pid, 1)-1;
 	task->pd = (void *)cpu->kd;
 	task->stack_end=STACK_LOCATION;
@@ -103,6 +104,7 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 		push %%ebx; \
 		call *%%eax;" :: "r" (cpu_k_task_entry),"r"(task),"r"(STACK_LOCATION + STACK_SIZE - STACK_ELEMENT_SIZE));
 	/* we'll never get here */	
+#endif
 }
 
 /* C-side CPU entry code. Called from the assembly handler */
@@ -110,7 +112,7 @@ void cpu_entry(void)
 {
 	/* get the ID and the cpu struct so we can set a private stack */
 	int apicid = get_boot_flag();
-	cpu_t *cpu = cpu_get(apicid);
+	struct cpu *cpu = cpu_get(apicid);
 	/* load up the pmode gdt, tss, and idt */
 	load_tables_ap(cpu);
 	/* set up our private temporary tack */

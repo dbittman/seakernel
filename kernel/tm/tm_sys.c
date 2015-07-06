@@ -7,7 +7,6 @@
 /* Low-level memory allocator implementation */
 int sys_sbrk(long inc)
 {
-	assert(current_task);
 	if(inc < 0 && current_process->heap_start < current_process->heap_end) {
 		int dec = -inc;
 		addr_t new_end = current_process->heap_end - dec;
@@ -32,18 +31,17 @@ int sys_sbrk(long inc)
 	if(end + inc >= TOP_TASK_MEM)
 		tm_send_signal(current_thread->tid, SIGSEGV);
 	current_process->heap_end += inc;
-	current_process->he_red = end + inc;
 	addr_t page = end & PAGE_MASK;
 	for(;page <=(current_process->heap_end&PAGE_MASK);page += PAGE_SIZE)
 		user_map_if_not_mapped(page);
 	return end;
 }
 
-int sys_isstate(int pid, int state)
+int sys_isstate(pid_t pid, int state)
 {
-	task_t *task = tm_get_process_by_pid(pid);
-	if(!task) return -ESRCH;
-	return (task->state == state) ? 1 : 0;
+	struct process *proc = tm_process_get(pid);
+	if(!proc) return -ESRCH;
+	/*TODO: how do we do this for multiple threads? */
 }
 
 int sys_gsetpriority(int set, int which, int id, int val)
@@ -53,11 +51,13 @@ int sys_gsetpriority(int set, int which, int id, int val)
 	return current_thread->priority;
 }
 
+
+#if 0
 void __sys_nice_search_action(task_t *t, int val)
 {
 	t->priority = val;
 }
-
+#endif
 int sys_nice(int which, int who, int val, int flags)
 {
 	/* TODO: threads? */
@@ -99,12 +99,12 @@ int sys_setpgid(int a, int b)
 	return -ENOSYS;
 }
 
-int sys_get_pid()
+pid_t sys_get_pid()
 {
 	return current_process->pid;
 }
 
-int sys_getppid()
+pid_t sys_getppid()
 {
 	return current_process->parent->pid;
 }
@@ -182,14 +182,16 @@ int tm_get_euid()
 int sys_times(struct tms *buf)
 {
 	if(buf) {
-		buf->tms_utime = current_process->utime;
-		buf->tms_stime = current_process->stime;
-		buf->tms_cstime = current_process->t_cstime;
-		buf->tms_cutime = current_process->t_cutime;
+		/*TODO: threading? */
+		/* buf->tms_utime = current_process->utime; */
+		/* buf->tms_stime = current_process->stime; */
+		/* buf->tms_cstime = current_process->t_cstime; */
+		/* buf->tms_cutime = current_process->t_cutime; */
 	}
 	return tm_get_ticks();
 }
 
+#if 0
 static void do_sys_thread_stat(struct task_stat *s, struct thread *t)
 {
 	assert(s && t);
@@ -208,15 +210,15 @@ static void do_sys_thread_stat(struct task_stat *s, struct thread *t)
 	strncpy(s->cmd, (char *)t->command, 128);
 	s->mem_usage = (t->pid && !(t->flags & TF_KTASK)) ? t->phys_mem_usage * 4 : 0;
 }
-
+#endif
 /* TODO */
-int sys_task_pstat(unsigned int pid, struct task_stat *s)
+int sys_task_pstat(pid_t pid, struct task_stat *s)
 {
 	if(!s) return -EINVAL;
 	//task_t *t=tm_get_process_by_pid(pid);
-	if(!t)
+	//if(!t)
 		return -ESRCH;
-	do_sys_task_stat(s, t);
+	//do_sys_task_stat(s, t);
 	return 0;
 }
 
@@ -224,10 +226,10 @@ int sys_task_pstat(unsigned int pid, struct task_stat *s)
 int sys_task_stat(unsigned int num, struct task_stat *s)
 {
 	if(!s) return -EINVAL;
-	task_t *t = tm_search_tqueue(primary_queue, TSEARCH_ENUM, num, 0, 0, 0);
-	if(!t) 
+	//task_t *t = tm_search_tqueue(primary_queue, TSEARCH_ENUM, num, 0, 0, 0);
+	//if(!t) 
 		return -ESRCH;
-	do_sys_task_stat(s, t);
+	//do_sys_task_stat(s, t);
 	return 0;
 }
 

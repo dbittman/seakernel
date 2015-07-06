@@ -4,7 +4,6 @@
 #include <sea/tm/process.h>
 #include <sea/cpu/atomic.h>
 #include <sea/cpu/processor.h>
-#include <sea/tm/context.h>
 #include <sea/mm/vmm.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/fs/inode.h>
@@ -100,12 +99,12 @@ static void copy_task_struct(task_t *task, task_t *parent, char share_thread_dat
 }
 
 #if CONFIG_SMP
-extern cpu_t cpu_array[];
+extern struct cpu cpu_array[];
 static int __counter = 0;
-static cpu_t *fork_choose_cpu(task_t *parent)
+static struct cpu *fork_choose_cpu(task_t *parent)
 {
-	cpu_t *pc = parent->cpu;
-	cpu_t *cpu = &cpu_array[__counter];
+	struct cpu *pc = parent->cpu;
+	struct cpu *cpu = &cpu_array[__counter];
 	add_atomic(&__counter, 1);
 	if(__counter >= (int)num_cpus)
 		__counter=0;
@@ -113,7 +112,7 @@ static cpu_t *fork_choose_cpu(task_t *parent)
 		return pc;
 	if(cpu->active_queue->num < 2) return cpu;
 	for(int i=0;i<(int)num_cpus;i++) {
-		cpu_t *tmp = &cpu_array[i];
+		struct cpu *tmp = &cpu_array[i];
 		if(tmp->active_queue->num < cpu->active_queue->num)
 			cpu = tmp;
 	}
@@ -152,7 +151,7 @@ int tm_do_fork(unsigned flags)
 	 * And then add it to the queue */
 	task->state = TASK_USLEEP;
 	tqueue_insert(primary_queue, (void *)task, task->listnode);
-	cpu_t *cpu = current_task->cpu;
+	struct cpu *cpu = current_task->cpu;
 #if CONFIG_SMP
 	cpu = fork_choose_cpu(current_task);
 #endif

@@ -47,7 +47,7 @@ struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int
 	struct inode *inode=0;
 	struct dirent *dirent=0;
 	struct file *f;
-	mode_t mode = (_mode & ~0xFFF) | ((_mode&0xFFF) & (~(current_task->cmask&0xFFF)));
+	mode_t mode = (_mode & ~0xFFF) | ((_mode&0xFFF) & (~(current_process->cmask&0xFFF)));
 	
 	inode = (flags & _FCREAT) ?
 				fs_path_resolve_create_get(name, 0, 
@@ -165,8 +165,8 @@ static int duplicate(struct process *t, int fp, int n)
 	if(f->inode->pipe && !f->inode->pipe->type) {
 		add_atomic(&f->inode->pipe->count, 1);
 		if(f->flags & _FWRITE) add_atomic(&f->inode->pipe->wrcount, 1);
-		tm_remove_all_from_blocklist(f->inode->pipe->read_blocked);
-		tm_remove_all_from_blocklist(f->inode->pipe->write_blocked);
+		tm_blocklist_wakeall(f->inode->pipe->read_blocked);
+		tm_blocklist_wakeall(f->inode->pipe->write_blocked);
 	}
 	fs_fput(t, fp, 0);
 	fs_fput(t, ret, 0);

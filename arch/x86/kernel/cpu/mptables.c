@@ -27,13 +27,13 @@ static void imps_add_processor(struct imps_processor *proc)
 	printk(0, "add proc\n");
 	num_cpus++;
 	int apicid = proc->apic_id;
-	cpu_t new_cpu;
+	struct cpu new_cpu;
 	if (!(proc->flags & IMPS_FLAG_ENABLED))
 		return;
-	memset(&new_cpu, 0, sizeof(cpu_t));
+	memset(&new_cpu, 0, sizeof(struct cpu));
 	new_cpu.snum = apicid;
 	new_cpu.flags=0;
-	cpu_t *cp = cpu_add(&new_cpu);
+	struct cpu *cp = cpu_add(&new_cpu);
 	if (proc->flags & (IMPS_CPUFLAG_BOOT)) {
 		primary_cpu = cp;
 		return;

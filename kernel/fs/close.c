@@ -44,8 +44,8 @@ int sys_close(int fp)
 			fs_pipe_free(f->inode);
 			f->inode->pipe = 0;
 		} else {
-			tm_remove_all_from_blocklist(f->inode->pipe->read_blocked);
-			tm_remove_all_from_blocklist(f->inode->pipe->write_blocked);
+			tm_blocklist_wakeall(f->inode->pipe->read_blocked);
+			tm_blocklist_wakeall(f->inode->pipe->write_blocked);
 			mutex_release(f->inode->pipe->lock);
 		}
 	}

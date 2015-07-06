@@ -12,7 +12,7 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
 
-extern cpu_t primary_cpu_data;
+extern struct cpu primary_cpu_data;
 
 void init_lapic(int);
 void set_debug_traps (void);
@@ -22,7 +22,7 @@ void arch_cpu_processor_init_1()
 {
 #if CONFIG_SMP
 	mutex_create(&ipi_mutex, MT_NOSCHED);
-	memset(cpu_array, 0, sizeof(cpu_t) * CONFIG_MAX_CPUS);
+	memset(cpu_array, 0, sizeof(struct cpu) * CONFIG_MAX_CPUS);
 	cpu_array_num = 0;
 	int res = probe_smp();
 	if(!(kernel_state_flags & KSF_CPUS_RUNNING))
@@ -39,7 +39,7 @@ void arch_cpu_processor_init_1()
 		kprintf("[smp]: error in init code, disabling SMP support\n");
 #else
 	primary_cpu = &primary_cpu_data;
-	memset(primary_cpu, 0, sizeof(cpu_t));
+	memset(primary_cpu, 0, sizeof(struct cpu));
 	load_tables_ap(primary_cpu);
 #endif
 	assert(primary_cpu);
@@ -59,6 +59,8 @@ void arch_cpu_processor_init_1()
 	kprintf("---[DEBUG - resuming]---\n");
 #endif
 }
+
+void x86_hpet_init();
 
 void arch_cpu_processor_init_2()
 {

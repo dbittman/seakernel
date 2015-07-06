@@ -156,7 +156,7 @@ struct dirent *fs_path_resolve(const char *path, int flags, int *result)
 		start = current_process->root;
 		path++;
 	} else {
-		start = current_process->pwd;
+		start = current_process->cwd;
 	}
 	return fs_do_path_resolve(start, path, 0, result);
 }

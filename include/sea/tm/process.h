@@ -5,11 +5,12 @@
 #include <sea/ll.h>
 #include <sea/cpu/registers.h>
 #include <sea/tm/signal.h>
-#include <sea/mm/context.h>
 #include <sea/sys/stat.h>
 #include <sea/mm/valloc.h>
+#include <sea/mm/context.h>
 #include <sea/tm/async_call.h>
 #include <sea/lib/hash.h>
+#include <sea/tm/thread.h>
 
 #define current_process current_thread->process
 
@@ -22,16 +23,9 @@
 #define __STOPSIG  4
 #define __STOPPED  8
 
-#define TASK_MAGIC 0xCAFEBABE
+#define PROCESS_MAGIC 0xCAFEBABE
 
-/* flags for different task states */
-#define TF_INSIG        0x800 /* inside a signal */
-#define TF_SCHED       0x1000 /* we request a reschedule after this syscall completes */
-#define TF_JUMPIN      0x2000 /* going to jump to a signal handler on the next IRET
-* used by the syscall handler to determine if it needs to back up
-* it's return value */
-#define TF_IN_INT     0x40000 /* inside an interrupt handler */
-#define TF_BGROUND    0x80000 /* is waiting for things in the kernel (NOT blocking for a resource) */
+#define PROCESS_FORK 1
 
 typedef struct exit_status {
 	unsigned pid;
@@ -55,20 +49,28 @@ struct process {
 	char **argv, **env;
 	int cmask;
 	int tty;
+	uid_t effective_uid, real_uid, saved_uid;
+	gid_t effective_gid, real_gid, saved_gid;
+	struct inode *root, *cwd;
+	mutex_t files_lock;
+	struct file_ptr *filp[FILP_HASH_LEN];
+	struct llist mappings;
+	mutex_t map_lock;
+	struct valloc mmf_valloc;
 
 	sigset_t signal_mask;
 	unsigned signal;
 	struct process *parent;
+	int thread_count;
 	struct llist threadlist;
 };
 
 #define WNOHANG 1
 
-#define FORK_SHAREDIR 0x1
-#define FORK_SHAREDAT 0x2
+#define CLONE_PROCESS 1 /*TODO: these need to match with userland.. */
 #define tm_fork() tm_do_fork(0)
 
-extern unsigned running_processes;
+extern size_t running_processes;
 
 int tm_set_gid(int n);
 int tm_set_uid(int n);
@@ -102,10 +104,15 @@ int sys_isstate(int pid, int state);
 extern void arch_do_switch_to_user_mode();
 void arch_tm_set_current_thread_marker(addr_t *space, addr_t task);
 
-struct hash_table *process_table;
+extern struct hash_table *process_table;
 
 #include <sea/mm/vmm.h>
 
+int tm_process_wait(pid_t pid, int state);
+pid_t sys_get_pid(void);
+
+int sys_task_stat(unsigned int num, struct task_stat *s);
+int sys_task_pstat(pid_t pid, struct task_stat *s);
 #define MMF_VMEM_NUM_INDEX_PAGES 12
 
 #endif

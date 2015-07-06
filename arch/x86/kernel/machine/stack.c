@@ -46,11 +46,11 @@ void setup_kernelstack()
 	move_stack((void*)STACK_LOCATION, STACK_SIZE);
 }
 
-void arch_cpu_print_stack_trace(unsigned int MaxFrames)
+void arch_cpu_print_stack_trace(int MaxFrames)
 {
-	unsigned int * ebp = &MaxFrames - 2;
+	unsigned int * ebp = (unsigned int *)&MaxFrames - 2;
 	kprintf("    ADDR      MODULE FUNCTION\n");
-	for(unsigned int frame = 0; frame < MaxFrames; ++frame)
+	for(int frame = 0; frame < MaxFrames; ++frame)
 	{
 		if((kernel_state_flags&KSF_MMU) && !mm_vm_get_map((addr_t)ebp, 0, 1)) break;
 		unsigned int eip = ebp[1];

@@ -97,8 +97,9 @@ int fs_pipe_read(struct inode *ino, int flags, char *buffer, size_t length)
 			&& pipe->wrcount>0)) {
 		/* we need to block, but also release the lock. Disable interrupts
 		 * so we don't schedule before we want to */
+		/* TODO: switch this to preempt disable. Switch all calls to this to that if possible */
 		int old = cpu_interrupt_set(0);
-		tm_add_to_blocklist(pipe->read_blocked, current_thread);
+		tm_thread_add_to_blocklist(current_thread, pipe->read_blocked);
 		mutex_release(pipe->lock);
 		while(!tm_schedule());
 		cpu_interrupt_set(old);
@@ -123,8 +124,8 @@ int fs_pipe_read(struct inode *ino, int flags, char *buffer, size_t length)
 		len -= ret;
 		count+=ret;
 	}
-	tm_remove_all_from_blocklist(pipe->write_blocked);
-	tm_remove_all_from_blocklist(pipe->read_blocked);
+	tm_blocklist_wakeall(pipe->write_blocked);
+	tm_blocklist_wakeall(pipe->read_blocked);
 	mutex_release(pipe->lock);
 	return count;
 }
@@ -154,14 +155,15 @@ int fs_pipe_write(struct inode *ino, int flags, char *initialbuffer, size_t tota
 		/* we're writing to a pipe with no reading process! */
 		if((pipe->count - pipe->wrcount) == 0 && pipe->type != PIPE_NAMED) {
 			mutex_release(pipe->lock);
-			current_thread->sigd = SIGPIPE;
+			/* TODO: we probably shouldn't ever set this directly... remove all code that does this */
+			current_thread->signal = SIGPIPE;
 			return -EPIPE;
 		}
 		/* IO block until we can write to it */
 		while((pipe->write_pos+length)>=PIPE_SIZE) {
 			int old = cpu_interrupt_set(0);
-			tm_remove_all_from_blocklist(pipe->read_blocked);
-			tm_add_to_blocklist(pipe->write_blocked, current_thread);
+			tm_blocklist_wakeall(pipe->read_blocked);
+			tm_thread_add_to_blocklist(current_thread, pipe->write_blocked);
 			mutex_release(pipe->lock);
 			while(!tm_schedule());
 			cpu_interrupt_set(old);
@@ -175,8 +177,8 @@ int fs_pipe_write(struct inode *ino, int flags, char *initialbuffer, size_t tota
 		pipe->write_pos += length;
 		pipe->pending += length;
 		/* now, unblock the tasks */
-		tm_remove_all_from_blocklist(pipe->read_blocked);
-		tm_remove_all_from_blocklist(pipe->write_blocked);
+		tm_blocklist_wakeall(pipe->read_blocked);
+		tm_blocklist_wakeall(pipe->write_blocked);
 
 		remain -= length;
 		buffer += length;

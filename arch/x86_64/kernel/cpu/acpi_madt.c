@@ -15,16 +15,16 @@ void acpi_madt_parse_processor(void *ent, int boot)
 		uint32_t flags;
 	} *proc = ent;
 	num_cpus++;
-	cpu_t new_cpu;
+	struct cpu new_cpu;
 	if(!(proc->flags & 1))
 	{
 		printk(0, "[acpi]: detected disabled processor #%d (%d)\n", proc->apicid, proc->acpi_processor_id);
 		return;
 	}
-	memset(&new_cpu, 0, sizeof(cpu_t));
+	memset(&new_cpu, 0, sizeof(struct cpu));
 	new_cpu.snum = proc->apicid;
 	new_cpu.flags=0;
-	cpu_t *cp = cpu_add(&new_cpu);
+	struct cpu *cp = cpu_add(&new_cpu);
 	if(boot) {
 		primary_cpu = cp;
 		return;

@@ -308,11 +308,11 @@ void mm_destroy_all_mappings(struct process *t)
 	mutex_acquire(&current_process->map_lock);
 	struct llistnode *cur, *next;
 	struct memmap *map;
-	ll_for_each_entry_safe(&(t->thread->mappings), cur, next, struct memmap *, map) {
+	ll_for_each_entry_safe(&(t->mappings), cur, next, struct memmap *, map) {
 		disengage_mapping(map);
 		__do_mm_disestablish_mapping(map);
 	}
-	assert(t->thread->mappings.num == 0);
+	assert(t->mappings.num == 0);
 	mutex_release(&current_process->map_lock);
 }
 

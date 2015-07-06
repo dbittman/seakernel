@@ -61,10 +61,11 @@ void tty_putch(struct vterm *con, int ch)
 void __tty_found_task_raise_action(struct thread *t, int arg)
 {
 	if(t->flags & TF_BGROUND) return;
-	t->sigd = arg;
-	tm_process_raise_flag(t, TF_SCHED);
-	if(t->blocklist)
-		tm_remove_from_blocklist(t->blocklist, t);
+	t->signal = arg;
+	tm_thread_raise_flag(t, TF_SCHED);
+	/* TODO */
+	/* if(t->blocklist) */
+	/* 	tm_remove_from_blocklist(t->blocklist, t); */
 }
 
 int tty_raise_action(int min, int sig)
@@ -73,8 +74,9 @@ int tty_raise_action(int min, int sig)
 		return 0;
 	if((kernel_state_flags & KSF_SHUTDOWN))
 		return 0;
-	if(tm_search_tqueue(primary_queue, TSEARCH_FINDALL | TSEARCH_TTY, min, __tty_found_task_raise_action, sig, 0))
-		consoles[min].inpos=0;
+	/* TODO */
+	//if(tm_search_tqueue(primary_queue, TSEARCH_FINDALL | TSEARCH_TTY, min, __tty_found_task_raise_action, sig, 0))
+	//	consoles[min].inpos=0;
 	return 0;
 }
 
@@ -98,7 +100,7 @@ int tty_read(int min, char *buf, size_t len)
 		mutex_acquire(&con->inlock);
 		while(!con->inpos) {
 			mutex_release(&con->inlock);
-			tm_add_to_blocklist_and_block(&con->input_block, current_thread);
+			tm_thread_block(&con->input_block, THREAD_INTERRUPTIBLE);
 			if(tm_thread_got_signal(current_thread))
 				return -EINTR;
 			mutex_acquire(&con->inlock);
@@ -265,7 +267,7 @@ int ttyx_ioctl(int min, int cmd, long arg)
 				con->input[con->inpos] = (char)arg;
 				con->inpos++;
 			}
-			tm_remove_all_from_blocklist(&con->input_block);
+			tm_blocklist_wakeall(&con->input_block);
 			mutex_release(&con->inlock);
 			if(!(con->term.c_lflag & ECHO) && arg != '\b' && arg != '\n')
 				break;
@@ -333,22 +335,7 @@ int ttyx_ioctl(int min, int cmd, long arg)
 			return 0;
 			break;
 		default:
-			if(cmd >= 128 && cmd < 256 && ((current_thread->system == SYS_LMOD)
-					|| (current_thread->pid < init_pid)))
-			{
-				addr_t q = tty_calltable ? tty_calltable[cmd-128] : 0;
-				if(q)
-				{
-					int (*call)(int,int,int) = (int (*)(int,int,int))q;
-					return call(min, cmd, arg);
-				} else {
-					if(!tty_calltable)
-						tty_calltable = (unsigned *)kmalloc(128 * sizeof(unsigned));
-					tty_calltable[cmd-128] = arg;
-					return cmd;
-				}
-			} else
-				printk(1, "[tty]: %d: invalid ioctl %d\n", min, cmd);
+			printk(1, "[tty]: %d: invalid ioctl %d\n", min, cmd);
 	}
 	return 0;
 }

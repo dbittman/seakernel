@@ -78,7 +78,7 @@ int sys_setup(int a)
 
 	struct filesystem *fs = fs_filesystem_create();
 	ramfs_mount(fs);
-	current_process->pwd = current_process->root = fs_read_root_inode(fs);
+	current_process->cwd = current_process->root = fs_read_root_inode(fs);
 	fs_initrd_parse();
 	devfs_init();
 
@@ -93,7 +93,7 @@ int sys_setup(int a)
 	kerfs_register_report("/dev/kmm", kerfs_kmalloc_report);
 	kerfs_register_report("/dev/fs_icache", kerfs_icache_report);
 	kerfs_register_report("/dev/modules", kerfs_module_report);
-	current_thread->tty=1;
+	current_process->tty=1;
 	system_setup=1;
 	printk(KERN_MILE, "done (i/o/e=%x [tty1]: ok)\n", GETDEV(3, 1));
 	return 12;

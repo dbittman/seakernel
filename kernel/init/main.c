@@ -23,6 +23,7 @@
 #include <stdarg.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/trace.h>
+#include <sea/tm/thread.h>
 
 
 static struct multiboot *mtboot;
@@ -155,7 +156,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	if(!tm_fork())
 		init();
 	sys_setsid();
-	tm_process_enter_system(255);
+	tm_thread_enter_system(255);
 	kt_kernel_idle_task();
 }
 

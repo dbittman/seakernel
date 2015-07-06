@@ -22,8 +22,8 @@ struct kthread *kthread_create(struct kthread *kt, const char *name, int flags,
 	kt->entry = entry;
 	kt->arg = arg;
 	/* TODO: this could be a thread, but we'd need to clone from the kernel directory ... */
-	int pid = tm_do_fork(0);
-	if(!pid) {
+	int tid = tm_do_fork(0);
+	if(!tid) {
 		/* kernel threads have no parent (since we don't do a wait() for them), and
 		 * they have root-like abilities. They are also constantly 'in the system',
 		 * and so they have their syscall num set to -1. Also, no regs are set, since
@@ -45,6 +45,8 @@ struct kthread *kthread_create(struct kthread *kt, const char *name, int flags,
 		 * being a valid pointer */
 		int code = kt->code;
 		or_atomic(&kt->flags, KT_EXITED);
+		/* TODO: figure this out */
+#if 0
 		if(current_thread->flags & TF_FORK_COPIEDUSER) {
 			/* HACK: this will cause the stack to switch over to the kernel stack
 			 * when exit is called, allowing us to free the whole page directory.
@@ -57,10 +59,12 @@ struct kthread *kthread_create(struct kthread *kt, const char *name, int flags,
 		} else {
 			tm_exit(0);
 		}
+#endif
 		panic(0, "kthread lived past exit");
 	}
-	kt->pid = pid;
-	kt->process = tm_get_process_by_pid(pid);
+	kt->tid = tid;
+	/* TODO */
+	//kt->thread = tm_get_process_by_pid(pid);
 	return kt;
 }
 
@@ -93,7 +97,7 @@ int kthread_wait(struct kthread *kt, int flags)
 int kthread_join(struct kthread *kt, int flags)
 {
 	or_atomic(&kt->flags, KT_JOIN);
-	tm_process_resume(kt->process); /* in case it's sleeping */
+	tm_thread_resume(kt->thread); /* in case it's sleeping */
 	if(!(flags & KT_JOIN_NONBLOCK))
 		kthread_wait(kt, 0);
 	if(kt->flags & KT_EXITED)
@@ -105,8 +109,8 @@ void kthread_kill(struct kthread *kt, int flags)
 {
 	if(kt->tid && kt->tid == current_thread->tid)
 		panic(0, "kthread tried to commit suicide");
-	if(!kt->pid)
+	if(!kt->tid)
 		panic(0, "cannot kill unknown kthread");
-	tm_kill_process(kt->pid);
+	tm_thread_kill(kt->thread);
 }
 

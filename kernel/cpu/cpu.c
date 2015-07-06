@@ -3,13 +3,14 @@
 #include <sea/tm/schedule.h>
 #include <sea/string.h>
 #include <sea/loader/symbol.h>
+#include <sea/cpu/atomic.h>
 
-cpu_t *primary_cpu=0;
+struct cpu *primary_cpu=0;
 #if CONFIG_SMP
-cpu_t cpu_array[CONFIG_MAX_CPUS];
+struct cpu cpu_array[CONFIG_MAX_CPUS];
 unsigned cpu_array_num=0;
 #endif
-cpu_t primary_cpu_data;
+struct cpu primary_cpu_data;
 
 void cpu_reset()
 {
@@ -52,7 +53,7 @@ void cpu_copy_fixup_stack(addr_t new, addr_t old, size_t len)
 }
 
 #if CONFIG_SMP
-cpu_t *cpu_get(unsigned id)
+struct cpu *cpu_get(unsigned id)
 {
 	/* TODO: fix this FUCKING RETARDED nonsense */
 	for(unsigned int i=0;i<cpu_array_num;i++)
@@ -62,11 +63,11 @@ cpu_t *cpu_get(unsigned id)
 	return 0;
 }
 
-cpu_t *cpu_add(cpu_t *c)
+struct cpu *cpu_add(struct cpu *c)
 {
 	if(cpu_array_num >= CONFIG_MAX_CPUS)
 		return 0;
-	memcpy(&cpu_array[cpu_array_num], c, sizeof(cpu_t));
+	memcpy(&cpu_array[cpu_array_num], c, sizeof(struct cpu));
 	mutex_create((mutex_t *)&(cpu_array[cpu_array_num].lock), MT_NOSCHED);
 	return &cpu_array[cpu_array_num++];
 }
@@ -78,9 +79,24 @@ void cpu_timer_install(int freq)
 	arch_cpu_timer_install(freq);
 }
 
+/* TODO: optimize this mess of calls that interact with cpu_interrupt_set{,flag} and etc */
+void cpu_disable_preemption()
+{
+	int old = cpu_interrupt_set(0);
+	__current_cpu->flags |= CPU_DISABLE_PREEMPT;
+	cpu_interrupt_set(old);
+}
+
+void cpu_enable_preemption()
+{
+	int old = cpu_interrupt_set(0);
+	__current_cpu->flags &= ~CPU_DISABLE_PREEMPT;
+	cpu_interrupt_set(old);
+}
+
 struct cpu *cpu_get_current(void)
 {
-	tm_disable_preemption();
+	cpu_disable_preemption();
 	struct cpu *cpu = current_thread->cpu;
 	add_atomic(&cpu->gc_count, 1);
 	return cpu;
@@ -89,6 +105,6 @@ struct cpu *cpu_get_current(void)
 void cpu_put_current(struct cpu *cpu)
 {
 	if(sub_atomic(&cpu->gc_count, 1) == 0)
-		tm_enable_preemption();
+		cpu_enable_preemption();
 }
 

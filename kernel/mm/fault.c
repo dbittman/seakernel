@@ -49,7 +49,7 @@ void mm_page_fault_handler(registers_t *regs, addr_t address, int pf_cause)
 		/* page fault was caused while in ring 3. We can pretend to
 		 * be a second-stage interrupt handler... */
 		/* TODO: ??? */
-		assert(!current_task->sysregs);
+		assert(!current_thread->sysregs);
 		current_thread->sysregs = regs;
 		/* check if we need to map a page for mmap, etc */
 		if(mm_page_fault_test_mappings(address, pf_cause) == 0) {
@@ -81,7 +81,7 @@ void mm_page_fault_handler(registers_t *regs, addr_t address, int pf_cause)
 			return;
 	}
 	if(!current_thread) {
-		if(kernel_task) {
+		if(primary_cpu->idle_thread) {
 			/* maybe a page fault while panicing? */
 			cpu_interrupt_set(0);
 			cpu_halt();

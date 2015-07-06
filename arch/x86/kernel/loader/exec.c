@@ -8,9 +8,9 @@ void arch_loader_exec_initializer(unsigned argc, addr_t eip)
 	struct thread *t = current_thread;
 	assert(t->sysregs);
 	t->sysregs->useresp = t->sysregs->ebp = STACK_LOCATION - STACK_ELEMENT_SIZE;
-	*(unsigned *)t->sysregs->useresp = (unsigned)t->env;
+	*(unsigned *)t->sysregs->useresp = (unsigned)t->process->env;
 	t->sysregs->useresp -= STACK_ELEMENT_SIZE;
-	*(unsigned *)t->sysregs->useresp = (unsigned)t->argv;
+	*(unsigned *)t->sysregs->useresp = (unsigned)t->process->argv;
 	t->sysregs->useresp -= STACK_ELEMENT_SIZE;
 	*(unsigned *)t->sysregs->useresp = (unsigned)argc;
 	t->sysregs->useresp -= STACK_ELEMENT_SIZE;

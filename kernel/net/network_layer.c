@@ -11,7 +11,7 @@
 
 struct nlayer_protocol arp = {
 	.flags = 0,
-	.receive = arp_receive_packet,
+	.receive = (void (*)(struct net_dev *, struct net_packet *, void *))arp_receive_packet,
 	.send = 0,
 };
 

@@ -33,16 +33,7 @@ typedef struct swapdevice_s
 extern swapdev_t *swaplist;
 extern volatile unsigned num_swapdev;
 
-void init_swap();
-int sys_swapoff(char *node, unsigned flags);
-int sys_swapon(char *node, unsigned size /*0 for all */);
-swapdev_t *find_swapdevice(int dev);
-int swap_in_page(task_t *t, unsigned addr);
-int swap_page_out(task_t *t, unsigned addr);
-int page_out_task_addr(task_t *t, unsigned addr);
-int swap_in_all_the_pages(task_t *t);
 int __KT_pager(struct kthread *kt, void *);
-int sys_swaptask(unsigned pid);
 
 static inline char valid_swappable(addr_t x)
 {

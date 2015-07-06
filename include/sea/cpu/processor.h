@@ -6,6 +6,7 @@
 #include <sea/tm/process.h>
 #include <sea/tm/thread.h>
 #include <sea/mutex.h>
+#include <sea/tm/ticker.h>
 
 #include <sea/config.h>
 #if CONFIG_ARCH == TYPE_ARCH_X86
@@ -27,43 +28,48 @@
 #define CPU_LOCK  0x100
 #define CPU_FXSAVE 0x200
 #define CPU_NEEDRESCHED 0x400
+#define CPU_DISABLE_PREEMPT 0x800
 
 struct cpu {
 	unsigned knum, snum; /* knum: cpu number to the kernel, snum: cpu number to the hardware */
 	unsigned flags;
 	cpuid_t cpuid;
-	volatile page_dir_t *kd;
+	volatile vmm_context_t *kd;
 	volatile addr_t kd_phys;
 	struct tqueue *active_queue;
-	struct thread *idle_thread, *current_thread /* TODO: do we need this? */;
+	struct thread *idle_thread, *cur /* TODO: do we need this? */;
 	mutex_t lock;
 	unsigned numtasks;
 	unsigned stack[CPU_STACK_TEMP_SIZE];
+	int gc_count;
+	struct ticker *ticker; /* TODO: initialize this */
 
 	struct arch_cpu arch_cpu_data;
 
-	struct __cpu_t__ *next, *prev;
+	struct cpu *next, *prev;
 };
 
-void cpu_smp_task_idle(struct thread *me);
+void cpu_smp_task_idle(struct cpu *me);
 int cpu_get_num_running_processors();
 int cpu_get_num_halted_processors();
 int cpu_get_num_secondary_processors();
 
-extern cpu_t cpu_array[CONFIG_MAX_CPUS];
+/* TODO: make this a real thing */
+#define __current_cpu ((struct cpu *)0)
+extern struct cpu cpu_array[CONFIG_MAX_CPUS];
 extern unsigned cpu_array_num;
 
 #if CONFIG_SMP
 
-cpu_t *cpu_get(unsigned id);
-cpu_t *cpu_add(cpu_t *c);
+struct cpu *cpu_get(unsigned id);
+struct cpu *cpu_add(struct cpu *c);
 
 #endif
 
 extern volatile unsigned num_halted_cpus;
 extern unsigned num_cpus, num_booted_cpus, num_failed_cpus;
 
-extern cpu_t *primary_cpu;
+extern struct cpu *primary_cpu;
 void arch_cpu_copy_fixup_stack(addr_t, addr_t, size_t length);
 void cpu_copy_fixup_stack(addr_t, addr_t, size_t length);
 
@@ -99,6 +105,9 @@ static inline void cpu_jump(addr_t a)
 {
 	arch_cpu_jump(a);
 }
+
+struct cpu *cpu_get_current();
+void cpu_put_current(struct cpu *);
 
 #endif
 

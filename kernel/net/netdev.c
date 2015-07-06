@@ -89,7 +89,8 @@ static int kt_packet_rec_thread(struct kthread *kt, void *arg)
 			pack = 0;
 			nd->rx_thread_lastwork = tm_get_ticks();
 		} else {
-			if(tm_get_ticks() > nd->rx_thread_lastwork + TICKS_SECONDS(5))
+			/* TODO: some way of determining this... (this is broken, ONE_SECOND is in nanoseconds) */
+			if(tm_get_ticks() > nd->rx_thread_lastwork + ONE_SECOND * 5)
 				tm_thread_pause(current_thread);
 			else
 				tm_schedule();
@@ -109,7 +110,7 @@ struct net_dev *net_add_device(struct net_dev_calls *fn, void *data)
 	memcpy(nd->hw_address, mac, sizeof(uint8_t) * 6);
 	if(fn->poll) {
 		kthread_create(&nd->rec_thread, "[kpacket]", 0, kt_packet_rec_thread, nd);
-		nd->rec_thread.process->priority = 100;
+		nd->rec_thread.thread->priority = 100;
 	}
 	net_iface_set_flags(nd, IFACE_FLAGS_DEFAULT);
 	int num = add_atomic(&nd_num, 1);

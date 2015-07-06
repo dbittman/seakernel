@@ -38,7 +38,7 @@ void cpu_k_task_entry(task_t *me)
 __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 {
 	/* get the cpu again... */
-	cpu_t *cpu = cpu_get(apicid);
+	struct cpu *cpu = cpu_get(apicid);
 	cpu->flags |= CPU_UP;
 	/* call the CPU features init code */
 	parse_cpuid(cpu);
@@ -91,7 +91,7 @@ void cpu_entry(void)
 {
 	/* get the ID and the cpu struct so we can set a private stack */
 	int apicid = get_boot_flag();
-	cpu_t *cpu = cpu_get(apicid);
+	struct cpu *cpu = cpu_get(apicid);
 	/* load up the pmode gdt, tss, and idt */
 	load_tables_ap(cpu);
 	/* set up our private temporary tack */

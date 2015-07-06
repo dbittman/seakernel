@@ -59,7 +59,7 @@ void net_notify_packet_ready(struct net_dev *nd)
 {
 	add_atomic(&nd->rx_pending, 1);
 	if(nd->callbacks->poll)
-		tm_process_resume(nd->rec_thread.process);
+		tm_thread_resume(nd->rec_thread.thread);
 	/* TODO: notify CPU to schedule this process NOW */
 }
 

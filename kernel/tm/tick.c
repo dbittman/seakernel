@@ -1,4 +1,3 @@
-#include <sea/tm/_tm.h>
 #include <sea/tm/process.h>
 #include <sea/kernel.h>
 #include <sea/cpu/interrupt.h>
@@ -57,11 +56,8 @@ static void do_run_scheduler()
 #define __USR 1, 0
 static void do_tick()
 {
-	if(!current_thread || (kernel_state_flags&KSF_PANICING))
-		return;
-	if(!(current_thread->cpu->flags & CPU_TASK))
-		return;
 	if(current_thread) {
+		ticker_tick(current_thread->cpu->ticker, 1000 /* TODO: Whatever this actually is */);
 		current_thread->system 
 			? (++current_process->stime) 
 			: (++current_process->utime);

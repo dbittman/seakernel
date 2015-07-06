@@ -199,7 +199,7 @@ void idt_set_gate(u8int num, u64int base, u16int sel, u8int flags)
 }
 
 /* each CPU gets it's own GDT and TSS, so we need to specify that here. */
-void load_tables_ap(cpu_t *cpu)
+void load_tables_ap(struct cpu *cpu)
 {
 	init_gdt(cpu->arch_cpu_data.gdt, &cpu->arch_cpu_data.gdt_ptr);
 	/* don't init the IDT again, just flush it into the current processor.

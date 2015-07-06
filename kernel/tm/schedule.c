@@ -4,7 +4,6 @@
 #include <sea/mm/vmm.h>
 #include <sea/tm/process.h>
 #include <sea/cpu/processor.h>
-#include <sea/tm/context.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/atomic.h>
 #include <sea/tm/schedule.h>
@@ -30,7 +29,7 @@ static __attribute__((always_inline)) inline void update_task(struct thread *t)
 }
 /* This here is the basic scheduler - It does nothing 
  * except find the next runable task */
-static __attribute__((always_inline)) inline task_t *get_next_task(task_t *prev, cpu_t *cpu)
+static __attribute__((always_inline)) inline task_t *get_next_task(task_t *prev, struct cpu *cpu)
 {
 	assert(prev && kernel_task);
 	assert(prev->cpu == cpu);
@@ -133,7 +132,7 @@ int tm_schedule()
 	/* make sure to re-enable interrupts when we come back to this
 	 * task if we entered schedule with them enabled */
 	task_t *old = current_task;
-	cpu_t *cpu = old->cpu;
+	struct cpu *cpu = old->cpu;
 	task_t *next_task = (task_t *)get_next_task(old, cpu);
 	
 	if(old == next_task) {

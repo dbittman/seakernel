@@ -56,7 +56,7 @@ static void cpuid_cpu_get_brand(cpuid_t *cpuid)
 	printk(KERN_DEBUG, "\tCPU Brand: %s \n", cpuid->cpu_brand);
 }
 
-void parse_cpuid(cpu_t *me)
+void parse_cpuid(struct cpu *me)
 {
 	cpuid_t cpuid;
 	int eax, ebx, ecx, edx;

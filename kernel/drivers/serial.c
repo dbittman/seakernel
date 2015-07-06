@@ -3,6 +3,7 @@
 #include <sea/dm/dev.h>
 #include <sea/serial.h>
 #include <sea/tm/process.h>
+#include <sea/tm/thread.h>
 #include <sea/loader/symbol.h>
 
 static mutex_t serial_m;

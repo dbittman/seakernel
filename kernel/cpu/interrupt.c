@@ -437,7 +437,7 @@ int cpu_interrupt_set(unsigned _new)
 {
 	/* need to make sure we don't get interrupted... */
 	arch_interrupt_disable();
-	cpu_t *cpu = current_task ? current_task->cpu : 0;
+	struct cpu *cpu = current_task ? current_task->cpu : 0;
 	unsigned old = cpu ? cpu->flags&CPU_INTER : 0;
 	if(!_new) {
 		arch_interrupt_disable();
@@ -451,7 +451,7 @@ int cpu_interrupt_set(unsigned _new)
 
 void cpu_interrupt_set_flag(int flag)
 {
-	cpu_t *cpu = current_task ? current_task->cpu : 0;
+	struct cpu *cpu = current_task ? current_task->cpu : 0;
 	if(!cpu) return;
 	if(flag)
 		cpu->flags |= CPU_INTER;
@@ -461,7 +461,7 @@ void cpu_interrupt_set_flag(int flag)
 
 int cpu_interrupt_get_flag()
 {
-	cpu_t *cpu = current_task ? current_task->cpu : 0;
+	struct cpu *cpu = current_task ? current_task->cpu : 0;
 	return (cpu ? (cpu->flags&CPU_INTER) : 0);
 }
 

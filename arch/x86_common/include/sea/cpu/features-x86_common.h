@@ -3,7 +3,7 @@
 
 #include <sea/cpu/processor.h>
 
-void x86_cpu_init_sse(cpu_t *me);
-void x86_cpu_init_fpu(cpu_t *me);
+void x86_cpu_init_sse(struct cpu *me);
+void x86_cpu_init_fpu(struct cpu *me);
 
 #endif

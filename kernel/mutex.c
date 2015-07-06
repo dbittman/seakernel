@@ -35,25 +35,11 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 	assert(m->magic == MUTEX_MAGIC);
 	if(kernel_state_flags & KSF_SHUTDOWN) return;
 	/* are we re-locking ourselves? */
-	if(current_task && m->lock && ((m->pid == (int)current_task->pid) && ((m->lock & MT_LCK_INT) || !(current_task->flags & TF_IN_INT))))
+	if(current_thread && m->lock && ((m->pid == (pid_t)current_thread->tid)))
 		panic(0, "task %d tried to relock mutex %x (%s:%d)", m->pid, m->lock, file, line);
-	/* check for a potential deadlock */
-	if(current_task
-#if CONFIG_SMP
-		&& !(kernel_state_flags & KSF_SMP_ENABLE)
-#endif
-		&& (m->flags & MT_NOSCHED) && !(current_task->cpu->flags&CPU_INTER)
-		&& (int)current_task->pid != m->pid && m->pid != -1)
-			panic(0, "mutex will deadlock (%d %d): %s:%d\n", file, line);
 #if CONFIG_DEBUG
 	int t = 100000000;
 #endif
-	if(current_task && (m->pid == (int)current_task->pid) && (current_task->flags & TF_IN_INT)) {
-		/* we don't need to be atomic, since we already own the lock */
-		assert(!(m->lock & MT_LCK_INT));
-		m->lock |= MT_LCK_INT;
-		return;
-	}
 	/* wait until we can set bit 0. once this is done, we have the lock */
 	while(bts_atomic(&m->lock, 0)) {
 		if(!(m->flags & MT_NOSCHED))
@@ -65,7 +51,7 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 #endif
 	}
 	assert(m->lock);
-	if(current_task) m->pid = current_task->pid;
+	if(current_thread) m->pid = current_thread->tid;
 }
 
 void __mutex_release(mutex_t *m, char *file, int line)
@@ -73,14 +59,8 @@ void __mutex_release(mutex_t *m, char *file, int line)
 	assert(m->magic == MUTEX_MAGIC);
 	if(kernel_state_flags & KSF_SHUTDOWN) return;
 	assert(m->lock);
-	if(current_task && m->pid != (int)current_task->pid)
+	if(current_thread && m->pid != (int)current_thread->tid)
 		panic(0, "task %d tried to release mutex it didn't own (%s:%d)", m->pid, file, line);
-	if(m->lock & MT_LCK_INT)
-	{
-		assert(current_task->flags & TF_IN_INT);
-		m->lock &= ~MT_LCK_INT;
-		return;
-	}
 	m->pid = -1;
 	btr_atomic(&m->lock, 0);
 }

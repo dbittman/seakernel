@@ -4,11 +4,10 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/tm/schedule.h>
 #if CONFIG_SMP
-void cpu_smp_task_idle(struct thread *me)
+void cpu_smp_task_idle(struct cpu *cpu)
 {
-	cpu_t *cpu = me->cpu;
 	cpu->flags |= CPU_TASK;
-	me->system = -1;
+	cpu->idle_thread->system = -1;
 	cpu_interrupt_set(1);
 	/* wait until we have tasks to run */
 	for(;;) 

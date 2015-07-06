@@ -120,7 +120,7 @@ static void vmcs_write32_fixedbits(uint32_t msr, uint32_t vmcs_field, uint32_t v
  *  * Switches to specified vcpu, until a matching vcpu_put(), but assumes
  *   * vcpu mutex is already taken.
  *    */
-static void vmx_vcpu_load(cpu_t *cpu, struct vcpu *vcpu)
+static void vmx_vcpu_load(struct cpu *cpu, struct vcpu *vcpu)
 {
 	uint64_t phys_addr = __pa(vcpu->vmcs);
 	printk(0, "shiv: vmx_vcpu_load\n");
@@ -151,7 +151,7 @@ static void vmx_vcpu_load(cpu_t *cpu, struct vcpu *vcpu)
 int shiv_check_hardware_support()
 {
 	/* check CPUID.1 ECX.VMX */
-	cpu_t *cpu = current_task->cpu;
+	struct cpu *cpu = current_task->cpu;
 	if(!(cpu->cpuid.features_ecx & (1 << 5)))
 	{
 		printk(0, "[shiv]: no support for VMX on this processor\n");
@@ -949,7 +949,7 @@ void fx_restore(struct vcpu *vcpu, int selector)
 				:: "r" (ALIGN(vcpu->fpu_save_data[selector], 16)));
 }
 
-void tss_reload(cpu_t *cpu)
+void tss_reload(struct cpu *cpu)
 {
 	/* the vm exit process only loads the selector into the TR register, but doesn't
 	 * actually read the data out of the GDT. So, we have to flush the TSS after each

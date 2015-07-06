@@ -3,7 +3,6 @@
 #include <sea/mm/vmm.h>
 #include <sea/tm/process.h>
 #include <sea/mm/kmalloc.h>
-#warning "MEMORY RELEASING"
 #if 0
 
 __attribute__ ((noinline)) static void self_free_table(int t)

@@ -3,8 +3,11 @@
 
 #include <sea/mm/kmalloc.h>
 
+#define ASYNC_CALL_KMALLOC 1
+
 struct async_call {
 	void (*func)(unsigned long data);
+	int flags;
 	int priority;
 	unsigned long data;
 };

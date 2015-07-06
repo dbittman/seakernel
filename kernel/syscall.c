@@ -25,6 +25,7 @@
 #include <sea/vsprintf.h>
 #include <sea/fs/socket.h>
 #include <sea/lib/timer.h>
+#include <sea/tm/thread.h>
 #include <sea/fs/dir.h>
 #include <sea/fs/kerfs.h>
 
@@ -64,6 +65,7 @@ int sys_syslog(int level, char *buf, int len, int ctl)
 	return 0;
 }
 
+int sys_get_timer_th(int *t); /* TODO: this is shit */
 static void *syscall_table[129] = {
 	[SYS_SETUP]           = SC sys_setup,
 	[SYS_EXIT]            = SC tm_exit,
@@ -328,7 +330,7 @@ int syscall_handler(volatile registers_t *regs)
 		return -EINVAL;
 	if(kernel_state_flags & KSF_SHUTDOWN)
 		for(;;);
-	tm_process_enter_system(SYSCALL_NUM_AND_RET);
+	tm_thread_enter_system(SYSCALL_NUM_AND_RET);
 	/* most syscalls are pre-emptible, so we enable interrupts and
 	 * expect handlers to disable them if needed */
 	cpu_interrupt_set(1);
@@ -360,16 +362,15 @@ int syscall_handler(volatile registers_t *regs)
 			   current_task->allocated, current_task->freed, current_task->kalloc);
 	#endif
 	cpu_interrupt_set(0);
-	tm_process_exit_system();
-	tm_engage_idle();
+	tm_thread_exit_system();
 	/* if we need to reschedule, or we have overused our timeslice
 	 * then we need to reschedule. this prevents tasks that do a continuous call
 	 * to write() from starving the resources of other tasks. syscall_count resets
 	 * on each call to tm_tm_schedule() */
-	if(NEED_RESCHEDULE)
+	if(current_thread->flags & TF_SCHED)
 	{
 		/* clear out the flag. Either way in the if statement, we've rescheduled. */
-		tm_lower_flag(TF_SCHED);
+		tm_thread_lower_flag(current_thread, TF_SCHED);
 		tm_schedule();
 	}
 	/* store the return value in the regs */
@@ -379,6 +380,7 @@ int syscall_handler(volatile registers_t *regs)
 	 * original systemcall returning the proper value.
 	 */
 	/* TODO: fix this */
+#if 0
 	if((current_thread->flags & TF_INSIG) && (current_thread->flags & TF_JUMPIN)) {
 #if CONFIG_ARCH == TYPE_ARCH_X86
 		current_thread->reg_b.eax=ret;
@@ -387,6 +389,7 @@ int syscall_handler(volatile registers_t *regs)
 #endif
 		tm_lower_flag(TF_JUMPIN);
 	}
+#endif
 	return ret;
 }
 

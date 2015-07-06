@@ -112,8 +112,10 @@ extern addr_t lapic_addr;
 extern unsigned lapic_timer_start;
 extern mutex_t ipi_mutex;
 
+struct cpu;
+
 void load_tables_ap(struct cpu *cpu);
-void parse_cpuid(cpu_t *);
+void parse_cpuid(struct cpu *);
 #if CONFIG_SMP
 
 int boot_cpu(unsigned id, unsigned apic_ver);

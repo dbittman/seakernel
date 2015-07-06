@@ -1,7 +1,6 @@
 /* Functions for signaling tasks (IPC)
  * signal.c: Copyright (c) 2010 Daniel Bittman
  */
-#include <sea/tm/_tm.h>
 #include <sea/kernel.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/tm/process.h>

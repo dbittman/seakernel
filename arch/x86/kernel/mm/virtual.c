@@ -146,16 +146,17 @@ addr_t arch_mm_vm_get_map(addr_t v, addr_t *p, unsigned locked)
 	unsigned *pd = page_directory;
 	unsigned int vp = (v&PAGE_MASK) / 0x1000;
 	unsigned int pt_idx = PAGE_DIR_IDX(vp);
-	if(kernel_task && !locked)
+	/* TODO: generic "tasking system up" flag */
+	if(primary_cpu->idle_thread && !locked)
 		mutex_acquire(&pd_cur_data->lock);
 	if(!pd[pt_idx])
 	{
-		if(kernel_task && !locked)
+		if(primary_cpu->idle_thread && !locked)
 			mutex_release(&pd_cur_data->lock);
 		return 0;
 	}
 	unsigned ret = page_tables[vp] & PAGE_MASK;
-	if(kernel_task && !locked)
+	if(primary_cpu->idle_thread && !locked)
 		mutex_release(&pd_cur_data->lock);
 	if(p)
 		*p = ret;
@@ -167,11 +168,11 @@ void arch_mm_vm_set_attrib(addr_t v, short attr)
 	unsigned *pd = page_directory;
 	unsigned int vp = (v&PAGE_MASK) / 0x1000;
 	unsigned int pt_idx = PAGE_DIR_IDX(vp);
-	if(kernel_task)
+	if(primary_cpu->idle_thread)
 		mutex_acquire(&pd_cur_data->lock);
 	if(!pd[pt_idx])
 	{
-		if(kernel_task)
+		if(primary_cpu->idle_thread)
 			mutex_release(&pd_cur_data->lock);
 		return;
 	}
@@ -180,14 +181,14 @@ void arch_mm_vm_set_attrib(addr_t v, short attr)
 	(page_tables[vp] |= attr);
 	asm("invlpg (%0)"::"r" (v));
 #if CONFIG_SMP
-	if(kernel_task) {
+	if(primary_cpu->idle_thread) {
 		if(IS_KERN_MEM(v))
 			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
 		else if((IS_THREAD_SHARED_MEM(v) && pd_cur_data->count > 1))
 			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
 	}
 #endif
-	if(kernel_task)
+	if(primary_cpu->idle_thread)
 		mutex_release(&pd_cur_data->lock);
 }
 
@@ -196,16 +197,16 @@ unsigned int arch_mm_vm_get_attrib(addr_t v, unsigned *p, unsigned locked)
 	unsigned *pd = page_directory;
 	unsigned int vp = (v&PAGE_MASK) / 0x1000;
 	unsigned int pt_idx = PAGE_DIR_IDX(vp);
-	if(kernel_task && !locked)
+	if(primary_cpu->idle_thread && !locked)
 		mutex_acquire(&pd_cur_data->lock);
 	if(!pd[pt_idx])
 	{
-		if(kernel_task && !locked)
+		if(primary_cpu->idle_thread && !locked)
 			mutex_release(&pd_cur_data->lock);
 		return 0;
 	}
 	unsigned ret = page_tables[vp] & ATTRIB_MASK;
-	if(kernel_task && !locked)
+	if(primary_cpu->idle_thread && !locked)
 		mutex_release(&pd_cur_data->lock);
 	if(p)
 		*p = ret;

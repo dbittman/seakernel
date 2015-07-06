@@ -76,6 +76,5 @@
 #define flush_pd() \
  __asm__ __volatile__("movl %%cr3,%%eax\n\tmovl %%eax,%%cr3": : :"ax", "eax")
 
-#define current_thread ((kernel_state_flags&KSF_MMU) ? ((struct thread *)page_directory[PAGE_DIR_IDX(SMP_CUR_TASK/PAGE_SIZE)]) : 0)
 
 #endif

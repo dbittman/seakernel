@@ -150,7 +150,7 @@ static void *syscall_table[129] = {
 	[SYS_MSYNC]           = SC sys_msync,
 	[SYS_TSTAT]           = SC sys_task_stat,
 
-	[SYS_DELAY]           = SC tm_delay,
+	[SYS_DELAY]           = SC tm_delay, /* TODO: remove this */
 	[SYS_KRESET]          = SC kernel_reset,
 	[SYS_KPOWOFF]         = SC kernel_poweroff,
 	[SYS_GETUID]          = SC tm_get_uid,

@@ -45,7 +45,7 @@ void ahci_reset_device(struct hba_memory *abar, struct hba_port *port, struct ah
 	port->command |= 2;
 	port->command |= 4;
 	ahci_flush_commands(port);
-	tm_delay_sleep(1);
+	tm_thread_delay_sleep(ONE_MILLISECOND);
 	/* initialize state */
 	port->interrupt_status = ~0; /* clear pending interrupts */
 	port->interrupt_enable = AHCI_DEFAULT_INT; /* we want some interrupts */

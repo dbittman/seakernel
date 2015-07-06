@@ -17,14 +17,14 @@ int __KT_pager(struct kthread *kt, void *arg)
 		int km_use = slab_get_usage();
 		if(pm_use > 50 || km_use > 50) {
 			if(!mm_reclaim_size(PAGE_SIZE)) {
-				tm_delay(500);
+				tm_thread_delay(ONE_SECOND / 2);
 			} else {
 				if(!active++)
 					printk(0, "[mm]: activating memory reclaimer\n");
 			}
 		} else {
 			/* TODO: Need a good clean API for this */
-			tm_delay(1000);
+			tm_thread_delay(ONE_SECOND);
 			if(active > 0) active /= 2;
 		}
 	}

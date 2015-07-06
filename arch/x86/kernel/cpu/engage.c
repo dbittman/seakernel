@@ -156,20 +156,20 @@ int boot_cpu(unsigned id, unsigned apic_ver)
 	accept_status = LAPIC_READ(LAPIC_ESR);
 	/* assert INIT IPI */
 	x86_cpu_send_ipi(LAPIC_ICR_SHORT_DEST, apicid, LAPIC_ICR_TM_LEVEL | LAPIC_ICR_LEVELASSERT | LAPIC_ICR_DM_INIT);
-	tm_delay_sleep(10);
+	tm_thread_delay_sleep(ONE_MILLISECOND * 10);
 	/* de-assert INIT IPI */
 	x86_cpu_send_ipi(LAPIC_ICR_SHORT_DEST, apicid, LAPIC_ICR_TM_LEVEL | LAPIC_ICR_DM_INIT);
-	tm_delay_sleep(10);
+	tm_thread_delay_sleep(ONE_MILLISECOND * 10);
 	if (apic_ver >= APIC_VER_NEW) {
 		int i;
 		for (i = 1; i <= 2; i++) {
 			x86_cpu_send_ipi(LAPIC_ICR_SHORT_DEST, apicid, LAPIC_ICR_DM_SIPI | ((bootaddr >> 12) & 0xFF));
-			tm_delay_sleep(1);
+			tm_thread_delay_sleep(ONE_MILLISECOND);
 		}
 	}
 	to = 0;
 	while ((get_boot_flag() != 0xFFFFFFFF) && to++ < 100)
-		tm_delay_sleep(10);
+		tm_thread_delay_sleep(10 * ONE_MILLISECOND);
 	/* cpu didn't boot up...:( */
 	if (to >= 100)
 		success = 0;

@@ -101,7 +101,7 @@ void calibrate_lapic_timer(unsigned freq)
 	LAPIC_WRITE(LAPIC_TICR, 0xFFFFFFFF);
 	
 	/* wait 1/10 of a second */
-	tm_delay_sleep(ONE_SECOND / 10);
+	tm_thread_delay_sleep(ONE_SECOND / 10);
 	/* read how much it has counted and stop the timer */
 	unsigned val = LAPIC_READ(LAPIC_TCCR);
 	LAPIC_WRITE(LAPIC_LVTT, LAPIC_DISABLE);

@@ -50,7 +50,7 @@ struct thread {
 	unsigned long stack_pointer;
 	struct cpu *cpu;
 
-	sigset_t signal_mask;
+	sigset_t sig_mask, old_mask;
 	unsigned signal;
 	struct sigaction signal_act[128]; /* TODO: per thread? */
 	registers_t *sysregs, *regs, regs_b;

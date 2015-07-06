@@ -10,65 +10,60 @@
 #include <sea/tm/schedule.h>
 #include <sea/errno.h>
 #include <sea/vsprintf.h>
-int __tm_handle_signal(task_t *t)
+
+int tm_thread_handle_signal(int signal)
 {
-	int ret = TASK_RUNNING;
-	t->exit_reason.sig=0;
-	struct sigaction *sa = (struct sigaction *)&(t->thread->signal_act[t->sigd]);
-	t->old_mask = t->sig_mask;
-	t->sig_mask |= sa->sa_mask;
+	struct sigaction *sa = &current_thread->signal_act[signal];
+	current_thread->old_mask = current_thread->sig_mask;
 	if(!(sa->sa_flags & SA_NODEFER))
-		t->sig_mask |= (1 << t->sigd);
-	if(sa->_sa_func._sa_handler && t->sigd != SIGKILL && arch_tm_userspace_signal_initializer(t, sa));
-	else if(!sa->_sa_func._sa_handler && !t->system) {
+		current_thread->sig_mask |= (1 << signal);
+	if(signal != SIGKILL && sa->_sa_func._sa_handler) {
+		arch_tm_userspace_signal_initializer(sa);
+	} else if(!current_thread->system) {
 		/* Default Handlers */
-		tm_process_raise_flag(t, TF_SCHED);
-		switch(t->sigd)
+		tm_thread_raise_flag(current_thread, TF_SCHED);
+		switch(signal)
 		{
 			case SIGHUP : case SIGKILL: case SIGQUIT: case SIGPIPE:
 			case SIGBUS : case SIGABRT: case SIGTRAP: case SIGSEGV:
 			case SIGALRM: case SIGFPE : case SIGILL : case SIGPAGE:
 			case SIGINT : case SIGTERM: case SIGUSR1: case SIGUSR2:
-				t->exit_reason.cause=__EXITSIG;
-				t->exit_reason.sig=t->sigd;
-				tm_kill_process(t->pid);
+				/* TODO */
+				//t->exit_reason.cause=__EXITSIG;
+				//t->exit_reason.sig=t->sigd;
+				tm_thread_kill(current_thread);
 				break;
 			case SIGUSLEEP:
-				ret = TASK_USLEEP;
-				t->tick=0;
+				//ret = TASK_USLEEP;
+				//t->tick=0;
 				break;
 			case SIGSTOP: 
-				if(!(sa->sa_flags & SA_NOCLDSTOP) && t->parent)
-					t->parent->sigd=SIGCHILD;
-				t->exit_reason.cause=__STOPSIG;
-				t->exit_reason.sig=t->sigd; /* Fall through */
+				//if(!(sa->sa_flags & SA_NOCLDSTOP) && t->parent)
+				//	t->parent->sigd=SIGCHILD;
+				//t->exit_reason.cause=__STOPSIG;
+				//t->exit_reason.sig=t->sigd; /* Fall through */
 			case SIGISLEEP:
-				ret = TASK_ISLEEP; 
-				t->tick=0;
+				//ret = TASK_ISLEEP; 
+				//t->tick=0;
 				break;
 			default:
-				t->flags &= ~TF_SCHED;
+				//t->flags &= ~TF_SCHED;
 				break;
 		}
-		t->sig_mask = t->old_mask;
-		t->sigd = 0;
-		tm_process_lower_flag(t, TF_INSIG);
-	} else {
-		t->sig_mask = t->old_mask;
-		tm_process_lower_flag(t, TF_INSIG);
-		tm_process_raise_flag(t, TF_SCHED);
 	}
-	return ret;
+	
+	/* RESTORE SIGNAL MASK? */
+
 }
 
-static int __can_send_signal(task_t *from, task_t *to)
+static int __can_send_signal(struct process *from, struct process *to)
 {
-	if(from->thread->real_uid && from->thread->effective_uid)
+	if(from->real_uid && from->effective_uid)
 	{
-		if(from->thread->real_uid == to->thread->real_uid
-			|| from->thread->real_uid == to->thread->saved_uid
-			|| from->thread->effective_uid == to->thread->real_uid
-			|| from->thread->effective_uid == to->thread->saved_uid)
+		if(from->real_uid == to->real_uid
+			|| from->real_uid == to->saved_uid
+			|| from->effective_uid == to->real_uid
+			|| from->effective_uid == to->saved_uid)
 			return 1;
 		else
 			return 0;
@@ -79,47 +74,42 @@ static int __can_send_signal(task_t *from, task_t *to)
 /* TODO: thread */
 int tm_do_send_signal(int pid, int __sig, int p)
 {
-	if(!current_task)
-	{
-		printk(1, "Attempted to send signal %d to pid %d, but we are taskless\n",
-				__sig, pid);
-		return -ESRCH;
-	}
-	
-	if(!pid && !p && current_task->thread->effective_uid && current_task->pid)
+	if(!pid && !p && current_process->effective_uid && current_process->pid)
 		return -EPERM;
-	task_t *task = tm_get_process_by_pid(pid);
-	if(!task) return -ESRCH;
-	if(__sig == 127) {
-		if(task->parent)
-			task = task->parent;
-		task->wait_again=current_task->pid;
+	struct process *proc = tm_process_get(pid);
+	if(!proc) return -ESRCH;
+	if(__sig == 127) { /* TODO: what the fuck is this? */
+		//if(task->parent)
+		//	task = task->parent;
+		//task->wait_again=current_task->pid;
 	}
 	if(__sig > 32) return -EINVAL;
 	/* We may always signal ourselves */
-	if(task != current_task) {
-		if(!p && pid != 0 && (current_task->thread->effective_uid) && !current_task->system)
-			panic(PANIC_NOSYNC, "Priority signal sent by an illegal task!");
-		if(!__sig || (__sig < 32 && __can_send_signal(current_task, task) && !p))
+	if(proc != current_process) {
+		if(!p && pid != 0 && (current_process->effective_uid) && !current_thread->system)
+			panic(PANIC_NOSYNC, "Priority signal sent by an illegal task!"); /* TODO: get rid of this priority thing */
+		if(!__sig || (__sig < 32 && __can_send_signal(current_process, proc) && !p)) /* TODO: move all the permissions checks
+																					 to a syscall entry, and have this
+																					 be the actual "send signal" function */
 			return -EACCES;
-		if(task->state == TASK_DEAD || task->state == TASK_SUICIDAL)
-			return -EINVAL;
-		if(__sig < 32 && (task->sig_mask & (1<<__sig)) && __sig != SIGKILL)
-			return -EACCES;
+		//if(task->state == TASK_DEAD || task->state == TASK_SUICIDAL)
+		//	return -EINVAL;
+		//if(__sig < 32 && (task->sig_mask & (1<<__sig)) && __sig != SIGKILL)
+		//	return -EACCES;
 	}
 	/* We need to reschedule if we signal ourselves, so that we can handle it. 
 	 * The vast majority of signals below 32 require immediate handling, so we 
 	 * force a reschedule. */
-	task->sigd = __sig;
+	//task->sigd = __sig;
 	if(__sig == SIGKILL)
 	{
-		task->exit_reason.cause=__EXITSIG;
-		task->exit_reason.sig=__sig;
-		task->state = TASK_RUNNING;
-		tm_kill_process(pid);
+		//task->exit_reason.cause=__EXITSIG;
+		//task->exit_reason.sig=__sig;
+		//task->state = TASK_RUNNING;
+		//tm_kill_process(pid);
 	}
-	if(task == current_task)
-		tm_process_raise_flag(task, TF_SCHED);
+	//if(task == current_task)
+	//	tm_process_raise_flag(task, TF_SCHED);
 	return 0;
 }
 
@@ -130,12 +120,12 @@ int tm_send_signal(int p, int s)
 
 void tm_set_signal(int sig, addr_t hand)
 {
-	assert(current_task);
 	if(sig > 128)
 		return;
-	current_task->thread->signal_act[sig]._sa_func._sa_handler = (void (*)(int))hand;
+	current_thread->signal_act[sig]._sa_func._sa_handler = (void (*)(int))hand; /* TODO: threads? */
 }
 
+/*
 void tm_remove_process_from_alarm(task_t *t)
 {
 	if((t->flags & TF_ALARM)) {
@@ -149,7 +139,7 @@ void tm_remove_process_from_alarm(task_t *t)
 		cpu_interrupt_set(old);
 	}
 }
-
+*/
 /* TODO */
 #if 0
 int sys_alarm(int a)
@@ -188,6 +178,7 @@ int sys_alarm(int a)
 
 int sys_sigact(int sig, const struct sigaction *act, struct sigaction *oact)
 {
+#if 0
 	if(oact)
 		memcpy(oact, (void *)&current_task->thread->signal_act[sig], sizeof(struct sigaction));
 	if(!act)
@@ -204,11 +195,13 @@ int sys_sigact(int sig, const struct sigaction *act, struct sigaction *oact)
 		current_task->thread->signal_act[sig]._sa_func._sa_handler=0;
 		current_task->thread->signal_act[sig].sa_flags |= SA_NODEFER;
 	}
+#endif
 	return 0;
 }
 
 int sys_sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict oset)
 {
+#if 0
 	if(oset)
 		*oset = current_task->sig_mask;
 	if(!set)
@@ -229,6 +222,7 @@ int sys_sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict os
 			return -EINVAL;
 	}
 	current_task->thread->global_sig_mask = current_task->sig_mask = nm;
+#endif
 	return 0;
 }
 
@@ -239,7 +233,7 @@ int tm_signal_will_be_fatal(struct thread *t, int sig)
 	if(sig == SIGKILL) return 1;
 	/* if there is a user-space handler, then it will be called, and
 	 * so will not be fatal (probably) */
-	if(t->signal_act[t->sigd]._sa_func._sa_handler)
+	if(t->signal_act[t->signal]._sa_func._sa_handler)
 		return 0;
 	/* of the default handlers, these signals don't kill the process */
 	if(sig == SIGUSLEEP || sig == SIGISLEEP || sig == SIGSTOP || sig == SIGCHILD)
@@ -251,7 +245,7 @@ int tm_thread_got_signal(struct thread *t)
 {
 	if(kernel_state_flags & KSF_SHUTDOWN)
 		return 0;
-	int sn = t->cursig ? t->cursig : t->sigd;
+	int sn = t->signal; /* TODO: do we need cursig? */
 	if(!sn) return 0;
 	/* if the SA_RESTART flag is set, then return false */
 	if(t->signal_act[sn].sa_flags & SA_RESTART) return 0;

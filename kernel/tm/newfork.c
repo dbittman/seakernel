@@ -17,7 +17,7 @@ struct thread *tm_thread_fork(int flags)
 	thr->flags = TF_FORK;
 	thr->priority = current_thread->priority;
 	thr->kernel_stack = kmalloc_a(0x1000);
-	thr->signal_mask = current_thread->signal_mask;
+	thr->sig_mask = current_thread->sig_mask;
 	memcpy((void *)thr->signal_act, current_thread->signal_act, sizeof(struct sigaction) * 128);
 	return thr;
 }

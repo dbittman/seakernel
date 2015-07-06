@@ -132,9 +132,11 @@ int ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev)
 uint32_t ahci_check_type(volatile struct hba_port *port)
 {
 	uint32_t s = port->sata_status;
+	printk(2, "[ahci]: port data: sig=%x, stat=%x, ctl=%x, sac=%x\n", port->signature, s, port->command, port->sata_active);
 	uint8_t ipm, det;
 	ipm = (s >> 8) & 0x0F;
 	det = s & 0x0F;
+	printk(2, "[ahci]: port check: ipm=%x, det=%x\n", ipm, det);
 	if(ipm != 1 || det != 3)
 		return 0;
 	return port->signature;
@@ -143,6 +145,7 @@ uint32_t ahci_check_type(volatile struct hba_port *port)
 void ahci_probe_ports(struct hba_memory *abar)
 {
 	uint32_t pi = abar->port_implemented;
+	printk(2, "[ahci]: ports implemented: %x\n", pi);
 	int i=0;
 	while(i < 32)
 	{
@@ -150,6 +153,7 @@ void ahci_probe_ports(struct hba_memory *abar)
 		{
 			uint32_t type = ahci_check_type(&abar->ports[i]);
 			if(type) {
+				printk(2, "[ahci]: detected device on port %d\n", i);
 				ports[i] = kmalloc(sizeof(struct ahci_device));
 				ports[i]->type = type;
 				ports[i]->idx = i;
@@ -176,13 +180,13 @@ void ahci_init_hba(struct hba_memory *abar)
 	}
 	
 	/* enable the AHCI and reset it */
-	abar->global_host_control |= HBA_GHC_AHCI_ENABLE;
-	abar->global_host_control |= HBA_GHC_RESET;
+	//abar->global_host_control |= HBA_GHC_AHCI_ENABLE;
+	//abar->global_host_control |= HBA_GHC_RESET;
 	/* wait for reset to complete */
-	while(abar->global_host_control & HBA_GHC_RESET) cpu_pause();
+	//while(abar->global_host_control & HBA_GHC_RESET) cpu_pause();
 	/* enable the AHCI and interrupts */
 	abar->global_host_control |= HBA_GHC_AHCI_ENABLE;
 	abar->global_host_control |= HBA_GHC_INTERRUPT_ENABLE;
-	tm_delay_sleep(10);
+	tm_delay_sleep(20);
 	printk(KERN_DEBUG, "[ahci]: caps and ver: %x %x v %x\n", abar->capability, abar->ext_capabilities, abar->version);
 }

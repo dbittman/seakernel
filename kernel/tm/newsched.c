@@ -12,7 +12,7 @@ static void arch_tm_thread_switch(struct thread *old, struct thread *new)
 		"push %%edi;"
 		"push %%ebp;"
 		"mov %%esp, %0;": "=r"(old->stack_pointer)::"memory");
-	if(new->process != old->process) { /* TODO: does this cover all cases? */
+	if(new->process->mm_context != old->process->mm_context) {
 		asm ("mov %0, %%cr3;"::"r"(new->process->mm_context):"memory");
 	}
 	asm ("mov %0, %%esp;"
@@ -25,7 +25,16 @@ static void arch_tm_thread_switch(struct thread *old, struct thread *new)
 
 static struct thread *get_next_thread()
 {
-	struct thread *n = tqueue_next(current_thread->cpu->active_queue);
+	struct thread *n = 0;
+	while(1) {
+		n = tqueue_next(current_thread->cpu->active_queue);
+		if(n && tm_thread_runnable(n))
+			break;
+		if(!n || n == current_thread) {
+			n = current_thread->cpu->idle_thread;
+			break;
+		}
+	}
 	assert(n && tm_thread_runnable(n));
 	return n;
 }

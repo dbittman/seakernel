@@ -4,6 +4,7 @@
 #include <sea/types.h>
 #include <sea/lib/heap.h>
 #include <sea/mutex.h>
+#include <sea/tm/async_call.h>
 
 #define TICKER_KMALLOC 1
 

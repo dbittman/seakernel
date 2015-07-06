@@ -95,7 +95,7 @@ static void __heap_bubbledown(struct heap *heap, size_t elem)
 
 void heap_insert(struct heap *heap, uint64_t key, void *data)
 {
-	if(!(flags & HEAP_LOCKLESS))
+	if(!(heap->flags & HEAP_LOCKLESS))
 		rwlock_acquire(&heap->rwl, RWL_WRITER);
 
 	if(heap->count == heap->capacity) {
@@ -107,16 +107,17 @@ void heap_insert(struct heap *heap, uint64_t key, void *data)
 
 	__heap_bubbleup(heap, heap->count++);
 
-	if(!(flags & HEAP_LOCKLESS))
+	if(!(heap->flags & HEAP_LOCKLESS))
 		rwlock_release(&heap->rwl, RWL_WRITER);
 }
 
 int heap_peek(struct heap *heap, uint64_t *key, void **data)
 {
-	if(!(flags & HEAP_LOCKLESS))
+	if(!(heap->flags & HEAP_LOCKLESS))
 		rwlock_acquire(&heap->rwl, RWL_READER);
 	if(!heap->count) {
-		rwlock_release(&heap->rwl, RWL_READER);
+		if(!(heap->flags & HEAP_LOCKLESS))
+			rwlock_release(&heap->rwl, RWL_READER);
 		return -ENOENT;
 	}
 
@@ -127,17 +128,18 @@ int heap_peek(struct heap *heap, uint64_t *key, void **data)
 		*data = heap->array[0].data;
 	}
 
-	if(!(flags & HEAP_LOCKLESS))
+	if(!(heap->flags & HEAP_LOCKLESS))
 		rwlock_release(&heap->rwl, RWL_READER);
 	return 0;
 }
 
 int heap_pop(struct heap *heap, uint64_t *key, void **data)
 {
-	if(!(flags & HEAP_LOCKLESS))
+	if(!(heap->flags & HEAP_LOCKLESS))
 		rwlock_acquire(&heap->rwl, RWL_WRITER);
 	if(!heap->count) {
-		rwlock_release(&heap->rwl, RWL_WRITER);
+		if(!(heap->flags & HEAP_LOCKLESS))
+			rwlock_release(&heap->rwl, RWL_WRITER);
 		return -ENOENT;
 	}
 
@@ -151,7 +153,7 @@ int heap_pop(struct heap *heap, uint64_t *key, void **data)
 	heap->array[0] = heap->array[--heap->count];
 	__heap_bubbledown(heap, 0);
 
-	if(!(flags & HEAP_LOCKLESS))
+	if(!(heap->flags & HEAP_LOCKLESS))
 		rwlock_release(&heap->rwl, RWL_WRITER);
 	return 0;
 }
@@ -159,7 +161,7 @@ int heap_pop(struct heap *heap, uint64_t *key, void **data)
 void heap_destroy(struct heap *heap)
 {
 	assert(!heap->count);
-	if(!(flags & HEAP_LOCKLESS))
+	if(!(heap->flags & HEAP_LOCKLESS))
 		rwlock_destroy(&heap->rwl);
 	kfree(heap->array);
 	if(heap->flags & HEAP_KMALLOC)

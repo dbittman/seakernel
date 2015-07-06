@@ -88,7 +88,7 @@ int sys_times(struct tms *buf);
 int sys_waitpid(int pid, int *st, int opt);
 int sys_wait3(int *, int, int *);
 
-int sys_getppid();
+pid_t sys_getppid();
 int sys_alarm(int a);
 int sys_gsetpriority(int set, int which, int id, int val);
 int sys_waitagain();
@@ -98,7 +98,7 @@ int sys_setpgid(int a, int b);
 int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds, 
 	struct timeval *timeout);
 int sys_sbrk(long inc);
-int sys_isstate(int pid, int state);
+int sys_isstate(pid_t pid, int state);
 
 /* provided by arch-dep code */
 extern void arch_do_switch_to_user_mode();

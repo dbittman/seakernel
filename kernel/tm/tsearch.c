@@ -1,5 +1,4 @@
 /* searches a task queue for a task with specific properties. */
-#include <sea/tm/_tm.h>
 #include <sea/tm/process.h>
 #include <sea/tm/tqueue.h>
 #include <sea/cpu/interrupt.h>

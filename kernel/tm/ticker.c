@@ -24,7 +24,7 @@ void ticker_tick(struct ticker *ticker, uint64_t nanoseconds)
 	ticker->tick += nanoseconds;
 	uint64_t key;
 	void *data;
-	mutex_acquire(&heap->lock);
+	mutex_acquire(&ticker->lock);
 	if(heap_peek(&ticker->heap, &key, &data) == 0) {
 		if(key < ticker->tick) {
 			/* get the data again, since it's cheap and
@@ -38,14 +38,14 @@ void ticker_tick(struct ticker *ticker, uint64_t nanoseconds)
 			async_call_destroy(call);
 		}
 	}
-	mutex_release(&heap->lock);
+	mutex_release(&ticker->lock);
 }
 
 void ticker_insert(struct ticker *ticker, time_t nanoseconds, struct async_call *call)
 {
-	mutex_acquire(&heap->lock);
+	mutex_acquire(&ticker->lock);
 	heap_insert(&ticker->heap, nanoseconds + ticker->tick, call);
-	mutex_release(&heap->lock);
+	mutex_release(&ticker->lock);
 }
 
 void ticker_destroy(struct ticker *ticker)

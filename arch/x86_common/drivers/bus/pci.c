@@ -31,7 +31,7 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/cpu/cpu-io.h>
 #include <sea/vsprintf.h>
-#define PCI_LOGLEVEL 1
+#define PCI_LOGLEVEL 2
 
 struct pci_device *pci_list=0;
 mutex_t *pci_mutex;

@@ -1,5 +1,4 @@
 #include <sea/kernel.h>
-#include <sea/tm/_tm.h>
 #include <sea/tm/schedule.h>
 #include <sea/tm/process.h>
 #include <sea/tm/tqueue.h>
@@ -8,6 +7,7 @@
 #include <sea/errno.h>
 int tm_process_wait(pid_t pid, int state)
 {
+#if 0
 	if(!state) return 0;
 	if(!pid) return 0;
 	if(current_task->pid) current_task->system=0;
@@ -32,10 +32,13 @@ int tm_process_wait(pid_t pid, int state)
 	if(current_task->sigd != SIGWAIT && current_task->sigd)
 		return -EINTR;
 	return current_task->waiting_ret;
+#endif
 }
 
+#if 0
 static void get_status_int(task_t *t, int *st, int *__pid)
 {
+
 	int ret_val, sig_number;
 	int status= (t->state == TASK_DEAD) ? __EXIT : __STOPPED;
 	
@@ -61,9 +64,10 @@ static void get_status_int(task_t *t, int *st, int *__pid)
 	if(st)
 		*st = code << 16 | info;
 }
-
+#endif
 int sys_waitpid(int pid, int *st, int opt)
 {
+#if 0
 	if(!pid || pid < -1)
 		return -ENOSYS;
 	tm_raise_flag(TF_BGROUND);
@@ -106,13 +110,14 @@ int sys_waitpid(int pid, int *st, int opt)
 		*st = code;
 	tm_lower_flag(TF_BGROUND);
 	return gotpid;
+#endif
 }
 
 int sys_waitagain()
 {
-	return (current_task->wait_again ? 
-		sys_waitpid(current_task->wait_again, 0, 0)
-		: 0);
+	//return (current_task->wait_again ? 
+	//	sys_waitpid(current_task->wait_again, 0, 0)
+	//	: 0);
 }
 
 int sys_wait3(int *a, int b, int *c)

@@ -36,18 +36,17 @@ int sys_get_timer_th(int *t)
 /* Iterate through the parents of tasks and update their times */
 static void inc_parent_times(struct process *t, int u, int s)
 {
-	while(t && t != kernel_task) {
-		t->t_cutime += u;
-		t->t_cstime += s;
+	/* TODO: better way to do this? */
+	while(t) {
+		//t->t_cutime += u;
+		//t->t_cstime += s;
 		t=t->parent;
 	}
 }
 
 static void do_run_scheduler()
 {
-	if(!current_task ||
-		(current_task->flags&TF_DYING) || 
-		(current_task->flags&TF_LOCK))
+	if(!current_thread)
 		return;
 	tm_schedule();
 }
@@ -58,11 +57,11 @@ static void do_tick()
 {
 	if(current_thread) {
 		ticker_tick(current_thread->cpu->ticker, 1000 /* TODO: Whatever this actually is */);
-		current_thread->system 
-			? (++current_process->stime) 
-			: (++current_process->utime);
-		inc_parent_times(current_process->parent, 
-			current_thread->system ? __SYS : __USR);
+		//current_thread->system 
+		//	? (++current_process->stime) 
+		//	: (++current_process->utime);
+		//inc_parent_times(current_process->parent, 
+		//	current_thread->system ? __SYS : __USR);
 	}
 	/* TODO: alarm() */
 	/* TODO: maybe set flag to schedule */

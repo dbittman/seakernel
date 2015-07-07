@@ -78,11 +78,8 @@ int kt_kernel_idle_task()
 	/* Now enter the main idle loop, waiting to do periodic cleanup */
 	printk(0, "[idle]: entering background loop\n");
 	for(;;) {
-		task=__KT_try_releasing_tasks();
-		__KT_try_handle_stage2_interrupts();
 		tm_schedule();
 		cpu_interrupt_set(1);
-		//mm_reclaim();
 	}
 }
 

@@ -73,9 +73,6 @@ void tm_timer_handler(registers_t *r)
 	/* TODO */
 	//if(!current_task || !current_task->cpu || current_task->cpu == primary_cpu)
 		add_atomic(&ticks, 1);
-	/* engage the idle task occasionally */
-	if((ticks % current_hz*10) == 0)
-		tm_engage_idle();
 	do_tick();
 }
 /* TODO */

@@ -10,7 +10,7 @@
 
 void arch_cpu_timer_install(int hz)
 {
-	interrupt_register_handler(IRQ0, &tm_timer_handler, 0);
+	cpu_interrupt_register_handler(IRQ0, &tm_timer_handler);
 	u32int divisor = 1193180 / hz;
 	outb(0x43, 0x36);
 	u8int l = (u8int)(divisor & 0xFF);

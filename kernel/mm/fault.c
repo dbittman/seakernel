@@ -73,7 +73,7 @@ void mm_page_fault_handler(registers_t *regs, addr_t address, int pf_cause)
 				current_thread->tid, current_process->heap_start, 
 				current_process->heap_end, current_thread->flags);
 		
-		tm_kill_thread(current_thread);
+		tm_thread_kill(current_thread);
 		/* this function does not return */
 	} else {
 		/* WARNING: TODO: this might not be safe */

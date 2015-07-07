@@ -72,19 +72,26 @@ static void __timeout_expired(unsigned long data)
 	tm_thread_set_state(t, THREAD_RUNNING); /* TODO: maybe restore an old state */
 }
 
-int tm_thread_delay(struct thread *thread, time_t nanoseconds)
+int tm_thread_delay(time_t nanoseconds)
 {
-	struct async_call *call = &thread->block_timeout;
+	struct async_call *call = &current_thread->block_timeout;
 	call->func = __timeout_expired;
 	call->priority = 10; /* TODO: what priority */
-	call->data = (unsigned long)thread;
+	call->data = (unsigned long)current_thread;
 	struct cpu *cpu = cpu_get_current();
 	ticker_insert(cpu->ticker, nanoseconds, call);
 	cpu_put_current(cpu);
-	tm_thread_set_state(thread, THREAD_INTERRUPTIBLE);
-	if(tm_thread_got_signal(thread))
+	tm_thread_set_state(current_thread, THREAD_INTERRUPTIBLE);
+	if(tm_thread_got_signal(current_thread))
 		return -EINTR;
 	return 0;
+}
+
+void tm_thread_delay_sleep(time_t nanoseconds)
+{
+	uint64_t end = current_thread->cpu->ticker->tick + nanoseconds;
+	while(current_thread->cpu->ticker->tick < end)
+		cpu_pause();
 }
 
 int tm_thread_block_timeout(struct llist *blocklist, time_t nanoseconds)

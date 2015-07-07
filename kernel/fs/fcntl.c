@@ -46,7 +46,7 @@ int sys_fcntl(int filedes, int cmd, long attr1, long attr2, long attr3)
 			break;
 		case F_SETOWN: case F_GETOWN:
 			printk(5, "Task attempted to access socket controls on non-socket descriptor!\n");
-			tm_kill_thread(current_thread);
+			tm_thread_kill(current_thread);
 			break;
 #if 0
 		case F_SETLK: 

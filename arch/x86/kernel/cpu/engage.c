@@ -16,6 +16,7 @@ initialization */
 #include <sea/cpu/cpu-x86.h>
 #include <sea/asm/system.h>
 #include <sea/vsprintf.h>
+#include <sea/tm/timing.h>
 void set_lapic_timer(unsigned tmp);
 void init_lapic(int);
 addr_t lapic_addr=0;

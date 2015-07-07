@@ -9,6 +9,7 @@
 #include <sea/cpu/registers.h>
 #include <sea/lib/hash.h>
 #include <sea/cpu/processor.h>
+#include <sea/cpu/atomic.h>
 
 #define KERN_STACK_SIZE 0x16000
 #define THREAD_MAGIC 0xBABECAFE
@@ -68,13 +69,11 @@ extern struct hash_table *thread_table;
 int tm_thread_got_signal(struct thread *);
 void tm_thread_enter_system(int sys);
 void tm_thread_exit_system();
-void tm_thread_delay_sleep(time_t nanoseconds);
-void tm_thread_delay(time_t nanoseconds);
 int tm_do_fork(int);
 int sys_vfork();
 void tm_set_signal(int sig, addr_t hand);
 void tm_exit(int);
-void tm_kill_thread(struct thread *);
+void tm_thread_kill(struct thread *);
 void tm_blocklist_wakeall(struct llist *blocklist);
 void tm_thread_unblock(struct thread *t);
 int tm_thread_block_timeout(struct llist *blocklist, time_t nanoseconds);

@@ -80,7 +80,7 @@ int cpu_interrupt_register_handler(int num, void (*fn)(int, int))
 	return i;
 }
 
-void interrupt_unregister_handler(u8int n, int id)
+void cpu_interrupt_unregister_handler(u8int n, int id)
 {
 	mutex_acquire(&isr_lock);
 	if(!interrupt_handlers[n][id].fn)
@@ -140,7 +140,7 @@ static void faulted(int fuckoff, int userspace, addr_t ip, long err_code, regist
 				current_thread->signal = SIGABRT;
 				break;
 			default:
-				tm_kill_thread(current_thread);
+				tm_thread_kill(current_thread);
 				break;
 		}
 		/* the above signals WILL be handled, since at the end of tm_tm_schedule(), it checks
@@ -224,7 +224,7 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 	 * was recieved! Fuckin' brilliant! Back up that flag, so we can
 	 * properly restore the flag later. */
 	int previous_interrupt_flag = cpu_interrupt_set(0);
-	add_atomic(&int_count[int_no], 1);
+	add_atomic(&interrupt_counts[int_no], 1);
 	/* save the registers so we can screw with iret later if we need to */
 	char clear_regs=0;
 	if(current_thread && !current_thread->regs) {
@@ -282,14 +282,17 @@ void interrupt_init()
 	
 	mutex_create(&isr_lock, 0);
 #if CONFIG_MODULES
-	loader_add_kernel_symbol(interrupt_register_handler);
-	loader_add_kernel_symbol(interrupt_unregister_handler);
+	loader_add_kernel_symbol(cpu_interrupt_register_handler);
+	loader_add_kernel_symbol(cpu_interrupt_unregister_handler);
 	loader_do_add_kernel_symbol((addr_t)interrupt_handlers, "interrupt_handlers");
 	loader_add_kernel_symbol(cpu_interrupt_set);
 	loader_add_kernel_symbol(cpu_interrupt_set_flag);
 #endif
 }
 
+/* TODO: Right, so, like....
+ * Let's just get rid of all references to CPU_INTER, and just read from
+ * eflags when we want to know... */
 int cpu_interrupt_set(unsigned _new)
 {
 	/* need to make sure we don't get interrupted... */
@@ -328,12 +331,12 @@ int kerfs_int_report(size_t offset, size_t length, char *buf)
 	KERFS_PRINTF(offset, length, buf, current,
 			"INT: # CALLS\tMIN\t      MAX\t    MEAN\n");
 	for(int i=0;i<256;i++) {
-		if(!int_count[i])
+		if(!interrupt_counts[i])
 			continue;
 		KERFS_PRINTF(offset, length, buf, current,
 				"%3d: %-5d\n   "
 				"| 1 -> %9d\t%9d\t%9d\n   ",
-				i, int_count[i], 
+				i, interrupt_counts[i], 
 				interrupt_timers[i].runs > 0 ?
 					(uint32_t)interrupt_timers[i].min / 1000 : 
 					0,

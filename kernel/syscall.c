@@ -68,8 +68,8 @@ int sys_syslog(int level, char *buf, int len, int ctl)
 int sys_get_timer_th(int *t); /* TODO: this is shit */
 static void *syscall_table[129] = {
 	[SYS_SETUP]           = SC sys_setup,
-	[SYS_EXIT]            = SC tm_exit,
-	[SYS_FORK]            = SC tm_do_fork,
+	[SYS_EXIT]            = SC sys_exit,
+	[SYS_FORK]            = SC sys_clone,
 	[SYS_WAIT]            = SC tm_process_wait,
 	[SYS_READ]            = SC sys_readpos,
 	[SYS_WRITE]           = SC sys_writepos,
@@ -150,7 +150,7 @@ static void *syscall_table[129] = {
 	[SYS_MSYNC]           = SC sys_msync,
 	[SYS_TSTAT]           = SC sys_task_stat,
 
-	[SYS_DELAY]           = SC tm_delay, /* TODO: remove this */
+	//[SYS_DELAY]           = SC tm_delay, /* TODO: remove this */
 	[SYS_KRESET]          = SC kernel_reset,
 	[SYS_KPOWOFF]         = SC kernel_poweroff,
 	[SYS_GETUID]          = SC tm_get_uid,

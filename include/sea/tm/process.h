@@ -91,7 +91,7 @@ int sys_wait3(int *, int, int *);
 pid_t sys_getppid();
 int sys_alarm(int a);
 int sys_gsetpriority(int set, int which, int id, int val);
-int sys_waitagain();
+int sys_waitagain(); /* TODO: clean up any declarations that don't exist anymore */
 int sys_nice(int which, int who, int val, int flags);
 int sys_setsid();
 int sys_setpgid(int a, int b);
@@ -99,6 +99,8 @@ int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 	struct timeval *timeout);
 int sys_sbrk(long inc);
 int sys_isstate(pid_t pid, int state);
+void sys_exit(int);
+int sys_clone(int);
 
 /* provided by arch-dep code */
 extern void arch_do_switch_to_user_mode();

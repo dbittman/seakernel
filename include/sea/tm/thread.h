@@ -67,7 +67,7 @@ extern size_t running_threads;
 extern struct hash_table *thread_table;
 
 /* TODO: const */
-struct thread *arch_tm_get_current_thread(int);
+const struct thread *arch_tm_get_current_thread(int) __attribute__((const));
 
 int tm_thread_got_signal(struct thread *);
 void tm_thread_enter_system(int sys);

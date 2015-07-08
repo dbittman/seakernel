@@ -132,8 +132,9 @@ int sys_clone(int flags)
 	thr->jump_point = (addr_t)arch_tm_read_ip();
 
 	if(current_thread == thr) {
-		
-		kprintf("CHILD\n");
+		current_thread->jump_point = 0;
+		cpu_interrupt_set(1);
+		kprintf("CHILD %x %x %x\n", current_thread->flags, current_thread->magic, current_thread->tid);
 		return 0;
 	} else {
 		kprintf("PARENT\n");

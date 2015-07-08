@@ -13,7 +13,7 @@ void arch_tm_set_kernel_stack(addr_t start, addr_t end)
 }
 
 /* TODO: do we need to pass in flags? */
-struct thread *arch_tm_get_current_thread(int flags)
+__attribute__((const)) const struct thread *arch_tm_get_current_thread(int flags)
 {
 	if(!(flags & KSF_THREADING))
 		return 0;

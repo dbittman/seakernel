@@ -152,12 +152,12 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	       CONFIG_VERSION_NUMBER, BITS_PER_LONG);
 	printk(KERN_DEBUG, "[kernel]: structure sizes: process=%d bytes, thread=%d bytes, inode=%d bytes\n",
 			sizeof(struct process), sizeof(struct thread), sizeof(struct inode));
-	//cpu_interrupt_set(1);
+	cpu_interrupt_set(1);
 	if(!sys_clone(0))
 		init();
-
-	kprintf("Got here - parent\n");
-	tm_schedule();
+	for(;;) {
+	kprintf("Got here - parent %x\n", cpu_interrupt_get_flag());
+	}
 	for(;;);
 	sys_setsid();
 	tm_thread_enter_system(255);
@@ -183,8 +183,9 @@ void printf(const char *fmt, ...)
 void init()
 {
 
-
-	kprintf("Got here - child\n");
+for(;;) {
+	kprintf("Got here - child %x\n", cpu_interrupt_get_flag());
+}
 	for(;;);
 	/* Call sys_setup. This sets up the root nodes, and filedesc's 0, 1 and 2. */
 	sys_setup();

@@ -165,8 +165,6 @@ void cpu_interrupt_syscall_entry(registers_t *regs, int syscall_num)
 		assert(!cpu_interrupt_get_flag());
 	}
 
-	if(current_thread->flags & TF_SCHED)
-		tm_schedule();
 
 	cpu_interrupt_set(0);
 	current_thread->sysregs = current_thread->regs = 0;
@@ -207,8 +205,6 @@ void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_addres
 	if(!called)
 		faulted(int_no, !already_in_interrupt, return_address, regs->err_code, regs);
 
-	if(current_thread->flags & TF_SCHED)
-		tm_schedule();
 	/* restore previous interrupt state */
 	cpu_interrupt_set_flag(previous_interrupt_flag);
 	if(!already_in_interrupt)
@@ -252,8 +248,6 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 			(interrupt_handlers[int_no][i].fn)(int_no, flags);
 	}
 	if(s1started) timer_stop(&interrupt_timers[int_no]);
-	if(current_thread->flags & TF_SCHED)
-		tm_schedule();
 	assert(!cpu_interrupt_get_flag());
 	/* ok, now lets clean up */
 	cpu_interrupt_set(0);
@@ -295,14 +289,10 @@ void interrupt_init()
  * eflags when we want to know... */
 int cpu_interrupt_set(unsigned _new)
 {
-	/* need to make sure we don't get interrupted... */
-	arch_interrupt_disable();
-	unsigned old = __current_cpu->flags & CPU_INTER;
+	int old = cpu_interrupt_get_flag();
 	if(!_new) {
-		__current_cpu->flags &= ~CPU_INTER;
 		arch_interrupt_disable();
 	} else {
-		__current_cpu->flags |= CPU_INTER;
 		arch_interrupt_enable();
 	}
 	return old;
@@ -310,19 +300,14 @@ int cpu_interrupt_set(unsigned _new)
 
 void cpu_interrupt_set_flag(int flag)
 {
-	struct cpu *current_cpu = cpu_get_current();
-	if(flag)
-		current_cpu->flags |= CPU_INTER; /* TODO: make these atomic */
-	else
-		current_cpu->flags &= ~CPU_INTER;
-	cpu_put_current(current_cpu);
+	/* TODO: remove calls to this */
 }
 
 int cpu_interrupt_get_flag()
 {
-	struct cpu *current_cpu = cpu_get_current();
-	int flag = current_cpu->flags&CPU_INTER;
-	cpu_put_current(current_cpu);
+	int res;
+	asm("pushf; pop %%eax; and $0x200, %%eax; mov %%eax, %0":"=r"(res));
+	return res;
 }
 
 int kerfs_int_report(size_t offset, size_t length, char *buf)

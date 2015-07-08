@@ -28,7 +28,7 @@ mboot:
 section .text
 [GLOBAL start]                  ; Kernel entry point.
 [EXTERN kmain]                  ; This is the entry point of our C code
-STACKSIZE equ 0x4000            ; that's 16k.
+STACKSIZE equ 0x1000            ; that's 16k.
 
 align 8
 ; descriptor for the temporary 64-bit GDT

@@ -28,7 +28,8 @@ static void preexec(int desc)
 	struct thread *t = current_thread;
 	/* unmap all mappings, specified by POSIX */
 	mm_destroy_all_mappings(t->process);
-	mm_free_thread_shared_directory();
+	//mm_free_thread_shared_directory();
+	mm_free_self_directory();
 	/* we need to re-create the vmem for memory mappings */
 	valloc_create(&(t->process->mmf_valloc), MMF_BEGIN, MMF_END, PAGE_SIZE, VALLOC_USERMAP);
 	for(addr_t a = MMF_BEGIN;a < (MMF_BEGIN + (size_t)t->process->mmf_valloc.nindex);a+=PAGE_SIZE)
@@ -128,8 +129,6 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 	_strcpy((char *)path_backup, path);
 	path = path_backup;
 	
-	if(pd_cur_data->count > 1)
-		printk(0, "[exec]: Not sure what to do here...\n");
 	/* Preexec - This is the point of no return. Here we close out unneeded 
 	 * file descs, free up the page directory and clear up the resources 
 	 * of the task */
@@ -154,7 +153,7 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 		printk(5, "[exec]: Tried to execute an invalid ELF file!\n");
 		free_dp(backup_argv, argc);
 		free_dp(backup_env, envc);
-		tm_exit(0);
+		tm_thread_exit(0);
 	}
 	
 	if(EXEC_LOG == 2) 

@@ -22,7 +22,7 @@ struct kthread *kthread_create(struct kthread *kt, const char *name, int flags,
 	kt->entry = entry;
 	kt->arg = arg;
 	/* TODO: this could be a thread, but we'd need to clone from the kernel directory ... */
-	int tid = tm_do_fork(0);
+	int tid = sys_clone(CLONE_SHARE_PROCESS);
 	if(!tid) {
 		/* kernel threads have no parent (since we don't do a wait() for them), and
 		 * they have root-like abilities. They are also constantly 'in the system',
@@ -37,8 +37,8 @@ struct kthread *kthread_create(struct kthread *kt, const char *name, int flags,
 		strncpy((char *)current_process->command, name, 128);
 		
 		/* free up the directory save for the stack and the kernel stuff, since we
-		 * don't need it */
-		mm_free_thread_shared_directory();
+		 * don't need it TODO */
+		//mm_free_thread_shared_directory();
 		/* okay, call the thread entry function */
 		kt->code = entry(kt, arg);
 		/* get the code FIRST, since once we set KT_EXITED, we can't rely on kt

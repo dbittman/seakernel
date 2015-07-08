@@ -34,7 +34,7 @@ void arch_interrupt_ipi_handler(volatile registers_t regs)
 	assert(((regs.ds&(~0x7)) == 0x10 || (regs.ds&(~0x7)) == 0x20) && ((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));
 #endif
 	int previous_interrupt_flag = cpu_interrupt_set(0);
-	add_atomic(&int_count[regs.int_no], 1);
+	add_atomic(&interrupt_counts[regs.int_no], 1);
 #if CONFIG_SMP
 	/* delegate to the proper handler, in ipi.c */
 	switch(regs.int_no) {

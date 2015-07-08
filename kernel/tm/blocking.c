@@ -79,7 +79,7 @@ int tm_thread_delay(time_t nanoseconds)
 	call->priority = 10; /* TODO: what priority */
 	call->data = (unsigned long)current_thread;
 	struct cpu *cpu = cpu_get_current();
-	ticker_insert(cpu->ticker, nanoseconds, call);
+	ticker_insert(&cpu->ticker, nanoseconds, call);
 	cpu_put_current(cpu);
 	tm_thread_set_state(current_thread, THREAD_INTERRUPTIBLE);
 	if(tm_thread_got_signal(current_thread))
@@ -89,8 +89,8 @@ int tm_thread_delay(time_t nanoseconds)
 
 void tm_thread_delay_sleep(time_t nanoseconds)
 {
-	uint64_t end = current_thread->cpu->ticker->tick + nanoseconds;
-	while(current_thread->cpu->ticker->tick < end)
+	uint64_t end = current_thread->cpu->ticker.tick + nanoseconds;
+	while(current_thread->cpu->ticker.tick < end)
 		cpu_pause();
 }
 
@@ -100,7 +100,7 @@ int tm_thread_block_timeout(struct llist *blocklist, time_t nanoseconds)
 	call->func = __timeout_expired;
 	call->priority = 10; /* TODO: what priority */
 	call->data = (unsigned long)current_thread;
-	ticker_insert(current_thread->cpu->ticker, nanoseconds, call);
+	ticker_insert(&current_thread->cpu->ticker, nanoseconds, call);
 	int r = tm_thread_block(blocklist, THREAD_INTERRUPTIBLE);
 	/* TODO: do we care more about EINTR or ETIME? */
 	if(current_thread->flags & TF_TIMEOUT_EXPIRED) {

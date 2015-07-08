@@ -37,6 +37,11 @@ int sys_sbrk(long inc)
 	return end;
 }
 
+int sys_alarm(int dur)
+{
+
+}
+
 int sys_isstate(pid_t pid, int state)
 {
 	struct process *proc = tm_process_get(pid);

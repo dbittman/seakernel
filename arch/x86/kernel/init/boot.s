@@ -29,10 +29,10 @@ section .text
 [GLOBAL start]                  ; Kernel entry point.
 [GLOBAL _start]                 ; Kernel entry point.
 [EXTERN kmain]                  ; This is the entry point of our C code
-STACKSIZE equ 0x4000            ; that's 16k.
+STACKSIZE equ 0x1000
 
 start:
-   mov esp, stack+STACKSIZE     ; set up the stack
+   mov esp, initial_kernel_stack+STACKSIZE     ; set up the stack
    push esp                     ; kernel expects and esp value in the arguments
    push ebx                     ; pass Multiboot info structure
    cli                          ; start with ints disabled
@@ -49,6 +49,7 @@ hang:
    jmp   hang                   ; course, this wont happen
 
 section .bss
-align 32
-stack:
+align 0x1000
+[GLOBAL initial_kernel_stack]
+initial_kernel_stack:
    resb STACKSIZE               ; reserve 16k stack on a quadword boundary

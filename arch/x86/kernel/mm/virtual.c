@@ -111,8 +111,7 @@ void arch_mm_vm_init(addr_t id_map_to)
 	/* CR3 requires the physical address, so we directly 
 	 * set it because we have the physical address */
 	__asm__ volatile ("mov %0, %%cr3" : : "r" (pd));
-	/* Enable */
-	enable_paging();
+	__asm__ volatile ("mov %%cr0, %%eax; or %%eax, 0x80000000; mov %%eax, %%cr0":::"eax");
 	
 	set_ksf(KSF_PAGING);
 }
@@ -121,7 +120,6 @@ void arch_mm_vm_init(addr_t id_map_to)
  * upon clone, and creates a new directory that is...well, complete */
 void arch_mm_vm_init_2()
 {
-	setup_kernelstack(id_tables);
 	printk(0, "[mm]: cloning directory for boot processor\n");
 	primary_cpu->kd = mm_vm_clone(page_directory, 0);
 	primary_cpu->kd_phys = primary_cpu->kd[1023] & PAGE_MASK;

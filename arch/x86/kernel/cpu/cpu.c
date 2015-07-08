@@ -20,7 +20,7 @@ int probe_smp();
 
 void arch_cpu_processor_init_1()
 {
-#if CONFIG_SMP
+#if 0 /* TODO */
 	mutex_create(&ipi_mutex, MT_NOSCHED);
 	memset(cpu_array, 0, sizeof(struct cpu) * CONFIG_MAX_CPUS);
 	cpu_array_num = 0;
@@ -50,8 +50,8 @@ void arch_cpu_processor_init_1()
 	x86_cpu_init_fpu(primary_cpu);
 	x86_cpu_init_sse(primary_cpu);
 	primary_cpu->flags |= CPU_RUNNING;
-	printk(KERN_EVERY, "done\n");
 	mutex_create((mutex_t *)&primary_cpu->lock, MT_NOSCHED);
+	printk(KERN_EVERY, "done\n");
 #if CONFIG_GDB_STUB
 	set_debug_traps();
 	kprintf("---[DEBUG - waiting for GDB connection]---\n");

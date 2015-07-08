@@ -42,7 +42,7 @@ struct cpu {
 	unsigned numtasks;
 	unsigned stack[CPU_STACK_TEMP_SIZE];
 	int gc_count;
-	struct ticker *ticker; /* TODO: initialize this */
+	struct ticker ticker; /* TODO: initialize this */
 
 	struct arch_cpu arch_cpu_data;
 

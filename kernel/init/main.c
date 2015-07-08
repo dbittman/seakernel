@@ -152,9 +152,13 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	       CONFIG_VERSION_NUMBER, BITS_PER_LONG);
 	printk(KERN_DEBUG, "[kernel]: structure sizes: process=%d bytes, thread=%d bytes, inode=%d bytes\n",
 			sizeof(struct process), sizeof(struct thread), sizeof(struct inode));
-	cpu_interrupt_set(1);
-	if(!tm_fork())
+	//cpu_interrupt_set(1);
+	if(!sys_clone(0))
 		init();
+
+	kprintf("Got here - parent\n");
+	tm_schedule();
+	for(;;);
 	sys_setsid();
 	tm_thread_enter_system(255);
 	kt_kernel_idle_task();
@@ -178,6 +182,10 @@ void printf(const char *fmt, ...)
 
 void init()
 {
+
+
+	kprintf("Got here - child\n");
+	for(;;);
 	/* Call sys_setup. This sets up the root nodes, and filedesc's 0, 1 and 2. */
 	sys_setup();
 	kprintf("Something stirs and something tries, and starts to climb towards the light.\n");

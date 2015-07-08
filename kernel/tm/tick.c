@@ -56,7 +56,7 @@ static void do_run_scheduler()
 static void do_tick()
 {
 	if(current_thread) {
-		ticker_tick(current_thread->cpu->ticker, 1000 /* TODO: Whatever this actually is */);
+		ticker_tick(&current_thread->cpu->ticker, 1000 /* TODO: Whatever this actually is */);
 		//current_thread->system 
 		//	? (++current_process->stime) 
 		//	: (++current_process->utime);

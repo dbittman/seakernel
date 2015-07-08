@@ -99,7 +99,7 @@ void tm_thread_add_to_cpu(struct thread *thr, struct cpu *cpu)
 int sys_clone(int flags)
 {
 	struct process *proc = current_process;
-	if(flags & CLONE_PROCESS) {
+	if(!(flags & CLONE_SHARE_PROCESS)) {
 		proc = tm_process_copy(flags);
 		add_atomic(&running_processes, 1);
 		/* TODO: insert to global hash table */
@@ -109,9 +109,42 @@ int sys_clone(int flags)
 	assert(!hash_table_set_entry(thread_table, &thr->tid, sizeof(thr->tid), 1, thr));
 	add_atomic(&running_threads, 1);
 	tm_thread_add_to_process(thr, proc);
+	thr->state = THREAD_UNINTERRUPTIBLE;
+	
+
+	arch_cpu_copy_fixup_stack((addr_t)thr->kernel_stack, (addr_t)current_thread->kernel_stack, KERN_STACK_SIZE);
+	*(struct thread **)(thr->kernel_stack) = thr;
+	addr_t esp;
+	addr_t ebp;
+	asm("mov %%esp, %0":"=r"(esp));
+	asm("mov %%ebp, %0":"=r"(ebp));
+
+
+	esp -= (addr_t)current_thread->kernel_stack;
+	ebp -= (addr_t)current_thread->kernel_stack;
+	esp += (addr_t)thr->kernel_stack;
+	ebp += (addr_t)thr->kernel_stack;
+
+	esp += 4;
+	*(addr_t *)esp = ebp;
+	thr->stack_pointer = esp;
 	tm_thread_add_to_cpu(thr, current_thread->cpu);
-	thr->state = THREAD_RUNNING;
-	/* TODO: how to handle child spawning */
-	return thr->tid;
+	thr->jump_point = (addr_t)arch_tm_read_ip();
+
+	if(current_thread == thr) {
+		
+		kprintf("CHILD\n");
+		return 0;
+	} else {
+		kprintf("PARENT\n");
+		thr->state = THREAD_RUNNING;
+		return thr->tid;
+	}
+	
+}
+
+int sys_vfork()
+{
+
 }
 

@@ -11,8 +11,6 @@
 
 #define MAX_HANDLERS 256
 #define MAX_INTERRUPTS 256
-typedef void (*isr_s1_handler_t)(registers_t *);
-typedef void (*isr_s2_handler_t)(int);
 
 int cpu_interrupt_set(unsigned _new);
 void cpu_interrupt_set_flag(int flag);
@@ -28,13 +26,12 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no);
 void arch_cpu_timer_install(int hz);
 void cpu_timer_install(int hz);
 
-int interrupt_register_handler(u8int num, isr_s1_handler_t stage1_handler, isr_s2_handler_t stage2_handler);
-void interrupt_unregister_handler(u8int n, int id);
+int cpu_interrupt_register_handler(int num, void (*fn)(int, int));
+void cpu_interrupt_unregister_handler(u8int n, int id);
 
-void __KT_try_handle_stage2_interrupts();
 void interrupt_init();
 
-extern volatile long int_count[256];
+extern volatile unsigned long interrupt_counts[256];
 
 #if CONFIG_SMP
 void cpu_handle_ipi_tlb(volatile registers_t);

@@ -13,14 +13,27 @@ static void arch_tm_thread_switch(struct thread *old, struct thread *new)
 		"push %%ebp;"
 		"mov %%esp, %0;": "=r"(old->stack_pointer)::"memory");
 	if(new->process->mm_context != old->process->mm_context) {
-		asm ("mov %0, %%cr3;"::"r"(new->process->mm_context):"memory");
+	//	asm ("mov %0, %%cr3;"::"r"(new->process->mm_context):"memory");
 	}
-	asm ("mov %0, %%esp;"
-			"pop %%ebp;"
-			"pop %%edi;"
-			"pop %%esi;"
-			"pop %%ebp;"
-			"popf"::"r"(new->stack_pointer):"memory");
+	if(new->jump_point) {
+		/* newly created thread, needs to just have some basic context set
+		 * up initially and then jumped to */
+		addr_t jump = new->jump_point;
+		new->jump_point = 0;
+		asm ("mov %1, %%ecx;"
+				"mov %0, %%esp;"
+				"pop %%ebp;"
+				"jmp *%%ecx"::"r"(new->stack_pointer), "r"(jump):"memory");
+	} else {
+		asm ("mov %0, %%esp;"
+				"pop %%ebp;"
+				"pop %%edi;"
+				"pop %%esi;"
+				"pop %%ebx;"
+				"popf"::"r"(new->stack_pointer):"memory");
+	}
+	tm_set_kernel_stack(new->kernel_stack,
+			new->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
 }
 
 static struct thread *get_next_thread()

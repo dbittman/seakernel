@@ -7,6 +7,7 @@
 #include <sea/string.h>
 #include <sea/tty/terminal.h>
 
+/* TODO: clean these up */
 #define KSF_MMU            0x1
 #define KSF_SHUTDOWN       0x2
 #define KSF_PANICING       0x4
@@ -17,6 +18,7 @@
 #define KSF_PAGING         0x20
 #define KSF_HAVEEXECED     0x40 /* have we exec'd once? we dont check for valid pointers if this is unset */
 #define KSF_MEMMAPPED      0x80 /* is memory mapped? (used by pmm) */
+#define KSF_THREADING      0x100
 extern volatile unsigned kernel_state_flags;
 #define set_ksf(flag) or_atomic(&kernel_state_flags, flag)
 #define unset_ksf(flag) and_atomic(&kernel_state_flags, ~flag)

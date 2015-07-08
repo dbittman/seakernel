@@ -11,7 +11,7 @@
 #include <sea/cpu/processor.h>
 #include <sea/cpu/atomic.h>
 
-#define KERN_STACK_SIZE 0x16000
+#define KERN_STACK_SIZE 0x1000
 #define THREAD_MAGIC 0xBABECAFE
 #define PRIO_PROCESS 1
 #define PRIO_PGRP    2
@@ -39,7 +39,7 @@
 #define tm_thread_raise_flag(t,f) or_atomic(&(t->flags), f)
 #define tm_thread_lower_flag(t,f) and_atomic(&(t->flags), ~f)
 
-#define current_thread __current_cpu->cur
+#define current_thread ((struct thread *)arch_tm_get_current_thread(kernel_state_flags))
 struct thread {
 	unsigned magic;
 	pid_t tid;
@@ -48,7 +48,7 @@ struct thread {
 	int system;
 	int priority, timeslice;
 	void *kernel_stack;
-	unsigned long stack_pointer;
+	unsigned long stack_pointer, jump_point;
 	struct cpu *cpu;
 
 	sigset_t sig_mask, old_mask;
@@ -65,6 +65,9 @@ struct thread {
 
 extern size_t running_threads;
 extern struct hash_table *thread_table;
+
+/* TODO: const */
+struct thread *arch_tm_get_current_thread(int);
 
 int tm_thread_got_signal(struct thread *);
 void tm_thread_enter_system(int sys);

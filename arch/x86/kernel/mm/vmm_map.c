@@ -23,9 +23,6 @@ int arch_mm_vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned opt)
 		pd[vdir] = p | PAGE_WRITE | PAGE_PRESENT | (attr & PAGE_USER);
 		flush_pd();
 	}
-	if(current_process->pid > 5 && page_tables[vpage]) {
-		panic(0, "WARNING - task %d in sys %d overwriting page table entry %x: was %x, now: %x %x\n", current_process->pid, current_thread->system, virt, page_tables[vpage], phys, attr);
-	}
 	page_tables[vpage] = (phys & PAGE_MASK) | attr;
 	asm("invlpg (%0)"::"r" (virt));
 	if(!(opt & MAP_NOCLEAR))

@@ -1,5 +1,5 @@
-[GLOBAL arch_tm_read_eip]
-arch_tm_read_eip:
+[GLOBAL arch_tm_read_ip]
+arch_tm_read_ip:
   pop eax ; this is so cheating.
   jmp eax ; this really shouldn't work. But damn, it's cool.
 

@@ -67,7 +67,7 @@ struct process {
 
 #define WNOHANG 1
 
-#define CLONE_PROCESS 1 /*TODO: these need to match with userland.. */
+#define CLONE_SHARE_PROCESS 1 /*TODO: these need to match with userland.. */
 #define tm_fork() tm_do_fork(0)
 
 extern size_t running_processes;

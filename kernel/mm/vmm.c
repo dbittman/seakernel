@@ -10,19 +10,14 @@ vmm_context_t *mm_vm_copy(vmm_context_t *pd)
 	return arch_mm_vm_copy(pd);
 }
 
-void mm_free_thread_shared_directory()
+void mm_destroy_directory(vmm_context_t *dir)
 {
-	arch_mm_free_thread_shared_directory();
+
 }
 
-void mm_destroy_task_page_directory(struct process *p)
+void mm_free_self_directory()
 {
-	arch_mm_destroy_task_page_directory(p);
-}
 
-void mm_free_thread_specific_directory()
-{
-	arch_mm_free_thread_specific_directory();
 }
 
 void mm_vm_init(addr_t id_map_to)

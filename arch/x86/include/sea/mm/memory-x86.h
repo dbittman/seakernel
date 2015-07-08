@@ -61,16 +61,6 @@
 #define PAGE_TABLE_IDX(x) ((uint32_t)x%1024)
 #define PAGE_DIR_PHYS(x) (x[1023]&PAGE_MASK)
 
-#define disable_paging() \
-	__asm__ volatile ("mov %%cr0, %0" : "=r" (cr0temp)); \
-	cr0temp &= ~0x80000000; \
-	__asm__ volatile ("mov %0, %%cr0" : : "r" (cr0temp));
-
-#define enable_paging() \
-	__asm__ volatile ("mov %%cr0, %0" : "=r" (cr0temp)); \
-	cr0temp |= 0x80000000; \
-	__asm__ volatile ("mov %0, %%cr0" : : "r" (cr0temp));
-
 #define GET_PDIR_INFO(x) (page_dir_info *)(t_page + x*sizeof(page_dir_info))
 
 #define flush_pd() \

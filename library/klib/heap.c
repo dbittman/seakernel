@@ -67,6 +67,16 @@ static void __heap_bubbledown(struct heap *heap, size_t elem)
 	uint64_t k1, k2, cur;
 	k1 = heap->array[CHILDA(elem)].key;
 	k2 = heap->array[CHILDB(elem)].key;
+	/* Hack to ignore elements that aren't in the heap.
+	 * We design the bubbledown procedure to do as little
+	 * work as possible, which means that if two elements
+	 * are equal, don't swap. So, if an element is outside
+	 * heap, set the key to the "max" value (or min), and
+	 * use that to compare. */
+	if(CHILDA(elem) >= heap->count)
+		k1 = heap->mode == HEAPMODE_MAX ? 0 : (~0);
+	if(CHILDB(elem) >= heap->count)
+		k2 = heap->mode == HEAPMODE_MAX ? 0 : (~0);
 	cur = heap->array[elem].key;
 	if(heap->mode == HEAPMODE_MAX) {
 		if(cur < k1 && cur < k2) {
@@ -148,6 +158,7 @@ int heap_pop(struct heap *heap, uint64_t *key, void **data)
 	}
 	if(data) {
 		*data = heap->array[0].data;
+		printk_safe(0, "heap: %x\n", *data);
 	}
 	/* standard heap stuff */
 	heap->array[0] = heap->array[--heap->count];

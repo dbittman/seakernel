@@ -68,9 +68,10 @@ void tm_blocklist_wakeall(struct llist *blocklist)
 static void __timeout_expired(unsigned long data)
 {
 	struct thread *t = (struct thread *)data;
-	if(t->blocklist)
+	if(t->blocklist) {
 		tm_thread_remove_from_blocklist(t);
-	tm_thread_raise_flag(t, TF_TIMEOUT_EXPIRED);
+		tm_thread_raise_flag(t, TF_TIMEOUT_EXPIRED);
+	}
 	tm_thread_set_state(t, THREAD_RUNNING); /* TODO: maybe restore an old state */
 }
 
@@ -84,7 +85,6 @@ int tm_thread_delay(time_t nanoseconds)
 	ticker_insert(&cpu->ticker, nanoseconds, call);
 	cpu_put_current(cpu);
 	tm_thread_set_state(current_thread, THREAD_INTERRUPTIBLE);
-	tm_thread_lower_flag(current_thread, TF_TIMEOUT_EXPIRED);
 	if(tm_thread_got_signal(current_thread))
 		return -EINTR;
 	return 0;

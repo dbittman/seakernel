@@ -200,14 +200,14 @@ void init()
 	if(!sys_clone(0)) {
 		kprintf("Blocking\n");
 		
-		tm_thread_block(bl, THREAD_INTERRUPTIBLE);
+		tm_thread_block_timeout(bl, 1000);
 
 		kprintf("Got here\n");
 
 		for(;;);
 	}
 	
-	tm_thread_delay(1000);
+	tm_thread_delay(500);
 	struct thread *th = tm_thread_get(2);
 	kprintf("Waking up blocked thread %d\n", th->tid);
 	//tm_blocklist_wakeall(bl);

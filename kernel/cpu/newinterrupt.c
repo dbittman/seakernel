@@ -9,6 +9,9 @@
 #include <sea/fs/kerfs.h>
 #include <sea/cpu/atomic.h>
 #include <sea/loader/symbol.h>
+#include <sea/cpu/processor.h>
+#include <sea/tm/workqueue.h>
+#include <sea/tm/async_call.h>
 struct interrupt_handler {
 	void (*fn)(registers_t *, int nr, int flags);
 };
@@ -89,6 +92,13 @@ void cpu_interrupt_unregister_handler(u8int n, int id)
 	mutex_release(&isr_lock);
 }
 
+void cpu_interrupt_schedule_stage2(struct async_call *call)
+{
+	struct cpu *c = cpu_get_current();
+	workqueue_insert(&c->work, call);
+	cpu_put_current(c);
+}
+
 static const char *special_names(int i)
 {
 	if(i == 0x80)
@@ -151,7 +161,7 @@ static void faulted(int fuckoff, int userspace, addr_t ip, long err_code, regist
 
 static inline void __setup_signal_handler(registers_t *regs)
 {
-	if(!current_thread->signal)
+	if(!current_thread->signal || !(current_thread->flags & TF_SIGNALED))
 		return;
 	struct sigaction *sa = &current_process->signal_act[current_thread->signal];
 	arch_tm_userspace_signal_initializer(regs, sa);
@@ -161,11 +171,10 @@ extern void syscall_handler(registers_t *regs);
 void cpu_interrupt_syscall_entry(registers_t *regs, int syscall_num)
 {
 	cpu_interrupt_set(0);
-	if(!current_thread->regs)
-		current_thread->regs = regs;
+	assert(!current_thread->regs);
+	current_thread->regs = regs;
 	add_atomic(&interrupt_counts[0x80], 1);
 	if(syscall_num == 128) {
-		/* TODO: RETURN SIGNAL HANDLING */
 		arch_tm_userspace_signal_cleanup(regs);
 	} else {
 		current_thread->regs = regs;
@@ -200,16 +209,21 @@ void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_addres
 	/* if it went unhandled, kill the process or panic */
 	if(!called)
 		faulted(int_no, !already_in_interrupt, return_address, regs->err_code, regs);
-	__setup_signal_handler(regs);
-	current_thread->regs = 0;
+	if(!already_in_interrupt) {
+		__setup_signal_handler(regs);
+		current_thread->regs = 0;
+	}
 }
 
 void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 {
 	cpu_interrupt_set(0);
 	add_atomic(&interrupt_counts[int_no], 1);
+	int already_in_interrupt = 0;
 	if(!current_thread->regs)
 		current_thread->regs = regs;
+	else
+		already_in_interrupt = 1;
 	/* now, run through the stage1 handlers, and see if we need any
 	 * stage2 handlers to run later */
 	int s1started = timer_start(&interrupt_timers[int_no]);
@@ -220,8 +234,10 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 	}
 	if(s1started) timer_stop(&interrupt_timers[int_no]);
 	cpu_interrupt_set(0);
-	__setup_signal_handler(regs);
-	current_thread->regs = 0;
+	if(!already_in_interrupt) {
+		__setup_signal_handler(regs);
+		current_thread->regs = 0;
+	}
 }
 
 void interrupt_init()
@@ -239,6 +255,7 @@ void interrupt_init()
 #if CONFIG_MODULES
 	loader_add_kernel_symbol(cpu_interrupt_register_handler);
 	loader_add_kernel_symbol(cpu_interrupt_unregister_handler);
+	loader_add_kernel_symbol(cpu_interrupt_schedule_stage2);
 	loader_do_add_kernel_symbol((addr_t)interrupt_handlers, "interrupt_handlers");
 	loader_add_kernel_symbol(cpu_interrupt_set);
 #endif

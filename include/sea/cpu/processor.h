@@ -28,7 +28,6 @@
 #define CPU_LOCK  0x100
 #define CPU_FXSAVE 0x200
 #define CPU_NEEDRESCHED 0x400
-#define CPU_DISABLE_PREEMPT 0x800
 
 struct cpu {
 	unsigned knum, snum; /* knum: cpu number to the kernel, snum: cpu number to the hardware */
@@ -40,8 +39,8 @@ struct cpu {
 	mutex_t lock;
 	unsigned numtasks;
 	unsigned stack[CPU_STACK_TEMP_SIZE];
-	int gc_count;
 	struct ticker ticker; /* TODO: initialize this */
+	int preempt_disable;
 
 	struct arch_cpu arch_cpu_data;
 

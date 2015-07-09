@@ -269,6 +269,7 @@ int try_console_switch(int code)
 unsigned char last_sc=0;
 unsigned char key_stack[64];
 int ks_idx=0;
+struct async_call keyboard_s2_call;
 void keyboard_int_stage1(registers_t *regs)
 {
 	unsigned char scancode = inb(0x60);
@@ -283,6 +284,7 @@ void keyboard_int_stage1(registers_t *regs)
 		kprintf("BREAKPOINT TRIGGERED\n");
 		asm("int $0x3");
 	}
+	cpu_interrupt_schedule_stage2(&keyboard_s2_call);
 	return;
 }
 
@@ -354,6 +356,7 @@ addr_t get_keymap_callback()
 	return (addr_t)_keymap_callback;
 }
 int irqk=0;
+int __int_no = 33;
 int module_install()
 {
 	printk(1, "[keyboard]: Driver loading\n");
@@ -366,7 +369,8 @@ int module_install()
 	_keymap_callback=0;
 	loader_add_kernel_symbol(set_keymap_callback);
 	loader_add_kernel_symbol(get_keymap_callback);
-	irqk = interrupt_register_handler(IRQ1, keyboard_int_stage1, keyboard_int_stage2);
+	async_call_create(&keyboard_s2_call, 0, keyboard_int_stage2, &__int_no, 100 /* TODO */);
+	irqk = cpu_interrupt_register_handler(IRQ1, keyboard_int_stage1);
 	flush_port();
 	printk(1, "[keyboard]: initialized keyboard\n");
 	return 0;
@@ -376,7 +380,7 @@ int module_exit()
 {
 	flush_port();
 	printk(1, "[keyboard]: Restoring old handler\n");
-	interrupt_unregister_handler(IRQ1, irqk);
+	cpu_interrupt_unregister_handler(IRQ1, irqk);
 	return 0;
 }
 
@@ -384,3 +388,4 @@ int module_deps(char *b)
 {
 	return CONFIG_VERSION_NUMBER;
 }
+

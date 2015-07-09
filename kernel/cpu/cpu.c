@@ -82,32 +82,26 @@ void cpu_timer_install(int freq)
 void cpu_disable_preemption()
 {
 	int old = cpu_interrupt_set(0);
-	__current_cpu->flags |= CPU_DISABLE_PREEMPT;
+	add_atomic(&__current_cpu->preempt_disable, 1);
 	cpu_interrupt_set(old);
 }
 
 void cpu_enable_preemption()
 {
 	int old = cpu_interrupt_set(0);
-	__current_cpu->flags &= ~CPU_DISABLE_PREEMPT;
+	sub_atomic(&__current_cpu->preempt_disable, 1);
 	cpu_interrupt_set(old);
 }
 
 struct cpu *cpu_get_current(void)
 {
-	int old = cpu_interrupt_set(0);
 	cpu_disable_preemption();
 	struct cpu *cpu = current_thread->cpu;
-	add_atomic(&cpu->gc_count, 1);
-	cpu_interrupt_set(old);
 	return cpu;
 }
 
 void cpu_put_current(struct cpu *cpu)
 {
-	int old = cpu_interrupt_set(0);
-	if(sub_atomic(&cpu->gc_count, 1) == 0)
-		cpu_enable_preemption();
-	cpu_interrupt_set(old);
+	cpu_enable_preemption();
 }
 

@@ -22,10 +22,8 @@ void arch_tm_userspace_signal_initializer(registers_t *regs, struct sigaction *s
 		* immediately goes back to the isr common handler to perform the regs
 		* back to where we were executing before.
 		*/
-	kprintf("old esp = %x\n", regs->useresp);
 	memcpy((void *)((addr_t)regs->useresp - sizeof(registers_t)), (void *)regs, sizeof(*regs));
 	regs->useresp -= sizeof(registers_t);
-	kprintf("regs esp = %x\n", regs->useresp);
 	regs->useresp -= STACK_ELEMENT_SIZE;
 	/* push the argument (signal number) */
 	*(unsigned *)(regs->useresp) = current_thread->signal;
@@ -33,15 +31,12 @@ void arch_tm_userspace_signal_initializer(registers_t *regs, struct sigaction *s
 	/* push the return address. this function is mapped in when
 		* paging is set up */
 	*(unsigned *)(regs->useresp) = (unsigned)SIGNAL_INJECT;
-	kprintf("final esp = %x\n", regs->useresp);
 	regs->eip = (unsigned)sa->_sa_func._sa_handler;
 	current_thread->signal=0;
 }
 
 void arch_tm_userspace_signal_cleanup(registers_t *regs)
 {
-	kprintf("Got here (esp = %x) (us = %x)\n", regs->useresp, regs);
 	memcpy((void *)regs, (void *)(regs->useresp + STACK_ELEMENT_SIZE), sizeof(*regs));
-	kprintf("restored esp = %x\n", regs->useresp);
 }
 

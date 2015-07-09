@@ -38,7 +38,7 @@ int atapi_pio_rw(struct ata_controller *cont, struct ata_device *dev, int rw,
 	outsw (cont->port_cmd_base+REG_DATA, (uint16 *) read_cmd, 6);
 	/* Wait for IRQ that says the data is ready. */
 	// schedule ();
-	tm_delay_sleep(6);
+	tm_thread_delay_sleep(6);
 	
 	/* Read actual size */
 	size =
@@ -55,7 +55,7 @@ int atapi_pio_rw(struct ata_controller *cont, struct ata_device *dev, int rw,
 	/* The controller will send another IRQ even though we've read all
 	* the data we want.  Wait for it -- so it doesn't interfere with
 	* subsequent operations: */
-	tm_delay_sleep(6);
+	tm_thread_delay_sleep(6);
 	/* Wait for BSY and DRQ to clear, indicating Command Finished */
 	while((status = inb (cont->port_cmd_base+REG_STATUS)) & 0x88) 
 		;

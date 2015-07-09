@@ -62,6 +62,10 @@ void tm_init_multitasking()
 	add_atomic(&running_processes, 1);
 	add_atomic(&running_threads, 1);
 	set_ksf(KSF_THREADING);
+#if CONFIG_MODULES
+	loader_add_kernel_symbol(tm_thread_delay_sleep);
+	//loader_add_kernel_symbol(tm_schedule);
+#endif
 }
 
 void tm_set_kernel_stack(struct cpu *cpu, addr_t start, addr_t end)

@@ -47,14 +47,8 @@ void mm_page_fault_handler(registers_t *regs, addr_t address, int pf_cause)
 	 */
 	assert(regs);
 	if(pf_cause & PF_CAUSE_USER) {
-		/* page fault was caused while in ring 3. We can pretend to
-		 * be a second-stage interrupt handler... */
-		/* TODO: ??? */
-		assert(!current_thread->sysregs);
-		current_thread->sysregs = regs;
 		/* check if we need to map a page for mmap, etc */
 		if(mm_page_fault_test_mappings(address, pf_cause) == 0) {
-			current_thread->sysregs = 0;
 			return;
 		}
 		/* if that didn't work, lets see if we should map a page
@@ -62,7 +56,6 @@ void mm_page_fault_handler(registers_t *regs, addr_t address, int pf_cause)
 		mutex_acquire(&pd_cur_data->lock);
 		if(map_in_page(address)) {
 			mutex_release(&pd_cur_data->lock);
-			current_thread->sysregs = 0;
 			return;
 		}
 		/* ...and if that didn't work, the task did something evil */

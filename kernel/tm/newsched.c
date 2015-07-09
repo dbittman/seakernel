@@ -58,18 +58,21 @@ static struct thread *get_next_thread()
 static void prepare_schedule()
 {
 	/* store arch-indep context */
+	tm_thread_lower_flag(current_thread, TF_SCHED);
 }
 
 static void finish_schedule()
 {
 	/* restore arch-indep context */
 	/* check signals */
+	if(current_thread->signal && !current_thread->system)
+		tm_thread_handle_signal(current_thread->signal);
 }
 
 void tm_schedule()
 {
 	int old = cpu_interrupt_set(0);
-	if(__current_cpu->flags & CPU_DISABLE_PREEMPT) {
+	if(__current_cpu->preempt_disable > 0) {
 		cpu_interrupt_set(old);
 		return;
 	}

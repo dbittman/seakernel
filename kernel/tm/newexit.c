@@ -5,15 +5,12 @@
 static void tm_thread_destroy(unsigned long data)
 {
 	struct thread *thr = (struct thread *)data;
-	kprintf("got cleanup call: TID=%d\n", thr->tid);
-
 	kfree(thr->kernel_stack);
 	kfree(thr);
 }
 
 void tm_process_wait_cleanup(struct process *proc)
 {
-	kprintf("tm_process_wait_cleanup called\n");
 	hash_table_delete_entry(process_table, &proc->pid, sizeof(proc->pid), 1);
 	ll_do_remove(process_list, &proc->listnode, 0);
 	mm_destroy_directory(&proc->vmm_context);

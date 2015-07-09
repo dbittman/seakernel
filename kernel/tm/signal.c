@@ -189,10 +189,7 @@ int tm_signal_will_be_fatal(struct thread *t, int sig)
 
 int tm_thread_got_signal(struct thread *t)
 {
-	if(!t->signal) return 0;
-	/* if the SA_RESTART flag is set, then return false */
-	if(t->process->signal_act[t->signal].sa_flags & SA_RESTART) return 0;
-	/* otherwise, return if we have a signal */
+	/* SA_RESTART? */
 	return t->signal;
 }
 

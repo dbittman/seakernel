@@ -33,7 +33,7 @@ struct kthread *kthread_create(struct kthread *kt, const char *name, int flags,
 			current_process->real_gid = current_process->effective_gid = 0;
 		current_thread->flags |= TF_KTASK;
 		current_thread->system = -1;
-		current_thread->regs = current_thread->sysregs = 0;
+		current_thread->regs = 0;
 		strncpy((char *)current_process->command, name, 128);
 		
 		/* free up the directory save for the stack and the kernel stuff, since we

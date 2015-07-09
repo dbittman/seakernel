@@ -371,7 +371,6 @@ int syscall_handler(volatile registers_t *regs)
 	if(current_thread->flags & TF_SCHED)
 	{
 		/* clear out the flag. Either way in the if statement, we've rescheduled. */
-		tm_thread_lower_flag(current_thread, TF_SCHED);
 		tm_schedule();
 	}
 	/* store the return value in the regs */
@@ -380,17 +379,6 @@ int syscall_handler(volatile registers_t *regs)
 	 * return value so that when we return to the system we have the
 	 * original systemcall returning the proper value.
 	 */
-	/* TODO: fix this */
-#if 0
-	if((current_thread->flags & TF_INSIG) && (current_thread->flags & TF_JUMPIN)) {
-#if CONFIG_ARCH == TYPE_ARCH_X86
-		current_thread->reg_b.eax=ret;
-#elif CONFIG_ARCH == TYPE_ARCH_X86_64
-		current_thread->reg_b.rax=ret;
-#endif
-		tm_lower_flag(TF_JUMPIN);
-	}
-#endif
 	return ret;
 }
 

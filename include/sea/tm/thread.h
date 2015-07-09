@@ -56,7 +56,7 @@ struct thread {
 
 	sigset_t sig_mask, old_mask;
 	unsigned signal;
-	registers_t *sysregs, *regs, regs_b;
+	registers_t *regs;
 	time_t stime, utime, t_cutime, t_cstime;
 
 	struct llistnode blocknode, activenode, pnode;
@@ -87,6 +87,7 @@ void tm_thread_add_to_blocklist(struct thread *t, struct llist *blocklist);
 void tm_thread_remove_from_blocklist(struct thread *t);
 int tm_thread_block(struct llist *blocklist, int state);
 void tm_switch_to_user_mode();
+void tm_thread_delay_sleep();
 #define ONE_SECOND 1000 /* TODO: set this to the correct value */
 
 #define tm_thread_pause(th) tm_thread_set_state(th, THREAD_INTERRUPTIBLE)

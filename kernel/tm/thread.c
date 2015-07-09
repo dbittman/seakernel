@@ -19,6 +19,8 @@ int tm_thread_runnable(struct thread *thr)
 {
 	if(thr->state == THREAD_RUNNING)
 		return 1;
+	if(thr->state == THREAD_INTERRUPTIBLE && tm_thread_got_signal(thr))
+		return 1;
 	return 0;
 }
 

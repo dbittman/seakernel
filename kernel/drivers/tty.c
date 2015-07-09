@@ -60,8 +60,8 @@ void tty_putch(struct vterm *con, int ch)
 
 void __tty_found_task_raise_action(struct thread *t, int arg)
 {
-	if(t->flags & TF_BGROUND) return;
-	t->signal = arg;
+	/* TODO: what? */
+	tm_signal_send_thread(t, arg);
 	tm_thread_raise_flag(t, TF_SCHED);
 	/* TODO */
 	/* if(t->blocklist) */

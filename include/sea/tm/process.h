@@ -69,8 +69,8 @@ struct process {
 	mutex_t map_lock;
 	struct valloc mmf_valloc;
 
-	sigset_t signal_mask;
-	unsigned signal;
+	sigset_t global_sig_mask;
+	struct sigaction signal_act[128]; /* TODO: only need 32 of these */
 	struct process *parent;
 	int thread_count;
 	struct llist threadlist;

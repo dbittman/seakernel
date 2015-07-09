@@ -131,13 +131,13 @@ static void faulted(int fuckoff, int userspace, addr_t ip, long err_code, regist
 		switch(fuckoff)
 		{
 			case 0: case 5: case 6: case 13:
-				current_thread->signal = SIGILL;
+				tm_signal_send_thread(current_thread, SIGILL);
 				break;
 			case 1: case 3: case 4:
-				current_thread->signal = SIGTRAP;
+				tm_signal_send_thread(current_thread, SIGTRAP);
 				break;
 			case 8: case 18:
-				current_thread->signal = SIGABRT;
+				tm_signal_send_thread(current_thread, SIGABRT);
 				break;
 			default:
 				tm_thread_kill(current_thread);
@@ -149,52 +149,49 @@ static void faulted(int fuckoff, int userspace, addr_t ip, long err_code, regist
 	}
 }
 
+static inline void __setup_signal_handler(registers_t *regs)
+{
+	if(!current_thread->signal)
+		return;
+	struct sigaction *sa = &current_process->signal_act[current_thread->signal];
+	arch_tm_userspace_signal_initializer(regs, sa);
+}
+
 extern void syscall_handler(registers_t *regs);
 void cpu_interrupt_syscall_entry(registers_t *regs, int syscall_num)
 {
 	cpu_interrupt_set(0);
+	if(!current_thread->regs)
+		current_thread->regs = regs;
 	add_atomic(&interrupt_counts[0x80], 1);
-	if(current_thread->flags & TF_IN_INT) /* TODO: Better way of determining this? */
-		panic(0, "attempted to enter syscall while handling an interrupt");
-	tm_thread_raise_flag(current_thread, TF_IN_INT);
 	if(syscall_num == 128) {
 		/* TODO: RETURN SIGNAL HANDLING */
+		arch_tm_userspace_signal_cleanup(regs);
 	} else {
-		current_thread->regs = current_thread->sysregs = regs;
+		current_thread->regs = regs;
 		syscall_handler(regs);
-		assert(!cpu_interrupt_get_flag());
 	}
-
 	cpu_interrupt_set(0);
-	current_thread->sysregs = current_thread->regs = 0;
-	cpu_interrupt_set_flag(1);
-	tm_thread_lower_flag(current_thread, TF_IN_INT);
+	__setup_signal_handler(regs);
+	current_thread->regs = 0;
 }
 
 void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_address)
 {
-	/* this is explained in the IRQ handler */
-	int previous_interrupt_flag = cpu_interrupt_set(0);
+	int already_in_interrupt = 0;
+	cpu_interrupt_set(0);
 	add_atomic(&interrupt_counts[int_no], 1);
-	/* check if we're interrupting kernel code, and set the interrupt
-	 * handling flag */
-	char already_in_interrupt = 0;
-	if(current_thread->flags & TF_IN_INT)
+	if(!current_thread->regs)
+		current_thread->regs = regs;
+	else
 		already_in_interrupt = 1;
-	tm_thread_raise_flag(current_thread, TF_IN_INT);
-	int flags = 0;
-	if(already_in_interrupt)
-		flags |= INTR_INTR;
-	/* run the stage1 handlers, and see if we need any stage2s. And if we
-	 * don't handle it at all, we need to actually fault to handle the error
-	 * and kill the process or kernel panic */
 	int started = timer_start(&interrupt_timers[int_no]);
 	char called = 0;
 	for(int i=0;i<MAX_HANDLERS;i++)
 	{
 		if(interrupt_handlers[int_no][i].fn)
 		{
-			interrupt_handlers[int_no][i].fn(regs, int_no, flags);
+			interrupt_handlers[int_no][i].fn(regs, int_no, 0);
 			called = 1;
 		}
 	}
@@ -203,64 +200,28 @@ void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_addres
 	/* if it went unhandled, kill the process or panic */
 	if(!called)
 		faulted(int_no, !already_in_interrupt, return_address, regs->err_code, regs);
-
-	/* restore previous interrupt state */
-	cpu_interrupt_set_flag(previous_interrupt_flag);
-	if(!already_in_interrupt)
-		tm_thread_lower_flag(current_thread, TF_IN_INT);
+	__setup_signal_handler(regs);
+	current_thread->regs = 0;
 }
 
 void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 {
-	/* ok, so the assembly entry function clears interrupts in the cpu, 
-	 * but the kernel doesn't know that yet. So we clear the interrupt
-	 * flag in the cpu structure as part of the normal cpu_interrupt_set call, but
-	 * it returns the interrupts-enabled flag from BEFORE the interrupt
-	 * was recieved! Fuckin' brilliant! Back up that flag, so we can
-	 * properly restore the flag later. */
-	/*TODO: this stuff no longer makes sense (we don't keep a seperate int flag) */
-	int previous_interrupt_flag = cpu_interrupt_set(0);
+	cpu_interrupt_set(0);
 	add_atomic(&interrupt_counts[int_no], 1);
-	/* save the registers so we can screw with iret later if we need to */
-	char clear_regs=0;
-	if(current_thread && !current_thread->regs) {
-		/* of course, if we are already inside an interrupt, we shouldn't
-		 * overwrite those. Also, we remember if we've saved this set of registers
-		 * for later use */
-		clear_regs=1;
+	if(!current_thread->regs)
 		current_thread->regs = regs;
-	}
-	/* check if we're interrupting kernel code */
-	char already_in_interrupt = 0;
-	if(current_thread->flags & TF_IN_INT)
-		already_in_interrupt = 1;
-	/* ...and set the flag so we know we're in an interrupt */
-	tm_thread_raise_flag(current_thread, TF_IN_INT);
-	int flags = 0;
-	if(already_in_interrupt)
-		flags |= INTR_INTR;
 	/* now, run through the stage1 handlers, and see if we need any
 	 * stage2 handlers to run later */
 	int s1started = timer_start(&interrupt_timers[int_no]);
 	for(int i=0;i<MAX_HANDLERS;i++)
 	{
 		if(interrupt_handlers[int_no][i].fn)
-			(interrupt_handlers[int_no][i].fn)(regs, int_no, flags);
+			(interrupt_handlers[int_no][i].fn)(regs, int_no, 0);
 	}
 	if(s1started) timer_stop(&interrupt_timers[int_no]);
-	assert(!cpu_interrupt_get_flag());
-	/* ok, now lets clean up */
 	cpu_interrupt_set(0);
-	/* clear the registers if we saved the ones from this interrupt */
-	if(current_thread && clear_regs)
-		current_thread->regs=0;
-	/* restore the flag in the cpu struct. The assembly routine will
-	 * call iret, which will also restore the EFLAG state to what
-	 * it was before, including the interrupts-enabled bit in eflags */
-	cpu_interrupt_set_flag(previous_interrupt_flag);
-	/* and clear the state flag if this is going to return to user-space code */
-	if(!already_in_interrupt)
-		tm_thread_lower_flag(current_thread, TF_IN_INT);
+	__setup_signal_handler(regs);
+	current_thread->regs = 0;
 }
 
 void interrupt_init()
@@ -280,7 +241,6 @@ void interrupt_init()
 	loader_add_kernel_symbol(cpu_interrupt_unregister_handler);
 	loader_do_add_kernel_symbol((addr_t)interrupt_handlers, "interrupt_handlers");
 	loader_add_kernel_symbol(cpu_interrupt_set);
-	loader_add_kernel_symbol(cpu_interrupt_set_flag);
 #endif
 }
 
@@ -293,11 +253,6 @@ int cpu_interrupt_set(unsigned _new)
 		arch_interrupt_enable();
 	}
 	return old;
-}
-
-void cpu_interrupt_set_flag(int flag)
-{
-	/* TODO: remove calls to this */
 }
 
 int cpu_interrupt_get_flag()

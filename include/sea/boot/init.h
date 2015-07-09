@@ -44,6 +44,7 @@ void tm_init_multitasking();
 #define u_execve(p, a, e) dosyscall(SYS_EXECVE,(addr_t)p,(addr_t)a,(addr_t)e,0,0)
 #define u_write(a, b) dosyscall(SYS_WRITE, a, (addr_t)b, strlen(b), 0, 0)
 #define sys_setup() dosyscall(0,0,0,0,0,0)
+#define u_sys_sigact(s,a,o) dosyscall(SYS_SIGACT, (addr_t)s, (addr_t)a, (addr_t)o, 0, 0);
 
 extern char *stuff_to_pass[128];
 

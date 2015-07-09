@@ -20,7 +20,8 @@
 #define TF_SHUTDOWN 1 /* TODO: do we need all these? */
 #define TF_KTASK 2
 #define TF_FORK  4
-#define TF_TIMEOUT_EXPIRED 4
+#define TF_TIMEOUT_EXPIRED 8
+#define TF_SIGNALED 0x10
 /* flags for different task states */
 #define TF_INSIG        0x800 /* inside a signal */
 #define TF_SCHED       0x1000 /* we request a reschedule after this syscall completes */
@@ -55,7 +56,6 @@ struct thread {
 
 	sigset_t sig_mask, old_mask;
 	unsigned signal;
-	struct sigaction signal_act[128]; /* TODO: per thread? */
 	registers_t *sysregs, *regs, regs_b;
 	time_t stime, utime, t_cutime, t_cstime;
 

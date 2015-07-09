@@ -18,7 +18,6 @@ struct thread *tm_thread_fork(int flags)
 	thr->priority = current_thread->priority;
 	thr->kernel_stack = kmalloc_a(0x1000);
 	thr->sig_mask = current_thread->sig_mask;
-	memcpy((void *)thr->signal_act, current_thread->signal_act, sizeof(struct sigaction) * 128);
 	return thr;
 }
 
@@ -66,8 +65,8 @@ struct process *tm_process_copy(int flags)
 	newp->tty = current_process->tty;
 	newp->heap_start = current_process->heap_start;
 	newp->heap_end = current_process->heap_end;
-	newp->signal_mask = current_process->signal_mask;
-	newp->signal = current_process->signal; /* TODO: do we need this, or just in threads? */
+	newp->global_sig_mask = current_process->global_sig_mask;
+	memcpy((void *)newp->signal_act, current_process->signal_act, sizeof(struct sigaction) * 128);
 	newp->parent = current_process;
 	ll_create(&newp->threadlist);
 	ll_create_lockless(&newp->mappings);

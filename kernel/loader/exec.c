@@ -35,7 +35,7 @@ static void preexec(int desc)
 	for(addr_t a = MMF_BEGIN;a < (MMF_BEGIN + (size_t)t->process->mmf_valloc.nindex);a+=PAGE_SIZE)
 		mm_vm_set_attrib(a, PAGE_PRESENT | PAGE_WRITE);
 	t->signal = 0;
-	memset((void *)t->signal_act, 0, sizeof(struct sigaction) * 128);
+	memset((void *)t->process->signal_act, 0, sizeof(struct sigaction) * 128);
 }
 
 static void free_dp(char **mem, int num)

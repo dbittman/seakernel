@@ -155,6 +155,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	cpu_interrupt_set(1);
 	if(!sys_clone(0))
 		init();
+
 	for(;;) {
 		tm_schedule();
 	}
@@ -187,7 +188,6 @@ void user_mode_init(void)
 	 * So we write simple wrapper functions for common functions that 
 	 * we will need */
 	sys_setup();
-	printf("Hello userland world\n");
 	int ret = u_execve("/sh", (char **)stuff_to_pass, (char **)init_env);
 	ret = u_execve("/bin/sh", (char **)stuff_to_pass, (char **)init_env);
 	printf("Failed to start the init process (err=%d). Halting.\n", -ret);
@@ -196,25 +196,6 @@ void user_mode_init(void)
 
 void init()
 {
-	struct llist *bl = ll_create(0);
-	if(!sys_clone(0)) {
-		kprintf("Blocking\n");
-		
-		tm_thread_block_timeout(bl, 1000);
-
-		kprintf("Got here\n");
-
-		for(;;);
-	}
-	
-	tm_thread_delay(500);
-	struct thread *th = tm_thread_get(2);
-	kprintf("Waking up blocked thread %d\n", th->tid);
-	//tm_blocklist_wakeall(bl);
-	tm_thread_unblock(th);
-	kprintf("Okay...\n");
-
-	for(;;);
 	/* Set some basic environment variables. These allow simple root execution, 
 	 * basic terminal access, and a shell to run from */
 	add_init_env("PATH=/bin/:/usr/bin/:/usr/sbin:");

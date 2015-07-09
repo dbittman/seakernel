@@ -30,8 +30,8 @@ void tm_process_exit(int code)
 	current_process->exit_reason.pid = current_process->pid;
 
 	/* TODO */
-	//if(current_process->parent)
-	//	tm_do_send_signal(current_process->parent->pid, SIGCHILD, 1);
+	if(current_process->parent)
+		tm_signal_send_process(current_process->parent, SIGCHILD);
 	fs_close_all_files(current_process);
 	if(current_process->root)
 		vfs_icache_put(current_process->root);

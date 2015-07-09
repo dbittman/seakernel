@@ -6,15 +6,12 @@
 #include <sea/tm/thread.h>
 #define SIGSTACK (STACK_LOCATION - (STACK_SIZE + PAGE_SIZE + 8))
 
-int arch_tm_userspace_signal_initializer(struct sigaction *sa)
+void arch_tm_userspace_signal_initializer(registers_t *regs, struct sigaction *sa)
 {
-	struct thread *t = current_thread;
-	volatile registers_t *iret = t->regs;
-	if(!iret) return 0;
 	/* user-space signal handing design:
 		* 
 		* we exploit the fact the iret pops back everything in the stack, and that
-		* we have access to those stack element. We trick iret into popping
+		* we have access to those stack element. We trick regs into popping
 		* back modified values of things, after pushing what looks like the
 		* first half of a subprocedure call to the new stack location for the 
 		* signal handler.
@@ -22,23 +19,29 @@ int arch_tm_userspace_signal_initializer(struct sigaction *sa)
 		* We set the return address of this 'function call' to be a bit of 
 		* injector code, listed above, which simply does a system call (128).
 		* This syscall copies back the original interrupt stack frame and 
-		* immediately goes back to the isr common handler to perform the iret
+		* immediately goes back to the isr common handler to perform the regs
 		* back to where we were executing before.
 		*/
-	/* TODO: redesign? */
-	//memcpy((void *)&t->reg_b, (void *)iret, sizeof(registers_t));
-	iret->useresp = SIGSTACK;
-	iret->useresp -= STACK_ELEMENT_SIZE;
+	kprintf("old esp = %x\n", regs->useresp);
+	memcpy((void *)((addr_t)regs->useresp - sizeof(registers_t)), (void *)regs, sizeof(*regs));
+	regs->useresp -= sizeof(registers_t);
+	kprintf("regs esp = %x\n", regs->useresp);
+	regs->useresp -= STACK_ELEMENT_SIZE;
 	/* push the argument (signal number) */
-	*(unsigned *)(iret->useresp) = t->signal;
-	iret->useresp -= STACK_ELEMENT_SIZE;
+	*(unsigned *)(regs->useresp) = current_thread->signal;
+	regs->useresp -= STACK_ELEMENT_SIZE;
 	/* push the return address. this function is mapped in when
 		* paging is set up */
-	*(unsigned *)(iret->useresp) = (unsigned)SIGNAL_INJECT;
-	iret->eip = (unsigned)sa->_sa_func._sa_handler;
-	t->signal=0;
-	/* sysregs is only set when we are in a syscall */
-	if(t->sysregs)
-		tm_thread_raise_flag(t, TF_JUMPIN);
-	return 1;
+	*(unsigned *)(regs->useresp) = (unsigned)SIGNAL_INJECT;
+	kprintf("final esp = %x\n", regs->useresp);
+	regs->eip = (unsigned)sa->_sa_func._sa_handler;
+	current_thread->signal=0;
 }
+
+void arch_tm_userspace_signal_cleanup(registers_t *regs)
+{
+	kprintf("Got here (esp = %x) (us = %x)\n", regs->useresp, regs);
+	memcpy((void *)regs, (void *)(regs->useresp + STACK_ELEMENT_SIZE), sizeof(*regs));
+	kprintf("restored esp = %x\n", regs->useresp);
+}
+

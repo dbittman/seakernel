@@ -22,10 +22,10 @@ int tm_thread_runnable(struct thread *thr)
 	return 0;
 }
 
+/* TODO: remove this function? */
 void tm_thread_kill(struct thread *thr)
 {
-	thr->signal = SIGKILL;
-	tm_thread_raise_flag(thr, TF_SCHED);
+	tm_signal_send_thread(thr, SIGKILL);
 }
 
 struct process *tm_thread_get(pid_t tid)

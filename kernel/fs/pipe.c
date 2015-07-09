@@ -156,7 +156,7 @@ int fs_pipe_write(struct inode *ino, int flags, char *initialbuffer, size_t tota
 		if((pipe->count - pipe->wrcount) == 0 && pipe->type != PIPE_NAMED) {
 			mutex_release(pipe->lock);
 			/* TODO: we probably shouldn't ever set this directly... remove all code that does this */
-			current_thread->signal = SIGPIPE;
+			tm_signal_send_thread(current_thread, SIGPIPE);
 			return -EPIPE;
 		}
 		/* IO block until we can write to it */

@@ -29,7 +29,7 @@ int sys_sbrk(long inc)
 	addr_t end = current_process->heap_end;
 	assert(end);
 	if(end + inc >= TOP_TASK_MEM)
-		tm_send_signal(current_thread->tid, SIGSEGV);
+		tm_signal_send_thread(current_thread, SIGSEGV);
 	current_process->heap_end += inc;
 	addr_t page = end & PAGE_MASK;
 	for(;page <=(current_process->heap_end&PAGE_MASK);page += PAGE_SIZE)

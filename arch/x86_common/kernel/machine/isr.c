@@ -33,7 +33,7 @@ void arch_interrupt_ipi_handler(volatile registers_t regs)
 #if CONFIG_ARCH == TYPE_ARCH_X86_64
 	assert(((regs.ds&(~0x7)) == 0x10 || (regs.ds&(~0x7)) == 0x20) && ((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));
 #endif
-	int previous_interrupt_flag = cpu_interrupt_set(0);
+	cpu_interrupt_set(0);
 	add_atomic(&interrupt_counts[regs.int_no], 1);
 #if CONFIG_SMP
 	/* delegate to the proper handler, in ipi.c */
@@ -58,7 +58,6 @@ void arch_interrupt_ipi_handler(volatile registers_t regs)
 	}
 #endif
 	cpu_interrupt_set(0);
-	cpu_interrupt_set_flag(previous_interrupt_flag); /* assembly code will issue sti */
 #if CONFIG_SMP
 	lapic_eoi();
 #endif
@@ -124,3 +123,4 @@ void arch_interrupt_reset_timer_state()
 {
 	if(interrupt_controller == IOINT_PIC) ack_pic(32);
 }
+

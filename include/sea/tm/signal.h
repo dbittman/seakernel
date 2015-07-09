@@ -85,9 +85,7 @@ struct sigaction
 
 int sys_sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict oset);
 int sys_sigact(int sig, const struct sigaction *act, struct sigaction *oact);
-int sys_alarm(int a);
-void set_signal(int sig, addr_t hand);
-int tm_send_signal(int p, int s);
-int tm_do_send_signal(int pid, int __sig, int p);
+int sys_kill(pid_t pid, int signal);
+//int sys_alarm(int a);
 
 #endif

@@ -14,6 +14,7 @@ void tm_thread_set_state(struct thread *t, int state)
 	/* TODO: What if this process is running on a different CPU */
 	if(oldstate != state && t == current_thread)
 		tm_schedule();
+	tm_thread_raise_flag(t, TF_SCHED);
 }
 
 void tm_thread_add_to_blocklist(struct thread *t, struct llist *blocklist)

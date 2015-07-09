@@ -3,7 +3,6 @@
 
 #include <sea/types.h>
 #include <sea/ll.h>
-#include <sea/tm/process.h>
 #include <sea/tm/async_call.h>
 #include <sea/tm/signal.h>
 #include <sea/cpu/registers.h>
@@ -35,11 +34,14 @@
 #define THREAD_RUNNING 0
 #define THREAD_INTERRUPTIBLE 1
 #define THREAD_UNINTERRUPTIBLE 2
+#define THREAD_DEAD 3
 
 #define tm_thread_raise_flag(t,f) or_atomic(&(t->flags), f)
 #define tm_thread_lower_flag(t,f) and_atomic(&(t->flags), ~f)
 
 #define current_thread ((struct thread *)arch_tm_get_current_thread(kernel_state_flags))
+
+struct process;
 struct thread {
 	unsigned magic;
 	pid_t tid;

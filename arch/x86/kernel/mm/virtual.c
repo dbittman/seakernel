@@ -13,10 +13,7 @@
 #endif
 #include <sea/mm/vmm.h>
 #include <sea/asm/system.h>
-volatile page_dir_t *kernel_dir=0, *minimal_directory=0;
-static unsigned int cr0temp;
 int id_tables=0;
-struct pd_data *pd_cur_data = (struct pd_data *)PDIR_DATA;
 
 addr_t id_mapped_location;
 void setup_kernelstack();
@@ -100,6 +97,7 @@ static addr_t vm_init_directory(addr_t id_map_to)
 
 /* This function will setup a paging environment with a basic page dir, 
  * enough to process the memory map passed by grub */
+static struct vmm_context minimal_context;
 void arch_mm_vm_init(addr_t id_map_to)
 {
 	id_mapped_location=id_map_to;
@@ -107,11 +105,12 @@ void arch_mm_vm_init(addr_t id_map_to)
 	cpu_interrupt_register_handler (14, &arch_mm_page_fault_handle);
 	
 	page_dir_t *pd = (page_dir_t *)vm_init_directory(id_map_to);
-	minimal_directory = pd;
+	minimal_context.root_physical = pd;
+	minimal_context.root_virtual = page_directory;
 	/* CR3 requires the physical address, so we directly 
 	 * set it because we have the physical address */
 	__asm__ volatile ("mov %0, %%cr3" : : "r" (pd));
-	__asm__ volatile ("mov %%cr0, %%eax; or %%eax, 0x80000000; mov %%eax, %%cr0":::"eax");
+	__asm__ volatile ("mov %%cr0, %%eax; or $0x80000000, %%eax; mov %%eax, %%cr0":::"eax");
 	
 	set_ksf(KSF_PAGING);
 }
@@ -121,22 +120,14 @@ void arch_mm_vm_init(addr_t id_map_to)
 void arch_mm_vm_init_2()
 {
 	printk(0, "[mm]: cloning directory for boot processor\n");
-	primary_cpu->kd = mm_vm_clone(page_directory, 0);
-	primary_cpu->kd_phys = primary_cpu->kd[1023] & PAGE_MASK;
+	mm_vm_clone(&minimal_context, &kernel_context);
 	printk(0, "[mm]: cloned\n");
-	kernel_dir = primary_cpu->kd;
-	/* can't call vm_switch, because we'll end up with the stack like it was
-	 * when we call vm_clone! So, we have to assume an invalid stack until
-	 * this function returns */
-	asm ("mov %0, %%cr3; nop; nop" :: "r" ((addr_t)kernel_dir[1023] & PAGE_MASK));
-	flush_pd();
-	printk(0, "[mm]: switched\n");
+	arch_mm_vm_switch_context(&kernel_context);
 }
 
-void arch_mm_vm_switch_context(page_dir_t *n/*VIRTUAL ADDRESS*/)
+void arch_mm_vm_switch_context(struct vmm_context *context)
 {
-	/* n[1023] is the mapped bit that loops to itself */
- 	asm ("mov %0, %%cr3" :: "r" ((addr_t)n[1023] & PAGE_MASK));
+ 	asm ("mov %0, %%cr3" :: "r" (context->root_physical):"memory");
 }
 
 addr_t arch_mm_vm_get_map(addr_t v, addr_t *p, unsigned locked)
@@ -145,16 +136,16 @@ addr_t arch_mm_vm_get_map(addr_t v, addr_t *p, unsigned locked)
 	unsigned int vp = (v&PAGE_MASK) / 0x1000;
 	unsigned int pt_idx = PAGE_DIR_IDX(vp);
 	/* TODO: generic "tasking system up" flag */
-	if(primary_cpu->idle_thread && !locked)
+	if(pd_cur_data && !locked)
 		mutex_acquire(&pd_cur_data->lock);
 	if(!pd[pt_idx])
 	{
-		if(primary_cpu->idle_thread && !locked)
+		if(pd_cur_data && !locked)
 			mutex_release(&pd_cur_data->lock);
 		return 0;
 	}
 	unsigned ret = page_tables[vp] & PAGE_MASK;
-	if(primary_cpu->idle_thread && !locked)
+	if(pd_cur_data && !locked)
 		mutex_release(&pd_cur_data->lock);
 	if(p)
 		*p = ret;
@@ -166,11 +157,11 @@ void arch_mm_vm_set_attrib(addr_t v, short attr)
 	unsigned *pd = page_directory;
 	unsigned int vp = (v&PAGE_MASK) / 0x1000;
 	unsigned int pt_idx = PAGE_DIR_IDX(vp);
-	if(primary_cpu->idle_thread)
+	if(pd_cur_data)
 		mutex_acquire(&pd_cur_data->lock);
 	if(!pd[pt_idx])
 	{
-		if(primary_cpu->idle_thread)
+		if(pd_cur_data)
 			mutex_release(&pd_cur_data->lock);
 		return;
 	}
@@ -179,14 +170,14 @@ void arch_mm_vm_set_attrib(addr_t v, short attr)
 	(page_tables[vp] |= attr);
 	asm("invlpg (%0)"::"r" (v));
 #if CONFIG_SMP
-	if(primary_cpu->idle_thread) {
+	if(pd_cur_data) {
 		if(IS_KERN_MEM(v))
 			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
 		else if((IS_THREAD_SHARED_MEM(v) && pd_cur_data->count > 1))
 			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
 	}
 #endif
-	if(primary_cpu->idle_thread)
+	if(pd_cur_data)
 		mutex_release(&pd_cur_data->lock);
 }
 
@@ -195,16 +186,16 @@ unsigned int arch_mm_vm_get_attrib(addr_t v, unsigned *p, unsigned locked)
 	unsigned *pd = page_directory;
 	unsigned int vp = (v&PAGE_MASK) / 0x1000;
 	unsigned int pt_idx = PAGE_DIR_IDX(vp);
-	if(primary_cpu->idle_thread && !locked)
+	if(pd_cur_data && !locked)
 		mutex_acquire(&pd_cur_data->lock);
 	if(!pd[pt_idx])
 	{
-		if(primary_cpu->idle_thread && !locked)
+		if(pd_cur_data && !locked)
 			mutex_release(&pd_cur_data->lock);
 		return 0;
 	}
 	unsigned ret = page_tables[vp] & ATTRIB_MASK;
-	if(primary_cpu->idle_thread && !locked)
+	if(pd_cur_data && !locked)
 		mutex_release(&pd_cur_data->lock);
 	if(p)
 		*p = ret;

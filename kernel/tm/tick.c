@@ -56,13 +56,13 @@ static void do_run_scheduler()
 static void do_tick()
 {
 	if(current_thread) {
-		//ticker_tick(&current_thread->cpu->ticker, 1000 /* TODO: Whatever this actually is */);
+		ticker_tick(&current_thread->cpu->ticker, 1 /* TODO: Whatever this actually is */);
 		//current_thread->system 
 		//	? (++current_process->stime) 
 		//	: (++current_process->utime);
 		//inc_parent_times(current_process->parent, 
 		//	current_thread->system ? __SYS : __USR);
-		printk_safe(0, "TICK: %d\n", current_thread->tid);
+		//printk_safe(0, "TICK: %d\n", current_thread->tid);
 		current_thread->flags |= TF_SCHED;
 	}
 	/* TODO: alarm() */

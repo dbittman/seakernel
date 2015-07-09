@@ -68,6 +68,7 @@ int serial_rw(int rw, int min, char *b, size_t c)
 void serial_init()
 {
 #if ! DISABLE_SERIAL
+	/* TODO: make this not schedule */
 	mutex_create(&serial_m, 0);
 	arch_serial_init(&serial_debug_port_minor, &serial_enable);
 

@@ -79,7 +79,6 @@ void cpu_timer_install(int freq)
 	arch_cpu_timer_install(freq);
 }
 
-/* TODO: optimize this mess of calls that interact with cpu_interrupt_set{,flag} and etc */
 void cpu_disable_preemption()
 {
 	int old = cpu_interrupt_set(0);
@@ -96,15 +95,19 @@ void cpu_enable_preemption()
 
 struct cpu *cpu_get_current(void)
 {
+	int old = cpu_interrupt_set(0);
 	cpu_disable_preemption();
 	struct cpu *cpu = current_thread->cpu;
 	add_atomic(&cpu->gc_count, 1);
+	cpu_interrupt_set(old);
 	return cpu;
 }
 
 void cpu_put_current(struct cpu *cpu)
 {
+	int old = cpu_interrupt_set(0);
 	if(sub_atomic(&cpu->gc_count, 1) == 0)
 		cpu_enable_preemption();
+	cpu_interrupt_set(old);
 }
 

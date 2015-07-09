@@ -3,10 +3,10 @@
 #include <sea/types.h>
 #include <sea/mm/vmm.h>
 #include <sea/tm/tqueue.h>
-#include <sea/tm/process.h>
 #include <sea/tm/thread.h>
 #include <sea/mutex.h>
 #include <sea/tm/ticker.h>
+#include <sea/tm/workqueue.h>
 
 #include <sea/config.h>
 #if CONFIG_ARCH == TYPE_ARCH_X86
@@ -34,9 +34,8 @@ struct cpu {
 	unsigned knum, snum; /* knum: cpu number to the kernel, snum: cpu number to the hardware */
 	unsigned flags;
 	cpuid_t cpuid;
-	volatile vmm_context_t *kd;
-	volatile addr_t kd_phys;
 	struct tqueue *active_queue;
+	struct workqueue work;
 	struct thread *idle_thread, *cur /* TODO: do we need this? */;
 	mutex_t lock;
 	unsigned numtasks;
@@ -54,8 +53,10 @@ int cpu_get_num_running_processors();
 int cpu_get_num_halted_processors();
 int cpu_get_num_secondary_processors();
 
-/* TODO: make this a real thing */
-#define __current_cpu ((struct cpu *)0)
+/* warning: this is not "safe" to use! The cpu could change on
+ * any schedule, which may happen while you're using this. Use
+ * cpu_get_current to make sure that doesn't happen. */
+#define __current_cpu ((struct cpu *)current_thread->cpu)
 extern struct cpu cpu_array[CONFIG_MAX_CPUS];
 extern unsigned cpu_array_num;
 
@@ -108,6 +109,9 @@ static inline void cpu_jump(addr_t a)
 
 struct cpu *cpu_get_current();
 void cpu_put_current(struct cpu *);
+
+void cpu_disable_preemption();
+void cpu_enable_preemption();
 
 #endif
 

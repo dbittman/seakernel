@@ -78,7 +78,9 @@ int sys_setup(int a)
 
 	struct filesystem *fs = fs_filesystem_create();
 	ramfs_mount(fs);
-	current_process->cwd = current_process->root = fs_read_root_inode(fs);
+	current_process->root = fs_read_root_inode(fs);
+	vfs_inode_get(current_process->root);
+	current_process->cwd = current_process->root;
 	fs_initrd_parse();
 	devfs_init();
 

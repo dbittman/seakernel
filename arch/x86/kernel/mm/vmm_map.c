@@ -14,7 +14,7 @@ int arch_mm_vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned opt)
 	unsigned vdir = PAGE_DIR_IDX(vpage);
 	addr_t p;
 	unsigned *pd = page_directory;
-	if(primary_cpu->idle_thread && !(opt & MAP_PDLOCKED))
+	if(pd_cur_data && !(opt & MAP_PDLOCKED))
 		mutex_acquire(&pd_cur_data->lock);
 	if(!pd[vdir])
 	{
@@ -28,14 +28,14 @@ int arch_mm_vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned opt)
 	if(!(opt & MAP_NOCLEAR))
 		memset((void *)(virt&PAGE_MASK), 0, 0x1000);
 #if CONFIG_SMP
-	if(primary_cpu->idle_thread) {
+	if(pd_cur_data) {
 		if(IS_KERN_MEM(virt))
 			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
 		else if((IS_THREAD_SHARED_MEM(virt) && pd_cur_data->count > 1))
 			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
 	}
 #endif
-	if(primary_cpu->idle_thread && !(opt & MAP_PDLOCKED))
+	if(pd_cur_data && !(opt & MAP_PDLOCKED))
 		mutex_release(&pd_cur_data->lock);
 	return 0;
 }

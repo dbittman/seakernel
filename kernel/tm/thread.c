@@ -1,6 +1,7 @@
 #include <sea/tm/thread.h>
 #include <sea/tm/process.h>
 #include <sea/lib/hash.h>
+#include <sea/errno.h>
 size_t running_threads = 0;
 struct hash_table *thread_table;
 void tm_thread_enter_system(int sys)
@@ -25,5 +26,14 @@ void tm_thread_kill(struct thread *thr)
 {
 	thr->signal = SIGKILL;
 	tm_thread_raise_flag(thr, TF_SCHED);
+}
+
+struct process *tm_thread_get(pid_t tid)
+{
+	struct thread *thr;
+	/* TODO: should we reference count thread structures? */
+	if(hash_table_get_entry(thread_table, &tid, sizeof(tid), 1, (void **)&thr) == -ENOENT)
+		return 0;
+	return thr;
 }
 

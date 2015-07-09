@@ -24,6 +24,8 @@ void tm_init_multitasking()
 	process_table = hash_table_create(0, 0, HASH_TYPE_CHAIN);
 	hash_table_resize(process_table, HASH_RESIZE_MODE_IGNORE, 1000);
 	hash_table_specify_function(process_table, HASH_FUNCTION_BYTE_SUM);
+
+	process_list = ll_create(0);
 	
 	thread_table = hash_table_create(0, 0, HASH_TYPE_CHAIN);
 	hash_table_resize(thread_table, HASH_RESIZE_MODE_IGNORE, 1000);
@@ -32,19 +34,25 @@ void tm_init_multitasking()
 	struct thread *thread = kmalloc(sizeof(struct thread));
 	struct process *proc = kmalloc(sizeof(struct process));
 
+	valloc_create(&proc->mmf_valloc, MMF_BEGIN, MMF_END, PAGE_SIZE, VALLOC_USERMAP);
+	for(addr_t a = MMF_BEGIN;a < (MMF_BEGIN + (size_t)proc->mmf_valloc.nindex);a+=PAGE_SIZE)
+		mm_vm_set_attrib(a, PAGE_PRESENT | PAGE_WRITE);
 	ll_create(&proc->threadlist);
 	mutex_create(&proc->map_lock, 0);
 	proc->magic = PROCESS_MAGIC;
-	proc->mm_context = kernel_dir;
+	memcpy(&proc->vmm_context, &kernel_context, sizeof(kernel_context));
+	thread->process = proc; /* we have to do this early, so that the vmm system can use the lock... */
 	thread->state = THREAD_RUNNING;
 	thread->magic = THREAD_MAGIC;
 	thread->kernel_stack = &initial_kernel_stack;
 	*(struct thread **)(thread->kernel_stack) = thread;
 
+
 	primary_cpu->active_queue = tqueue_create(0, 0);
 	primary_cpu->idle_thread = thread;
 	primary_cpu->numtasks=1;
 	ticker_create(&primary_cpu->ticker, 0);
+	workqueue_create(&primary_cpu->work, 0);
 	tm_thread_add_to_process(thread, proc);
 	tm_thread_add_to_cpu(thread, primary_cpu);
 	/* this is the final thing to allow the system to begin scheduling
@@ -56,16 +64,25 @@ void tm_init_multitasking()
 	set_ksf(KSF_THREADING);
 }
 
-void tm_set_kernel_stack(addr_t start, addr_t end)
+void tm_set_kernel_stack(struct cpu *cpu, addr_t start, addr_t end)
 {
-	arch_tm_set_kernel_stack(start, end);
+	arch_tm_set_kernel_stack(cpu, start, end);
 }
 
+	/* TODO: try to remove this function */
 void tm_switch_to_user_mode()
 {
 	/* set up the kernel stack first...*/
-	tm_set_kernel_stack(current_thread->kernel_stack,
+	tm_set_kernel_stack(current_thread->cpu, current_thread->kernel_stack,
 			current_thread->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
 	arch_tm_switch_to_user_mode();
+}
+
+void tm_thread_user_mode_jump(void (*fn)(void))
+{
+	cpu_interrupt_set(0);
+	tm_set_kernel_stack(current_thread->cpu, current_thread->kernel_stack,
+			current_thread->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
+	arch_tm_jump_to_user_mode((addr_t)fn);
 }
 

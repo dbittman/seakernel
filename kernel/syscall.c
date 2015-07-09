@@ -70,7 +70,7 @@ static void *syscall_table[129] = {
 	[SYS_SETUP]           = SC sys_setup,
 	[SYS_EXIT]            = SC sys_exit,
 	[SYS_FORK]            = SC sys_clone,
-	[SYS_WAIT]            = SC tm_process_wait,
+	//[SYS_WAIT]            = SC tm_process_wait,
 	[SYS_READ]            = SC sys_readpos,
 	[SYS_WRITE]           = SC sys_writepos,
 	[SYS_OPEN]            = SC sys_open_posix,
@@ -330,6 +330,7 @@ int syscall_handler(volatile registers_t *regs)
 		return -EINVAL;
 	if(kernel_state_flags & KSF_SHUTDOWN)
 		for(;;);
+	
 	tm_thread_enter_system(SYSCALL_NUM_AND_RET);
 	/* most syscalls are pre-emptible, so we enable interrupts and
 	 * expect handlers to disable them if needed */

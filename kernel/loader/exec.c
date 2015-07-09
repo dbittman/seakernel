@@ -224,7 +224,6 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 	/* Zero the heap and stack */
 	memset((void *)end_l, 0, PAGE_SIZE-(end_l%PAGE_SIZE));
 	memset((void *)(end+PAGE_SIZE), 0, PAGE_SIZE);
-	memset((void *)(STACK_LOCATION - STACK_SIZE), 0, STACK_SIZE);
 	/* Release everything */
 	if(EXEC_LOG == 2) 
 		printk(0, "[%d]: Performing call\n", current_process->pid);

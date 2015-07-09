@@ -1,28 +1,31 @@
 #ifndef __SEA_MM_VMM_H
 #define __SEA_MM_VMM_H
 
-#include <sea/tm/process.h>
 #include <sea/mm/pmm.h>
 #include <sea/arch-include/mm-memory.h>
+struct thread;
 struct pd_data {
 	unsigned count;
 	mutex_t lock;
 };
 
-extern struct pd_data *pd_cur_data;
+struct vmm_context {
+	addr_t root_physical;
+	addr_t root_virtual;
+	mutex_t lock;
+};
 
-struct process;
-extern volatile vmm_context_t *kernel_dir, *current_dir;
+extern struct vmm_context kernel_context;
+
+#define pd_cur_data (current_process ? &current_process->vmm_context : 0)
+
 extern int id_tables;
-extern addr_t initial_boot_stack;
-vmm_context_t *mm_vm_clone(vmm_context_t *pd, char cow);
-vmm_context_t *mm_vm_copy(vmm_context_t *pd);
-void mm_free_thread_shared_directory();
-void mm_destroy_task_page_directory(struct process *p);
-void mm_free_thread_specific_directory();
+extern addr_t initial_boot_stack; /* TODO: don't we have another one of these? */
+void mm_vm_clone(struct vmm_context *, struct vmm_context *);
+void mm_vm_switch_context(struct vmm_context *);
+
 void mm_vm_init(addr_t id_map_to);
 void mm_vm_init_2();
-void mm_vm_switch_context(vmm_context_t *n/*VIRTUAL ADDRESS*/);
 addr_t mm_vm_get_map(addr_t v, addr_t *p, unsigned locked);
 void mm_vm_set_attrib(addr_t v, short attr);
 unsigned int mm_vm_get_attrib(addr_t v, unsigned *p, unsigned locked);

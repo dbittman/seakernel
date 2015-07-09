@@ -5,42 +5,13 @@
 #include <sea/cpu/atomic.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/errno.h>
-int tm_process_wait(pid_t pid, int state)
-{
-#if 0
-	if(!state) return 0;
-	if(!pid) return 0;
-	if(current_task->pid) current_task->system=0;
-	task_t *task = tm_get_process_by_pid(pid);
-	if(!task) return -ESRCH;
-	current_task->waiting = task;
-	if(state == -1)
-		/* We wait for it to be dead. When it is, we recieve a signal, 
-		 * so why loop? */
-		tm_process_pause(current_task);
-	else {
-		/* So, here we just wait until either the task tm_exits or the 
-		 * state becomes equal. Unfortunately we are forced to check 
-		 * the state whenever we can */
-		while(1) {
-			task = tm_get_process_by_pid(pid);
-			if(!task || task->state == state)
-				break;
-			tm_schedule();
-		}
-	}
-	if(current_task->sigd != SIGWAIT && current_task->sigd)
-		return -EINTR;
-	return current_task->waiting_ret;
-#endif
-}
 
-#if 0
-static void get_status_int(task_t *t, int *st, int *__pid)
+static void get_status_int(struct process *t, int *st, int *__pid)
 {
 
 	int ret_val, sig_number;
-	int status= (t->state == TASK_DEAD) ? __EXIT : __STOPPED;
+	//int status = (t->state == TASK_DEAD) ? __EXIT : __STOPPED;
+	int status = __EXIT;
 	
 	sig_number = t->exit_reason.sig;
 	ret_val = t->exit_reason.ret;
@@ -64,55 +35,55 @@ static void get_status_int(task_t *t, int *st, int *__pid)
 	if(st)
 		*st = code << 16 | info;
 }
-#endif
+
+static struct process *__find_first_child(struct process *parent)
+{
+	struct llistnode *node;
+	struct process *proc;
+	rwlock_acquire(&process_list->rwl, RWL_READER);
+	ll_for_each_entry(process_list, node, struct process *, proc) {
+		if(proc->parent == parent) {
+			rwlock_release(&process_list->rwl, RWL_READER);
+			return proc;
+		}
+	}
+	rwlock_release(&process_list->rwl, RWL_READER);
+	return 0;
+}
+
 int sys_waitpid(int pid, int *st, int opt)
 {
-#if 0
 	if(!pid || pid < -1)
 		return -ENOSYS;
-	tm_raise_flag(TF_BGROUND);
-	task_t *t=0;
+
+	struct process *proc = 0;
 	if(pid == -1) {
-		/* find first child */
-		t = tm_search_tqueue(primary_queue, TSEARCH_PARENT, (addr_t)current_task, (void (*)(task_t *, int))0, 0, 0);
-	} else
-		t = tm_get_process_by_pid(pid);
-	top:
-	
-	if(!t || t->parent != current_task) {
-		tm_lower_flag(TF_BGROUND);
+		proc = __find_first_child(current_process);
+	} else {
+		proc = tm_process_get(pid);
+	}
+
+	if(!proc || proc->parent != current_process)
 		return -ECHILD;
+
+	while(proc->thread_count != 0 && !(opt & WNOHANG)) {
+		if(tm_thread_got_signal(current_thread))
+			return -EINTR;
+		tm_schedule();
 	}
-	
-	if(current_task->sigd && 
-		((struct sigaction *)&(current_task->thread->signal_act
-		[current_task->sigd]))->_sa_func._sa_handler && !(current_task->thread->signal_act
-	[current_task->sigd].sa_flags & SA_RESTART)) {
-		tm_lower_flag(TF_BGROUND);
-		return -EINTR;
-	}
-	
-	if(t->state != TASK_DEAD) {
-		if(!(opt & WNOHANG)) {
-			tm_schedule();
-			/* we're hanging around in the kernel anyway, might as well help out */
-			__KT_try_handle_stage2_interrupts();
-			goto top;
-		}
-		tm_lower_flag(TF_BGROUND);
+
+	if(proc->thread_count > 0) {
 		return 0;
 	}
 	int code, gotpid;
-	get_status_int(t, &code, &gotpid);
-	if(pid == -1 && t->state == TASK_DEAD)
-		__tm_remove_task_from_primary_queue(t, 0);
+	get_status_int(proc, &code, &gotpid);
+	tm_process_wait_cleanup(proc);
 	if(st)
 		*st = code;
-	tm_lower_flag(TF_BGROUND);
 	return gotpid;
-#endif
 }
 
+/* TODO: remove */
 int sys_waitagain()
 {
 	//return (current_task->wait_again ? 

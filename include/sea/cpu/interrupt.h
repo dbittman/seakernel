@@ -26,7 +26,7 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no);
 void arch_cpu_timer_install(int hz);
 void cpu_timer_install(int hz);
 
-int cpu_interrupt_register_handler(int num, void (*fn)(int, int));
+int cpu_interrupt_register_handler(int num, void (*fn)(registers_t *, int, int));
 void cpu_interrupt_unregister_handler(u8int n, int id);
 
 void interrupt_init();

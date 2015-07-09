@@ -1,16 +1,11 @@
 #include <sea/mm/_mm.h>
 
-vmm_context_t *mm_vm_clone(vmm_context_t *pd, char cow)
+void mm_vm_clone(struct vmm_context *old, struct vmm_context *new)
 {
-	return arch_mm_vm_clone(pd, cow);
+	return arch_mm_vm_clone(old, new);
 }
 
-vmm_context_t *mm_vm_copy(vmm_context_t *pd)
-{
-	return arch_mm_vm_copy(pd);
-}
-
-void mm_destroy_directory(vmm_context_t *dir)
+void mm_destroy_directory(struct vmm_context *dir)
 {
 
 }
@@ -30,9 +25,9 @@ void mm_vm_init_2()
 	arch_mm_vm_init_2();
 }
 
-void mm_vm_switch_context(vmm_context_t *n/*VIRTUAL ADDRESS*/)
+void mm_vm_switch_context(struct vmm_context *c)
 {
-	arch_mm_vm_switch_context(n);
+	arch_mm_vm_switch_context(c);
 }
 
 addr_t mm_vm_get_map(addr_t v, addr_t *p, unsigned locked)

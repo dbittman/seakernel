@@ -21,11 +21,11 @@ static inline void _set_lowercase(char *b)
 static void __panic_print_extra_data(int flags, struct thread *t)
 {
 	/* TODO */
-#if 0
 	if(t) 
-		printk_safe(9,"current_task=%x:%d(%s), sys=%d, flags=%x, F=%x. Stack trace:\n", t, 
-				t->pid, t->command, t->system, t->flags, t->flag);
+		printk_safe(9,"current_task=%x:%d, sys=%d, flags=%x. Stack trace:\n", t, 
+				t->tid, t->system, t->flags);
 	cpu_print_stack_trace(64);
+#if 0
 	if(flags & PANIC_VERBOSE)
 	{
 		printk_safe(9, "task listing:\n");
@@ -76,8 +76,8 @@ void panic(int flags, char *fmt, ...)
 			cpu_halt();
 		}
 	}
-	set_ksf(KSF_PANICING);
 	struct thread *t = current_thread;
+	set_ksf(KSF_PANICING);
 	
 	printk_safe(9, "\n\n*** kernel panic - ");	
 	char buf[512];

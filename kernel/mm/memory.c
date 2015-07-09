@@ -16,6 +16,8 @@
 #include <sea/mm/reclaim.h>
 #include <sea/vsprintf.h>
 
+struct vmm_context kernel_context;
+
 static void process_memorymap(struct multiboot *mboot)
 {
 	addr_t i = mboot->mmap_addr;
@@ -103,7 +105,6 @@ void mm_init(struct multiboot *m)
 	init_swap();
 #endif
 #if CONFIG_MODULES
-	loader_add_kernel_symbol(kernel_dir);
 	loader_add_kernel_symbol(__kmalloc);
 	loader_add_kernel_symbol(__kmalloc_ap);
 	loader_add_kernel_symbol(__kmalloc_a);

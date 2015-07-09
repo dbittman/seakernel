@@ -10,7 +10,7 @@
 #include <sea/cpu/atomic.h>
 #include <sea/loader/symbol.h>
 struct interrupt_handler {
-	void (*fn)(int nr, int flags);
+	void (*fn)(registers_t *, int nr, int flags);
 };
 
 #define INTR_USER   1
@@ -63,7 +63,7 @@ static struct timer interrupt_timers[256];
 static mutex_t isr_lock, s2_lock;
 char interrupt_controller=0;
 
-int cpu_interrupt_register_handler(int num, void (*fn)(int, int))
+int cpu_interrupt_register_handler(int num, void (*fn)(registers_t *, int, int))
 {
 	mutex_acquire(&isr_lock);
 	int i;
@@ -165,7 +165,6 @@ void cpu_interrupt_syscall_entry(registers_t *regs, int syscall_num)
 		assert(!cpu_interrupt_get_flag());
 	}
 
-
 	cpu_interrupt_set(0);
 	current_thread->sysregs = current_thread->regs = 0;
 	cpu_interrupt_set_flag(1);
@@ -195,7 +194,7 @@ void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_addres
 	{
 		if(interrupt_handlers[int_no][i].fn)
 		{
-			interrupt_handlers[int_no][i].fn(int_no, flags);
+			interrupt_handlers[int_no][i].fn(regs, int_no, flags);
 			called = 1;
 		}
 	}
@@ -219,6 +218,7 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 	 * it returns the interrupts-enabled flag from BEFORE the interrupt
 	 * was recieved! Fuckin' brilliant! Back up that flag, so we can
 	 * properly restore the flag later. */
+	/*TODO: this stuff no longer makes sense (we don't keep a seperate int flag) */
 	int previous_interrupt_flag = cpu_interrupt_set(0);
 	add_atomic(&interrupt_counts[int_no], 1);
 	/* save the registers so we can screw with iret later if we need to */
@@ -245,7 +245,7 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 	for(int i=0;i<MAX_HANDLERS;i++)
 	{
 		if(interrupt_handlers[int_no][i].fn)
-			(interrupt_handlers[int_no][i].fn)(int_no, flags);
+			(interrupt_handlers[int_no][i].fn)(regs, int_no, flags);
 	}
 	if(s1started) timer_stop(&interrupt_timers[int_no]);
 	assert(!cpu_interrupt_get_flag());
@@ -284,9 +284,6 @@ void interrupt_init()
 #endif
 }
 
-/* TODO: Right, so, like....
- * Let's just get rid of all references to CPU_INTER, and just read from
- * eflags when we want to know... */
 int cpu_interrupt_set(unsigned _new)
 {
 	int old = cpu_interrupt_get_flag();

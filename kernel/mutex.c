@@ -37,18 +37,12 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 	/* are we re-locking ourselves? */
 	if(current_thread && m->lock && ((m->pid == (pid_t)current_thread->tid)))
 		panic(0, "task %d tried to relock mutex %x (%s:%d)", m->pid, m->lock, file, line);
-#if CONFIG_DEBUG
-	int t = 100000000;
-#endif
 	/* wait until we can set bit 0. once this is done, we have the lock */
 	while(bts_atomic(&m->lock, 0)) {
 		if(!(m->flags & MT_NOSCHED))
 			tm_schedule();
 		else
 			cpu_pause();
-#if CONFIG_DEBUG
-		if(!--t) panic(0, "mutex time out %s:%d\n", file, line);
-#endif
 	}
 	assert(m->lock);
 	if(current_thread) m->pid = current_thread->tid;

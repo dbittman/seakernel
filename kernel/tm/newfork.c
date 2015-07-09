@@ -59,7 +59,7 @@ struct process *tm_process_copy(int flags)
 	 * to be cloned) */
 	struct process *newp = kmalloc(sizeof(struct process));
 	newp->magic = PROCESS_MAGIC;
-	newp->mm_context = mm_vm_clone(current_process->mm_context, 0); /* TODO: is this the right one? */
+	mm_vm_clone(&current_process->vmm_context, &newp->vmm_context);
 	newp->pid = add_atomic(&__next_pid, 1);
 	newp->flags = PROCESS_FORK;
 	newp->cmask = current_process->cmask;
@@ -70,6 +70,12 @@ struct process *tm_process_copy(int flags)
 	newp->signal = current_process->signal; /* TODO: do we need this, or just in threads? */
 	newp->parent = current_process;
 	ll_create(&newp->threadlist);
+	ll_create_lockless(&newp->mappings);
+	mutex_create(&newp->map_lock, 0);
+	/* TODO: what the fuck is this? */
+	valloc_create(&newp->mmf_valloc, MMF_BEGIN, MMF_END, PAGE_SIZE, VALLOC_USERMAP);
+	for(addr_t a = MMF_BEGIN;a < (MMF_BEGIN + (size_t)newp->mmf_valloc.nindex);a+=PAGE_SIZE)
+		mm_vm_set_attrib(a, PAGE_PRESENT | PAGE_WRITE);
 	__copy_mappings(newp, current_process);
 	if(current_process->root) {
 		newp->root = current_process->root;
@@ -80,6 +86,8 @@ struct process *tm_process_copy(int flags)
 		vfs_inode_get(newp->cwd);
 	}
 	fs_copy_file_handles(current_process, newp);
+	mutex_create(&newp->files_lock, 0);
+	mutex_create(&newp->map_lock, 0);
 	return newp;
 }
 
@@ -102,8 +110,8 @@ int sys_clone(int flags)
 	if(!(flags & CLONE_SHARE_PROCESS)) {
 		proc = tm_process_copy(flags);
 		add_atomic(&running_processes, 1);
-		/* TODO: insert to global hash table */
 		assert(!hash_table_set_entry(process_table, &proc->pid, sizeof(proc->pid), 1, proc));
+		ll_do_insert(process_list, &proc->listnode, proc);
 	}
 	struct thread *thr = tm_thread_fork(flags);
 	assert(!hash_table_set_entry(thread_table, &thr->tid, sizeof(thr->tid), 1, thr));
@@ -112,6 +120,7 @@ int sys_clone(int flags)
 	thr->state = THREAD_UNINTERRUPTIBLE;
 	
 
+	cpu_disable_preemption();
 	arch_cpu_copy_fixup_stack((addr_t)thr->kernel_stack, (addr_t)current_thread->kernel_stack, KERN_STACK_SIZE);
 	*(struct thread **)(thr->kernel_stack) = thr;
 	addr_t esp;
@@ -130,14 +139,14 @@ int sys_clone(int flags)
 	thr->stack_pointer = esp;
 	tm_thread_add_to_cpu(thr, current_thread->cpu);
 	thr->jump_point = (addr_t)arch_tm_read_ip();
+	cpu_enable_preemption();
 
 	if(current_thread == thr) {
 		current_thread->jump_point = 0;
+		cpu_enable_preemption();
 		cpu_interrupt_set(1);
-		kprintf("CHILD %x %x %x\n", current_thread->flags, current_thread->magic, current_thread->tid);
 		return 0;
 	} else {
-		kprintf("PARENT\n");
 		thr->state = THREAD_RUNNING;
 		return thr->tid;
 	}

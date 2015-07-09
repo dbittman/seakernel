@@ -2,6 +2,7 @@
 #define _SEA_TM_PROCESS_H
 
 #include <sea/types.h>
+#include <sea/mm/vmm.h>
 #include <sea/ll.h>
 #include <sea/cpu/registers.h>
 #include <sea/tm/signal.h>
@@ -12,7 +13,16 @@
 #include <sea/lib/hash.h>
 #include <sea/tm/thread.h>
 
-#define current_process current_thread->process
+#define current_process (__tm_get_current_process())
+
+/* TODO: const? */
+static inline struct process *__tm_get_current_process(void)
+{
+	struct thread *thr = current_thread;
+	if(thr == 0)
+		return 0;
+	return thr->process;
+}
 
 #define FILP_HASH_LEN 512
 
@@ -27,18 +37,18 @@
 
 #define PROCESS_FORK 1
 
-typedef struct exit_status {
+struct exit_status {
 	unsigned pid;
 	int ret;
 	unsigned sig;
 	char coredump;
 	int cause;
 	struct exit_status *next, *prev;
-} ex_stat;
+};
 
 struct process {
 	unsigned magic;
-	vmm_context_t *mm_context;
+	struct vmm_context vmm_context;
 	pid_t pid;
 	int flags;
 
@@ -49,6 +59,7 @@ struct process {
 	char **argv, **env;
 	int cmask;
 	int tty;
+	struct exit_status exit_reason;
 	uid_t effective_uid, real_uid, saved_uid;
 	gid_t effective_gid, real_gid, saved_gid;
 	struct inode *root, *cwd;
@@ -81,8 +92,9 @@ int tm_get_uid();
 int tm_get_egid();
 int tm_get_euid();
 
-void arch_tm_set_kernel_stack(addr_t, addr_t);
-void tm_set_kernel_stack(addr_t, addr_t);
+/* TODO: move to CPU subsys */
+void arch_tm_set_kernel_stack(struct cpu*, addr_t, addr_t);
+void tm_set_kernel_stack(struct cpu*, addr_t, addr_t);
 
 int sys_times(struct tms *buf);
 int sys_waitpid(int pid, int *st, int opt);
@@ -106,6 +118,7 @@ int sys_clone(int);
 extern void arch_do_switch_to_user_mode();
 void arch_tm_set_current_thread_marker(addr_t *space, addr_t task);
 
+extern struct llist *process_list;
 extern struct hash_table *process_table;
 
 #include <sea/mm/vmm.h>

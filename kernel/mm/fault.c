@@ -24,8 +24,9 @@ static int map_in_page(addr_t address)
 	if(address >= current_process->heap_start && address <= current_process->heap_end)
 		return do_map_page(address, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
 	/* and check if the memory is for the stack */
-	if(address >= TOP_TASK_MEM_EXEC && address < (TOP_TASK_MEM_EXEC+STACK_SIZE*2))
+	if(address >= TOP_TASK_MEM_EXEC && address < (TOP_TASK_MEM)) {
 		return do_map_page(address, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
+	}
 	return 0;
 }
 

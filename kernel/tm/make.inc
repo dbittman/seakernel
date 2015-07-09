@@ -11,4 +11,5 @@ KOBJS+= kernel/tm/blocking.o \
 		kernel/tm/ticker.o \
 		kernel/tm/tm_sys.o \
 		kernel/tm/tsearch.o \
-		kernel/tm/wait.o
+		kernel/tm/wait.o \
+		kernel/tm/workqueue.o

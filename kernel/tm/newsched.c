@@ -3,8 +3,14 @@
 #include <sea/tm/process.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/processor.h>
-static void arch_tm_thread_switch(struct thread *old, struct thread *new)
+static void arch_tm_thread_switch(struct thread *old, struct thread *new) 
 {
+	assert(new->stack_pointer > (addr_t)new->kernel_stack + sizeof(addr_t));
+	tm_set_kernel_stack(new->cpu, new->kernel_stack,
+			new->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
+	if(new->process != old->process) {
+		mm_vm_switch_context(&new->process->vmm_context);
+	}
 	asm (
 		"pushf;"
 		"push %%ebx;"
@@ -12,9 +18,6 @@ static void arch_tm_thread_switch(struct thread *old, struct thread *new)
 		"push %%edi;"
 		"push %%ebp;"
 		"mov %%esp, %0;": "=r"(old->stack_pointer)::"memory");
-	if(new->process->mm_context != old->process->mm_context) {
-	//	asm ("mov %0, %%cr3;"::"r"(new->process->mm_context):"memory");
-	}
 	if(new->jump_point) {
 		/* newly created thread, needs to just have some basic context set
 		 * up initially and then jumped to */
@@ -24,16 +27,15 @@ static void arch_tm_thread_switch(struct thread *old, struct thread *new)
 				"mov %0, %%esp;"
 				"pop %%ebp;"
 				"jmp *%%ecx"::"r"(new->stack_pointer), "r"(jump):"memory");
-	} else {
-		asm ("mov %0, %%esp;"
-				"pop %%ebp;"
-				"pop %%edi;"
-				"pop %%esi;"
-				"pop %%ebx;"
-				"popf"::"r"(new->stack_pointer):"memory");
 	}
-	tm_set_kernel_stack(new->kernel_stack,
-			new->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
+	asm ("mov %0, %%esp;"
+			"pop %%ebp;"
+			"pop %%edi;"
+			"pop %%esi;"
+			"pop %%ebx;"
+			"popf"::"r"(new->stack_pointer):"memory");
+	/* WARNING - we've switched stacks at this point! We must NOT use anything
+	 * stack related now until this function returns! */
 }
 
 static struct thread *get_next_thread()
@@ -41,6 +43,7 @@ static struct thread *get_next_thread()
 	struct thread *n = 0;
 	while(1) {
 		n = tqueue_next(current_thread->cpu->active_queue);
+		assert(n->cpu == current_thread->cpu);
 		if(n && tm_thread_runnable(n))
 			break;
 		if(!n || n == current_thread) {
@@ -65,13 +68,12 @@ static void finish_schedule()
 
 void tm_schedule()
 {
-	/* TODO: global preempt disable, or just on this CPU? */
 	int old = cpu_interrupt_set(0);
 	if(__current_cpu->flags & CPU_DISABLE_PREEMPT) {
 		cpu_interrupt_set(old);
 		return;
 	}
-	/* TODO: do we need to call a preempt_disable function */
+	cpu_disable_preemption();
 	prepare_schedule();
 	struct thread *next = get_next_thread();
 
@@ -79,7 +81,11 @@ void tm_schedule()
 		arch_tm_thread_switch(current_thread, next);
 	}
 
+	struct cpu *thiscpu = current_thread->cpu;
 	finish_schedule();
+	cpu_enable_preemption();
 	cpu_interrupt_set(old);
+	if(thiscpu->work.count > 0)
+		workqueue_dowork(&thiscpu->work);
 }
 

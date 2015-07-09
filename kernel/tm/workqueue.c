@@ -3,6 +3,7 @@
 #include <sea/kernel.h>
 #include <sea/cpu/atomic.h>
 #include <sea/tm/async_call.h>
+#include <sea/tm/workqueue.h>
 /* TODO: roll this out to all kernel objects */
 #define KOBJ_CREATE(obj,flags,alloc_flag) do {\
 	if(!obj) {\
@@ -22,30 +23,45 @@
 struct workqueue *workqueue_create(struct workqueue *wq, int flags)
 {
 	KOBJ_CREATE(wq, flags, WORKQUEUE_KMALLOC);
-	heap_create(&wq->tasks, 0);
+	heap_create(&wq->tasks, HEAP_LOCKLESS, HEAPMODE_MAX);
+	mutex_create(&wq->lock, MT_NOSCHED);
+	return wq;
 }
 
 void workqueue_destroy(struct workqueue *wq)
 {
+	heap_destroy(&wq->tasks);
+	ll_destroy(&wq->lock);
 	KOBJ_DESTROY(wq, WORKQUEUE_KMALLOC);
 }
 
 void workqueue_insert(struct workqueue *wq, struct async_call *call)
 {
+	mutex_acquire(&wq->lock);
 	heap_insert(&wq->tasks, call->priority, call);
+	mutex_release(&wq->lock);
 	add_atomic(&wq->count, 1);
 }
 
 int workqueue_dowork(struct workqueue *wq)
 {
 	struct async_call *call;
+	/* TODO: this is probably going to be pretty common with the
+	 * non-scheduling mutexes. Maybe make it the default? */
+	/* TODO: that would mean making disable_preempt a counter in cpu struct. */
+	cpu_disable_preemption();
+	mutex_acquire(&wq->lock);
 	if(heap_pop(&wq->tasks, 0, (void **)&call) == 0) {
+		mutex_release(&wq->lock);
+		cpu_enable_preemption();
 		sub_atomic(&wq->count, 1);
 		/* handle async_call */
 		async_call_execute(call);
 		async_call_destroy(call);
 		return 0;
 	}
+	mutex_release(&wq->lock);
+	cpu_enable_preemption();
 	return -1;
 }
 

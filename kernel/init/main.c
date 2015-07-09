@@ -156,9 +156,8 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	if(!sys_clone(0))
 		init();
 	for(;;) {
-	kprintf("Got here - parent %x\n", cpu_interrupt_get_flag());
+		tm_schedule();
 	}
-	for(;;);
 	sys_setsid();
 	tm_thread_enter_system(255);
 	kt_kernel_idle_task();
@@ -180,35 +179,50 @@ void printf(const char *fmt, ...)
 	va_end(args);
 }
 
+void user_mode_init(void)
+{
+	/* We have to be careful now. If we try to call any kernel functions
+	 * without doing a system call, the processor will generate a GPF (or 
+	 * a page fault) because you can't do fancy kernel stuff in ring 3!
+	 * So we write simple wrapper functions for common functions that 
+	 * we will need */
+	sys_setup();
+	printf("Hello userland world\n");
+	int ret = u_execve("/sh", (char **)stuff_to_pass, (char **)init_env);
+	ret = u_execve("/bin/sh", (char **)stuff_to_pass, (char **)init_env);
+	printf("Failed to start the init process (err=%d). Halting.\n", -ret);
+	u_exit(0);
+}
+
 void init()
 {
+	struct llist *bl = ll_create(0);
+	if(!sys_clone(0)) {
+		kprintf("Blocking\n");
+		
+		tm_thread_block(bl, THREAD_INTERRUPTIBLE);
 
-for(;;) {
-	kprintf("Got here - child %x\n", cpu_interrupt_get_flag());
-}
+		kprintf("Got here\n");
+
+		for(;;);
+	}
+	
+	tm_thread_delay(1000);
+	struct thread *th = tm_thread_get(2);
+	kprintf("Waking up blocked thread %d\n", th->tid);
+	//tm_blocklist_wakeall(bl);
+	tm_thread_unblock(th);
+	kprintf("Okay...\n");
+
 	for(;;);
-	/* Call sys_setup. This sets up the root nodes, and filedesc's 0, 1 and 2. */
-	sys_setup();
-	kprintf("Something stirs and something tries, and starts to climb towards the light.\n");
 	/* Set some basic environment variables. These allow simple root execution, 
 	 * basic terminal access, and a shell to run from */
 	add_init_env("PATH=/bin/:/usr/bin/:/usr/sbin:");
 	add_init_env("TERM=seaos");
 	add_init_env("HOME=/");
 	add_init_env("SHELL=/bin/sh");
-	int ret=0;
 	int pid;
 	init_pid = current_process->pid+1;
-	cpu_interrupt_set_flag(1);
-	tm_switch_to_user_mode();
-	/* We have to be careful now. If we try to call any kernel functions
-	 * without doing a system call, the processor will generate a GPF (or 
-	 * a page fault) because you can't do fancy kernel stuff in ring 3!
-	 * So we write simple wrapper functions for common functions that 
-	 * we will need */
-	ret = u_execve("/sh", (char **)stuff_to_pass, (char **)init_env);
-	ret = u_execve("/bin/sh", (char **)stuff_to_pass, (char **)init_env);
-	printf("Failed to start the init process (err=%d). Halting.\n", -ret);
-	u_exit(0);
+	tm_thread_user_mode_jump(user_mode_init);
 }
 

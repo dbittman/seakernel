@@ -38,13 +38,19 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 	if(current_thread && m->lock && ((m->pid == (pid_t)current_thread->tid)))
 		panic(0, "task %d tried to relock mutex %x (%s:%d)", m->pid, m->lock, file, line);
 	/* wait until we can set bit 0. once this is done, we have the lock */
+	cpu_disable_preemption();
 	while(bts_atomic(&m->lock, 0)) {
-		if(!(m->flags & MT_NOSCHED))
+		cpu_enable_preemption();
+		if(!(m->flags & MT_NOSCHED)) {
 			tm_schedule();
-		else
+		} else {
 			cpu_pause();
+		}
+		cpu_disable_preemption();
 	}
 	assert(m->lock);
+	if(!(m->flags & MT_NOSCHED))
+		cpu_enable_preemption();
 	if(current_thread) m->pid = current_thread->tid;
 }
 
@@ -57,6 +63,8 @@ void __mutex_release(mutex_t *m, char *file, int line)
 		panic(0, "task %d tried to release mutex it didn't own (%s:%d)", m->pid, file, line);
 	m->pid = -1;
 	btr_atomic(&m->lock, 0);
+	if(m->flags & MT_NOSCHED)
+		cpu_enable_preemption();
 }
 
 mutex_t *mutex_create(mutex_t *m, unsigned flags)

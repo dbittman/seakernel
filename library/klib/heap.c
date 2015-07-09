@@ -158,7 +158,6 @@ int heap_pop(struct heap *heap, uint64_t *key, void **data)
 	}
 	if(data) {
 		*data = heap->array[0].data;
-		printk_safe(0, "heap: %x\n", *data);
 	}
 	/* standard heap stuff */
 	heap->array[0] = heap->array[--heap->count];

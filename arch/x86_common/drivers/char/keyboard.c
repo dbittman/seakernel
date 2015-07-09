@@ -290,6 +290,7 @@ void keyboard_int_stage1(registers_t *regs)
 
 void keyboard_int_stage2(int int_no)
 {
+	/* TODO: read all the keys in the stack */
 	int x = sub_atomic(&ks_idx, 1);
 	if(x < 0) {
 		ks_idx=0;

@@ -82,14 +82,16 @@ void cpu_timer_install(int freq)
 void cpu_disable_preemption()
 {
 	int old = cpu_interrupt_set(0);
-	add_atomic(&__current_cpu->preempt_disable, 1);
+	if(current_thread)
+		add_atomic(&__current_cpu->preempt_disable, 1);
 	cpu_interrupt_set(old);
 }
 
 void cpu_enable_preemption()
 {
 	int old = cpu_interrupt_set(0);
-	sub_atomic(&__current_cpu->preempt_disable, 1);
+	if(current_thread)
+		sub_atomic(&__current_cpu->preempt_disable, 1);
 	cpu_interrupt_set(old);
 }
 

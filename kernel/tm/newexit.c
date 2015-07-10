@@ -51,6 +51,8 @@ void tm_thread_exit(int code)
 	struct async_call *thread_cleanup_call = async_call_create(0, 0, 
 							tm_thread_destroy, (unsigned long)current_thread, 0);
 
+	tm_thread_release_usermode_stack(current_thread, current_thread->usermode_stack_num);
+
 	sub_atomic(&running_threads, 1);
 	if(sub_atomic(&current_process->thread_count, 1) == 0) {
 		sub_atomic(&running_processes, 1);

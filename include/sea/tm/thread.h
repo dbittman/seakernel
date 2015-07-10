@@ -52,6 +52,9 @@ struct thread {
 	int priority, timeslice;
 	void *kernel_stack;
 	unsigned long stack_pointer, jump_point;
+	addr_t usermode_stack_start;
+	addr_t usermode_stack_end;
+	int usermode_stack_num;
 	struct cpu *cpu;
 
 	sigset_t sig_mask, old_mask;
@@ -88,6 +91,9 @@ void tm_thread_remove_from_blocklist(struct thread *t);
 int tm_thread_block(struct llist *blocklist, int state);
 void tm_switch_to_user_mode();
 void tm_thread_delay_sleep();
+int tm_thread_reserve_usermode_stack(struct thread *thr);
+void tm_thread_release_usermode_stack(struct thread *thr, int stack);
+addr_t tm_thread_usermode_stack_end(int stack);
 #define ONE_SECOND 1000 /* TODO: set this to the correct value */
 
 #define tm_thread_pause(th) tm_thread_set_state(th, THREAD_INTERRUPTIBLE)

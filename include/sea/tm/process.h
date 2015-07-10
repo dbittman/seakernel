@@ -46,6 +46,8 @@ struct exit_status {
 	struct exit_status *next, *prev;
 };
 
+#define NUM_USERMODE_STACKS ((USERMODE_STACKS_END - USERMODE_STACKS_START) / (CONFIG_STACK_PAGES * PAGE_SIZE)) 
+
 struct process {
 	unsigned magic;
 	struct vmm_context vmm_context;
@@ -74,6 +76,9 @@ struct process {
 	struct process *parent;
 	int thread_count;
 	struct llist threadlist;
+	/* TODO: clean this up */
+	unsigned char stack_bitmap[NUM_USERMODE_STACKS / 8];
+	mutex_t stacks_lock;
 };
 
 #define WNOHANG 1

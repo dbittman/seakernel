@@ -71,6 +71,7 @@ struct process *tm_process_copy(int flags)
 	ll_create(&newp->threadlist);
 	ll_create_lockless(&newp->mappings);
 	mutex_create(&newp->map_lock, 0);
+	mutex_create(&newp->stacks_lock, 0);
 	/* TODO: what the fuck is this? */
 	valloc_create(&newp->mmf_valloc, MMF_BEGIN, MMF_END, PAGE_SIZE, VALLOC_USERMAP);
 	for(addr_t a = MMF_BEGIN;a < (MMF_BEGIN + (size_t)newp->mmf_valloc.nindex);a+=PAGE_SIZE)
@@ -117,7 +118,8 @@ int sys_clone(int flags)
 	add_atomic(&running_threads, 1);
 	tm_thread_add_to_process(thr, proc);
 	thr->state = THREAD_UNINTERRUPTIBLE;
-	
+	thr->usermode_stack_num = tm_thread_reserve_usermode_stack(thr);
+	thr->usermode_stack_end = tm_thread_usermode_stack_end(thr->usermode_stack_num);
 
 	cpu_disable_preemption();
 	arch_cpu_copy_fixup_stack((addr_t)thr->kernel_stack, (addr_t)current_thread->kernel_stack, KERN_STACK_SIZE);

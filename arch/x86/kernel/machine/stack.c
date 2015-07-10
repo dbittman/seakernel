@@ -3,48 +3,6 @@
 #include <sea/loader/elf-x86.h>
 #include <sea/asm/system.h>
 #include <sea/vsprintf.h>
-/* This function's design is based off of JamesM's tutorials. 
- * Yes, I know its bad. But it works okay. */
-void move_stack(void *start, unsigned int sz)
-{
-	unsigned i;
-	for(i=(unsigned int)start+sz; i >= (unsigned int)start - sz*2;i -= 0x1000) {
-		mm_vm_map(i, mm_alloc_physical_page(), PAGE_PRESENT | PAGE_WRITE | PAGE_USER, MAP_CRIT);
-		memset((void *)i, 0, 0x1000);
-	}
-	unsigned pd_addr;
-	u32int old_stack_pointer;
-	u32int old_base_pointer;
-	u32int offset = (u32int)start - initial_boot_stack;
-	u32int new_base_pointer, new_stack_pointer, tmp, *tmp2;
-	asm("mov %%cr3, %0" : "=r" (pd_addr));
-	asm("mov %0, %%cr3" : : "r" (pd_addr)); 
-	asm("mov %%esp, %0" : "=r" (old_stack_pointer));
-	asm("mov %%ebp, %0" : "=r" (old_base_pointer));
-	new_stack_pointer = old_stack_pointer + offset;
-	new_base_pointer  = old_base_pointer  + offset; 
-	memcpy((void*)new_stack_pointer, (void*)old_stack_pointer, initial_boot_stack-old_stack_pointer);
-	
-	for(i = (u32int)start; i > ((u32int)start-sz); i -= 4)
-	{
-		tmp = * (u32int*)i;
-		if (( old_stack_pointer < tmp) && (tmp < initial_boot_stack))
-		{
-			tmp = tmp + offset;
-			tmp2 = (u32int*)i;
-			*tmp2 = tmp;
-		}
-	}
-	
-	asm("mov %0, %%esp" : : "r" (new_stack_pointer));
-	asm("mov %0, %%ebp" : : "r" (new_base_pointer));
-}
-
-void setup_kernelstack()
-{
-	printk(1, "[stack]: Relocating stack\n");
-	move_stack((void*)STACK_LOCATION, STACK_SIZE);
-}
 
 void arch_cpu_print_stack_trace(int MaxFrames)
 {

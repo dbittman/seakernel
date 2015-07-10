@@ -38,6 +38,6 @@ void arch_tm_jump_to_user_mode(addr_t jmp)
 			"push $0x1b;"
 			"push %0;"
 			"iret;"
-			::"r"(jmp), "r"(STACK_LOCATION):"memory","eax","esp");
+			::"r"(jmp), "r"(current_thread->usermode_stack_end):"memory","eax","esp");
 }
 

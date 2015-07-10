@@ -13,6 +13,7 @@
 #include <sea/ll.h>
 #include <sea/kernel.h>
 
+extern mutex_t process_refs_lock;
 extern int initial_kernel_stack;
 void tm_init_multitasking(void)
 {
@@ -25,6 +26,7 @@ void tm_init_multitasking(void)
 	hash_table_specify_function(process_table, HASH_FUNCTION_BYTE_SUM);
 
 	process_list = ll_create(0);
+	mutex_create(&process_refs_lock, 0);
 	
 	thread_table = hash_table_create(0, 0, HASH_TYPE_CHAIN);
 	hash_table_resize(thread_table, HASH_RESIZE_MODE_IGNORE, 1000);
@@ -32,6 +34,10 @@ void tm_init_multitasking(void)
 
 	struct thread *thread = kmalloc(sizeof(struct thread));
 	struct process *proc = kmalloc(sizeof(struct process));
+
+	proc->refs = 2;
+	assert(!hash_table_set_entry(process_table, &proc->pid, sizeof(proc->pid), 1, proc));
+	ll_do_insert(process_list, &proc->listnode, proc);
 
 	valloc_create(&proc->mmf_valloc, MMF_BEGIN, MMF_END, PAGE_SIZE, VALLOC_USERMAP);
 	for(addr_t a = MMF_BEGIN;a < (MMF_BEGIN + (size_t)proc->mmf_valloc.nindex);a+=PAGE_SIZE)

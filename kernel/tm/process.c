@@ -4,15 +4,42 @@
 #include <sea/lib/hash.h>
 #include <sea/errno.h>
 #include <sea/ll.h>
+#include <sea/cpu/atomic.h>
 struct hash_table *process_table;
 struct llist *process_list;
 size_t running_processes = 0;
 
+mutex_t process_refs_lock;
+
 struct process *tm_process_get(pid_t pid)
 {
 	struct process *proc;
-	/* TODO: should we reference count process structures? */
-	if(hash_table_get_entry(process_table, &pid, sizeof(pid), 1, (void **)&proc) == -ENOENT)
+	mutex_acquire(&process_refs_lock);
+	if(hash_table_get_entry(process_table, &pid, sizeof(pid), 1, (void **)&proc) == -ENOENT) {
+		mutex_release(&process_refs_lock);
 		return 0;
+	}
+	add_atomic(&proc->refs, 1);
+	mutex_release(&process_refs_lock);
 	return proc;
 }
+
+void tm_process_inc_reference(struct process *proc)
+{
+	assert(proc->refs >= 1);
+	add_atomic(&proc->refs, 1);
+}
+
+void tm_process_put(struct process *proc)
+{
+	mutex_acquire(&process_refs_lock);
+	assert(proc->refs >= 1);
+	if(sub_atomic(&proc->refs, 1) == 0) {
+		hash_table_delete_entry(process_table, &proc->pid, sizeof(proc->pid), 1);
+		mutex_release(&process_refs_lock);
+		kfree(proc);
+	} else {
+		mutex_release(&process_refs_lock);
+	}
+}
+

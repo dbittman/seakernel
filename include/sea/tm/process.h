@@ -36,6 +36,7 @@ static inline struct process *__tm_get_current_process(void)
 #define PROCESS_MAGIC 0xCAFEBABE
 
 #define PROCESS_FORK 1
+#define PROCESS_CLEANED 2
 
 struct exit_status {
 	unsigned pid;
@@ -53,6 +54,7 @@ struct process {
 	struct vmm_context vmm_context;
 	pid_t pid;
 	int flags;
+	int refs;
 
 	struct llistnode listnode;
 
@@ -107,6 +109,9 @@ int sys_times(struct tms *buf);
 int sys_waitpid(int pid, int *st, int opt);
 int sys_wait3(int *, int, int *);
 
+struct process *tm_process_get(pid_t pid);
+void tm_process_inc_reference(struct process *proc);
+void tm_process_put(struct process *proc);
 pid_t sys_getppid();
 int sys_alarm(int a);
 int sys_gsetpriority(int set, int which, int id, int val);
@@ -124,8 +129,8 @@ int sys_clone(int);
 /* provided by arch-dep code */
 extern void arch_do_switch_to_user_mode();
 void arch_tm_set_current_thread_marker(addr_t *space, addr_t task);
-
 extern struct llist *process_list;
+
 extern struct hash_table *process_table;
 
 #include <sea/mm/vmm.h>

@@ -62,11 +62,13 @@ struct process *tm_process_copy(int flags)
 	newp->pid = add_atomic(&__next_pid, 1);
 	newp->flags = PROCESS_FORK;
 	newp->cmask = current_process->cmask;
+	newp->refs = 1;
 	newp->tty = current_process->tty;
 	newp->heap_start = current_process->heap_start;
 	newp->heap_end = current_process->heap_end;
 	newp->global_sig_mask = current_process->global_sig_mask;
 	memcpy((void *)newp->signal_act, current_process->signal_act, sizeof(struct sigaction) * 128);
+	tm_process_inc_reference(current_process);
 	newp->parent = current_process;
 	ll_create(&newp->threadlist);
 	ll_create_lockless(&newp->mappings);
@@ -95,6 +97,7 @@ void tm_thread_add_to_process(struct thread *thr, struct process *proc)
 {
 	ll_do_insert(&proc->threadlist, &thr->pnode, thr);
 	thr->process = proc;
+	tm_process_inc_reference(proc);
 	add_atomic(&proc->thread_count, 1);
 }
 
@@ -110,6 +113,7 @@ int sys_clone(int flags)
 	if(!(flags & CLONE_SHARE_PROCESS)) {
 		proc = tm_process_copy(flags);
 		add_atomic(&running_processes, 1);
+		tm_process_inc_reference(proc);
 		assert(!hash_table_set_entry(process_table, &proc->pid, sizeof(proc->pid), 1, proc));
 		ll_do_insert(process_list, &proc->listnode, proc);
 	}

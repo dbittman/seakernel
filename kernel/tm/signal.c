@@ -107,10 +107,13 @@ int sys_kill(pid_t pid, int signal)
 	struct process *proc = tm_process_get(pid);
 	if(!proc)
 		return -ESRCH;
-	if(!__can_send_signal(current_process, proc, signal))
+	if(!__can_send_signal(current_process, proc, signal)) {
+		tm_process_put(proc);
 		return -EPERM;
+	}
 	if(!(proc->global_sig_mask & (1 << signal)))
 		tm_signal_send_process(proc, signal);
+	tm_process_put(proc);
 	return 0;
 }
 

@@ -24,7 +24,7 @@ int tm_thread_runnable(struct thread *thr)
 	return 0;
 }
 
-struct process *tm_thread_get(pid_t tid)
+struct thread *tm_thread_get(pid_t tid)
 {
 	struct thread *thr;
 	/* TODO: should we reference count thread structures? */

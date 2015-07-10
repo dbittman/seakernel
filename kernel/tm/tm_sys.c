@@ -45,6 +45,7 @@ int sys_isstate(pid_t pid, int state)
 {
 	struct process *proc = tm_process_get(pid);
 	if(!proc) return -ESRCH;
+	tm_process_put(pid);
 	/*TODO: how do we do this for multiple threads? */
 }
 

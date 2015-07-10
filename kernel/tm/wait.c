@@ -43,6 +43,7 @@ static struct process *__find_first_child(struct process *parent)
 	ll_for_each_entry(process_list, node, struct process *, proc) {
 		if(proc->parent == parent) {
 			rwlock_release(&process_list->rwl, RWL_READER);
+			tm_process_inc_reference(proc);
 			return proc;
 		}
 	}
@@ -62,21 +63,28 @@ int sys_waitpid(int pid, int *st, int opt)
 		proc = tm_process_get(pid);
 	}
 
-	if(!proc || proc->parent != current_process)
+	if(!proc || proc->parent != current_process) {
+		if(proc)
+			tm_process_put(proc);
 		return -ECHILD;
+	}
 
 	while(proc->thread_count != 0 && !(opt & WNOHANG)) {
-		if(tm_thread_got_signal(current_thread))
+		if(tm_thread_got_signal(current_thread)) {
+			tm_process_put(proc);
 			return -EINTR;
+		}
 		tm_schedule();
 	}
 
 	if(proc->thread_count > 0) {
+		tm_process_put(proc);
 		return 0;
 	}
 	int code, gotpid;
 	get_status_int(proc, &code, &gotpid);
 	tm_process_wait_cleanup(proc);
+	tm_process_put(proc);
 	if(st)
 		*st = code;
 	return gotpid;

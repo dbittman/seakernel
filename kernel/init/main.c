@@ -157,6 +157,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 		init();
 
 	for(;;) {
+		sys_waitpid(1, 0, 0);
 		tm_schedule();
 	}
 	sys_setsid();

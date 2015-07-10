@@ -11,10 +11,12 @@ static void tm_thread_destroy(unsigned long data)
 
 void tm_process_wait_cleanup(struct process *proc)
 {
-	hash_table_delete_entry(process_table, &proc->pid, sizeof(proc->pid), 1);
-	ll_do_remove(process_list, &proc->listnode, 0);
-	mm_destroy_directory(&proc->vmm_context);
-	kfree(proc);
+	/* prevent this process from being "cleaned up" multiple times */
+	if(!(ff_or_atomic(&proc->flags, PROCESS_CLEANED) & PROCESS_CLEANED)) {
+		mm_destroy_directory(&proc->vmm_context);
+		ll_do_remove(process_list, &proc->listnode, 0);
+		tm_process_put(proc); /* process_list releases its pointer */
+	}
 }
 
 /* TODO: ref count processes and threads */
@@ -50,6 +52,9 @@ void tm_process_exit(int code)
 	mm_free_self_directory();
 	/* TODO: free everything else? */
 	/* TODO: parent inherits children */
+
+	if(current_process->parent)
+		tm_process_put(current_process->parent);
 }
 
 void tm_thread_exit(int code)
@@ -65,12 +70,15 @@ void tm_thread_exit(int code)
 	if(sub_atomic(&current_process->thread_count, 1) == 0) {
 		sub_atomic(&running_processes, 1);
 		tm_process_exit(code);
+		tm_process_put(current_process); /* fork starts us out at refs = 1 */
 	}
+
+	ll_do_remove(&current_process->threadlist, &current_thread->pnode, 0);
+	tm_process_put(current_process); /* thread releases it's process pointer */
 
 	cpu_interrupt_set(0);
 	cpu_disable_preemption();
 
-	ll_do_remove(&current_process->threadlist, &current_thread->pnode, 0);
 	hash_table_delete_entry(thread_table, &current_thread->tid, sizeof(current_thread->tid), 1);
 	tqueue_remove(current_thread->cpu->active_queue, &current_thread->activenode);
 	current_thread->state = THREAD_DEAD;

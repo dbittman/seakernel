@@ -90,7 +90,7 @@ int part_get_partition(dev_t dev, struct part_info *part, int n)
 }
 #endif
 
-int module_install()
+int module_install(void)
 {
 	loader_add_kernel_symbol(enumerate_partitions);
 #if CONFIG_MODULE_PSM
@@ -101,7 +101,7 @@ int module_install()
 	return 0;
 }
 
-int module_exit()
+int module_exit(void)
 {
 	loader_remove_kernel_symbol("enumerate_partitions");
 #if CONFIG_MODULE_PSM

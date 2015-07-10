@@ -34,7 +34,7 @@ int shiv_userspace_request_interruptible(struct vcpu *vc)
 	return 0;
 }
 
-struct vmachine *shiv_create_vmachine()
+struct vmachine *shiv_create_vmachine (void)
 {
 	struct vmachine *vm = kmalloc(sizeof(*vm));
 	int ret = shiv_init_virtual_machine(vm);
@@ -121,7 +121,7 @@ int shiv_ioctl(int min, int cmd, long arg)
 void exploit_setup_pagetables(addr_t *gcr3, addr_t *mcr3);
 
 void vmcs_set_cr3_target(int n, uint64_t cr3);
-int module_install()
+int module_install(void)
 {
 	if(!shiv_check_hardware_support())
 	{
@@ -158,7 +158,7 @@ int module_install()
 	return 0;
 }
 
-int module_exit()
+int module_exit(void)
 {
 	return 0;
 }

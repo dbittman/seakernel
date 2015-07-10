@@ -217,7 +217,7 @@ static void *syscall_table[129] = {
 struct timer systimers[129];
 unsigned int syscounts[129];
 
-void syscall_init()
+void syscall_init(void)
 {
 	num_syscalls = sizeof(syscall_table)/sizeof(void *);
 	for(int i=0;i<129;i++) {

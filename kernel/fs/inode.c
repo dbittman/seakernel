@@ -15,7 +15,7 @@ struct llist *ic_inuse, *ic_dirty;
 struct queue *ic_lru;
 mutex_t *ic_lock;
 
-void vfs_icache_init()
+void vfs_icache_init(void)
 {
 	icache = hash_table_create(0, 0, HASH_TYPE_CHAIN);
 	hash_table_resize(icache, HASH_RESIZE_MODE_IGNORE,1000);
@@ -67,7 +67,7 @@ int vfs_inode_check_permissions(struct inode *node, int perm, int real)
 	return perm & node->mode;
 }
 
-struct inode *vfs_inode_create()
+struct inode *vfs_inode_create (void)
 {
 	struct inode *node = kmalloc(sizeof(struct inode));
 	rwlock_create(&node->lock);
@@ -193,7 +193,7 @@ void vfs_icache_put(struct inode *node)
 	mutex_release(ic_lock);
 }
 
-size_t fs_inode_reclaim_lru()
+size_t fs_inode_reclaim_lru(void)
 {
 	int released = 0;
 	mutex_acquire(ic_lock);
@@ -314,7 +314,7 @@ int vfs_inode_chroot(struct inode *node)
 }
 
 /* it's important to sync the inode cache back to the disk... */
-int fs_icache_sync()
+int fs_icache_sync(void)
 {
 	printk(0, "[fs]: syncing inode cache (%d)\n", ic_dirty->num);
 	rwlock_acquire(&ic_dirty->rwl, RWL_WRITER);

@@ -74,13 +74,13 @@ struct data_layer_protocol ether = {
 	.receive = ethernet_receive_packet,
 };
 
-int module_install()
+int module_install(void)
 {
 	net_data_register_protocol(NET_HWTYPE_ETHERNET, &ether);
 	return 0;
 }
 
-int module_exit()
+int module_exit(void)
 {
 	net_data_unregister_protocol(NET_HWTYPE_ETHERNET);
 	return 0;

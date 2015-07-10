@@ -72,7 +72,7 @@ static __attribute__((always_inline)) inline task_t *get_next_task(task_t *prev,
 	return (task_t *)0;
 }
 
-__attribute__((always_inline)) static inline void check_signals()
+__attribute__((always_inline)) static inline void check_signals(void)
 {
 	if(unlikely(current_task->state == TASK_SUICIDAL) && !(current_task->flags & TF_EXITING))
 		tm_process_suicide();
@@ -97,7 +97,7 @@ __attribute__((always_inline)) static inline void check_signals()
 	}
 }
 
-__attribute__((always_inline)) static inline void post_context_switch()
+__attribute__((always_inline)) static inline void post_context_switch(void)
 {
 	assert(!(kernel_state_flags & KSF_SHUTDOWN) || current_task->flags & TF_SHUTDOWN);
 	assert(!cpu_interrupt_get_flag());
@@ -116,7 +116,7 @@ __attribute__((always_inline)) static inline void post_context_switch()
 		cpu_interrupt_set(1);
 }
 
-int tm_schedule()
+int tm_schedule(void)
 {
 	if(unlikely(!current_task || !kernel_task))
 		return 0;
@@ -193,7 +193,7 @@ int tm_schedule()
 	return 1;
 }
 
-void __tm_check_alarms()
+void __tm_check_alarms(void)
 {
 	if(!alarm_list_start) return;
 	/* interrupts will be disabled here. Thus, we can aquire 

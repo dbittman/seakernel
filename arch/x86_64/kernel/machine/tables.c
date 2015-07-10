@@ -69,7 +69,7 @@ void io_wait( void )
 #define PIC1_DATA	(PIC1+1)
 #define PIC2_COMMAND	PIC2
 #define PIC2_DATA	(PIC2+1)
-void disable_pic()
+void disable_pic(void)
 {
 	outb(0xA1, 0xFF);
 	outb(0x21, 0xFF);
@@ -91,7 +91,7 @@ void mask_pic_int(unsigned char irq, int mask)
     outb(port, value);
 }
 
-void init_pic()
+void init_pic(void)
 {
 	outb(0x20, 0x11);
 	io_wait();
@@ -116,7 +116,7 @@ void init_pic()
 	interrupt_controller = IOINT_PIC;
 }
 
-static void init_idt()
+static void init_idt(void)
 {
 	idt_ptr.limit = sizeof(idt_entry_t) * 256 -1;
 	idt_ptr.base  = (u64int)&idt_entries;
@@ -210,7 +210,7 @@ void load_tables_ap(struct cpu *cpu)
 	tss_flush();
 }
 
-void load_tables()
+void load_tables(void)
 {
 	/* load up some temporary tables so we can use interrupts until the CPU stuff
 	 * is loaded */

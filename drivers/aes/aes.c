@@ -65,7 +65,7 @@ void aes_decrypt_block(unsigned char *dec_round_keys, int nrounds, unsigned char
 	rijndaelDecrypt((uint32_t *)dec_round_keys, nrounds, ciphertext, plaintext);
 }
 
-int module_install()
+int module_install(void)
 {
 #if CONFIG_ARCH == TYPE_ARCH_X86_64
 	has_intel_aes = primary_cpu->cpuid.features_ecx & (1 << 25) ? 1 : 0;
@@ -80,7 +80,7 @@ int module_install()
 	return 0;
 }
 
-int module_exit()
+int module_exit(void)
 {
 	loader_remove_kernel_symbol("aes_setup_decrypt");
 	loader_remove_kernel_symbol("aes_setup_encrypt");

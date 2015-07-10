@@ -15,7 +15,7 @@ void cpu_smp_task_idle(struct cpu *cpu)
 }
 #endif
 
-int cpu_get_num_running_processors()
+int cpu_get_num_running_processors(void)
 {
 #if CONFIG_SMP
 	return num_booted_cpus + 1;
@@ -24,7 +24,7 @@ int cpu_get_num_running_processors()
 #endif
 }
 
-int cpu_get_num_halted_processors()
+int cpu_get_num_halted_processors(void)
 {
 #if CONFIG_SMP
 	return num_halted_cpus;
@@ -33,7 +33,7 @@ int cpu_get_num_halted_processors()
 #endif
 }
 
-int cpu_get_num_secondary_processors()
+int cpu_get_num_secondary_processors(void)
 {
 	return cpu_get_num_running_processors()-1;
 }

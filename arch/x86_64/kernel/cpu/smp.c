@@ -11,7 +11,7 @@
 unsigned num_cpus=0, num_booted_cpus=0, num_failed_cpus=0;
 volatile unsigned num_halted_cpus=0;
 int parse_acpi_madt();
-int probe_smp()
+int probe_smp(void)
 {
 	if(!parse_acpi_madt()) return 0;
 	set_ksf(KSF_CPUS_RUNNING);

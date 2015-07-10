@@ -154,7 +154,7 @@ int sys_clone(int flags)
 	
 }
 
-int sys_vfork()
+int sys_vfork(void)
 {
 
 }

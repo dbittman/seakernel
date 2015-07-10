@@ -15,7 +15,7 @@ int is_ctrl=0, is_alt=0, is_shift=0, is_altgr=0;
 int capslock, slock;
 unsigned short *(*_keymap_callback)(int, int, int, int) = 0;
 
-void flush_port()
+void flush_port(void)
 {
 	unsigned temp;
 	do
@@ -352,13 +352,13 @@ void set_keymap_callback(addr_t ptr)
 	_keymap_callback = (unsigned short *(*)(int, int, int, int))ptr;
 }
 
-addr_t get_keymap_callback()
+addr_t get_keymap_callback(void)
 {
 	return (addr_t)_keymap_callback;
 }
 int irqk=0;
 int __int_no = 33;
-int module_install()
+int module_install(void)
 {
 	printk(1, "[keyboard]: Driver loading\n");
 	is_shift=0;
@@ -377,7 +377,7 @@ int module_install()
 	return 0;
 }
 
-int module_exit()
+int module_exit(void)
 {
 	flush_port();
 	printk(1, "[keyboard]: Restoring old handler\n");

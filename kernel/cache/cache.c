@@ -31,7 +31,7 @@ static int should_element_be_added(cache_t *c)
 	return 1;
 }
 
-int init_cache()
+int init_cache(void)
 {
 #if CONFIG_MODULES
 	loader_add_kernel_symbol(cache_create);
@@ -303,7 +303,7 @@ void cache_destroy(cache_t *c)
 	printk(1, "[cache]: Cache '%s' destroyed\n", c->name);
 }
 
-int cache_sync_all()
+int cache_sync_all(void)
 {
 	struct llistnode *cur;
 	cache_t *ent;

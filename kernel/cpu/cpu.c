@@ -12,17 +12,17 @@ unsigned cpu_array_num=0;
 #endif
 struct cpu primary_cpu_data;
 
-void cpu_reset()
+void cpu_reset(void)
 {
 	arch_cpu_reset();
 }
 
-void cpu_processor_init_1()
+void cpu_processor_init_1(void)
 {
 	arch_cpu_processor_init_1();
 }
 
-void cpu_processor_init_2()
+void cpu_processor_init_2(void)
 {
 	arch_cpu_processor_init_2();
 #if CONFIG_MODULES
@@ -37,7 +37,7 @@ void cpu_processor_init_2()
 #endif
 }
 
-void cpu_early_init()
+void cpu_early_init(void)
 {
 	arch_cpu_early_init();
 }
@@ -79,7 +79,7 @@ void cpu_timer_install(int freq)
 	arch_cpu_timer_install(freq);
 }
 
-void cpu_disable_preemption()
+void cpu_disable_preemption(void)
 {
 	int old = cpu_interrupt_set(0);
 	if(current_thread)
@@ -87,7 +87,7 @@ void cpu_disable_preemption()
 	cpu_interrupt_set(old);
 }
 
-void cpu_enable_preemption()
+void cpu_enable_preemption(void)
 {
 	int old = cpu_interrupt_set(0);
 	if(current_thread)

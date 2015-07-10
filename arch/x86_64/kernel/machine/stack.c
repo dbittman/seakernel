@@ -40,7 +40,7 @@ void move_stack(void *start, size_t sz)
 	asm("mov %0, %%rbp" : : "r" (new_base_pointer));
 }
 
-void setup_kernelstack()
+void setup_kernelstack(void)
 {
 	printk(1, "[stack]: Relocating stack\n");
 	move_stack((void*)STACK_LOCATION, STACK_SIZE);

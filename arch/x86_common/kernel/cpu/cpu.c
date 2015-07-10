@@ -81,7 +81,7 @@ void parse_cpuid(struct cpu *me)
 }
 
 extern void load_tables();
-void arch_cpu_early_init()
+void arch_cpu_early_init(void)
 {
 	load_tables();
 }

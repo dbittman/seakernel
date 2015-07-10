@@ -53,7 +53,7 @@ void acpi_madt_parse_ioapic(void *ent)
 	add_ioapic(pmap_get_mapping(&apic_pmap, st->address), st->apicid, st->int_start);
 }
 
-int parse_acpi_madt()
+int parse_acpi_madt(void)
 {
 	struct {
 		uint8_t type;

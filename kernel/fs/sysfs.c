@@ -124,7 +124,7 @@ int kerfs_write(struct inode *node, size_t offset, size_t length, const char *bu
 }
 
 
-void kerfs_init()
+void kerfs_init(void)
 {
 	table = hash_table_create(0, 0, HASH_TYPE_CHAIN);
 	hash_table_resize(table, HASH_RESIZE_MODE_IGNORE,1000);

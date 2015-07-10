@@ -70,7 +70,7 @@ void pci_dm_remove_device(struct pci_device *dev)
 }
 
 /* Deletes the entire linked list */
-void pci_destroy_list()
+void pci_destroy_list(void)
 {
 	struct pci_device *tmp = pci_list;
 	while(tmp)
@@ -175,7 +175,7 @@ struct pci_config_space *get_pci_config(int bus, int dev, int func)
 }
 
 /* Scans the entire PCI bus(es) and compiles a linked list of devices */
-void pci_scan()
+void pci_scan(void)
 {
 	unsigned short bus, dev, func, tmp;
 	for(bus=0;bus<256;bus++)
@@ -274,7 +274,7 @@ unsigned pci_get_base_address(struct pci_device *device)
 	return tmp & 0xFFFFFFFC;
 }
 
-int module_install()
+int module_install(void)
 {
 	pci_list=0;
 	pci_mutex = mutex_create(0, 0);
@@ -290,7 +290,7 @@ int module_install()
 	return 0;
 }
 
-int module_exit()
+int module_exit(void)
 {
 	pci_destroy_list();
 	loader_remove_kernel_symbol("pci_locate_device");

@@ -1,7 +1,7 @@
 #include <sea/cpu/time.h>
 #include <sea/types.h>
 
-time_t time_get_epoch()
+time_t time_get_epoch(void)
 {
 	return arch_time_get_epoch();
 }

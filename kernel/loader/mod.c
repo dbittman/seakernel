@@ -252,7 +252,7 @@ static int unload_module(char *name)
 	return do_unload_module(name, 0);
 }
 
-void loader_unload_all_modules()
+void loader_unload_all_modules(void)
 {
 	/* Unload all loaded modules */
 	int todo=1;
@@ -276,7 +276,7 @@ void loader_unload_all_modules()
 	}
 }
 
-void loader_init_modules()
+void loader_init_modules(void)
 {
 }
 

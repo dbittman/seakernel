@@ -38,7 +38,7 @@ static void arch_tm_thread_switch(struct thread *old, struct thread *new)
 	 * stack related now until this function returns! */
 }
 
-static struct thread *get_next_thread()
+static struct thread *get_next_thread (void)
 {
 	struct thread *n = 0;
 	while(1) {
@@ -55,13 +55,13 @@ static struct thread *get_next_thread()
 	return n;
 }
 
-static void prepare_schedule()
+static void prepare_schedule(void)
 {
 	/* store arch-indep context */
 	tm_thread_lower_flag(current_thread, TF_SCHED);
 }
 
-static void finish_schedule()
+static void finish_schedule(void)
 {
 	/* restore arch-indep context */
 	/* check signals */
@@ -69,7 +69,7 @@ static void finish_schedule()
 		tm_thread_handle_signal(current_thread->signal);
 }
 
-void tm_schedule()
+void tm_schedule(void)
 {
 	int old = cpu_interrupt_set(0);
 	if(__current_cpu->preempt_disable > 0) {

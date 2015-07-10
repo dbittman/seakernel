@@ -96,7 +96,7 @@ int cp_ioctl(int min, int cmd, long arg)
 	return -EINVAL;
 }
 
-int module_install()
+int module_install(void)
 {
 	memset(list, 0, sizeof(list));
 	cp_major = dm_set_available_block_device(cp_rw_single, 512, cp_ioctl, cp_rw_multiple, 0);
@@ -104,7 +104,7 @@ int module_install()
 	return 0;
 }
 
-int module_exit()
+int module_exit(void)
 {
 	
 	

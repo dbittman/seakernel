@@ -117,7 +117,7 @@ int rand3(unsigned int lim)
 	return ((a % lim) + 1);
 }
 
-int module_install()
+int module_install(void)
 {
 	df=0;
 	rand_maj=0;
@@ -136,7 +136,7 @@ int module_install()
 	return 0;
 }
 
-int module_exit()
+int module_exit(void)
 {
 	sys_unlink("/dev/random");
 	if(rand_maj > 0) dm_unregister_char_device(rand_maj);

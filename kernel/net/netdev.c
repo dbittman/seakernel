@@ -28,7 +28,7 @@ static struct net_dev *devices[256];
 
 extern void net_lo_init();
 
-void net_init()
+void net_init(void)
 {
 	net_list = ll_create(0);
 #if CONFIG_MODULES

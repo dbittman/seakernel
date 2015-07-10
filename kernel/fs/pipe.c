@@ -10,7 +10,7 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/string.h>
 
-pipe_t *fs_pipe_create()
+pipe_t *fs_pipe_create (void)
 {
 	pipe_t *pipe = (pipe_t *)kmalloc(sizeof(pipe_t));
 	pipe->length = PIPE_SIZE;
@@ -21,7 +21,7 @@ pipe_t *fs_pipe_create()
 	return pipe;
 }
 
-static struct inode *create_anon_pipe()
+static struct inode *create_anon_pipe (void)
 {
 	struct inode *node;
 	/* create a 'fake' inode */

@@ -29,7 +29,7 @@ static inline void set_boot_flag(unsigned x)
 	*(unsigned *)(BOOTFLAG_ADDR) = x;
 }
 
-static inline  unsigned get_boot_flag()
+static inline  unsigned get_boot_flag(void)
 {
 	return *(unsigned *)(BOOTFLAG_ADDR);
 }

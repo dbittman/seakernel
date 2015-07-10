@@ -148,7 +148,7 @@ int psm_ioctl(int min, int cmd, long arg)
 	return dm_block_ioctl(d.dev, cmd, arg);
 }
 
-int module_install()
+int module_install(void)
 {
 	printk(KERN_DEBUG, "[psm]: initializing\n");
 	psm_initialize_table();
@@ -158,7 +158,7 @@ int module_install()
 	return 0;
 }
 
-int module_exit()
+int module_exit(void)
 {
 	loader_remove_kernel_symbol("psm_register_disk_device");
 	loader_remove_kernel_symbol("psm_unregister_disk_device");

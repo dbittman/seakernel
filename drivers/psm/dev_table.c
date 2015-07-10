@@ -9,7 +9,7 @@ struct psm_device *table;
 int table_length;
 int table_index;
 mutex_t *table_lock;
-void psm_initialize_table()
+void psm_initialize_table(void)
 {
 	table_length=8;
 	table_index=0;
@@ -17,7 +17,7 @@ void psm_initialize_table()
 	table_lock = mutex_create(0, 0);
 }
 
-void psm_table_destroy()
+void psm_table_destroy(void)
 {
 	mutex_acquire(table_lock);
 	for(int i=0;i<table_index;i++)

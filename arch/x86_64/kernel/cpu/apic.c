@@ -70,7 +70,7 @@ int program_ioapic(struct ioapic *ia)
 	return 1;
 }
 
-void lapic_eoi()
+void lapic_eoi(void)
 {
 	if(!(kernel_state_flags & KSF_CPUS_RUNNING))
 		return;
@@ -150,7 +150,7 @@ void init_lapic(int extint)
 	LAPIC_WRITE(LAPIC_SPIV, 0x0100 | 0xFF);
 }
 
-void init_ioapic()
+void init_ioapic(void)
 {
 	if(!num_ioapic)
 		return;

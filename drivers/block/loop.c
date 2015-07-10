@@ -154,7 +154,7 @@ int ioctl_main(int min, int cmd, long arg)
 	return 0;
 }
 
-int module_install()
+int module_install(void)
 {
 	loop_maj = dm_set_available_block_device(loop_rw, 512, ioctl_main, 0, 0);
 	if(loop_maj < 0) return EINVAL;
@@ -172,7 +172,7 @@ int module_install()
 	return 0;
 }
 
-int module_exit()
+int module_exit(void)
 {
 	dm_unregister_block_device(loop_maj);
 	if(ll_is_active(loops))

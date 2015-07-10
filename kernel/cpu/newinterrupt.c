@@ -240,7 +240,7 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 	}
 }
 
-void interrupt_init()
+void interrupt_init(void)
 {
 	for(int i=0;i<MAX_INTERRUPTS;i++)
 	{
@@ -272,7 +272,7 @@ int cpu_interrupt_set(unsigned _new)
 	return old;
 }
 
-int cpu_interrupt_get_flag()
+int cpu_interrupt_get_flag(void)
 {
 	int res;
 	asm("pushf; pop %%eax; and $0x200, %%eax; mov %%eax, %0":"=r"(res));

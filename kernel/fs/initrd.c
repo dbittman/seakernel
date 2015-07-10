@@ -25,7 +25,7 @@ void fs_initrd_load(struct multiboot *mb)
 	panic(0, "no initrd");
 }
 
-void fs_initrd_parse()
+void fs_initrd_parse(void)
 {
 	struct ustar_header *uh = (struct ustar_header *)initrd_location;
 	while((addr_t)uh < initrd_end) {

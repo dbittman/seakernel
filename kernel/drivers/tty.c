@@ -394,7 +394,7 @@ void tty_init(struct vterm **k)
 	*k = &consoles[0];
 }
 
-void console_init_stage2()
+void console_init_stage2(void)
 {
 	console_create(&consoles[1]);
 	console_create(&consoles[9]);

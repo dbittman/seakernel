@@ -6,7 +6,7 @@
 #include <sea/mm/swap.h>
 #include <sea/tm/schedule.h>
 
-addr_t arch_mm_alloc_physical_page_zero()
+addr_t arch_mm_alloc_physical_page_zero(void)
 {
 	addr_t ret = mm_alloc_physical_page();
 	if(kernel_state_flags & KSF_PAGING)

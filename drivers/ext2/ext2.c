@@ -82,14 +82,14 @@ struct fsdriver ext2driver = {
 	.umount = ext2_unmount,
 };
 
-int module_install()
+int module_install(void)
 {
 	printk(1, "[ext2]: Registering filesystem\n");
 	fs_filesystem_register(&ext2driver);
 	return 0;
 }
 
-int module_exit()
+int module_exit(void)
 {
 	printk(1, "[ext2]: Unmounting all ext2 filesystems\n");
 	fs_filesystem_unregister(&ext2driver);

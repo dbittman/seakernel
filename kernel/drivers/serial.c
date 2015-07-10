@@ -65,7 +65,7 @@ int serial_rw(int rw, int min, char *b, size_t c)
 	return 0;
 }
 
-void serial_init()
+void serial_init(void)
 {
 #if ! DISABLE_SERIAL
 	/* TODO: make this not schedule */

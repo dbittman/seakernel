@@ -37,7 +37,7 @@ OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 *  call to set_debug_traps() is necessary in order to allow any breakpoints
 *  or error conditions to be properly intercepted and reported to gdb.
 *  Two, a breakpoint needs to be generated to begin communication.  This
-*  is most easily accomplished by a call to breakpoint().  Breakpoint()
+*  is most easily accomplished by a call to breakpoint(). Breakpoint(void)
 *  simulates a breakpoint by executing a trap #1.
 *
 *  The external function exceptionHandler() is
@@ -107,7 +107,7 @@ void putDebugChar(char a)
 	write_serial(0x2F8, a);
 }
 
-int getDebugChar()
+int getDebugChar(void)
 {
 	return read_serial(0x2F8);
 }
@@ -443,7 +443,7 @@ __asm__ ("		pushl %eax");	/* push exception onto stack  */
 __asm__ ("		call  handle_exception");    /* this never returns */
 
 void
-_returnFromException ()
+_returnFromException (void)
 {
 return_to_prog ();
 }

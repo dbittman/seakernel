@@ -15,7 +15,7 @@
 #include <sea/kernel.h>
 
 extern int initial_kernel_stack;
-void tm_init_multitasking()
+void tm_init_multitasking(void)
 {
 	printk(KERN_DEBUG, "[sched]: Starting multitasking system...\n");
 	
@@ -75,7 +75,7 @@ void tm_set_kernel_stack(struct cpu *cpu, addr_t start, addr_t end)
 }
 
 	/* TODO: try to remove this function */
-void tm_switch_to_user_mode()
+void tm_switch_to_user_mode(void)
 {
 	/* set up the kernel stack first...*/
 	tm_set_kernel_stack(current_thread->cpu, current_thread->kernel_stack,

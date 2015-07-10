@@ -23,7 +23,7 @@ __attribute__((always_inline)) inline static void store_context_fork(task_t *tas
 	asm("mov %%esi, %0" : "=r"(task->preserved[2]));
 }
 
-__attribute__((always_inline)) inline static void store_context()
+__attribute__((always_inline)) inline static void store_context(void)
 {
 	asm("mov %%esp, %0" : "=r"(current_task->esp));
 	asm("mov %%ebp, %0" : "=r"(current_task->ebp));

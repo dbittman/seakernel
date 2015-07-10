@@ -73,7 +73,7 @@ void console_switch(struct vterm *n)
 	mutex_release(&old->wlock);
 }
 
-void console_init_stage1()
+void console_init_stage1(void)
 {
 	tty_init(&kernel_console);
 	console_create(kernel_console);

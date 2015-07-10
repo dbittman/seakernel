@@ -119,7 +119,7 @@ void arch_interrupt_irq_handler(volatile registers_t regs)
 		tm_schedule();
 }
 
-void arch_interrupt_reset_timer_state()
+void arch_interrupt_reset_timer_state(void)
 {
 	if(interrupt_controller == IOINT_PIC) ack_pic(32);
 }

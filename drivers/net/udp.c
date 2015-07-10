@@ -106,14 +106,14 @@ static int shutdown(struct socket *sock, int how)
 	return 0;
 }
 
-int module_install()
+int module_install(void)
 {
 	net_tlayer_register_protocol(PROTOCOL_UDP, &udp_tpi);
 	socket_set_calls(17, &socket_calls_udp);
 	return 0;
 }
 
-int module_exit()
+int module_exit(void)
 {
 	net_tlayer_deregister_protocol(PROTOCOL_UDP);
 	socket_set_calls(17, 0);

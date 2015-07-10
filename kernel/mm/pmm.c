@@ -41,7 +41,7 @@ void mm_zero_page_physical(addr_t page)
 #endif
 }
 
-static addr_t mm_reclaim_page_from_contiguous()
+static addr_t mm_reclaim_page_from_contiguous(void)
 {
 	assert(mutex_is_locked(&pm_mutex));
 	printk(0, "[pmm]: reclaiming a page from contiguous region (%d)\n", pmm_contiguous_end_index);
@@ -157,7 +157,7 @@ void mm_free_contiguous_region(struct mm_physical_region *p)
 	mutex_release(&pm_mutex);
 }
 
-static addr_t __oom_handler()
+static addr_t __oom_handler(void)
 {
 	addr_t ret = mm_reclaim_page_from_contiguous();
 	if(!ret)
@@ -165,7 +165,7 @@ static addr_t __oom_handler()
 	return ret;
 }
 
-addr_t mm_alloc_physical_page()
+addr_t mm_alloc_physical_page(void)
 {
 	if(!pm_location)
 		panic(PANIC_MEM | PANIC_NOSYNC, "Physical memory allocation before initilization");

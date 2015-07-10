@@ -43,7 +43,7 @@ struct inode_operations fatfs_inode_ops = {
 };
 
 fat_volume vols[MAX_VOLS];
-fat_volume *get_new_vol()
+fat_volume *get_new_vol (void)
 {
 	int i;
 	for(i=0;i<MAX_VOLS;i++)
@@ -190,7 +190,7 @@ struct inode *fat_mount(int dev, int block, char *node)
 	return 0;
 }
 
-int module_install()
+int module_install(void)
 {
 	int i;
 	for(i=0;i<MAX_VOLS;i++)
@@ -199,7 +199,7 @@ int module_install()
 	return 0;
 }
 
-int module_exit()
+int module_exit(void)
 {
 	unfs_register_filesystemt("ext2");
 	return 0;

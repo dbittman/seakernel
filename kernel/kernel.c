@@ -19,7 +19,7 @@
 int PRINT_LEVEL = DEF_PRINT_LEVEL;
 volatile unsigned kernel_state_flags=0;
 
-void kernel_shutdown()
+void kernel_shutdown(void)
 {
 	cpu_interrupt_set(0);
 #if CONFIG_SMP
@@ -40,7 +40,7 @@ void kernel_shutdown()
 	kprintf("Everything under the sun is in tune, but the sun is eclipsed by the moon.\n");
 }
 
-void kernel_reset()
+void kernel_reset(void)
 {
 	if(current_process->effective_uid)
 		return;
@@ -49,7 +49,7 @@ void kernel_reset()
 	cpu_reset();
 }
 
-void kernel_poweroff()
+void kernel_poweroff(void)
 {
 	if(current_process->effective_uid)
 		return;

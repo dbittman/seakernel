@@ -70,7 +70,7 @@ void dm_unregister_block_device(int n)
 	kfree(fr);
 }
 
-void dm_init_block_devices()
+void dm_init_block_devices(void)
 {
 	mutex_create(&bd_search_lock, 0);
 #if CONFIG_BLOCK_CACHE
@@ -366,7 +366,7 @@ int dm_blockdev_select(struct inode *in, int rw)
 	return dm_block_device_select(in->phys_dev, rw);
 }
 
-void dm_send_sync_block()
+void dm_send_sync_block(void)
 {
 	int i=0;
 	while(i>=0) {

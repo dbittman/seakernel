@@ -52,7 +52,7 @@ struct data_layer_protocol loop_prot = {
 	.receive = 0,
 };
 
-void net_lo_create()
+void net_lo_create(void)
 {
 	for(int i=0;i<MAX_LO;i++) {
 		if(!los[i].nd) {
@@ -66,7 +66,7 @@ void net_lo_create()
 	}
 }
 
-int module_install()
+int module_install(void)
 {
 	for(int i=0;i<MAX_LO;i++)
 		los[i].nd = 0;
@@ -75,7 +75,7 @@ int module_install()
 	return 0;
 }
 
-int module_exit()
+int module_exit(void)
 {
 	/* TODO: shutdown interfaces */
 	return 0;

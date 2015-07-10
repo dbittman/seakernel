@@ -15,7 +15,7 @@ static struct llist fsdriverslist;
 static struct llist fslist;
 extern struct filesystem *devfs;
 
-void fs_fsm_init()
+void fs_fsm_init(void)
 {
 	ll_create(&fsdriverslist);
 	ll_create(&fslist);
@@ -105,7 +105,7 @@ int fs_filesystem_init_mount(struct filesystem *fs, char *point, char *node, cha
 	return -EINVAL;
 }
 
-void fs_unmount_all()
+void fs_unmount_all(void)
 {
 	struct llistnode *ln, *next;
 	struct filesystem *fs;
@@ -137,7 +137,7 @@ int fs_umount(struct filesystem *fs)
 	return 0;
 }
 
-struct filesystem *fs_filesystem_create()
+struct filesystem *fs_filesystem_create (void)
 {
 	struct filesystem *fs = kmalloc(sizeof(struct filesystem));
 	fs->id = add_atomic(&fsids, 1)-1;

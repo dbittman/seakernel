@@ -117,7 +117,7 @@ void arch_mm_vm_init(addr_t id_map_to)
 
 /* This relocates the stack to a safe place which is copied 
  * upon clone, and creates a new directory that is...well, complete */
-void arch_mm_vm_init_2()
+void arch_mm_vm_init_2(void)
 {
 	printk(0, "[mm]: cloning directory for boot processor\n");
 	mm_vm_clone(&minimal_context, &kernel_context);

@@ -68,7 +68,7 @@ int dm_set_available_char_device(int (*f)(int, int, char*, size_t),
 	return i;
 }
 
-void dm_init_char_devices()
+void dm_init_char_devices(void)
 {
 	/* These devices are all built into the kernel. We must initialize them now */
 	dm_set_char_device(0, null_rw, 0, 0);
@@ -136,7 +136,7 @@ int dm_chardev_select(struct inode *in, int rw)
 	return 1;
 }
 
-void dm_send_sync_char()
+void dm_send_sync_char(void)
 {
 	int i=0;
 	while(i>=0) {

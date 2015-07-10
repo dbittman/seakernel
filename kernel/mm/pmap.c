@@ -13,7 +13,7 @@
 
 static addr_t mmdev_addr = 0;
 static mutex_t mmd_lock;
-static addr_t get_next_mm_device_page()
+static addr_t get_next_mm_device_page(void)
 {
 	if(!mmdev_addr) {
 		mutex_create(&mmd_lock, 0);

@@ -11,7 +11,7 @@
 static int current_hz=1000;
 static volatile long ticks=0;
 
-int tm_get_current_frequency()
+int tm_get_current_frequency(void)
 {
 	return current_hz;
 }
@@ -21,7 +21,7 @@ void tm_set_current_frequency_indicator(int hz)
 	current_hz = hz;
 }
 
-long tm_get_ticks()
+long tm_get_ticks(void)
 {
 	return ticks;
 }
@@ -44,7 +44,7 @@ static void inc_parent_times(struct process *t, int u, int s)
 	}
 }
 
-static void do_run_scheduler()
+static void do_run_scheduler(void)
 {
 	if(!current_thread)
 		return;
@@ -53,7 +53,7 @@ static void do_run_scheduler()
 
 #define __SYS 0, 1
 #define __USR 1, 0
-static void do_tick()
+static void do_tick(void)
 {
 	if(current_thread) {
 		ticker_tick(&current_thread->cpu->ticker, 1 /* TODO: Whatever this actually is */);

@@ -23,7 +23,7 @@ struct hba_memory *hba_mem;
 struct pmap *ahci_pmap;
 struct ahci_device *ports[32];
 int ahci_major=0;
-struct pci_device *get_ahci_pci()
+struct pci_device *get_ahci_pci (void)
 {
 	struct pci_device *ahci = pci_locate_class(0x1, 0x6);
 	if(!ahci) ahci = pci_locate_device(0x8086, 0x8c03);
@@ -170,7 +170,7 @@ int ioctl_ahci(int min, int cmd, long arg)
 }
 
 int irq1;
-int module_install()
+int module_install(void)
 {
 	printk(KERN_DEBUG, "[ahci]: initializing ahci driver...\n");
 	ahci_pmap = pmap_create(0, 0);
@@ -188,7 +188,7 @@ int module_install()
 	return 0;
 }
 
-int module_exit()
+int module_exit(void)
 {
 	int i;
 	dm_unregister_block_device(ahci_major);

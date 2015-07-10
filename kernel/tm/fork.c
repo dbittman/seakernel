@@ -178,7 +178,7 @@ int tm_do_fork(unsigned flags)
 	return 0;
 }
 
-int sys_vfork()
+int sys_vfork(void)
 {
 	int pid = tm_do_fork(0);
 	if(pid < 0) {

@@ -104,12 +104,12 @@ int sys_setpgid(int a, int b)
 	return -ENOSYS;
 }
 
-pid_t sys_get_pid()
+pid_t sys_get_pid(void)
 {
 	return current_process->pid;
 }
 
-pid_t sys_getppid()
+pid_t sys_getppid(void)
 {
 	return current_process->parent->pid;
 }
@@ -164,22 +164,22 @@ int tm_set_egid(int n)
 	return 0;
 }
 
-int tm_get_gid()
+int tm_get_gid(void)
 {
 	return current_process->real_gid;
 }
 
-int tm_get_uid()
+int tm_get_uid(void)
 {
 	return current_process->real_uid;
 }
 
-int tm_get_egid()
+int tm_get_egid(void)
 {
 	return current_process->effective_gid;
 }
 
-int tm_get_euid()
+int tm_get_euid(void)
 {
 	return current_process->effective_uid;
 }

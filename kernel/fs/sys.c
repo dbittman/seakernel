@@ -40,7 +40,7 @@ extern void fs_initrd_parse();
 
 struct filesystem *devfs;
 
-void devfs_init()
+void devfs_init(void)
 {
 	devfs = fs_filesystem_create();
 	fs_filesystem_init_mount(devfs, "/dev", "devfs", "devfs", 0);
@@ -101,7 +101,7 @@ int sys_setup(int a)
 	return 12;
 }
 
-void fs_init()
+void fs_init(void)
 {
 	vfs_icache_init();
 	vfs_dirent_init();

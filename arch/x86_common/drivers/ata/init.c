@@ -6,7 +6,7 @@
 #include <modules/psm.h>
 #include <sea/mm/dma.h>
 #include <sea/string.h>
-int init_ata_device()
+int init_ata_device(void)
 {
 	struct pci_device *ata = pci_locate_class(0x1, 0x1);
 	if(!ata) 

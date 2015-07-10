@@ -91,12 +91,12 @@ void arch_cpu_processor_init_2();
 void arch_cpu_early_init();
 void cpu_early_init();
 
-static inline void cpu_halt()
+static inline void cpu_halt(void)
 {
 	arch_cpu_halt();
 }
 
-static inline void cpu_pause()
+static inline void cpu_pause(void)
 {
 	arch_cpu_pause();
 }

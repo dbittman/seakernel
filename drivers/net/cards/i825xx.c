@@ -145,7 +145,7 @@ int ioctl_i825xx(int min, int cmd, int arg)
 	return 0;
 }
 
-int module_install()
+int module_install(void)
 {
 	i8_min=0;
 	cards=0;
@@ -168,7 +168,7 @@ int module_deps(char *b)
 	return CONFIG_VERSION_NUMBER;
 }
 
-int module_exit()
+int module_exit(void)
 {
 	printk(1, "[i825xx]: Shutting down all cards...\n");
 	while(cards) /* this call updates 'cards' within it. */

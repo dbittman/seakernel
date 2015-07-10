@@ -194,7 +194,7 @@ void user_mode_init(void)
 	u_exit(0);
 }
 
-void init()
+void init(void)
 {
 	/* Set some basic environment variables. These allow simple root execution, 
 	 * basic terminal access, and a shell to run from */

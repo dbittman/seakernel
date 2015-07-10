@@ -10,7 +10,7 @@ void mm_destroy_directory(struct vmm_context *dir)
 
 }
 
-void mm_free_self_directory()
+void mm_free_self_directory(void)
 {
 
 }
@@ -20,7 +20,7 @@ void mm_vm_init(addr_t id_map_to)
 	arch_mm_vm_init(id_map_to);
 }
 
-void mm_vm_init_2()
+void mm_vm_init_2(void)
 {
 	arch_mm_vm_init_2();
 }
@@ -60,7 +60,7 @@ int mm_vm_unmap(addr_t virt, unsigned locked)
 	return arch_mm_vm_unmap(virt, locked);
 }
 
-void mm_flush_page_tables()
+void mm_flush_page_tables(void)
 {
 	arch_mm_flush_page_tables();
 }

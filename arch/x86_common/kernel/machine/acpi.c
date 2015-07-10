@@ -38,7 +38,7 @@ static int rsdp_validate_checksum(struct acpi_rsdp *rsdp)
 	return 1;
 }
 
-static struct acpi_rsdp *apci_get_RSDP()
+static struct acpi_rsdp *apci_get_RSDP (void)
 {
 	/* The root structure may in the first KB of EBDA or from 0xE0000 to 0xFFFFF */
 	addr_t ebda_bottom = *(uint16_t *)(0x40e) << 4;
@@ -107,7 +107,7 @@ void *acpi_get_table_data(const char *sig, int *length)
 	return (dt+1);
 }
 
-void acpi_init()
+void acpi_init(void)
 {
 	pmap_create(&acpi_pmap, 0);
 	struct acpi_rsdp *rsdp = apci_get_RSDP();

@@ -54,7 +54,7 @@ swapdev_t *find_swapdevice(int dev)
 	return 0;
 }
 
-void init_swap()
+void init_swap(void)
 {
 	sl_mutex=create_mutex(0);
 	swaplist=0;
@@ -303,7 +303,7 @@ int swap_task(task_t *t)
 	return tot;
 }
 
-void __KT_swapper()
+void __KT_swapper(void)
 {
 	
 	//for(;;)

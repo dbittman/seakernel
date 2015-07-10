@@ -5,7 +5,7 @@
 extern struct console_driver crtc_drv;
 #define VIDEO_MEMORY 0xb8000
 
-void arch_console_init_stage1()
+void arch_console_init_stage1(void)
 {
 	kernel_console->vmem=kernel_console->cur_mem
 						=kernel_console->video=(char *)VIDEO_MEMORY;

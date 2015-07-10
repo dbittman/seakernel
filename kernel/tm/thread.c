@@ -11,7 +11,7 @@ void tm_thread_enter_system(int sys)
 }
 
 /* TODO: add (void) to all non-argument taking functions */
-void tm_thread_exit_system()
+void tm_thread_exit_system(void)
 {
 	current_thread->system=0;
 }

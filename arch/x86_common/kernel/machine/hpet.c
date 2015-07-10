@@ -31,7 +31,7 @@ static void hpet_write64(int offset, uint64_t data)
 	*(uint64_t *)(hpet_addr + offset) = data;
 }
 
-void x86_hpet_init()
+void x86_hpet_init(void)
 {
 	int len;
 	pmap_create(&hpet_pmap, 0);
@@ -50,7 +50,7 @@ void x86_hpet_init()
 	hpet_write64(0x10, conf);
 }
 
-uint64_t arch_hpt_get_nanoseconds()
+uint64_t arch_hpt_get_nanoseconds(void)
 {
 	if(!hpet_have) {
 		return 0;

@@ -69,7 +69,7 @@ static int program_ioapic(struct imps_ioapic *ia)
 	return 1;
 }
 
-void lapic_eoi()
+void lapic_eoi(void)
 {
 	if(!(kernel_state_flags & KSF_CPUS_RUNNING))
 		return;
@@ -159,7 +159,7 @@ void id_map_apic(page_dir_t *pd)
 	pt[t] = (lapic_addr&PAGE_MASK) | PAGE_PRESENT | PAGE_WRITE | PAGE_NOCACHE;
 }
 
-void init_ioapic()
+void init_ioapic(void)
 {
 	if(!num_ioapic)
 		return;

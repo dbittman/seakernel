@@ -31,7 +31,7 @@ int dm_write_block_cache(int dev, u64 blk)
 	return 1;
 }
 
-void dm_block_cache_init()
+void dm_block_cache_init(void)
 {
 #if CONFIG_MODULES
 #if CONFIG_BLOCK_CACHE

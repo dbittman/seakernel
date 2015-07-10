@@ -117,7 +117,7 @@ addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt,
 	return ret;
 }
 
-static struct physical_page *__create_entry()
+static struct physical_page *__create_entry (void)
 {
 	struct physical_page *p = kmalloc(sizeof(struct physical_page));
 	mutex_create(&p->lock, 0);

@@ -147,7 +147,7 @@ int net_tlayer_sendto_network(struct socket *socket, struct sockaddr *src, struc
 	return net_nlayer_send_packet(payload, len, dest, src, socket->domain, socket->prot);
 }
 
-void net_tlayer_init()
+void net_tlayer_init(void)
 {
 	memset(protocols, 0, sizeof(protocols));
 }

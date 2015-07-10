@@ -38,7 +38,7 @@ static void early_mm_vm_map(pml4_t *pml4, addr_t addr, addr_t map)
 	pt[PAGE_TABLE_IDX(addr/0x1000)] = map;
 }
 
-static pml4_t *create_initial_directory()
+static pml4_t *create_initial_directory (void)
 {
 	/* Create kernel directory */
 	pml4_t *pml4 = (addr_t *)arch_mm_alloc_physical_page_zero();
@@ -95,7 +95,7 @@ void arch_mm_vm_init(addr_t id_map_to)
 
 /* This relocates the stack to a safe place which is copied 
  * upon clone, and creates a new directory that is...well, complete */
-void arch_mm_vm_init_2()
+void arch_mm_vm_init_2(void)
 {
 	setup_kernelstack(id_tables);
 	printk(0, "[mm]: cloning directory for primary cpu\n");

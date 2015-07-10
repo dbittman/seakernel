@@ -83,7 +83,7 @@ struct inode_operations iso9660_inode_ops = {
 };
 
 iso_fs_t vols[MAX_ISO];
-iso_fs_t *get_new_fsvol()
+iso_fs_t *get_new_fsvol (void)
 {
 	int i;
 	for(i=0;i<MAX_ISO;i++)
@@ -243,7 +243,7 @@ int iso9660_unmount(struct inode *i, unsigned int v)
 	return 0;
 }
 
-int module_install()
+int module_install(void)
 {
 	int i=0;
 	for(i=0;i<MAX_ISO;i++)
@@ -252,7 +252,7 @@ int module_install()
 	return 0;
 }
 
-int module_exit()
+int module_exit(void)
 {
 	int i=0;
 	for(i=0;i<MAX_ISO;i++)

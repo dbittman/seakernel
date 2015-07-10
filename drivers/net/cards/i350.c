@@ -40,7 +40,7 @@ struct net_dev_calls i350_net_callbacks = {
 	0,0
 };
 
-struct pci_device *get_i350_pci()
+struct pci_device *get_i350_pci (void)
 {
 	struct pci_device *i350;
 	i350 = pci_locate_device(0x8086, 0x1521);
@@ -239,7 +239,7 @@ void i350_init(struct i350_device *dev)
 
 }
 
-void i350_notify_packet_available()
+void i350_notify_packet_available(void)
 {
 	/* tell networking subsystem that this device has a packet available
 	 * for reading. This doesn't do anything about the rx rings, that is
@@ -299,22 +299,22 @@ int i350_transmit_packet(struct net_dev *nd, struct net_packet *packets, int cou
 	return count;
 }
 
-void i350_link_status_change()
+void i350_link_status_change(void)
 {
 	kprintf("[i350]: link status changed\n");
 }
 
-void i350_transmitted_packet()
+void i350_transmitted_packet(void)
 {
 	//kprintf("[i350]: transmit complete\n");
 }
 
-void i350_rx_miss()
+void i350_rx_miss(void)
 {
 	kprintf("[i350]: warning - missed packet\n");
 }
 
-void i350_error_interrupt()
+void i350_error_interrupt(void)
 {
 	kprintf("[i350]: error - fatal error interrupt received\n");
 }
@@ -353,7 +353,7 @@ void i350_interrupt_lvl2(registers_t *regs, int int_no)
 
 int i350_irq1;
 
-int module_install()
+int module_install(void)
 {
 	struct pci_device *i350;
 	i350 = get_i350_pci();
@@ -374,7 +374,7 @@ int module_install()
 	return 0;
 }
 
-int module_exit()
+int module_exit(void)
 {
 	return 0;
 }

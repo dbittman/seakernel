@@ -129,12 +129,12 @@ static inline void arch_cpu_jump(addr_t x)
 	asm("jmp *%0"::"r"(x));
 }
 
-static inline void arch_cpu_halt()
+static inline void arch_cpu_halt(void)
 {
 	asm("hlt");
 }
 
-static inline void arch_cpu_pause()
+static inline void arch_cpu_pause(void)
 {
 	asm("pause");
 }

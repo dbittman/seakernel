@@ -10,7 +10,7 @@
 #include <sea/vsprintf.h>
 static struct devhash_s devhash[NUM_DT];
 
-void dm_init()
+void dm_init(void)
 {
 	printk(KERN_DEBUG, "[dev]: Loading device management...\n");
 	memset(devhash, 0, sizeof(struct devhash_s)*NUM_DT);
@@ -131,7 +131,7 @@ int dm_ioctl(int type, dev_t dev, int cmd, long arg)
 	return 0;
 }
 
-void dm_sync()
+void dm_sync(void)
 {
 	dm_send_sync_block();
 }

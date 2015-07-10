@@ -412,7 +412,7 @@ int ioctl_rtl8139(int min, int cmd, long int arg)
 	return 0;
 }
 
-int module_install()
+int module_install(void)
 {
 	rtl8139_maj = dm_set_available_char_device(rtl8139_rw_main, ioctl_rtl8139, 0);
 	int i=0;
@@ -439,7 +439,7 @@ int module_install()
 	return 0;
 }
 
-int module_exit()
+int module_exit(void)
 {
 	dm_unregister_char_device(rtl8139_maj);
 	//rtl8139_unload_device_pci(rtldev);

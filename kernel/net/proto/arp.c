@@ -315,7 +315,7 @@ int arp_receive_packet(struct net_dev *nd, struct net_packet *netpacket, struct 
 	return 0;
 }
 
-void arp_init()
+void arp_init(void)
 {
 	outstanding = ll_create_lockless(0);
 	outlock = mutex_create(0, 0);

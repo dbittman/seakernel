@@ -21,7 +21,7 @@ mutex_t *dirent_cache_lock;
  * read from a directory entry is when the dirent has a non-zero count.
  */
 
-void vfs_dirent_init()
+void vfs_dirent_init(void)
 {
 	dirent_lru = queue_create(0, 0);
 	dirent_cache_lock = mutex_create(0, 0);
@@ -77,7 +77,7 @@ void fs_dirent_remove_lru(struct dirent *dir)
 	queue_remove(dirent_lru, &dir->lru_item);
 }
 
-size_t fs_dirent_reclaim_lru()
+size_t fs_dirent_reclaim_lru(void)
 {
 	mutex_acquire(dirent_cache_lock);
 	struct queue_item *qi = queue_dequeue_item(dirent_lru);

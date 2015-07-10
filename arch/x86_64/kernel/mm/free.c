@@ -49,7 +49,7 @@ void free_pml4e(pml4_t *pml4, unsigned idx)
 	mm_free_physical_page(physical);
 }
 
-void arch_mm_free_thread_shared_directory()
+void arch_mm_free_thread_shared_directory(void)
 {
 	/* don't free all of the first pml4e, only the stuff above 0x40000000 */
 	unsigned int S = 1;
@@ -106,7 +106,7 @@ void arch_mm_destroy_task_page_directory(task_t *p)
 }
 
 /* basically frees the stack */
-void arch_mm_free_thread_specific_directory()
+void arch_mm_free_thread_specific_directory(void)
 {
 	unsigned int S = PML4_IDX(TOP_TASK_MEM_EXEC/0x1000);
 	unsigned int E = PML4_IDX((TOP_TASK_MEM+1)/0x1000);

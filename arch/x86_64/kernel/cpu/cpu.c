@@ -20,7 +20,7 @@ extern struct cpu primary_cpu_data;
 void init_lapic(int extint);
 int probe_smp();
 void init_acpi();
-void arch_cpu_processor_init_1()
+void arch_cpu_processor_init_1(void)
 {
 	primary_cpu = &primary_cpu_data;
 	memset(primary_cpu, 0, sizeof(struct cpu));
@@ -37,7 +37,7 @@ void arch_cpu_processor_init_1()
 	mutex_create((mutex_t *)&primary_cpu->lock, MT_NOSCHED);
 }
 
-void arch_cpu_processor_init_2()
+void arch_cpu_processor_init_2(void)
 {
 	acpi_init();
 	x86_hpet_init();

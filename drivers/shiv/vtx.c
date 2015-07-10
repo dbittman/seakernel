@@ -148,7 +148,7 @@ static void vmx_vcpu_load(struct cpu *cpu, struct vcpu *vcpu)
 }
 
 
-int shiv_check_hardware_support()
+int shiv_check_hardware_support(void)
 {
 	/* check CPUID.1 ECX.VMX */
 	struct cpu *cpu = current_task->cpu;
@@ -186,7 +186,7 @@ int shiv_check_hardware_support()
 	return 1;
 }
 
-int shiv_vmx_on()
+int shiv_vmx_on(void)
 {
 	uint64_t cr4, v;
 	asm("mov %%cr4, %0":"=r"(cr4));
@@ -230,12 +230,12 @@ int shiv_vmx_on()
 	return 1;
 }
 
-int shiv_vmx_off()
+int shiv_vmx_off(void)
 {
 
 }
 
-addr_t ept_mm_alloc_physical_page_zero()
+addr_t ept_mm_alloc_physical_page_zero(void)
 {
 	addr_t ret = mm_alloc_physical_page();
 	memset((void *)(ret + PHYS_PAGE_MAP), 0, 0x1000);
@@ -516,7 +516,7 @@ int shiv_vm_exit_handler(struct vcpu *vcpu)
 	/* return to VM */
 }
 
-struct vmcs *shiv_alloc_vmcs()
+struct vmcs *shiv_alloc_vmcs (void)
 {
 	return kmalloc_a(0x1000);
 }

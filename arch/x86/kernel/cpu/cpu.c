@@ -18,7 +18,7 @@ void init_lapic(int);
 void set_debug_traps (void);
 int probe_smp();
 
-void arch_cpu_processor_init_1()
+void arch_cpu_processor_init_1(void)
 {
 #if 0 /* TODO */
 	mutex_create(&ipi_mutex, MT_NOSCHED);
@@ -62,7 +62,7 @@ void arch_cpu_processor_init_1()
 
 void x86_hpet_init();
 
-void arch_cpu_processor_init_2()
+void arch_cpu_processor_init_2(void)
 {
 	acpi_init();
 	x86_hpet_init();

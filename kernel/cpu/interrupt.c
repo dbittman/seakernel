@@ -376,7 +376,7 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 }
 
 /* make sure it eventually gets handled */
-void __KT_try_handle_stage2_interrupts()
+void __KT_try_handle_stage2_interrupts(void)
 {
 	/* TODO: don't run this if there aren't any pending interrupts */
 	if(!mutex_is_locked(&s2_lock))
@@ -406,7 +406,7 @@ void __KT_try_handle_stage2_interrupts()
 	}
 }
 
-void interrupt_init()
+void interrupt_init(void)
 {
 	for(int i=0;i<MAX_INTERRUPTS;i++)
 	{
@@ -459,7 +459,7 @@ void cpu_interrupt_set_flag(int flag)
 		cpu->flags &= ~CPU_INTER;
 }
 
-int cpu_interrupt_get_flag()
+int cpu_interrupt_get_flag(void)
 {
 	struct cpu *cpu = current_task ? current_task->cpu : 0;
 	return (cpu ? (cpu->flags&CPU_INTER) : 0);

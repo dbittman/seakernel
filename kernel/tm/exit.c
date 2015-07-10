@@ -15,8 +15,8 @@
 #include <sea/vsprintf.h>
 #include <sea/boot/init.h>
 
-/* DESIGN: A process that calls exit() goes through a number of stages. First, exit()
- * adds the task to the kill_queue list right away, but doesn't free it yet. Once exit()
+/* DESIGN: A process that calls exit() goes through a number of stages. First, exit(void)
+ * adds the task to the kill_queue list right away, but doesn't free it yet. Once exit(void)
  * cleans up as much as it can, it calls set_as_dead(), which sets the tasks TF_DYING
  * flag, and sets the state to TASK_DEAD. This means that the task will not get
  * rescheduled, and tells the scheduler to "bury" the task. Since we can't risk freeing
@@ -69,7 +69,7 @@ static void release_process(task_t *p)
 
 /* kernel background process calls this, and it tries to release
  * a process, and move tasks to the kill queue */
-int __KT_try_releasing_tasks()
+int __KT_try_releasing_tasks(void)
 {
 	struct llistnode *cur;
 	rwlock_acquire(&kill_queue->rwl, RWL_WRITER);
@@ -119,7 +119,7 @@ int __KT_try_releasing_tasks()
 	return pid;
 }
 
-void tm_process_suicide()
+void tm_process_suicide(void)
 {
 	/* we have to be a bit careful. If we're a kernel thread that
 	 * uses a user-area stack (created during boot), then we need

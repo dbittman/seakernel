@@ -17,7 +17,7 @@ uint32_t calculate_crc32(uint32_t crc, const unsigned char *buf, size_t len)
 	return ~crc;
 }
 
-void init_crc32_table()
+void init_crc32_table(void)
 {
 	for(int i=0;i<256;i++)
 	{
@@ -35,14 +35,14 @@ void init_crc32_table()
 	}
 }
 
-int module_install()
+int module_install(void)
 {
 	init_crc32_table();
 	loader_add_kernel_symbol(calculate_crc32);
 	return 0;
 }
 
-int module_exit()
+int module_exit(void)
 {
 	loader_remove_kernel_symbol("calculate_crc32");
 	return 0;

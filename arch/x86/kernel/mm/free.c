@@ -17,7 +17,7 @@ __attribute__ ((noinline)) static void self_free_table(int t)
 	}
 }
 
-void arch_mm_free_thread_shared_directory()
+void arch_mm_free_thread_shared_directory(void)
 {
 	unsigned int *pd = (unsigned *)current_task->pd;
 	int D = PAGE_DIR_IDX(TOP_TASK_MEM_EXEC/PAGE_SIZE);
@@ -48,7 +48,7 @@ void arch_mm_destroy_task_page_directory(task_t *p)
 	kfree(p->pd);
 }
 
-void arch_mm_free_thread_specific_directory()
+void arch_mm_free_thread_specific_directory(void)
 {
 	unsigned int *pd = (unsigned *)current_task->pd;
 	int T = PAGE_DIR_IDX(TOP_TASK_MEM/PAGE_SIZE);

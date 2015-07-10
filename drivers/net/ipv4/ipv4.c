@@ -46,7 +46,7 @@ struct nlayer_protocol ipv4 = {
 	.send = ipv4_enqueue_sockaddr,
 };
 
-int module_install()
+int module_install(void)
 {
 	ipv4_tx_queue = queue_create(0, 0);
 	ipv4_send_thread = kthread_create(0, "[kipv4-send]", 0, ipv4_sending_thread, 0);
@@ -57,7 +57,7 @@ int module_install()
 	return 0;
 }
 
-int module_exit()
+int module_exit(void)
 {
 	/* shutdown the ipv4 sending thread */
 	kthread_join(ipv4_send_thread, KT_JOIN_NONBLOCK);

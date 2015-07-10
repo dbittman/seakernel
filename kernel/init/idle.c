@@ -27,7 +27,7 @@
 int __KT_try_releasing_tasks();
 void __KT_try_handle_stage2_interrupts();
 
-static inline int __KT_clear_args()
+static inline int __KT_clear_args(void)
 {
 	/* Clear out the alloc'ed arguments */
 	/* TODO */
@@ -49,7 +49,7 @@ static inline int __KT_clear_args()
 
 struct kthread kthread_pager;
 
-int kt_kernel_idle_task()
+int kt_kernel_idle_task(void)
 {
 	int task, cache;
 	kthread_create(&kthread_pager, "[kpager]", 0, __KT_pager, 0);

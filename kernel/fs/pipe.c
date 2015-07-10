@@ -4,7 +4,6 @@
 #include <sea/tm/process.h>
 #include <sea/fs/file.h>
 #include <sea/cpu/interrupt.h>
-#include <sea/tm/schedule.h>
 #include <sea/sys/fcntl.h>
 #include <sea/errno.h>
 #include <sea/mm/kmalloc.h>

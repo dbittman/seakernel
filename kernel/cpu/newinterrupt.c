@@ -5,7 +5,6 @@
 #include <sea/kernel.h>
 #include <sea/vsprintf.h>
 #include <sea/tm/process.h>
-#include <sea/tm/schedule.h>
 #include <sea/fs/kerfs.h>
 #include <sea/cpu/atomic.h>
 #include <sea/loader/symbol.h>

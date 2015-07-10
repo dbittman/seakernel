@@ -7,7 +7,6 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
 #include <sea/net/data_queue.h>
-#include <sea/tm/schedule.h>
 #include <sea/fs/fcntl.h>
 #include <sea/dm/dev.h>
 /* network worker threads just add the packet to the

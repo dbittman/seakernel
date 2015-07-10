@@ -4,7 +4,6 @@
 #include <sea/mm/dma.h>
 #include <sea/boot/multiboot.h>
 #include <sea/kernel.h>
-#include <sea/tm/schedule.h>
 #include <sea/fs/kerfs.h>
 #include <sea/vsprintf.h>
 

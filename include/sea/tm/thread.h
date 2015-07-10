@@ -84,7 +84,7 @@ void tm_exit(int);
 void tm_thread_kill(struct thread *);
 void tm_blocklist_wakeall(struct llist *blocklist);
 void tm_thread_unblock(struct thread *t);
-int tm_thread_block_timeout(struct llist *blocklist, time_t nanoseconds);
+int tm_thread_block_timeout(struct llist *blocklist, time_t microseconds);
 void tm_thread_set_state(struct thread *t, int state);
 void tm_thread_add_to_blocklist(struct thread *t, struct llist *blocklist);
 void tm_thread_remove_from_blocklist(struct thread *t);
@@ -94,7 +94,6 @@ void tm_thread_delay_sleep();
 int tm_thread_reserve_usermode_stack(struct thread *thr);
 void tm_thread_release_usermode_stack(struct thread *thr, int stack);
 addr_t tm_thread_usermode_stack_end(int stack);
-#define ONE_SECOND 1000 /* TODO: set this to the correct value */
 
 #define tm_thread_pause(th) tm_thread_set_state(th, THREAD_INTERRUPTIBLE)
 #define tm_thread_resume(th) tm_thread_set_state(th, THREAD_RUNNING)

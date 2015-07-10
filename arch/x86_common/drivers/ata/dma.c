@@ -5,7 +5,6 @@
 #include <modules/ata.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/mm/dma.h>
-#include <sea/tm/schedule.h>
 typedef struct {
 	unsigned addr;
 	unsigned short size;

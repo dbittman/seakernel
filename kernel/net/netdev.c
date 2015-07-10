@@ -9,7 +9,6 @@
 #include <sea/vsprintf.h>
 #include <sea/net/arp.h>
 #include <sea/net/route.h>
-#include <sea/tm/schedule.h>
 #include <sea/net/datalayer.h>
 #include <sea/fs/devfs.h>
 #include <sea/errno.h>
@@ -17,6 +16,7 @@
 #include <sea/net/nlayer.h>
 #include <sea/net/data_queue.h>
 #include <sea/asm/system.h>
+#include <sea/tm/timing.h>
 uint16_t af_to_ethertype_map[PF_MAX] = {
 	[AF_INET] = 0x800,
 };
@@ -87,10 +87,9 @@ static int kt_packet_rec_thread(struct kthread *kt, void *arg)
 			}
 			net_packet_put(pack, 0);
 			pack = 0;
-			nd->rx_thread_lastwork = tm_get_ticks();
+			nd->rx_thread_lastwork = tm_timing_get_microseconds();
 		} else {
-			/* TODO: some way of determining this... (this is broken, ONE_SECOND is in nanoseconds) */
-			if(tm_get_ticks() > nd->rx_thread_lastwork + ONE_SECOND * 5)
+			if(tm_timing_get_microseconds() > nd->rx_thread_lastwork + ONE_SECOND * 5)
 				tm_thread_pause(current_thread);
 			else
 				tm_schedule();

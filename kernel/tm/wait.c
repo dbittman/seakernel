@@ -1,5 +1,4 @@
 #include <sea/kernel.h>
-#include <sea/tm/schedule.h>
 #include <sea/tm/process.h>
 #include <sea/tm/tqueue.h>
 #include <sea/cpu/atomic.h>

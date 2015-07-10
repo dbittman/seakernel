@@ -1,7 +1,6 @@
 #include <sea/tm/process.h>
 #include <sea/tm/thread.h>
 #include <sea/tm/async_call.h>
-#include <sea/tm/schedule.h>
 #include <sea/tm/ticker.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/atomic.h>
@@ -76,14 +75,14 @@ static void __timeout_expired(unsigned long data)
 	tm_thread_set_state(t, THREAD_RUNNING); /* TODO: maybe restore an old state */
 }
 
-int tm_thread_delay(time_t nanoseconds)
+int tm_thread_delay(time_t microseconds)
 {
 	struct async_call *call = &current_thread->block_timeout;
 	call->func = __timeout_expired;
 	call->priority = 10; /* TODO: what priority */
 	call->data = (unsigned long)current_thread;
 	struct cpu *cpu = cpu_get_current();
-	ticker_insert(&cpu->ticker, nanoseconds, call);
+	ticker_insert(&cpu->ticker, microseconds, call);
 	cpu_put_current(cpu);
 	tm_thread_set_state(current_thread, THREAD_INTERRUPTIBLE);
 	if(tm_thread_got_signal(current_thread))
@@ -91,22 +90,22 @@ int tm_thread_delay(time_t nanoseconds)
 	return 0;
 }
 
-void tm_thread_delay_sleep(time_t nanoseconds)
+void tm_thread_delay_sleep(time_t microseconds)
 {
 	struct cpu *cpu = __current_cpu;
-	uint64_t end = cpu->ticker.tick + nanoseconds;
+	uint64_t end = cpu->ticker.tick + microseconds;
 	while(cpu->ticker.tick < end) {
 		cpu_pause();
 	}
 }
 
-int tm_thread_block_timeout(struct llist *blocklist, time_t nanoseconds)
+int tm_thread_block_timeout(struct llist *blocklist, time_t microseconds)
 {
 	struct async_call *call = &current_thread->block_timeout;
 	call->func = __timeout_expired;
 	call->priority = 10; /* TODO: what priority */
 	call->data = (unsigned long)current_thread;
-	ticker_insert(&current_thread->cpu->ticker, nanoseconds, call);
+	ticker_insert(&current_thread->cpu->ticker, microseconds, call);
 	/* TODO: what happens if the timer expires before we do this? */
 	int r = tm_thread_block(blocklist, THREAD_INTERRUPTIBLE);
 	/* TODO: do we care more about EINTR or ETIME? */

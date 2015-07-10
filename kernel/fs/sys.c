@@ -17,7 +17,6 @@
 #include <sea/fs/callback.h>
 #include <sea/fs/ramfs.h>
 #include <sea/fs/pipe.h>
-#include <sea/tm/schedule.h>
 #include <sea/sys/fcntl.h>
 #include <sea/errno.h>
 #include <sea/vsprintf.h>
@@ -27,6 +26,7 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/fs/fs.h>
 #include <sea/fs/kerfs.h>
+#include <sea/tm/timing.h>
 static int system_setup=0;
 /* This function is called once at the start of the init process initialization.
  * It sets the task fs values to possible and useful things, allowing VFS access.
@@ -589,18 +589,19 @@ static int select_filedes(int i, int rw)
 int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds, 
 		struct timeval *timeout)
 {
+	/* TODO: add blocking, make non-polling */
 	if(nfds < 0)
 		return -EINVAL;
 	if(!nfds)
 		return 0;
-	unsigned int wait=0;
+	unsigned long wait=0;
 	int i;
 	if(timeout)
-		wait = timeout->tv_sec * 1000 + (timeout->tv_usec/1000);
-	long end = wait+tm_get_ticks();
+		wait = timeout->tv_sec * ONE_SECOND + (timeout->tv_usec);
+	unsigned long end = wait+tm_timing_get_microseconds();
 	int total_set=0, is_ok=0;
 	int ret=0;
-	while((tm_get_ticks() <= end || !wait || !timeout) && !ret)
+	while((tm_timing_get_microseconds() <= end || !wait || !timeout) && !ret)
 	{
 		total_set=0;
 		for(i=0;i<nfds;++i)
@@ -640,9 +641,9 @@ int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 	}
 	if(timeout)
 	{
-		timeout->tv_sec = (end-tm_get_ticks())/1000;
-		timeout->tv_usec = ((end-tm_get_ticks())%1000)*1000;
-		if(tm_get_ticks() >= end) {
+		timeout->tv_sec = (end-tm_timing_get_microseconds())/ONE_SECOND;
+		timeout->tv_usec = ((end-tm_timing_get_microseconds())%ONE_SECOND);
+		if(tm_timing_get_microseconds() >= end) {
 			timeout->tv_sec = 0;
 			timeout->tv_usec = 0;
 			return 0;

@@ -26,6 +26,14 @@ void tm_process_exit(int code)
 	current_process->exit_reason.ret = code;
 	current_process->exit_reason.pid = current_process->pid;
 
+	/* update times */
+	if(current_process->parent) {
+		time_t total_utime = current_process->utime + current_process->cutime;
+		time_t total_stime = current_process->stime + current_process->cstime;
+		add_atomic(&current_process->parent->cutime, total_utime);
+		add_atomic(&current_process->parent->cstime, total_stime);
+	}
+
 	/* TODO */
 	if(current_process->parent)
 		tm_signal_send_process(current_process->parent, SIGCHILD);

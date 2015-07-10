@@ -15,7 +15,6 @@
 #include <sea/tty/terminal.h>
 #include <sea/fs/stat.h>
 #include <sea/fs/dir.h>
-#include <sea/tm/schedule.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/fs/pipe.h>
 #include <sea/loader/exec.h>
@@ -169,7 +168,7 @@ static void *syscall_table[129] = {
 	[SYS_GETTIMEEPOCH]    = SC time_get_epoch,
 
 	[SYS_GETTIME]         = SC time_get,
-	[SYS_TIMERTH]         = SC sys_get_timer_th,
+	//[SYS_TIMERTH]         = SC sys_get_timer_th,
 	[SYS_ISSTATE]         = SC sys_isstate,
 	[SYS_WAIT3]           = SC sys_wait3,
 

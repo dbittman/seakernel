@@ -3,6 +3,7 @@
 #include <sea/tm/kthread.h>
 #include <sea/mm/reclaim.h>
 #include <sea/vsprintf.h>
+#include <sea/tm/timing.h>
 /* this is an extremely complicated function, so take some care
  * when reading it to increase understanding */
 int slab_get_usage(void);

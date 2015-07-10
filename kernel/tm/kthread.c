@@ -1,7 +1,6 @@
 #include <sea/kernel.h>
 #include <sea/tm/process.h>
 #include <sea/tm/kthread.h>
-#include <sea/tm/schedule.h>
 #include <sea/mm/vmm.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/cpu/atomic.h>

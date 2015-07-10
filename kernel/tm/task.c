@@ -1,6 +1,5 @@
 #include <sea/tm/process.h>
 #include <sea/tm/tqueue.h>
-#include <sea/tm/schedule.h>
 #include <sea/tm/kthread.h>
 #include <sea/mm/vmm.h>
 #include <sea/mm/kmalloc.h>

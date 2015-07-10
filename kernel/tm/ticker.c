@@ -20,9 +20,9 @@ struct ticker *ticker_create(struct ticker *ticker, int flags)
 	return ticker;
 }
 
-void ticker_tick(struct ticker *ticker, uint64_t nanoseconds)
+void ticker_tick(struct ticker *ticker, uint64_t microseconds)
 {
-	ticker->tick += nanoseconds;
+	ticker->tick += microseconds;
 	uint64_t key;
 	void *data;
 	if(heap_peek(&ticker->heap, &key, &data) == 0) {
@@ -37,7 +37,6 @@ void ticker_tick(struct ticker *ticker, uint64_t nanoseconds)
 			if(res == 0) {
 				/* handle the time-event */
 				struct async_call *call = (struct async_call *)data;
-				printk_safe(0, "-> %x\n", call);
 				async_call_execute(call);
 				async_call_destroy(call);
 			}
@@ -45,12 +44,11 @@ void ticker_tick(struct ticker *ticker, uint64_t nanoseconds)
 	}
 }
 
-void ticker_insert(struct ticker *ticker, time_t nanoseconds, struct async_call *call)
+void ticker_insert(struct ticker *ticker, time_t microseconds, struct async_call *call)
 {
-	kprintf("TICKER INSERT %x\n", call);
 	assert(call);
 	mutex_acquire(&ticker->lock);
-	heap_insert(&ticker->heap, nanoseconds + ticker->tick, call);
+	heap_insert(&ticker->heap, microseconds + ticker->tick, call);
 	mutex_release(&ticker->lock);
 }
 

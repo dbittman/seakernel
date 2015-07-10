@@ -9,7 +9,6 @@
 #include <sea/kernel.h>
 #include <sea/tm/process.h>
 #include <sea/cpu/processor.h>
-#include <sea/tm/schedule.h>
 #include <sea/asm/system.h>
 #include <sea/mm/kmalloc.h>
 /* a task may relock a mutex if it is inside an interrupt handler,

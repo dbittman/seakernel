@@ -7,10 +7,10 @@
 #include <sea/sys/sysconf.h>
 #include <sea/cpu/processor.h>
 #include <sea/uname.h>
-#include <sea/tm/schedule.h>
 #include <sea/errno.h>
 #include <sea/vsprintf.h>
 #include <sea/string.h>
+#include <sea/tm/timing.h>
 long sys_sysconf(int cmd)
 {
 	int ret = -EINVAL;

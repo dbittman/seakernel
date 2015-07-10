@@ -2,7 +2,6 @@
 #include <sea/tm/process.h>
 #include <sea/cpu/processor.h>
 #include <sea/cpu/interrupt.h>
-#include <sea/tm/schedule.h>
 #if CONFIG_SMP
 void cpu_smp_task_idle(struct cpu *cpu)
 {

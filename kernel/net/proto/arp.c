@@ -9,9 +9,8 @@
 #include <sea/cpu/time.h>
 #include <sea/net/ethertype.h>
 #include <sea/net/datalayer.h>
-#include <sea/tm/schedule.h>
 #include <sea/mutex.h>
-
+#include <sea/tm/timing.h>
 #define MAX_PROTS 64
 
 static struct arp_database {
@@ -69,8 +68,7 @@ static struct arp_entry *__arp_get_outstanding_requests_entry(int prot_type, uin
 	struct llistnode *node;
 	struct arp_entry *entry;
 	ll_for_each_entry(outstanding, node, struct arp_entry *, entry) {
-		/* TODO: same here, this needs to be fixed */
-		if(check_time && (tm_get_ticks() > (entry->timestamp + ONE_SECOND))) {
+		if(check_time && (tm_timing_get_microseconds() > (entry->timestamp + ONE_SECOND))) {
 			ll_remove(outstanding, entry->node);
 			kfree(entry);
 			continue;
@@ -108,7 +106,7 @@ static void arp_add_outstanding_requests(int prot_type, uint16_t addr[2])
 	entry->type = prot_type;
 	memcpy(entry->prot_addr, addr, 2 * sizeof(uint16_t));
 	mutex_acquire(outlock);
-	entry->timestamp = tm_get_ticks();
+	entry->timestamp = tm_timing_get_microseconds();
 	entry->node = ll_insert(outstanding, entry);
 	mutex_release(outlock);
 }

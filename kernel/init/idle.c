@@ -18,7 +18,6 @@
 #include <sea/mm/swap.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/atomic.h>
-#include <sea/tm/schedule.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
 #include <sea/string.h>

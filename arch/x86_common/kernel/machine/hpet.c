@@ -1,5 +1,4 @@
 #include <sea/cpu/acpi.h>
-#include <sea/tm/schedule.h>
 #include <sea/mm/pmap.h>
 struct hpet_header
 {

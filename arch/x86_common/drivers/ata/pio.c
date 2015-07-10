@@ -4,7 +4,6 @@
 #include <sea/dm/block.h>
 #include <sea/tm/process.h>
 #include <sea/cpu/interrupt.h>
-#include <sea/tm/schedule.h>
 int ata_pio_rw(struct ata_controller *cont, struct ata_device *dev, 
 	int rw, unsigned long long blk, unsigned char *buffer, unsigned count)
 {

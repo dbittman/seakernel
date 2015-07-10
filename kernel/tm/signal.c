@@ -7,7 +7,6 @@
 #include <sea/boot/init.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/atomic.h>
-#include <sea/tm/schedule.h>
 #include <sea/errno.h>
 #include <sea/vsprintf.h>
 

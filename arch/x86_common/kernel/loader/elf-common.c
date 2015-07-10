@@ -3,7 +3,6 @@
 #include <sea/tm/process.h>
 #include <sea/fs/file.h>
 #include <sea/loader/module.h>
-#include <sea/tm/schedule.h>
 #include <sea/mm/kmalloc.h>
 
 void arch_loader_parse_kernel_elf(struct multiboot *mb, void *__elf)

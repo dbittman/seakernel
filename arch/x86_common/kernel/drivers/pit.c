@@ -5,8 +5,8 @@
 #include <sea/tm/process.h>
 #include <sea/cpu/atomic.h>
 #include <sea/cpu/interrupt.h>
-#include <sea/tm/schedule.h>
 #include <sea/cpu/cpu-io.h>
+#include <sea/tm/timing.h>
 
 void arch_cpu_timer_install(int hz)
 {

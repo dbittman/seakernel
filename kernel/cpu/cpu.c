@@ -1,6 +1,5 @@
 #include <sea/cpu/processor.h>
 #include <sea/cpu/interrupt.h>
-#include <sea/tm/schedule.h>
 #include <sea/string.h>
 #include <sea/loader/symbol.h>
 #include <sea/cpu/atomic.h>

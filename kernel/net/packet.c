@@ -6,7 +6,6 @@
 #include <sea/tm/process.h>
 #include <sea/loader/symbol.h>
 #include <sea/asm/system.h>
-#include <sea/tm/schedule.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
 #include <sea/string.h>

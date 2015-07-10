@@ -10,7 +10,6 @@
 #include <sea/cpu/atomic.h>
 #include <sea/rwlock.h>
 #include <sea/tm/process.h>
-#include <sea/tm/schedule.h>
 #include <sea/mm/kmalloc.h>
 void __rwlock_acquire(rwlock_t *lock, unsigned flags, char *file, int line)
 {

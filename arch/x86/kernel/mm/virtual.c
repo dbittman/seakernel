@@ -135,7 +135,6 @@ addr_t arch_mm_vm_get_map(addr_t v, addr_t *p, unsigned locked)
 	unsigned *pd = page_directory;
 	unsigned int vp = (v&PAGE_MASK) / 0x1000;
 	unsigned int pt_idx = PAGE_DIR_IDX(vp);
-	/* TODO: generic "tasking system up" flag */
 	if(pd_cur_data && !locked)
 		mutex_acquire(&pd_cur_data->lock);
 	if(!pd[pt_idx])

@@ -4,6 +4,7 @@
 #include <sea/kernel.h>
 #include <sea/mm/memory-x86_common.h>
 #include <sea/types.h>
+/* TODO: unfuck the memory maps */
 #define TOP_TASK_MEM       0xA8000000
 #define TOP_TASK_MEM_EXEC  0xA0000000
 #define USERMODE_STACKS_START 0xA1000000
@@ -26,12 +27,6 @@
 #define PM_STACK_ADDR_TOP  0xF0000000
 
 #define PDIR_INFO_START    0xF0000000
-
-#define PDIR_DATA		   0xF0000000
-
-/* this entry in the page directory actually just points to the current
- * task */
-#define SMP_CUR_TASK       0xF0400000
 
 #define DIR_PHYS           0xFFBFF000
 #define TBL_PHYS           0xFFC00000

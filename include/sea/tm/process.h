@@ -76,7 +76,6 @@ struct process {
 	struct process *parent;
 	int thread_count;
 	struct llist threadlist;
-	/* TODO: clean this up */
 	unsigned char stack_bitmap[NUM_USERMODE_STACKS / 8];
 	mutex_t stacks_lock;
 };

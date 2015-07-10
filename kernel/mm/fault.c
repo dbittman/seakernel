@@ -75,11 +75,8 @@ void mm_page_fault_handler(registers_t *regs, addr_t address, int pf_cause)
 			return;
 	}
 	if(!current_thread) {
-		if(primary_cpu->idle_thread) {
-			/* maybe a page fault while panicing? */
-			cpu_interrupt_set(0);
-			cpu_halt();
-		}
+		cpu_interrupt_set(0);
+		cpu_halt();
 		panic(PANIC_MEM | PANIC_NOSYNC, "early page fault (addr=%x, cause=%x)", address, pf_cause);
 	}
 	panic(PANIC_MEM | PANIC_NOSYNC, "page fault (addr=%x, cause=%x)", address, pf_cause);

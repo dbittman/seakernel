@@ -129,7 +129,6 @@ static void kernel_fault(int fuckoff, addr_t ip, long err_code, registers_t *reg
 
 static void faulted(int fuckoff, int userspace, addr_t ip, long err_code, registers_t *regs)
 {
-	/* TODO: do we need to check all of these? */
 	if(!current_thread || current_thread->system || !userspace)
 	{
 		kernel_fault(fuckoff, ip, err_code, regs);

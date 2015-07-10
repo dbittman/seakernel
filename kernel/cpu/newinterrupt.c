@@ -148,7 +148,7 @@ static void faulted(int fuckoff, int userspace, addr_t ip, long err_code, regist
 				tm_signal_send_thread(current_thread, SIGABRT);
 				break;
 			default:
-				tm_thread_kill(current_thread);
+				tm_signal_send_thread(current_thread, SIGABRT);
 				break;
 		}
 		/* the above signals WILL be handled, since at the end of tm_tm_schedule(), it checks

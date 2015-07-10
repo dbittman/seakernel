@@ -46,19 +46,8 @@ int sys_fcntl(int filedes, int cmd, long attr1, long attr2, long attr3)
 			break;
 		case F_SETOWN: case F_GETOWN:
 			printk(5, "Task attempted to access socket controls on non-socket descriptor!\n");
-			tm_thread_kill(current_thread);
+			tm_signal_send_thread(current_thread, SIGABRT);
 			break;
-#if 0
-		case F_SETLK: 
-			ret = fs_fcntl_setlk(f, attr1);
-			break;
-		case F_GETLK: 
-			ret = fs_fcntl_getlk(f, attr1);
-			break;
-		case F_SETLKW:
-			ret = fs_fcntl_setlkw(f, attr1);
-			break;
-#endif
 		default:
 			printk(5, "Task tried calling fcntl with invalid commands!\n");
 			ret = -EINVAL;

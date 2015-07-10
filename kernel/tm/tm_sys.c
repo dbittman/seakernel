@@ -3,7 +3,7 @@
 #include <sea/tm/process.h>
 #include <sea/tm/tqueue.h>
 #include <sea/errno.h>
-/* Low-level memory allocator implementation */
+
 int sys_sbrk(long inc)
 {
 	if(inc < 0 && current_process->heap_start < current_process->heap_end) {

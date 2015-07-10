@@ -67,8 +67,9 @@ void mm_page_fault_handler(registers_t *regs, addr_t address, int pf_cause)
 				current_thread->tid, current_process->heap_start, 
 				current_process->heap_end, current_thread->flags);
 		
-		tm_thread_kill(current_thread);
-		/* this function does not return */
+		tm_signal_send_thread(current_thread, SIGSEGV);
+		/* TODO: what if the thread wants to handle this? */
+		tm_signal_send_thread(current_thread, SIGKILL);
 	} else {
 		/* WARNING: TODO: this might not be safe */
 		if(mm_page_fault_test_mappings(address, pf_cause) == 0)

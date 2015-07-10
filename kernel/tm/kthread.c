@@ -110,6 +110,6 @@ void kthread_kill(struct kthread *kt, int flags)
 		panic(0, "kthread tried to commit suicide");
 	if(!kt->tid)
 		panic(0, "cannot kill unknown kthread");
-	tm_thread_kill(kt->thread);
+	tm_signal_send_thread(kt->thread, SIGKILL);
 }
 

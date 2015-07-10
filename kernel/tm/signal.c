@@ -30,7 +30,7 @@ int tm_thread_handle_signal(int signal)
 				/* TODO */
 				//t->exit_reason.cause=__EXITSIG;
 				//t->exit_reason.sig=t->sigd;
-				tm_thread_kill(current_thread);
+				tm_signal_send_thread(current_thread, SIGKILL);
 				break;
 			case SIGUSLEEP:
 				//ret = TASK_USLEEP;

@@ -8,7 +8,10 @@
 
 void tm_thread_delay_sleep(time_t microseconds);
 int tm_thread_delay(time_t microseconds);
-void tm_timer_handler(registers_t *r);
+void tm_timer_handler(registers_t *r, int, int);
+int tm_get_current_frequency(void);
+time_t tm_timing_get_microseconds(void);
+void tm_set_current_frequency_indicator(int hz);
 int tm_get_current_frequency(void);
 
 #endif

@@ -80,7 +80,7 @@ void arch_mm_vm_clone(struct vmm_context *oldcontext, struct vmm_context *newcon
 	page_dir_t *new = (page_dir_t *)kmalloc_ap(PAGE_SIZE, &new_p);
 	if(pd_cur_data)
 		mutex_acquire(&pd_cur_data->lock);
-	vm_copy_dir(oldcontext->root_virtual, new, 0);
+	vm_copy_dir((addr_t *)oldcontext->root_virtual, new, 0);
 	/* Now set the self refs (DIR_PHYS, TBL_PHYS) */
 	new[1023] = new_p | PAGE_PRESENT | PAGE_WRITE;
 	addr_t *tmp = (addr_t *)VIRT_TEMP;

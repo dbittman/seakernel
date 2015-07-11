@@ -13,6 +13,8 @@
 #include <sea/syscall.h>
 #include <sea/ll.h>
 #include <sea/kernel.h>
+#include <sea/vsprintf.h>
+#include <sea/tm/thread.h>
 
 extern mutex_t process_refs_lock;
 extern mutex_t thread_refs_lock;
@@ -83,8 +85,8 @@ void tm_set_kernel_stack(struct cpu *cpu, addr_t start, addr_t end)
 void tm_thread_user_mode_jump(void (*fn)(void))
 {
 	cpu_interrupt_set(0);
-	tm_set_kernel_stack(current_thread->cpu, current_thread->kernel_stack,
-			current_thread->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
+	tm_set_kernel_stack(current_thread->cpu, (addr_t)current_thread->kernel_stack,
+			(addr_t)current_thread->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
 	arch_tm_jump_to_user_mode((addr_t)fn);
 }
 

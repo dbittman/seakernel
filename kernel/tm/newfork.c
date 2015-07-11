@@ -4,7 +4,9 @@
 #include <sea/cpu/atomic.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/mm/map.h>
-/* TODO: hash table of threads and processes */
+#include <sea/fs/inode.h>
+#include <sea/fs/file.h>
+#include <sea/cpu/interrupt.h>
 
 static pid_t __next_pid = 0;
 static pid_t __next_tid = 0;

@@ -56,11 +56,11 @@ void arch_cpu_processor_init_2(void)
 	x86_hpet_init();
 	init_lapic(1);
 	calibrate_lapic_timer(1000);
-	init_ioapic(); /* TODO */
+	init_ioapic();
 	set_ksf(KSF_SMP_ENABLE);
 }
 
-void arch_cpu_boot_ap(struct cpu *cpu)
+int arch_cpu_boot_ap(struct cpu *cpu)
 {
 	int re = boot_cpu(cpu->snum);
 	if(!re) {
@@ -68,6 +68,6 @@ void arch_cpu_boot_ap(struct cpu *cpu)
 		num_failed_cpus++;
 	} else
 		num_booted_cpus++;
-	printk(2, "[smp]: initialized %d application CPUs\n", num_booted_cpus);
+	return re;
 }
 

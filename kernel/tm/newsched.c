@@ -7,8 +7,8 @@ static void arch_tm_thread_switch(struct thread *old, struct thread *new)
 {
 	/* TODO fpu, sse */
 	assert(new->stack_pointer > (addr_t)new->kernel_stack + sizeof(addr_t));
-	tm_set_kernel_stack(new->cpu, new->kernel_stack,
-			new->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
+	tm_set_kernel_stack(new->cpu, (addr_t)new->kernel_stack,
+			(addr_t)new->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
 	if(new->process != old->process) {
 		mm_vm_switch_context(&new->process->vmm_context);
 	}

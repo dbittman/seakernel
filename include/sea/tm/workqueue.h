@@ -13,4 +13,9 @@ struct workqueue {
 	mutex_t lock;
 };
 
+struct workqueue *workqueue_create(struct workqueue *wq, int flags);
+void workqueue_destroy(struct workqueue *wq);
+void workqueue_insert(struct workqueue *wq, struct async_call *call);
+int workqueue_dowork(struct workqueue *wq);
+
 #endif

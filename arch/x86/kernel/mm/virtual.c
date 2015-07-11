@@ -102,8 +102,8 @@ void arch_mm_vm_init(addr_t id_map_to)
 	cpu_interrupt_register_handler (14, &arch_mm_page_fault_handle);
 	
 	page_dir_t *pd = (page_dir_t *)vm_init_directory(id_map_to);
-	minimal_context.root_physical = pd;
-	minimal_context.root_virtual = page_directory;
+	minimal_context.root_physical = (addr_t)pd;
+	minimal_context.root_virtual = (addr_t)page_directory;
 	/* CR3 requires the physical address, so we directly 
 	 * set it because we have the physical address */
 	__asm__ volatile ("mov %0, %%cr3" : : "r" (pd));

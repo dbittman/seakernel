@@ -3,6 +3,7 @@
 #include <sea/tm/process.h>
 #include <sea/tm/tqueue.h>
 #include <sea/errno.h>
+#include <sea/tm/timing.h>
 
 int sys_sbrk(long inc)
 {
@@ -45,7 +46,7 @@ int sys_isstate(pid_t pid, int state)
 {
 	struct process *proc = tm_process_get(pid);
 	if(!proc) return -ESRCH;
-	tm_process_put(pid);
+	tm_process_put(proc);
 	/*TODO: how do we do this for multiple threads? */
 }
 

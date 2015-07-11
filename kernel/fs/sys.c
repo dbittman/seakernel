@@ -598,7 +598,7 @@ int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 	int i;
 	if(timeout)
 		wait = timeout->tv_sec * ONE_SECOND + (timeout->tv_usec);
-	unsigned long end = wait+tm_timing_get_microseconds();
+	time_t end = wait+tm_timing_get_microseconds();
 	int total_set=0, is_ok=0;
 	int ret=0;
 	while((tm_timing_get_microseconds() <= end || !wait || !timeout) && !ret)

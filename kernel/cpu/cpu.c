@@ -3,6 +3,8 @@
 #include <sea/string.h>
 #include <sea/loader/symbol.h>
 #include <sea/cpu/atomic.h>
+#include <sea/vsprintf.h>
+#include <sea/tm/timing.h>
 
 struct cpu *primary_cpu=0;
 #if CONFIG_SMP
@@ -87,6 +89,7 @@ void cpu_boot_all_aps(void)
 			}
 		}
 	}
+	printk(2, "[smp]: initialized %d application CPUs\n", num_booted_cpus);
 }
 
 #endif

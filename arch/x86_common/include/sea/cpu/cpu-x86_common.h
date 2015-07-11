@@ -106,6 +106,8 @@ struct arch_cpu {
 
 #define LAPIC_READ(x) lapic_read(x)
 #define LAPIC_WRITE(x, y) lapic_write(x, y)
+void lapic_write(int reg, uint32_t data);
+uint32_t lapic_read(int reg);
 
 extern addr_t lapic_addr;
 extern unsigned lapic_timer_start;

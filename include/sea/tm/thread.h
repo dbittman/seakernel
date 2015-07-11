@@ -87,7 +87,7 @@ struct thread *tm_thread_get(pid_t tid);
 int tm_thread_runnable(struct thread *thr);
 void tm_thread_inc_reference(struct thread *thr);
 void tm_thread_put(struct thread *thr);
-int tm_thread_handle_signal(int signal);
+void tm_thread_handle_signal(int signal);
 void tm_signal_send_thread(struct thread *thr, int signal);
 int sys_kill_thread(pid_t tid, int signal);
 int tm_signal_will_be_fatal(struct thread *t, int sig);
@@ -100,6 +100,10 @@ void tm_thread_add_to_cpu(struct thread *thr, struct cpu *cpu);
 int sys_clone(int flags);
 void tm_schedule(void);
 void tm_thread_user_mode_jump(void (*fn)(void));
+void arch_tm_userspace_signal_initializer(registers_t *regs, struct sigaction *sa);
+void arch_tm_userspace_signal_cleanup(registers_t *regs);
+addr_t arch_tm_read_ip(void);
+void arch_tm_jump_to_user_mode(addr_t jmp);
 
 #define tm_thread_pause(th) tm_thread_set_state(th, THREAD_INTERRUPTIBLE)
 #define tm_thread_resume(th) tm_thread_set_state(th, THREAD_RUNNING)

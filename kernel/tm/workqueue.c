@@ -4,6 +4,7 @@
 #include <sea/cpu/atomic.h>
 #include <sea/tm/async_call.h>
 #include <sea/tm/workqueue.h>
+#include <sea/cpu/processor.h>
 /* TODO: roll this out to all kernel objects */
 #define KOBJ_CREATE(obj,flags,alloc_flag) do {\
 	if(!obj) {\
@@ -31,7 +32,7 @@ struct workqueue *workqueue_create(struct workqueue *wq, int flags)
 void workqueue_destroy(struct workqueue *wq)
 {
 	heap_destroy(&wq->tasks);
-	ll_destroy(&wq->lock);
+	mutex_destroy(&wq->lock);
 	KOBJ_DESTROY(wq, WORKQUEUE_KMALLOC);
 }
 

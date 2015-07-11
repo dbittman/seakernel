@@ -80,7 +80,7 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 		mov %%ecx, %%ebp; \
 		mov %%ecx, %%esp; \
 		push %%ebx; \
-		call *%%eax;" :: "r" (cpu_k_task_entry),"r"(thread),"r"(thread->kernel_stack + KERN_STACK_SIZE):"eax","ebx","ecx");
+		call *%%eax;" :: "r" (cpu_k_task_entry),"r"(thread),"r"((addr_t)thread->kernel_stack + KERN_STACK_SIZE):"eax","ebx","ecx");
 	/* we'll never get here */	
 }
 

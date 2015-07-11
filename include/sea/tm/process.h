@@ -15,7 +15,6 @@
 
 #define current_process (__tm_get_current_process())
 
-/* TODO: const? */
 __attribute__((const)) static inline struct process *__tm_get_current_process(void)
 {
 	struct thread *thr = current_thread;

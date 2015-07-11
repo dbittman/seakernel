@@ -44,8 +44,6 @@ void mm_reclaim(void)
 	rwlock_acquire(&reclaimers.rwl, RWL_READER);
 	ll_for_each_entry(&reclaimers, node, struct reclaimer *, rec) {
 		size_t amount = rec->fn();
-		if(amount)
-			printk(0, "reclaimed %d bytes\n", amount);
 		if(amount > 0)
 			break;
 	}

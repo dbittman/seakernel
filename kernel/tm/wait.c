@@ -93,9 +93,7 @@ int sys_waitpid(int pid, int *st, int opt)
 /* TODO: remove */
 int sys_waitagain(void)
 {
-	//return (current_task->wait_again ? 
-	//	sys_waitpid(current_task->wait_again, 0, 0)
-	//	: 0);
+	return -ENOSYS;
 }
 
 int sys_wait3(int *a, int b, int *c)

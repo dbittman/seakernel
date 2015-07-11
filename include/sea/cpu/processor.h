@@ -102,5 +102,6 @@ void cpu_disable_preemption();
 void cpu_enable_preemption();
 
 void cpu_boot_all_aps(void);
+int arch_cpu_boot_ap(struct cpu *);
 #endif
 

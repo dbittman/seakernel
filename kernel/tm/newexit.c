@@ -2,6 +2,9 @@
 #include <sea/tm/process.h>
 #include <sea/cpu/processor.h>
 #include <sea/cpu/atomic.h>
+#include <sea/fs/file.h>
+#include <sea/fs/inode.h>
+#include <sea/cpu/interrupt.h>
 static void tm_thread_destroy(unsigned long data)
 {
 	struct thread *thr = (struct thread *)data;
@@ -76,6 +79,7 @@ void tm_thread_exit(int code)
 	ll_do_remove(&current_process->threadlist, &current_thread->pnode, 0);
 	tm_process_put(current_process); /* thread releases it's process pointer */
 
+	/* TODO: see if we can remove interrupt controlling from high level code */
 	cpu_interrupt_set(0);
 	cpu_disable_preemption();
 

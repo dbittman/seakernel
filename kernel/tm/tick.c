@@ -25,7 +25,7 @@ time_t tm_timing_get_microseconds(void)
 	return __current_cpu->ticker.tick;
 }
 
-void tm_timer_handler(registers_t *r)
+void tm_timer_handler(registers_t *r, int int_no, int flags)
 {
 	if(current_thread) {
 		ticker_tick(&current_thread->cpu->ticker, ONE_SECOND / current_hz);

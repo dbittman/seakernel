@@ -10,7 +10,7 @@
 #include <sea/errno.h>
 #include <sea/vsprintf.h>
 
-int tm_thread_handle_signal(int signal)
+void tm_thread_handle_signal(int signal)
 {
 	struct sigaction *sa = &current_process->signal_act[signal];
 	current_thread->old_mask = current_thread->sig_mask;

@@ -61,7 +61,6 @@ struct process *tm_process_copy(int flags)
 	newp->magic = PROCESS_MAGIC;
 	mm_vm_clone(&current_process->vmm_context, &newp->vmm_context);
 	newp->pid = add_atomic(&__next_pid, 1);
-	newp->flags = PROCESS_FORK;
 	newp->cmask = current_process->cmask;
 	newp->refs = 1;
 	newp->tty = current_process->tty;

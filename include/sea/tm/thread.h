@@ -17,20 +17,13 @@
 #define PRIO_USER    3
 
 /* TODO: rename these to THREAD_ */
-#define TF_SHUTDOWN 1 /* TODO: do we need all these? */
-#define TF_KTASK 2
-#define TF_FORK  4
-#define TF_TIMEOUT_EXPIRED 8
-#define TF_SIGNALED 0x10
-/* flags for different task states */
-#define TF_INSIG        0x800 /* inside a signal */
-#define TF_SCHED       0x1000 /* we request a reschedule after this syscall completes */
-#define TF_JUMPIN      0x2000 /* going to jump to a signal handler on the next IRET
-* used by the syscall handler to determine if it needs to back up
-* it's return value */
-#define TF_IN_INT     0x40000 /* inside an interrupt handler */
-#define TF_BGROUND    0x80000 /* is waiting for things in the kernel (NOT blocking for a resource) */
-
+#define TF_SHUTDOWN        0x1  /* TODO: do we need all these? */
+#define TF_KTASK           0x2  /* a kernel thread */
+#define TF_FORK            0x4  /* freshly made thread, hot from the oven! */
+#define TF_TIMEOUT_EXPIRED 0x8  /* timeout expired while blocking */
+#define TF_SIGNALED        0x10 /* scheduler has detected that a signal is meant for this
+								   task's userspace */
+#define TF_SCHED           0x20 /* we request a reschedule after this interrupt completes */
 
 #define THREAD_RUNNING 0
 #define THREAD_INTERRUPTIBLE 1

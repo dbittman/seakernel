@@ -35,8 +35,7 @@ static inline struct process *__tm_get_current_process(void)
 
 #define PROCESS_MAGIC 0xCAFEBABE
 
-#define PROCESS_FORK 1
-#define PROCESS_CLEANED 2
+#define PROCESS_CLEANED 1
 
 struct exit_status {
 	unsigned pid;

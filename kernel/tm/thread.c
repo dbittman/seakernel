@@ -51,7 +51,6 @@ void tm_thread_put(struct thread *thr)
 	if(sub_atomic(&thr->refs, 1) == 0) {
 		hash_table_delete_entry(thread_table, &current_thread->tid, sizeof(current_thread->tid), 1);
 		mutex_release(&thread_refs_lock);
-		kprintf("destroying thread %d\n", thr->tid);
 		kfree(thr);
 	} else {
 		mutex_release(&thread_refs_lock);

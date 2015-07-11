@@ -18,6 +18,7 @@ struct thread *tm_thread_fork(int flags)
 	thr->priority = current_thread->priority;
 	thr->kernel_stack = kmalloc_a(0x1000);
 	thr->sig_mask = current_thread->sig_mask;
+	thr->refs = 1;
 	return thr;
 }
 

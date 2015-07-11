@@ -5,6 +5,7 @@
 #include <sea/lib/bitmap.h>
 size_t running_threads = 0;
 struct hash_table *thread_table;
+mutex_t thread_refs_lock;
 void tm_thread_enter_system(int sys)
 {
 	current_thread->system=(!sys ? -1 : sys);
@@ -27,10 +28,34 @@ int tm_thread_runnable(struct thread *thr)
 struct thread *tm_thread_get(pid_t tid)
 {
 	struct thread *thr;
-	/* TODO: should we reference count thread structures? */
-	if(hash_table_get_entry(thread_table, &tid, sizeof(tid), 1, (void **)&thr) == -ENOENT)
+	mutex_acquire(&thread_refs_lock);
+	if(hash_table_get_entry(thread_table, &tid, sizeof(tid), 1, (void **)&thr) == -ENOENT) {
+		mutex_release(&thread_refs_lock);
 		return 0;
+	}
+	add_atomic(&thr->refs, 1);
+	mutex_release(&thread_refs_lock);
 	return thr;
+}
+
+void tm_thread_inc_reference(struct thread *thr)
+{
+	assert(thr->refs >= 1);
+	add_atomic(&thr->refs, 1);
+}
+
+void tm_thread_put(struct thread *thr)
+{
+	assert(thr->refs >= 1);
+	mutex_acquire(&thread_refs_lock);
+	if(sub_atomic(&thr->refs, 1) == 0) {
+		hash_table_delete_entry(thread_table, &current_thread->tid, sizeof(current_thread->tid), 1);
+		mutex_release(&thread_refs_lock);
+		kprintf("destroying thread %d\n", thr->tid);
+		kfree(thr);
+	} else {
+		mutex_release(&thread_refs_lock);
+	}
 }
 
 int tm_thread_reserve_usermode_stack(struct thread *thr)

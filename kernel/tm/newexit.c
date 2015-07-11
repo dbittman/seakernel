@@ -6,7 +6,7 @@ static void tm_thread_destroy(unsigned long data)
 {
 	struct thread *thr = (struct thread *)data;
 	kfree(thr->kernel_stack);
-	kfree(thr);
+	tm_thread_put(thr);
 }
 
 void tm_process_wait_cleanup(struct process *proc)
@@ -79,7 +79,6 @@ void tm_thread_exit(int code)
 	cpu_interrupt_set(0);
 	cpu_disable_preemption();
 
-	hash_table_delete_entry(thread_table, &current_thread->tid, sizeof(current_thread->tid), 1);
 	tqueue_remove(current_thread->cpu->active_queue, &current_thread->activenode);
 	current_thread->state = THREAD_DEAD;
 	

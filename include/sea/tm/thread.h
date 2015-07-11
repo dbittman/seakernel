@@ -46,6 +46,7 @@ struct process;
 struct thread {
 	unsigned magic;
 	pid_t tid;
+	int refs;
 	int cpuid;
 	int state, flags;
 	int system;

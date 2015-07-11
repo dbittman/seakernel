@@ -14,6 +14,7 @@
 #include <sea/kernel.h>
 
 extern mutex_t process_refs_lock;
+extern mutex_t thread_refs_lock;
 extern int initial_kernel_stack;
 void tm_init_multitasking(void)
 {
@@ -27,6 +28,7 @@ void tm_init_multitasking(void)
 
 	process_list = ll_create(0);
 	mutex_create(&process_refs_lock, 0);
+	mutex_create(&thread_refs_lock, 0);
 	
 	thread_table = hash_table_create(0, 0, HASH_TYPE_CHAIN);
 	hash_table_resize(thread_table, HASH_RESIZE_MODE_IGNORE, 1000);
@@ -36,6 +38,7 @@ void tm_init_multitasking(void)
 	struct process *proc = kmalloc(sizeof(struct process));
 
 	proc->refs = 2;
+	thread->refs = 1;
 	assert(!hash_table_set_entry(process_table, &proc->pid, sizeof(proc->pid), 1, proc));
 	ll_do_insert(process_list, &proc->listnode, proc);
 

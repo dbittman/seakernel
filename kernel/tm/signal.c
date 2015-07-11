@@ -123,10 +123,13 @@ int sys_kill_thread(pid_t tid, int signal)
 	struct thread *thr = tm_thread_get(tid);
 	if(!thr)
 		return -ESRCH;
-	if(thr->process != current_process)
+	if(thr->process != current_process) {
+		tm_thread_put(thr);
 		return -EPERM;
+	}
 	if(!(thr->sig_mask & (1 << signal)))
 		tm_signal_send_thread(thr, signal);
+	tm_thread_put(thr);
 	return 0;
 }
 

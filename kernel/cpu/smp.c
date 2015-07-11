@@ -5,8 +5,6 @@
 #if CONFIG_SMP
 void cpu_smp_task_idle(struct cpu *cpu)
 {
-	cpu->flags |= CPU_TASK;
-	cpu->idle_thread->system = -1;
 	cpu_interrupt_set(1);
 	/* wait until we have tasks to run */
 	for(;;) 
@@ -36,3 +34,4 @@ int cpu_get_num_secondary_processors(void)
 {
 	return cpu_get_num_running_processors()-1;
 }
+

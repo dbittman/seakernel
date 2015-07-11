@@ -36,13 +36,11 @@ static inline  unsigned get_boot_flag(void)
 
 void cpu_k_task_entry(struct thread *me)
 {
-	/* final part: set the current_thread pointer to 'me', and set the 
-	 * task flags that allow the cpu to start executing */
-	//page_directory[PAGE_DIR_IDX(SMP_CUR_TASK / PAGE_SIZE)] = (unsigned)me;
-	//cpu_smp_task_idle(me->cpu);
+	cpu_smp_task_idle(me->cpu);
 }
 
 /* it's important that this doesn't get inlined... */
+extern struct process *kernel_process;
 __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 {
 	/* get the cpu again... */
@@ -58,36 +56,33 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	cpu->flags |= CPU_RUNNING;
 	init_lapic(0);
 	set_lapic_timer(lapic_timer_start);
-	for(;;) asm("cli; hlt");
 	/* initialize tasking for this CPU */
 	/* TODO: thread initialization */
-#if 0
-	task->pid = add_atomic(&next_pid, 1)-1;
-	task->pd = (void *)cpu->kd;
-	task->stack_end=STACK_LOCATION;
-	task->priority = 1;
-	
 	cpu->active_queue = tqueue_create(0, 0);
-	tqueue_insert(primary_queue, (void *)task, task->listnode);
-	tqueue_insert(cpu->active_queue, (void *)task, task->activenode);
-	cpu->cur = cpu->ktask = task;
-	task->cpu = cpu;
-	mutex_create(&cpu->lock, MT_NOSCHED);
 	cpu->numtasks=1;
-	task->thread = tm_thread_data_create();
-	set_kernel_stack(&cpu->arch_cpu_data.tss, task->kernel_stack + (KERN_STACK_SIZE - STACK_ELEMENT_SIZE));
-	add_atomic(&running_processes, 1);
-	/* set up the real stack, and call cpu_k_task_entry with a pointer to this cpu's ktask as 
-	 * the argument */
+	ticker_create(&cpu->ticker, 0);
+	workqueue_create(&cpu->work, 0);
+	struct thread *thread = kmalloc(sizeof(struct thread));
+	thread->refs = 1;
+	cpu->idle_thread = thread;
+	thread->process = kernel_process; /* we have to do this early, so that the vmm system can use the lock... */
+	thread->state = THREAD_RUNNING;
+	thread->tid = tm_thread_next_tid();
+	thread->magic = THREAD_MAGIC;
+	thread->kernel_stack = kmalloc_a(KERN_STACK_SIZE);
+	*(struct thread **)(thread->kernel_stack) = thread;
+	tm_thread_add_to_process(thread, kernel_process);
+	tm_thread_add_to_cpu(thread, cpu);
+	add_atomic(&running_threads, 1);
 	asm(" \
 		mov %0, %%eax; \
 		mov %1, %%ebx; \
-		mov %2, %%esp; \
-		mov %2, %%ebp; \
+		mov %2, %%ecx; \
+		mov %%ecx, %%ebp; \
+		mov %%ecx, %%esp; \
 		push %%ebx; \
-		call *%%eax;" :: "r" (cpu_k_task_entry),"r"(task),"r"(STACK_LOCATION + STACK_SIZE - STACK_ELEMENT_SIZE));
+		call *%%eax;" :: "r" (cpu_k_task_entry),"r"(thread),"r"(thread->kernel_stack + KERN_STACK_SIZE):"eax","ebx","ecx");
 	/* we'll never get here */	
-#endif
 }
 
 /* C-side CPU entry code. Called from the assembly handler */
@@ -99,8 +94,8 @@ void cpu_entry(void)
 	/* load up the pmode gdt, tss, and idt */
 	load_tables_ap(cpu);
 	/* set up our private temporary tack */
-	asm("mov %0, %%esp" : : "r" (cpu->stack + (CPU_STACK_TEMP_SIZE - STACK_ELEMENT_SIZE)));
-	asm("mov %0, %%ebp" : : "r" (cpu->stack + (CPU_STACK_TEMP_SIZE - STACK_ELEMENT_SIZE)));
+	asm("mov %0, %%esp" : : "r" (cpu->stack + (CPU_STACK_TEMP_SIZE)));
+	asm("mov %0, %%ebp" : : "r" (cpu->stack + (CPU_STACK_TEMP_SIZE)));
 	cpu_stage1_init(get_boot_flag());
 }
 

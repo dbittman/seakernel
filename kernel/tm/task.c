@@ -16,6 +16,7 @@
 extern mutex_t process_refs_lock;
 extern mutex_t thread_refs_lock;
 extern int initial_kernel_stack;
+struct process *kernel_process = 0;
 void tm_init_multitasking(void)
 {
 	printk(KERN_DEBUG, "[sched]: Starting multitasking system...\n");
@@ -35,7 +36,7 @@ void tm_init_multitasking(void)
 	hash_table_specify_function(thread_table, HASH_FUNCTION_BYTE_SUM);
 
 	struct thread *thread = kmalloc(sizeof(struct thread));
-	struct process *proc = kmalloc(sizeof(struct process));
+	struct process *proc = kernel_process = kmalloc(sizeof(struct process));
 
 	proc->refs = 2;
 	thread->refs = 1;

@@ -9,11 +9,21 @@
 static pid_t __next_pid = 0;
 static pid_t __next_tid = 0;
 
+pid_t tm_thread_next_tid(void)
+{
+	return add_atomic(&__next_tid, 1);
+}
+
+pid_t tm_process_next_pid(void)
+{
+	return add_atomic(&__next_pid, 1);
+}
+
 struct thread *tm_thread_fork(int flags)
 {
 	struct thread *thr = kmalloc(sizeof(struct thread));
 	thr->magic = THREAD_MAGIC;
-	thr->tid = add_atomic(&__next_tid, 1);
+	thr->tid = tm_thread_next_tid();
 	thr->flags = TF_FORK;
 	thr->priority = current_thread->priority;
 	thr->kernel_stack = kmalloc_a(0x1000);
@@ -60,7 +70,7 @@ struct process *tm_process_copy(int flags)
 	struct process *newp = kmalloc(sizeof(struct process));
 	newp->magic = PROCESS_MAGIC;
 	mm_vm_clone(&current_process->vmm_context, &newp->vmm_context);
-	newp->pid = add_atomic(&__next_pid, 1);
+	newp->pid = tm_process_next_pid();
 	newp->cmask = current_process->cmask;
 	newp->refs = 1;
 	newp->tty = current_process->tty;

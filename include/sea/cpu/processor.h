@@ -15,36 +15,24 @@
   #include <sea/cpu/cpu-x86_common.h>
 #endif
 
-#define CPU_STACK_TEMP_SIZE 1024
+#define CPU_STACK_TEMP_SIZE 256
 
 #define CPU_UP      0x1
-#define CPU_RUNNING 0x2
-#define CPU_ERROR   0x4
-#define CPU_SSE     0x8
-#define CPU_FPU    0x10
-#define CPU_PAGING 0x20
-#define CPU_INTER  0x40
-#define CPU_TASK   0x80
-#define CPU_LOCK  0x100
-#define CPU_FXSAVE 0x200
-#define CPU_NEEDRESCHED 0x400
-#define CPU_WAITING 0x800
+#define CPU_ERROR   0x2
+#define CPU_WAITING 0x4
+
 struct cpu {
 	unsigned knum, snum; /* knum: cpu number to the kernel, snum: cpu number to the hardware */
 	unsigned flags;
 	cpuid_t cpuid;
 	struct tqueue *active_queue;
 	struct workqueue work;
-	struct thread *idle_thread, *cur /* TODO: do we need this? */;
-	mutex_t lock;
+	struct thread *idle_thread;
 	unsigned numtasks;
 	unsigned stack[CPU_STACK_TEMP_SIZE];
-	struct ticker ticker; /* TODO: initialize this */
+	struct ticker ticker;
 	int preempt_disable;
-
 	struct arch_cpu arch_cpu_data;
-
-	struct cpu *next, *prev;
 };
 
 void cpu_smp_task_idle(struct cpu *me);
@@ -63,6 +51,7 @@ extern unsigned cpu_array_num;
 
 struct cpu *cpu_get(unsigned id);
 struct cpu *cpu_add(int);
+struct cpu *cpu_get_snum(unsigned id);
 
 #endif
 
@@ -112,5 +101,6 @@ void cpu_put_current(struct cpu *);
 void cpu_disable_preemption();
 void cpu_enable_preemption();
 
+void cpu_boot_all_aps(void);
 #endif
 

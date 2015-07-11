@@ -62,7 +62,7 @@ static void __copy_mappings(struct process *ch, struct process *pa)
 	mutex_release(&pa->map_lock);
 }
 
-struct process *tm_process_copy(int flags)
+static struct process *tm_process_copy(int flags)
 {
 	/* copies the current_process structure into
 	 * a new one (cloning the things that need
@@ -114,6 +114,7 @@ void tm_thread_add_to_process(struct thread *thr, struct process *proc)
 void tm_thread_add_to_cpu(struct thread *thr, struct cpu *cpu)
 {
 	thr->cpu = cpu;
+	add_atomic(&cpu->numtasks, 1);
 	tqueue_insert(cpu->active_queue, thr, &thr->activenode);
 }
 

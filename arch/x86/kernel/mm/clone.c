@@ -15,6 +15,7 @@ static int vm_do_copy_table(int i, page_dir_t *new, page_dir_t *from, char cow)
 	table = (addr_t *)VIRT_TEMP;
 	table_phys = mm_alloc_physical_page();
 	mm_vm_map((addr_t)table, table_phys, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_PDLOCKED);
+	/* TODO: remove these flushes */
 	flush_pd();
 	memset((void *)table, 0, PAGE_SIZE);
 	addr_t virt = i*PAGE_SIZE*1024;
@@ -90,13 +91,6 @@ void arch_mm_vm_clone(struct vmm_context *oldcontext, struct vmm_context *newcon
 	tmp[1023] = new_p | PAGE_PRESENT | PAGE_WRITE;
 	new[1022] = tmp_p | PAGE_PRESENT | PAGE_WRITE;
 	mm_vm_unmap_only((unsigned)tmp, 1);
-	
-#if CONFIG_SMP
-	/* we can link since all page directories have this table set up
-	 * already */
-	unsigned pdi = PAGE_DIR_IDX(lapic_addr / PAGE_SIZE);
-	new[pdi] = ((addr_t *)oldcontext->root_virtual)[pdi];
-#endif
 	
 	if(pd_cur_data)
 		mutex_release(&pd_cur_data->lock);

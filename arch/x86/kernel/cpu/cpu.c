@@ -23,12 +23,9 @@ void arch_cpu_processor_init_1(void)
 #if CONFIG_SMP
 	mutex_create(&ipi_mutex, MT_NOSCHED);
 	memset(cpu_array, 0, sizeof(struct cpu) * CONFIG_MAX_CPUS);
-	cpu_array_num = 0;
+	cpu_array_num = 1;
 	int res = probe_smp();
-	if(!(kernel_state_flags & KSF_CPUS_RUNNING))
-		primary_cpu = &cpu_array[0];
-	if(!primary_cpu)
-		primary_cpu = &primary_cpu_data;
+	primary_cpu = &cpu_array[0];
 	load_tables_ap(primary_cpu);
 #else
 	primary_cpu = &primary_cpu_data;
@@ -42,8 +39,6 @@ void arch_cpu_processor_init_1(void)
 	parse_cpuid(primary_cpu);
 	x86_cpu_init_fpu(primary_cpu);
 	x86_cpu_init_sse(primary_cpu);
-	primary_cpu->flags |= CPU_RUNNING;
-	mutex_create((mutex_t *)&primary_cpu->lock, MT_NOSCHED);
 	printk(KERN_EVERY, "done\n");
 #if CONFIG_GDB_STUB
 	set_debug_traps();
@@ -61,7 +56,7 @@ void arch_cpu_processor_init_2(void)
 	x86_hpet_init();
 	init_lapic(1);
 	calibrate_lapic_timer(1000);
-	//init_ioapic(); /* TODO */
+	init_ioapic(); /* TODO */
 	set_ksf(KSF_SMP_ENABLE);
 }
 
@@ -73,5 +68,6 @@ void arch_cpu_boot_ap(struct cpu *cpu)
 		num_failed_cpus++;
 	} else
 		num_booted_cpus++;
+	printk(2, "[smp]: initialized %d application CPUs\n", num_booted_cpus);
 }
 

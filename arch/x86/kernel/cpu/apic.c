@@ -22,6 +22,22 @@ volatile unsigned num_ioapic=0;
 static struct imps_ioapic *ioapic_list[MAX_IOAPIC];
 
 struct pmap ioapic_pmap;
+struct pmap lapic_pmap;
+
+static int lapic_inited = 0;
+
+void lapic_write(int reg, uint32_t data)
+{
+	if(lapic_inited)
+		*((uint32_t *)pmap_get_mapping(&lapic_pmap, lapic_addr + reg)) = data;
+}
+
+uint32_t lapic_read(int reg)
+{
+	if(lapic_inited)
+		return (uint32_t)*((volatile uint32_t *)pmap_get_mapping(&lapic_pmap, lapic_addr + reg));
+	return 0;
+}
 
 void add_ioapic(struct imps_ioapic *ioapic)
 {
@@ -74,15 +90,11 @@ static int program_ioapic(struct imps_ioapic *ia)
 
 void lapic_eoi(void)
 {
-	if(!(kernel_state_flags & KSF_CPUS_RUNNING))
-		return;
 	LAPIC_WRITE(LAPIC_EOI, 0x0);
 }
 
 void set_lapic_timer(unsigned tmp)
 {
-	if(!(kernel_state_flags & KSF_CPUS_RUNNING))
-		return;
 	/* mask the old timer interrupt */
 	mask_pic_int(0, 1);
 	/* THE ORDER OF THESE IS IMPORTANT!
@@ -96,8 +108,6 @@ void set_lapic_timer(unsigned tmp)
 
 void calibrate_lapic_timer(unsigned freq)
 {
-	if(!(kernel_state_flags & KSF_CPUS_RUNNING))
-		return;
 	printk(0, "[smp]: calibrating LAPIC timer...");
 	LAPIC_WRITE(LAPIC_LVTT, 32);
 	LAPIC_WRITE(LAPIC_TDCR, 3);
@@ -119,9 +129,8 @@ void calibrate_lapic_timer(unsigned freq)
 
 void init_lapic(int extint)
 {
-	/* TODO: remove most of these flags... */
-	if(!(kernel_state_flags & KSF_CPUS_RUNNING))
-		return;
+	pmap_create(&lapic_pmap, 0);
+	lapic_inited=1;
 	int i;
 	/* we may be in a state where there are interrupts left
 	 * in the registers that haven't been EOI'd. I'm pretending like
@@ -153,23 +162,12 @@ void init_lapic(int extint)
 	LAPIC_WRITE(LAPIC_SPIV, 0x0100 | 0xFF);
 }
 
-void id_map_apic(page_dir_t *pd)
-{
-	/* TODO: remove this, replace with pmap */
-	if(!lapic_addr) return;
-	int a = PAGE_DIR_IDX(lapic_addr / 0x1000);
-	int t = PAGE_TABLE_IDX(lapic_addr / 0x1000);
-	pd[a] = mm_alloc_physical_page() | PAGE_PRESENT | PAGE_WRITE;
-	unsigned int *pt = (unsigned int *)(pd[a] & PAGE_MASK);
-	pt[t] = (lapic_addr&PAGE_MASK) | PAGE_PRESENT | PAGE_WRITE | PAGE_NOCACHE;
-}
-
 void init_ioapic(void)
 {
 	if(!num_ioapic)
 		return;
 	unsigned i, num=0;
-	cpu_interrupt_set(0);
+	int old = cpu_interrupt_set(0);
 	interrupt_controller = 0;
 	disable_pic();
 	pmap_create(&ioapic_pmap, 0);
@@ -188,5 +186,7 @@ void init_ioapic(void)
 		outb(0x23, 0x01);
 	}
 	interrupt_controller = IOINT_APIC;
+	printk(1, "[apic]: ioapic initialized\n");
+	cpu_interrupt_set(old);
 }
 #endif

@@ -70,11 +70,8 @@ const struct thread *arch_tm_get_current_thread(int) __attribute__((const));
 
 int tm_thread_got_signal(struct thread *);
 void tm_thread_enter_system(int sys);
-void tm_thread_exit_system();
-int tm_do_fork(int);
-int sys_vfork();
-void tm_set_signal(int sig, addr_t hand);
-void tm_exit(int);
+void tm_thread_exit_system(void);
+int sys_vfork(void);
 void tm_thread_kill(struct thread *);
 void tm_blocklist_wakeall(struct llist *blocklist);
 void tm_thread_unblock(struct thread *t);
@@ -83,11 +80,26 @@ void tm_thread_set_state(struct thread *t, int state);
 void tm_thread_add_to_blocklist(struct thread *t, struct llist *blocklist);
 void tm_thread_remove_from_blocklist(struct thread *t);
 int tm_thread_block(struct llist *blocklist, int state);
-void tm_switch_to_user_mode();
-void tm_thread_delay_sleep();
 int tm_thread_reserve_usermode_stack(struct thread *thr);
 void tm_thread_release_usermode_stack(struct thread *thr, int stack);
 addr_t tm_thread_usermode_stack_end(int stack);
+struct thread *tm_thread_get(pid_t tid);
+int tm_thread_runnable(struct thread *thr);
+void tm_thread_inc_reference(struct thread *thr);
+void tm_thread_put(struct thread *thr);
+int tm_thread_handle_signal(int signal);
+void tm_signal_send_thread(struct thread *thr, int signal);
+int sys_kill_thread(pid_t tid, int signal);
+int tm_signal_will_be_fatal(struct thread *t, int sig);
+void tm_thread_exit(int code);
+void sys_exit(int);
+pid_t tm_thread_next_tid(void);
+struct thread *tm_thread_fork(int flags);
+void tm_thread_add_to_process(struct thread *thr, struct process *proc);
+void tm_thread_add_to_cpu(struct thread *thr, struct cpu *cpu);
+int sys_clone(int flags);
+void tm_schedule(void);
+void tm_thread_user_mode_jump(void (*fn)(void));
 
 #define tm_thread_pause(th) tm_thread_set_state(th, THREAD_INTERRUPTIBLE)
 #define tm_thread_resume(th) tm_thread_set_state(th, THREAD_RUNNING)

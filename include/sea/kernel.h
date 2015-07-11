@@ -12,7 +12,6 @@
 #define KSF_SHUTDOWN       0x2
 #define KSF_PANICING       0x4
 #if CONFIG_SMP
-  #define KSF_CPUS_RUNNING 0x8
   #define KSF_SMP_ENABLE   0x10
 #endif
 #define KSF_PAGING         0x20

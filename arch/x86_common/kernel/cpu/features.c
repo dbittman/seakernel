@@ -13,7 +13,6 @@ void x86_cpu_init_fpu(struct cpu *me)
 	{
 		printk(KERN_EVERY, "\tFPU...");
 		asm("finit;");  
-		me->flags |= CPU_FPU;
 		unsigned long cr0;
 		asm("mov %%cr0, %0;":"=r"(cr0)); /* store CR0 */
 		cr0 |= 0x20;
@@ -34,8 +33,5 @@ void x86_cpu_init_sse(struct cpu *me)
 		cr4 |= (CR4_OSFXSR | CR4_OSXMMEXCPT); /* set the bits to enable FPU SAVE/RESTORE and XMM registers */
 		asm("mov %0, %%cr4;"::"r"(cr4)); /* restore CR4 */
 		asm("mov %0, %%cr0;"::"r"(cr0)); /* restore CR0 */
-		me->flags |= CPU_SSE;
 	}
-	if(me->cpuid.features_edx & (1 << 24))
-		me->flags |= CPU_FXSAVE;
 }

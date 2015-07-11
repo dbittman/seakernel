@@ -17,6 +17,7 @@ initialization */
 #include <sea/asm/system.h>
 #include <sea/vsprintf.h>
 #include <sea/tm/timing.h>
+#include <sea/tm/workqueue.h>
 void set_lapic_timer(unsigned tmp);
 void init_lapic(int);
 addr_t lapic_addr=0;
@@ -53,11 +54,9 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	x86_cpu_init_sse(cpu);
 	__asm__ volatile ("mov %0, %%cr3" : : "r" (kernel_context.root_physical));
 	__asm__ volatile ("mov %%cr0, %%eax; or $0x80000000, %%eax; mov %%eax, %%cr0":::"eax");
-	cpu->flags |= CPU_RUNNING;
 	init_lapic(0);
 	set_lapic_timer(lapic_timer_start);
 	/* initialize tasking for this CPU */
-	/* TODO: thread initialization */
 	cpu->active_queue = tqueue_create(0, 0);
 	cpu->numtasks=1;
 	ticker_create(&cpu->ticker, 0);
@@ -101,7 +100,6 @@ void cpu_entry(void)
 
 int boot_cpu(unsigned id)
 {
-	kprintf("********\nBOOTING %d\n", id);
 	int apicid = id, success = 1, to;
 	unsigned bootaddr, accept_status;
 	unsigned bios_reset_vector = BIOS_RESET_VECTOR;
@@ -160,8 +158,6 @@ int boot_cpu(unsigned id)
 	CMOS_WRITE_BYTE(CMOS_RESET_CODE, 0);
 	*((volatile unsigned *) bios_reset_vector) = 0;
 	cpu_enable_preemption();
-	if(!success)
-		kprintf("FAILED\n");
 	return success;
 }
 

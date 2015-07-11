@@ -47,9 +47,6 @@ static addr_t vm_init_directory(addr_t id_map_to)
 		mapper++;
 	}
 	id_tables=mapper;
-#if CONFIG_SMP
-	id_map_apic(pd);
-#endif
 	/* map in the signal return inject code. we need to do this, because
 	 * user code may not run the the kernel area of the page directory */
 	unsigned sig_pdi = PAGE_DIR_IDX(SIGNAL_INJECT / PAGE_SIZE);

@@ -1,6 +1,7 @@
 #include <sea/tm/process.h>
 #include <sea/tm/tqueue.h>
 #include <sea/tm/kthread.h>
+#include <sea/tm/timing.h>
 #include <sea/mm/vmm.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/loader/symbol.h>
@@ -65,10 +66,6 @@ void tm_init_multitasking(void)
 	workqueue_create(&primary_cpu->work, 0);
 	tm_thread_add_to_process(thread, proc);
 	tm_thread_add_to_cpu(thread, primary_cpu);
-	/* this is the final thing to allow the system to begin scheduling
-	 * once interrupts are enabled */
-	primary_cpu->flags |= CPU_TASK;
-	
 	add_atomic(&running_processes, 1);
 	add_atomic(&running_threads, 1);
 	set_ksf(KSF_THREADING);
@@ -81,15 +78,6 @@ void tm_init_multitasking(void)
 void tm_set_kernel_stack(struct cpu *cpu, addr_t start, addr_t end)
 {
 	arch_tm_set_kernel_stack(cpu, start, end);
-}
-
-	/* TODO: try to remove this function */
-void tm_switch_to_user_mode(void)
-{
-	/* set up the kernel stack first...*/
-	tm_set_kernel_stack(current_thread->cpu, current_thread->kernel_stack,
-			current_thread->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
-	arch_tm_switch_to_user_mode();
 }
 
 void tm_thread_user_mode_jump(void (*fn)(void))

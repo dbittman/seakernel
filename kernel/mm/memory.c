@@ -97,7 +97,6 @@ void mm_init(struct multiboot *m)
 	process_memorymap(m);
  	kmalloc_create(KMALLOC_NAME, KMALLOC_INIT, KMALLOC_ALLOC, KMALLOC_FREE);
 	mm_vm_init_2();
-	primary_cpu->flags |= CPU_PAGING;
 	set_ksf(KSF_MMU);
 	/* hey, look at that, we have happy memory times! */
 	mm_reclaim_init();

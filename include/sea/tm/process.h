@@ -16,7 +16,7 @@
 #define current_process (__tm_get_current_process())
 
 /* TODO: const? */
-static inline struct process *__tm_get_current_process(void)
+__attribute__((const)) static inline struct process *__tm_get_current_process(void)
 {
 	struct thread *thr = current_thread;
 	if(thr == 0)
@@ -107,10 +107,6 @@ void tm_set_kernel_stack(struct cpu*, addr_t, addr_t);
 int sys_times(struct tms *buf);
 int sys_waitpid(int pid, int *st, int opt);
 int sys_wait3(int *, int, int *);
-
-struct process *tm_process_get(pid_t pid);
-void tm_process_inc_reference(struct process *proc);
-void tm_process_put(struct process *proc);
 pid_t sys_getppid();
 int sys_alarm(int a);
 int sys_gsetpriority(int set, int which, int id, int val);
@@ -122,23 +118,32 @@ int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 	struct timeval *timeout);
 int sys_sbrk(long inc);
 int sys_isstate(pid_t pid, int state);
-void sys_exit(int);
-int sys_clone(int);
 
 /* provided by arch-dep code */
-extern void arch_do_switch_to_user_mode();
-void arch_tm_set_current_thread_marker(addr_t *space, addr_t task);
 extern struct llist *process_list;
 
 extern struct hash_table *process_table;
 
 #include <sea/mm/vmm.h>
 
-int tm_process_wait(pid_t pid, int state);
 pid_t sys_get_pid(void);
 
 int sys_task_stat(unsigned int num, struct task_stat *s);
 int sys_task_pstat(pid_t pid, struct task_stat *s);
 #define MMF_VMEM_NUM_INDEX_PAGES 12
+
+
+
+
+void tm_process_wait_cleanup(struct process *proc);
+struct process *tm_process_get(pid_t pid);
+void tm_process_inc_reference(struct process *proc);
+void tm_process_put(struct process *proc);
+int tm_signal_send_process(struct process *proc, int signal);
+int sys_kill(pid_t pid, int signal);
+
+
+
+
 
 #endif

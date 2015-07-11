@@ -100,7 +100,7 @@ int fs_pipe_read(struct inode *ino, int flags, char *buffer, size_t length)
 		int old = cpu_interrupt_set(0);
 		tm_thread_add_to_blocklist(current_thread, pipe->read_blocked);
 		mutex_release(pipe->lock);
-		while(!tm_schedule());
+		tm_schedule();
 		cpu_interrupt_set(old);
 		if(tm_thread_got_signal(current_thread))
 			return -EINTR;
@@ -164,7 +164,7 @@ int fs_pipe_write(struct inode *ino, int flags, char *initialbuffer, size_t tota
 			tm_blocklist_wakeall(pipe->read_blocked);
 			tm_thread_add_to_blocklist(current_thread, pipe->write_blocked);
 			mutex_release(pipe->lock);
-			while(!tm_schedule());
+			tm_schedule();
 			cpu_interrupt_set(old);
 			if(tm_thread_got_signal(current_thread))
 				return -EINTR;

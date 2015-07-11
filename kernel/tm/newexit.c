@@ -20,7 +20,7 @@ void tm_process_wait_cleanup(struct process *proc)
 }
 
 /* TODO: ref count processes and threads */
-void tm_process_exit(int code)
+static void tm_process_exit(int code)
 {
 	/* TODO: what? */
 	if(code != -9) 
@@ -80,6 +80,7 @@ void tm_thread_exit(int code)
 	cpu_disable_preemption();
 
 	tqueue_remove(current_thread->cpu->active_queue, &current_thread->activenode);
+	sub_atomic(&current_thread->cpu->numtasks, 1);
 	current_thread->state = THREAD_DEAD;
 	
 	workqueue_insert(&__current_cpu->work, thread_cleanup_call);

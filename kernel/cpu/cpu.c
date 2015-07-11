@@ -71,9 +71,7 @@ struct cpu *cpu_add(int snum)
 {
 	if(cpu_array_num >= CONFIG_MAX_CPUS)
 		return 0;
-	memset(&cpu_array[cpu_array_num], 0, sizeof(struct cpu));
 	cpu_array[cpu_array_num].snum = snum;
-	mutex_create((mutex_t *)&(cpu_array[cpu_array_num].lock), MT_NOSCHED);
 	return &cpu_array[cpu_array_num++];
 }
 

@@ -6,12 +6,13 @@
 #include <sea/tm/process.h>
 #include <sea/mutex.h>
 #include <sea/cpu/imps-x86.h>
-#include <sea/tm/schedule.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/dm/dev.h>
 #include <sea/cpu/cpu-x86.h>
 #include <sea/cpu/cpu-io.h>
 #include <sea/vsprintf.h>
+#include <sea/tm/timing.h>
+#include <sea/mm/pmap.h>
 #define MAX_IOAPIC 8
 #define write_ioapic(l,o,v) ioapic_rw(l, WRITE, o, v)
 #define read_ioapic(l,o) ioapic_rw(l, READ, o, 0)
@@ -19,6 +20,8 @@
 unsigned lapic_timer_start=0;
 volatile unsigned num_ioapic=0;
 static struct imps_ioapic *ioapic_list[MAX_IOAPIC];
+
+struct pmap ioapic_pmap;
 
 void add_ioapic(struct imps_ioapic *ioapic)
 {
@@ -31,11 +34,11 @@ void add_ioapic(struct imps_ioapic *ioapic)
 
 static unsigned ioapic_rw(struct imps_ioapic *l, int rw, unsigned char off, unsigned val)
 {
-	*(uint32_t*)(l->addr) = off;
+	*(uint32_t*)(pmap_get_mapping(&ioapic_pmap, l->addr)) = off;
 	if(rw == WRITE)
-		return (*(uint32_t*)(l->addr + 0x10) = val);
+		return (*(uint32_t*)(pmap_get_mapping(&ioapic_pmap, l->addr + 0x10)) = val);
 	else
-		return *(uint32_t*)(l->addr + 0x10);
+		return *(uint32_t*)(pmap_get_mapping(&ioapic_pmap, l->addr + 0x10));
 }
 
 static void write_ioapic_vector(struct imps_ioapic *l, unsigned irq, char masked, char trigger, char polarity, char mode, unsigned char vector)
@@ -116,6 +119,7 @@ void calibrate_lapic_timer(unsigned freq)
 
 void init_lapic(int extint)
 {
+	/* TODO: remove most of these flags... */
 	if(!(kernel_state_flags & KSF_CPUS_RUNNING))
 		return;
 	int i;
@@ -151,6 +155,7 @@ void init_lapic(int extint)
 
 void id_map_apic(page_dir_t *pd)
 {
+	/* TODO: remove this, replace with pmap */
 	if(!lapic_addr) return;
 	int a = PAGE_DIR_IDX(lapic_addr / 0x1000);
 	int t = PAGE_TABLE_IDX(lapic_addr / 0x1000);
@@ -167,6 +172,7 @@ void init_ioapic(void)
 	cpu_interrupt_set(0);
 	interrupt_controller = 0;
 	disable_pic();
+	pmap_create(&ioapic_pmap, 0);
 	/* enable all discovered ioapics */
 	for(i=0;i<num_ioapic;i++) {
 		struct imps_ioapic *l = ioapic_list[i];

@@ -119,9 +119,7 @@ void arch_mm_vm_init(addr_t id_map_to)
  * upon clone, and creates a new directory that is...well, complete */
 void arch_mm_vm_init_2(void)
 {
-	printk(0, "[mm]: cloning directory for boot processor\n");
 	mm_vm_clone(&minimal_context, &kernel_context);
-	printk(0, "[mm]: cloned\n");
 	arch_mm_vm_switch_context(&kernel_context);
 }
 
@@ -172,7 +170,9 @@ void arch_mm_vm_set_attrib(addr_t v, short attr)
 	if(pd_cur_data) {
 		if(IS_KERN_MEM(v))
 			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
-		else if((IS_THREAD_SHARED_MEM(v) && pd_cur_data->count > 1))
+		else if((IS_THREAD_SHARED_MEM(v))) /* TODO: we don't need to lock when there's only one thread...
+											  actually, we should figure out locking rules for threads shared
+											  address space... we need to redesign all these function anyway */
 			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
 	}
 #endif

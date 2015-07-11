@@ -52,9 +52,14 @@ void cpu_copy_fixup_stack(addr_t new, addr_t old, size_t len)
 }
 
 #if CONFIG_SMP
+
 struct cpu *cpu_get(unsigned id)
 {
-	/* TODO: fix this FUCKING RETARDED nonsense */
+	return &cpu_array[id];
+}
+
+struct cpu *cpu_get_snum(unsigned id)
+{
 	for(unsigned int i=0;i<cpu_array_num;i++)
 	{
 		if(cpu_array[i].snum == id) return &cpu_array[i];
@@ -62,14 +67,30 @@ struct cpu *cpu_get(unsigned id)
 	return 0;
 }
 
-struct cpu *cpu_add(struct cpu *c)
+struct cpu *cpu_add(int snum)
 {
 	if(cpu_array_num >= CONFIG_MAX_CPUS)
 		return 0;
-	memcpy(&cpu_array[cpu_array_num], c, sizeof(struct cpu));
+	memset(&cpu_array[cpu_array_num], 0, sizeof(struct cpu));
+	cpu_array[cpu_array_num].snum = snum;
 	mutex_create((mutex_t *)&(cpu_array[cpu_array_num].lock), MT_NOSCHED);
 	return &cpu_array[cpu_array_num++];
 }
+
+void cpu_boot_all_aps(void)
+{
+	for(unsigned i=0;i<cpu_array_num;i++) {
+		struct cpu *cpu = &cpu_array[i];
+		if(cpu->flags & CPU_WAITING) {
+			cpu->flags &= ~CPU_WAITING;
+			int res = arch_cpu_boot_ap(cpu);
+			if(res < 0) {
+				cpu->flags |= CPU_ERROR;
+			}
+		}
+	}
+}
+
 #endif
 
 void cpu_timer_install(int freq)

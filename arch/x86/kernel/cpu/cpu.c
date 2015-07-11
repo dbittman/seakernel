@@ -20,7 +20,7 @@ int probe_smp();
 
 void arch_cpu_processor_init_1(void)
 {
-#if 0 /* TODO */
+#if CONFIG_SMP
 	mutex_create(&ipi_mutex, MT_NOSCHED);
 	memset(cpu_array, 0, sizeof(struct cpu) * CONFIG_MAX_CPUS);
 	cpu_array_num = 0;
@@ -30,13 +30,6 @@ void arch_cpu_processor_init_1(void)
 	if(!primary_cpu)
 		primary_cpu = &primary_cpu_data;
 	load_tables_ap(primary_cpu);
-	init_lapic(1);
-	calibrate_lapic_timer(1000);
-	init_ioapic();
- 	if(res >= 0) 
-		set_ksf(KSF_SMP_ENABLE);
-	else
-		kprintf("[smp]: error in init code, disabling SMP support\n");
 #else
 	primary_cpu = &primary_cpu_data;
 	memset(primary_cpu, 0, sizeof(struct cpu));
@@ -66,4 +59,19 @@ void arch_cpu_processor_init_2(void)
 {
 	acpi_init();
 	x86_hpet_init();
+	init_lapic(1);
+	calibrate_lapic_timer(1000);
+	//init_ioapic(); /* TODO */
+	set_ksf(KSF_SMP_ENABLE);
 }
+
+void arch_cpu_boot_ap(struct cpu *cpu)
+{
+	int re = boot_cpu(cpu->snum);
+	if(!re) {
+		cpu->flags |= CPU_ERROR;
+		num_failed_cpus++;
+	} else
+		num_booted_cpus++;
+}
+

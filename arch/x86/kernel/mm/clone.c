@@ -95,7 +95,7 @@ void arch_mm_vm_clone(struct vmm_context *oldcontext, struct vmm_context *newcon
 	/* we can link since all page directories have this table set up
 	 * already */
 	unsigned pdi = PAGE_DIR_IDX(lapic_addr / PAGE_SIZE);
-	new[pdi] = pd[pdi];
+	new[pdi] = ((addr_t *)oldcontext->root_virtual)[pdi];
 #endif
 	
 	if(pd_cur_data)

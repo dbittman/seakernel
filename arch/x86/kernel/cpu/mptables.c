@@ -24,31 +24,22 @@ static int imps_get_checksum(unsigned start, int length)
 
 static void imps_add_processor(struct imps_processor *proc)
 {
-	printk(0, "add proc\n");
 	num_cpus++;
 	int apicid = proc->apic_id;
-	struct cpu new_cpu;
 	if (!(proc->flags & IMPS_FLAG_ENABLED))
 		return;
-	memset(&new_cpu, 0, sizeof(struct cpu));
-	new_cpu.snum = apicid;
-	new_cpu.flags=0;
-	struct cpu *cp = cpu_add(&new_cpu);
+	struct cpu *cp = cpu_add(apicid);
 	if (proc->flags & (IMPS_CPUFLAG_BOOT)) {
 		primary_cpu = cp;
 		return;
+	} else {
+		cp->flags |= CPU_WAITING;
 	}
 	if(!cp)
 	{
 		printk(2, "[smp]: refusing to initialize CPU %d\n", apicid);
 		return;
 	}
-	int re = boot_cpu(apicid, proc->apic_ver);
-	if(!re) {
-		cp->flags |= CPU_ERROR;
-		num_failed_cpus++;
-	} else
-		num_booted_cpus++;
 }
 
 static int imps_read_config_table(unsigned start, int count, int do_)

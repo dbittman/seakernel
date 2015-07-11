@@ -14,24 +14,24 @@ static void print_eflags(registers_t *regs){
 			    "AC", "VIF", "VIP", "ID"};
 	uint32_t mask=1;
 	int i=0;
-	kprintf("eflags: 0x%x \t[", flags);
+	printk_safe(5, "eflags: 0x%x \t[", flags);
 	for(i=0;i<22;++i){
 		/* print flag if currently examined bit is 1 and not reserved*/
 		if((mask&flags)&&(strcmp(flag_array[i],"r")!=0)){
-			kprintf(" %s,",flag_array[i]);
+			printk_safe(5, " %s,",flag_array[i]);
 		}
 		flags>>=1;
 		
 	}
-	kprintf("]\n");
+	printk_safe(5, "]\n");
 }
 
 void arch_cpu_print_reg_state(registers_t *regs){
-	kprintf("ds:0x%x\ncs:0x%x\nss:0x%x\n",regs->ds,regs->cs, regs->ss);
-	kprintf("edi:0x%x\nesi:0x%x\nebp:0x%x\nesp:0x%x\neip:0x%x\n",regs->edi,regs->esi,regs->ebp, regs->esp, regs->eip);
-	kprintf("eax:0x%x\nebx:0x%x\necx:0x%x\nedx:0x%x\n",regs->eax, regs->ebx, regs->ecx, regs->edx);
-	kprintf("int_no:0x%x\nerr_code:0x%x\n", regs->int_no,regs->err_code);
-	kprintf("useresp:0x%x\n", regs->useresp);
+	printk_safe(5, "ds:0x%x\ncs:0x%x\nss:0x%x\n",regs->ds,regs->cs, regs->ss);
+	printk_safe(5, "edi:0x%x\nesi:0x%x\nebp:0x%x\nesp:0x%x\neip:0x%x\n",regs->edi,regs->esi,regs->ebp, regs->esp, regs->eip);
+	printk_safe(5, "eax:0x%x\nebx:0x%x\necx:0x%x\nedx:0x%x\n",regs->eax, regs->ebx, regs->ecx, regs->edx);
+	printk_safe(5, "int_no:0x%x\nerr_code:0x%x\n", regs->int_no,regs->err_code);
+	printk_safe(5, "useresp:0x%x\n", regs->useresp);
 	print_eflags(regs);
 }
 

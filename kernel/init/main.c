@@ -138,7 +138,6 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	/* Now get the management stuff going */
 	printk(1, "[kernel]: Starting system management\n");
 	mm_init(mtboot);
-	cpu_processor_init_2();
 	console_init_stage2();
 	parse_kernel_cmd((char *)(addr_t)mtboot->cmdline);
 	tm_init_multitasking();
@@ -153,6 +152,8 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	printk(KERN_DEBUG, "[kernel]: structure sizes: process=%d bytes, thread=%d bytes, inode=%d bytes\n",
 			sizeof(struct process), sizeof(struct thread), sizeof(struct inode));
 	cpu_interrupt_set(1);
+	cpu_processor_init_2();
+	cpu_boot_all_aps();
 	if(!sys_clone(0))
 		init();
 

@@ -42,9 +42,11 @@
 
 #define VIRT_TEMP (0xA0000000)
 
-#define IS_KERN_MEM(x) (x < TOP_LOWER_KERNEL || (x >= DEVICE_MAP_START && x < PDIR_DATA))
+/* TODO: need better defines for the memory map */
+#define IS_KERN_MEM(x) (x < TOP_LOWER_KERNEL || (x >= DEVICE_MAP_START))
 
-#define IS_THREAD_SHARED_MEM(x) (((!(x >= TOP_TASK_MEM_EXEC && x < TOP_TASK_MEM)) || ((x&PAGE_MASK) == PDIR_DATA)) && x < DIR_PHYS)
+/* TODO: these are ugly anyway */
+#define IS_THREAD_SHARED_MEM(x) (!IS_KERN_MEM(x))
 #define page_directory ((unsigned *)DIR_PHYS)
 #define page_tables ((unsigned *)TBL_PHYS)
 
@@ -56,10 +58,8 @@
 #define PAGE_TABLE_IDX(x) ((uint32_t)x%1024)
 #define PAGE_DIR_PHYS(x) (x[1023]&PAGE_MASK)
 
-#define GET_PDIR_INFO(x) (page_dir_info *)(t_page + x*sizeof(page_dir_info))
-
+/* TODO: check if we're doing this needlessly */
 #define flush_pd() \
  __asm__ __volatile__("movl %%cr3,%%eax\n\tmovl %%eax,%%cr3": : :"ax", "eax")
-
 
 #endif

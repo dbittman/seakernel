@@ -31,7 +31,7 @@ int arch_mm_vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned opt)
 	if(pd_cur_data) {
 		if(IS_KERN_MEM(virt))
 			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
-		else if((IS_THREAD_SHARED_MEM(virt) && pd_cur_data->count > 1))
+		else if((IS_THREAD_SHARED_MEM(virt)))
 			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
 	}
 #endif

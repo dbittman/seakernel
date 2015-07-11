@@ -28,7 +28,7 @@
 #define CPU_LOCK  0x100
 #define CPU_FXSAVE 0x200
 #define CPU_NEEDRESCHED 0x400
-
+#define CPU_WAITING 0x800
 struct cpu {
 	unsigned knum, snum; /* knum: cpu number to the kernel, snum: cpu number to the hardware */
 	unsigned flags;
@@ -62,7 +62,7 @@ extern unsigned cpu_array_num;
 #if CONFIG_SMP
 
 struct cpu *cpu_get(unsigned id);
-struct cpu *cpu_add(struct cpu *c);
+struct cpu *cpu_add(int);
 
 #endif
 

@@ -118,7 +118,7 @@ void load_tables_ap(struct cpu *cpu);
 void parse_cpuid(struct cpu *);
 #if CONFIG_SMP
 
-int boot_cpu(unsigned id, unsigned apic_ver);
+int boot_cpu(unsigned id);
 void calibrate_lapic_timer(unsigned freq);
 extern unsigned bootstrap;
 void init_ioapic();

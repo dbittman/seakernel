@@ -72,6 +72,7 @@ struct hash_table *hash_table_create(struct hash_table *h, unsigned flags, unsig
 	} else
 		h->flags = flags;
 	
+	asm("xchg %%bx, %%bx":);
 	assert(type < NUM_HASH_COLLISION_RESOLVERS);
 	h->resolver = hash_collision_resolvers[type];
 	if(!h->resolver)

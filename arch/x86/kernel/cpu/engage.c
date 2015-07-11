@@ -38,45 +38,27 @@ void cpu_k_task_entry(struct thread *me)
 {
 	/* final part: set the current_thread pointer to 'me', and set the 
 	 * task flags that allow the cpu to start executing */
-	page_directory[PAGE_DIR_IDX(SMP_CUR_TASK / PAGE_SIZE)] = (unsigned)me;
-	cpu_smp_task_idle(me->cpu);
+	//page_directory[PAGE_DIR_IDX(SMP_CUR_TASK / PAGE_SIZE)] = (unsigned)me;
+	//cpu_smp_task_idle(me->cpu);
 }
 
 /* it's important that this doesn't get inlined... */
 __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 {
 	/* get the cpu again... */
-	struct cpu *cpu = cpu_get(apicid);
+	struct cpu *cpu = cpu_get_snum(apicid);
 	cpu->flags |= CPU_UP;
+	set_boot_flag(0xFFFFFFFF);
 	/* call the CPU features init code */
 	parse_cpuid(cpu);
 	x86_cpu_init_fpu(cpu);
 	x86_cpu_init_sse(cpu);
+	__asm__ volatile ("mov %0, %%cr3" : : "r" (kernel_context.root_physical));
+	__asm__ volatile ("mov %%cr0, %%eax; or $0x80000000, %%eax; mov %%eax, %%cr0":::"eax");
 	cpu->flags |= CPU_RUNNING;
-	set_boot_flag(0xFFFFFFFF);
-	while(!(kernel_state_flags & KSF_SMP_ENABLE)) asm("cli; pause");
 	init_lapic(0);
 	set_lapic_timer(lapic_timer_start);
-	/* now we need to wait up the memory manager is all set up */
-	while(!(kernel_state_flags & KSF_MMU)) 
-		asm("cli; pause");
-	/* CR3 requires the physical address, so we directly 
-	 * set it because we have the physical address */
-	__asm__ volatile ("mov %0, %%cr3" : : "r" (minimal_directory));
-	/* Enable */
-	unsigned cr0temp;
-	enable_paging();
-	
-	mutex_acquire(&cpu_stage1_lock);
-	printk(0, "[mm]: cloning directory for processor %d\n", apicid);
-	cpu->kd = mm_vm_clone(page_directory, 0);
-	cpu->kd_phys = cpu->kd[1023] & PAGE_MASK;
-	asm ("mov %0, %%cr3; nop; nop" :: "r" ((addr_t)cpu->kd[1023] & PAGE_MASK));
-	flush_pd();
-	mutex_release(&cpu_stage1_lock);
-	printk(0, "[cpu%d]: waiting for tasking...\n", apicid);
-	while(!primary_cpu->idle_thread) asm("cli; pause");
-	printk(0, "[cpu%d]: enable tasks...\n", apicid);
+	for(;;) asm("cli; hlt");
 	/* initialize tasking for this CPU */
 	/* TODO: thread initialization */
 #if 0
@@ -113,7 +95,7 @@ void cpu_entry(void)
 {
 	/* get the ID and the cpu struct so we can set a private stack */
 	int apicid = get_boot_flag();
-	struct cpu *cpu = cpu_get(apicid);
+	struct cpu *cpu = cpu_get_snum(apicid);
 	/* load up the pmode gdt, tss, and idt */
 	load_tables_ap(cpu);
 	/* set up our private temporary tack */
@@ -122,8 +104,9 @@ void cpu_entry(void)
 	cpu_stage1_init(get_boot_flag());
 }
 
-int boot_cpu(unsigned id, unsigned apic_ver)
+int boot_cpu(unsigned id)
 {
+	kprintf("********\nBOOTING %d\n", id);
 	int apicid = id, success = 1, to;
 	unsigned bootaddr, accept_status;
 	unsigned bios_reset_vector = BIOS_RESET_VECTOR;
@@ -134,7 +117,7 @@ int boot_cpu(unsigned id, unsigned apic_ver)
 		mutex_create(&cpu_stage1_lock, MT_NOSCHED);
 	}
 	
-	cpu_interrupt_set(0);
+	cpu_disable_preemption();
 	/* choose this as the bios reset vector */
 	bootaddr = 0x7000;
 	unsigned sz = (unsigned)trampoline_end - (unsigned)trampoline_start;
@@ -161,20 +144,19 @@ int boot_cpu(unsigned id, unsigned apic_ver)
 	/* de-assert INIT IPI */
 	x86_cpu_send_ipi(LAPIC_ICR_SHORT_DEST, apicid, LAPIC_ICR_TM_LEVEL | LAPIC_ICR_DM_INIT);
 	tm_thread_delay_sleep(ONE_MILLISECOND * 10);
-	if (apic_ver >= APIC_VER_NEW) {
+	//if (apic_ver >= APIC_VER_NEW) { /* TODO */
 		int i;
 		for (i = 1; i <= 2; i++) {
 			x86_cpu_send_ipi(LAPIC_ICR_SHORT_DEST, apicid, LAPIC_ICR_DM_SIPI | ((bootaddr >> 12) & 0xFF));
 			tm_thread_delay_sleep(ONE_MILLISECOND);
 		}
-	}
+	//}
 	to = 0;
 	while ((get_boot_flag() != 0xFFFFFFFF) && to++ < 100)
 		tm_thread_delay_sleep(10 * ONE_MILLISECOND);
 	/* cpu didn't boot up...:( */
 	if (to >= 100)
 		success = 0;
-	cpu_interrupt_set(0);
 	/* clear the APIC error register */
 	LAPIC_WRITE(LAPIC_ESR, 0);
 	accept_status = LAPIC_READ(LAPIC_ESR);
@@ -182,7 +164,11 @@ int boot_cpu(unsigned id, unsigned apic_ver)
 	/* clean up BIOS reset vector */
 	CMOS_WRITE_BYTE(CMOS_RESET_CODE, 0);
 	*((volatile unsigned *) bios_reset_vector) = 0;
+	cpu_enable_preemption();
+	if(!success)
+		kprintf("FAILED\n");
 	return success;
 }
 
 #endif
+

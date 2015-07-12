@@ -123,7 +123,7 @@ void arch_mm_vm_init_2(void)
 
 void arch_mm_vm_switch_context(struct vmm_context *context)
 {
- 	asm ("mov %0, %%cr3" :: "r" (context->root_physical):"memory");
+ 	__asm__ __volatile__ ("mov %0, %%cr3" :: "r" (context->root_physical):"memory");
 }
 
 addr_t arch_mm_vm_get_map(addr_t v, addr_t *p, unsigned locked)
@@ -163,7 +163,7 @@ void arch_mm_vm_set_attrib(addr_t v, short attr)
 	unsigned ret = page_tables[vp] & PAGE_MASK;
 	(page_tables[vp] &= PAGE_MASK);
 	(page_tables[vp] |= attr);
-	asm("invlpg (%0)"::"r" (v));
+	__asm__ __volatile__ ("invlpg (%0)"::"r" (v));
 #if CONFIG_SMP
 	if(pd_cur_data) {
 		if(IS_KERN_MEM(v))

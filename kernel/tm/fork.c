@@ -162,8 +162,8 @@ int sys_clone(int flags)
 	*(struct thread **)(thr->kernel_stack) = thr;
 	addr_t esp;
 	addr_t ebp;
-	asm("mov %%esp, %0":"=r"(esp));
-	asm("mov %%ebp, %0":"=r"(ebp));
+	__asm__ __volatile__ ("mov %%esp, %0":"=r"(esp));
+	__asm__ __volatile__ ("mov %%ebp, %0":"=r"(ebp));
 
 
 	esp -= (addr_t)current_thread->kernel_stack;

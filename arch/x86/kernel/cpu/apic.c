@@ -129,7 +129,8 @@ void calibrate_lapic_timer(unsigned freq)
 
 void init_lapic(int extint)
 {
-	pmap_create(&lapic_pmap, 0);
+	if(!lapic_inited)
+		pmap_create(&lapic_pmap, 0);
 	lapic_inited=1;
 	int i;
 	/* we may be in a state where there are interrupts left

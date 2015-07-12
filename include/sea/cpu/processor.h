@@ -30,7 +30,7 @@ struct cpu {
 	struct workqueue work;
 	struct thread *idle_thread;
 	unsigned numtasks;
-	unsigned stack[CPU_STACK_TEMP_SIZE];
+	addr_t stack;
 	struct ticker ticker;
 	int preempt_disable;
 	struct arch_cpu arch_cpu_data;

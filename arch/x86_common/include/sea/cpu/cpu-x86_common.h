@@ -119,25 +119,26 @@ void load_tables_ap(struct cpu *cpu);
 void parse_cpuid(struct cpu *);
 #if CONFIG_SMP
 
-int boot_cpu(unsigned id);
+int boot_cpu(struct cpu *);
 void calibrate_lapic_timer(unsigned freq);
 extern unsigned bootstrap;
 void init_ioapic();
 #endif /* CONFIG_SMP */
 
+/* TODO: do we need this? */
 static inline void arch_cpu_jump(addr_t x)
 {
-	asm("jmp *%0"::"r"(x));
+	__asm__ __volatile__ ("jmp *%0"::"r"(x));
 }
 
 static inline void arch_cpu_halt(void)
 {
-	asm("hlt");
+	__asm__ __volatile__ ("hlt");
 }
 
 static inline void arch_cpu_pause(void)
 {
-	asm("pause");
+	__asm__ __volatile__ ("pause");
 }
 
 #endif

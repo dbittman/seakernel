@@ -1,8 +1,6 @@
 #ifndef _ASM_SYSTEM_H
 #define _ASM_SYSTEM_H
 
-#define asm __sync_synchronize(); __asm__ __volatile__
-
 #include <sea/config.h>
 #include <sea/types.h>
 #if CONFIG_ARCH == TYPE_ARCH_X86

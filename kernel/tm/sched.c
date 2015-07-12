@@ -3,7 +3,7 @@
 #include <sea/tm/process.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/processor.h>
-static void arch_tm_thread_switch(struct thread *old, struct thread *new) 
+__attribute__((noinline)) static void arch_tm_thread_switch(struct thread *old, struct thread *new)
 {
 	/* TODO fpu, sse */
 	assert(new->stack_pointer > (addr_t)new->kernel_stack + sizeof(addr_t));
@@ -12,7 +12,7 @@ static void arch_tm_thread_switch(struct thread *old, struct thread *new)
 	if(new->process != old->process) {
 		mm_vm_switch_context(&new->process->vmm_context);
 	}
-	asm (
+	__asm__ __volatile__ (
 		"pushf;"
 		"push %%ebx;"
 		"push %%esi;"
@@ -24,12 +24,12 @@ static void arch_tm_thread_switch(struct thread *old, struct thread *new)
 		 * up initially and then jumped to */
 		addr_t jump = new->jump_point;
 		new->jump_point = 0;
-		asm ("mov %1, %%ecx;"
+		__asm__ __volatile__ ("mov %1, %%ecx;"
 				"mov %0, %%esp;"
 				"pop %%ebp;"
 				"jmp *%%ecx"::"r"(new->stack_pointer), "r"(jump):"memory");
 	}
-	asm ("mov %0, %%esp;"
+	__asm__ __volatile__ ("mov %0, %%esp;"
 			"pop %%ebp;"
 			"pop %%edi;"
 			"pop %%esi;"
@@ -73,7 +73,7 @@ static void finish_schedule(void)
 void tm_schedule(void)
 {
 	int old = cpu_interrupt_set(0);
-	if(__current_cpu->preempt_disable > 0) {
+	if(__current_cpu->preempt_disable > 0 || !(__current_cpu->flags & CPU_RUNNING)) {
 		cpu_interrupt_set(old);
 		return;
 	}

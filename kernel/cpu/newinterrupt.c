@@ -273,7 +273,7 @@ int cpu_interrupt_set(unsigned _new)
 int cpu_interrupt_get_flag(void)
 {
 	int res;
-	asm("pushf; pop %%eax; and $0x200, %%eax; mov %%eax, %0":"=r"(res));
+	__asm__ __volatile__ ("pushf; pop %%eax; and $0x200, %%eax; mov %%eax, %0":"=r"(res) :: "eax");
 	return res;
 }
 

@@ -32,28 +32,48 @@ static inline  unsigned get_boot_flag(void)
 	return *(unsigned *)(BOOTFLAG_ADDR);
 }
 
-void cpu_k_task_entry(struct thread *me)
-{
-	cpu_smp_task_idle(me->cpu);
-}
-
 /* it's important that this doesn't get inlined... */
 extern struct process *kernel_process;
-__attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
+__attribute__ ((noinline)) void cpu_stage1_init(void)
 {
 	/* get the cpu again... */
-	struct cpu *cpu = cpu_get_snum(apicid);
+	struct cpu *cpu = cpu_get_snum(get_boot_flag());
 	cpu->flags |= CPU_UP;
 	set_boot_flag(0xFFFFFFFF);
+	init_lapic(0);
+	set_lapic_timer(lapic_timer_start);
 	/* call the CPU features init code */
 	parse_cpuid(cpu);
 	x86_cpu_init_fpu(cpu);
 	x86_cpu_init_sse(cpu);
-	__asm__ volatile ("mov %0, %%cr3" : : "r" (kernel_context.root_physical));
-	__asm__ volatile ("mov %%cr0, %%eax; or $0x80000000, %%eax; mov %%eax, %%cr0":::"eax");
-	init_lapic(0);
-	set_lapic_timer(lapic_timer_start);
 	/* initialize tasking for this CPU */
+	cpu_smp_task_idle(cpu);
+}
+
+/* C-side CPU entry code. Called from the assembly handler */
+void cpu_entry(void)
+{
+	/* get the ID and the cpu struct so we can set a private stack */
+	int apicid = get_boot_flag();
+	struct cpu *cpu = cpu_get_snum(apicid);
+	/* load up the pmode gdt, tss, and idt */
+	load_tables_ap(cpu);
+	/* set up our private temporary tack */
+	__asm__ __volatile__ ("mov %0, %%cr3" : : "r" (kernel_context.root_physical));
+	__asm__ __volatile__ ("mov %%cr0, %%eax; or $0x80000000, %%eax; mov %%eax, %%cr0":::"eax");
+	__asm__ __volatile__ ("mov %0, %%esp" : : "r" (cpu->stack + KERN_STACK_SIZE));
+	__asm__ __volatile__ ("mov %0, %%ebp" : : "r" (cpu->stack + KERN_STACK_SIZE));
+	cpu_stage1_init();
+}
+
+int boot_cpu(struct cpu *cpu)
+{
+	int apicid = cpu->snum, success = 1, to;
+	unsigned bootaddr, accept_status;
+	unsigned bios_reset_vector = BIOS_RESET_VECTOR;
+	printk(1, "[smp]: poking cpu %d\n", apicid);
+
+	cpu->stack = (addr_t)kmalloc_a(KERN_STACK_SIZE);
 	cpu->active_queue = tqueue_create(0, 0);
 	cpu->numtasks=1;
 	ticker_create(&cpu->ticker, 0);
@@ -66,42 +86,12 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	/* TODO: this line was causing weirdness */
 	thread->tid = tm_thread_next_tid();
 	thread->magic = THREAD_MAGIC;
-	thread->kernel_stack = kmalloc_a(KERN_STACK_SIZE);
+	thread->kernel_stack = (void *)cpu->stack;
 	*(struct thread **)(thread->kernel_stack) = thread;
 	tm_thread_add_to_process(thread, kernel_process);
 	tm_thread_add_to_cpu(thread, cpu);
 	add_atomic(&running_threads, 1);
-	asm(" \
-		mov %0, %%eax; \
-		mov %1, %%ebx; \
-		mov %2, %%ecx; \
-		mov %%ecx, %%ebp; \
-		mov %%ecx, %%esp; \
-		push %%ebx; \
-		call *%%eax;" :: "r" (cpu_k_task_entry),"r"(thread),"r"((addr_t)thread->kernel_stack + KERN_STACK_SIZE):"eax","ebx","ecx");
-	/* we'll never get here */	
-}
 
-/* C-side CPU entry code. Called from the assembly handler */
-void cpu_entry(void)
-{
-	/* get the ID and the cpu struct so we can set a private stack */
-	int apicid = get_boot_flag();
-	struct cpu *cpu = cpu_get_snum(apicid);
-	/* load up the pmode gdt, tss, and idt */
-	load_tables_ap(cpu);
-	/* set up our private temporary tack */
-	asm("mov %0, %%esp" : : "r" (cpu->stack + (CPU_STACK_TEMP_SIZE)));
-	asm("mov %0, %%ebp" : : "r" (cpu->stack + (CPU_STACK_TEMP_SIZE)));
-	cpu_stage1_init(get_boot_flag());
-}
-
-int boot_cpu(unsigned id)
-{
-	int apicid = id, success = 1, to;
-	unsigned bootaddr, accept_status;
-	unsigned bios_reset_vector = BIOS_RESET_VECTOR;
-	
 	/* choose this as the bios reset vector */
 	bootaddr = 0x7000;
 	unsigned sz = (unsigned)trampoline_end - (unsigned)trampoline_start;

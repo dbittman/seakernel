@@ -48,6 +48,7 @@ void mm_page_fault_handler(registers_t *regs, addr_t address, int pf_cause)
 	assert(regs);
 	if(pf_cause & PF_CAUSE_USER) {
 		/* check if we need to map a page for mmap, etc */
+		if(pd_cur_data) {
 		if(mm_page_fault_test_mappings(address, pf_cause) == 0) {
 			return;
 		}
@@ -60,7 +61,7 @@ void mm_page_fault_handler(registers_t *regs, addr_t address, int pf_cause)
 		}
 		/* ...and if that didn't work, the task did something evil */
 		mutex_release(&pd_cur_data->lock);
-
+		}
 		kprintf("[mm]: %d: segmentation fault at eip=%x\n", current_thread->tid, regs->eip);
 		printk(0, "[mm]: %d: cause = %x, address = %x\n", current_thread->tid, pf_cause, address);
 		printk(0, "[mm]: %d: heap %x -> %x, flags = %x\n",
@@ -72,13 +73,15 @@ void mm_page_fault_handler(registers_t *regs, addr_t address, int pf_cause)
 		tm_signal_send_thread(current_thread, SIGKILL);
 	} else {
 		/* WARNING: TODO: this might not be safe */
+		if(pd_cur_data) {
 		if(mm_page_fault_test_mappings(address, pf_cause) == 0)
 			return;
+		}
 	}
 	if(!current_thread) {
 		cpu_interrupt_set(0);
 		cpu_halt();
-		panic(PANIC_MEM | PANIC_NOSYNC, "early page fault (addr=%x, cause=%x)", address, pf_cause);
+		panic(PANIC_MEM | PANIC_NOSYNC, "early page fault (addr=%x, cause=%x, from=%x)", address, pf_cause, regs->eip);
 	}
 	panic(PANIC_MEM | PANIC_NOSYNC, "page fault (addr=%x, cause=%x)", address, pf_cause);
 }

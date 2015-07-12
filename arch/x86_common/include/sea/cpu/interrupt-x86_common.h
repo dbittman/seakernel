@@ -10,8 +10,8 @@ void arch_interrupt_isr_handler(volatile registers_t regs);
 void arch_interrupt_irq_handler(volatile registers_t regs);
 void arch_interrupt_reset_timer_state();
 
-#define arch_interrupt_enable()  asm("sti")
-#define arch_interrupt_disable() asm("cli")
+#define arch_interrupt_enable()  __asm__ __volatile__ ("sti")
+#define arch_interrupt_disable() __asm__ __volatile__ ("cli")
 
 void x86_cpu_handle_ipi_cpu_halt(volatile registers_t regs);
 void x86_cpu_handle_ipi_reschedule(volatile registers_t regs);

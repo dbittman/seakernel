@@ -61,7 +61,7 @@ void arch_cpu_processor_init_2(void)
 
 int arch_cpu_boot_ap(struct cpu *cpu)
 {
-	int re = boot_cpu(cpu->snum);
+	int re = boot_cpu(cpu);
 	if(!re) {
 		cpu->flags |= CPU_ERROR;
 		num_failed_cpus++;

@@ -133,7 +133,7 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 	 * file descs, free up the page directory and clear up the resources 
 	 * of the task */
 	if(EXEC_LOG)
-		printk(0, "Executing (task %d, cpu %d, tty %d): %s\n", current_process->pid, current_thread->cpu->snum, current_process->tty, path);
+		printk(0, "Executing (task %d, cpu %d, tty %d): %s\n", current_process->pid, current_thread->cpu->knum, current_process->tty, path);
 	preexec(desc);
 	
 	/* load in the new image */

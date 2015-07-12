@@ -2,13 +2,19 @@
 #include <sea/tm/process.h>
 #include <sea/cpu/processor.h>
 #include <sea/cpu/interrupt.h>
+#include <sea/vsprintf.h>
 #if CONFIG_SMP
 void cpu_smp_task_idle(struct cpu *cpu)
 {
+	cpu->flags |= CPU_RUNNING;
+	printk(1, "[smp]: cpu %d ready\n", cpu->knum);
 	cpu_interrupt_set(1);
 	/* wait until we have tasks to run */
-	for(;;) 
+	for(;;) {
 		tm_schedule();
+		if(__current_cpu->work.count > 0)
+			workqueue_dowork(&__current_cpu->work);
+	}
 }
 #endif
 

@@ -120,6 +120,23 @@ void tm_thread_add_to_cpu(struct thread *thr, struct cpu *cpu)
 	tqueue_insert(cpu->active_queue, thr, &thr->activenode);
 }
 
+struct cpu *tm_fork_pick_cpu(void)
+{
+#if CONFIG_SMP
+	static int last_cpu = 0;
+	struct cpu *cpu = cpu_get(add_atomic(&last_cpu, 1));
+	if(!(cpu->flags & CPU_RUNNING))
+		cpu = 0;
+	if(!cpu) {
+		last_cpu = 0;
+		return primary_cpu;
+	}
+	return cpu;
+#else
+	return primary_cpu;
+#endif
+}
+
 int sys_clone(int flags)
 {
 	struct process *proc = current_process;
@@ -138,6 +155,8 @@ int sys_clone(int flags)
 	thr->usermode_stack_num = tm_thread_reserve_usermode_stack(thr);
 	thr->usermode_stack_end = tm_thread_usermode_stack_end(thr->usermode_stack_num);
 
+	struct cpu *target_cpu = tm_fork_pick_cpu();
+
 	cpu_disable_preemption();
 	arch_cpu_copy_fixup_stack((addr_t)thr->kernel_stack, (addr_t)current_thread->kernel_stack, KERN_STACK_SIZE);
 	*(struct thread **)(thr->kernel_stack) = thr;
@@ -155,7 +174,7 @@ int sys_clone(int flags)
 	esp += 4;
 	*(addr_t *)esp = ebp;
 	thr->stack_pointer = esp;
-	tm_thread_add_to_cpu(thr, current_thread->cpu);
+	tm_thread_add_to_cpu(thr, target_cpu);
 	thr->jump_point = (addr_t)arch_tm_read_ip();
 	cpu_enable_preemption();
 

@@ -322,8 +322,10 @@ int syscall_handler(volatile registers_t *regs)
 	/* SYSCALL_NUM_AND_RET is defined to be the correct register in the syscall regs struct. */
 	if(unlikely(SYSCALL_NUM_AND_RET >= num_syscalls))
 		return -ENOSYS;
-	if(unlikely(!syscall_table[SYSCALL_NUM_AND_RET]))
+	if(unlikely(!syscall_table[SYSCALL_NUM_AND_RET])) {
+		kprintf("[syscall]: (from %d(%d)) no such syscall %d\n", current_thread->tid, current_process->pid, SYSCALL_NUM_AND_RET);
 		return -ENOSYS;
+	}
 	volatile long ret;
 	if(!check_pointers(regs))
 		return -EINVAL;
@@ -338,10 +340,10 @@ int syscall_handler(volatile registers_t *regs)
 	syscounts[SYSCALL_NUM_AND_RET]++;
 
 	#ifdef SC_DEBUG
-	if(current_task->tty == current_console->tty && SYSCALL_NUM_AND_RET != 0 && 0)
-		printk(SC_DEBUG, "tty %d: syscall %d (from: %x): enter %d\n",
-				current_task->tty, current_task->pid,
-				current_task->sysregs->eip, SYSCALL_NUM_AND_RET);
+	if(current_process->tty == current_console->tty && SYSCALL_NUM_AND_RET != 0)
+		printk(SC_DEBUG, "tty %d: syscall %d(%d) (from: %x): enter %d\n",
+				current_process->tty, current_thread->tid, current_process->pid,
+				current_thread->regs->eip, SYSCALL_NUM_AND_RET);
 	#endif
 #ifdef SC_TIMING
 	int timer_did_start = timer_start(&systimers[SYSCALL_NUM_AND_RET]);
@@ -354,12 +356,10 @@ int syscall_handler(volatile registers_t *regs)
 	}
 #endif
 	#ifdef SC_DEBUG
-	if((current_task->tty == current_console->tty || 1)
-		&& (ret < 0 || 0) && (ret == -EINTR || 1)
-		&& ((current_task->allocated != 0 || current_task->freed != 0 || current_task->kalloc != 0) || 1))
-		printk(SC_DEBUG, "syscall pid %3d: #%3d ret %4d (%d al, %d fr, %d ka)\n",
-			   current_task->pid, current_task->system, ret < 0 ? -ret : ret,
-			   current_task->allocated, current_task->freed, current_task->kalloc);
+	if((current_process->tty == current_console->tty || 1)
+		&& (ret < 0 || 1) && (ret == -EINTR || 1))
+		printk(SC_DEBUG, "syscall pid %3d: #%3d ret %4d\n",
+			   current_thread->tid, current_thread->system, ret < 0 ? -ret : ret);
 	#endif
 	cpu_interrupt_set(0);
 	tm_thread_exit_system();

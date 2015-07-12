@@ -78,7 +78,9 @@ int kt_kernel_idle_task(void)
 	printk(0, "[idle]: entering background loop\n");
 	for(;;) {
 		tm_schedule();
-		cpu_interrupt_set(1);
+		if(__current_cpu->work.count > 0)
+			workqueue_dowork(&__current_cpu->work);
+
 	}
 }
 

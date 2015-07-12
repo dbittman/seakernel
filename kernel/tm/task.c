@@ -71,6 +71,7 @@ void tm_init_multitasking(void)
 	add_atomic(&running_processes, 1);
 	add_atomic(&running_threads, 1);
 	set_ksf(KSF_THREADING);
+	primary_cpu->flags |= CPU_RUNNING;
 #if CONFIG_MODULES
 	loader_add_kernel_symbol(tm_thread_delay_sleep);
 	//loader_add_kernel_symbol(tm_schedule);

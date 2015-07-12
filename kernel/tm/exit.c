@@ -58,6 +58,7 @@ static void tm_process_exit(int code)
 
 	if(current_process->parent)
 		tm_process_put(current_process->parent);
+	or_atomic(&current_process->flags, PROCESS_EXITED);
 }
 
 void tm_thread_exit(int code)

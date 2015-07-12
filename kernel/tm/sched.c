@@ -89,7 +89,6 @@ void tm_schedule(void)
 	finish_schedule();
 	cpu_enable_preemption();
 	cpu_interrupt_set(old);
-	if(thiscpu->work.count > 0)
-		workqueue_dowork(&thiscpu->work);
+	//printk_safe(0, "%d", __current_cpu->knum);
 }
 

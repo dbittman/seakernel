@@ -98,6 +98,6 @@ void arch_mm_vm_clone(struct vmm_context *oldcontext, struct vmm_context *newcon
 	newcontext->root_virtual = (addr_t)new;
 	newcontext->root_physical = new_p;
 	/* TODO: audit these locks */
-	mutex_create(&newcontext->lock, 0);
+	mutex_create(&newcontext->lock, MT_NOSCHED);
 }
 

@@ -20,6 +20,7 @@
 #define CPU_UP      0x1
 #define CPU_ERROR   0x2
 #define CPU_WAITING 0x4
+#define CPU_RUNNING 0x8
 
 struct cpu {
 	unsigned knum, snum; /* knum: cpu number to the kernel, snum: cpu number to the hardware */

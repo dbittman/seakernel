@@ -35,14 +35,14 @@ __attribute__((const)) static inline struct process *__tm_get_current_process(vo
 #define PROCESS_MAGIC 0xCAFEBABE
 
 #define PROCESS_CLEANED 1
+#define PROCESS_EXITED  2
 
 struct exit_status {
-	unsigned pid;
+	pid_t pid;
 	int ret;
 	unsigned sig;
 	char coredump;
 	int cause;
-	struct exit_status *next, *prev;
 };
 
 #define NUM_USERMODE_STACKS ((USERMODE_STACKS_END - USERMODE_STACKS_START) / (CONFIG_STACK_PAGES * PAGE_SIZE)) 
@@ -51,7 +51,7 @@ struct process {
 	unsigned magic;
 	struct vmm_context vmm_context;
 	pid_t pid;
-	int flags;
+	volatile int flags;
 	int refs;
 
 	struct llistnode listnode;

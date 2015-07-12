@@ -39,3 +39,4 @@ int arch_mm_vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned opt)
 		mutex_release(&pd_cur_data->lock);
 	return 0;
 }
+

@@ -7,7 +7,6 @@
 
 static void get_status_int(struct process *t, int *st, int *__pid)
 {
-
 	int ret_val, sig_number;
 	//int status = (t->state == TASK_DEAD) ? __EXIT : __STOPPED;
 	int status = __EXIT;
@@ -69,7 +68,7 @@ int sys_waitpid(int pid, int *st, int opt)
 		return -ECHILD;
 	}
 
-	while(proc->thread_count != 0 && !(opt & WNOHANG)) {
+	while(!(proc->flags & PROCESS_EXITED) && !(opt & WNOHANG)) {
 		if(tm_thread_got_signal(current_thread)) {
 			tm_process_put(proc);
 			return -EINTR;

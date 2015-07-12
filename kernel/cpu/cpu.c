@@ -74,6 +74,7 @@ struct cpu *cpu_add(int snum)
 	if(cpu_array_num >= CONFIG_MAX_CPUS)
 		return 0;
 	cpu_array[cpu_array_num].snum = snum;
+	cpu_array[cpu_array_num].knum = cpu_array_num;
 	return &cpu_array[cpu_array_num++];
 }
 

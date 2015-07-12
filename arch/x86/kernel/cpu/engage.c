@@ -21,9 +21,6 @@ initialization */
 void set_lapic_timer(unsigned tmp);
 void init_lapic(int);
 addr_t lapic_addr=0;
-extern page_dir_t *minimal_directory;
-int cpu_s1_lock_init=0;
-mutex_t cpu_stage1_lock;
 
 static inline void set_boot_flag(unsigned x)
 {
@@ -66,6 +63,7 @@ __attribute__ ((noinline)) void cpu_stage1_init(unsigned apicid)
 	cpu->idle_thread = thread;
 	thread->process = kernel_process; /* we have to do this early, so that the vmm system can use the lock... */
 	thread->state = THREAD_RUNNING;
+	/* TODO: this line was causing weirdness */
 	thread->tid = tm_thread_next_tid();
 	thread->magic = THREAD_MAGIC;
 	thread->kernel_stack = kmalloc_a(KERN_STACK_SIZE);
@@ -104,13 +102,6 @@ int boot_cpu(unsigned id)
 	unsigned bootaddr, accept_status;
 	unsigned bios_reset_vector = BIOS_RESET_VECTOR;
 	
-	if(!cpu_s1_lock_init)
-	{
-		cpu_s1_lock_init=1;
-		mutex_create(&cpu_stage1_lock, MT_NOSCHED);
-	}
-	
-	cpu_disable_preemption();
 	/* choose this as the bios reset vector */
 	bootaddr = 0x7000;
 	unsigned sz = (unsigned)trampoline_end - (unsigned)trampoline_start;
@@ -157,7 +148,6 @@ int boot_cpu(unsigned id)
 	/* clean up BIOS reset vector */
 	CMOS_WRITE_BYTE(CMOS_RESET_CODE, 0);
 	*((volatile unsigned *) bios_reset_vector) = 0;
-	cpu_enable_preemption();
 	return success;
 }
 

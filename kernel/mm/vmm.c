@@ -1,4 +1,5 @@
-#include <sea/mm/_mm.h>
+#include <sea/types.h>
+#include <sea/mm/vmm.h>
 
 void mm_vm_clone(struct vmm_context *old, struct vmm_context *new)
 {

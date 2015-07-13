@@ -24,11 +24,6 @@
 
 #define DEF_PRINT_LEVEL CONFIG_LOG_LEVEL
 
-#define KMALLOC_INIT __mm_slab_init
-#define KMALLOC_ALLOC __mm_do_kmalloc_slab
-#define KMALLOC_FREE  __mm_do_kfree_slab
-#define KMALLOC_NAME ((char *)"slab")
-
 #define KERN_PANIC 8
 #define KERN_CRIT 7
 #define KERN_ERROR 6

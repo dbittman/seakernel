@@ -1,4 +1,3 @@
-#include <sea/mm/_mm.h>
 #include <sea/mm/init.h>
 #include <sea/kernel.h>
 #include <sea/mm/vmm.h>
@@ -80,8 +79,8 @@ static void process_memorymap(struct multiboot *mboot)
 		printk(KERN_MILE, "%d GB and ", gbs);
 		mbs = mbs % 1024;
 	}
-	printk(KERN_MILE, "%d MB available memory (page size=%d KB, kmalloc=%s: ok)\n"
- 			, mbs, PAGE_SIZE/1024, KMALLOC_NAME);
+	printk(KERN_MILE, "%d MB available memory (page size=%d KB, kmalloc=slab: ok)\n"
+ 			, mbs, PAGE_SIZE/1024);
 	printk(1, "[mm]: num pages = %d\n", num_pages);
 	pm_num_pages=num_pages;
 	pm_used_pages=0;
@@ -95,7 +94,7 @@ void mm_init(struct multiboot *m)
 	mutex_create(&pm_mutex, 0);
 	mm_vm_init(pm_location);
 	process_memorymap(m);
- 	kmalloc_create(KMALLOC_NAME, KMALLOC_INIT, KMALLOC_ALLOC, KMALLOC_FREE);
+	kmalloc_init();
 	mm_vm_init_2();
 	set_ksf(KSF_MMU);
 	/* hey, look at that, we have happy memory times! */

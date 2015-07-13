@@ -294,7 +294,7 @@ static void release_slab(struct slab *slab)
 		release_scache(sc);
 }
 
-unsigned __mm_slab_init(addr_t start, addr_t end)
+void __mm_slab_init(addr_t start, addr_t end)
 {
 	printk(1, "[slab]: Initiating slab allocator...");
 	map_if_not_mapped(start);
@@ -312,7 +312,6 @@ unsigned __mm_slab_init(addr_t start, addr_t end)
 	printk(1, "done\n");
 	pages_used = slab_valloc.nindex+1;
 	mutex_create(&scache_lock, 0);
-	return 0;
 }
 
 /* Look through the available caches for: 

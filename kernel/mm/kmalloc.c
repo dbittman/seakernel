@@ -5,28 +5,25 @@
 #include <sea/mm/vmm.h>
 #include <sea/tm/process.h>
 
-static addr_t (*do_kmalloc_wrap)(size_t, char)=0;
-static void (*do_kfree_wrap)(void *)=0;
+addr_t __mm_do_kmalloc_slab(size_t sz, char align);
+void __mm_do_kfree_slab(void *ptr);
+void __mm_slab_init(addr_t start, addr_t end);
 
 static char kmalloc_name[128];
+/* TODO: more granular locking inside slab */
 static mutex_t km_m;
-void kmalloc_create(char *name, unsigned (*init)(addr_t, addr_t), 
-	addr_t (*alloc)(size_t, char), void (*free)(void *))
+
+void kmalloc_init(void)
 {
-	do_kmalloc_wrap = alloc;
-	do_kfree_wrap = free;
-	strncpy(kmalloc_name, name, 128);
+	strncpy(kmalloc_name, "slab", 128);
 	mutex_create(&km_m, 0);
-	if(init)
-		init(KMALLOC_ADDR_START, KMALLOC_ADDR_END);
+	__mm_slab_init(KMALLOC_ADDR_START, KMALLOC_ADDR_END);
 }
 
 static addr_t do_kmalloc(size_t sz, char align, char *file, int line)
 {
-	if(!do_kmalloc_wrap)
-		panic(PANIC_MEM | PANIC_NOSYNC, "No kernel-level allocator installed!");
 	mutex_acquire(&km_m);
-	addr_t ret = do_kmalloc_wrap(sz, align);
+	addr_t ret = __mm_do_kmalloc_slab(sz, align);
 	mutex_release(&km_m);
 	if(!ret || ret >= KMALLOC_ADDR_END || ret < KMALLOC_ADDR_START)
 		panic(PANIC_MEM | PANIC_NOSYNC, "kmalloc returned impossible address");
@@ -64,9 +61,6 @@ void kfree(void *pt)
 {
 	if(!pt) return;
 	mutex_acquire(&km_m);
-	if(do_kfree_wrap)
-		do_kfree_wrap(pt);
-	else
-		panic(PANIC_MEM | PANIC_NOSYNC, "No kfree installed!");
+	__mm_do_kfree_slab(pt);
 	mutex_release(&km_m);
 }

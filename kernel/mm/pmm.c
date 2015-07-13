@@ -1,4 +1,3 @@
-#include <sea/mm/_mm.h>
 #include <sea/config.h>
 #include <sea/mm/pmm.h>
 #include <sea/mm/dma.h>

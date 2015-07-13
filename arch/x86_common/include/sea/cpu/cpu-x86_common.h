@@ -125,12 +125,6 @@ extern unsigned bootstrap;
 void init_ioapic();
 #endif /* CONFIG_SMP */
 
-/* TODO: do we need this? */
-static inline void arch_cpu_jump(addr_t x)
-{
-	__asm__ __volatile__ ("jmp *%0"::"r"(x));
-}
-
 static inline void arch_cpu_halt(void)
 {
 	__asm__ __volatile__ ("hlt");

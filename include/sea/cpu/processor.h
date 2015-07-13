@@ -93,11 +93,6 @@ static inline void cpu_pause(void)
 	arch_cpu_pause();
 }
 
-static inline void cpu_jump(addr_t a)
-{
-	arch_cpu_jump(a);
-}
-
 struct cpu *cpu_get_current();
 void cpu_put_current(struct cpu *);
 

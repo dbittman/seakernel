@@ -158,25 +158,7 @@ int sys_clone(int flags)
 	struct cpu *target_cpu = tm_fork_pick_cpu();
 
 	cpu_disable_preemption();
-	arch_cpu_copy_fixup_stack((addr_t)thr->kernel_stack, (addr_t)current_thread->kernel_stack, KERN_STACK_SIZE);
-	*(struct thread **)(thr->kernel_stack) = thr;
-	addr_t esp;
-	addr_t ebp;
-	__asm__ __volatile__ ("mov %%esp, %0":"=r"(esp));
-	__asm__ __volatile__ ("mov %%ebp, %0":"=r"(ebp));
-
-
-	esp -= (addr_t)current_thread->kernel_stack;
-	ebp -= (addr_t)current_thread->kernel_stack;
-	esp += (addr_t)thr->kernel_stack;
-	ebp += (addr_t)thr->kernel_stack;
-
-	esp += 4;
-	*(addr_t *)esp = ebp;
-	thr->stack_pointer = esp;
-	tm_thread_add_to_cpu(thr, target_cpu);
-	thr->jump_point = (addr_t)arch_tm_read_ip();
-	cpu_enable_preemption();
+	arch_tm_fork_setup_stack(thr);
 
 	if(current_thread == thr) {
 		current_thread->jump_point = 0;
@@ -184,14 +166,15 @@ int sys_clone(int flags)
 		cpu_interrupt_set(1);
 		return 0;
 	} else {
+		cpu_enable_preemption();
 		thr->state = THREADSTATE_RUNNING;
+		tm_thread_add_to_cpu(thr, target_cpu);
 		return thr->tid;
 	}
-	
 }
 
 int sys_vfork(void)
 {
-
+	/* TODO */
 }
 

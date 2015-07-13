@@ -272,9 +272,7 @@ int cpu_interrupt_set(unsigned _new)
 
 int cpu_interrupt_get_flag(void)
 {
-	int res;
-	__asm__ __volatile__ ("pushf; pop %%eax; and $0x200, %%eax; mov %%eax, %0":"=r"(res) :: "eax");
-	return res;
+	return arch_cpu_get_interrupt_flag();
 }
 
 int kerfs_int_report(size_t offset, size_t length, char *buf)

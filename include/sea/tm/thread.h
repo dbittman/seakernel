@@ -101,6 +101,8 @@ void arch_tm_userspace_signal_initializer(registers_t *regs, struct sigaction *s
 void arch_tm_userspace_signal_cleanup(registers_t *regs);
 addr_t arch_tm_read_ip(void);
 void arch_tm_jump_to_user_mode(addr_t jmp);
+__attribute__((noinline)) void arch_tm_thread_switch(struct thread *old, struct thread *);
+__attribute__((noinline)) void arch_tm_fork_setup_stack(struct thread *thr);
 
 #define tm_thread_pause(th) tm_thread_set_state(th, THREADSTATE_INTERRUPTIBLE)
 #define tm_thread_resume(th) tm_thread_set_state(th, THREADSTATE_RUNNING)

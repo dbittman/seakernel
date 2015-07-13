@@ -3,41 +3,7 @@
 #include <sea/tm/process.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/processor.h>
-__attribute__((noinline)) static void arch_tm_thread_switch(struct thread *old, struct thread *new)
-{
-	/* TODO fpu, sse */
-	assert(new->stack_pointer > (addr_t)new->kernel_stack + sizeof(addr_t));
-	cpu_set_kernel_stack(new->cpu, (addr_t)new->kernel_stack,
-			(addr_t)new->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
-	if(new->process != old->process) {
-		mm_vm_switch_context(&new->process->vmm_context);
-	}
-	__asm__ __volatile__ (
-		"pushf;"
-		"push %%ebx;"
-		"push %%esi;"
-		"push %%edi;"
-		"push %%ebp;"
-		"mov %%esp, %0;": "=r"(old->stack_pointer)::"memory");
-	if(new->jump_point) {
-		/* newly created thread, needs to just have some basic context set
-		 * up initially and then jumped to */
-		addr_t jump = new->jump_point;
-		new->jump_point = 0;
-		__asm__ __volatile__ ("mov %1, %%ecx;"
-				"mov %0, %%esp;"
-				"pop %%ebp;"
-				"jmp *%%ecx"::"r"(new->stack_pointer), "r"(jump):"memory");
-	}
-	__asm__ __volatile__ ("mov %0, %%esp;"
-			"pop %%ebp;"
-			"pop %%edi;"
-			"pop %%esi;"
-			"pop %%ebx;"
-			"popf"::"r"(new->stack_pointer):"memory");
-	/* WARNING - we've switched stacks at this point! We must NOT use anything
-	 * stack related now until this function returns! */
-}
+
 
 static struct thread *get_next_thread (void)
 {
@@ -89,6 +55,5 @@ void tm_schedule(void)
 	finish_schedule();
 	cpu_enable_preemption();
 	cpu_interrupt_set(old);
-	//printk_safe(0, "%d", __current_cpu->knum);
 }
 

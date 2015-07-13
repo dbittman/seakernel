@@ -135,4 +135,11 @@ static inline void arch_cpu_pause(void)
 	__asm__ __volatile__ ("pause");
 }
 
+static inline int arch_cpu_get_interrupt_flag(void)
+{
+	int res;
+	__asm__ __volatile__ ("pushf; pop %%eax; and $0x200, %%eax; mov %%eax, %0":"=r"(res) :: "eax");
+	return res;
+}
+
 #endif

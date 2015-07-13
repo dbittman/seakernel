@@ -20,6 +20,7 @@ void kmalloc_init(void)
 	__mm_slab_init(KMALLOC_ADDR_START, KMALLOC_ADDR_END);
 }
 
+/* TODO: remove a lot of the file-line stuff */
 static addr_t do_kmalloc(size_t sz, char align, char *file, int line)
 {
 	mutex_acquire(&km_m);

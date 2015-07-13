@@ -17,10 +17,10 @@ void tm_thread_handle_signal(int signal)
 	if(!(sa->sa_flags & SA_NODEFER))
 		current_thread->sig_mask |= (1 << signal);
 	if(signal != SIGKILL && sa->_sa_func._sa_handler) {
-		tm_thread_raise_flag(current_thread, TF_SIGNALED);
+		tm_thread_raise_flag(current_thread, THREAD_SIGNALED);
 	} else if(!current_thread->system) {
 		/* Default Handlers */
-		tm_thread_raise_flag(current_thread, TF_SCHED);
+		tm_thread_raise_flag(current_thread, THREAD_SCHEDULE);
 		switch(signal)
 		{
 			case SIGHUP : case SIGKILL: case SIGQUIT: case SIGPIPE:
@@ -46,7 +46,7 @@ void tm_thread_handle_signal(int signal)
 				//t->tick=0;
 				break;
 			default:
-				//t->flags &= ~TF_SCHED;
+				//t->flags &= ~THREAD_SCHEDULE;
 				break;
 		}
 	}
@@ -78,13 +78,15 @@ static int __can_send_signal(struct process *from, struct process *to, int signa
 void tm_signal_send_thread(struct thread *thr, int signal)
 {
 	/* TODO: check if there's already a signal? */
+	assert(signal < NUM_SIGNALS);
 	thr->signal = signal;
-	if(thr->state == THREAD_INTERRUPTIBLE)
-		tm_thread_set_state(thr, THREAD_RUNNING);
+	if(thr->state == THREADSTATE_INTERRUPTIBLE)
+		tm_thread_set_state(thr, THREADSTATE_RUNNING);
 }
 
 int tm_signal_send_process(struct process *proc, int signal)
 {
+	assert(signal < NUM_SIGNALS);
 	rwlock_acquire(&proc->threadlist.rwl, RWL_READER);
 	struct llistnode *node;
 	struct thread *thr;
@@ -102,7 +104,7 @@ int tm_signal_send_process(struct process *proc, int signal)
 
 int sys_kill(pid_t pid, int signal)
 {
-	if(pid == 0)
+	if(pid == 0 || signal < 0 || signal >= NUM_SIGNALS)
 		return -EINVAL;
 	struct process *proc = tm_process_get(pid);
 	if(!proc)
@@ -120,6 +122,8 @@ int sys_kill(pid_t pid, int signal)
 /* TODO: add to syscall table */
 int sys_kill_thread(pid_t tid, int signal)
 {
+	if(tid == 0 || signal < 0 || signal >= NUM_SIGNALS)
+		return -EINVAL;
 	struct thread *thr = tm_thread_get(tid);
 	if(!thr)
 		return -ESRCH;

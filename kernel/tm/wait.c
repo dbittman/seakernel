@@ -89,12 +89,6 @@ int sys_waitpid(int pid, int *st, int opt)
 	return gotpid;
 }
 
-/* TODO: remove */
-int sys_waitagain(void)
-{
-	return -ENOSYS;
-}
-
 int sys_wait3(int *a, int b, int *c)
 {
 	return sys_waitpid(-1, a, b);

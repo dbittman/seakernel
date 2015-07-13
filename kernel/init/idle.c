@@ -52,7 +52,7 @@ int kt_kernel_idle_task(void)
 {
 	int task, cache;
 	kthread_create(&kthread_pager, "[kpager]", 0, __KT_pager, 0);
-	current_thread->flags |= TF_KTASK;
+	current_thread->flags |= THREAD_KERNEL;
 	strncpy((char *)current_process->command, "[kidle]", 128);
 	/* First stage is to wait until we can clear various allocated things
 	 * that we wont need anymore */

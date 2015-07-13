@@ -86,7 +86,7 @@ void tm_thread_exit(int code)
 
 	tqueue_remove(current_thread->cpu->active_queue, &current_thread->activenode);
 	sub_atomic(&current_thread->cpu->numtasks, 1);
-	current_thread->state = THREAD_DEAD;
+	current_thread->state = THREADSTATE_DEAD;
 	
 	workqueue_insert(&__current_cpu->work, thread_cleanup_call);
 	cpu_enable_preemption();

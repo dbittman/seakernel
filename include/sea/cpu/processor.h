@@ -81,6 +81,8 @@ void arch_cpu_processor_init_2();
 void arch_cpu_early_init();
 void cpu_early_init();
 
+void arch_cpu_set_kernel_stack(struct cpu*, addr_t, addr_t);
+void cpu_set_kernel_stack(struct cpu*, addr_t, addr_t);
 static inline void cpu_halt(void)
 {
 	arch_cpu_halt();

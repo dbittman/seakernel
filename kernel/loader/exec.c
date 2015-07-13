@@ -35,7 +35,7 @@ static void preexec(int desc)
 	for(addr_t a = MMF_BEGIN;a < (MMF_BEGIN + (size_t)t->process->mmf_valloc.nindex);a+=PAGE_SIZE)
 		mm_vm_set_attrib(a, PAGE_PRESENT | PAGE_WRITE);
 	t->signal = 0;
-	memset((void *)t->process->signal_act, 0, sizeof(struct sigaction) * 128);
+	memset((void *)t->process->signal_act, 0, sizeof(struct sigaction) * NUM_SIGNALS);
 }
 
 static void free_dp(char **mem, int num)
@@ -231,7 +231,7 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 	/* now, we just need to deal with the syscall return stuff. When the syscall
 	 * returns, it'll just jump into the entry point of the new process */
 	cpu_interrupt_set(0);
-	tm_thread_lower_flag(current_thread, TF_SCHED);
+	tm_thread_lower_flag(current_thread, THREAD_SCHEDULE);
 	/* the kernel cares if it has executed something or not */
 	if(!(kernel_state_flags & KSF_HAVEEXECED))
 		set_ksf(KSF_HAVEEXECED);

@@ -159,7 +159,7 @@ static void faulted(int fuckoff, int userspace, addr_t ip, long err_code, regist
 
 static inline void __setup_signal_handler(registers_t *regs)
 {
-	if(!current_thread->signal || !(current_thread->flags & TF_SIGNALED))
+	if(!current_thread->signal || !(current_thread->flags & THREAD_SIGNALED))
 		return;
 	struct sigaction *sa = &current_process->signal_act[current_thread->signal];
 	arch_tm_userspace_signal_initializer(regs, sa);

@@ -3,7 +3,7 @@
 #include <sea/cpu/tables-x86_common.h>
 #include <sea/cpu/processor.h>
 
-void arch_tm_set_kernel_stack(struct cpu *cpu, addr_t start, addr_t end)
+void arch_cpu_set_kernel_stack(struct cpu *cpu, addr_t start, addr_t end)
 {
 	/* TODO: is this thread safe? We're calling this during a context switch, so
 	 * is preempt already off? is this gonna fuck that up? */

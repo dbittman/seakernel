@@ -62,7 +62,7 @@ void __tty_found_task_raise_action(struct thread *t, int arg)
 {
 	/* TODO: what? */
 	tm_signal_send_thread(t, arg);
-	tm_thread_raise_flag(t, TF_SCHED);
+	tm_thread_raise_flag(t, THREAD_SCHEDULE);
 	/* TODO */
 	/* if(t->blocklist) */
 	/* 	tm_remove_from_blocklist(t->blocklist, t); */
@@ -100,7 +100,7 @@ int tty_read(int min, char *buf, size_t len)
 		mutex_acquire(&con->inlock);
 		while(!con->inpos) {
 			mutex_release(&con->inlock);
-			tm_thread_block(&con->input_block, THREAD_INTERRUPTIBLE);
+			tm_thread_block(&con->input_block, THREADSTATE_INTERRUPTIBLE);
 			if(tm_thread_got_signal(current_thread))
 				return -EINTR;
 			mutex_acquire(&con->inlock);

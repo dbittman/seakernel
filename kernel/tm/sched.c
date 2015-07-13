@@ -7,7 +7,7 @@ __attribute__((noinline)) static void arch_tm_thread_switch(struct thread *old, 
 {
 	/* TODO fpu, sse */
 	assert(new->stack_pointer > (addr_t)new->kernel_stack + sizeof(addr_t));
-	tm_set_kernel_stack(new->cpu, (addr_t)new->kernel_stack,
+	cpu_set_kernel_stack(new->cpu, (addr_t)new->kernel_stack,
 			(addr_t)new->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
 	if(new->process != old->process) {
 		mm_vm_switch_context(&new->process->vmm_context);
@@ -59,7 +59,7 @@ static struct thread *get_next_thread (void)
 static void prepare_schedule(void)
 {
 	/* store arch-indep context */
-	tm_thread_lower_flag(current_thread, TF_SCHED);
+	tm_thread_lower_flag(current_thread, THREAD_SCHEDULE);
 }
 
 static void finish_schedule(void)

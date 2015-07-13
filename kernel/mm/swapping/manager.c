@@ -353,7 +353,7 @@ int sys_swaptask(unsigned pid)
 	task_t *t = tm_get_process_by_pid(pid);
 	if(!t)
 		return -2;
-	if(t->flags & TF_KTASK || !t->pid)
+	if(t->flags & THREAD_KERNEL || !t->pid)
 		return -3;
 	if(!num_swapdev)
 		return -4;

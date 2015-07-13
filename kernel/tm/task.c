@@ -55,7 +55,7 @@ void tm_init_multitasking(void)
 	proc->magic = PROCESS_MAGIC;
 	memcpy(&proc->vmm_context, &kernel_context, sizeof(kernel_context));
 	thread->process = proc; /* we have to do this early, so that the vmm system can use the lock... */
-	thread->state = THREAD_RUNNING;
+	thread->state = THREADSTATE_RUNNING;
 	thread->magic = THREAD_MAGIC;
 	thread->kernel_stack = &initial_kernel_stack;
 	*(struct thread **)(thread->kernel_stack) = thread;
@@ -78,15 +78,10 @@ void tm_init_multitasking(void)
 #endif
 }
 
-void tm_set_kernel_stack(struct cpu *cpu, addr_t start, addr_t end)
-{
-	arch_tm_set_kernel_stack(cpu, start, end);
-}
-
 void tm_thread_user_mode_jump(void (*fn)(void))
 {
 	cpu_interrupt_set(0);
-	tm_set_kernel_stack(current_thread->cpu, (addr_t)current_thread->kernel_stack,
+	cpu_set_kernel_stack(current_thread->cpu, (addr_t)current_thread->kernel_stack,
 			(addr_t)current_thread->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
 	arch_tm_jump_to_user_mode((addr_t)fn);
 }

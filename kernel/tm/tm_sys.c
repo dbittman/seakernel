@@ -213,7 +213,7 @@ static void do_sys_thread_stat(struct task_stat *s, struct thread *t)
 	s->argv = t->argv;
 	s->pid = t->pid;
 	strncpy(s->cmd, (char *)t->command, 128);
-	s->mem_usage = (t->pid && !(t->flags & TF_KTASK)) ? t->phys_mem_usage * 4 : 0;
+	s->mem_usage = (t->pid && !(t->flags & THREAD_KERNEL)) ? t->phys_mem_usage * 4 : 0;
 }
 #endif
 /* TODO */

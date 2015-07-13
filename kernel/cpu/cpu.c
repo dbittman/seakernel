@@ -53,6 +53,10 @@ void cpu_copy_fixup_stack(addr_t new, addr_t old, size_t len)
 	arch_cpu_copy_fixup_stack(new, old, len);
 }
 
+void cpu_set_kernel_stack(struct cpu *cpu, addr_t start, addr_t end)
+{
+	arch_cpu_set_kernel_stack(cpu, start, end);
+}
 #if CONFIG_SMP
 
 struct cpu *cpu_get(unsigned id)

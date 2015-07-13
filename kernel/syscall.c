@@ -209,7 +209,7 @@ static void *syscall_table[129] = {
 
 
 
-	[SYS_WAITAGAIN] = SC sys_waitagain,
+	//[SYS_WAITAGAIN] = SC sys_waitagain,
 	[SYS_RET_FROM_SIG] = SC sys_null,
 };
 
@@ -367,7 +367,7 @@ int syscall_handler(volatile registers_t *regs)
 	 * then we need to reschedule. this prevents tasks that do a continuous call
 	 * to write() from starving the resources of other tasks. syscall_count resets
 	 * on each call to tm_tm_schedule() */
-	if(current_thread->flags & TF_SCHED)
+	if(current_thread->flags & THREAD_SCHEDULE)
 	{
 		/* clear out the flag. Either way in the if statement, we've rescheduled. */
 		tm_schedule();

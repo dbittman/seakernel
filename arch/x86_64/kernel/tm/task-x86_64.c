@@ -30,7 +30,7 @@ void arch_tm_set_current_task_marker(pml4_t *pml4, addr_t task)
 	*(addr_t *)(virt) = task;
 }
 
-void arch_tm_set_kernel_stack(addr_t start, addr_t end)
+void arch_cpu_set_kernel_stack(addr_t start, addr_t end)
 {
 	set_kernel_stack(current_tss, end);
 }

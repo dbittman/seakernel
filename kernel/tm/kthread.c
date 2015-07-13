@@ -30,7 +30,7 @@ struct kthread *kthread_create(struct kthread *kt, const char *name, int flags,
 		current_process->parent = 0;
 		current_process->real_uid = current_process->effective_uid = 
 			current_process->real_gid = current_process->effective_gid = 0;
-		current_thread->flags |= TF_KTASK;
+		current_thread->flags |= THREAD_KERNEL;
 		current_thread->system = -1;
 		current_thread->regs = 0;
 		strncpy((char *)current_process->command, name, 128);
@@ -46,7 +46,7 @@ struct kthread *kthread_create(struct kthread *kt, const char *name, int flags,
 		or_atomic(&kt->flags, KT_EXITED);
 		/* TODO: figure this out */
 #if 0
-		if(current_thread->flags & TF_FORK_COPIEDUSER) {
+		if(current_thread->flags & THREAD_FORK_COPIEDUSER) {
 			/* HACK: this will cause the stack to switch over to the kernel stack
 			 * when exit is called, allowing us to free the whole page directory.
 			 * There is probably a better way to do this, but it would require a

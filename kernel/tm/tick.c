@@ -34,7 +34,7 @@ void tm_timer_handler(registers_t *r, int int_no, int flags)
 		else
 			add_atomic(&current_process->utime, ONE_SECOND / current_hz);
 		/* TODO: timeslicing, don't reschedule every time */
-		current_thread->flags |= TF_SCHED;
+		current_thread->flags |= THREAD_SCHEDULE;
 	}
 }
 

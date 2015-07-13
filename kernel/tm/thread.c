@@ -18,9 +18,9 @@ void tm_thread_exit_system(void)
 
 int tm_thread_runnable(struct thread *thr)
 {
-	if(thr->state == THREAD_RUNNING)
+	if(thr->state == THREADSTATE_RUNNING)
 		return 1;
-	if(thr->state == THREAD_INTERRUPTIBLE && tm_thread_got_signal(thr))
+	if(thr->state == THREADSTATE_INTERRUPTIBLE && tm_thread_got_signal(thr))
 		return 1;
 	return 0;
 }

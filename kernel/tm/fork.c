@@ -26,7 +26,7 @@ struct thread *tm_thread_fork(int flags)
 	struct thread *thr = kmalloc(sizeof(struct thread));
 	thr->magic = THREAD_MAGIC;
 	thr->tid = tm_thread_next_tid();
-	thr->flags = TF_FORK;
+	thr->flags = THREAD_FORK;
 	thr->priority = current_thread->priority;
 	thr->kernel_stack = kmalloc_a(0x1000);
 	thr->sig_mask = current_thread->sig_mask;
@@ -79,7 +79,7 @@ static struct process *tm_process_copy(int flags)
 	newp->heap_start = current_process->heap_start;
 	newp->heap_end = current_process->heap_end;
 	newp->global_sig_mask = current_process->global_sig_mask;
-	memcpy((void *)newp->signal_act, current_process->signal_act, sizeof(struct sigaction) * 128);
+	memcpy((void *)newp->signal_act, current_process->signal_act, sizeof(struct sigaction) * NUM_SIGNALS);
 	tm_process_inc_reference(current_process);
 	newp->parent = current_process;
 	ll_create(&newp->threadlist);
@@ -151,7 +151,7 @@ int sys_clone(int flags)
 	assert(!hash_table_set_entry(thread_table, &thr->tid, sizeof(thr->tid), 1, thr));
 	add_atomic(&running_threads, 1);
 	tm_thread_add_to_process(thr, proc);
-	thr->state = THREAD_UNINTERRUPTIBLE;
+	thr->state = THREADSTATE_UNINTERRUPTIBLE;
 	thr->usermode_stack_num = tm_thread_reserve_usermode_stack(thr);
 	thr->usermode_stack_end = tm_thread_usermode_stack_end(thr->usermode_stack_num);
 
@@ -184,7 +184,7 @@ int sys_clone(int flags)
 		cpu_interrupt_set(1);
 		return 0;
 	} else {
-		thr->state = THREAD_RUNNING;
+		thr->state = THREADSTATE_RUNNING;
 		return thr->tid;
 	}
 	

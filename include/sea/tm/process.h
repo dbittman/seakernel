@@ -47,6 +47,8 @@ struct exit_status {
 
 #define NUM_USERMODE_STACKS ((USERMODE_STACKS_END - USERMODE_STACKS_START) / (CONFIG_STACK_PAGES * PAGE_SIZE)) 
 
+#define NUM_SIGNALS 32
+
 struct process {
 	unsigned magic;
 	struct vmm_context vmm_context;
@@ -75,7 +77,7 @@ struct process {
 	time_t utime, stime, cutime, cstime;
 
 	sigset_t global_sig_mask;
-	struct sigaction signal_act[128]; /* TODO: only need 32 of these */
+	struct sigaction signal_act[NUM_SIGNALS];
 	struct process *parent;
 	int thread_count;
 	struct llist threadlist;
@@ -85,7 +87,7 @@ struct process {
 
 #define WNOHANG 1
 
-#define CLONE_SHARE_PROCESS 1 /*TODO: these need to match with userland.. */
+#define CLONE_SHARE_PROCESS 1
 #define tm_fork() tm_do_fork(0)
 
 extern size_t running_processes;
@@ -99,17 +101,12 @@ int tm_get_uid();
 int tm_get_egid();
 int tm_get_euid();
 
-/* TODO: move to CPU subsys */
-void arch_tm_set_kernel_stack(struct cpu*, addr_t, addr_t);
-void tm_set_kernel_stack(struct cpu*, addr_t, addr_t);
-
 int sys_times(struct tms *buf);
 int sys_waitpid(int pid, int *st, int opt);
 int sys_wait3(int *, int, int *);
 pid_t sys_getppid();
 int sys_alarm(int a);
 int sys_gsetpriority(int set, int which, int id, int val);
-int sys_waitagain(); /* TODO: clean up any declarations that don't exist anymore */
 int sys_nice(int which, int who, int val, int flags);
 int sys_setsid();
 int sys_setpgid(int a, int b);
@@ -131,18 +128,11 @@ int sys_task_stat(unsigned int num, struct task_stat *s);
 int sys_task_pstat(pid_t pid, struct task_stat *s);
 #define MMF_VMEM_NUM_INDEX_PAGES 12
 
-
-
-
 void tm_process_wait_cleanup(struct process *proc);
 struct process *tm_process_get(pid_t pid);
 void tm_process_inc_reference(struct process *proc);
 void tm_process_put(struct process *proc);
 int tm_signal_send_process(struct process *proc, int signal);
 int sys_kill(pid_t pid, int signal);
-
-
-
-
 
 #endif

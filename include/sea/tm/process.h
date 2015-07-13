@@ -91,7 +91,7 @@ struct process {
 #define tm_fork() tm_do_fork(0)
 
 extern size_t running_processes;
-
+extern struct process *kernel_process;
 int tm_set_gid(int n);
 int tm_set_uid(int n);
 int tm_set_euid(int n);

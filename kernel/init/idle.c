@@ -64,7 +64,7 @@ int kt_kernel_idle_task(void)
 	cpu_interrupt_set(0);
 	printk(1, "[kernel]: remapping lower memory with protection flags...\n");
 	addr_t addr = 0;
-	while(addr != TOP_LOWER_KERNEL)
+	while(addr != TOP_LOWER_KERNEL && 0)
 	{
 		/* set it to write. We don't actually have to do this, because
 		 * ring0 code may always access memory. As long as the PAGE_USER
@@ -77,10 +77,10 @@ int kt_kernel_idle_task(void)
 	/* Now enter the main idle loop, waiting to do periodic cleanup */
 	printk(0, "[idle]: entering background loop\n");
 	for(;;) {
-		tm_schedule();
 		if(__current_cpu->work.count > 0)
 			workqueue_dowork(&__current_cpu->work);
-
+		else
+			tm_schedule();
 	}
 }
 

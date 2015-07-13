@@ -11,9 +11,10 @@ void cpu_smp_task_idle(struct cpu *cpu)
 	cpu_interrupt_set(1);
 	/* wait until we have tasks to run */
 	for(;;) {
-		tm_schedule();
 		if(__current_cpu->work.count > 0)
 			workqueue_dowork(&__current_cpu->work);
+		else
+			tm_schedule();
 	}
 }
 #endif

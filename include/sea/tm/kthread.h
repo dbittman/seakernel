@@ -6,7 +6,6 @@
 
 struct kthread {
 	int flags, code;
-	pid_t tid;
 	int (*entry)(struct kthread *, void *);
 	void *arg;
 	struct thread *thread;

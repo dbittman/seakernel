@@ -157,14 +157,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	if(!sys_clone(0))
 		init();
 
-	/* TODO: remove this */
-	for(;;) {
-		tm_schedule();
-		if(__current_cpu->work.count > 0)
-			workqueue_dowork(&__current_cpu->work);
-	}
 	sys_setsid();
-	tm_thread_enter_system(255);
 	kt_kernel_idle_task();
 }
 

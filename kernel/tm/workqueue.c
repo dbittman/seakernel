@@ -47,14 +47,9 @@ void workqueue_insert(struct workqueue *wq, struct async_call *call)
 int workqueue_dowork(struct workqueue *wq)
 {
 	struct async_call *call;
-	/* TODO: this is probably going to be pretty common with the
-	 * non-scheduling mutexes. Maybe make it the default? */
-	/* TODO: that would mean making disable_preempt a counter in cpu struct. */
-	cpu_disable_preemption();
 	mutex_acquire(&wq->lock);
 	if(heap_pop(&wq->tasks, 0, (void **)&call) == 0) {
 		mutex_release(&wq->lock);
-		cpu_enable_preemption();
 		sub_atomic(&wq->count, 1);
 		/* handle async_call */
 		async_call_execute(call);
@@ -62,7 +57,6 @@ int workqueue_dowork(struct workqueue *wq)
 		return 0;
 	}
 	mutex_release(&wq->lock);
-	cpu_enable_preemption();
 	return -1;
 }
 

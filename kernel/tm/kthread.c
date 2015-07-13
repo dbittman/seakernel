@@ -23,47 +23,35 @@ struct kthread *kthread_create(struct kthread *kt, const char *name, int flags,
 	/* TODO: this could be a thread, but we'd need to clone from the kernel directory ... */
 	int tid = sys_clone(CLONE_SHARE_PROCESS);
 	if(!tid) {
+		
+		struct process *oldproc = current_process;
+		if(oldproc != kernel_process) {
+			ll_do_remove(&oldproc->threadlist, &current_thread->pnode, 0);
+			tm_process_put(oldproc);
+			sub_atomic(&oldproc->thread_count, 1);
+			current_thread->process = kernel_process;
+		}
+
+
 		/* kernel threads have no parent (since we don't do a wait() for them), and
 		 * they have root-like abilities. They are also constantly 'in the system',
 		 * and so they have their syscall num set to -1. Also, no regs are set, since
 		 * we can't do any weird iret calls or anything. */
-		current_process->parent = 0;
-		current_process->real_uid = current_process->effective_uid = 
-			current_process->real_gid = current_process->effective_gid = 0;
 		current_thread->flags |= THREAD_KERNEL;
 		current_thread->system = -1;
 		current_thread->regs = 0;
 		strncpy((char *)current_process->command, name, 128);
 		
-		/* free up the directory save for the stack and the kernel stuff, since we
-		 * don't need it TODO */
-		//mm_free_thread_shared_directory();
 		/* okay, call the thread entry function */
 		kt->code = entry(kt, arg);
 		/* get the code FIRST, since once we set KT_EXITED, we can't rely on kt
 		 * being a valid pointer */
 		int code = kt->code;
 		or_atomic(&kt->flags, KT_EXITED);
-		/* TODO: figure this out */
-#if 0
-		if(current_thread->flags & THREAD_FORK_COPIEDUSER) {
-			/* HACK: this will cause the stack to switch over to the kernel stack
-			 * when exit is called, allowing us to free the whole page directory.
-			 * There is probably a better way to do this, but it would require a
-			 * switch_stack_and_call_function function, which I don't feel like
-			 * writing.
-			 */
-			tm_switch_to_user_mode();
-			u_exit(code);
-		} else {
-			tm_exit(0);
-		}
-#endif
+		tm_thread_exit(0);
 		panic(0, "kthread lived past exit");
 	}
-	kt->tid = tid;
-	/* TODO */
-	//kt->thread = tm_get_process_by_pid(pid);
+	kt->thread = tm_thread_get(tid);
 	return kt;
 }
 
@@ -106,9 +94,9 @@ int kthread_join(struct kthread *kt, int flags)
 
 void kthread_kill(struct kthread *kt, int flags)
 {
-	if(kt->tid && kt->tid == current_thread->tid)
+	if(kt->thread == current_thread)
 		panic(0, "kthread tried to commit suicide");
-	if(!kt->tid)
+	if(!kt->thread)
 		panic(0, "cannot kill unknown kthread");
 	tm_signal_send_thread(kt->thread, SIGKILL);
 }

@@ -20,10 +20,10 @@ struct kthread *kthread_create(struct kthread *kt, const char *name, int flags,
 	kt->flags |= flags;
 	kt->entry = entry;
 	kt->arg = arg;
-	/* TODO: this could be a thread, but we'd need to clone from the kernel directory ... */
 	int tid = sys_clone(CLONE_SHARE_PROCESS);
 	if(!tid) {
-		
+		/* instead of being part of whichever process created us, we need
+		 * to be part of the kernel process */
 		struct process *oldproc = current_process;
 		if(oldproc != kernel_process) {
 			ll_do_remove(&oldproc->threadlist, &current_thread->pnode, 0);
@@ -32,11 +32,6 @@ struct kthread *kthread_create(struct kthread *kt, const char *name, int flags,
 			current_thread->process = kernel_process;
 		}
 
-
-		/* kernel threads have no parent (since we don't do a wait() for them), and
-		 * they have root-like abilities. They are also constantly 'in the system',
-		 * and so they have their syscall num set to -1. Also, no regs are set, since
-		 * we can't do any weird iret calls or anything. */
 		current_thread->flags |= THREAD_KERNEL;
 		current_thread->system = -1;
 		current_thread->regs = 0;

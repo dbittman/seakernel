@@ -45,12 +45,18 @@ void arch_tm_jump_to_user_mode(addr_t jmp)
 
 __attribute__((noinline)) void arch_tm_thread_switch(struct thread *old, struct thread *new)
 {
-	/* TODO fpu, sse */
 	assert(new->stack_pointer > (addr_t)new->kernel_stack + sizeof(addr_t));
 	cpu_set_kernel_stack(new->cpu, (addr_t)new->kernel_stack,
 			(addr_t)new->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
 	if(new->process != old->process) {
 		mm_vm_switch_context(&new->process->vmm_context);
+	}
+	/* TODO: determine when to actually do this. It's a waste of time to do it for every thread */
+	__asm__ __volatile__ (
+			"fxsave (%0)" :: "r" (ALIGN(old->arch_thread.fpu_save_data, 16)) : "memory");
+	if(!new->jump_point) {
+		__asm__ __volatile__ (
+				"fxrstor (%0)" :: "r" (ALIGN(new->arch_thread.fpu_save_data, 16)) : "memory");
 	}
 	__asm__ __volatile__ (
 		"pushf;"

@@ -9,6 +9,7 @@
 #include <sea/lib/hash.h>
 #include <sea/cpu/processor.h>
 #include <sea/cpu/atomic.h>
+#include <sea/arch-include/tm-thread.h>
 
 #define KERN_STACK_SIZE 0x1000
 #define THREAD_MAGIC 0xBABECAFE
@@ -53,6 +54,8 @@ struct thread {
 	unsigned signal;
 	registers_t *regs;
 	time_t stime, utime, t_cutime, t_cstime;
+
+	struct arch_thread_data arch_thread;
 
 	struct llistnode blocknode, activenode, pnode;
 	struct llist *blocklist;

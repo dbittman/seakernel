@@ -8,14 +8,14 @@
 
 struct llistnode {
 	unsigned magic;
-	volatile struct llistnode *next, *prev;
+	struct llistnode *next, *prev;
 	void *entry;
 	struct llist *memberof;
 };
 
 struct llist {
 	unsigned magic;
-	volatile struct llistnode *head;
+	struct llistnode *head;
 	rwlock_t rwl;
 	char flags;
 	unsigned num;

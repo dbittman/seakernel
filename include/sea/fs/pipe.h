@@ -10,11 +10,11 @@
 typedef struct pipe_struct {
 	volatile unsigned pending;
 	volatile unsigned write_pos, read_pos;
-	volatile char *buffer;
-	volatile off_t length;
+	char *buffer;
+	off_t length;
 	mutex_t *lock;
 	char type;
-	volatile int count, wrcount;
+	int count, wrcount;
 	struct llist *read_blocked, *write_blocked;
 } pipe_t;
 

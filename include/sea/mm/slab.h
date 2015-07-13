@@ -17,12 +17,12 @@ struct slab {
 	unsigned magic;
 	unsigned id;
 	unsigned num_pages;
-	volatile unsigned obj_used;/* Ref count */
+	unsigned obj_used;/* Ref count */
 	unsigned obj_num;
 	/* For usage in the slab lists */
 	struct slab *next, *prev;
 	struct slab_cache *parent; /* Pointer to the slab cache that this slab is part of */
-	volatile unsigned short *stack;
+	unsigned short *stack;
 	unsigned short stack_arr[MAX_OBJ_ID];
 	struct valloc_region vreg;
 };

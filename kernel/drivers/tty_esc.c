@@ -71,7 +71,7 @@ static int tty_Kclear(struct vterm *con, int d)
 	if(d == 0){
 		int x = con->x;
 		int y = con->y;
-		volatile int *p = &con->x;
+		int *p = &con->x;
 		while(con->y==y && (*p < con->w))
 			con->rend->putch(con, ' ');
 		con->x=x;
@@ -80,7 +80,7 @@ static int tty_Kclear(struct vterm *con, int d)
 	else if(d == 1) {
 		int x = con->x;
 		int y = con->y;
-		volatile int *p = &con->x;
+		int *p = &con->x;
 		con->x=0;
 		while(*p < x && con->y==y && (t++ < con->w)) {
 			con->rend->putch(con, ' ');
@@ -91,7 +91,7 @@ static int tty_Kclear(struct vterm *con, int d)
 	{
 		int x = con->x;
 		int y = con->y;
-		volatile int *p = &con->x;
+		int *p = &con->x;
 		*p=0;
 		while(con->y==y && (t++ < con->w))
 			con->rend->putch(con, ' ');

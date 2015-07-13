@@ -226,8 +226,8 @@ void cache_sync(cache_t *c)
 	if(!c->dirty || !c->sync) return;
 	accessed_cache(c);
 	printk(0, "[cache]: Cache '%s' is syncing\n", c->name);
-	volatile unsigned int num = c->dirty;
-	volatile unsigned int i=1;
+	unsigned int num = c->dirty;
+	unsigned int i=1;
 	struct ce_t *obj;
 	c->syncing=1;
 	while(c->dirty > 0)

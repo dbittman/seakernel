@@ -31,7 +31,7 @@ void cpu_interrupt_schedule_stage2(struct async_call *call);
 
 void interrupt_init();
 
-extern volatile unsigned long interrupt_counts[256];
+extern unsigned long interrupt_counts[256];
 
 #if CONFIG_SMP
 void cpu_handle_ipi_tlb(volatile registers_t);

@@ -6,19 +6,19 @@
 #include <sea/fs/kerfs.h>
 #include <sea/vsprintf.h>
 
-volatile addr_t pm_location=0;
-static volatile addr_t pm_stack = PM_STACK_ADDR;
-static volatile addr_t pm_stack_max = PM_STACK_ADDR;
+addr_t pm_location=0;
+static addr_t pm_stack = PM_STACK_ADDR;
+static addr_t pm_stack_max = PM_STACK_ADDR;
 
-volatile unsigned long pm_num_pages=0, pm_used_pages=0;
-volatile uint64_t highest_page=0;
-volatile uint64_t lowest_page=~0;
+unsigned long pm_num_pages=0, pm_used_pages=0;
+uint64_t highest_page=0;
+uint64_t lowest_page=~0;
 
 static addr_t pmm_contiguous_address_start;
 static int pmm_contiguous_end_index, pmm_contiguous_max_index, pmm_contiguous_index_bytes, pmm_contiguous_start_index;
 static uint8_t pmm_contiguous_index[4096];
 
-volatile addr_t placement;
+addr_t placement;
 mutex_t pm_mutex;
 
 void mm_copy_page_physical(addr_t src, addr_t dest)

@@ -8,7 +8,7 @@
 
 struct vterm {
 	char flag;
-	volatile int x, ox, y, oy, f, b, w, h, bd, fw, fh, mode, es, scrollt, scrollb;
+	int x, ox, y, oy, f, b, w, h, bd, fw, fh, mode, es, scrollt, scrollb;
 	char *vmem, *cur_mem, *video;
 	char input[TTY_IBLEN];
  	volatile int inpos;

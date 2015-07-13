@@ -89,10 +89,10 @@ int tty_read(int min, char *buf, size_t len)
 	con = &consoles[min];
 	if(!con->flag)
 		return -ENOENT;
-	volatile int rem=len;
-	volatile char t=0;
-	volatile size_t count=0;
-	volatile int cb = !(con->term.c_lflag & ICANON);
+	int rem=len;
+	char t=0;
+	size_t count=0;
+	int cb = !(con->term.c_lflag & ICANON);
 	int x = con->x;
 	while(1) {
 		if(con->rend->update_cursor)

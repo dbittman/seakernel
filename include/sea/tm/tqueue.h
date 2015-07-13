@@ -25,8 +25,8 @@ struct tqueue {
 	unsigned magic;
 	unsigned flags;
 	mutex_t lock;
-	volatile unsigned num;
-	volatile struct llistnode *current;
+	unsigned num;
+	struct llistnode *current;
 	struct llist tql;
 };
 

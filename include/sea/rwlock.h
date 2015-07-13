@@ -1,8 +1,8 @@
 #ifndef RWLOCK_H
 #define RWLOCK_H
 
-typedef volatile struct {
-	volatile unsigned magic, flags;
+typedef struct {
+	unsigned magic, flags;
 	volatile unsigned long locks;
 } rwlock_t;
 

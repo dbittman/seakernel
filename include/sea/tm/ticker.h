@@ -10,7 +10,7 @@
 
 struct ticker {
 	int flags;
-	volatile uint64_t tick; /*TODO: audit all volatiles */
+	volatile uint64_t tick;
 	struct heap heap;
 	mutex_t lock;
 };

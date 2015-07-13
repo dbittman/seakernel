@@ -24,8 +24,6 @@ void tm_init_multitasking(void)
 {
 	printk(KERN_DEBUG, "[sched]: Starting multitasking system...\n");
 	
-	/* TODO: set up initial processes and threads */
-
 	process_table = hash_table_create(0, 0, HASH_TYPE_CHAIN);
 	hash_table_resize(process_table, HASH_RESIZE_MODE_IGNORE, 1000);
 	hash_table_specify_function(process_table, HASH_FUNCTION_BYTE_SUM);

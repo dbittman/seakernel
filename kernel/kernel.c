@@ -17,7 +17,7 @@
 #endif
 
 int PRINT_LEVEL = DEF_PRINT_LEVEL;
-volatile unsigned kernel_state_flags=0;
+unsigned kernel_state_flags=0;
 
 void kernel_shutdown(void)
 {

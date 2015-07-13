@@ -317,7 +317,7 @@ int check_pointers(volatile registers_t *regs)
 	return 1;
 }
 
-int syscall_handler(volatile registers_t *regs)
+int syscall_handler(registers_t *regs)
 {
 	/* SYSCALL_NUM_AND_RET is defined to be the correct register in the syscall regs struct. */
 	if(unlikely(SYSCALL_NUM_AND_RET >= num_syscalls))
@@ -326,7 +326,7 @@ int syscall_handler(volatile registers_t *regs)
 		kprintf("[syscall]: (from %d(%d)) no such syscall %d\n", current_thread->tid, current_process->pid, SYSCALL_NUM_AND_RET);
 		return -ENOSYS;
 	}
-	volatile long ret;
+	long ret;
 	if(!check_pointers(regs))
 		return -EINVAL;
 	if(kernel_state_flags & KSF_SHUTDOWN)

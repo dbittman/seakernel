@@ -4,9 +4,6 @@
 #define CPU_EXT_FEATURES_GBPAGE (1 << 26)
 
 extern addr_t lapic_addr;
-#define LAPIC_READ(x)  (*((volatile unsigned *) (lapic_addr+(x))))
-#define LAPIC_WRITE(x, y)   \
-(*((volatile unsigned *) (lapic_addr+(x))) = (y))
 
 void init_ioapic();
 void lapic_eoi();

@@ -1,10 +1,6 @@
 /* Defines functions for physical memory */
 #include <sea/kernel.h>
 #include <sea/mm/vmm.h>
-#include <sea/boot/multiboot.h>
-#include <sea/tm/process.h>
-#include <sea/mm/swap.h>
-#include <sea/tm/schedule.h>
 
 addr_t arch_mm_alloc_physical_page_zero(void)
 {

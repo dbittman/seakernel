@@ -4,7 +4,6 @@
 #include <sea/mm/vmm.h>
 #include <sea/cpu/atomic.h>
 #include <sea/tm/thread.h>
-#define SIGSTACK (STACK_LOCATION - (STACK_SIZE + PAGE_SIZE + 8))
 
 void arch_tm_userspace_signal_initializer(registers_t *regs, struct sigaction *sa)
 {

@@ -9,13 +9,21 @@
 #include <sea/cpu/cpu-x86_64.h>
 #endif
 
+#if CONFIG_ARCH == TYPE_ARCH_X86
+
 #define CPUID(cmd, a, b, c, d) __asm__ __volatile__ ("push %%eax; push %%ebx; push %%ecx; push %%edx; mov %0, %%eax; cpuid;"\
 		"mov %%eax, %1; mov %%ebx, %2; mov %%ecx, %3; mov %%edx, %4;" \
 		"pop %%edx; pop %%ecx; pop %%ebx; pop %%eax" :"=r"(a), "=r"(b), "=r"(c), "=r"(d) : "r"(cmd));
+#else
+#define CPUID(cmd, a, b, c, d) __asm__ __volatile__ ("push %%rax; push %%rbx; push %%rcx; push %%rdx; mov %0, %%rax; cpuid;"\
+		"mov %%rax, %1; mov %%rbx, %2; mov %%rcx, %3; mov %%rdx, %4;" \
+		"pop %%rdx; pop %%rcx; pop %%rbx; pop %%rax" :"=r"(a), "=r"(b), "=r"(c), "=r"(d) : "r"(cmd));
+
+#endif
 
 static void cpuid_get_features(cpuid_t *cpuid)
 {
-	int eax, ebx, ecx, edx;
+	long int eax, ebx, ecx, edx;
 	eax = 0x01;
 	CPUID(eax, eax, ebx, ecx, edx);
 	/* if no LAPIC is present, the INIT IPI will fail. */
@@ -36,7 +44,7 @@ static void cpuid_get_features(cpuid_t *cpuid)
 
 static void cpuid_cpu_get_brand(cpuid_t *cpuid)
 {
-	int eax, ebx, ecx, edx;
+	long int eax, ebx, ecx, edx;
 	eax = 0x80000002;
 	CPUID(eax, eax, ebx, ecx, edx);
 	cpuid->cpu_brand[48] = 0;     /* init cpu_brand to null-terminate the string */
@@ -62,7 +70,7 @@ static void cpuid_cpu_get_brand(cpuid_t *cpuid)
 void parse_cpuid(struct cpu *me)
 {
 	cpuid_t cpuid;
-	int eax, ebx, ecx, edx;
+	long int eax, ebx, ecx, edx;
 	eax = 0x00;
 	CPUID(eax, eax, ebx, ecx, edx);
 	cpuid.max_basic_input_val = eax;

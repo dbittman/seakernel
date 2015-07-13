@@ -11,10 +11,11 @@
 #include <sea/vsprintf.h>
 #include <sea/loader/symbol.h>
 
-volatile addr_t *kernel_dir=0;
+addr_t *kernel_directory=0;
 pml4_t *kernel_dir_phys=0;
 int id_tables=0;
-struct pd_data *pd_cur_data = (struct pd_data *)PDIR_DATA;
+
+struct vmm_context kernel_context;
 
 /* This function will setup a paging environment with a basic page dir, 
  * enough to process the memory map passed by grub */
@@ -75,7 +76,6 @@ static pml4_t *create_initial_directory (void)
 	/* map in the signal return inject code. we need to do this, because
 	 * user code may not run the the kernel area of the page directory */
 	early_mm_vm_map(pml4, SIGNAL_INJECT, arch_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_USER);
-	early_mm_vm_map(pml4, PDIR_DATA, arch_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_WRITE);
 	
 	/* CR3 requires the physical address, so we directly 
 	 * set it because we have the physical address */
@@ -86,8 +86,10 @@ static pml4_t *create_initial_directory (void)
 void arch_mm_vm_init(addr_t id_map_to)
 {
 	/* Register some stuff... */
-	interrupt_register_handler (14, (isr_s1_handler_t)&arch_mm_page_fault_handle, 0);
- 	kernel_dir = create_initial_directory();
+	cpu_interrupt_register_handler (14, &arch_mm_page_fault_handle);
+ 	kernel_context.root_physical = (addr_t)create_initial_directory();
+ 	kernel_context.root_virtual = kernel_context.root_physical + PHYS_PAGE_MAP;
+ 	//mutex_create(&kernel_context.lock, MT_NOSCHED);
 	/* Enable paging */
 	memcpy((void *)SIGNAL_INJECT, (void *)signal_return_injector, SIGNAL_INJECT_SIZE);
 	set_ksf(KSF_PAGING);
@@ -97,19 +99,14 @@ void arch_mm_vm_init(addr_t id_map_to)
  * upon clone, and creates a new directory that is...well, complete */
 void arch_mm_vm_init_2(void)
 {
-	setup_kernelstack(id_tables);
-	printk(0, "[mm]: cloning directory for primary cpu\n");
-	primary_cpu->kd = mm_vm_clone((addr_t *)kernel_dir, 0);
-	primary_cpu->kd_phys = primary_cpu->kd[PML4_IDX(PHYSICAL_PML4_INDEX/0x1000)] & PAGE_MASK;
-	kernel_dir_phys = (pml4_t *)primary_cpu->kd_phys;
-	kernel_dir = primary_cpu->kd;
-	asm ("mov %0, %%cr3" : : "r" (kernel_dir[PML4_IDX((PHYSICAL_PML4_INDEX/0x1000))]));
+	mm_vm_clone(&kernel_context, &kernel_context);
+	asm ("mov %0, %%cr3" : : "r" (kernel_context.root_physical));
 	loader_add_kernel_symbol(arch_mm_vm_early_map);
 }
 
-void arch_mm_vm_switch_context(addr_t *n/*VIRTUAL ADDRESS*/)
+void arch_mm_vm_switch_context(struct vmm_context *context)
 {
-	asm ("mov %0, %%cr3" : : "r" (n[PML4_IDX((PHYSICAL_PML4_INDEX/0x1000))]));
+	asm ("mov %0, %%cr3" : : "r" (context->root_physical));
 }
 
 addr_t arch_mm_vm_get_map(addr_t v, addr_t *p, unsigned locked)
@@ -120,14 +117,14 @@ addr_t arch_mm_vm_get_map(addr_t v, addr_t *p, unsigned locked)
 	unsigned vdir = PAGE_DIR_IDX(vpage);
 	unsigned vtbl = PAGE_TABLE_IDX(vpage);
 	addr_t ret=0;
-	if(kernel_task && !locked)
+	if(pd_cur_data && !locked)
 		mutex_acquire(&pd_cur_data->lock);
 	page_dir_t *pd;
 	page_table_t *pt;
 	pdpt_t *pdpt;
 	pml4_t *pml4;
 	
-	pml4 = (pml4_t *)((kernel_task && current_task) ? current_task->pd : kernel_dir);
+	pml4 = (pml4_t *)((pd_cur_data) ? pd_cur_data->root_virtual : kernel_context.root_virtual);
 	if(!pml4[vp4])
 		goto out;
 	pdpt = (addr_t *)((pml4[vp4]&PAGE_MASK) + PHYS_PAGE_MAP);
@@ -151,7 +148,7 @@ addr_t arch_mm_vm_get_map(addr_t v, addr_t *p, unsigned locked)
 	out:
 	if(p)
 		*p = ret;
-	if(kernel_task && !locked)
+	if(pd_cur_data && !locked)
 		mutex_release(&pd_cur_data->lock);
 	return ret;
 }
@@ -163,14 +160,14 @@ void arch_mm_vm_set_attrib(addr_t v, short attr)
 	unsigned vpdpt = PDPT_IDX(vpage);
 	unsigned vdir = PAGE_DIR_IDX(vpage);
 	unsigned vtbl = PAGE_TABLE_IDX(vpage);
-	if(kernel_task)
+	if(pd_cur_data)
 		mutex_acquire(&pd_cur_data->lock);
 	page_dir_t *pd;
 	page_table_t *pt;
 	pdpt_t *pdpt;
 	pml4_t *pml4;
 	
-	pml4 = (pml4_t *)((kernel_task && current_task) ? current_task->pd : kernel_dir);
+	pml4 = (pml4_t *)((pd_cur_data) ? pd_cur_data->root_virtual : kernel_context.root_virtual);
 	if(!pml4[vp4])
 		pml4[vp4] = arch_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
 	pdpt = (addr_t *)((pml4[vp4]&PAGE_MASK) + PHYS_PAGE_MAP);
@@ -198,14 +195,14 @@ void arch_mm_vm_set_attrib(addr_t v, short attr)
 	out:
 	asm("invlpg (%0)"::"r" (v));
 #if CONFIG_SMP && 0
-	if(kernel_task) {
+	if(pd_cur_data) {
 		if(IS_KERN_MEM(v))
 			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
 		else if((IS_THREAD_SHARED_MEM(v) && pd_cur_data->count > 1))
 			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
 	}
 #endif
-	if(kernel_task)
+	if(pd_cur_data)
 		mutex_release(&pd_cur_data->lock);
 }
 
@@ -217,14 +214,14 @@ unsigned int arch_mm_vm_get_attrib(addr_t v, unsigned *p, unsigned locked)
 	unsigned vdir = PAGE_DIR_IDX(vpage);
 	unsigned vtbl = PAGE_TABLE_IDX(vpage);
 	unsigned ret=0;
-	if(kernel_task && !locked)
+	if(pd_cur_data && !locked)
 		mutex_acquire(&pd_cur_data->lock);
 	page_dir_t *pd;
 	page_table_t *pt;
 	pdpt_t *pdpt;
 	pml4_t *pml4;
 	
-	pml4 = (pml4_t *)((kernel_task && current_task) ? current_task->pd : kernel_dir);
+	pml4 = (pml4_t *)((pd_cur_data) ? pd_cur_data->root_virtual : kernel_context.root_virtual);
 	if(!pml4[vp4])
 		goto out;
 	pdpt = (addr_t *)((pml4[vp4]&PAGE_MASK) + PHYS_PAGE_MAP);
@@ -248,7 +245,7 @@ unsigned int arch_mm_vm_get_attrib(addr_t v, unsigned *p, unsigned locked)
 	out:
 	if(p)
 		*p = ret;
-	if(kernel_task && !locked)
+	if(pd_cur_data && !locked)
 		mutex_release(&pd_cur_data->lock);
 	return ret;
 }

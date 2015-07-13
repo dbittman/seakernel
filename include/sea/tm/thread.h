@@ -3,6 +3,7 @@
 
 #include <sea/types.h>
 #include <sea/ll.h>
+#include <sea/kernel.h>
 #include <sea/tm/async_call.h>
 #include <sea/tm/signal.h>
 #include <sea/cpu/registers.h>

@@ -13,14 +13,14 @@ int arch_mm_vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned opt)
 	unsigned vpdpt = PDPT_IDX(vpage);
 	unsigned vdir = PAGE_DIR_IDX(vpage);
 	unsigned vtbl = PAGE_TABLE_IDX(vpage);
-	if(kernel_task && !(opt & MAP_PDLOCKED))
+	if(pd_cur_data && !(opt & MAP_PDLOCKED))
 		mutex_acquire(&pd_cur_data->lock);
 	page_dir_t *pd;
 	page_table_t *pt;
 	pdpt_t *pdpt;
 	pml4_t *pml4;
 	
-	pml4 = (pml4_t *)((kernel_task && current_task) ? current_task->pd : kernel_dir);
+	pml4 = (pml4_t *)((pd_cur_data) ? pd_cur_data->root_virtual : kernel_context.root_virtual);
 	if(!pml4[vp4])
 		pml4[vp4] = arch_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_WRITE | (attr & PAGE_USER);
 	pdpt = (addr_t *)((pml4[vp4]&PAGE_MASK) + PHYS_PAGE_MAP);
@@ -33,17 +33,17 @@ int arch_mm_vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned opt)
 	
 	pt[vtbl] = (phys & PAGE_MASK) | attr;
 	asm("invlpg (%0)"::"r" (virt));
-	if(!(opt & MAP_NOCLEAR)) 
+	if(!(opt & MAP_NOCLEAR))
 		memset((void *)(virt&PAGE_MASK), 0, 0x1000);
 	#if CONFIG_SMP
-	if(kernel_task) {
+	if(pd_cur_data) {
 		if(IS_KERN_MEM(virt))
 			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
 		else if((IS_THREAD_SHARED_MEM(virt) && pd_cur_data->count > 1))
 			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
 	}
 	#endif
-	if(kernel_task && !(opt & MAP_PDLOCKED))
+	if(pd_cur_data && !(opt & MAP_PDLOCKED))
 		mutex_release(&pd_cur_data->lock);
 	return 0;
 }

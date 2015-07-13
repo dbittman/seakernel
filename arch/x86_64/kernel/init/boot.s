@@ -54,7 +54,7 @@ gdtable:
 ;
 ; Here is where the 32-bit entry code is.
 start:
-	mov esp, stack+STACKSIZE-4  ; set up the stack
+	mov esp, initial_kernel_stack+STACKSIZE  ; set up the stack
 	cli
 	mov [ebx_backup], ebx       ; the kernel expects this as an argument later, so save it
 	; enable PAE
@@ -115,7 +115,7 @@ start64:
 	xor rbx, rbx
 	mov ebx, [ebx_backup]
 	; reset the stack
-	mov rsp, stack+STACKSIZE
+	mov rsp, initial_kernel_stack+STACKSIZE
 	cli
 	; function call!
 	mov rsi, rsp
@@ -129,9 +129,11 @@ start64:
     int 3
 
 section .bss
-align 32
-stack:
-   resb STACKSIZE                ; reserve 16k stack on a quadword boundary
+align 0x1000
+[GLOBAL initial_kernel_stack]
+initial_kernel_stack:
+   resb STACKSIZE               ; reserve 16k stack on a quadword boundary
 
 ebx_backup:
 	resd 1
+

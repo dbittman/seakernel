@@ -4,45 +4,45 @@
 #include <sea/cpu/atomic.h>
 #include <sea/string.h>
 
-#define SIGSTACK (STACK_LOCATION - (STACK_SIZE + PAGE_SIZE + 8))
-
-int arch_tm_userspace_signal_initializer(task_t *t, struct sigaction *sa)
+void arch_tm_userspace_signal_initializer(registers_t *regs, struct sigaction *sa)
 {
-	volatile registers_t *iret = t->regs;
-	if(!iret) return 0;
 	/* user-space signal handing design:
-	 * 
-	 * we exploit the fact the iret pops back everything in the stack, and that
-	 * we have access to those stack element. We trick iret into popping
-	 * back modified values of things, after pushing what looks like the
-	 * first half of a subprocedure call to the new stack location for the 
-	 * signal handler.
-	 * 
-	 * We set the return address of this 'function call' to be a bit of 
-	 * injector code, listed above, which simply does a system call (128).
-	 * This syscall copies back the original interrupt stack frame and 
-	 * immediately goes back to the isr common handler to perform the iret
-	 * back to where we were executing before.
-	 */
-	memcpy((void *)&t->reg_b, (void *)iret, sizeof(registers_t));
-	iret->useresp = SIGSTACK;
-	iret->useresp -= STACK_ELEMENT_SIZE;
-	/* fuck it, just set all the parameter registers to the argument. */
-	iret->rdi = t->sigd;
-	iret->rsi = t->sigd;
-	iret->rdx = t->sigd;
-	iret->rcx = t->sigd;
-	iret->r8 = t->sigd;
-	iret->r9 = t->sigd;
-	*(addr_t *)(iret->useresp) = t->sigd;
-	iret->useresp -= STACK_ELEMENT_SIZE;
+		* 
+		* we exploit the fact the iret pops back everything in the stack, and that
+		* we have access to those stack element. We trick regs into popping
+		* back modified values of things, after pushing what looks like the
+		* first half of a subprocedure call to the new stack location for the 
+		* signal handler.
+		* 
+		* We set the return address of this 'function call' to be a bit of 
+		* injector code, listed above, which simply does a system call (128).
+		* This syscall copies back the original interrupt stack frame and 
+		* immediately goes back to the isr common handler to perform the regs
+		* back to where we were executing before.
+		*/
+	memcpy((void *)((addr_t)regs->useresp - sizeof(registers_t)), (void *)regs, sizeof(*regs));
+	regs->useresp -= sizeof(registers_t);
+
+	regs->rdi = current_thread->signal;
+	regs->rsi = current_thread->signal;
+	regs->rdx = current_thread->signal;
+	regs->rcx = current_thread->signal;
+	regs->r8 = current_thread->signal;
+	regs->r9 = current_thread->signal;
+
+	regs->useresp -= STACK_ELEMENT_SIZE;
+	/* push the argument (signal number) */
+	*(addr_t *)(regs->useresp) = current_thread->signal;
+	regs->useresp -= STACK_ELEMENT_SIZE;
 	/* push the return address. this function is mapped in when
-	 * paging is set up */
-	*(addr_t *)(iret->useresp) = (unsigned)SIGNAL_INJECT;
-	iret->eip = (addr_t)sa->_sa_func._sa_handler;
-	t->cursig = t->sigd;
-	t->sigd=0;
-	/* sysregs is only set when we are in a syscall */
-	if(t->sysregs) tm_process_raise_flag(t, TF_JUMPIN);
-	return 1;
+		* paging is set up */
+	*(addr_t *)(regs->useresp) = (addr_t)SIGNAL_INJECT;
+	regs->eip = (addr_t)sa->_sa_func._sa_handler;
+	current_thread->signal=0;
 }
+
+void arch_tm_userspace_signal_cleanup(registers_t *regs)
+{
+	memcpy((void *)regs, (void *)(regs->useresp + STACK_ELEMENT_SIZE), sizeof(*regs));
+}
+

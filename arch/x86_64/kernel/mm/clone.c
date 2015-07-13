@@ -67,16 +67,13 @@ void copy_pml4e(pml4_t *pml4, pml4_t *parent_pml4, int idx)
 }
 
 /* Accepts virtual, returns virtual */
-pml4_t *arch_mm_vm_clone(pml4_t *parent_pml4, char cow)
+void arch_mm_vm_clone(struct vmm_context *oldcontext, struct vmm_context *newcontext)
 {
-#if CONFIG_SWAP
-	if(current_task && current_task->num_swapped)
-		swap_in_all_the_pages(current_task);
-#endif
 	addr_t pml4_phys;
 	pml4_t *pml4 = kmalloc_ap(0x1000, &pml4_phys);
+	pml4_t *parent_pml4 = (pml4_t *)oldcontext->root_virtual;
 	
-	if(kernel_task)
+	if(pd_cur_data)
 		mutex_acquire(&pd_cur_data->lock);
 	unsigned int i;
 	/* manually set up the pml4e #0 */
@@ -97,58 +94,11 @@ pml4_t *arch_mm_vm_clone(pml4_t *parent_pml4, char cow)
 	}
 	pml4[PML4_IDX(PHYSICAL_PML4_INDEX/0x1000)] = pml4_phys;
 	
-	/* get the physical address of the page_dir_info for the new task, which is automatically
-	 * copied in the copy loop above */
-	addr_t info_phys;
-	addr_t *tmp = (addr_t *)((pml4[PML4_IDX(PDIR_DATA/0x1000)] & PAGE_MASK)+PHYS_PAGE_MAP);
-	tmp = (addr_t *)((tmp[PDPT_IDX(PDIR_DATA/0x1000)] & PAGE_MASK)+PHYS_PAGE_MAP);
-	tmp = (addr_t *)((tmp[PAGE_DIR_IDX(PDIR_DATA/0x1000)] & PAGE_MASK)+PHYS_PAGE_MAP);
-	
-	info_phys = tmp[PAGE_TABLE_IDX(PDIR_DATA/0x1000)] & PAGE_MASK;
-	
-	struct pd_data *info = (struct pd_data *)(info_phys + PHYS_PAGE_MAP);
-	memset(info, 0, 0x1000);
-	info->count=1;
-	/* create the lock. We assume that the only time that two threads
-	 * may be trying to access this lock at the same time is when they're
-	 * running on different processors, thus we get away with NOSCHED. Also, 
-	 * calling tm_schedule() may be problematic inside code that is locked by
-	 * this, but it may not be an issue. We'll see. */
-	mutex_create(&info->lock, MT_NOSCHED);
-	if(kernel_task)
+	if(pd_cur_data)
 		mutex_release(&pd_cur_data->lock);
-	return pml4;
+	newcontext->root_virtual = (addr_t)pml4;
+	newcontext->root_physical = pml4_phys;
+	/* TODO: audit these locks */
+	mutex_create(&newcontext->lock, MT_NOSCHED);
 }
 
-/* this sets up a new page directory in almost exactly the same way:
- * the directory is specific to the thread, but everything inside
- * the directory is just linked to the parent directory. The count
- * on the directory usage is increased, and the accounting page is 
- * linked so it can be accessed by both threads */
-pml4_t *arch_mm_vm_copy(pml4_t *parent_pml4)
-{
-#if CONFIG_SWAP
-	if(current_task && current_task->num_swapped)
-		swap_in_all_the_pages(current_task);
-#endif
-	addr_t pml4_phys;
-	pml4_t *pml4 = kmalloc_ap(0x1000, &pml4_phys);
-	
-	if(kernel_task)
-		mutex_acquire(&pd_cur_data->lock);
-	pd_cur_data->count++;
-	unsigned int i;
-	for(i=0;i<512;i++)
-	{
-		if(parent_pml4[i] == 0 || i >= PML4_IDX(BOTTOM_HIGHER_KERNEL/0x1000) || i < PML4_IDX(TOP_TASK_MEM_EXEC/0x1000) || i == PML4_IDX(PDIR_DATA/0x1000))
-		{
-			pml4[i] = parent_pml4[i];
-		} else {
-			copy_pml4e(pml4, parent_pml4, i);
-		}
-	}
-	pml4[PML4_IDX(PHYSICAL_PML4_INDEX/0x1000)] = pml4_phys;
-	if(kernel_task)
-		mutex_release(&pd_cur_data->lock);
-	return pml4;
-}

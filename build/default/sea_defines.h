@@ -3,10 +3,10 @@
  * and re-process the config file!
  */
 
-#define CONFIG_OPTIMIZATION_LEVEL 3
-#define CONFIG_ARCH 1
+#define CONFIG_OPTIMIZATION_LEVEL 0
+#define CONFIG_ARCH 2
 #define CONFIG_WERROR 0
-#define CONFIG_SMP 1
+#define CONFIG_SMP 0
 #define CONFIG_MAX_CPUS 64
 #define CONFIG_MAX_TASKS -1
 #define CONFIG_STACK_PAGES 20

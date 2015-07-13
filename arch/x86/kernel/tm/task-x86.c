@@ -25,7 +25,6 @@ __attribute__((const)) const struct thread *arch_tm_get_current_thread(int flags
 void arch_tm_jump_to_user_mode(addr_t jmp)
 {
 	__asm__ __volatile__ ("cli;"
-			"xchg %%bx, %%bx;"
 			"mov %1, %%ebp;"
 			"mov $0x23, %%ax;"
 			"mov %%ax, %%ds;"
@@ -99,6 +98,7 @@ __attribute__((noinline)) void arch_tm_fork_setup_stack(struct thread *thr)
 	esp += (addr_t)thr->kernel_stack;
 	ebp += (addr_t)thr->kernel_stack;
 
+#error "set this to minus"
 	esp += 4;
 	*(addr_t *)esp = ebp;
 	thr->stack_pointer = esp;

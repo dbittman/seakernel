@@ -57,7 +57,9 @@ void arch_cpu_processor_init_2(void)
 	init_lapic(1);
 	calibrate_lapic_timer(1000);
 	init_ioapic();
+#if CONFIG_SMP
 	set_ksf(KSF_SMP_ENABLE);
+#endif
 }
 
 int arch_cpu_boot_ap(struct cpu *cpu)

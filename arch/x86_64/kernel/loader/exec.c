@@ -1,26 +1,15 @@
 #include <sea/tm/process.h>
 #include <sea/kernel.h>
 #include <sea/vsprintf.h>
-void arch_loader_exec_initializer(task_t *t, unsigned argc, addr_t eip)
+void arch_loader_exec_initializer(unsigned argc, addr_t eip)
 {
 	/* don't ya just love iret? */
-	assert(t->sysregs);
-	t->sysregs->rdi = argc;
-	t->sysregs->rsi = (uint64_t)t->argv;
-	t->sysregs->rdx = (uint64_t)t->env;
+	struct thread *t = current_thread;
+	assert(t->regs);
+	t->regs->rdi = argc;
+	t->regs->rsi = (uint64_t)t->process->argv;
+	t->regs->rdx = (uint64_t)t->process->env;
+	t->regs->useresp = t->regs->rbp = t->usermode_stack_end;
 	
-		/* don't ya just love iret? */
-	if(t->flags & TF_OTHERBS) {
-		kprintf("not implemented - x86_64 32-bit ELF\n");
-		t->sysregs->useresp = t->sysregs->rbp = 0xFFFF0000 - 4;
-		*(unsigned *)t->sysregs->useresp = (unsigned)(addr_t)t->env;
-		t->sysregs->useresp -= 4;
-		*(unsigned *)t->sysregs->useresp = (unsigned)(addr_t)t->argv;
-		t->sysregs->useresp -= 4;
-		*(unsigned *)t->sysregs->useresp = (unsigned)argc;
-		t->sysregs->useresp -= 4;
-	} else
-		t->sysregs->useresp = t->sysregs->rbp = STACK_LOCATION - 8;
-	
-	t->sysregs->eip = eip;
+	t->regs->eip = eip;
 }

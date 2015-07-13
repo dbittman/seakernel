@@ -25,14 +25,14 @@ int arch_mm_vm_unmap_only(addr_t virt, unsigned locked)
 	unsigned vpdpt = PDPT_IDX(vpage);
 	unsigned vdir = PAGE_DIR_IDX(vpage);
 	unsigned vtbl = PAGE_TABLE_IDX(vpage);
-	if(kernel_task && (virt&PAGE_MASK) != PDIR_DATA && !locked)
+	if(pd_cur_data && !locked)
 		mutex_acquire(&pd_cur_data->lock);
 	page_dir_t *pd;
 	page_table_t *pt;
 	pdpt_t *pdpt;
 	pml4_t *pml4;
 	
-	pml4 = (pml4_t *)((kernel_task && current_task) ? current_task->pd : kernel_dir);
+	pml4 = (pml4_t *)((pd_cur_data) ? current_process->vmm_context.root_virtual : kernel_context.root_virtual);
 	if(!pml4[vp4])
 		pml4[vp4] = mm_alloc_physical_page() | PAGE_PRESENT | PAGE_WRITE;
 	pdpt = (addr_t *)((pml4[vp4]&PAGE_MASK) + PHYS_PAGE_MAP);
@@ -46,14 +46,14 @@ int arch_mm_vm_unmap_only(addr_t virt, unsigned locked)
 	pt[vtbl] = 0;
 	asm("invlpg (%0)"::"r" (virt));
 	#if CONFIG_SMP
-	if(kernel_task && (virt&PAGE_MASK) != PDIR_DATA) {
+	if(pd_cur_data) {
 		if(IS_KERN_MEM(virt))
 			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
 		else if((IS_THREAD_SHARED_MEM(virt) && pd_cur_data->count > 1))
 			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
 	}
 	#endif
-	if(kernel_task && (virt&PAGE_MASK) != PDIR_DATA && !locked)
+	if(pd_cur_data && !locked)
 		mutex_release(&pd_cur_data->lock);
 	return 0;
 }
@@ -71,14 +71,14 @@ int arch_mm_vm_unmap(addr_t virt, unsigned locked)
 	unsigned vpdpt = PDPT_IDX(vpage);
 	unsigned vdir = PAGE_DIR_IDX(vpage);
 	unsigned vtbl = PAGE_TABLE_IDX(vpage);
-	if(kernel_task && (virt&PAGE_MASK) != PDIR_DATA && !locked)
+	if(pd_cur_data && !locked)
 		mutex_acquire(&pd_cur_data->lock);
 	page_dir_t *pd;
 	page_table_t *pt;
 	pdpt_t *pdpt;
 	pml4_t *pml4;
 	
-	pml4 = (pml4_t *)((kernel_task && current_task) ? current_task->pd : kernel_dir);
+	pml4 = (pml4_t *)((pd_cur_data) ? current_process->vmm_context.root_virtual : kernel_context.root_virtual);
 	if(!pml4[vp4])
 		pml4[vp4] = mm_alloc_physical_page() | PAGE_PRESENT | PAGE_WRITE;
 	pdpt = (addr_t *)((pml4[vp4]&PAGE_MASK) + PHYS_PAGE_MAP);
@@ -93,14 +93,14 @@ int arch_mm_vm_unmap(addr_t virt, unsigned locked)
 	pt[vtbl] = 0;
 	asm("invlpg (%0)"::"r" (virt));
 	#if CONFIG_SMP
-	if(kernel_task && (virt&PAGE_MASK) != PDIR_DATA) {
+	if(pd_cur_data) {
 		if(IS_KERN_MEM(virt))
 			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
 		else if((IS_THREAD_SHARED_MEM(virt) && pd_cur_data->count > 1))
 			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
 	}
 	#endif
-	if(kernel_task && (virt&PAGE_MASK) != PDIR_DATA && !locked)
+	if(pd_cur_data && !locked)
 		mutex_release(&pd_cur_data->lock);
 	if(p && !(p & PAGE_COW))
 		mm_free_physical_page(p & PAGE_MASK);

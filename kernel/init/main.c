@@ -153,10 +153,13 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 			sizeof(struct process), sizeof(struct thread), sizeof(struct inode));
 	cpu_interrupt_set(1);
 	cpu_processor_init_2();
+#if CONFIG_SMP
 	cpu_boot_all_aps();
+#endif
 	if(!sys_clone(0))
 		init();
 
+	for(;;) tm_schedule();
 	sys_setsid();
 	kt_kernel_idle_task();
 }

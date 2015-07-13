@@ -83,6 +83,6 @@ void tm_thread_release_usermode_stack(struct thread *thr, int stack)
 addr_t tm_thread_usermode_stack_end(int stack)
 {
 	assert(stack >= 0 && (unsigned)stack < NUM_USERMODE_STACKS);
-	return stack * (CONFIG_STACK_PAGES * PAGE_SIZE) + USERMODE_STACKS_START;
+	return (stack + 1) * (CONFIG_STACK_PAGES * PAGE_SIZE) + USERMODE_STACKS_START;
 }
 

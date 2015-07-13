@@ -20,7 +20,8 @@
 #define TOP_USER_HEAP             0x0000600000000000
 #define TOP_LOWER_KERNEL                  0x40000000
 
-#define STACK_LOCATION     (0x0000700000002000 + ((CONFIG_STACK_PAGES+1) * 0x1000)*2)
+#define USERMODE_STACKS_START 0x0000700000000000
+#define USERMODE_STACKS_END   0x00007F0000000000
 
 #define BOTTOM_HIGHER_KERNEL      0xFFFF820000000000
 
@@ -43,23 +44,17 @@
 
 #define PHYS_PAGE_MAP             0xFFFFFF8000000000
 
-#define PDIR_INFO_START           0xFFFF800000000000
-
-#define PDIR_DATA		          0xFFFF800000000000
-
 #define PHYSICAL_PML4_INDEX       0xFFFFFE8000000000
 
 #define RESERVED1                 0xFFFFFE8000000000
 #define RESERVED1_END             0xFFFFFF0000000000
-
-#define CURRENT_TASK_POINTER      0xFFFF810000000000
 
 /* where the signal injector code goes */
 #define SIGNAL_INJECT                  (0x40000000-0x1000)
 
 #define IS_KERN_MEM(x) (x < TOP_LOWER_KERNEL || x > TOP_TASK_MEM)
 
-#define IS_THREAD_SHARED_MEM(x) (((!(x >= TOP_TASK_MEM_EXEC && x < TOP_TASK_MEM)) || ((x&PAGE_MASK) == PDIR_DATA)))
+#define IS_THREAD_SHARED_MEM(x) (!IS_KERN_MEM(x))
 
 #define PAGE_MASK      0xFFFFFFFFFFFFF000
 #define PAGE_LARGE (1 << 7)
@@ -73,7 +68,6 @@
 #define flush_pd() \
 __asm__ __volatile__("mov %%cr3,%%rax\n\tmov %%rax,%%cr3": : :"ax", "eax", "rax")
 
-#define current_task ((volatile task_t *)(kernel_task ? ((volatile task_t *)(*((volatile addr_t *)CURRENT_TASK_POINTER))) : 0))
 addr_t arch_mm_alloc_physical_page_zero();
 int vm_early_map(addr_t *, addr_t virt, addr_t phys, unsigned attr, unsigned opt);
 int arch_mm_vm_early_map(pml4_t *pml4, addr_t virt, addr_t phys, unsigned attr, unsigned opt);

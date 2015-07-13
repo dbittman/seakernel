@@ -14,7 +14,7 @@ static void print_eflags(registers_t *regs){
 			    "AC", "VIF", "VIP", "ID"};
 	uint64_t mask=1;
 	int i=0;
-	kprintf("eflags: 0x%llx \t[", flags);
+	kprintf("eflags: 0x%x \t[", flags);
 	for(i=0;i<22;++i){
 		/* print flag if currently examined bit is 1 and not reserved*/
 		if((mask&flags)&&(strcmp(flag_array[i],"r")!=0)){
@@ -27,13 +27,13 @@ static void print_eflags(registers_t *regs){
 	kprintf("]\n");
 }
 
-
 void arch_cpu_print_reg_state(registers_t *regs){
-	kprintf("ds:0x%llx\ncs:0x%llx\nss:0x%llx\n",regs->ds, regs->cs, regs->ss);
-	kprintf("r15:0x%llx\nr14:0x%llx\nr13:0x%llx\nr12:0x%llx\nr11:0x%llx\nr10:0x%llx\nr9:0x%llx\nr8:0x%llx\n", regs->r15, regs->r14, regs->r13, regs->r12, regs->r11, regs->r10, regs->r9, regs->r8);
-	kprintf("eip:0x%llx\nrbp:0x%llx\nrsi:0x%llx\nrdi:0x%llx\n", regs->eip, regs->rbp, regs->rsi, regs->rdi);
-	kprintf("rax:0x%llx\nrbx:0x%llx\nrcx:0x%llx\nrdx:0x%llx\n",regs->rax, regs->rbx, regs->rcx, regs->rdx); 
-	kprintf("int_no:0x%llx\nerr_code:0x%llx\n", regs->int_no, regs->err_code);
-	kprintf("useresp:0x%llx\n", regs->useresp);
+	kprintf("ds:0x%x\ncs:0x%x\nss:0x%x\n",regs->ds, regs->cs, regs->ss);
+	kprintf("r15:0x%x\nr14:0x%x\nr13:0x%x\nr12:0x%x\nr11:0x%x\nr10:0x%x\nr9:0x%x\nr8:0x%x\n", regs->r15, regs->r14, regs->r13, regs->r12, regs->r11, regs->r10, regs->r9, regs->r8);
+	kprintf("eip:0x%x\nrbp:0x%x\nrsi:0x%x\nrdi:0x%x\n", regs->eip, regs->rbp, regs->rsi, regs->rdi);
+	kprintf("rax:0x%x\nrbx:0x%x\nrcx:0x%x\nrdx:0x%x\n",regs->rax, regs->rbx, regs->rcx, regs->rdx); 
+	kprintf("int_no:0x%x\nerr_code:0x%x\n", regs->int_no, regs->err_code);
+	kprintf("useresp:0x%x\n", regs->useresp);
 	print_eflags(regs);
 }
+

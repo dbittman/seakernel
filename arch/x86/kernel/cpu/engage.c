@@ -59,11 +59,11 @@ void cpu_entry(void)
 	/* load up the pmode gdt, tss, and idt */
 	load_tables_ap(cpu);
 	/* set up our private temporary tack */
-	__asm__ __volatile__ ("mov %0, %%cr3" : : "r" (kernel_context.root_physical));
-	__asm__ __volatile__ ("mov %%cr0, %%eax; or $0x80000000, %%eax; mov %%eax, %%cr0":::"eax");
-	__asm__ __volatile__ ("mov %0, %%esp" : : "r" (cpu->stack + KERN_STACK_SIZE));
-	__asm__ __volatile__ ("mov %0, %%ebp" : : "r" (cpu->stack + KERN_STACK_SIZE));
-	cpu_stage1_init();
+	__asm__ __volatile__ ("mov %0, %%cr3" : : "r" (kernel_context.root_physical) : "memory");
+	__asm__ __volatile__ ("mov %%cr0, %%eax; or $0x80000000, %%eax; mov %%eax, %%cr0":::"eax", "memory");
+	__asm__ __volatile__ ("mov %0, %%esp" : : "r" (cpu->stack + KERN_STACK_SIZE) : "memory");
+	__asm__ __volatile__ ("mov %0, %%ebp" : : "r" (cpu->stack + KERN_STACK_SIZE) : "memory");
+	__asm__ __volatile__ ("jmp cpu_stage1_init" ::: "memory");
 }
 
 int boot_cpu(struct cpu *cpu)

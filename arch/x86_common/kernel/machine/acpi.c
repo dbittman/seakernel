@@ -116,9 +116,9 @@ void acpi_init(void)
 	struct acpi_dt_header *rsdt = (struct acpi_dt_header *)(rsdp->revision ? (addr_t)rsdp->xsdt_addr : (addr_t)rsdp->rsdt_addr);
 	int pointer_size = (rsdp->revision ? 8 : 4);
 	const char *sig = (rsdp->revision ? "XSDT" : "RSDT");
-	
 	addr_t rsdt_v = pmap_get_mapping(&acpi_pmap, (addr_t)rsdt);
 	int valid = acpi_validate_dt((void *)(rsdt_v), sig);
+	
 	acpi_rsdt = (void *)rsdt_v;
 	acpi_rsdt_pt_sz = pointer_size;
 	if(valid) __acpi_enable=1;

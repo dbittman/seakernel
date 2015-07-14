@@ -25,4 +25,11 @@ void add_ioapic(addr_t address, int id, int int_start);
 
 #include <sea/cpu/cpu-x86_common.h>
 
+#undef LAPIC_READ
+#undef LAPIC_WRITE
+
+#define LAPIC_READ(x)  (*((volatile unsigned *) (lapic_addr+(x))))
+#define LAPIC_WRITE(x, y)   \
+	(*((volatile unsigned *) (lapic_addr+(x))) = (y))
 #endif
+

@@ -83,7 +83,6 @@ int boot_cpu(struct cpu *cpu)
 	cpu->idle_thread = thread;
 	thread->process = kernel_process; /* we have to do this early, so that the vmm system can use the lock... */
 	thread->state = THREADSTATE_RUNNING;
-	/* TODO: this line was causing weirdness */
 	thread->tid = tm_thread_next_tid();
 	thread->magic = THREAD_MAGIC;
 	thread->kernel_stack = (void *)cpu->stack;

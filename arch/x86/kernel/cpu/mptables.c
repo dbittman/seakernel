@@ -32,7 +32,7 @@ static void imps_add_processor(struct imps_processor *proc)
 	if (proc->flags & (IMPS_CPUFLAG_BOOT)) {
 		primary_cpu = cp;
 		return;
-	} else {
+	} else if(cp) {
 		cp->flags |= CPU_WAITING;
 	}
 	if(!cp)

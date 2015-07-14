@@ -15,33 +15,24 @@ void acpi_madt_parse_processor(void *ent, int boot)
 		uint32_t flags;
 	} *proc = ent;
 	num_cpus++;
-	struct cpu new_cpu;
 	if(!(proc->flags & 1))
 	{
 		printk(0, "[acpi]: detected disabled processor #%d (%d)\n", proc->apicid, proc->acpi_processor_id);
 		return;
 	}
-	memset(&new_cpu, 0, sizeof(struct cpu));
-	new_cpu.snum = proc->apicid;
-	new_cpu.flags=0;
-	struct cpu *cp = cpu_add(&new_cpu);
+	struct cpu *cp = 0;
 	if(boot) {
-		primary_cpu = cp;
+		primary_cpu->snum = proc->apicid;
 		return;
+	} else{
+		cp = cpu_add(proc->apicid);
+		if(cp) cp->flags |= CPU_WAITING;
 	}
 	if(!cp)
 	{
 		printk(2, "[smp]: refusing to initialize CPU %d\n", proc->apicid);
 		return;
 	}
-	int ver = APIC_VERSION(LAPIC_READ(LAPIC_VER));
-	printk(0, "[acpi]: booting CPU %d %x\n", proc->apicid, ver);
-	int re = boot_cpu(proc->apicid, ver);
-	if(!re) {
-		cp->flags |= CPU_ERROR;
-		num_failed_cpus++;
-	} else
-		num_booted_cpus++;
 }
 
 void acpi_madt_parse_ioapic(void *ent)

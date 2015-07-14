@@ -159,7 +159,6 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	if(!sys_clone(0))
 		init();
 
-	for(;;) tm_schedule();
 	sys_setsid();
 	kt_kernel_idle_task();
 }

@@ -213,7 +213,6 @@ void mm_free_physical_page(addr_t addr)
 	}
 	else if(pm_stack_max <= pm_stack)
 	{
-		/* TODO: not sure if this is correct... */
 		if(!(kernel_state_flags & KSF_MEMMAPPED))
 			mm_vm_map(pm_stack_max, mm_alloc_physical_page(), PAGE_PRESENT | PAGE_WRITE, 0);
 		else

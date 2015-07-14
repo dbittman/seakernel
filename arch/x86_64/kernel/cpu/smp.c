@@ -14,7 +14,6 @@ int parse_acpi_madt();
 int probe_smp(void)
 {
 	if(!parse_acpi_madt()) return 0;
-	set_ksf(KSF_CPUS_RUNNING);
 	printk(5, "[cpu]: CPU%s initialized (boot=%d, #APs=%d: ok)                    \n", num_cpus > 1 ? "s" : "", primary_cpu->snum, num_booted_cpus);
 	return num_booted_cpus > 0;
 }

@@ -42,6 +42,8 @@ void arch_tm_jump_to_user_mode(addr_t jmp)
 			::"r"(jmp), "r"(current_thread->usermode_stack_end):"memory","eax","esp");
 }
 
+void arch_tm_do_switch(long unsigned *, long unsigned *, addr_t);
+
 __attribute__((noinline)) void arch_tm_thread_switch(struct thread *old, struct thread *new)
 {
 	assert(old != new);
@@ -66,6 +68,8 @@ __attribute__((noinline)) void arch_tm_thread_switch(struct thread *old, struct 
 	/* WARNING - we've switched stacks at this point! We must NOT use anything
 	 * stack related now until this function returns! */
 }
+
+void arch_tm_do_fork_setup(long unsigned *stack, long unsigned *jmp, signed long offset);
 
 __attribute__((noinline)) void arch_tm_fork_setup_stack(struct thread *thr)
 {

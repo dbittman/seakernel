@@ -43,6 +43,9 @@ void arch_tm_jump_to_user_mode(addr_t jmp)
 			::"r"(jmp), "r"(current_thread->usermode_stack_end):"memory","rax","rsp");
 }
 
+void arch_tm_do_switch(long unsigned *, long unsigned *, addr_t);
+void arch_tm_do_fork_setup(long unsigned *stack, long unsigned *jmp, signed long offset);
+
 __attribute__((noinline)) void arch_tm_thread_switch(struct thread *old, struct thread *new)
 {
 	assert(old != new);
@@ -63,8 +66,6 @@ __attribute__((noinline)) void arch_tm_thread_switch(struct thread *old, struct 
 		__asm__ __volatile__ (
 				"fxrstor (%0)" :: "r" (ALIGN(new->arch_thread.fpu_save_data, 16)) : "memory");
 	}
-	if(jump)
-		__asm__("xchg %%bx, %%bx" :);
 	arch_tm_do_switch(&old->stack_pointer, &new->stack_pointer, jump);
 	/* WARNING - we've switched stacks at this point! We must NOT use anything
 	 * stack related now until this function returns! */

@@ -98,8 +98,7 @@ __attribute__((noinline)) void arch_tm_fork_setup_stack(struct thread *thr)
 	esp += (addr_t)thr->kernel_stack;
 	ebp += (addr_t)thr->kernel_stack;
 
-#error "set this to minus"
-	esp += 4;
+	esp -= 4;
 	*(addr_t *)esp = ebp;
 	thr->stack_pointer = esp;
 	thr->jump_point = (addr_t)arch_tm_read_ip();

@@ -187,6 +187,7 @@ void user_mode_init(void)
 	 * So we write simple wrapper functions for common functions that 
 	 * we will need */
 	sys_setup();
+
 	int ret = u_execve("/sh", (char **)stuff_to_pass, (char **)init_env);
 	ret = u_execve("/bin/sh", (char **)stuff_to_pass, (char **)init_env);
 	printf("Failed to start the init process (err=%d). Halting.\n", -ret);

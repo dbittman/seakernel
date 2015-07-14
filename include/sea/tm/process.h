@@ -94,6 +94,7 @@ struct process {
 #define WNOHANG 1
 
 #define CLONE_SHARE_PROCESS 1
+#define CLONE_KTHREAD 0x100
 #define tm_fork() tm_do_fork(0)
 
 extern size_t running_processes;

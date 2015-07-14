@@ -41,13 +41,13 @@ void arch_cpu_processor_init_1(void)
 	x86_cpu_init_sse(primary_cpu);
 	printk(KERN_EVERY, "done\n");
 }
-#include <sea/tm/timing.h>
+
 void arch_cpu_processor_init_2(void)
 {
 	acpi_init();
-	probe_smp();
 	x86_hpet_init();
 #if CONFIG_SMP
+	probe_smp();
 	init_lapic(1);
 	calibrate_lapic_timer(1000);
 	init_ioapic();
@@ -55,6 +55,7 @@ void arch_cpu_processor_init_2(void)
 #endif
 }
 
+#if CONFIG_SMP
 int arch_cpu_boot_ap(struct cpu *cpu)
 {
 	int re = boot_cpu(cpu);
@@ -65,4 +66,5 @@ int arch_cpu_boot_ap(struct cpu *cpu)
 		num_booted_cpus++;
 	return re;
 }
+#endif
 

@@ -5,7 +5,7 @@
 static long dosyscall(int num, long a, long b, long c, long d, long e)
 {
 	long x;
-	asm("int $0x80":"=a"(x):"0" (num), "b" (a), "c" (b), "d" (c), "S" (d), "D" (e));
+	__asm__ __volatile__("int $0x80":"=a"(x):"0" (num), "b" (a), "c" (b), "d" (c), "S" (d), "D" (e));
 	return x;
 }
 

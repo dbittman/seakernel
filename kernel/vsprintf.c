@@ -336,10 +336,10 @@ void serial_console_puts(int port, char *s);
 /* This WILL print to the screen */
 void kprintf(const char *fmt, ...)
 {
-	char printbuf[2024];
+	char printbuf[512];
 	va_list args;
 	va_start(args, fmt);
-	vsnprintf(2024, printbuf, fmt, args);
+	vsnprintf(512, printbuf, fmt, args);
 	console_kernel_puts(printbuf);
 	if(kernel_state_flags & KSF_PANICING)
 		serial_console_puts_nolock(0, printbuf);
@@ -351,11 +351,11 @@ void kprintf(const char *fmt, ...)
 /* Will print to screen only if the printlevel is above the log-level */
 void printk(int l, const char *fmt, ...)
 {
-	char printbuf[2024];
+	char printbuf[512];
 	va_list args;
 	int i=0;
 	va_start(args, fmt);
-	vsnprintf(2024, printbuf, fmt, args);
+	vsnprintf(512, printbuf, fmt, args);
 	if(l >= LOGL_SERIAL)
 		serial_console_puts(0, printbuf);
 	if(l >= LOGL_LOGTTY && log_console)
@@ -368,11 +368,11 @@ void printk(int l, const char *fmt, ...)
 /* Will print to screen only if the printlevel is above the log-level */
 void printk_safe(int l, const char *fmt, ...)
 {
-	char printbuf[2024];
+	char printbuf[512];
 	va_list args;
 	int i=0;
 	va_start(args, fmt);
-	vsnprintf(2024, printbuf, fmt, args);
+	vsnprintf(512, printbuf, fmt, args);
 	if(l >= LOGL_SERIAL)
 		serial_console_puts_nolock(0, printbuf);
 	if(l >= LOGL_LOGTTY && log_console)

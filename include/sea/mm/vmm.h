@@ -37,21 +37,21 @@ void mm_page_fault_handler(registers_t *, addr_t, int);
 void mm_flush_page_tables();
 void arch_mm_vm_switch_context(struct vmm_context *context);
 
-static void map_if_not_mapped(addr_t loc)
+static inline void map_if_not_mapped(addr_t loc)
 {
 	if(!mm_vm_get_map(loc & PAGE_MASK, 0, 0))
 		mm_vm_map(loc & PAGE_MASK, mm_alloc_physical_page(), 
 		       PAGE_PRESENT | PAGE_WRITE, MAP_CRIT);
 }
 
-static void map_if_not_mapped_noclear(addr_t loc)
+static inline void map_if_not_mapped_noclear(addr_t loc)
 {
 	if(!mm_vm_get_map(loc & PAGE_MASK, 0, 0))
 		mm_vm_map(loc & PAGE_MASK, mm_alloc_physical_page(), 
 		       PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_NOCLEAR);
 }
 
-static void user_map_if_not_mapped(addr_t loc)
+static inline void user_map_if_not_mapped(addr_t loc)
 {
 	if(!mm_vm_get_map(loc & PAGE_MASK, 0, 0))
 		mm_vm_map(loc & PAGE_MASK, mm_alloc_physical_page(), 
@@ -60,7 +60,7 @@ static void user_map_if_not_mapped(addr_t loc)
 		mm_vm_set_attrib(loc & PAGE_MASK, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
 }
 
-static void user_map_if_not_mapped_noclear(addr_t loc)
+static inline void user_map_if_not_mapped_noclear(addr_t loc)
 {
 	if(!mm_vm_get_map(loc & PAGE_MASK, 0, 0))
 		mm_vm_map(loc & PAGE_MASK, mm_alloc_physical_page(), 

@@ -54,14 +54,15 @@ void arch_cpu_processor_init_2(void)
 	acpi_init();
 	x86_hpet_init();
 	/* TODO: these cause bochs to freeze */
+#if CONFIG_SMP
 	init_lapic(1);
 	calibrate_lapic_timer(1000);
 	init_ioapic();
-#if CONFIG_SMP
 	set_ksf(KSF_SMP_ENABLE);
 #endif
 }
 
+#if CONFIG_SMP
 int arch_cpu_boot_ap(struct cpu *cpu)
 {
 	int re = boot_cpu(cpu);
@@ -72,4 +73,5 @@ int arch_cpu_boot_ap(struct cpu *cpu)
 		num_booted_cpus++;
 	return re;
 }
+#endif
 

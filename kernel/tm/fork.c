@@ -137,7 +137,7 @@ struct cpu *tm_fork_pick_cpu(void)
 #endif
 }
 
-int sys_clone(int flags)
+int tm_clone(int flags)
 {
 	struct process *proc = current_process;
 	if(!(flags & CLONE_SHARE_PROCESS)) {
@@ -146,6 +146,8 @@ int sys_clone(int flags)
 		tm_process_inc_reference(proc);
 		assert(!hash_table_set_entry(process_table, &proc->pid, sizeof(proc->pid), 1, proc));
 		ll_do_insert(process_list, &proc->listnode, proc);
+	} else if(flags & CLONE_KTHREAD) {
+		proc = kernel_process;
 	}
 	struct thread *thr = tm_thread_fork(flags);
 	assert(!hash_table_set_entry(thread_table, &thr->tid, sizeof(thr->tid), 1, thr));
@@ -160,6 +162,7 @@ int sys_clone(int flags)
 	cpu_disable_preemption();
 	arch_tm_fork_setup_stack(thr);
 
+
 	if(current_thread == thr) {
 		current_thread->jump_point = 0;
 		cpu_enable_preemption();
@@ -171,6 +174,12 @@ int sys_clone(int flags)
 		tm_thread_add_to_cpu(thr, target_cpu);
 		return thr->tid;
 	}
+}
+
+int sys_clone(int f)
+{
+	f &= ~CLONE_KTHREAD;
+	return tm_clone(f);
 }
 
 int sys_vfork(void)

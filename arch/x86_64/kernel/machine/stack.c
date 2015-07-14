@@ -7,7 +7,7 @@
 void arch_cpu_print_stack_trace(unsigned int MaxFrames)
 {
 	addr_t * ebp;
-	asm("mov %%rbp, %0" : "=r"(ebp));
+	__asm__ __volatile__ ("mov %%rbp, %0" : "=r"(ebp));
 	kprintf("        ADDR          MODULE FUNCTION\n");
 	for(unsigned int frame = 0; frame < MaxFrames; ++frame)
 	{

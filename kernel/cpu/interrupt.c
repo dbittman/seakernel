@@ -133,8 +133,8 @@ static void faulted(int fuckoff, int userspace, addr_t ip, long err_code, regist
 		kernel_fault(fuckoff, ip, err_code, regs);
 	} else
 	{
-		printk(5, "%s occured in task %d (ip=%x, err=%x (%d)): He's dead, Jim.\n", 
-				exception_messages[fuckoff], current_thread->tid, ip, err_code, err_code);
+		printk(5, "%s occured in task %d (ip=%x, err=%x (%d), usersp=%x %x): He's dead, Jim.\n", 
+				exception_messages[fuckoff], current_thread->tid, ip, err_code, err_code, regs->useresp, regs->r15);
 		/* we die for different reasons on different interrupts */
 		switch(fuckoff)
 		{
@@ -151,8 +151,7 @@ static void faulted(int fuckoff, int userspace, addr_t ip, long err_code, regist
 				tm_signal_send_thread(current_thread, SIGABRT);
 				break;
 		}
-		/* the above signals WILL be handled, since at the end of tm_tm_schedule(), it checks
-		 * for signals. Since we are returning to user-space here, the handler will always run */
+		tm_thread_exit(-9);
 		tm_schedule();
 	}
 }

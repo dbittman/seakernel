@@ -4,7 +4,6 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/processor.h>
 
-
 static struct thread *get_next_thread (void)
 {
 	struct thread *n = 0;
@@ -39,6 +38,7 @@ static void finish_schedule(void)
 void tm_schedule(void)
 {
 	int old = cpu_interrupt_set(0);
+	assert(__current_cpu->preempt_disable >= 0);
 	if(__current_cpu->preempt_disable > 0 || !(__current_cpu->flags & CPU_RUNNING)) {
 		cpu_interrupt_set(old);
 		return;

@@ -50,9 +50,8 @@ struct kthread kthread_pager;
 
 int kt_kernel_idle_task(void)
 {
-	int task, cache;
-	kthread_create(&kthread_pager, "[kpager]", 0, __KT_pager, 0);
 	current_thread->flags |= THREAD_KERNEL;
+	kthread_create(&kthread_pager, "[kpager]", 0, __KT_pager, 0);
 	strncpy((char *)current_process->command, "[kidle]", 128);
 	/* First stage is to wait until we can clear various allocated things
 	 * that we wont need anymore */
@@ -64,6 +63,7 @@ int kt_kernel_idle_task(void)
 	cpu_interrupt_set(0);
 	printk(1, "[kernel]: remapping lower memory with protection flags...\n");
 	addr_t addr = 0;
+	/* TODO */
 	while(addr != TOP_LOWER_KERNEL && 0)
 	{
 		/* set it to write. We don't actually have to do this, because

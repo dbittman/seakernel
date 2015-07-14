@@ -20,18 +20,8 @@ struct kthread *kthread_create(struct kthread *kt, const char *name, int flags,
 	kt->flags |= flags;
 	kt->entry = entry;
 	kt->arg = arg;
-	int tid = sys_clone(CLONE_SHARE_PROCESS);
+	int tid = sys_clone(CLONE_SHARE_PROCESS | CLONE_KTHREAD);
 	if(!tid) {
-		/* instead of being part of whichever process created us, we need
-		 * to be part of the kernel process */
-		struct process *oldproc = current_process;
-		if(oldproc != kernel_process) {
-			ll_do_remove(&oldproc->threadlist, &current_thread->pnode, 0);
-			tm_process_put(oldproc);
-			sub_atomic(&oldproc->thread_count, 1);
-			current_thread->process = kernel_process;
-		}
-
 		current_thread->flags |= THREAD_KERNEL;
 		current_thread->system = -1;
 		current_thread->regs = 0;

@@ -78,8 +78,8 @@ void tqueue_remove_nolock(struct tqueue *tq, struct llistnode *i)
 void *tqueue_next(struct tqueue *tq)
 {
 	int old = cpu_interrupt_set(0);
-	mutex_acquire(&tq->lock);
 	assert(tq->magic == TQ_MAGIC);
+	mutex_acquire(&tq->lock);
 	assert(tq->num > 0);
 	if(tq->current) tq->current = tq->current->next;
 	/* can't use else here. Need to catch the case when current->next is
@@ -92,3 +92,4 @@ void *tqueue_next(struct tqueue *tq)
 	cpu_interrupt_set(old);
 	return ret;
 }
+

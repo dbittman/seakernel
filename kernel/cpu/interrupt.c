@@ -133,8 +133,8 @@ static void faulted(int fuckoff, int userspace, addr_t ip, long err_code, regist
 		kernel_fault(fuckoff, ip, err_code, regs);
 	} else
 	{
-		printk(5, "%s occured in task %d (ip=%x, err=%x (%d), usersp=%x %x): He's dead, Jim.\n", 
-				exception_messages[fuckoff], current_thread->tid, ip, err_code, err_code, regs->useresp, regs->r15);
+		printk(5, "%s occured in task %d (ip=%x, err=%x (%d), usersp=%x): He's dead, Jim.\n", 
+				exception_messages[fuckoff], current_thread->tid, ip, err_code, err_code, regs->useresp);
 		/* we die for different reasons on different interrupts */
 		switch(fuckoff)
 		{

@@ -151,10 +151,10 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	       CONFIG_VERSION_NUMBER, BITS_PER_LONG);
 	printk(KERN_DEBUG, "[kernel]: structure sizes: process=%d bytes, thread=%d bytes, inode=%d bytes\n",
 			sizeof(struct process), sizeof(struct thread), sizeof(struct inode));
-	cpu_interrupt_set(1);
-	cpu_processor_init_2();
+	//cpu_interrupt_set(1);
+	//cpu_processor_init_2();
 #if CONFIG_SMP
-	cpu_boot_all_aps();
+	//cpu_boot_all_aps();
 #endif
 	if(!sys_clone(0))
 		init();

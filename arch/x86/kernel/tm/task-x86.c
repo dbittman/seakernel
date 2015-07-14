@@ -44,9 +44,14 @@ void arch_tm_jump_to_user_mode(addr_t jmp)
 
 __attribute__((noinline)) void arch_tm_thread_switch(struct thread *old, struct thread *new)
 {
-	assert(new->stack_pointer > (addr_t)new->kernel_stack + sizeof(addr_t));
+	assert(old != new);
+	addr_t jump = new->jump_point;
+	new->jump_point = 0;
+	if(!(new->stack_pointer > (addr_t)new->kernel_stack + sizeof(addr_t))) {
+		panic(0, "kernel stack overrun! thread=%x:%d %x (min = %x)", new, new->tid, new->stack_pointer, new->kernel_stack);
+	}
 	cpu_set_kernel_stack(new->cpu, (addr_t)new->kernel_stack,
-			(addr_t)new->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
+			(addr_t)new->kernel_stack + (KERN_STACK_SIZE));
 	if(new->process != old->process) {
 		mm_vm_switch_context(&new->process->vmm_context);
 	}
@@ -57,29 +62,7 @@ __attribute__((noinline)) void arch_tm_thread_switch(struct thread *old, struct 
 		__asm__ __volatile__ (
 				"fxrstor (%0)" :: "r" (ALIGN(new->arch_thread.fpu_save_data, 16)) : "memory");
 	}
-	__asm__ __volatile__ (
-		"pushf;"
-		"push %%ebx;"
-		"push %%esi;"
-		"push %%edi;"
-		"push %%ebp;"
-		"mov %%esp, %0;": "=r"(old->stack_pointer)::"memory");
-	if(new->jump_point) {
-		/* newly created thread, needs to just have some basic context set
-		 * up initially and then jumped to */
-		addr_t jump = new->jump_point;
-		new->jump_point = 0;
-		__asm__ __volatile__ ("mov %1, %%ecx;"
-				"mov %0, %%esp;"
-				"pop %%ebp;"
-				"jmp *%%ecx"::"r"(new->stack_pointer), "r"(jump):"memory");
-	}
-	__asm__ __volatile__ ("mov %0, %%esp;"
-			"pop %%ebp;"
-			"pop %%edi;"
-			"pop %%esi;"
-			"pop %%ebx;"
-			"popf"::"r"(new->stack_pointer):"memory");
+	arch_tm_do_switch(&old->stack_pointer, &new->stack_pointer, jump);
 	/* WARNING - we've switched stacks at this point! We must NOT use anything
 	 * stack related now until this function returns! */
 }
@@ -88,19 +71,6 @@ __attribute__((noinline)) void arch_tm_fork_setup_stack(struct thread *thr)
 {
 	arch_cpu_copy_fixup_stack((addr_t)thr->kernel_stack, (addr_t)current_thread->kernel_stack, KERN_STACK_SIZE);
 	*(struct thread **)(thr->kernel_stack) = thr;
-	addr_t esp;
-	addr_t ebp;
-	__asm__ __volatile__ ("mov %%esp, %0":"=r"(esp));
-	__asm__ __volatile__ ("mov %%ebp, %0":"=r"(ebp));
-
-	esp -= (addr_t)current_thread->kernel_stack;
-	ebp -= (addr_t)current_thread->kernel_stack;
-	esp += (addr_t)thr->kernel_stack;
-	ebp += (addr_t)thr->kernel_stack;
-
-	esp -= 4;
-	*(addr_t *)esp = ebp;
-	thr->stack_pointer = esp;
-	thr->jump_point = (addr_t)arch_tm_read_ip();
+	arch_tm_do_fork_setup(&thr->stack_pointer, &thr->jump_point, (signed long)((addr_t)thr->kernel_stack - (addr_t)current_thread->kernel_stack));
 }
 

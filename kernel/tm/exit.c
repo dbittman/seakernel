@@ -80,8 +80,6 @@ void tm_thread_exit(int code)
 	ll_do_remove(&current_process->threadlist, &current_thread->pnode, 0);
 	tm_process_put(current_process); /* thread releases it's process pointer */
 
-	/* TODO: see if we can remove interrupt controlling from high level code */
-	cpu_interrupt_set(0);
 	cpu_disable_preemption();
 
 	tqueue_remove(current_thread->cpu->active_queue, &current_thread->activenode);

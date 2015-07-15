@@ -230,7 +230,6 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 	
 	/* now, we just need to deal with the syscall return stuff. When the syscall
 	 * returns, it'll just jump into the entry point of the new process */
-	cpu_interrupt_set(0);
 	tm_thread_lower_flag(current_thread, THREAD_SCHEDULE);
 	/* the kernel cares if it has executed something or not */
 	if(!(kernel_state_flags & KSF_HAVEEXECED))

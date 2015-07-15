@@ -81,10 +81,8 @@ void mm_page_fault_handler(registers_t *regs, addr_t address, int pf_cause)
 		}
 	}
 	if(!current_thread) {
-		cpu_interrupt_set(0);
-		cpu_halt();
 		panic(PANIC_MEM | PANIC_NOSYNC, "early page fault (addr=%x, cause=%x, from=%x)", address, pf_cause, regs->eip);
 	}
-		panic(PANIC_MEM | PANIC_NOSYNC, "page fault (addr=%x, cause=%x, from=%x)", address, pf_cause, regs->eip);
+	panic(PANIC_MEM | PANIC_NOSYNC, "page fault (addr=%x, cause=%x, from=%x)", address, pf_cause, regs->eip);
 }
 

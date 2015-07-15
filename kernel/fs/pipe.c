@@ -96,12 +96,12 @@ int fs_pipe_read(struct inode *ino, int flags, char *buffer, size_t length)
 			&& pipe->wrcount>0)) {
 		/* we need to block, but also release the lock. Disable interrupts
 		 * so we don't schedule before we want to */
-		/* TODO: switch this to preempt disable. Switch all calls to this to that if possible */
-		int old = cpu_interrupt_set(0);
+		cpu_disable_preemption();
 		tm_thread_add_to_blocklist(current_thread, pipe->read_blocked);
 		mutex_release(pipe->lock);
+		tm_thread_set_state(current_thread, THREADSTATE_INTERRUPTIBLE);
+		cpu_enable_preemption();
 		tm_schedule();
-		cpu_interrupt_set(old);
 		if(tm_thread_got_signal(current_thread))
 			return -EINTR;
 		mutex_acquire(pipe->lock);
@@ -154,18 +154,18 @@ int fs_pipe_write(struct inode *ino, int flags, char *initialbuffer, size_t tota
 		/* we're writing to a pipe with no reading process! */
 		if((pipe->count - pipe->wrcount) == 0 && pipe->type != PIPE_NAMED) {
 			mutex_release(pipe->lock);
-			/* TODO: we probably shouldn't ever set this directly... remove all code that does this */
 			tm_signal_send_thread(current_thread, SIGPIPE);
 			return -EPIPE;
 		}
 		/* IO block until we can write to it */
 		while((pipe->write_pos+length)>=PIPE_SIZE) {
-			int old = cpu_interrupt_set(0);
 			tm_blocklist_wakeall(pipe->read_blocked);
+			cpu_disable_preemption();
 			tm_thread_add_to_blocklist(current_thread, pipe->write_blocked);
 			mutex_release(pipe->lock);
+			tm_thread_set_state(current_thread, THREADSTATE_INTERRUPTIBLE);
+			cpu_enable_preemption();
 			tm_schedule();
-			cpu_interrupt_set(old);
 			if(tm_thread_got_signal(current_thread))
 				return -EINTR;
 			mutex_acquire(pipe->lock);

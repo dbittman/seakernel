@@ -47,9 +47,6 @@ void tm_thread_handle_signal(int signal)
 				break;
 		}
 	}
-	
-	/* RESTORE SIGNAL MASK? */
-
 }
 
 static int __can_send_signal(struct process *from, struct process *to, int signal)
@@ -70,13 +67,11 @@ static int __can_send_signal(struct process *from, struct process *to, int signa
 	}
 }
 
-/* TODO: handle sigkill */
-
 void tm_signal_send_thread(struct thread *thr, int signal)
 {
-	/* TODO: check if there's already a signal? */
 	assert(signal < NUM_SIGNALS);
 	thr->signal = signal;
+	tm_thread_raise_flag(thr, THREAD_SCHEDULE);
 	if(thr->state == THREADSTATE_INTERRUPTIBLE)
 		tm_thread_set_state(thr, THREADSTATE_RUNNING);
 }
@@ -134,8 +129,6 @@ int sys_kill_thread(pid_t tid, int signal)
 	return 0;
 }
 
-/* TODO: alarm */
-
 int sys_sigact(int sig, const struct sigaction *act, struct sigaction *oact)
 {
 	if(oact)
@@ -177,7 +170,6 @@ int sys_sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict os
 	current_process->global_sig_mask = nm;
 	return 0;
 }
-
 
 int tm_signal_will_be_fatal(struct thread *t, int sig)
 {

@@ -78,7 +78,6 @@ void tm_init_multitasking(void)
 
 void tm_thread_user_mode_jump(void (*fn)(void))
 {
-	cpu_interrupt_set(0);
 	cpu_set_kernel_stack(current_thread->cpu, (addr_t)current_thread->kernel_stack,
 			(addr_t)current_thread->kernel_stack + (KERN_STACK_SIZE-STACK_ELEMENT_SIZE));
 	arch_tm_jump_to_user_mode((addr_t)fn);

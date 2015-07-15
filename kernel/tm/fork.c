@@ -166,7 +166,6 @@ int tm_clone(int flags)
 	if(current_thread == thr) {
 		current_thread->jump_point = 0;
 		cpu_enable_preemption();
-		cpu_interrupt_set(1);
 		return 0;
 	} else {
 		cpu_enable_preemption();

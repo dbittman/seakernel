@@ -177,12 +177,17 @@ int tm_clone(int flags)
 
 int sys_clone(int f)
 {
+	/* userspace calls aren't allowed to fork a kernel thread. */
 	f &= ~CLONE_KTHREAD;
 	return tm_clone(f);
 }
 
+/* vfork is a performance hack designed to make the normal fork-exec proces
+ * faster by not copying page tables during fork. There isn't really a reason
+ * for this now, since we can just do copy-on-write. So....just have this
+ * call normal fork. */
 int sys_vfork(void)
 {
-	/* TODO */
+	return sys_clone(0);
 }
 

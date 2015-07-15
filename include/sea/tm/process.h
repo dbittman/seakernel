@@ -114,7 +114,7 @@ int sys_wait3(int *, int, int *);
 pid_t sys_getppid();
 int sys_alarm(int a);
 int sys_gsetpriority(int set, int which, int id, int val);
-int sys_nice(int which, int who, int val, int flags);
+int sys_nice(int which, pid_t who, int val, int flags);
 int sys_setsid();
 int sys_setpgid(int a, int b);
 int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds, 

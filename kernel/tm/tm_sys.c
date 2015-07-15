@@ -59,14 +59,6 @@ int sys_alarm(int dur)
 	return 0;
 }
 
-int sys_isstate(pid_t pid, int state)
-{
-	struct process *proc = tm_process_get(pid);
-	if(!proc) return -ESRCH;
-	tm_process_put(proc);
-	/*TODO: how do we do this for multiple threads? */
-}
-
 int sys_gsetpriority(int set, int which, int id, int val)
 {
 	if(set)
@@ -74,38 +66,49 @@ int sys_gsetpriority(int set, int which, int id, int val)
 	return current_thread->priority;
 }
 
-
-#if 0
-void __sys_nice_search_action(task_t *t, int val)
+/* TODO: add to syscalls */
+int sys_thread_setpriority(pid_t tid, int val, int flags)
 {
-	t->priority = val;
-}
-#endif
-int sys_nice(int which, int who, int val, int flags)
-{
-	/* TODO: threads? */
-#if 0
-	if(!flags || which == PRIO_PROCESS)
-	{
-		if(who && (unsigned)who != current_task->pid)
-			return -ENOTSUP;
-		if(!flags && val < 0 && current_task->thread->effective_uid != 0)
-			return -EPERM;
-		/* Yes, this is correct */
-		if(!flags)
-			current_task->priority += -val;
-		else
-			current_task->priority = (-val)+1;
-		return 0;
+	struct thread *thr = tm_thread_get(tid);
+	if(!thr)
+		return -ESRCH;
+	if(thr->flags & THREAD_KERNEL) {
+		tm_thread_put(thr);
+		return -EPERM;
 	}
-	val=-val;
-	val++; /* our default is 1, POSIX default is 0 */
-	task_t *t = (task_t *)kernel_task;
-	int c=0;
-	if(which == PRIO_USER)
-		tm_search_tqueue(primary_queue, TSEARCH_UID | TSEARCH_EUID | TSEARCH_FINDALL | TSEARCH_EXCLUSIVE, who, __sys_nice_search_action, val, &c);
-	return c ? 0 : -ESRCH;
-#endif
+	if(thr->process != current_process && current_process->effective_uid) {
+		tm_thread_put(thr);
+		return -EPERM;
+	}
+	if(!flags)
+		thr->priority += -val;
+	else
+		thr->priority = (-val) + 1; /* POSIX has default 0, we use 1 */
+	tm_thread_put(thr);
+	return 0;
+}
+
+int sys_nice(int which, pid_t who, int val, int flags)
+{
+	if(which != PRIO_PROCESS)
+		return -ENOTSUP;
+
+	if(who != current_process->pid && current_process->effective_uid)
+		return -EPERM;
+
+	struct process *proc = tm_process_get(who);
+	rwlock_acquire(&proc->threadlist.rwl, RWL_READER);
+	struct thread *thr;
+	struct llistnode *node;
+	int ret = 0;
+	ll_for_each_entry(&proc->threadlist, node, struct thread *, thr) {
+		ret = sys_thread_setpriority(thr->tid, val, flags);
+		if(ret < 0)
+			break;
+	}
+	rwlock_release(&proc->threadlist.rwl, RWL_READER);
+	tm_process_put(proc);
+	return ret;
 }
 
 int sys_setsid(int ex, int cmd)
@@ -211,47 +214,5 @@ int sys_times(struct tms *buf)
 		buf->tms_cutime = current_process->cutime;
 	}
 	return tm_timing_get_microseconds();
-}
-
-#if 0
-static void do_sys_thread_stat(struct task_stat *s, struct thread *t)
-{
-	assert(s && t);
-	s->stime = t->stime;
-	s->utime = t->utime;
-	s->state = t->state;
-	if(s->state != TASK_DEAD) {
-		s->uid = t->thread->real_uid;
-		s->gid = t->thread->real_gid;
-	}
-	if(t->parent) s->ppid = t->parent->pid;
-	s->system = t->system;
-	s->tty = t->tty;
-	s->argv = t->argv;
-	s->pid = t->pid;
-	strncpy(s->cmd, (char *)t->command, 128);
-	s->mem_usage = (t->pid && !(t->flags & THREAD_KERNEL)) ? t->phys_mem_usage * 4 : 0;
-}
-#endif
-/* TODO */
-int sys_task_pstat(pid_t pid, struct task_stat *s)
-{
-	if(!s) return -EINVAL;
-	//task_t *t=tm_get_process_by_pid(pid);
-	//if(!t)
-		return -ESRCH;
-	//do_sys_task_stat(s, t);
-	return 0;
-}
-
-/* TODO */
-int sys_task_stat(unsigned int num, struct task_stat *s)
-{
-	if(!s) return -EINVAL;
-	//task_t *t = tm_search_tqueue(primary_queue, TSEARCH_ENUM, num, 0, 0, 0);
-	//if(!t) 
-		return -ESRCH;
-	//do_sys_task_stat(s, t);
-	return 0;
 }
 

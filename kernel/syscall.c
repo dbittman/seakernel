@@ -147,7 +147,7 @@ static void *syscall_table[129] = {
 	[SYS_MMAP]            = SC sys_mmap,
 	[SYS_MUNMAP]          = SC sys_munmap,
 	[SYS_MSYNC]           = SC sys_msync,
-	[SYS_TSTAT]           = SC sys_task_stat,
+	//[SYS_TSTAT]           = SC sys_task_stat,
 
 	//[SYS_DELAY]           = SC tm_delay, /* TODO: remove this */
 	[SYS_KRESET]          = SC kernel_reset,
@@ -157,7 +157,7 @@ static void *syscall_table[129] = {
 	[SYS_SETUID]          = SC tm_set_uid,
 	[SYS_SETGID]          = SC tm_set_gid,
 	[SYS_MEMSTAT]         = SC sys_null,
-	[SYS_TPSTAT]          = SC sys_task_pstat,
+	//[SYS_TPSTAT]          = SC sys_task_pstat,
 	[SYS_MOUNT2]          = SC sys_mount2,
 	[SYS_SETEUID]         = SC tm_set_euid,
 	[SYS_SETEGID]         = SC tm_set_egid,
@@ -169,7 +169,7 @@ static void *syscall_table[129] = {
 
 	[SYS_GETTIME]         = SC time_get,
 	//[SYS_TIMERTH]         = SC sys_get_timer_th,
-	[SYS_ISSTATE]         = SC sys_isstate,
+	//[SYS_ISSTATE]         = SC sys_isstate,
 	[SYS_WAIT3]           = SC sys_wait3,
 
 

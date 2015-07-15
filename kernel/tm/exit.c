@@ -22,10 +22,8 @@ void tm_process_wait_cleanup(struct process *proc)
 	}
 }
 
-/* TODO: ref count processes and threads */
 static void tm_process_exit(int code)
 {
-	/* TODO: what? */
 	if(code != -9) 
 		current_process->exit_reason.cause = 0;
 	current_process->exit_reason.ret = code;
@@ -54,10 +52,21 @@ static void tm_process_exit(int code)
 	valloc_destroy(&current_process->mmf_valloc);
 	mm_free_self_directory();
 	/* TODO: free everything else? */
-	/* TODO: parent inherits children */
 
-	if(current_process->parent)
+	if(current_process->parent) {
+		rwlock_acquire(&process_list->rwl, RWL_READER);
+		struct process *child;
+		struct llistnode *node;
+		ll_for_each_entry(process_list, node, struct process *, child) {
+			if(child->parent == current_process) {
+				child->parent = current_process->parent;
+				tm_process_inc_reference(current_process->parent);
+				tm_process_put(current_process);
+			}
+		}
+		rwlock_release(&process_list->rwl, RWL_READER);
 		tm_process_put(current_process->parent);
+	}
 	or_atomic(&current_process->flags, PROCESS_EXITED);
 }
 
@@ -85,15 +94,14 @@ void tm_thread_exit(int code)
 	tqueue_remove(current_thread->cpu->active_queue, &current_thread->activenode);
 	sub_atomic(&current_thread->cpu->numtasks, 1);
 	current_thread->state = THREADSTATE_DEAD;
+	tm_thread_raise_flag(current_thread, THREAD_SCHEDULE);
 	
 	workqueue_insert(&__current_cpu->work, thread_cleanup_call);
 	cpu_enable_preemption();
-	tm_schedule();
 }
 
 void sys_exit(int code)
 {
 	tm_thread_exit(code);
-	panic(0, "tried to return from exit");
 }
 

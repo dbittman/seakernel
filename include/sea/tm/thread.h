@@ -24,7 +24,7 @@
 #define THREAD_SIGNALED        0x8 /* scheduler has detected that a signal is meant for this
                                        task's userspace */
 #define THREAD_SCHEDULE        0x10 /* we request a reschedule after this interrupt completes */
-
+#define THREAD_INTERRUPT       0x20 /* we're servicing a stage-1 interrupt */
 #define THREADSTATE_RUNNING 0
 #define THREADSTATE_INTERRUPTIBLE 1
 #define THREADSTATE_UNINTERRUPTIBLE 2

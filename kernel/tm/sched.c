@@ -39,6 +39,8 @@ static void finish_schedule(void)
 void tm_schedule(void)
 {
 	int old = cpu_interrupt_set(0);
+	if(current_thread->flags & THREAD_INTERRUPT)
+		panic(0, "tried to reschedule within interrupt context");
 	assert(__current_cpu->preempt_disable >= 0);
 	if(__current_cpu->preempt_disable > 0 || !(__current_cpu->flags & CPU_RUNNING)) {
 		cpu_interrupt_set(old);

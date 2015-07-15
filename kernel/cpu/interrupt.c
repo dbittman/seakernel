@@ -152,7 +152,6 @@ static void faulted(int fuckoff, int userspace, addr_t ip, long err_code, regist
 				break;
 		}
 		tm_thread_exit(-9);
-		tm_schedule();
 	}
 }
 
@@ -191,6 +190,7 @@ void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_addres
 		current_thread->regs = regs;
 	else
 		already_in_interrupt = 1;
+	tm_thread_raise_flag(current_thread, THREAD_INTERRUPT);
 	int started = timer_start(&interrupt_timers[int_no]);
 	char called = 0;
 	for(int i=0;i<MAX_HANDLERS;i++)
@@ -209,6 +209,7 @@ void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_addres
 	if(!already_in_interrupt) {
 		__setup_signal_handler(regs);
 		current_thread->regs = 0;
+		tm_thread_lower_flag(current_thread, THREAD_INTERRUPT);
 	}
 }
 
@@ -221,6 +222,7 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 		current_thread->regs = regs;
 	else
 		already_in_interrupt = 1;
+	tm_thread_raise_flag(current_thread, THREAD_INTERRUPT);
 	/* now, run through the stage1 handlers, and see if we need any
 	 * stage2 handlers to run later */
 	int s1started = timer_start(&interrupt_timers[int_no]);
@@ -234,6 +236,7 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 	if(!already_in_interrupt) {
 		__setup_signal_handler(regs);
 		current_thread->regs = 0;
+		tm_thread_lower_flag(current_thread, THREAD_INTERRUPT);
 	}
 }
 

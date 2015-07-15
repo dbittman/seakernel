@@ -3,6 +3,12 @@ arch_tm_read_ip:
   pop rax
   jmp rax
 
+; NOTE: For a description of how this code works, look at
+; the 32-bit version first. They are essentially the same
+; in design, except here we have some more registers to play
+; with and so it makes the code slightly easier to write.
+; The main difference is that here we store more registers,
+; and don't need to store rsi and rdi.
 [GLOBAL arch_tm_do_switch]
 arch_tm_do_switch:
   pushfq

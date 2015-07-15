@@ -49,7 +49,7 @@ __attribute__((noinline)) void arch_tm_thread_switch(struct thread *old, struct 
 	/* TODO: determine when to actually do this. It's a waste of time to do it for every thread */
 	__asm__ __volatile__ (
 			"fxsave (%0)" :: "r" (ALIGN(old->arch_thread.fpu_save_data, 16)) : "memory");
-	if(!new->jump_point) {
+	if(!jump) {
 		__asm__ __volatile__ (
 				"fxrstor (%0)" :: "r" (ALIGN(new->arch_thread.fpu_save_data, 16)) : "memory");
 	}

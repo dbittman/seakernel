@@ -27,26 +27,21 @@ void tm_thread_handle_signal(int signal)
 			case SIGBUS : case SIGABRT: case SIGTRAP: case SIGSEGV:
 			case SIGALRM: case SIGFPE : case SIGILL : case SIGPAGE:
 			case SIGINT : case SIGTERM: case SIGUSR1: case SIGUSR2:
-				/* TODO */
-				//t->exit_reason.cause=__EXITSIG;
-				//t->exit_reason.sig=t->sigd;
+				current_process->exit_reason.cause=__EXITSIG;
+				current_process->exit_reason.sig=current_thread->signal;
 				tm_signal_send_thread(current_thread, SIGKILL);
 				break;
 			case SIGUSLEEP:
-				//ret = TASK_USLEEP;
-				//t->tick=0;
+				current_thread->state = THREADSTATE_UNINTERRUPTIBLE;
 				break;
 			case SIGSTOP: 
-				//if(!(sa->sa_flags & SA_NOCLDSTOP) && t->parent)
-				//	t->parent->sigd=SIGCHILD;
-				//t->exit_reason.cause=__STOPSIG;
-				//t->exit_reason.sig=t->sigd; /* Fall through */
+				if(!(sa->sa_flags & SA_NOCLDSTOP) && current_process->parent)
+					tm_signal_send_process(current_process->parent, SIGCHILD);
+				current_process->exit_reason.cause=__STOPSIG;
+				current_process->exit_reason.sig=current_thread->signal;
+				/* Fall through */
 			case SIGISLEEP:
-				//ret = TASK_ISLEEP; 
-				//t->tick=0;
-				break;
-			default:
-				//t->flags &= ~THREAD_SCHEDULE;
+				current_thread->state = THREADSTATE_INTERRUPTIBLE;
 				break;
 		}
 	}

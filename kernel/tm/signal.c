@@ -17,7 +17,7 @@ void tm_thread_handle_signal(int signal)
 		if(!(sa->sa_flags & SA_NODEFER))
 			current_thread->sig_mask |= (1 << signal);
 		tm_thread_raise_flag(current_thread, THREAD_SIGNALED);
-	} else if(!current_thread->system) {
+	} else if(!current_thread->system && !(current_thread->flags & THREAD_KERNEL)) {
 		/* Default Handlers */
 		tm_thread_raise_flag(current_thread, THREAD_SCHEDULE);
 		switch(signal)
@@ -46,6 +46,8 @@ void tm_thread_handle_signal(int signal)
 				current_thread->signal = 0;
 				break;
 		}
+	} else if(!current_thread->system && current_thread->flags & THREAD_KERNEL) {
+		current_thread->signal = 0;
 	}
 }
 

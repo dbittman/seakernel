@@ -85,8 +85,9 @@ int tm_thread_delay(time_t microseconds)
 	ticker_insert(&cpu->ticker, microseconds, call);
 	cpu_put_current(cpu);
 	tm_thread_set_state(current_thread, THREADSTATE_INTERRUPTIBLE);
-	if(tm_thread_got_signal(current_thread))
+	if(tm_thread_got_signal(current_thread)) {
 		return -EINTR;
+	}
 	return 0;
 }
 

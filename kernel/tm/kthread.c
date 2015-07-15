@@ -23,7 +23,6 @@ struct kthread *kthread_create(struct kthread *kt, const char *name, int flags,
 	int tid = sys_clone(CLONE_SHARE_PROCESS | CLONE_KTHREAD);
 	if(!tid) {
 		current_thread->flags |= THREAD_KERNEL;
-		current_thread->system = -1;
 		current_thread->regs = 0;
 		strncpy((char *)current_process->command, name, 128);
 		

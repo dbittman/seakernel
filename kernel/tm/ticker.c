@@ -5,6 +5,7 @@
 #include <sea/tm/async_call.h>
 #include <sea/mutex.h>
 #include <sea/kernel.h>
+#include <sea/cpu/processor.h>
 
 struct ticker *ticker_create(struct ticker *ticker, int flags)
 {
@@ -23,6 +24,11 @@ struct ticker *ticker_create(struct ticker *ticker, int flags)
 void ticker_tick(struct ticker *ticker, uint64_t microseconds)
 {
 	ticker->tick += microseconds;
+	cpu_disable_preemption();
+	if(__current_cpu->preempt_disable > 1) {
+		cpu_enable_preemption();
+		return;
+	}
 	uint64_t key;
 	void *data;
 	if(heap_peek(&ticker->heap, &key, &data) == 0) {
@@ -42,6 +48,7 @@ void ticker_tick(struct ticker *ticker, uint64_t microseconds)
 			}
 		}
 	}
+	cpu_enable_preemption();
 }
 
 void ticker_insert(struct ticker *ticker, time_t microseconds, struct async_call *call)

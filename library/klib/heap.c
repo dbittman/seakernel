@@ -37,6 +37,8 @@ static void __heap_resize(struct heap *heap)
 
 static void __swap(struct heap *heap, size_t e1, size_t e2)
 {
+	assert(e1 < heap->count);
+	assert(e2 < heap->count);
 	struct heapnode tmp = heap->array[e1];
 	heap->array[e1] = heap->array[e2];
 	heap->array[e2] = tmp;
@@ -45,6 +47,8 @@ static void __swap(struct heap *heap, size_t e1, size_t e2)
 static void __heap_bubbleup(struct heap *heap, size_t elem)
 {
 	if(!elem)
+		return;
+	if(heap->count == 0)
 		return;
 	uint64_t kp = heap->array[PARENT(elem)].key;
 	uint64_t cur = heap->array[elem].key;
@@ -65,6 +69,8 @@ static void __heap_bubbleup(struct heap *heap, size_t elem)
 static void __heap_bubbledown(struct heap *heap, size_t elem)
 {
 	uint64_t k1, k2, cur;
+	if(heap->count == 0)
+		return;
 	k1 = heap->array[CHILDA(elem)].key;
 	k2 = heap->array[CHILDB(elem)].key;
 	/* Hack to ignore elements that aren't in the heap.

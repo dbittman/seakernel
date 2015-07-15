@@ -48,7 +48,18 @@ void tm_schedule(void)
 	struct thread *next = get_next_thread();
 
 	if(current_thread != next) {
-		arch_tm_thread_switch(current_thread, next);
+		addr_t jump = next->jump_point;
+		next->jump_point = 0;
+		if(!(next->stack_pointer > (addr_t)next->kernel_stack + sizeof(addr_t))) {
+			panic(0, "kernel stack overrun! thread=%x:%d %x (min = %x)", next, next->tid, next->stack_pointer, next->kernel_stack);
+		}
+		cpu_set_kernel_stack(next->cpu, (addr_t)next->kernel_stack,
+				(addr_t)next->kernel_stack + (KERN_STACK_SIZE));
+		if(next->process != current_thread->process) {
+			mm_vm_switch_context(&next->process->vmm_context);
+		}
+
+		arch_tm_thread_switch(current_thread, next, jump);
 	}
 
 	struct cpu *thiscpu = current_thread->cpu;

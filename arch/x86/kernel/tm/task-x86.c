@@ -44,19 +44,8 @@ void arch_tm_jump_to_user_mode(addr_t jmp)
 
 void arch_tm_do_switch(long unsigned *, long unsigned *, addr_t);
 
-__attribute__((noinline)) void arch_tm_thread_switch(struct thread *old, struct thread *new)
+__attribute__((noinline)) void arch_tm_thread_switch(struct thread *old, struct thread *new, addr_t jump)
 {
-	assert(old != new);
-	addr_t jump = new->jump_point;
-	new->jump_point = 0;
-	if(!(new->stack_pointer > (addr_t)new->kernel_stack + sizeof(addr_t))) {
-		panic(0, "kernel stack overrun! thread=%x:%d %x (min = %x)", new, new->tid, new->stack_pointer, new->kernel_stack);
-	}
-	cpu_set_kernel_stack(new->cpu, (addr_t)new->kernel_stack,
-			(addr_t)new->kernel_stack + (KERN_STACK_SIZE));
-	if(new->process != old->process) {
-		mm_vm_switch_context(&new->process->vmm_context);
-	}
 	/* TODO: determine when to actually do this. It's a waste of time to do it for every thread */
 	__asm__ __volatile__ (
 			"fxsave (%0)" :: "r" (ALIGN(old->arch_thread.fpu_save_data, 16)) : "memory");

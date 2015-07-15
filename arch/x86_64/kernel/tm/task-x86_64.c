@@ -46,7 +46,7 @@ void arch_tm_jump_to_user_mode(addr_t jmp)
 void arch_tm_do_switch(long unsigned *, long unsigned *, addr_t);
 void arch_tm_do_fork_setup(long unsigned *stack, long unsigned *jmp, signed long offset);
 
-__attribute__((noinline)) void arch_tm_thread_switch(struct thread *old, struct thread *new)
+__attribute__((noinline)) void arch_tm_thread_switch(struct thread *old, struct thread *new, addr_t jump)
 {
 	assert(old != new);
 	addr_t jump = new->jump_point;

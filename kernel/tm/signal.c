@@ -13,10 +13,9 @@
 void tm_thread_handle_signal(int signal)
 {
 	struct sigaction *sa = &current_process->signal_act[signal];
-	current_thread->old_mask = current_thread->sig_mask;
-	if(!(sa->sa_flags & SA_NODEFER))
-		current_thread->sig_mask |= (1 << signal);
 	if(signal != SIGKILL && sa->_sa_func._sa_handler) {
+		if(!(sa->sa_flags & SA_NODEFER))
+			current_thread->sig_mask |= (1 << signal);
 		tm_thread_raise_flag(current_thread, THREAD_SIGNALED);
 	} else if(!current_thread->system) {
 		/* Default Handlers */
@@ -29,7 +28,7 @@ void tm_thread_handle_signal(int signal)
 			case SIGINT : case SIGTERM: case SIGUSR1: case SIGUSR2:
 				current_process->exit_reason.cause=__EXITSIG;
 				current_process->exit_reason.sig=current_thread->signal;
-				tm_signal_send_thread(current_thread, SIGKILL);
+				tm_thread_exit(-9);
 				break;
 			case SIGUSLEEP:
 				current_thread->state = THREADSTATE_UNINTERRUPTIBLE;
@@ -42,6 +41,9 @@ void tm_thread_handle_signal(int signal)
 				/* Fall through */
 			case SIGISLEEP:
 				current_thread->state = THREADSTATE_INTERRUPTIBLE;
+				break;
+			default:
+				current_thread->signal = 0;
 				break;
 		}
 	}

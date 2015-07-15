@@ -51,7 +51,7 @@ struct thread {
 	int usermode_stack_num;
 	struct cpu *cpu;
 
-	sigset_t sig_mask, old_mask;
+	sigset_t sig_mask;
 	unsigned signal;
 	registers_t *regs;
 	time_t stime, utime, t_cutime, t_cstime;

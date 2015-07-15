@@ -36,6 +36,10 @@ void arch_tm_userspace_signal_initializer(registers_t *regs, struct sigaction *s
 
 void arch_tm_userspace_signal_cleanup(registers_t *regs)
 {
+	int signal = *(int *)(regs->useresp);
+	struct sigaction *sa = &current_process->signal_act[signal];
+	if(!(sa->sa_flags & SA_NODEFER))
+		current_thread->sig_mask &= ~(1 << signal);
 	memcpy((void *)regs, (void *)(regs->useresp + STACK_ELEMENT_SIZE), sizeof(*regs));
 }
 

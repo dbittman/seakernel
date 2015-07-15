@@ -5,6 +5,11 @@
 
 #define ASYNC_CALL_KMALLOC 1
 
+#define ASYNC_CALL_PRIORITY_HIGH   100
+#define ASYNC_CALL_PRIORITY_MEDIUM 50
+#define ASYNC_CALL_PRIORITY_LOW    10
+#define ASYNC_CALL_PRIORITY_MIN    0
+
 struct async_call {
 	void (*func)(unsigned long data);
 	int flags;

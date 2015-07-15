@@ -5,15 +5,15 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/atomic.h>
 #include <sea/errno.h>
-/* TODO: need to handle EINTR */
+
 void tm_thread_set_state(struct thread *t, int state)
 {
 	int oldstate = t->state;
 	t->state = state;
-	/* TODO: What if this process is running on a different CPU */
 	if(oldstate != state && t == current_thread)
 		tm_schedule();
-	tm_thread_raise_flag(t, THREAD_SCHEDULE);
+	else
+		tm_thread_raise_flag(t, THREAD_SCHEDULE);
 }
 
 void tm_thread_add_to_blocklist(struct thread *t, struct llist *blocklist)
@@ -72,14 +72,14 @@ static void __timeout_expired(unsigned long data)
 		tm_thread_remove_from_blocklist(t);
 		tm_thread_raise_flag(t, THREAD_TIMEOUT_EXPIRED);
 	}
-	tm_thread_set_state(t, THREADSTATE_RUNNING); /* TODO: maybe restore an old state */
+	tm_thread_set_state(t, THREADSTATE_RUNNING);
 }
 
 int tm_thread_delay(time_t microseconds)
 {
 	struct async_call *call = &current_thread->block_timeout;
 	call->func = __timeout_expired;
-	call->priority = 10; /* TODO: what priority */
+	call->priority = ASYNC_CALL_PRIORITY_MEDIUM;
 	call->data = (unsigned long)current_thread;
 	struct cpu *cpu = cpu_get_current();
 	ticker_insert(&cpu->ticker, microseconds, call);
@@ -103,16 +103,28 @@ int tm_thread_block_timeout(struct llist *blocklist, time_t microseconds)
 {
 	struct async_call *call = &current_thread->block_timeout;
 	call->func = __timeout_expired;
-	call->priority = 10; /* TODO: what priority */
+	call->priority = ASYNC_CALL_PRIORITY_MEDIUM;
 	call->data = (unsigned long)current_thread;
-	ticker_insert(&current_thread->cpu->ticker, microseconds, call);
-	/* TODO: what happens if the timer expires before we do this? */
-	int r = tm_thread_block(blocklist, THREADSTATE_INTERRUPTIBLE);
-	/* TODO: do we care more about EINTR or ETIME? */
+	cpu_disable_preemption();
+	struct ticker *ticker = &__current_cpu->ticker;
+	ticker_insert(ticker, microseconds, call);
+	tm_thread_add_to_blocklist(current_thread, blocklist);
+	tm_thread_set_state(current_thread, THREADSTATE_INTERRUPTIBLE);
+	cpu_enable_preemption();
+	tm_schedule();
+	cpu_disable_preemption();
+	ticker_delete(&current_thread->cpu->ticker, call);
+	async_call_destroy(call);
 	if(current_thread->flags & THREAD_TIMEOUT_EXPIRED) {
-		tm_thread_lower_flag(current_thread, THREAD_TIMEOUT_EXPIRED); /* TODO: do the test and set atomically */
+		tm_thread_lower_flag(current_thread, THREAD_TIMEOUT_EXPIRED);
+		cpu_enable_preemption();
 		return -ETIME;
 	}
-	return r;
+	if(tm_thread_got_signal(current_thread)) {
+		cpu_enable_preemption();
+		return -EINTR;
+	}
+	cpu_enable_preemption();
+	return 0;
 }
 

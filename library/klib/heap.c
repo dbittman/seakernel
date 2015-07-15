@@ -168,6 +168,38 @@ int heap_pop(struct heap *heap, uint64_t *key, void **data)
 	return 0;
 }
 
+int heap_delete(struct heap *heap, void *data)
+{
+	if(!(heap->flags & HEAP_LOCKLESS))
+		rwlock_acquire(&heap->rwl, RWL_WRITER);
+	if(!heap->count) {
+		if(!(heap->flags & HEAP_LOCKLESS))
+			rwlock_release(&heap->rwl, RWL_WRITER);
+		return -ENOENT;
+	}
+
+	int index = -1;
+	for(unsigned i=0;i<heap->count;++i) {
+		if(heap->array[i].data == data) {
+			index = i;
+			break;
+		}
+	}
+	if(index == -1) {
+		if(!(heap->flags & HEAP_LOCKLESS))
+			rwlock_release(&heap->rwl, RWL_WRITER);
+		return -ENOENT;
+	}
+
+	heap->array[index] = heap->array[--heap->count];
+	__heap_bubbledown(heap, index);
+	__heap_bubbleup(heap, index);
+	
+	if(!(heap->flags & HEAP_LOCKLESS))
+		rwlock_release(&heap->rwl, RWL_WRITER);
+	return 0;
+}
+
 void heap_destroy(struct heap *heap)
 {
 	assert(!heap->count);

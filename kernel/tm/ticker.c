@@ -52,6 +52,15 @@ void ticker_insert(struct ticker *ticker, time_t microseconds, struct async_call
 	mutex_release(&ticker->lock);
 }
 
+int ticker_delete(struct ticker *ticker, struct async_call *call)
+{
+	assert(call);
+	mutex_acquire(&ticker->lock);
+	int r = heap_delete(&ticker->heap, call);
+	mutex_release(&ticker->lock);
+	return r;
+}
+
 void ticker_destroy(struct ticker *ticker)
 {
 	heap_destroy(&ticker->heap);

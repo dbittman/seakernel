@@ -28,6 +28,7 @@ void heap_insert(struct heap *heap, uint64_t key, void *data);
 int heap_peek(struct heap *heap, uint64_t *key, void **data);
 int heap_pop(struct heap *heap, uint64_t *key, void **data);
 void heap_destroy(struct heap *heap);
-
+int heap_delete(struct heap *heap, void *data);
+int heap_change(struct heap *heap, void *data, uint64_t newkey);
 #endif
 

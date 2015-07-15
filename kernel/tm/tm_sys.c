@@ -32,14 +32,31 @@ int sys_sbrk(long inc)
 		tm_signal_send_thread(current_thread, SIGSEGV);
 	current_process->heap_end += inc;
 	addr_t page = end & PAGE_MASK;
-	for(;page <=(current_process->heap_end&PAGE_MASK);page += PAGE_SIZE)
-		user_map_if_not_mapped(page);
+	/* for(;page <=(current_process->heap_end&PAGE_MASK);page += PAGE_SIZE) */
+	/* 	user_map_if_not_mapped(page); */
 	return end;
+}
+
+static void __alarm_timeout(unsigned long data)
+{
+	struct thread *thr = (struct thread *)data;
+	tm_signal_send_thread(thr, SIGALRM);
 }
 
 int sys_alarm(int dur)
 {
+	struct async_call *call = async_call_create(&current_thread->alarm_timeout,
+			0, &__alarm_timeout, (unsigned long)current_thread, ASYNC_CALL_PRIORITY_LOW);
+	struct cpu *cpu = cpu_get_current();
+	struct ticker *ticker = &cpu->ticker;
+	cpu_put_current(cpu);
 
+	if(dur == 0) {
+		ticker_delete(ticker, call);
+	} else {
+		ticker_insert(ticker, dur * ONE_SECOND, call);
+	}
+	return 0;
 }
 
 int sys_isstate(pid_t pid, int state)

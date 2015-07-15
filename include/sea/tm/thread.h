@@ -61,6 +61,7 @@ struct thread {
 	struct llistnode blocknode, activenode, pnode;
 	struct llist *blocklist;
 	struct async_call block_timeout;
+	struct async_call alarm_timeout;
 	struct process *process;
 };
 

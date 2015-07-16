@@ -21,6 +21,7 @@ static uint8_t pmm_contiguous_index[4096];
 addr_t placement;
 mutex_t pm_mutex;
 
+void arch_mm_copy_page_physical(addr_t src, addr_t dest);
 void mm_copy_page_physical(addr_t src, addr_t dest)
 {
 #if CONFIG_ARCH == TYPE_ARCH_X86
@@ -30,6 +31,7 @@ void mm_copy_page_physical(addr_t src, addr_t dest)
 #endif
 }
 
+void arch_mm_zero_page_physical(addr_t page);
 void mm_zero_page_physical(addr_t page)
 {
 #if CONFIG_ARCH == TYPE_ARCH_X86

@@ -5,6 +5,7 @@
 #include <sea/fs/file.h>
 #include <sea/fs/inode.h>
 #include <sea/cpu/interrupt.h>
+#include <sea/mm/map.h>
 static void tm_thread_destroy(unsigned long data)
 {
 	struct thread *thr = (struct thread *)data;

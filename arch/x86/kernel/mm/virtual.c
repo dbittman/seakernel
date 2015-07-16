@@ -113,6 +113,10 @@ void arch_mm_vm_init(addr_t id_map_to)
 	set_ksf(KSF_PAGING);
 }
 
+void arch_mm_vm_switch_context(struct vmm_context *context)
+{
+ 	__asm__ __volatile__ ("mov %0, %%cr3" :: "r" (context->root_physical):"memory");
+}
 /* This relocates the stack to a safe place which is copied 
  * upon clone, and creates a new directory that is...well, complete */
 void arch_mm_vm_init_2(void)
@@ -121,10 +125,6 @@ void arch_mm_vm_init_2(void)
 	arch_mm_vm_switch_context(&kernel_context);
 }
 
-void arch_mm_vm_switch_context(struct vmm_context *context)
-{
- 	__asm__ __volatile__ ("mov %0, %%cr3" :: "r" (context->root_physical):"memory");
-}
 
 addr_t arch_mm_vm_get_map(addr_t v, addr_t *p, unsigned locked)
 {

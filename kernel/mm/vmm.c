@@ -1,6 +1,20 @@
 #include <sea/types.h>
 #include <sea/mm/vmm.h>
 
+void arch_mm_vm_clone(struct vmm_context *old, struct vmm_context *new);
+void arch_mm_destroy_directory(struct vmm_context *dir);
+void arch_mm_free_self_directory(void);
+void arch_mm_vm_init(addr_t id_map_to);
+void arch_mm_vm_init_2();
+void arch_mm_vm_switch_context(struct vmm_context *context);
+addr_t arch_mm_vm_get_map(addr_t v, addr_t *p, unsigned locked);
+void arch_mm_vm_set_attrib(addr_t v, short attr);
+unsigned int arch_mm_vm_get_attrib(addr_t v, unsigned *p, unsigned locked);
+int arch_mm_vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned opt);
+int arch_mm_vm_unmap_only(addr_t virt, unsigned locked);
+int arch_mm_vm_unmap(addr_t virt, unsigned locked);
+void arch_mm_flush_page_tables(void);
+
 void mm_vm_clone(struct vmm_context *old, struct vmm_context *new)
 {
 	return arch_mm_vm_clone(old, new);

@@ -27,13 +27,11 @@ int mutex_is_locked(mutex_t *m)
 	return m->lock;
 }
 
-/* TODO: rewrite a lot of this... (do we need the interrupt thing?) */
-
 void __mutex_acquire(mutex_t *m, char *file, int line)
 {
 	assert(m->magic == MUTEX_MAGIC);
-	if(current_thread->flags & THREAD_INTERRUPT && !(m->flags & MT_NOSCHED))
-		panic(0, "cannot lock a normal mutex within interrupt context");
+	if(current_thread && current_thread->interrupt_level && !(m->flags & MT_NOSCHED))
+		panic(PANIC_NOSYNC, "cannot lock a normal mutex within interrupt context (%s:%d)", file, line);
 	if(kernel_state_flags & KSF_SHUTDOWN) return;
 	/* are we re-locking ourselves? */
 	if(current_thread && m->lock && ((m->pid == (pid_t)current_thread->tid)))

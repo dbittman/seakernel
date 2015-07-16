@@ -91,7 +91,8 @@ static void process_memorymap(struct multiboot *mboot)
 void mm_init(struct multiboot *m)
 {
 	printk(KERN_DEBUG, "[mm]: Setting up Memory Management...\n");
-	mutex_create(&pm_mutex, 0);
+	mutex_create(&pm_mutex, MT_NOSCHED); /* allocating physical memory is required inside
+										  * interrupt context because of page faults */
 	mm_vm_init(pm_location);
 	process_memorymap(m);
 	kmalloc_init();

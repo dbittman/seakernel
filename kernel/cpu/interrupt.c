@@ -183,14 +183,14 @@ void cpu_interrupt_syscall_entry(registers_t *regs, int syscall_num)
 
 void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_address)
 {
-	int already_in_interrupt = 0;
+	int already_in_kernel = 0;
 	cpu_interrupt_set(0);
 	add_atomic(&interrupt_counts[int_no], 1);
 	if(!current_thread->regs)
 		current_thread->regs = regs;
 	else
-		already_in_interrupt = 1;
-	tm_thread_raise_flag(current_thread, THREAD_INTERRUPT);
+		already_in_kernel = 1;
+	assert(add_atomic(&current_thread->interrupt_level, 1) > 0);
 	int started = timer_start(&interrupt_timers[int_no]);
 	char called = 0;
 	for(int i=0;i<MAX_HANDLERS;i++)
@@ -205,11 +205,11 @@ void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_addres
 	cpu_interrupt_set(0);
 	/* if it went unhandled, kill the process or panic */
 	if(!called)
-		faulted(int_no, !already_in_interrupt, return_address, regs->err_code, regs);
-	if(!already_in_interrupt) {
+		faulted(int_no, !already_in_kernel, return_address, regs->err_code, regs);
+	assert(sub_atomic(&current_thread->interrupt_level, 1) >= 0);
+	if(!already_in_kernel) {
 		__setup_signal_handler(regs);
 		current_thread->regs = 0;
-		tm_thread_lower_flag(current_thread, THREAD_INTERRUPT);
 	}
 }
 
@@ -217,12 +217,12 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 {
 	cpu_interrupt_set(0);
 	add_atomic(&interrupt_counts[int_no], 1);
-	int already_in_interrupt = 0;
+	int already_in_kernel = 0;
 	if(!current_thread->regs)
 		current_thread->regs = regs;
 	else
-		already_in_interrupt = 1;
-	tm_thread_raise_flag(current_thread, THREAD_INTERRUPT);
+		already_in_kernel = 1;
+	assert(add_atomic(&current_thread->interrupt_level, 1) > 0);
 	/* now, run through the stage1 handlers, and see if we need any
 	 * stage2 handlers to run later */
 	int s1started = timer_start(&interrupt_timers[int_no]);
@@ -233,10 +233,10 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 	}
 	if(s1started) timer_stop(&interrupt_timers[int_no]);
 	cpu_interrupt_set(0);
-	if(!already_in_interrupt) {
+	assert(sub_atomic(&current_thread->interrupt_level, 1) >= 0);
+	if(!already_in_kernel) {
 		__setup_signal_handler(regs);
 		current_thread->regs = 0;
-		tm_thread_lower_flag(current_thread, THREAD_INTERRUPT);
 	}
 }
 

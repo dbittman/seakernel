@@ -82,7 +82,7 @@ void arch_interrupt_syscall_handler(volatile registers_t regs)
 	lapic_eoi();
 #endif
 
-	if(current_thread->flags & THREAD_SCHEDULE && !(current_thread->flags & THREAD_INTERRUPT))
+	if(current_thread->flags & THREAD_SCHEDULE && !(current_thread->interrupt_level))
 		tm_schedule();
 }
 
@@ -98,7 +98,7 @@ void arch_interrupt_isr_handler(volatile registers_t regs)
 #if CONFIG_SMP
 	lapic_eoi();
 #endif
-	if(current_thread->flags & THREAD_SCHEDULE && !(current_thread->flags & THREAD_INTERRUPT))
+	if(current_thread->flags & THREAD_SCHEDULE && !(current_thread->interrupt_level))
 		tm_schedule();
 }
 
@@ -114,7 +114,7 @@ void arch_interrupt_irq_handler(volatile registers_t regs)
 	lapic_eoi();
 #endif
 	/* TODO: put this in arch-indep code */
-	if(current_thread->flags & THREAD_SCHEDULE && !(current_thread->flags & THREAD_INTERRUPT))
+	if(current_thread->flags & THREAD_SCHEDULE && !(current_thread->interrupt_level))
 		tm_schedule();
 }
 

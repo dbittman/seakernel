@@ -13,8 +13,8 @@
 #include <sea/mm/kmalloc.h>
 void __rwlock_acquire(rwlock_t *lock, unsigned flags, char *file, int line)
 {
-	if(current_thread->flags & THREAD_INTERRUPT)
-		panic(0, "cannot lock an rwlock within interrupt context");
+	//if(current_thread && current_thread->interrupt_level)
+	//	panic(PANIC_NOSYNC, "cannot lock an rwlock within interrupt context");
 	assert(lock->magic == RWLOCK_MAGIC);
 	if(kernel_state_flags & KSF_SHUTDOWN) return;
 	while(1) 

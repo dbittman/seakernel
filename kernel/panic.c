@@ -62,12 +62,14 @@ void panic(int flags, char *fmt, ...)
 {
 	cpu_interrupt_set(0);
 #if CONFIG_SMP
-	/* tell the other processors to halt */
-	cpu_send_ipi(CPU_IPI_DEST_OTHERS, IPI_PANIC, 0);
-	int timeout = 100000;
-	while(cpu_get_num_halted_processors() 
-			< cpu_get_num_secondary_processors() && --timeout)
-		cpu_pause();
+	if(!(flags & PANIC_INSTANT)) {
+		/* tell the other processors to halt */
+		cpu_send_ipi(CPU_IPI_DEST_OTHERS, IPI_PANIC, 0);
+		int timeout = 100000;
+		while(cpu_get_num_halted_processors() 
+				< cpu_get_num_secondary_processors() && --timeout)
+			cpu_pause();
+	}
 #endif
 	if(kernel_state_flags & KSF_PANICING) {
 		/* panicing from within a panic? That's....bad.... */
@@ -88,7 +90,7 @@ void panic(int flags, char *fmt, ...)
 	printk_safe(9,buf);
 	printk_safe(9," ***\n");
 	
-	if(t && t->process->pid && !(flags & PANIC_NOSYNC))
+	if(t && t->process->pid && !(flags & PANIC_NOSYNC) && !(flags & PANIC_INSTANT))
 	{
 		printk_safe(9,"[panic]: syncing...");
 		sys_sync();

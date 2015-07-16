@@ -72,7 +72,7 @@ struct pmap *pmap_create(struct pmap *m, unsigned flags)
 		m->flags = flags;
 	}
 	m->magic = PMAP_MAGIC;
-	mutex_create(&m->lock, 0);
+	mutex_create(&m->lock, MT_NOSCHED);
 	m->idx_max = PMAP_INITIAL_MAX;
 	m->virt = kmalloc(sizeof(addr_t) * PMAP_INITIAL_MAX);
 	m->phys = kmalloc(sizeof(addr_t) * PMAP_INITIAL_MAX);

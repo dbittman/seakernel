@@ -24,6 +24,7 @@ extern unsigned kernel_state_flags;
 #define PANIC_NOSYNC  1
 #define PANIC_MEM     2
 #define PANIC_VERBOSE 4
+#define PANIC_INSTANT 8
 
 #if CONFIG_ENABLE_ASSERTS
   #define assert(c) \

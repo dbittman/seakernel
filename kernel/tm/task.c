@@ -48,7 +48,7 @@ void tm_init_multitasking(void)
 	for(addr_t a = MMF_BEGIN;a < (MMF_BEGIN + (size_t)proc->mmf_valloc.nindex);a+=PAGE_SIZE)
 		mm_vm_set_attrib(a, PAGE_PRESENT | PAGE_WRITE);
 	ll_create(&proc->threadlist);
-	mutex_create(&proc->map_lock, 0);
+	mutex_create(&proc->map_lock, MT_NOSCHED);
 	mutex_create(&proc->stacks_lock, 0);
 	proc->magic = PROCESS_MAGIC;
 	memcpy(&proc->vmm_context, &kernel_context, sizeof(kernel_context));

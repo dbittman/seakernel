@@ -84,7 +84,7 @@ static struct process *tm_process_copy(int flags)
 	newp->parent = current_process;
 	ll_create(&newp->threadlist);
 	ll_create_lockless(&newp->mappings);
-	mutex_create(&newp->map_lock, 0);
+	mutex_create(&newp->map_lock, MT_NOSCHED); /* we need to lock this during page faults */
 	mutex_create(&newp->stacks_lock, 0);
 	/* TODO: what the fuck is this? */
 	valloc_create(&newp->mmf_valloc, MMF_BEGIN, MMF_END, PAGE_SIZE, VALLOC_USERMAP);
@@ -101,7 +101,6 @@ static struct process *tm_process_copy(int flags)
 	}
 	fs_copy_file_handles(current_process, newp);
 	mutex_create(&newp->files_lock, 0);
-	mutex_create(&newp->map_lock, 0);
 	return newp;
 }
 

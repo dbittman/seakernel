@@ -8,12 +8,12 @@ void mm_vm_clone(struct vmm_context *old, struct vmm_context *new)
 
 void mm_destroy_directory(struct vmm_context *dir)
 {
-
+	arch_mm_destroy_directory(dir);
 }
 
 void mm_free_self_directory(void)
 {
-
+	arch_mm_free_self_directory();
 }
 
 void mm_vm_init(addr_t id_map_to)

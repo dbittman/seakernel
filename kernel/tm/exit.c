@@ -38,7 +38,6 @@ static void tm_process_exit(int code)
 		add_atomic(&current_process->parent->cstime, total_stime);
 	}
 
-	/* TODO */
 	if(current_process->parent)
 		tm_signal_send_process(current_process->parent, SIGCHILD);
 	fs_close_all_files(current_process);

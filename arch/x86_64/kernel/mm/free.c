@@ -49,3 +49,24 @@ void free_pml4e(pml4_t *pml4, unsigned idx)
 	mm_free_physical_page(physical);
 }
 
+void arch_mm_free_self_directory()
+{
+	/* don't free all of the first pml4e, only the stuff above 0x40000000 */
+	unsigned int S = 1;
+	unsigned int E = PML4_IDX(TOP_TASK_MEM_EXEC/0x1000);
+	pml4_t *pml4 = (pml4_t *)current_process->vmm_context.root_virtual;
+	for(unsigned i=S;i<E;i++)
+		free_pml4e(pml4, i);
+	pdpt_t *pdpt = (addr_t *)((pml4[0] & PAGE_MASK) + PHYS_PAGE_MAP);
+	for(unsigned i=1;i<512;i++)
+		free_pdpte(pdpt, i);
+}
+
+/* free the pml4, not the entries */
+void arch_mm_destroy_directory(struct vmm_context *vc)
+{
+	addr_t *tmp;
+	pml4_t *pml4 = (pml4_t *)current_process->vmm_context.root_virtual;
+	kfree(pml4);
+}
+

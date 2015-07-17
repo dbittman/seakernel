@@ -58,25 +58,21 @@ void tty_putch(struct vterm *con, int ch)
 	con->rend->putch(con, ch);
 }
 
-void __tty_found_task_raise_action(struct thread *t, int arg)
-{
-	/* TODO: what? */
-	tm_signal_send_thread(t, arg);
-	tm_thread_raise_flag(t, THREAD_SCHEDULE);
-	/* TODO */
-	/* if(t->blocklist) */
-	/* 	tm_remove_from_blocklist(t->blocklist, t); */
-}
-
 int tty_raise_action(int min, int sig)
 {
 	if(!(consoles[min].term.c_lflag & ISIG))
 		return 0;
 	if((kernel_state_flags & KSF_SHUTDOWN))
 		return 0;
-	/* TODO */
-	//if(tm_search_tqueue(primary_queue, TSEARCH_FINDALL | TSEARCH_TTY, min, __tty_found_task_raise_action, sig, 0))
-	//	consoles[min].inpos=0;
+	rwlock_acquire(&process_list->rwl, RWL_READER);
+	struct process *proc;
+	struct llistnode *node;
+	ll_for_each_entry(process_list, node, struct process *, proc) {
+		if(proc->tty == min) {
+			tm_signal_send_process(proc, sig);
+		}
+	}
+	rwlock_release(&process_list->rwl, RWL_READER);
 	return 0;
 }
 
@@ -100,8 +96,7 @@ int tty_read(int min, char *buf, size_t len)
 		mutex_acquire(&con->inlock);
 		while(!con->inpos) {
 			mutex_release(&con->inlock);
-			tm_thread_block(&con->input_block, THREADSTATE_INTERRUPTIBLE);
-			if(tm_thread_got_signal(current_thread))
+			if(tm_thread_block(&con->input_block, THREADSTATE_INTERRUPTIBLE) == -EINTR)
 				return -EINTR;
 			mutex_acquire(&con->inlock);
 		}

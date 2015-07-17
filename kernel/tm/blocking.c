@@ -47,6 +47,7 @@ int tm_thread_block(struct llist *blocklist, int state)
 
 void tm_thread_unblock(struct thread *t)
 {
+	/* TODO: thread safe? */
 	tm_thread_remove_from_blocklist(t);
 	tm_thread_set_state(t, THREADSTATE_RUNNING);
 }

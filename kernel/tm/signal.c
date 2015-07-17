@@ -74,8 +74,9 @@ void tm_signal_send_thread(struct thread *thr, int signal)
 	assert(signal < NUM_SIGNALS);
 	thr->signal = signal;
 	tm_thread_raise_flag(thr, THREAD_SCHEDULE);
-	if(thr->state == THREADSTATE_INTERRUPTIBLE)
-		tm_thread_set_state(thr, THREADSTATE_RUNNING);
+	if(thr->state == THREADSTATE_INTERRUPTIBLE) {
+		tm_thread_unblock(thr);
+	}
 }
 
 int tm_signal_send_process(struct process *proc, int signal)

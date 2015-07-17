@@ -6,6 +6,7 @@
 #if CONFIG_SMP
 void cpu_smp_task_idle(struct cpu *cpu)
 {
+	tm_thread_raise_flag(current_thread, THREAD_KERNEL);
 	cpu->flags |= CPU_RUNNING;
 	printk(1, "[smp]: cpu %d ready\n", cpu->knum);
 	cpu_interrupt_set(1);

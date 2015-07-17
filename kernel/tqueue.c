@@ -59,7 +59,7 @@ void tqueue_remove(struct tqueue *tq, struct llistnode *node)
 	assert(tq->magic == TQ_MAGIC);
 	if(tq->current == node) tq->current=0;
 	ll_do_remove(&tq->tql, node, 0);
-	sub_atomic(&tq->num, 1);
+	assert(sub_atomic(&tq->num, 1));
 	mutex_release(&tq->lock);
 	cpu_interrupt_set(old);
 }

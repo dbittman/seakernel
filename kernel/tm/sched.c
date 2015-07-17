@@ -29,6 +29,7 @@ static void prepare_schedule(void)
 	 * manually. Kernel threads must do this as well if they want to handle signals. */
 	if(current_thread->signals_pending && !current_thread->signal) {
 		int index = 0;
+		/* find the next signal in signals_pending and set signal to it */
 		for(; index < 32; ++index) {
 			if(current_thread->signals_pending & (1 << index))
 				break;
@@ -41,7 +42,7 @@ static void prepare_schedule(void)
 	if(current_thread->signal) {
 		if(current_thread->state == THREADSTATE_INTERRUPTIBLE)
 			tm_thread_unblock(current_thread);
-		if(!current_thread->system)
+		if(!current_thread->system && current_thread->state == THREADSTATE_RUNNING)
 			tm_thread_handle_signal(current_thread->signal);
 	}
 

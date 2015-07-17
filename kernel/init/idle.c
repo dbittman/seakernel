@@ -50,7 +50,7 @@ struct kthread kthread_pager;
 
 int kt_kernel_idle_task(void)
 {
-	current_thread->flags |= THREAD_KERNEL;
+	tm_thread_raise_flag(current_thread, THREAD_KERNEL);
 	kthread_create(&kthread_pager, "[kpager]", 0, __KT_pager, 0);
 	strncpy((char *)current_process->command, "[kidle]", 128);
 	/* First stage is to wait until we can clear various allocated things

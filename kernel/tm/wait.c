@@ -41,8 +41,8 @@ static struct process *__find_first_child(struct process *parent)
 	rwlock_acquire(&process_list->rwl, RWL_READER);
 	ll_for_each_entry(process_list, node, struct process *, proc) {
 		if(proc->parent == parent) {
-			rwlock_release(&process_list->rwl, RWL_READER);
 			tm_process_inc_reference(proc);
+			rwlock_release(&process_list->rwl, RWL_READER);
 			return proc;
 		}
 	}
@@ -76,7 +76,7 @@ int sys_waitpid(int pid, int *st, int opt)
 		tm_schedule();
 	}
 
-	if(proc->thread_count > 0) {
+	if(proc->thread_count > 0 || !(proc->flags & PROCESS_EXITED)) {
 		tm_process_put(proc);
 		return 0;
 	}

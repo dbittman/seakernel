@@ -20,6 +20,7 @@ void tm_thread_handle_signal(int signal)
 	} else if(!current_thread->system && !(current_thread->flags & THREAD_KERNEL)) {
 		/* Default Handlers */
 		tm_thread_raise_flag(current_thread, THREAD_SCHEDULE);
+		current_thread->signal = 0;
 		switch(signal)
 		{
 			case SIGHUP : case SIGKILL: case SIGQUIT: case SIGPIPE:
@@ -27,7 +28,7 @@ void tm_thread_handle_signal(int signal)
 			case SIGALRM: case SIGFPE : case SIGILL : case SIGPAGE:
 			case SIGINT : case SIGTERM: case SIGUSR1: case SIGUSR2:
 				current_process->exit_reason.cause=__EXITSIG;
-				current_process->exit_reason.sig=current_thread->signal;
+				current_process->exit_reason.sig=signal;
 				tm_thread_exit(-9);
 				break;
 			case SIGUSLEEP:
@@ -37,7 +38,7 @@ void tm_thread_handle_signal(int signal)
 				if(!(sa->sa_flags & SA_NOCLDSTOP) && current_process->parent)
 					tm_signal_send_process(current_process->parent, SIGCHILD);
 				current_process->exit_reason.cause=__STOPSIG;
-				current_process->exit_reason.sig=current_thread->signal;
+				current_process->exit_reason.sig=signal;
 				/* Fall through */
 			case SIGISLEEP:
 				current_thread->state = THREADSTATE_INTERRUPTIBLE;

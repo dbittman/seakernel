@@ -8,7 +8,9 @@
 #include <sea/mm/map.h>
 static void tm_thread_destroy(unsigned long data)
 {
+	return;
 	struct thread *thr = (struct thread *)data;
+	assert(thr != current_thread);
 
 	/* if the thread still hasn't been rescheduled, don't destroy it yet */
 	assert(thr->state == THREADSTATE_DEAD);
@@ -24,6 +26,7 @@ static void tm_thread_destroy(unsigned long data)
 
 void tm_process_wait_cleanup(struct process *proc)
 {
+	assert(proc != current_process);
 	/* prevent this process from being "cleaned up" multiple times */
 	if(!(ff_or_atomic(&proc->flags, PROCESS_CLEANED) & PROCESS_CLEANED)) {
 		mm_destroy_directory(&proc->vmm_context);
@@ -32,7 +35,7 @@ void tm_process_wait_cleanup(struct process *proc)
 	}
 }
 
-static void tm_process_exit(int code)
+__attribute__((noinline)) static void tm_process_exit(int code)
 {
 	if(code != -9) 
 		current_process->exit_reason.cause = 0;
@@ -77,6 +80,7 @@ static void tm_process_exit(int code)
 		tm_process_put(current_process->parent);
 	}
 	or_atomic(&current_process->flags, PROCESS_EXITED);
+	tm_process_put(current_process); /* fork starts us out at refs = 1 */
 }
 
 void tm_thread_exit(int code)
@@ -87,20 +91,25 @@ void tm_thread_exit(int code)
 							tm_thread_destroy, (unsigned long)current_thread, 0);
 
 	tm_thread_release_usermode_stack(current_thread, current_thread->usermode_stack_num);
+	ll_do_remove(&current_process->threadlist, &current_thread->pnode, 0);
+	tm_process_put(current_process); /* thread releases it's process pointer */
 
 	sub_atomic(&running_threads, 1);
 	if(sub_atomic(&current_process->thread_count, 1) == 0) {
 		sub_atomic(&running_processes, 1);
 		tm_process_exit(code);
-		tm_process_put(current_process); /* fork starts us out at refs = 1 */
 	}
-
-	ll_do_remove(&current_process->threadlist, &current_thread->pnode, 0);
-	tm_process_put(current_process); /* thread releases it's process pointer */
 
 	cpu_disable_preemption();
 
-	tqueue_remove(current_thread->cpu->active_queue, &current_thread->activenode);
+	mutex_acquire(&current_thread->block_mutex);
+	if(current_thread->blocklist) {
+		ll_do_remove(current_thread->blocklist, &current_thread->blocknode, 0);
+		current_thread->blocklist = 0;
+	} else {
+		tqueue_remove(current_thread->cpu->active_queue, &current_thread->activenode);
+	}
+	mutex_release(&current_thread->block_mutex);
 	sub_atomic(&current_thread->cpu->numtasks, 1);
 	current_thread->state = THREADSTATE_DEAD;
 	tm_thread_raise_flag(current_thread, THREAD_SCHEDULE);

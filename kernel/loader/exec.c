@@ -33,7 +33,7 @@ static void preexec(int desc)
 	valloc_create(&(t->process->mmf_valloc), MMF_BEGIN, MMF_END, PAGE_SIZE, VALLOC_USERMAP);
 	for(addr_t a = MMF_BEGIN;a < (MMF_BEGIN + (size_t)t->process->mmf_valloc.nindex);a+=PAGE_SIZE)
 		mm_vm_set_attrib(a, PAGE_PRESENT | PAGE_WRITE);
-	t->signal = 0;
+	t->signal = t->signals_pending = 0;
 	memset((void *)t->process->signal_act, 0, sizeof(struct sigaction) * NUM_SIGNALS);
 }
 
@@ -132,7 +132,7 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 	 * file descs, free up the page directory and clear up the resources 
 	 * of the task */
 	if(EXEC_LOG)
-		printk(0, "Executing (task %d, cpu %d, tty %d): %s\n", current_process->pid, current_thread->cpu->knum, current_process->tty, path);
+		printk(0, "Executing (p%dt%d, cpu %d, tty %d): %s\n", current_process->pid, current_thread->tid, current_thread->cpu->knum, current_process->tty, path);
 	preexec(desc);
 	
 	/* load in the new image */

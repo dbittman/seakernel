@@ -3,6 +3,7 @@
 #include <sea/tm/process.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/processor.h>
+#include <sea/cpu/atomic.h>
 
 static struct thread *get_next_thread (void)
 {
@@ -26,8 +27,23 @@ static void prepare_schedule(void)
 	/* threads that are in the kernel ignore signals until they're out of a syscall, in case
 	 * there's an interrupt. A syscall that waits or blocks is responsible for checking signals
 	 * manually. Kernel threads must do this as well if they want to handle signals. */
-	if(current_thread->signal && !current_thread->system)
-		tm_thread_handle_signal(current_thread->signal);
+	if(current_thread->signals_pending && !current_thread->signal) {
+		int index = 0;
+		for(; index < 32; ++index) {
+			if(current_thread->signals_pending & (1 << index))
+				break;
+		}
+		if(index < 32) {
+			current_thread->signal = index + 1;
+			and_atomic(&current_thread->signals_pending, ~(1 << (index)));
+		}
+	}
+	if(current_thread->signal) {
+		if(current_thread->state == THREADSTATE_INTERRUPTIBLE)
+			tm_thread_unblock(current_thread);
+		if(!current_thread->system)
+			tm_thread_handle_signal(current_thread->signal);
+	}
 
 	tm_thread_lower_flag(current_thread, THREAD_SCHEDULE);
 }

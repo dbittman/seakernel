@@ -96,8 +96,9 @@ int tty_read(int min, char *buf, size_t len)
 		mutex_acquire(&con->inlock);
 		while(!con->inpos) {
 			mutex_release(&con->inlock);
-			if(tm_thread_block(&con->input_block, THREADSTATE_INTERRUPTIBLE) == -EINTR)
+			if(tm_thread_block(&con->input_block, THREADSTATE_INTERRUPTIBLE) == -EINTR) {
 				return -EINTR;
+			}
 			mutex_acquire(&con->inlock);
 		}
 		t=con->input[0];

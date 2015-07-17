@@ -53,7 +53,7 @@ struct thread {
 	struct cpu *cpu;
 
 	sigset_t sig_mask;
-	unsigned signal;
+	unsigned signal, signals_pending;
 	registers_t *regs;
 	time_t stime, utime, t_cutime, t_cstime;
 
@@ -61,6 +61,7 @@ struct thread {
 
 	struct llistnode blocknode, activenode, pnode;
 	struct llist *blocklist;
+	mutex_t block_mutex;
 	struct async_call block_timeout;
 	struct async_call alarm_timeout;
 	struct process *process;

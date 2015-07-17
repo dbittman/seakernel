@@ -22,7 +22,6 @@ void arch_tm_userspace_signal_initializer(registers_t *regs, struct sigaction *s
 		*/
 	
 	int signal = current_thread->signal;
-	current_thread->signal = 0;
 	memcpy((void *)((addr_t)regs->useresp - sizeof(registers_t)), (void *)regs, sizeof(*regs));
 	regs->useresp -= sizeof(registers_t);
 

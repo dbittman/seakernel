@@ -161,6 +161,8 @@ static inline void __setup_signal_handler(registers_t *regs)
 		return;
 	struct sigaction *sa = &current_process->signal_act[current_thread->signal];
 	arch_tm_userspace_signal_initializer(regs, sa);
+	tm_thread_lower_flag(current_thread, THREAD_SIGNALED);
+	current_thread->signal = 0;
 }
 
 extern void syscall_handler(registers_t *regs);

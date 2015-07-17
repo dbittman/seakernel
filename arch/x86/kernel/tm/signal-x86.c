@@ -31,7 +31,6 @@ void arch_tm_userspace_signal_initializer(registers_t *regs, struct sigaction *s
 		* paging is set up */
 	*(unsigned *)(regs->useresp) = (unsigned)SIGNAL_INJECT;
 	regs->eip = (unsigned)sa->_sa_func._sa_handler;
-	current_thread->signal=0;
 }
 
 void arch_tm_userspace_signal_cleanup(registers_t *regs)

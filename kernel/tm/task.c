@@ -56,6 +56,7 @@ void tm_init_multitasking(void)
 	thread->state = THREADSTATE_RUNNING;
 	thread->magic = THREAD_MAGIC;
 	thread->kernel_stack = &initial_kernel_stack;
+	mutex_create(&thread->block_mutex, MT_NOSCHED);
 	*(struct thread **)(thread->kernel_stack) = thread;
 
 

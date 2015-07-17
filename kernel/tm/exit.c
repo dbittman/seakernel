@@ -9,6 +9,15 @@
 static void tm_thread_destroy(unsigned long data)
 {
 	struct thread *thr = (struct thread *)data;
+
+	/* if the thread still hasn't been rescheduled, don't destroy it yet */
+	assert(thr->state == THREADSTATE_DEAD);
+	if(thr->flags & THREAD_SCHEDULE) {
+		struct async_call *thread_cleanup_call = async_call_create(0, 0, 
+				tm_thread_destroy, data, 0);
+		workqueue_insert(&__current_cpu->work, thread_cleanup_call);
+		return;
+	}
 	kfree(thr->kernel_stack);
 	tm_thread_put(thr);
 }

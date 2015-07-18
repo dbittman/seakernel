@@ -29,7 +29,7 @@ section .text
 [GLOBAL start]                  ; Kernel entry point.
 [GLOBAL _start]                 ; Kernel entry point.
 [EXTERN kmain]                  ; This is the entry point of our C code
-STACKSIZE equ 0x1000
+STACKSIZE equ 0x4000
 
 start:
    mov esp, initial_kernel_stack+STACKSIZE     ; set up the stack
@@ -49,7 +49,7 @@ hang:
    jmp   hang                   ; course, this wont happen
 
 section .bss
-align 0x1000
+align 0x4000
 [GLOBAL initial_kernel_stack]
 initial_kernel_stack:
    resb STACKSIZE               ; reserve 16k stack on a quadword boundary

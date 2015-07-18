@@ -27,7 +27,7 @@
 #include <sea/tm/thread.h>
 #include <sea/fs/dir.h>
 #include <sea/fs/kerfs.h>
-
+#include <sea/tm/thread.h>
 static unsigned int num_syscalls=0;
 //#define SC_DEBUG 1
 #define SC_TIMING 1
@@ -149,7 +149,7 @@ static void *syscall_table[129] = {
 	[SYS_MSYNC]           = SC sys_msync,
 	//[SYS_TSTAT]           = SC sys_task_stat,
 
-	//[SYS_DELAY]           = SC tm_delay, /* TODO: remove this */
+	[SYS_DELAY]           = SC tm_thread_delay,
 	[SYS_KRESET]          = SC kernel_reset,
 	[SYS_KPOWOFF]         = SC kernel_poweroff,
 	[SYS_GETUID]          = SC tm_get_uid,
@@ -204,6 +204,7 @@ static void *syscall_table[129] = {
 	[SYS_SETSERV]         = SC sys_setserv,
 	[SYS_SYSLOG]          = SC sys_syslog,
 	[SYS_POSFSSTAT]       = sys_posix_fsstat,
+	[SYS_GETTIMEOFDAY]    = sys_gettimeofday,
 
 
 

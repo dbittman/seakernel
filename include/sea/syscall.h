@@ -130,12 +130,12 @@ int sys_setup();
 #define SYS_SETSERV      119
 #define SYS_SYSLOG       120
 #define SYS_POSFSSTAT    121
+#define SYS_GETTIMEOFDAY 122
 
 
 
 
-
-#define SYS_WAITAGAIN    127
+#define SYS_WAITAGAIN    127 /* TODO ??? */
 
 /* These are special */
 #define SYS_RET_FROM_SIG 128

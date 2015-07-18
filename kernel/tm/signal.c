@@ -1,5 +1,5 @@
-/* Functions for signaling tasks (IPC)
- * signal.c: Copyright (c) 2010 Daniel Bittman
+/* Functions for signaling threads and processes
+ * signal.c: Copyright (c) 2015 Daniel Bittman
  */
 #include <sea/kernel.h>
 #include <sea/cpu/interrupt.h>

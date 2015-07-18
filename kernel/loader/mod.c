@@ -36,6 +36,7 @@ void loader_init_kernel_symbols(void)
 	loader_add_kernel_symbol(panic);
 	loader_do_add_kernel_symbol((addr_t)&kernel_state_flags, "kernel_state_flags");
 	loader_add_kernel_symbol(printk);
+	loader_add_kernel_symbol(printk_safe);
 	loader_add_kernel_symbol(kprintf);
 	loader_add_kernel_symbol(snprintf);
 	loader_add_kernel_symbol(memset);

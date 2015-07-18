@@ -121,9 +121,9 @@ static const char *special_names(int i)
 
 static void kernel_fault(int fuckoff, addr_t ip, long err_code, registers_t *regs)
 {
-	kprintf("Kernel Exception #%d: ", fuckoff);
+	kprintf("Kernel Exception #%d: %s\n", fuckoff, exception_messages[fuckoff]);
 	arch_cpu_print_reg_state(regs);
-	panic(PANIC_NOSYNC | (fuckoff == 3 ? PANIC_VERBOSE : 0), exception_messages[fuckoff]);
+	panic(PANIC_INSTANT | PANIC_NOSYNC | (fuckoff == 3 ? PANIC_VERBOSE : 0), exception_messages[fuckoff]);
 }
 
 static void faulted(int fuckoff, int userspace, addr_t ip, long err_code, registers_t *regs)

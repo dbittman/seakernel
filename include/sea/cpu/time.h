@@ -34,6 +34,7 @@ time_t time_get_epoch();
 void arch_time_get(struct tm *now);
 uint64_t arch_hpt_get_nanoseconds();
 void time_get(struct tm *);
+int sys_gettimeofday(struct timeval *tv, void *g);
 
 #endif
 

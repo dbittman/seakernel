@@ -28,7 +28,7 @@ struct thread *tm_thread_fork(int flags)
 	thr->tid = tm_thread_next_tid();
 	thr->flags = THREAD_FORK;
 	thr->priority = current_thread->priority;
-	thr->kernel_stack = kmalloc_a(0x1000);
+	thr->kernel_stack = tm_thread_reserve_kernelmode_stack();
 	thr->sig_mask = current_thread->sig_mask;
 	thr->refs = 1;
 	mutex_create(&thr->block_mutex, MT_NOSCHED);

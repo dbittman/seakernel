@@ -73,7 +73,7 @@ int boot_cpu(struct cpu *cpu)
 	unsigned bios_reset_vector = BIOS_RESET_VECTOR;
 	printk(1, "[smp]: poking cpu %d\n", apicid);
 
-	cpu->stack = (addr_t)kmalloc_a(KERN_STACK_SIZE);
+	cpu->stack = tm_thread_reserve_kernelmode_stack();
 	cpu->active_queue = tqueue_create(0, 0);
 	cpu->numtasks=1;
 	ticker_create(&cpu->ticker, 0);

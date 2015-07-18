@@ -36,6 +36,9 @@ void tm_init_multitasking(void)
 	hash_table_resize(thread_table, HASH_RESIZE_MODE_IGNORE, 1000);
 	hash_table_specify_function(thread_table, HASH_FUNCTION_BYTE_SUM);
 
+	/* TODO: roll this out for usermode stacks? */
+	valloc_create(&km_stacks, KERNELMODE_STACKS_START, KERNELMODE_STACKS_END, KERN_STACK_SIZE, 0);
+
 	struct thread *thread = kmalloc(sizeof(struct thread));
 	struct process *proc = kernel_process = kmalloc(sizeof(struct process));
 
@@ -59,7 +62,6 @@ void tm_init_multitasking(void)
 	mutex_create(&thread->block_mutex, MT_NOSCHED);
 	*(struct thread **)(thread->kernel_stack) = thread;
 
-
 	primary_cpu->active_queue = tqueue_create(0, 0);
 	primary_cpu->idle_thread = thread;
 	primary_cpu->numtasks=1;
@@ -73,7 +75,8 @@ void tm_init_multitasking(void)
 	primary_cpu->flags |= CPU_RUNNING;
 #if CONFIG_MODULES
 	loader_add_kernel_symbol(tm_thread_delay_sleep);
-	//loader_add_kernel_symbol(tm_schedule);
+	loader_add_kernel_symbol(tm_schedule);
+	loader_add_kernel_symbol(arch_tm_get_current_thread);
 #endif
 }
 

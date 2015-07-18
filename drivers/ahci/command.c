@@ -1,6 +1,6 @@
 #include <sea/loader/module.h>
 #include <modules/ahci.h>
-#include <sea/tm/schedule.h>
+#include <sea/tm/timing.h>
 #include <sea/mm/dma.h>
 #include <sea/cpu/processor.h>
 #include <sea/vsprintf.h>

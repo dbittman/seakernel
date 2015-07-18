@@ -19,7 +19,8 @@ __attribute__((const)) const struct thread *arch_tm_get_current_thread(int flags
 	if(!(flags & KSF_THREADING))
 		return 0;
 	register uint32_t stack __asm__("esp");
-	return *(struct thread **)(stack & ~(KERN_STACK_SIZE - 1));
+	struct thread *ret = *(struct thread **)(stack & ~(KERN_STACK_SIZE - 1));
+	return ret;
 }
 
 void arch_tm_jump_to_user_mode(addr_t jmp)

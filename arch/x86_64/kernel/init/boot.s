@@ -28,7 +28,7 @@ mboot:
 section .text
 [GLOBAL start]                  ; Kernel entry point.
 [EXTERN kmain]                  ; This is the entry point of our C code
-STACKSIZE equ 0x1000            ; that's 16k.
+STACKSIZE equ 0x4000            ; that's 16k.
 
 align 8
 ; descriptor for the temporary 64-bit GDT
@@ -129,7 +129,7 @@ start64:
     int 3
 
 section .bss
-align 0x1000
+align 0x4000
 [GLOBAL initial_kernel_stack]
 initial_kernel_stack:
    resb STACKSIZE               ; reserve 16k stack on a quadword boundary

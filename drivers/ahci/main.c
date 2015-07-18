@@ -11,7 +11,7 @@
 #include <sea/dm/block.h>
 #include <sea/loader/symbol.h>
 #include <modules/psm.h>
-#include <sea/tm/schedule.h>
+#include <sea/tm/timing.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/vsprintf.h>
 #include <sea/errno.h>
@@ -169,7 +169,7 @@ int ioctl_ahci(int min, int cmd, long arg)
 	return -EINVAL;
 }
 
-int irq1;
+int irq;
 int module_install(void)
 {
 	printk(KERN_DEBUG, "[ahci]: initializing ahci driver...\n");
@@ -180,7 +180,7 @@ int module_install(void)
 		pmap_destroy(ahci_pmap);
 		return -ENOENT;
 	}
-	irq1 = interrupt_register_handler(ahci_int, ahci_interrupt_handler, 0);
+	irq = cpu_interrupt_register_handler(ahci_int, ahci_interrupt_handler);
 	ahci_major = dm_set_available_block_device(ahci_rw_single,
 			ATA_SECTOR_SIZE, ioctl_ahci, ahci_rw_multiple, 0);
 	ahci_init_hba(hba_mem);
@@ -192,7 +192,7 @@ int module_exit(void)
 {
 	int i;
 	dm_unregister_block_device(ahci_major);
-	interrupt_unregister_handler(ahci_int, irq1);
+	cpu_interrupt_unregister_handler(ahci_int, irq);
 	for(i=0;i<32;i++)
 	{
 		if(ports[i]) {

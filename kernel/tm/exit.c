@@ -20,7 +20,7 @@ static void tm_thread_destroy(unsigned long data)
 		workqueue_insert(&__current_cpu->work, thread_cleanup_call);
 		return;
 	}
-	kfree(thr->kernel_stack);
+	tm_thread_release_kernelmode_stack(thr->kernel_stack);
 	tm_thread_put(thr);
 }
 
@@ -115,6 +115,8 @@ void tm_thread_exit(int code)
 	tm_thread_raise_flag(current_thread, THREAD_SCHEDULE);
 	
 	workqueue_insert(&__current_cpu->work, thread_cleanup_call);
+	cpu_interrupt_set(0); /* don't schedule away until we get back
+							 to the syscall handler! */
 	cpu_enable_preemption();
 }
 

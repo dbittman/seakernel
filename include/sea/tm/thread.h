@@ -11,8 +11,8 @@
 #include <sea/cpu/processor.h>
 #include <sea/cpu/atomic.h>
 #include <sea/arch-include/tm-thread.h>
-
-#define KERN_STACK_SIZE 0x1000
+#include <sea/mm/valloc.h>
+#define KERN_STACK_SIZE 0x4000
 #define THREAD_MAGIC 0xBABECAFE
 #define PRIO_PROCESS 1
 #define PRIO_PGRP    2
@@ -45,7 +45,7 @@ struct thread {
 	int system;
 	int interrupt_level;
 	int priority, timeslice;
-	void *kernel_stack;
+	addr_t kernel_stack;
 	unsigned long stack_pointer, jump_point;
 	addr_t usermode_stack_start;
 	addr_t usermode_stack_end;
@@ -110,9 +110,13 @@ addr_t arch_tm_read_ip(void);
 void arch_tm_jump_to_user_mode(addr_t jmp);
 __attribute__((noinline)) void arch_tm_thread_switch(struct thread *old, struct thread *, addr_t);
 __attribute__((noinline)) void arch_tm_fork_setup_stack(struct thread *thr);
+addr_t tm_thread_reserve_kernelmode_stack(void);
+void tm_thread_release_kernelmode_stack(addr_t base);
+int tm_thread_delay(time_t microseconds);
 
 #define tm_thread_pause(th) tm_thread_set_state(th, THREADSTATE_INTERRUPTIBLE)
 #define tm_thread_resume(th) tm_thread_set_state(th, THREADSTATE_RUNNING)
 
+extern struct valloc km_stacks;
 #endif
 

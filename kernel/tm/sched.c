@@ -42,6 +42,10 @@ static void prepare_schedule(void)
 	if(current_thread->signal) {
 		if(current_thread->state == THREADSTATE_INTERRUPTIBLE)
 			tm_thread_unblock(current_thread);
+		/* NOTE: before we checked thread state, there was a bug where a thread that
+		 * called exit and got a signal during the exit would exit twice. This is because
+		 * it would finish the syscall and then reschedule, which would then handle the signal
+		 * here, which would then call exit...again. */
 		if(!current_thread->system && current_thread->state == THREADSTATE_RUNNING)
 			tm_thread_handle_signal(current_thread->signal);
 	}
@@ -56,8 +60,8 @@ static void finish_schedule(void)
 void tm_schedule(void)
 {
 	int old = cpu_interrupt_set(0);
-	if(current_thread->interrupt_level)
-		panic(PANIC_NOSYNC | PANIC_INSTANT, "tried to reschedule within interrupt context");
+	//if(current_thread->interrupt_level)
+	//	panic(PANIC_NOSYNC | PANIC_INSTANT, "tried to reschedule within interrupt context (%d)", current_thread->interrupt_level);
 	assert(__current_cpu->preempt_disable >= 0);
 	if(__current_cpu->preempt_disable > 0 || !(__current_cpu->flags & CPU_RUNNING)) {
 		cpu_interrupt_set(old);

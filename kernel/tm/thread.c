@@ -3,9 +3,11 @@
 #include <sea/lib/hash.h>
 #include <sea/errno.h>
 #include <sea/lib/bitmap.h>
+#include <sea/mm/valloc.h>
 size_t running_threads = 0;
 struct hash_table *thread_table;
 mutex_t thread_refs_lock;
+struct valloc km_stacks;
 void tm_thread_enter_system(int sys)
 {
 	current_thread->system=(!sys ? -1 : sys);
@@ -84,5 +86,24 @@ addr_t tm_thread_usermode_stack_end(int stack)
 {
 	assert(stack >= 0 && (unsigned)stack < NUM_USERMODE_STACKS);
 	return (stack + 1) * (CONFIG_STACK_PAGES * PAGE_SIZE) + USERMODE_STACKS_START;
+}
+
+addr_t tm_thread_reserve_kernelmode_stack(void)
+{
+	struct valloc_region va;
+	if(!valloc_allocate(&km_stacks, &va, 1))
+		panic(PANIC_NOSYNC, "unable to allocate kernel mode stack");
+	for(addr_t a = va.start; a < va.start + KERN_STACK_SIZE; a += PAGE_SIZE)
+		map_if_not_mapped(a);
+	return va.start;
+}
+
+void tm_thread_release_kernelmode_stack(addr_t base)
+{
+	struct valloc_region va;
+	va.start = base;
+	va.npages = 1;
+	va.flags = 0;
+	valloc_deallocate(&km_stacks, &va);
 }
 

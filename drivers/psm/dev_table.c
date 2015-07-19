@@ -14,7 +14,7 @@ void psm_initialize_table(void)
 	table_length=8;
 	table_index=0;
 	table = kmalloc(sizeof(struct psm_device)*8);
-	table_lock = mutex_create(0, 0);
+	table_lock = mutex_create(0, MT_NOSCHED);
 }
 
 void psm_table_destroy(void)

@@ -14,7 +14,7 @@ struct queue *queue_create(struct queue *q, int flags)
 	}
 	q->head = q->tail = 0;
 	q->count = 0;
-	mutex_create(&q->lock, 0);
+	mutex_create(&q->lock, MT_NOSCHED);
 	return q;
 }
 
@@ -86,6 +86,7 @@ void queue_enqueue_item(struct queue *q, struct queue_item *i, void *ent)
 		q->tail = i;
 	} else {
 		assert(!q->head);
+		assert(!q->count);
 		q->head = q->tail = i;
 	}
 	add_atomic(&q->count, 1);

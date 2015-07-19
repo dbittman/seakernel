@@ -33,11 +33,11 @@ void tm_timer_handler(registers_t *r, int int_no, int flags)
 			add_atomic(&current_process->stime, ONE_SECOND / current_hz);
 		else
 			add_atomic(&current_process->utime, ONE_SECOND / current_hz);
-		current_thread->timeslice /= 2;
-		if(!current_thread->timeslice) {
+		//current_thread->timeslice /= 2;
+		//if(!current_thread->timeslice) {
 			current_thread->flags |= THREAD_SCHEDULE;
-			current_thread->timeslice = current_thread->priority;
-		}
+		//	current_thread->timeslice = current_thread->priority;
+		//}
 	}
 }
 

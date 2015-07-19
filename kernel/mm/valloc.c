@@ -131,7 +131,7 @@ struct valloc *valloc_create(struct valloc *va, addr_t start, addr_t end, size_t
 	va->start = start;
 	va->end = end;
 	va->psize = page_size;
-	mutex_create(&va->lock, 0);
+	mutex_create(&va->lock, MT_NOSCHED);
 
 	va->npages = (end - start) / page_size;
 	va->nindex = ((va->npages-1) / (8 * page_size)) + 1;

@@ -12,6 +12,7 @@
 #include <sea/cpu/atomic.h>
 #include <sea/arch-include/tm-thread.h>
 #include <sea/mm/valloc.h>
+#include <sea/tm/workqueue.h>
 #define KERN_STACK_SIZE 0x4000
 #define THREAD_MAGIC 0xBABECAFE
 #define PRIO_PROCESS 1
@@ -65,6 +66,7 @@ struct thread {
 	struct async_call block_timeout;
 	struct async_call alarm_timeout;
 	struct process *process;
+	struct workqueue resume_work;
 };
 
 extern size_t running_threads;

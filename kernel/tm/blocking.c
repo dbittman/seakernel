@@ -13,7 +13,7 @@ void tm_thread_set_state(struct thread *t, int state)
 {
 	int oldstate = t->state;
 	t->state = state;
-	if(oldstate != state && t == current_thread)
+	if(oldstate != state && t == current_thread && t->interrupt_level == 0)
 		tm_schedule();
 	else
 		tm_thread_raise_flag(t, THREAD_SCHEDULE);

@@ -85,6 +85,7 @@ int boot_cpu(struct cpu *cpu)
 	thread->state = THREADSTATE_RUNNING;
 	thread->tid = tm_thread_next_tid();
 	thread->magic = THREAD_MAGIC;
+	workqueue_create(&thread->resume_work, 0);
 	thread->kernel_stack = (void *)cpu->stack;
 	mutex_create(&thread->block_mutex, MT_NOSCHED);
 	*(struct thread **)(thread->kernel_stack) = thread;

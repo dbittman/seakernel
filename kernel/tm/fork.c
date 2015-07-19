@@ -32,6 +32,7 @@ struct thread *tm_thread_fork(int flags)
 	thr->sig_mask = current_thread->sig_mask;
 	thr->refs = 1;
 	mutex_create(&thr->block_mutex, MT_NOSCHED);
+	workqueue_create(&thr->resume_work, 0);
 	return thr;
 }
 
@@ -140,7 +141,7 @@ struct cpu *tm_fork_pick_cpu(void)
 int tm_clone(int flags)
 {
 	struct process *proc = current_process;
-	if(!(flags & CLONE_SHARE_PROCESS)) {
+	if(!(flags & CLONE_SHARE_PROCESS) && !(flags & CLONE_KTHREAD)) {
 		proc = tm_process_copy(flags);
 		add_atomic(&running_processes, 1);
 		tm_process_inc_reference(proc);

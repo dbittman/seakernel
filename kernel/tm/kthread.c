@@ -20,9 +20,9 @@ struct kthread *kthread_create(struct kthread *kt, const char *name, int flags,
 	kt->flags |= flags;
 	kt->entry = entry;
 	kt->arg = arg;
-	int tid = sys_clone(CLONE_SHARE_PROCESS | CLONE_KTHREAD);
+	int tid = tm_clone(CLONE_SHARE_PROCESS | CLONE_KTHREAD);
 	if(!tid) {
-		current_thread->flags |= THREAD_KERNEL;
+		tm_thread_raise_flag(current_thread, THREAD_KERNEL);
 		current_thread->regs = 0;
 		strncpy((char *)current_process->command, name, 128);
 		
@@ -33,7 +33,7 @@ struct kthread *kthread_create(struct kthread *kt, const char *name, int flags,
 		int code = kt->code;
 		or_atomic(&kt->flags, KT_EXITED);
 		tm_thread_exit(0);
-		panic(0, "kthread lived past exit");
+		tm_schedule();
 	}
 	kt->thread = tm_thread_get(tid);
 	return kt;
@@ -43,6 +43,7 @@ void kthread_destroy(struct kthread *kt)
 {
 	if(!(kt->flags & KT_EXITED))
 		panic(0, "tried to destroy a running kernel thread");
+	tm_thread_put(kt->thread);
 	if(kt->flags & KT_ALLOC)
 		kfree(kt);
 }

@@ -16,7 +16,7 @@ static mutex_t km_m;
 void kmalloc_init(void)
 {
 	strncpy(kmalloc_name, "slab", 128);
-	mutex_create(&km_m, 0);
+	mutex_create(&km_m, MT_NOSCHED); //TODO
 	__mm_slab_init(KMALLOC_ADDR_START, KMALLOC_ADDR_END);
 }
 

@@ -6,7 +6,8 @@
 #include <sea/mutex.h>
 #include <sea/types.h>
 #include <sea/fs/inode.h>
-
+#include <sea/tm/kthread.h>
+#include <sea/lib/queue.h>
 typedef struct blockdevice_s {
 	int blksz;
 	int (*rw)(int mode, int minor, u64 blk, char *buf);
@@ -15,6 +16,8 @@ typedef struct blockdevice_s {
 	int (*select)(int min, int rw);
 	unsigned char cache;
 	mutex_t acl;
+	struct queue wq;
+	struct kthread elevator;
 } blockdevice_t;
 
 blockdevice_t *dm_set_block_device(int maj, int (*f)(int, int, u64, char*), int bs, 

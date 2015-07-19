@@ -30,6 +30,8 @@ void cpu_processor_init_2(void)
 	loader_do_add_kernel_symbol((addr_t)&primary_cpu, "primary_cpu");
 	loader_add_kernel_symbol(cpu_interrupt_set);
 	loader_add_kernel_symbol(cpu_interrupt_get_flag);
+	loader_add_kernel_symbol(cpu_disable_preemption);
+	loader_add_kernel_symbol(cpu_enable_preemption);
 #if CONFIG_SMP
 	loader_add_kernel_symbol(cpu_get);
 	loader_add_kernel_symbol((addr_t)&cpu_array_num);

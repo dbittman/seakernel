@@ -220,11 +220,12 @@ int mm_page_fault_test_mappings(addr_t address, int pf_cause)
 	if((pf_cause & PF_CAUSE_WRITE) && !(map->prot & PROT_WRITE))
 		goto out;
 	
+	mutex_release(&current_process->map_lock);
 	if(load_file_data(map, address) != -1)
 	{
-		mutex_release(&current_process->map_lock);
 		return 0;
 	}
+	return -1;
 out:
 	mutex_release(&current_process->map_lock);
 	return -1;

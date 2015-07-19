@@ -58,6 +58,7 @@ void tm_init_multitasking(void)
 	thread->process = proc; /* we have to do this early, so that the vmm system can use the lock... */
 	thread->state = THREADSTATE_RUNNING;
 	thread->magic = THREAD_MAGIC;
+	workqueue_create(&thread->resume_work, 0);
 	thread->kernel_stack = &initial_kernel_stack;
 	mutex_create(&thread->block_mutex, MT_NOSCHED);
 	*(struct thread **)(thread->kernel_stack) = thread;

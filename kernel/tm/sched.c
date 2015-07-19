@@ -57,6 +57,13 @@ static void finish_schedule(void)
 {
 }
 
+static void post_schedule(void)
+{
+	while(workqueue_dowork(&current_thread->resume_work) != -1) {
+		tm_schedule();
+	}
+}
+
 void tm_schedule(void)
 {
 	int old = cpu_interrupt_set(0);
@@ -90,5 +97,8 @@ void tm_schedule(void)
 	finish_schedule();
 	cpu_enable_preemption();
 	cpu_interrupt_set(old);
+	//post_schedule();
+	if(current_thread->flags & THREAD_SCHEDULE)
+		tm_schedule();
 }
 

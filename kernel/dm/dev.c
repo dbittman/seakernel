@@ -20,7 +20,7 @@ void dm_init(void)
 	dm_init_char_devices();
 	dm_init_block_devices();
 #if CONFIG_MODULES
-	loader_add_kernel_symbol(dm_block_rw);
+	//loader_add_kernel_symbol(dm_block_rw);
 	loader_add_kernel_symbol(dm_block_ioctl);
 	loader_add_kernel_symbol(dm_block_device_rw);
 	loader_add_kernel_symbol(dm_set_available_block_device);

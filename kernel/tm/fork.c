@@ -43,7 +43,7 @@ static void __copy_mappings(struct process *ch, struct process *pa)
 	 * to not screw up the universe. This is accomplished by the fact
 	 * that everything is just pointers to sections of memory that are
 	 * copied during mm_vm_clone anyway... */
-	mutex_acquire(&pa->map_lock);
+	//mutex_acquire(&pa->map_lock);
 	struct llistnode *node;
 	struct memmap *map;
 	ll_for_each_entry(&pa->mappings, node, struct memmap *, map) {
@@ -63,7 +63,7 @@ static void __copy_mappings(struct process *ch, struct process *pa)
 	 * this is called, so the pointers are actually valid */
 	memcpy(&(ch->mmf_valloc), &(pa->mmf_valloc), sizeof(pa->mmf_valloc));
 	ch->mmf_valloc.lock.lock = 0;
-	mutex_release(&pa->map_lock);
+	//mutex_release(&pa->map_lock);
 }
 
 static struct process *tm_process_copy(int flags)

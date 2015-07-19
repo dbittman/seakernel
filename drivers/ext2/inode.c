@@ -53,7 +53,7 @@ static int get_bg_block(struct ext2_info* fs, int group_nr)
 int ext2_bg_read(struct ext2_info* fs, int group_nr, ext2_blockgroup_t* bg)
 {
 	int bg_n = get_bg_block(fs, group_nr);
-	ext2_read_off(fs, bg_n * ext2_sb_blocksize(fs->sb) + 
+	int r = ext2_read_off(fs, bg_n * ext2_sb_blocksize(fs->sb) + 
 		((group_nr * sizeof(ext2_blockgroup_t)) % ext2_sb_blocksize(fs->sb)), 
 		(unsigned char *)bg, sizeof(ext2_blockgroup_t));
 	return 1;
@@ -104,11 +104,10 @@ int ext2_inode_read(struct ext2_info* fs, uint32_t inode_nr, ext2_inode_t* inode
 	if (!(num = inode_get_block(fs, inode_nr, &offset))) {
 		return 0;
 	}
-	ext2_read_off(fs, num * ext2_sb_blocksize(fs->sb) + offset, 
+	int r = ext2_read_off(fs, num * ext2_sb_blocksize(fs->sb) + offset, 
 		(unsigned char *)inode, ext2_sb_inodesize(fs->sb));
 	inode->fs = fs;
 	inode->number = inode_nr;
-	//printk(0, "%4d iread: %d\n", current_task->pid, inode_nr);
 	return 1;
 }
 

@@ -66,7 +66,6 @@ void tm_thread_unblock(struct thread *t)
 }
 
 void tm_blocklist_wakeall(struct llist *blocklist)
-
 {
 	struct llistnode *node, *next;
 	struct thread *t;

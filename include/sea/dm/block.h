@@ -8,6 +8,7 @@
 #include <sea/fs/inode.h>
 #include <sea/tm/kthread.h>
 #include <sea/lib/queue.h>
+#include <sea/ll.h>
 typedef struct blockdevice_s {
 	int blksz;
 	int (*rw)(int mode, int minor, u64 blk, char *buf);
@@ -19,6 +20,21 @@ typedef struct blockdevice_s {
 	struct queue wq;
 	struct kthread elevator;
 } blockdevice_t;
+
+struct ioreq {
+	uint64_t block;
+	size_t count;
+	char *buffer;
+	int direction;
+	int flags;
+	blockdevice_t *bd;
+	dev_t dev;
+	struct queue_item qi;
+	struct llist blocklist;
+};
+
+#define IOREQ_COMPLETE 1
+#define IOREQ_FAILED   2
 
 blockdevice_t *dm_set_block_device(int maj, int (*f)(int, int, u64, char*), int bs, 
 	int (*c)(int, int, long), int (*m)(int, int, u64, char *, int), int (*s)(int, int));

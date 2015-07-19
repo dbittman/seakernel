@@ -13,16 +13,6 @@
 
 static mutex_t bd_search_lock;
 
-struct ior {
-	uint64_t blk;
-	size_t count;
-	int rw;
-	dev_t dev;
-	char *buf;
-	volatile int complete;
-	struct thread *thread;
-};
-
 int ioctl_stub(int a, int b, long c)
 {
 	return -1;
@@ -31,20 +21,34 @@ int ioctl_stub(int a, int b, long c)
 int __elevator_main(struct kthread *kt, void *arg)
 {
 	blockdevice_t *dev = arg;
-	char buf[dev->blksz];
-	kprintf("Started elevator on %x: %d\n", arg, current_thread->tid);
+	const int max = 8;
+	char *buf = kmalloc(dev->blksz * max);
 	while(!kthread_is_joining(kt)) {
 		struct queue_item *qi;
 		if((qi = queue_dequeue_item(&dev->wq))) {
-			struct ior *req = qi->ent;
-			struct thread *t = req->thread;
-			int ret = dm_do_block_rw(req->rw, req->dev, req->blk, buf, dev);
-			if(ret == dev->blksz && (dev->cache & BCACHE_READ)) 
-				dm_cache_block(-req->dev, req->blk, dev->blksz, buf);
-			req->complete = 1;
-			tm_thread_set_state(t, THREADSTATE_RUNNING);
+			struct ioreq *req = qi->ent;
+			size_t count = req->count;
+			size_t block = req->block;
+			while(count) {
+				int this = 8;
+				if(this > count)
+					this = count;
+				assert(req->direction == READ);
+				int ret = dm_do_block_rw_multiple(req->direction, req->dev, block, buf, this, dev);
+				if(ret == dev->blksz * this) {
+					for(int i=0;i<this;i++) {
+						dm_cache_block(-req->dev, block+i, dev->blksz, buf+i*dev->blksz);
+					}
+				} else {
+					req->flags |= IOREQ_FAILED;
+				}
+				block+=this;
+				count-=this;
+			}
+			req->flags |= IOREQ_COMPLETE;
+			tm_blocklist_wakeall(&req->blocklist);
 		} else {
-			//tm_thread_set_state(current_thread, THREADSTATE_INTERRUPTIBLE);
+			tm_thread_set_state(current_thread, THREADSTATE_INTERRUPTIBLE);
 			tm_schedule();
 		}
 	}
@@ -128,9 +132,9 @@ int dm_do_block_rw(int rw, dev_t dev, u64 blk, char *buf, blockdevice_t *bd)
 	}
 	if(bd->rw)
 	{
-		mutex_acquire(&bd->acl);
+	//	mutex_acquire(&bd->acl);
 		int ret = (bd->rw)(rw, MINOR(dev), blk, buf);
-		mutex_release(&bd->acl);
+	//	mutex_release(&bd->acl);
 		return ret;
 	}
 	return -EIO;
@@ -149,214 +153,74 @@ int dm_do_block_rw_multiple(int rw, dev_t dev, u64 blk, char *buf, int count, bl
 	}
 	if(bd->rw_multiple)
 	{
-		mutex_acquire(&bd->acl);
+		//mutex_acquire(&bd->acl);
 		int ret = (bd->rw_multiple)(rw, MINOR(dev), blk, buf, count);
-		mutex_release(&bd->acl);
+	//	mutex_release(&bd->acl);
 		return ret;
 	}
 	return -EIO;
 }
 
-int dm_block_request(blockdevice_t *bd, dev_t dev, int rw, u64 start, size_t count)
+void __add_request(struct ioreq *req)
 {
-	
+	queue_enqueue_item(&req->bd->wq, &req->qi, req);
+	tm_thread_set_state(req->bd->elevator.thread, THREADSTATE_RUNNING);
 }
 
-static void __resume_call(void *arg)
+int block_cache_request(struct ioreq *req, off_t offset, size_t bytecount)
 {
-	struct ior *req = arg;
-	if(req->complete) {
-		printk(0, "READING %d (%d)\n", (uint32_t)req->blk, req->complete);
-		dm_get_block_cache(req->dev, req->blk, req->buf);
-		printk(0, "okay\n");
-	} else {
-		struct async_call *c = async_call_create(0, 0, __resume_call, (unsigned long)req, ASYNC_CALL_PRIORITY_MEDIUM);
-		workqueue_insert(&current_thread->resume_work, c);
-		tm_thread_raise_flag(current_thread, THREAD_SCHEDULE);
-	}
-}
-
-int dm_block_rw(int rw, dev_t dev, u64 blk, char *buf, blockdevice_t *bd)
-{
-	if(!bd) 
-	{
-		device_t *dt = dm_get_device(DT_BLOCK, MAJOR(dev));
-		if(!dt)
-			return -ENXIO;
-		bd = (blockdevice_t *)dt->ptr;
-	}
-	int ret=0;
-	if(rw == READ)
-	{
-#if CONFIG_BLOCK_CACHE
-		if(bd->cache) ret = dm_get_block_cache(dev, blk, buf);
-		if(ret)
-			return bd->blksz;
-#endif
-		struct ior *req = kmalloc(sizeof(*req));
-		struct queue_item *qi = kmalloc(sizeof(*qi));
-		req->rw = rw;
-		req->dev = dev;
-		req->blk = blk;
-		req->count = 1;
-		req->buf = buf;
-		req->complete = 0;
-		req->thread = current_thread;
-		queue_enqueue_item(&bd->wq, qi, req);
-		tm_thread_set_state(bd->elevator.thread, THREADSTATE_RUNNING);
-		tm_thread_set_state(current_thread, THREADSTATE_INTERRUPTIBLE);
-		
-		if(current_thread->interrupt_level && 0) {
-			printk(0, "ENQUEUEING %d -> %x\n", (uint32_t)blk, buf);
-			struct async_call *c = async_call_create(0, 0, __resume_call, (unsigned long)req, ASYNC_CALL_PRIORITY_MEDIUM);
-			workqueue_insert(&current_thread->resume_work, c);
-			return bd->blksz;
-		} else {
-			while(req->complete == 0)
-				tm_schedule();
-			if(bd->cache) ret = dm_get_block_cache(dev, blk, buf);
-			if(ret)
-				return bd->blksz;
-			return 0;
-		}
-		//ret = dm_do_block_rw(rw, dev, blk, buf, bd);
-#if CONFIG_BLOCK_CACHE
-		/* -dev signals that this is a read cache - 
-		 * meaning it is not 'dirty' to start with */
-		if(ret == bd->blksz && (bd->cache & BCACHE_READ)) 
-			dm_cache_block(-dev, blk, bd->blksz, buf);
-#endif
-	} else if(rw == WRITE)
-	{
-#if CONFIG_BLOCK_CACHE
-		if(bd->cache) 
-		{
-			if(!dm_cache_block(dev, blk, bd->blksz, buf))
-				return bd->blksz;
-		}
-#endif
-		ret = dm_do_block_rw(rw, dev, blk, buf, bd);
-	}
-	return ret;
-}
-
-/* reads many blocks and caches them */
-static unsigned do_dm_block_read_multiple(blockdevice_t *bd, dev_t dev, u64 start, 
-	unsigned num, char *buf)
-{
-	unsigned count=0;
-	/* if we don't support reading multiple blocks, then just loop through
-	 * and read them individually. block_rw will cache them */
-	if(!bd->rw_multiple) {
-		while(num--) {
-			if(dm_block_rw(READ, dev, start+count, buf+count*bd->blksz, bd) != bd->blksz)
-				return count;
-			count++;
-		}
-		return count;
-	}
-	num = bd->rw_multiple(READ, MINOR(dev), start, buf, num) / bd->blksz;
-#if CONFIG_BLOCK_CACHE
-	if(bd->cache & BCACHE_READ) {
-		while(count < num) {
-			dm_cache_block(-dev, start+count, bd->blksz, buf + count*bd->blksz);
-			count++;
-		}
-	} else
-		count=num;
-#else
-	count = num;
-#endif
-	return count;
-}
-
-static unsigned dm_block_read_multiple(blockdevice_t *bd, int dev, u64 start, 
-	unsigned num, char *buf)
-{
-	unsigned count=0;
 	int ret;
-#if CONFIG_BLOCK_CACHE
-	if(bd->cache & BCACHE_READ)  {
-		/* if we're gonna cache them, then we need to do some work. We try
-		 * to read any block that is in the cache from the cache, and only
-		 * ask the block device to read if we have to. So we loop though
-		 * to find where we need to start reading from the block device, and
-		 * then also loop through to figure out how many block we need to read
-		 * before we can read from the cache again. This is a simple implementation, 
-		 * and it could be more complicated. This gives the minimum reads from
-		 * the block device and reads in the largest chunks possible */
-		while(count<num) {
-			ret = dm_get_block_cache(dev, start+count, buf + count*bd->blksz);
-			if(!ret) {
-				unsigned x = count+1;
-				while(x < num && !dm_get_block_cache(dev, start+x, buf + x*bd->blksz))
-					x++;
-				unsigned r;
-				if(x-count == 1)
-					r = dm_block_rw(READ, dev, start+count, buf+count*bd->blksz, bd)/bd->blksz;
-				else
-					r = do_dm_block_read_multiple(bd, dev, start+count, x-count, buf + count*bd->blksz);
-				if(r != x-count)
-					return count+r;
-				count = x;
-				if(x < num)
-					count++;
-			} else
-				count++;
+	size_t count = req->count;
+	size_t block = req->block;
+	size_t position = 0;
+	char *buffer = req->buffer;
+	while(count) {
+		char tmp[req->bd->blksz];
+		ret = dm_get_block_cache(req->dev, block, tmp);
+		if(!ret) {
+			__add_request(req);
+			tm_thread_block(&req->blocklist, THREADSTATE_UNINTERRUPTIBLE);
+			assert(req->flags & IOREQ_COMPLETE);
+			if(req->flags & IOREQ_FAILED)
+				return position;
+		} else {
+			size_t copy_amount = req->bd->blksz - offset;
+			if(copy_amount > bytecount)
+				copy_amount = bytecount;
+			memcpy(buffer + position, tmp + offset, copy_amount);
+			block++;
+			count--;
+			bytecount -= copy_amount;
+			position += copy_amount;
+			offset = 0;
+			if(!bytecount)
+				assert(!count);
 		}
-	} else
-		count=do_dm_block_read_multiple(bd, dev, start, num, buf);
-#else
-	count=do_dm_block_read_multiple(bd, dev, start, num, buf);
-#endif
-	return count;
+	}
+	return position;
 }
 
-int dm_block_read(dev_t dev, off_t posit, char *buf, size_t c)
+int dm_block_read(dev_t dev, off_t pos, char *buf, size_t count)
 {
 	device_t *dt = dm_get_device(DT_BLOCK, MAJOR(dev));
 	if(!dt)
 		return -ENXIO;
 	blockdevice_t *bd = (blockdevice_t *)dt->ptr;
-	unsigned blk_size = bd->blksz;
-	unsigned count=0;
-	unsigned pos=posit;
-	unsigned offset=0;
-	unsigned end = pos + c;
-	unsigned i=0;
-	int ret;
-	char tmp[blk_size];
-	/* read in the first (possibly) partial block */
-	offset = pos % blk_size;
-	if(offset) {
-		ret = dm_block_rw(READ, dev, pos/blk_size, tmp, bd);
-		if(ret != (int)blk_size)
-			return count;
-		count = blk_size - offset;
-		if(count > c) count = c;
-		memcpy(buf, tmp + offset, c);
-		pos += count;
-	}
-	if(count >= c) return count;
-	/* read in the bulk full blocks */
-	unsigned max = (c-count)/blk_size;
-	for(i=0;i<max;i++) {
-		unsigned int r = dm_block_rw(READ, dev, (pos / blk_size), buf + count, bd);
-		if(r != blk_size)
-			return count;
-		pos += blk_size;
-		count += blk_size;
-	}
-	if(count >= c) return count;
-	/* read in the remainder */
-	if(end % blk_size && pos < end) {
-		ret = dm_block_rw(READ, dev, pos/blk_size, tmp, bd);
-		if(ret != (int)blk_size)
-			return count;
-		memcpy(buf+count, tmp, end % blk_size);
-		count += end % blk_size;
-	}
-	return count;
+	uint64_t start_block = pos / bd->blksz;
+	uint64_t end_block = ((pos + count - 1) / bd->blksz);
+	size_t num_blocks = (end_block - start_block) + 1;
+
+	struct ioreq *req = kmalloc(sizeof(*req));
+	req->block = start_block;
+	req->count = num_blocks;
+	req->direction = READ;
+	req->bd = bd;
+	req->dev = dev;
+	req->flags = 0;
+	req->buffer = buf;
+	ll_create(&req->blocklist);
+
+	return block_cache_request(req, pos % bd->blksz, count);
 }
 
 int dm_block_write(dev_t dev, off_t posit, char *buf, size_t count)
@@ -372,23 +236,22 @@ int dm_block_write(dev_t dev, off_t posit, char *buf, size_t count)
 	/* If we are offset in a block, we dont wanna overwrite stuff */
 	if(pos % blk_size)
 	{
-		if(dm_block_rw(READ, dev, pos/blk_size, buffer, bd) != blk_size)
+		if(dm_block_read(dev, pos & ~(blk_size - 1), buffer, blk_size) != blk_size) {
 			return 0;
+		}
 		/* If count is less than whats remaining, just use count */
 		int write = (blk_size-(pos % blk_size));
 		if(count < (unsigned)write)
 			write=count;
 		memcpy(buffer+(pos % blk_size), buf, write);
-		if(dm_block_rw(WRITE, dev, pos/blk_size, buffer, bd) != blk_size)
-			return 0;
+		dm_cache_block(dev, pos/blk_size, bd->blksz, buffer);
 		buf += write;
 		count -= write;
 		pos += write;
 	}
 	while(count >= (unsigned int)blk_size)
 	{
-		if(dm_block_rw(WRITE, dev, pos/blk_size, buf, bd) != blk_size)
-			return (pos-posit);
+		dm_cache_block(dev, pos/blk_size, bd->blksz, buf);
 		count -= blk_size;
 		pos += blk_size;
 		buf += blk_size;
@@ -396,10 +259,11 @@ int dm_block_write(dev_t dev, off_t posit, char *buf, size_t count)
 	/* Anything left over? */
 	if(count > 0)
 	{
-		if(dm_block_rw(READ, dev, pos/blk_size, buffer, bd) != blk_size)
+		if(dm_block_read(dev, pos & ~(blk_size - 1), buffer, blk_size) != blk_size) {
 			return pos-posit;
+		}
 		memcpy(buffer, buf, count);
-		dm_block_rw(WRITE, dev, pos/blk_size, buffer, bd);
+		dm_cache_block(dev, pos/blk_size, bd->blksz, buffer);
 		pos+=count;
 	}
 	return pos-posit;

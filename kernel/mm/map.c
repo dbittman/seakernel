@@ -306,7 +306,7 @@ int mm_mapping_munmap(addr_t start, size_t length)
 /* called by exit and exec */
 void mm_destroy_all_mappings(struct process *t)
 {
-	mutex_acquire(&current_process->map_lock);
+	/* we don't need to lock, because we assume only one thread */
 	struct llistnode *cur, *next;
 	struct memmap *map;
 	ll_for_each_entry_safe(&(t->mappings), cur, next, struct memmap *, map) {
@@ -314,6 +314,5 @@ void mm_destroy_all_mappings(struct process *t)
 		__do_mm_disestablish_mapping(map);
 	}
 	assert(t->mappings.num == 0);
-	mutex_release(&current_process->map_lock);
 }
 

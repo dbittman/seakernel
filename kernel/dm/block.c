@@ -47,6 +47,8 @@ int __elevator_main(struct kthread *kt, void *arg)
 			}
 			req->flags |= IOREQ_COMPLETE;
 			tm_blocklist_wakeall(&req->blocklist);
+			if(sub_atomic(&req->refs, 1) == 0)
+				kfree(req);
 		} else {
 			tm_thread_set_state(current_thread, THREADSTATE_INTERRUPTIBLE);
 			tm_schedule();
@@ -163,6 +165,7 @@ int dm_do_block_rw_multiple(int rw, dev_t dev, u64 blk, char *buf, int count, bl
 
 void __add_request(struct ioreq *req)
 {
+	add_atomic(&req->refs, 1);
 	queue_enqueue_item(&req->bd->wq, &req->qi, req);
 	tm_thread_set_state(req->bd->elevator.thread, THREADSTATE_RUNNING);
 }
@@ -181,8 +184,9 @@ int block_cache_request(struct ioreq *req, off_t offset, size_t bytecount)
 			__add_request(req);
 			tm_thread_block(&req->blocklist, THREADSTATE_UNINTERRUPTIBLE);
 			assert(req->flags & IOREQ_COMPLETE);
-			if(req->flags & IOREQ_FAILED)
+			if(req->flags & IOREQ_FAILED) {
 				return position;
+			}
 		} else {
 			size_t copy_amount = req->bd->blksz - offset;
 			if(copy_amount > bytecount)
@@ -218,9 +222,13 @@ int dm_block_read(dev_t dev, off_t pos, char *buf, size_t count)
 	req->dev = dev;
 	req->flags = 0;
 	req->buffer = buf;
+	req->refs = 1;
 	ll_create(&req->blocklist);
 
-	return block_cache_request(req, pos % bd->blksz, count);
+	int ret = block_cache_request(req, pos % bd->blksz, count);
+	if(sub_atomic(&req->refs, 1) == 0)
+		kfree(req);
+	return ret;
 }
 
 int dm_block_write(dev_t dev, off_t posit, char *buf, size_t count)
@@ -251,6 +259,7 @@ int dm_block_write(dev_t dev, off_t posit, char *buf, size_t count)
 	}
 	while(count >= (unsigned int)blk_size)
 	{
+		assert((pos & ~(blk_size - 1)) == pos);
 		dm_cache_block(dev, pos/blk_size, bd->blksz, buf);
 		count -= blk_size;
 		pos += blk_size;

@@ -54,7 +54,8 @@ int dm_get_block_cache(int dev, u64 blk, char *buf)
 	struct ce_t *c = cache_find_element(blk_cache, dev, blk);
 	if(!c)
 		return 0;
-	memcpy(buf, c->data, c->length);
+	if(buf)
+		memcpy(buf, c->data, c->length);
 	return 1;
 }
 

@@ -25,6 +25,7 @@ struct ioreq {
 	uint64_t block;
 	size_t count;
 	char *buffer;
+	int refs;
 	int direction;
 	int flags;
 	blockdevice_t *bd;

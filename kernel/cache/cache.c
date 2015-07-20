@@ -160,8 +160,10 @@ int do_cache_object(cache_t *c, u64 id, u64 key, int sz, char *buf, int dirty)
 		obj = 0;
 	if(obj)
 	{
-		memcpy(obj->data, buf, obj->length);
-		set_dirty(c, obj, dirty);
+		if(!(obj->dirty && !dirty)) {
+			memcpy(obj->data, buf, obj->length);
+			set_dirty(c, obj, dirty);
+		}
 		rwlock_release(c->rwl, RWL_WRITER);
 		return 0;
 	}

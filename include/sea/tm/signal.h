@@ -17,6 +17,10 @@
 #define SIG_BLOCK 1	/* set of signals to block */
 #define SIG_UNBLOCK 2	/* set of signals to, well, unblock */
 
+#define SIG_DFL 0
+#define SIG_IGN 1
+#define SIG_ERR -1
+
 #define SIGNULL 0
 #define SIGCHILD 1 /* Child has died */
 #define SIGINT 2   /* stdout has encountered a problem */

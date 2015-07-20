@@ -13,11 +13,14 @@
 void tm_thread_handle_signal(int signal)
 {
 	struct sigaction *sa = &current_process->signal_act[signal];
-	if(signal != SIGKILL && sa->_sa_func._sa_handler) {
+	printk(0, "%d handle %d -> %x\n", current_thread->tid, signal, sa->_sa_func._sa_handler);
+	if(signal != SIGKILL && (addr_t)sa->_sa_func._sa_handler != SIG_IGN && 
+			(addr_t)sa->_sa_func._sa_handler != SIG_DFL) {
 		if(!(sa->sa_flags & SA_NODEFER))
 			current_thread->sig_mask |= (1 << signal);
 		tm_thread_raise_flag(current_thread, THREAD_SIGNALED);
-	} else if(!current_thread->system && !(current_thread->flags & THREAD_KERNEL)) {
+	} else if(!current_thread->system && !(current_thread->flags & THREAD_KERNEL)
+			&& ((addr_t)sa->_sa_func._sa_handler != SIG_IGN || signal == SIGKILL)) {
 		/* Default Handlers */
 		tm_thread_raise_flag(current_thread, THREAD_SCHEDULE);
 		current_thread->signal = 0;
@@ -47,7 +50,7 @@ void tm_thread_handle_signal(int signal)
 				current_thread->signal = 0;
 				break;
 		}
-	} else if(!current_thread->system && current_thread->flags & THREAD_KERNEL) {
+	} else if(!current_thread->system && ((current_thread->flags & THREAD_KERNEL) || (addr_t)sa->_sa_func._sa_handler == SIG_IGN)) {
 		current_thread->signal = 0;
 	}
 }

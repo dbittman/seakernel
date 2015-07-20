@@ -16,6 +16,8 @@ void tm_thread_enter_system(int sys)
 void tm_thread_exit_system(void)
 {
 	current_thread->system=0;
+	if(tm_thread_got_signal(current_thread))
+		tm_thread_raise_flag(current_thread, THREAD_SCHEDULE);
 }
 
 int tm_thread_runnable(struct thread *thr)

@@ -71,8 +71,7 @@ void mm_page_fault_handler(registers_t *regs, addr_t address, int pf_cause)
 				current_process->heap_end, current_thread->flags);
 
 		tm_signal_send_thread(current_thread, SIGSEGV);
-		/* TODO: what if the thread wants to handle this? */
-		tm_signal_send_thread(current_thread, SIGKILL);
+		return;
 	} else {
 		/* WARNING: TODO: this might not be safe */
 		if(pd_cur_data) {

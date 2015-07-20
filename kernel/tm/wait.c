@@ -65,14 +65,12 @@ int sys_waitpid(int pid, int *st, int opt)
 	if(!proc || proc->parent != current_process) {
 		if(proc)
 			tm_process_put(proc);
-		printk(0, "wait: return echild\n");
 		return -ECHILD;
 	}
 
 	while(!(proc->flags & PROCESS_EXITED) && !(opt & WNOHANG)) {
 		if(tm_thread_got_signal(current_thread)) {
 			tm_process_put(proc);
-			//printk(0, "wait: return intr\n");
 			return -EINTR;
 		}
 		tm_schedule();
@@ -80,7 +78,6 @@ int sys_waitpid(int pid, int *st, int opt)
 
 	if(proc->thread_count > 0 || !(proc->flags & PROCESS_EXITED)) {
 		tm_process_put(proc);
-		printk(0, "wait: return not yet exited\n");
 		return 0;
 	}
 	int code, gotpid;
@@ -89,7 +86,6 @@ int sys_waitpid(int pid, int *st, int opt)
 	tm_process_put(proc);
 	if(st)
 		*st = code;
-	printk(0, "wait: return cleanedup\n");
 	return gotpid;
 }
 

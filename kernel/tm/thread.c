@@ -16,6 +16,9 @@ void tm_thread_enter_system(int sys)
 void tm_thread_exit_system(void)
 {
 	current_thread->system=0;
+	/* if we have a signal, then we've been ignoring it up until now
+	 * because we were inside a syscall. Set the schedule flag so we
+	 * can handle that now */
 	if(tm_thread_got_signal(current_thread))
 		tm_thread_raise_flag(current_thread, THREAD_SCHEDULE);
 }

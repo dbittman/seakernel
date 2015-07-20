@@ -161,17 +161,19 @@ int tm_clone(int flags)
 	struct cpu *target_cpu = tm_fork_pick_cpu();
 
 	cpu_disable_preemption();
+	int old = cpu_interrupt_set(0);
 	arch_tm_fork_setup_stack(thr);
-
 
 	if(current_thread == thr) {
 		current_thread->jump_point = 0;
+		cpu_interrupt_set(old);
 		cpu_enable_preemption();
 		return 0;
 	} else {
-		cpu_enable_preemption();
 		thr->state = THREADSTATE_RUNNING;
 		tm_thread_add_to_cpu(thr, target_cpu);
+		cpu_interrupt_set(old);
+		cpu_enable_preemption();
 		return thr->tid;
 	}
 }

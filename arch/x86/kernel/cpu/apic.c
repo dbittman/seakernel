@@ -24,18 +24,19 @@ static struct imps_ioapic *ioapic_list[MAX_IOAPIC];
 struct pmap ioapic_pmap;
 struct pmap lapic_pmap;
 
+static addr_t lapic_mapping = 0;
 static int lapic_inited = 0;
 
 void lapic_write(int reg, uint32_t data)
 {
 	if(lapic_inited)
-		*((uint32_t *)pmap_get_mapping(&lapic_pmap, lapic_addr + reg)) = data;
+		*((uint32_t *)(lapic_mapping + reg)) = data;
 }
 
 uint32_t lapic_read(int reg)
 {
 	if(lapic_inited)
-		return (uint32_t)*((volatile uint32_t *)pmap_get_mapping(&lapic_pmap, lapic_addr + reg));
+		return (uint32_t)*((volatile uint32_t *)(lapic_mapping + reg));
 	return 0;
 }
 
@@ -129,8 +130,10 @@ void calibrate_lapic_timer(unsigned freq)
 
 void init_lapic(int extint)
 {
-	if(!lapic_inited)
+	if(!lapic_inited) {
 		pmap_create(&lapic_pmap, 0);
+		lapic_mapping = pmap_get_mapping(&lapic_pmap, lapic_addr);
+	}
 	lapic_inited=1;
 	int i;
 	/* we may be in a state where there are interrupts left

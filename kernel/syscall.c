@@ -29,7 +29,7 @@
 #include <sea/fs/kerfs.h>
 #include <sea/tm/thread.h>
 static unsigned int num_syscalls=0;
-//#define SC_DEBUG 1
+/* #define SC_DEBUG 1 */
 #define SC_TIMING 1
 int sys_null(long a, long b, long c, long d, long e)
 {
@@ -339,7 +339,7 @@ int syscall_handler(registers_t *regs)
 	 	 * expect handlers to disable them if needed */
 		cpu_interrupt_set(1);
 		/* start accounting information! */
-		syscounts[SYSCALL_NUM_AND_RET]++;
+		add_atomic(&syscounts[SYSCALL_NUM_AND_RET], 1);
 
 #ifdef SC_DEBUG
 		if(current_process->tty == current_console->tty && SYSCALL_NUM_AND_RET != 0)
@@ -359,7 +359,7 @@ int syscall_handler(registers_t *regs)
 #endif
 #ifdef SC_DEBUG
 		if((current_process->tty == current_console->tty || 0)
-				&& (ret < 0 || 0) && (ret == -EINTR || 1))
+				&& (ret < 0 || 1) && (ret == -EINTR || 1))
 			printk(SC_DEBUG, "syscall pid %3d: #%3d ret %4d\n",
 			   		current_thread->tid, current_thread->system, ret < 0 ? -ret : ret);
 #endif

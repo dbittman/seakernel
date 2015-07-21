@@ -104,7 +104,7 @@ int sys_waitpid(int pid, int *st, int opt)
 	if(st)
 		*st = code;
 	if(current_process->pid > 1)
-		printk(0, "%d: %d\n", current_process->pid, gotpid);
+		printk(0, "%d: %d %x\n", current_process->pid, gotpid, code);
 	return gotpid;
 }
 

@@ -85,9 +85,10 @@ void tm_process_wait_cleanup(struct process *proc)
 	assert(proc != current_process);
 	/* prevent this process from being "cleaned up" multiple times */
 	if(!(ff_or_atomic(&proc->flags, PROCESS_CLEANED) & PROCESS_CLEANED)) {
-		tm_process_remove_kerfs_entries(proc);
 		mm_destroy_directory(&proc->vmm_context);
 		ll_do_remove(process_list, &proc->listnode, 0);
+		if(proc->parent)
+			tm_process_put(proc->parent);
 		tm_process_put(proc); /* process_list releases its pointer */
 	}
 }
@@ -123,18 +124,19 @@ __attribute__((noinline)) static void tm_process_exit(int code)
 	/* TODO: free everything else? */
 
 	if(current_process->parent) {
+		struct process *init = tm_process_get(0);
 		rwlock_acquire(&process_list->rwl, RWL_READER);
 		struct process *child;
 		struct llistnode *node;
 		ll_for_each_entry(process_list, node, struct process *, child) {
 			if(child->parent == current_process) {
-				child->parent = current_process->parent;
-				tm_process_inc_reference(current_process->parent);
+				child->parent = init;
+				tm_process_inc_reference(init);
 				tm_process_put(current_process);
 			}
 		}
 		rwlock_release(&process_list->rwl, RWL_READER);
-		tm_process_put(current_process->parent);
+		tm_process_put(init);
 	}
 	or_atomic(&current_process->flags, PROCESS_EXITED);
 	tm_process_put(current_process); /* fork starts us out at refs = 1 */
@@ -148,6 +150,11 @@ void tm_thread_exit(int code)
 							tm_thread_destroy, (unsigned long)current_thread, 0);
 
 	tm_thread_release_usermode_stack(current_thread, current_thread->usermode_stack_num);
+
+	if(current_process->thread_count == 1) {
+		tm_process_remove_kerfs_entries(current_process);
+	}
+
 	ll_do_remove(&current_process->threadlist, &current_thread->pnode, 0);
 	tm_process_put(current_process); /* thread releases it's process pointer */
 	tm_thread_remove_kerfs_entries(current_thread);

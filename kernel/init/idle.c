@@ -81,6 +81,7 @@ int kt_kernel_idle_task(void)
 			workqueue_dowork(&__current_cpu->work);
 		else
 			tm_schedule();
+		sys_waitpid(-1, 0, WNOHANG);
 	}
 }
 

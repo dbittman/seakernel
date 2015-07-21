@@ -8,34 +8,6 @@
 #include <sea/mm/map.h>
 #include <sea/vsprintf.h>
 #include <sea/fs/kerfs.h>
-static void tm_thread_destroy(unsigned long data)
-{
-	struct thread *thr = (struct thread *)data;
-	assert(thr != current_thread);
-
-	/* if the thread still hasn't been rescheduled, don't destroy it yet */
-	assert(thr->state == THREADSTATE_DEAD);
-	if(thr->flags & THREAD_SCHEDULE) {
-		struct async_call *thread_cleanup_call = async_call_create(0, 0, 
-				tm_thread_destroy, data, 0);
-		workqueue_insert(&__current_cpu->work, thread_cleanup_call);
-		tm_thread_raise_flag(current_thread, THREAD_SCHEDULE);
-		return;
-	}
-	tm_thread_release_kernelmode_stack(thr->kernel_stack);
-	tm_thread_put(thr);
-}
-
-void tm_process_wait_cleanup(struct process *proc)
-{
-	assert(proc != current_process);
-	/* prevent this process from being "cleaned up" multiple times */
-	if(!(ff_or_atomic(&proc->flags, PROCESS_CLEANED) & PROCESS_CLEANED)) {
-		mm_destroy_directory(&proc->vmm_context);
-		ll_do_remove(process_list, &proc->listnode, 0);
-		tm_process_put(proc); /* process_list releases its pointer */
-	}
-}
 
 #define __remove_kerfs_thread_entry(thr,name) \
 	do {\
@@ -61,6 +33,7 @@ void tm_thread_remove_kerfs_entries(struct thread *thr)
 	__remove_kerfs_thread_entry(thr, "usermode_stack_end");
 	__remove_kerfs_thread_entry(thr, "sig_mask");
 	__remove_kerfs_thread_entry(thr, "cpuid");
+	__remove_kerfs_thread_entry(thr, "blocklist");
 	char dir[128];
 	snprintf(dir, 128, "/dev/process/%d/%d", thr->process->pid, thr->tid);
 	sys_rmdir(dir);
@@ -79,9 +52,44 @@ void tm_process_remove_kerfs_entries(struct process *proc)
 	__remove_kerfs_proc_entry(proc, "thread_count");
 	__remove_kerfs_proc_entry(proc, "global_sig_mask");
 	__remove_kerfs_proc_entry(proc, "command");
+	__remove_kerfs_proc_entry(proc, "exit_reason.sig");
+	__remove_kerfs_proc_entry(proc, "exit_reason.pid");
+	__remove_kerfs_proc_entry(proc, "exit_reason.ret");
+	__remove_kerfs_proc_entry(proc, "exit_reason.cause");
+	__remove_kerfs_proc_entry(proc, "exit_reason.coredump");
 	char dir[128];
 	snprintf(dir, 128, "/dev/process/%d", proc->pid);
 	sys_rmdir(dir);
+}
+
+static void tm_thread_destroy(unsigned long data)
+{
+	struct thread *thr = (struct thread *)data;
+	assert(thr != current_thread);
+
+	/* if the thread still hasn't been rescheduled, don't destroy it yet */
+	assert(thr->state == THREADSTATE_DEAD);
+	if(thr->flags & THREAD_SCHEDULE) {
+		struct async_call *thread_cleanup_call = async_call_create(0, 0, 
+				tm_thread_destroy, data, 0);
+		workqueue_insert(&__current_cpu->work, thread_cleanup_call);
+		tm_thread_raise_flag(current_thread, THREAD_SCHEDULE);
+		return;
+	}
+	tm_thread_release_kernelmode_stack(thr->kernel_stack);
+	tm_thread_put(thr);
+}
+
+void tm_process_wait_cleanup(struct process *proc)
+{
+	assert(proc != current_process);
+	/* prevent this process from being "cleaned up" multiple times */
+	if(!(ff_or_atomic(&proc->flags, PROCESS_CLEANED) & PROCESS_CLEANED)) {
+		tm_process_remove_kerfs_entries(proc);
+		mm_destroy_directory(&proc->vmm_context);
+		ll_do_remove(process_list, &proc->listnode, 0);
+		tm_process_put(proc); /* process_list releases its pointer */
+	}
 }
 
 __attribute__((noinline)) static void tm_process_exit(int code)
@@ -113,7 +121,6 @@ __attribute__((noinline)) static void tm_process_exit(int code)
 	valloc_destroy(&current_process->mmf_valloc);
 	mm_free_self_directory();
 	/* TODO: free everything else? */
-	tm_process_remove_kerfs_entries(current_process);
 
 	if(current_process->parent) {
 		rwlock_acquire(&process_list->rwl, RWL_READER);

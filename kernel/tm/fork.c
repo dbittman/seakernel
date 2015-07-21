@@ -62,6 +62,11 @@ void tm_process_create_kerfs_entries(struct process *proc)
 	__expose_proc_field(proc, thread_count, KERFS_TYPE_INTEGER);
 	__expose_proc_field(proc, global_sig_mask, KERFS_TYPE_ADDRESS);
 	__expose_proc_field(proc, command, KERFS_TYPE_STRING);
+	__expose_proc_field(proc, exit_reason.sig, KERFS_TYPE_INTEGER);
+	__expose_proc_field(proc, exit_reason.pid, KERFS_TYPE_INTEGER);
+	__expose_proc_field(proc, exit_reason.ret, KERFS_TYPE_INTEGER);
+	__expose_proc_field(proc, exit_reason.coredump, KERFS_TYPE_INTEGER);
+	__expose_proc_field(proc, exit_reason.cause, KERFS_TYPE_INTEGER);
 }
 
 void tm_thread_create_kerfs_entries(struct thread *thr)
@@ -85,6 +90,7 @@ void tm_thread_create_kerfs_entries(struct thread *thr)
 	__expose_thread_field(thr, usermode_stack_end, KERFS_TYPE_ADDRESS);
 	__expose_thread_field(thr, sig_mask, KERFS_TYPE_ADDRESS);
 	__expose_thread_field(thr, cpuid, KERFS_TYPE_ADDRESS);
+	__expose_thread_field(thr, blocklist, KERFS_TYPE_ADDRESS);
 }
 
 struct thread *tm_thread_fork(int flags)

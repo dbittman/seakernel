@@ -34,7 +34,7 @@ arch_tm_do_switch:
   push edi
   mov [eax], esp ; save stack pointer
   mov esp, [ecx] ; load new stack pointer
-  test edx, edx ; if jump location is zero, jump to .normal
+  test edx, edx  ; if jump location is zero, jump to .normal
   je .normal
   jmp edx ; jump to the jump location
   .normal:

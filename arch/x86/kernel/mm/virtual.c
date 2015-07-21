@@ -65,6 +65,14 @@ static addr_t vm_init_directory(addr_t id_map_to)
 		pt = (unsigned int *)(pd[i] & PAGE_MASK);
 		memset(pt, 0, 0x1000);
 	}
+	/* Pre-map the kernel stack tables */
+	unsigned stacks_pd_idx = PAGE_DIR_IDX(KERNELMODE_STACKS_START / 0x1000);
+	for(i=stacks_pd_idx;i<(int)PAGE_DIR_IDX(KERNELMODE_STACKS_END/ 0x1000);i++)
+	{
+		pd[i] = mm_alloc_physical_page() | PAGE_PRESENT | PAGE_WRITE;
+		pt = (unsigned int *)(pd[i] & PAGE_MASK);
+		memset(pt, 0, 0x1000);
+	}
 	/* Pre-map the PMM's tables */
 	unsigned pm_pd_idx = PAGE_DIR_IDX(PM_STACK_ADDR / 0x1000);
 	for(i=pm_pd_idx;i<(int)PAGE_DIR_IDX(PM_STACK_ADDR_TOP / 0x1000);i++)

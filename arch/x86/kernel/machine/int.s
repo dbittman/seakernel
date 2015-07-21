@@ -67,6 +67,7 @@
     mov fs, ax
 
     call %2 ; calls the C-code handler
+
     pop ebx        ; reload the original data segment descriptor
     mov ds, bx
     mov es, bx

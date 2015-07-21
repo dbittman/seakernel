@@ -84,6 +84,7 @@ void tm_thread_create_kerfs_entries(struct thread *thr)
 	__expose_thread_field(thr, timeslice, KERFS_TYPE_INTEGER);
 	__expose_thread_field(thr, usermode_stack_end, KERFS_TYPE_ADDRESS);
 	__expose_thread_field(thr, sig_mask, KERFS_TYPE_ADDRESS);
+	__expose_thread_field(thr, cpuid, KERFS_TYPE_ADDRESS);
 }
 
 struct thread *tm_thread_fork(int flags)

@@ -60,6 +60,7 @@ void tm_thread_remove_kerfs_entries(struct thread *thr)
 	__remove_kerfs_thread_entry(thr, "timeslice");
 	__remove_kerfs_thread_entry(thr, "usermode_stack_end");
 	__remove_kerfs_thread_entry(thr, "sig_mask");
+	__remove_kerfs_thread_entry(thr, "cpuid");
 	char dir[128];
 	snprintf(dir, 128, "/dev/process/%d/%d", thr->process->pid, thr->tid);
 	sys_rmdir(dir);

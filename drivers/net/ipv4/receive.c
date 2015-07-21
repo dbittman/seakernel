@@ -9,7 +9,7 @@
 
 #include <sea/tm/kthread.h>
 #include <sea/tm/process.h>
-#include <sea/tm/schedule.h>
+#include <sea/tm/timing.h>
 
 #include <sea/cpu/time.h>
 #include <sea/cpu/atomic.h>
@@ -196,7 +196,7 @@ static int ipv4_handle_fragmentation(struct net_packet **np, struct ipv4_header 
 		return 1;
 	TRACE(0, "[ipv4]: UNTESTED: handling fragmentation\n");
 	/* wake up the worker thread (since it handles timed-out fragments */
-	tm_process_resume(ipv4_send_thread->process);
+	tm_thread_resume(ipv4_send_thread->thread);
 	/* okay, this is a fragment. Do we have other fragments of this packet yet? */
 	struct ipv4_fragment *parent = __ipv4_find_fragment(header);
 	if(!parent) {

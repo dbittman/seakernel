@@ -9,7 +9,7 @@
 
 #include <sea/tm/kthread.h>
 #include <sea/tm/process.h>
-#include <sea/tm/schedule.h>
+#include <sea/tm/timing.h>
 
 #include <sea/cpu/time.h>
 #include <sea/cpu/atomic.h>
@@ -37,7 +37,7 @@ static int ipv4_do_enqueue_packet(struct ipv4_packet *packet)
 {
 	/* error checking */
 	queue_enqueue(ipv4_tx_queue, packet);
-	tm_process_resume(ipv4_send_thread->process);
+	tm_thread_resume(ipv4_send_thread->thread);
 	return 0;
 }
 
@@ -265,7 +265,7 @@ int ipv4_sending_thread(struct kthread *kt, void *arg)
 			ipv4_thread_lastwork = tm_get_ticks();
 		}
 		if(tm_get_ticks() > ipv4_thread_lastwork + TICKS_SECONDS(5))
-			tm_process_pause(current_task);
+			tm_thread_pause(current_thread);
 		else if(!queue_count(ipv4_tx_queue))
 			tm_schedule();
 		__ipv4_cleanup_fragments(0);

@@ -92,7 +92,6 @@ struct thread *tm_thread_fork(int flags)
 	struct thread *thr = kmalloc(sizeof(struct thread));
 	thr->magic = THREAD_MAGIC;
 	thr->tid = tm_thread_next_tid();
-	thr->flags = THREAD_FORK;
 	thr->priority = current_thread->priority;
 	thr->kernel_stack = tm_thread_reserve_kernelmode_stack();
 	thr->sig_mask = current_thread->sig_mask;

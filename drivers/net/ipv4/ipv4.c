@@ -9,7 +9,7 @@
 
 #include <sea/tm/kthread.h>
 #include <sea/tm/process.h>
-#include <sea/tm/schedule.h>
+#include <sea/tm/timing.h>
 
 #include <sea/cpu/time.h>
 #include <sea/cpu/atomic.h>
@@ -50,7 +50,7 @@ int module_install(void)
 {
 	ipv4_tx_queue = queue_create(0, 0);
 	ipv4_send_thread = kthread_create(0, "[kipv4-send]", 0, ipv4_sending_thread, 0);
-	ipv4_send_thread->process->priority = 100;
+	ipv4_send_thread->thread->priority = 100;
 	frag_list = ll_create(0);
 	net_nlayer_register_protocol(PF_INET, &ipv4);
 	socket_set_calls(1 /* TODO */, &socket_calls_rawipv4);

@@ -20,11 +20,10 @@
 #define PRIO_USER    3
 
 #define THREAD_KERNEL          0x1  /* a kernel thread */
-#define THREAD_FORK            0x2  /* freshly made thread, hot from the oven! */
-#define THREAD_TIMEOUT_EXPIRED 0x4  /* timeout expired while blocking */
-#define THREAD_SIGNALED        0x8 /* scheduler has detected that a signal is meant for this
+#define THREAD_TIMEOUT_EXPIRED 0x2  /* timeout expired while blocking */
+#define THREAD_SIGNALED        0x4 /* scheduler has detected that a signal is meant for this
                                        task's userspace */
-#define THREAD_SCHEDULE        0x10 /* we request a reschedule after this interrupt completes */
+#define THREAD_SCHEDULE        0x8 /* we request a reschedule after this interrupt completes */
 
 #define THREADSTATE_RUNNING 0
 #define THREADSTATE_INTERRUPTIBLE 1

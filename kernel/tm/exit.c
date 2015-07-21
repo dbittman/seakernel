@@ -8,7 +8,6 @@
 #include <sea/mm/map.h>
 static void tm_thread_destroy(unsigned long data)
 {
-	return;
 	struct thread *thr = (struct thread *)data;
 	assert(thr != current_thread);
 
@@ -18,6 +17,7 @@ static void tm_thread_destroy(unsigned long data)
 		struct async_call *thread_cleanup_call = async_call_create(0, 0, 
 				tm_thread_destroy, data, 0);
 		workqueue_insert(&__current_cpu->work, thread_cleanup_call);
+		tm_thread_raise_flag(current_thread, THREAD_SCHEDULE);
 		return;
 	}
 	tm_thread_release_kernelmode_stack(thr->kernel_stack);

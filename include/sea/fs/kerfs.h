@@ -4,6 +4,8 @@
 #include <sea/fs/inode.h>
 
 #define KERFS_TYPE_INTEGER 1
+#define KERFS_TYPE_ADDRESS 2
+#define KERFS_TYPE_STRING  3
 
 #define KERFS_PARAM 1
 #define KERFS_PARAM_READONLY 2

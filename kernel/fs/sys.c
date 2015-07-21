@@ -38,7 +38,7 @@ static int system_setup=0;
  */
 extern void fs_initrd_parse();
 
-struct filesystem *devfs;
+struct filesystem *devfs = 0;
 
 void devfs_init(void)
 {
@@ -64,6 +64,7 @@ void devfs_init(void)
 	sys_mknod("/dev/null", S_IFCHR | 0666, GETDEV(0, 0));
 	sys_mknod("/dev/zero", S_IFCHR | 0666, GETDEV(1, 0));
 	sys_mknod("/dev/com0", S_IFCHR | 0600, GETDEV(5, 0));
+	sys_mkdir("/dev/process", 0755);
 }
 
 int sys_setup(int a)
@@ -96,6 +97,8 @@ int sys_setup(int a)
 	kerfs_register_report("/dev/fs_icache", kerfs_icache_report);
 	kerfs_register_report("/dev/modules", kerfs_module_report);
 	current_process->tty=1;
+	tm_process_create_kerfs_entries(current_process);
+	tm_thread_create_kerfs_entries(current_thread);
 	system_setup=1;
 	printk(KERN_MILE, "done (i/o/e=%x [tty1]: ok)\n", GETDEV(3, 1));
 	return 12;

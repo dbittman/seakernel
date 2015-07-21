@@ -29,8 +29,8 @@ void tm_init_multitasking(void)
 	hash_table_specify_function(process_table, HASH_FUNCTION_BYTE_SUM);
 
 	process_list = ll_create(0);
-	mutex_create(&process_refs_lock, 0);
-	mutex_create(&thread_refs_lock, 0);
+	mutex_create(&process_refs_lock, MT_NOSCHED);
+	mutex_create(&thread_refs_lock, MT_NOSCHED);
 	
 	thread_table = hash_table_create(0, 0, HASH_TYPE_CHAIN);
 	hash_table_resize(thread_table, HASH_RESIZE_MODE_IGNORE, 1000);
@@ -54,6 +54,7 @@ void tm_init_multitasking(void)
 	mutex_create(&proc->map_lock, MT_NOSCHED);
 	mutex_create(&proc->stacks_lock, 0);
 	proc->magic = PROCESS_MAGIC;
+	mutex_create(&proc->files_lock, 0);
 	memcpy(&proc->vmm_context, &kernel_context, sizeof(kernel_context));
 	thread->process = proc; /* we have to do this early, so that the vmm system can use the lock... */
 	thread->state = THREADSTATE_RUNNING;

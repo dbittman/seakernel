@@ -186,10 +186,10 @@ int ramfs_inode_getdents(struct filesystem *fs, struct inode *node, unsigned off
 	rwlock_acquire(&rfsnode->ents->rwl, RWL_READER);
 	ll_for_each_entry(rfsnode->ents, ln, struct rfsdirent *, rd) {
 		int reclen = rd->namelen + sizeof(struct dirent_posix) + 1;
+		reclen &= ~15;
+		reclen += 16;
 		if(read >= off) {
-			reclen &= ~15;
-			reclen += 16;
-			if(reclen + read > count)
+			if(reclen + (read - off) > count)
 				break;
 			struct dirent_posix *dp = (void *)rec;
 			dp->d_reclen = reclen;

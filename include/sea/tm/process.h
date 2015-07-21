@@ -141,5 +141,6 @@ void tm_process_inc_reference(struct process *proc);
 void tm_process_put(struct process *proc);
 int tm_signal_send_process(struct process *proc, int signal);
 int sys_kill(pid_t pid, int signal);
+void tm_process_create_kerfs_entries(struct process *proc);
 
 #endif

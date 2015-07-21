@@ -152,6 +152,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	printk(KERN_DEBUG, "[kernel]: structure sizes: process=%d bytes, thread=%d bytes, inode=%d bytes\n",
 			sizeof(struct process), sizeof(struct thread), sizeof(struct inode));
 	cpu_interrupt_set(1);
+	sys_setup();
 	cpu_processor_init_2();
 #if CONFIG_SMP
 	cpu_boot_all_aps();
@@ -186,7 +187,7 @@ void user_mode_init(void)
 	 * a page fault) because you can't do fancy kernel stuff in ring 3!
 	 * So we write simple wrapper functions for common functions that 
 	 * we will need */
-	sys_setup();
+	//sys_setup();
 
 	int ret = u_execve("/sh", (char **)stuff_to_pass, (char **)init_env);
 	ret = u_execve("/bin/sh", (char **)stuff_to_pass, (char **)init_env);

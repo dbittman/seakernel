@@ -61,21 +61,24 @@ int kerfs_read(struct inode *node, size_t offset, size_t length, char *buffer)
 	}
 
 	char tmp[128];
-	if(kn->type == KERFS_TYPE_INTEGER) {
+	if(kn->type == KERFS_TYPE_INTEGER || kn->type == KERFS_TYPE_ADDRESS) {
+		char *str = kn->type == KERFS_TYPE_INTEGER ? "%d" : "%x";
 		switch(kn->size) {
 			case 1:
-				snprintf(tmp, 128, "%d", *(uint8_t *)kn->param);
+				snprintf(tmp, 128, str, *(uint8_t *)kn->param);
 				break;
 			case 2:
-				snprintf(tmp, 128, "%d", *(uint16_t *)kn->param);
+				snprintf(tmp, 128, str, *(uint16_t *)kn->param);
 				break;
 			case 4:
-				snprintf(tmp, 128, "%d", *(uint32_t *)kn->param);
+				snprintf(tmp, 128, str, *(uint32_t *)kn->param);
 				break;
 			case 8:
-				snprintf(tmp, 128, "%d", *(uint64_t *)kn->param);
+				snprintf(tmp, 128, str, *(uint64_t *)kn->param);
 				break;
 		}
+	} else if(kn->type == KERFS_TYPE_STRING) {
+		strncpy(tmp, (char *)kn->param, 128);
 	}
 	
 	if(offset > strlen(tmp))
@@ -122,7 +125,6 @@ int kerfs_write(struct inode *node, size_t offset, size_t length, const char *bu
 	}
 	return length;
 }
-
 
 void kerfs_init(void)
 {

@@ -6,6 +6,9 @@
 #include <sea/mm/map.h>
 #include <sea/fs/inode.h>
 #include <sea/fs/file.h>
+#include <sea/vsprintf.h>
+#include <sea/fs/kerfs.h>
+#include <sea/fs/dir.h>
 #include <sea/cpu/interrupt.h>
 
 static pid_t __next_pid = 0;
@@ -19,6 +22,68 @@ pid_t tm_thread_next_tid(void)
 pid_t tm_process_next_pid(void)
 {
 	return add_atomic(&__next_pid, 1);
+}
+
+extern struct filesystem *devfs;
+#define __expose_proc_field(proc, field, type) \
+	do { \
+		char file[128];\
+		snprintf(file, 128, "/dev/process/%d/%s", proc->pid, #field); \
+		kerfs_register_parameter(file, &proc->field, sizeof(proc->field), \
+				KERFS_PARAM_READONLY, type); \
+	} while(0)
+#define __expose_thread_field(thr, field, type) \
+	do { \
+		char file[128];\
+		snprintf(file, 128, "/dev/process/%d/%d/%s", proc->pid, thr->tid, #field); \
+		kerfs_register_parameter(file, &thr->field, sizeof(thr->field), \
+				KERFS_PARAM_READONLY, type); \
+	} while(0)
+
+void tm_process_create_kerfs_entries(struct process *proc)
+{
+	if(!devfs)
+		return;
+	char path[32];
+	snprintf(path, 32, "/dev/process/%d", proc->pid);
+	int ret = sys_mkdir(path, 0755);
+	if(ret < 0) {
+		printk(2, "[tm]: failed to create process entry: %d\n", proc->pid);
+		return;
+	}
+	__expose_proc_field(proc, heap_start, KERFS_TYPE_ADDRESS);
+	__expose_proc_field(proc, flags, KERFS_TYPE_ADDRESS);
+	__expose_proc_field(proc, refs, KERFS_TYPE_INTEGER);
+	__expose_proc_field(proc, heap_end, KERFS_TYPE_ADDRESS);
+	__expose_proc_field(proc, cmask, KERFS_TYPE_ADDRESS);
+	__expose_proc_field(proc, tty, KERFS_TYPE_INTEGER);
+	__expose_proc_field(proc, utime, KERFS_TYPE_INTEGER);
+	__expose_proc_field(proc, stime, KERFS_TYPE_INTEGER);
+	__expose_proc_field(proc, thread_count, KERFS_TYPE_INTEGER);
+	__expose_proc_field(proc, global_sig_mask, KERFS_TYPE_ADDRESS);
+	__expose_proc_field(proc, command, KERFS_TYPE_STRING);
+}
+
+void tm_thread_create_kerfs_entries(struct thread *thr)
+{
+	struct process *proc = thr->process;
+	if(!devfs)
+		return;
+	char path[48];
+	snprintf(path, 48, "/dev/process/%d/%d", proc->pid, thr->tid);
+	int ret = sys_mkdir(path, 0755);
+	if(ret < 0) {
+		printk(2, "[tm]: failed to create thread entry: %d\n", thr->tid);
+		return;
+	}
+	__expose_thread_field(thr, refs, KERFS_TYPE_INTEGER);
+	__expose_thread_field(thr, state, KERFS_TYPE_INTEGER);
+	__expose_thread_field(thr, flags, KERFS_TYPE_ADDRESS);
+	__expose_thread_field(thr, system, KERFS_TYPE_INTEGER);
+	__expose_thread_field(thr, priority, KERFS_TYPE_INTEGER);
+	__expose_thread_field(thr, timeslice, KERFS_TYPE_INTEGER);
+	__expose_thread_field(thr, usermode_stack_end, KERFS_TYPE_ADDRESS);
+	__expose_thread_field(thr, sig_mask, KERFS_TYPE_ADDRESS);
 }
 
 struct thread *tm_thread_fork(int flags)
@@ -87,7 +152,7 @@ static struct process *tm_process_copy(int flags)
 	ll_create(&newp->threadlist);
 	ll_create_lockless(&newp->mappings);
 	mutex_create(&newp->map_lock, MT_NOSCHED); /* we need to lock this during page faults */
-	mutex_create(&newp->stacks_lock, 0);
+	mutex_create(&newp->stacks_lock, MT_NOSCHED);
 	/* TODO: what the fuck is this? */
 	valloc_create(&newp->mmf_valloc, MMF_BEGIN, MMF_END, PAGE_SIZE, VALLOC_USERMAP);
 	for(addr_t a = MMF_BEGIN;a < (MMF_BEGIN + (size_t)newp->mmf_valloc.nindex);a+=PAGE_SIZE)
@@ -103,6 +168,7 @@ static struct process *tm_process_copy(int flags)
 	}
 	fs_copy_file_handles(current_process, newp);
 	mutex_create(&newp->files_lock, 0);
+	tm_process_create_kerfs_entries(newp);
 	return newp;
 }
 
@@ -112,11 +178,13 @@ void tm_thread_add_to_process(struct thread *thr, struct process *proc)
 	thr->process = proc;
 	tm_process_inc_reference(proc);
 	add_atomic(&proc->thread_count, 1);
+	tm_thread_create_kerfs_entries(thr);
 }
 
 void tm_thread_add_to_cpu(struct thread *thr, struct cpu *cpu)
 {
 	thr->cpu = cpu;
+	thr->cpuid = cpu->knum;
 	add_atomic(&cpu->numtasks, 1);
 	tqueue_insert(cpu->active_queue, thr, &thr->activenode);
 }

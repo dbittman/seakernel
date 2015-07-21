@@ -48,7 +48,6 @@ struct thread {
 	int priority, timeslice;
 	addr_t kernel_stack;
 	unsigned long stack_pointer, jump_point;
-	addr_t usermode_stack_start;
 	addr_t usermode_stack_end;
 	int usermode_stack_num;
 	struct cpu *cpu;
@@ -56,7 +55,6 @@ struct thread {
 	sigset_t sig_mask;
 	unsigned signal, signals_pending;
 	registers_t *regs;
-	time_t stime, utime, t_cutime, t_cstime;
 
 	struct arch_thread_data arch_thread;
 
@@ -115,6 +113,7 @@ __attribute__((noinline)) void arch_tm_fork_setup_stack(struct thread *thr);
 addr_t tm_thread_reserve_kernelmode_stack(void);
 void tm_thread_release_kernelmode_stack(addr_t base);
 int tm_thread_delay(time_t microseconds);
+void tm_thread_create_kerfs_entries(struct thread *thr);
 
 #define tm_thread_pause(th) tm_thread_set_state(th, THREADSTATE_INTERRUPTIBLE)
 #define tm_thread_resume(th) tm_thread_set_state(th, THREADSTATE_RUNNING)

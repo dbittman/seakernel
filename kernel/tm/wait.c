@@ -52,6 +52,8 @@ static struct process *__find_first_child(struct process *parent)
 
 int sys_waitpid(int pid, int *st, int opt)
 {
+	if(current_process->pid > 1)
+	printk(0, "%d --> %d %x, %d\n", current_process->pid, pid, st, opt);
 	if(!pid || pid < -1)
 		return -ENOSYS;
 
@@ -63,21 +65,36 @@ int sys_waitpid(int pid, int *st, int opt)
 	}
 
 	if(!proc || proc->parent != current_process) {
+	if(current_process->pid > 1)
+		printk(0, "%d: ECHILD %x\n", current_process->pid, proc);
 		if(proc)
 			tm_process_put(proc);
 		return -ECHILD;
 	}
 
 	while(!(proc->flags & PROCESS_EXITED) && !(opt & WNOHANG)) {
-		if(tm_thread_got_signal(current_thread)) {
-			tm_process_put(proc);
-			return -EINTR;
+		switch(tm_thread_got_signal(current_thread)) {
+			case SA_RESTART:
+				tm_process_put(proc);
+				if(current_process->pid > 1)
+					printk(0, "%d: RESTART %d\n", current_process->pid, current_thread->signal);
+				return -ERESTART;
+				break;
+			case 0:
+				break;
+			default:
+				tm_process_put(proc);
+				if(current_process->pid > 1)
+					printk(0, "%d: EINTR %d\n", current_process->pid, current_thread->signal);
+				return -EINTR;
 		}
 		tm_schedule();
 	}
 
 	if(proc->thread_count > 0 || !(proc->flags & PROCESS_EXITED)) {
 		tm_process_put(proc);
+	if(current_process->pid > 1)
+		printk(0, "%d: 0\n", current_process->pid);
 		return 0;
 	}
 	int code, gotpid;
@@ -86,6 +103,8 @@ int sys_waitpid(int pid, int *st, int opt)
 	tm_process_put(proc);
 	if(st)
 		*st = code;
+	if(current_process->pid > 1)
+		printk(0, "%d: %d\n", current_process->pid, gotpid);
 	return gotpid;
 }
 

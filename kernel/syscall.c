@@ -327,52 +327,54 @@ int syscall_handler(registers_t *regs)
 		kprintf("[syscall]: (from %d(%d)) no such syscall %d\n", current_thread->tid, current_process->pid, SYSCALL_NUM_AND_RET);
 		return -ENOSYS;
 	}
-	long ret;
+	long ret = 0;
 	if(!check_pointers(regs))
 		return -EINVAL;
 	if(kernel_state_flags & KSF_SHUTDOWN)
 		for(;;);
-	
-	tm_thread_enter_system(SYSCALL_NUM_AND_RET);
-	/* most syscalls are pre-emptible, so we enable interrupts and
-	 * expect handlers to disable them if needed */
-	cpu_interrupt_set(1);
-	/* start accounting information! */
-	syscounts[SYSCALL_NUM_AND_RET]++;
 
-	#ifdef SC_DEBUG
-	if(current_process->tty == current_console->tty && SYSCALL_NUM_AND_RET != 0)
-		printk(SC_DEBUG, "tty %d: syscall %d(%d) (from: %x): enter %d\n",
-				current_process->tty, current_thread->tid, current_process->pid,
-				current_thread->regs->eip, SYSCALL_NUM_AND_RET);
-	#endif
-#ifdef SC_TIMING
-	int timer_did_start = timer_start(&systimers[SYSCALL_NUM_AND_RET]);
+	do {
+		tm_thread_enter_system(SYSCALL_NUM_AND_RET);
+		/* most syscalls are pre-emptible, so we enable interrupts and
+	 	 * expect handlers to disable them if needed */
+		cpu_interrupt_set(1);
+		/* start accounting information! */
+		syscounts[SYSCALL_NUM_AND_RET]++;
+
+#ifdef SC_DEBUG
+		if(current_process->tty == current_console->tty && SYSCALL_NUM_AND_RET != 0)
+			printk(SC_DEBUG, "tty %d: syscall %d(%d) (from: %x): enter %d\n",
+					current_process->tty, current_thread->tid, current_process->pid,
+					current_thread->regs->eip, SYSCALL_NUM_AND_RET);
 #endif
-	__do_syscall_jump(ret, syscall_table[SYSCALL_NUM_AND_RET], _E_, _D_,
-					  _C_, _B_, _A_);
 #ifdef SC_TIMING
-	if(!(SYSCALL_NUM_AND_RET == SYS_FORK && ret == 0)) {
-		if(timer_did_start) timer_stop(&systimers[SYSCALL_NUM_AND_RET]);
-	}
+		int timer_did_start = timer_start(&systimers[SYSCALL_NUM_AND_RET]);
 #endif
-	#ifdef SC_DEBUG
-	if((current_process->tty == current_console->tty || 0)
-		&& (ret < 0 || 0) && (ret == -EINTR || 1))
-		printk(SC_DEBUG, "syscall pid %3d: #%3d ret %4d\n",
-			   current_thread->tid, current_thread->system, ret < 0 ? -ret : ret);
-	#endif
-	cpu_interrupt_set(0);
-	tm_thread_exit_system();
-	/* if we need to reschedule, or we have overused our timeslice
-	 * then we need to reschedule. this prevents tasks that do a continuous call
-	 * to write() from starving the resources of other tasks. syscall_count resets
-	 * on each call to tm_tm_schedule() */
-	if(current_thread->flags & THREAD_SCHEDULE)
-	{
-		/* clear out the flag. Either way in the if statement, we've rescheduled. */
-		tm_schedule();
-	}
+		__do_syscall_jump(ret, syscall_table[SYSCALL_NUM_AND_RET], _E_, _D_,
+				_C_, _B_, _A_);
+#ifdef SC_TIMING
+		if(!(SYSCALL_NUM_AND_RET == SYS_FORK && ret == 0)) {
+			if(timer_did_start) timer_stop(&systimers[SYSCALL_NUM_AND_RET]);
+		}
+#endif
+#ifdef SC_DEBUG
+		if((current_process->tty == current_console->tty || 0)
+				&& (ret < 0 || 0) && (ret == -EINTR || 1))
+			printk(SC_DEBUG, "syscall pid %3d: #%3d ret %4d\n",
+			   		current_thread->tid, current_thread->system, ret < 0 ? -ret : ret);
+#endif
+		cpu_interrupt_set(0);
+		tm_thread_exit_system();
+		/* if we need to reschedule, or we have overused our timeslice
+	 	 * then we need to reschedule. this prevents tasks that do a continuous call
+	 	 * to write() from starving the resources of other tasks. syscall_count resets
+	 	 * on each call to tm_tm_schedule() */
+		if(current_thread->flags & THREAD_SCHEDULE)
+		{
+			/* clear out the flag. Either way in the if statement, we've rescheduled. */
+			tm_schedule();
+		}
+	} while(ret == -ERESTART);
 	/* store the return value in the regs */
 	SYSCALL_NUM_AND_RET = ret;
 	/* if we're going to jump to a signal here, we need to back up our

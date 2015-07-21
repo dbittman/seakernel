@@ -90,7 +90,7 @@
 #define EWOULDBLOCK EAGAIN      /* Operation would block */
 
 /* Should never be seen by user programs */
-#define ERESTARTSYS	512
+#define ERESTART	512
 #define ERESTARTNOINTR	513
 #define ERESTARTNOHAND	514	/* restart if no handler.. */
 

@@ -12,6 +12,7 @@
 
 void tm_thread_handle_signal(int signal)
 {
+	/* TODO: masks! */
 	struct sigaction *sa = &current_process->signal_act[signal];
 	if(signal != SIGKILL && (addr_t)sa->_sa_func._sa_handler != SIG_IGN && 
 			(addr_t)sa->_sa_func._sa_handler != SIG_DFL) {
@@ -195,6 +196,18 @@ int tm_signal_will_be_fatal(struct thread *t, int sig)
 
 int tm_thread_got_signal(struct thread *t)
 {
-	return t->signal || t->signals_pending;
+	if(!t->signal)
+		return 0;
+	if(t->signal == SIGKILL)
+		return 1;
+	if((addr_t)t->process->signal_act[t->signal]._sa_func._sa_handler == SIG_IGN)
+		return 0;
+	if(t->process->global_sig_mask & (1 << t->signal))
+		return 0;
+	if(t->sig_mask & (1 << t->signal))
+		return 0;
+	if(t->process->signal_act[t->signal].sa_flags & SA_RESTART)
+		return SA_RESTART;
+	return t->signal;
 }
 

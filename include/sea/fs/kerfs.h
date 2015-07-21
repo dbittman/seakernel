@@ -21,6 +21,7 @@ int kerfs_kmalloc_report(size_t offset, size_t length, char *buf);
 int kerfs_pmm_report(size_t offset, size_t length, char *buf);
 int kerfs_icache_report(size_t offset, size_t length, char *buf);
 int kerfs_module_report(size_t offset, size_t length, char *buf);
+int kerfs_unregister_entry(char *path);
 
 #define KERFS_PRINTF(offset,length,buf,current,format...) \
 	do { \

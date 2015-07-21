@@ -6,6 +6,8 @@
 #include <sea/fs/inode.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/mm/map.h>
+#include <sea/vsprintf.h>
+#include <sea/fs/kerfs.h>
 static void tm_thread_destroy(unsigned long data)
 {
 	struct thread *thr = (struct thread *)data;
@@ -33,6 +35,52 @@ void tm_process_wait_cleanup(struct process *proc)
 		ll_do_remove(process_list, &proc->listnode, 0);
 		tm_process_put(proc); /* process_list releases its pointer */
 	}
+}
+
+#define __remove_kerfs_thread_entry(thr,name) \
+	do {\
+		char file[128]; \
+		snprintf(file, 128, "/dev/process/%d/%d/%s", thr->process->pid, thr->tid, name); \
+		kerfs_unregister_entry(file); \
+	} while(0)
+#define __remove_kerfs_proc_entry(p,name) \
+	do {\
+		char file[128]; \
+		snprintf(file, 128, "/dev/process/%d/%s", p->pid, name); \
+		kerfs_unregister_entry(file); \
+	} while(0)
+
+void tm_thread_remove_kerfs_entries(struct thread *thr)
+{
+	__remove_kerfs_thread_entry(thr, "refs");
+	__remove_kerfs_thread_entry(thr, "state");
+	__remove_kerfs_thread_entry(thr, "flags");
+	__remove_kerfs_thread_entry(thr, "system");
+	__remove_kerfs_thread_entry(thr, "priority");
+	__remove_kerfs_thread_entry(thr, "timeslice");
+	__remove_kerfs_thread_entry(thr, "usermode_stack_end");
+	__remove_kerfs_thread_entry(thr, "sig_mask");
+	char dir[128];
+	snprintf(dir, 128, "/dev/process/%d/%d", thr->process->pid, thr->tid);
+	sys_rmdir(dir);
+}
+
+void tm_process_remove_kerfs_entries(struct process *proc)
+{
+	__remove_kerfs_proc_entry(proc, "heap_start");
+	__remove_kerfs_proc_entry(proc, "heap_end");
+	__remove_kerfs_proc_entry(proc, "flags");
+	__remove_kerfs_proc_entry(proc, "refs");
+	__remove_kerfs_proc_entry(proc, "cmask");
+	__remove_kerfs_proc_entry(proc, "tty");
+	__remove_kerfs_proc_entry(proc, "utime");
+	__remove_kerfs_proc_entry(proc, "stime");
+	__remove_kerfs_proc_entry(proc, "thread_count");
+	__remove_kerfs_proc_entry(proc, "global_sig_mask");
+	__remove_kerfs_proc_entry(proc, "command");
+	char dir[128];
+	snprintf(dir, 128, "/dev/process/%d", proc->pid);
+	sys_rmdir(dir);
 }
 
 __attribute__((noinline)) static void tm_process_exit(int code)
@@ -64,6 +112,7 @@ __attribute__((noinline)) static void tm_process_exit(int code)
 	valloc_destroy(&current_process->mmf_valloc);
 	mm_free_self_directory();
 	/* TODO: free everything else? */
+	tm_process_remove_kerfs_entries(current_process);
 
 	if(current_process->parent) {
 		rwlock_acquire(&process_list->rwl, RWL_READER);
@@ -93,6 +142,7 @@ void tm_thread_exit(int code)
 	tm_thread_release_usermode_stack(current_thread, current_thread->usermode_stack_num);
 	ll_do_remove(&current_process->threadlist, &current_thread->pnode, 0);
 	tm_process_put(current_process); /* thread releases it's process pointer */
+	tm_thread_remove_kerfs_entries(current_thread);
 
 	sub_atomic(&running_threads, 1);
 	if(sub_atomic(&current_process->thread_count, 1) == 0) {

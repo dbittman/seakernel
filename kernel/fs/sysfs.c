@@ -38,15 +38,39 @@ int kerfs_register_parameter(char *path, void *param, size_t size, int flags, in
 
 int kerfs_register_report(char *path, int (*fn)(size_t, size_t, char *))
 {
+	uid_t old = current_process->effective_uid;
+	current_process->effective_uid = 0;
 	dev_t num = add_atomic(&dev_num, 1);
 	int r = sys_mknod(path, S_IFREG | 0600, num);
-	if(r < 0)
+	if(r < 0) {
+		current_process->effective_uid = old;
 		return r;
+	}
 	struct kerfs_node *kn = kmalloc(sizeof(struct kerfs_node));
 	kn->num = num;
 	kn->fn = fn;
 
 	assert(!hash_table_set_entry(table, &num, sizeof(num), 1, kn));
+	current_process->effective_uid = old;
+	return 0;
+}
+
+int kerfs_unregister_entry(char *path)
+{
+	uid_t old = current_process->effective_uid;
+	current_process->effective_uid = 0;
+	struct inode *node = fs_path_resolve_inode(path, RESOLVE_NOLINK, 0);
+	if(!node) {
+		current_process->effective_uid = old;
+		return -ENOENT;
+	}
+	dev_t num = node->phys_dev;
+	vfs_icache_put(node);
+
+	sys_unlink(path);
+	hash_table_delete_entry(table, &num, sizeof(num), 1);
+	
+	current_process->effective_uid = old;
 	return 0;
 }
 

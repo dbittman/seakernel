@@ -40,15 +40,15 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 	int timeout = 10000000;
 	cpu_disable_preemption();
 	while(bts_atomic(&m->lock, 0)) {
-		cpu_enable_preemption();
 		if(!(m->flags & MT_NOSCHED)) {
+			cpu_enable_preemption();
 			tm_schedule();
+			cpu_disable_preemption();
 		} else {
 			cpu_pause();
 		}
 		if(--timeout == 0)
 			panic(PANIC_NOSYNC | PANIC_INSTANT, "timeout locking mutex (owned by %d)", m->pid);
-		cpu_disable_preemption();
 	}
 	assert(m->lock);
 	if(!(m->flags & MT_NOSCHED))

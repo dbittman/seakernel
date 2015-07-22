@@ -93,6 +93,7 @@ void tm_process_wait_cleanup(struct process *proc)
 	}
 }
 
+#warning "TODO: make this set a flag, and do the actual exit outside of an interrupt handler"
 __attribute__((noinline)) static void tm_process_exit(int code)
 {
 	if(code != -9) 

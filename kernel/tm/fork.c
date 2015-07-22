@@ -248,7 +248,10 @@ int tm_clone(int flags)
 		tm_thread_add_to_cpu(thr, target_cpu);
 		cpu_interrupt_set(old);
 		cpu_enable_preemption();
-		return thr->tid;
+		if(flags & CLONE_SHARE_PROCESS)
+			return thr->tid;
+		else
+			return proc->pid;
 	}
 }
 

@@ -334,6 +334,7 @@ int syscall_handler(registers_t *regs)
 		for(;;);
 
 	do {
+		ret = 0;
 		tm_thread_enter_system(SYSCALL_NUM_AND_RET);
 		/* most syscalls are pre-emptible, so we enable interrupts and
 	 	 * expect handlers to disable them if needed */

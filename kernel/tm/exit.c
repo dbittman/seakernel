@@ -93,7 +93,6 @@ void tm_process_wait_cleanup(struct process *proc)
 	}
 }
 
-#warning "TODO: make this set a flag, and do the actual exit outside of an interrupt handler"
 __attribute__((noinline)) static void tm_process_exit(int code)
 {
 	if(code != -9) 
@@ -142,7 +141,7 @@ __attribute__((noinline)) static void tm_process_exit(int code)
 	tm_process_put(current_process); /* fork starts us out at refs = 1 */
 }
 
-void tm_thread_exit(int code)
+void tm_thread_do_exit(void)
 {
 	assert(current_thread->blocklist == 0);
 
@@ -162,7 +161,7 @@ void tm_thread_exit(int code)
 	sub_atomic(&running_threads, 1);
 	if(sub_atomic(&current_process->thread_count, 1) == 0) {
 		sub_atomic(&running_processes, 1);
-		tm_process_exit(code);
+		tm_process_exit(current_thread->exit_code);
 	}
 
 	cpu_disable_preemption();
@@ -183,6 +182,12 @@ void tm_thread_exit(int code)
 	cpu_interrupt_set(0); /* don't schedule away until we get back
 							 to the syscall handler! */
 	cpu_enable_preemption();
+}
+
+void tm_thread_exit(int code)
+{
+	current_thread->exit_code = code;
+	tm_thread_raise_flag(current_thread, THREAD_EXIT);
 }
 
 void sys_exit(int code)

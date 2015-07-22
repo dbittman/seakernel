@@ -17,6 +17,7 @@
 #define KSF_HAVEEXECED     0x40 /* have we exec'd once? we dont check for valid pointers if this is unset */
 #define KSF_MEMMAPPED      0x80 /* is memory mapped? (used by pmm) */
 #define KSF_THREADING      0x100
+#define KSF_DEBUGGING      0x200
 extern unsigned kernel_state_flags;
 #define set_ksf(flag) or_atomic(&kernel_state_flags, flag)
 #define unset_ksf(flag) and_atomic(&kernel_state_flags, ~flag)

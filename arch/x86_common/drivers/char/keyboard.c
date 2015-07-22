@@ -281,7 +281,6 @@ void keyboard_int_stage1(registers_t *regs)
 	key_stack[x] = scancode;
 	if(x && scancode == BREAKER1 && key_stack[x-1] == BREAKER0)
 	{
-		kprintf("BREAKPOINT TRIGGERED\n");
 		asm("int $0x3");
 	}
 	cpu_interrupt_schedule_stage2(&keyboard_s2_call);

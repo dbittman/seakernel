@@ -181,8 +181,16 @@ int block_cache_request(struct ioreq *req, off_t offset, size_t bytecount)
 		char tmp[req->bd->blksz];
 		ret = dm_get_block_cache(req->dev, block, tmp);
 		if(!ret) {
+			/* TODO: cleanup patterns like this */
+			cpu_disable_preemption();
+			tm_thread_add_to_blocklist(current_thread, &req->blocklist);
 			__add_request(req);
-			tm_thread_block(&req->blocklist, THREADSTATE_UNINTERRUPTIBLE);
+			mutex_acquire(&current_thread->block_mutex);
+			if(current_thread->blocklist)
+				tm_thread_set_state(current_thread, THREADSTATE_UNINTERRUPTIBLE);
+			mutex_release(&current_thread->block_mutex);
+			cpu_enable_preemption();
+			tm_schedule();
 			assert(req->flags & IOREQ_COMPLETE);
 			if(req->flags & IOREQ_FAILED) {
 				return position;

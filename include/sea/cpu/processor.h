@@ -71,6 +71,7 @@ void cpu_reset();
 
 void cpu_print_stack_trace(int num);
 void arch_cpu_print_stack_trace(int num);
+void cpu_print_stack_trace_alternate(addr_t *starting_base_pointer);
 
 void cpu_processor_init_1();
 void cpu_processor_init_2();

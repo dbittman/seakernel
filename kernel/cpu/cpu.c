@@ -50,6 +50,12 @@ void cpu_print_stack_trace(int num)
 	arch_cpu_print_stack_trace(num);
 }
 
+void arch_cpu_print_stack_trace_alternate(addr_t *starting_base_pointer);
+void cpu_print_stack_trace_alternate(addr_t *starting_base_pointer)
+{
+	arch_cpu_print_stack_trace_alternate(starting_base_pointer);
+}
+
 void cpu_copy_fixup_stack(addr_t new, addr_t old, size_t len)
 {
 	arch_cpu_copy_fixup_stack(new, old, len);

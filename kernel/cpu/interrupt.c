@@ -11,6 +11,7 @@
 #include <sea/cpu/processor.h>
 #include <sea/tm/workqueue.h>
 #include <sea/tm/async_call.h>
+#include <sea/debugger.h>
 struct interrupt_handler {
 	void (*fn)(registers_t *, int nr, int flags);
 };
@@ -130,6 +131,8 @@ static void faulted(int fuckoff, int userspace, addr_t ip, long err_code, regist
 {
 	if(!current_thread || current_thread->system || !userspace)
 	{
+		if(fuckoff == 3)
+			debugger_enter();
 		kernel_fault(fuckoff, ip, err_code, regs);
 	} else
 	{
@@ -239,6 +242,19 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 	if(!already_in_kernel) {
 		__setup_signal_handler(regs);
 		current_thread->regs = 0;
+	}
+}
+
+/* this gets run when the interrupt hasn't returned yet, but it's now maybe 'safe' to
+ * do things - specifically, we've been "ack'd", and interrupt_level is now
+ * decremented */
+void cpu_interrupt_post_handling(void)
+{
+	if(!current_thread->interrupt_level) {
+		if(current_thread->flags & THREAD_EXIT)
+			tm_thread_do_exit();
+		if(current_thread->flags & THREAD_SCHEDULE)
+			tm_schedule();
 	}
 }
 

@@ -21,6 +21,7 @@ int arch_cpu_interrupt_get_flag();
 void cpu_interrupt_syscall_entry(registers_t *regs, int syscall_number);
 void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_address);
 void cpu_interrupt_irq_entry(registers_t *regs, int int_no);
+void cpu_interrupt_post_handling(void);
 
 void arch_cpu_timer_install(int hz);
 void cpu_timer_install(int hz);

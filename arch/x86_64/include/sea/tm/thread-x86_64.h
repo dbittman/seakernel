@@ -5,5 +5,9 @@ struct arch_thread_data {
 	char fpu_save_data[512 + 16 /* alignment */];
 };
 
+struct thread_switch_context {
+	uint64_t r15, r14, r13, r12, rbx, rbp, rflags;
+};
+
 #endif
 

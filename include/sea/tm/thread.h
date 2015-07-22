@@ -21,9 +21,10 @@
 
 #define THREAD_KERNEL          0x1  /* a kernel thread */
 #define THREAD_TIMEOUT_EXPIRED 0x2  /* timeout expired while blocking */
-#define THREAD_SIGNALED        0x4 /* scheduler has detected that a signal is meant for this
+#define THREAD_SIGNALED        0x4  /* scheduler has detected that a signal is meant for this
                                        task's userspace */
-#define THREAD_SCHEDULE        0x8 /* we request a reschedule after this interrupt completes */
+#define THREAD_SCHEDULE        0x8  /* we request a reschedule after this interrupt completes */
+#define THREAD_EXIT            0x10 /* we plan to exit when returning from this interrupt */
 
 #define THREADSTATE_RUNNING 0
 #define THREADSTATE_INTERRUPTIBLE 1
@@ -45,6 +46,7 @@ struct thread {
 	int system;
 	int interrupt_level;
 	int priority, timeslice;
+	int exit_code;
 	addr_t kernel_stack;
 	unsigned long stack_pointer, jump_point;
 	addr_t usermode_stack_end;
@@ -95,6 +97,7 @@ void tm_signal_send_thread(struct thread *thr, int signal);
 int sys_kill_thread(pid_t tid, int signal);
 int tm_signal_will_be_fatal(struct thread *t, int sig);
 void tm_thread_exit(int code);
+void tm_thread_do_exit(void);
 void sys_exit(int);
 pid_t tm_thread_next_tid(void);
 struct thread *tm_thread_fork(int flags);

@@ -50,6 +50,7 @@ static void __print_process(struct process *proc)
 	printk_safe(5, "  heap_end:     %x\n", proc->heap_end);
 	printk_safe(5, "  ppid:         %d\n", proc->parent ? proc->parent->pid : 0);
 	printk_safe(5, "  thread_count: %d\n", proc->thread_count);
+	printk_safe(5, "  command:      %s\n", proc->command ? proc->command : "(null)");
 }
 
 static void __print_thread(struct thread *thr, int trace)
@@ -69,7 +70,7 @@ static void __print_thread(struct thread *thr, int trace)
 	printk_safe(5, "    signal:             %d\n", thr->signal);
 	printk_safe(5, "    blocklist:          %x\n", thr->blocklist);
 	if(thr->regs) {
-		printk_safe(5, "    regs->int_no        %x\n", thr->regs->int_no);
+		printk_safe(5, "    regs->int_no        %d\n", thr->regs->int_no);
 	}
 	if(trace && thr == current_thread) {
 		cpu_print_stack_trace(20);

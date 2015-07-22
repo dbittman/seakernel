@@ -30,6 +30,8 @@ int mutex_is_locked(mutex_t *m)
 void __mutex_acquire(mutex_t *m, char *file, int line)
 {
 	assert(m->magic == MUTEX_MAGIC);
+	if(kernel_state_flags & KSF_DEBUGGING)
+		return;
 	if(current_thread && current_thread->interrupt_level && !(m->flags & MT_NOSCHED))
 		panic(PANIC_NOSYNC, "cannot lock a normal mutex within interrupt context (%s:%d)", file, line);
 	if(kernel_state_flags & KSF_SHUTDOWN) return;
@@ -59,6 +61,8 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 void __mutex_release(mutex_t *m, char *file, int line)
 {
 	assert(m->magic == MUTEX_MAGIC);
+	if(kernel_state_flags & KSF_DEBUGGING)
+		return;
 	if(kernel_state_flags & KSF_SHUTDOWN) return;
 	assert(m->lock);
 	if(current_thread && m->pid != (int)current_thread->tid)

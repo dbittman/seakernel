@@ -9,17 +9,8 @@
 #include <sea/cpu/cpu-x86_64.h>
 #endif
 
-#if CONFIG_ARCH == TYPE_ARCH_X86
-
-#define CPUID(cmd, a, b, c, d) __asm__ __volatile__ ("push %%eax; push %%ebx; push %%ecx; push %%edx; mov %0, %%eax; cpuid;"\
-		"mov %%eax, %1; mov %%ebx, %2; mov %%ecx, %3; mov %%edx, %4;" \
-		"pop %%edx; pop %%ecx; pop %%ebx; pop %%eax" :"=r"(a), "=r"(b), "=r"(c), "=r"(d) : "r"(cmd));
-#else
-#define CPUID(cmd, a, b, c, d) __asm__ __volatile__ ("push %%rax; push %%rbx; push %%rcx; push %%rdx; mov %0, %%rax; cpuid;"\
-		"mov %%rax, %1; mov %%rbx, %2; mov %%rcx, %3; mov %%rdx, %4;" \
-		"pop %%rdx; pop %%rcx; pop %%rbx; pop %%rax" :"=r"(a), "=r"(b), "=r"(c), "=r"(d) : "r"(cmd));
-
-#endif
+#define CPUID(cmd, a, b, c, d) __asm__ __volatile__ ("cpuid;"\
+		:"=a"(a), "=b"(b), "=c"(c), "=d"(d) : "a"(cmd));
 
 static void cpuid_get_features(cpuid_t *cpuid)
 {
@@ -27,6 +18,7 @@ static void cpuid_get_features(cpuid_t *cpuid)
 	eax = 0x01;
 	CPUID(eax, eax, ebx, ecx, edx);
 	/* if no LAPIC is present, the INIT IPI will fail. */
+	printk(5, ":: %x\n", edx);
 	cpuid->features_edx = edx;
 	cpuid->features_ecx = ecx;
 	cpuid->stepping =    (eax & 0x0F);

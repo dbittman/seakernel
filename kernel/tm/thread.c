@@ -56,7 +56,7 @@ void tm_thread_put(struct thread *thr)
 	assert(thr->refs >= 1);
 	mutex_acquire(&thread_refs_lock);
 	if(sub_atomic(&thr->refs, 1) == 0) {
-		hash_table_delete_entry(thread_table, &current_thread->tid, sizeof(current_thread->tid), 1);
+		assert(!hash_table_delete_entry(thread_table, &thr->tid, sizeof(thr->tid), 1));
 		mutex_release(&thread_refs_lock);
 		kfree(thr);
 	} else {

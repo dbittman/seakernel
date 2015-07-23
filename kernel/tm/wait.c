@@ -57,6 +57,8 @@ int sys_waitpid(int pid, int *st, int opt)
 
 	struct process *proc = 0;
 	if(current_process->pid > 1) printk(0, "%d wait: %d %d\n", current_process->pid, pid, opt);
+	if(pid != -1)
+		kprintf("WAITING SPECIFICALLY\n");
 	if(pid == -1) {
 		proc = __find_first_child(current_process);
 	} else {
@@ -70,6 +72,7 @@ int sys_waitpid(int pid, int *st, int opt)
 		return -ECHILD;
 	}
 
+	/* TODO: blocklist this shit! */
 	while(!(proc->flags & PROCESS_EXITED) && !(opt & WNOHANG)) {
 		switch(tm_thread_got_signal(current_thread)) {
 			case SA_RESTART:
@@ -86,7 +89,7 @@ int sys_waitpid(int pid, int *st, int opt)
 		tm_schedule();
 	}
 
-	if(proc->thread_count > 0 || !(proc->flags & PROCESS_EXITED)) {
+	if(!(proc->flags & PROCESS_EXITED)) {
 		if(current_process->pid > 1) printk(0, "%d wait: %d %d (RET 0)\n", current_process->pid, pid, opt);
 		tm_process_put(proc);
 		return 0;

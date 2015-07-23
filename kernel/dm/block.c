@@ -180,8 +180,6 @@ int block_cache_request(struct ioreq *req, off_t offset, size_t bytecount)
 	while(count) {
 		char tmp[req->bd->blksz];
 		ret = dm_get_block_cache(req->dev, block, tmp);
-			if(((addr_t)buffer & ~0xFFF) == 0x40853000)
-				printk_safe(0, "%d requesting %d -> %x... (%d %d)\n", current_process->pid, block, buffer + position, count, bytecount);
 		if(!ret) {
 			/* TODO: cleanup patterns like this */
 			cpu_disable_preemption();

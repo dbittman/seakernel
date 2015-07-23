@@ -138,12 +138,6 @@ static void faulted(int fuckoff, int userspace, addr_t ip, long err_code, regist
 	{
 		printk(5, "%s occured in task %d (ip=%x, err=%x (%d), usersp=%x): He's dead, Jim.\n", 
 				exception_messages[fuckoff], current_thread->tid, ip, err_code, err_code, regs->useresp);
-		if(fuckoff == 6) {
-			printk(0, "code: ");
-			for(int i=0;i<32;i++)
-				printk(0, "%x ", *(unsigned char *)(ip + i));
-			printk(0, "\n");
-		}
 		/* we die for different reasons on different interrupts */
 		switch(fuckoff)
 		{

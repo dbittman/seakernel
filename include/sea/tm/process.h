@@ -60,7 +60,7 @@ struct process {
 	unsigned magic;
 	struct vmm_context vmm_context;
 	pid_t pid;
-	int flags;
+	volatile int flags;
 	int refs;
 
 	struct llistnode listnode;

@@ -12,13 +12,13 @@
 
 void tm_thread_handle_signal(int signal)
 {
+	struct sigaction *sa = &current_process->signal_act[signal];
 	if(signal != SIGKILL) {
 		if((current_thread->sig_mask & (1 << signal)) || (current_process->global_sig_mask & (1 << signal))) {
 			current_thread->signal = 0;
 			return;
 		}
 	}
-	struct sigaction *sa = &current_process->signal_act[signal];
 	if(signal != SIGKILL && (addr_t)sa->_sa_func._sa_handler != SIG_IGN && 
 			(addr_t)sa->_sa_func._sa_handler != SIG_DFL) {
 		if(!(sa->sa_flags & SA_NODEFER))

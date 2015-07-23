@@ -18,7 +18,6 @@ static void cpuid_get_features(cpuid_t *cpuid)
 	eax = 0x01;
 	CPUID(eax, eax, ebx, ecx, edx);
 	/* if no LAPIC is present, the INIT IPI will fail. */
-	printk(5, ":: %x\n", edx);
 	cpuid->features_edx = edx;
 	cpuid->features_ecx = ecx;
 	cpuid->stepping =    (eax & 0x0F);

@@ -103,6 +103,7 @@ void panic(int flags, char *fmt, ...)
 	/* breakpoint so that GDB will catch us, allowing some better debugging */
 	asm("int $0x3");
 #endif
+	debugger_enter();
 	cpu_interrupt_set(0);
 	for(;;)
 		cpu_halt();

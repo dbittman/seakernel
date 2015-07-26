@@ -68,19 +68,15 @@ int sys_waitpid(int pid, int *st, int opt)
 		return -ECHILD;
 	}
 
-	/* TODO: blocklist this shit! */
 	while(!(proc->flags & PROCESS_EXITED) && !(opt & WNOHANG)) {
-		switch(tm_thread_got_signal(current_thread)) {
-			case SA_RESTART:
+		switch(tm_thread_block(&proc->waitlist, THREADSTATE_INTERRUPTIBLE)) {
+			case -ERESTART:
 				tm_process_put(proc);
 				return -ERESTART;
-			case 0:
-				break;
-			default:
+			case -EINTR:
 				tm_process_put(proc);
 				return -EINTR;
 		}
-		tm_schedule();
 	}
 
 	if(!(proc->flags & PROCESS_EXITED)) {

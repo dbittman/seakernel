@@ -133,7 +133,8 @@ static void faulted(int fuckoff, int userspace, addr_t ip, long err_code, regist
 	{
 		if(fuckoff == 3)
 			debugger_enter();
-		kernel_fault(fuckoff, ip, err_code, regs);
+		else
+			kernel_fault(fuckoff, ip, err_code, regs);
 	} else
 	{
 		printk(5, "%s occured in task %d (ip=%x, err=%x (%d), usersp=%x): He's dead, Jim.\n", 

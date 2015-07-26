@@ -147,11 +147,6 @@ static void debugger_threads(char tokens[16][64])
 	}
 }
 
-static void debugger_stack(char tokens[16][64])
-{
-
-}
-
 struct command {
 	char *str;
 	void (*fn)(char tokens[16][64]);
@@ -160,23 +155,25 @@ struct command {
 static struct command commands[32] = {
 	{ .str = "thread", .fn = debugger_threads },
 	{ .str = "proc", .fn = debugger_procs },
-	{ .str = "stack", .fn = debugger_stack },
 };
 
 void debugger_enter(void)
 {
 #if CONFIG_SMP
-	/* tell the other processors to halt */
-	cpu_send_ipi(CPU_IPI_DEST_OTHERS, IPI_PANIC, 0);
-	int timeout = 100000;
-	while(cpu_get_num_halted_processors() 
-			< cpu_get_num_secondary_processors() && --timeout)
-		cpu_pause();
+	/* panic already does this */
+	if(!(kernel_state_flags & KSF_PANICING)) {
+		/* tell the other processors to halt */
+		cpu_send_ipi(CPU_IPI_DEST_OTHERS, IPI_PANIC, 0);
+		int timeout = 100000;
+		while(cpu_get_num_halted_processors() 
+				< cpu_get_num_secondary_processors() && --timeout)
+			cpu_pause();
+	}
 #endif
 	set_ksf(KSF_DEBUGGING);
-	cpu_interrupt_set(0);
+	int old = cpu_interrupt_set(0);
 	cpu_disable_preemption();
-	printk_safe(5, "\n\nEntered Kernel Debugger (current_thread = %d)\n", current_thread->tid);
+	printk_safe(5, "\n\n---Entered Kernel Debugger (current_thread = %d)---\n", current_thread->tid);
 
 	char tokens[16][64];
 	for(;;) {
@@ -184,15 +181,24 @@ void debugger_enter(void)
 		int toks = debugger_get_tokens(16, 64, tokens);
 		if(!toks)
 			continue;
+		if(!strcmp(tokens[0], "continue"))
+			break;
 		for(int i=0;i<32;i++) {
 			if(!strcmp(commands[i].str, tokens[0]))
 				commands[i].fn(tokens);
 		}
 	}
 
-
-	for(;;) {
-		cpu_halt();
-	}
+	printk_safe(5, "---Attempting to restore previous state---\n");
+	if(cpu_get_num_secondary_processors() > 0)
+		printk_safe(5, "WARNING - CPUs other than %d will remain halted! Processes running on them may not"
+				"be able to resume!\n", __current_cpu->knum);
+	if(kernel_state_flags & KSF_PANICING)
+		printk_safe(5, "WARNING - Continuing execution after kernel panic! Kernel state might be bogus!\n");
+	printk_safe(5, "\n");
+	/* restore state */
+	unset_ksf(KSF_DEBUGGING);
+	cpu_enable_preemption();
+	cpu_interrupt_set(old);
 }
 

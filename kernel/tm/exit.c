@@ -50,6 +50,10 @@ void tm_process_remove_kerfs_entries(struct process *proc)
 	__remove_kerfs_proc_entry(proc, "utime");
 	__remove_kerfs_proc_entry(proc, "stime");
 	__remove_kerfs_proc_entry(proc, "thread_count");
+	__remove_kerfs_proc_entry(proc, "effective_uid");
+	__remove_kerfs_proc_entry(proc, "effective_gid");
+	__remove_kerfs_proc_entry(proc, "real_uid");
+	__remove_kerfs_proc_entry(proc, "real_gid");
 	__remove_kerfs_proc_entry(proc, "global_sig_mask");
 	__remove_kerfs_proc_entry(proc, "command");
 	__remove_kerfs_proc_entry(proc, "exit_reason.sig");

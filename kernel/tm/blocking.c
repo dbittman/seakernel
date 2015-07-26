@@ -45,16 +45,17 @@ int tm_thread_block(struct llist *blocklist, int state)
 	cpu_disable_preemption();
 	assert(!current_thread->blocklist);
 	assert(state != THREADSTATE_RUNNING);
-	if(state == THREADSTATE_INTERRUPTIBLE && tm_thread_got_signal(current_thread)) {
+	int ret;
+	if(state == THREADSTATE_INTERRUPTIBLE && (ret=tm_thread_got_signal(current_thread))) {
 		cpu_enable_preemption();
-		return -EINTR;
+		return ret == SA_RESTART ? -ERESTART : -EINTR;
 	}
 	tm_thread_add_to_blocklist(current_thread, blocklist);
 	tm_thread_set_state(current_thread, state);
 	cpu_enable_preemption();
 	tm_schedule();
-	if(tm_thread_got_signal(current_thread) && state != THREADSTATE_UNINTERRUPTIBLE) {
-		return -EINTR;
+	if((ret=tm_thread_got_signal(current_thread)) && state != THREADSTATE_UNINTERRUPTIBLE) {
+		return ret == SA_RESTART ? -ERESTART : -EINTR;
 	}
 	return 0;
 }
@@ -103,8 +104,9 @@ int tm_thread_delay(time_t microseconds)
 	ticker_insert(&cpu->ticker, microseconds, call);
 	cpu_put_current(cpu);
 	tm_thread_set_state(current_thread, THREADSTATE_INTERRUPTIBLE);
-	if(tm_thread_got_signal(current_thread)) {
-		return -EINTR;
+	int ret;
+	if((ret=tm_thread_got_signal(current_thread))) {
+		return ret == SA_RESTART ? -ERESTART : -EINTR;
 	}
 	return 0;
 }
@@ -140,9 +142,10 @@ int tm_thread_block_timeout(struct llist *blocklist, time_t microseconds)
 		cpu_enable_preemption();
 		return -ETIME;
 	}
-	if(tm_thread_got_signal(current_thread)) {
+	int ret;
+	if((ret=tm_thread_got_signal(current_thread))) {
 		cpu_enable_preemption();
-		return -EINTR;
+		return ret == SA_RESTART ? -ERESTART : -EINTR;
 	}
 	cpu_enable_preemption();
 	return 0;

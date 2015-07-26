@@ -56,6 +56,10 @@ void tm_process_create_kerfs_entries(struct process *proc)
 	__expose_proc_field(proc, refs, KERFS_TYPE_INTEGER);
 	__expose_proc_field(proc, heap_end, KERFS_TYPE_ADDRESS);
 	__expose_proc_field(proc, cmask, KERFS_TYPE_ADDRESS);
+	__expose_proc_field(proc, effective_uid, KERFS_TYPE_INTEGER);
+	__expose_proc_field(proc, effective_gid, KERFS_TYPE_INTEGER);
+	__expose_proc_field(proc, real_uid, KERFS_TYPE_INTEGER);
+	__expose_proc_field(proc, real_gid, KERFS_TYPE_INTEGER);
 	__expose_proc_field(proc, tty, KERFS_TYPE_INTEGER);
 	__expose_proc_field(proc, utime, KERFS_TYPE_INTEGER);
 	__expose_proc_field(proc, stime, KERFS_TYPE_INTEGER);
@@ -156,6 +160,7 @@ static struct process *tm_process_copy(int flags)
 	tm_process_inc_reference(current_process);
 	newp->parent = current_process;
 	ll_create(&newp->threadlist);
+	ll_create(&newp->waitlist);
 	ll_create_lockless(&newp->mappings);
 	mutex_create(&newp->map_lock, MT_NOSCHED); /* we need to lock this during page faults */
 	mutex_create(&newp->stacks_lock, MT_NOSCHED);

@@ -18,46 +18,6 @@ int ioctl_stub(int a, int b, long c)
 	return -1;
 }
 
-int __elevator_main(struct kthread *kt, void *arg)
-{
-	blockdevice_t *dev = arg;
-	const int max = 8;
-	char *buf = kmalloc(dev->blksz * max);
-	while(!kthread_is_joining(kt)) {
-		struct queue_item *qi;
-		if((qi = queue_dequeue_item(&dev->wq))) {
-			struct ioreq *req = qi->ent;
-			size_t count = req->count;
-			size_t block = req->block;
-			while(count) {
-				int this = 8;
-				if(this > count)
-					this = count;
-				assert(req->direction == READ);
-				int ret = dm_do_block_rw_multiple(req->direction, req->dev, block, buf, this, dev);
-				if(ret == dev->blksz * this) {
-					for(int i=0;i<this;i++) {
-						struct buffer *buffer = buffer_create(dev, block + i, 0, buf + i * dev->blksz);
-						dm_block_cache_insert(dev, block + i, buffer, 0);
-						buffer_put(buffer);
-					}
-				} else {
-					req->flags |= IOREQ_FAILED;
-				}
-				block+=this;
-				count-=this;
-			}
-			req->flags |= IOREQ_COMPLETE;
-			tm_blocklist_wakeall(&req->blocklist);
-			ioreq_put(req);
-		} else {
-			tm_thread_set_state(current_thread, THREADSTATE_INTERRUPTIBLE);
-			tm_schedule();
-		}
-	}
-	return 0;
-}
-
 blockdevice_t *dm_set_block_device(int maj, int (*f)(int, int, u64, char*), int bs, 
 	int (*c)(int, int, long), int (*m)(int, int, u64, char *, int), int (*s)(int, int))
 {
@@ -73,7 +33,7 @@ blockdevice_t *dm_set_block_device(int maj, int (*f)(int, int, u64, char*), int 
 		dev->ioctl=ioctl_stub;
 	dm_add_device(DT_BLOCK, maj, dev);
 	queue_create(&dev->wq, 0);
-	kthread_create(&dev->elevator, "[kelevator]", 0, __elevator_main, dev);
+	kthread_create(&dev->elevator, "[kelevator]", 0, block_elevator_main, dev);
 	hash_table_create(&dev->cache, HASH_NOLOCK, HASH_TYPE_CHAIN);
 	hash_table_resize(&dev->cache, HASH_RESIZE_MODE_IGNORE,1000000); /* TODO: initial value? */
 	hash_table_specify_function(&dev->cache, HASH_FUNCTION_BYTE_SUM);

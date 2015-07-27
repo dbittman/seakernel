@@ -74,6 +74,8 @@ int dm_blockdev_select(struct inode *in, int rw);
 void dm_send_sync_block();
 void block_cache_init(void);
 void block_buffer_init(void);
+int buffer_sync_all_dirty(void);
+int block_elevator_main(struct kthread *kt, void *arg);
 
 struct buffer *dm_block_cache_get(blockdevice_t *bd, uint64_t block);
 int dm_block_cache_insert(blockdevice_t *bd, uint64_t block, struct buffer *, int flags);

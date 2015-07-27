@@ -1,5 +1,6 @@
 #include <sea/dm/block.h>
-
+#include <sea/errno.h>
+#include <sea/tm/thread.h>
 struct llist dirty_list;
 mutex_t dlock;
 
@@ -7,6 +8,40 @@ void block_buffer_init(void)
 {
 	mutex_create(&dlock, MT_NOSCHED);
 	ll_create_lockless(&dirty_list);
+}
+
+void buffer_sync(struct buffer *buf)
+{
+	assert(buf->flags & BUFFER_DLIST);
+	assert(buf->flags & BUFFER_DIRTY);
+	panic(0, "NOT IMPLEMENTED");
+	
+	and_atomic(&buf->flags, ~BUFFER_DIRTY);
+}
+
+int buffer_sync_all_dirty(void)
+{
+	mutex_acquire(&dlock);
+	struct llistnode *ln, *next;
+	while(dirty_list.num > 0) {
+		struct buffer *buf = ll_entry(struct buffer *, dirty_list.head);
+		buffer_inc_refcount(buf);
+		buffer_sync(buf);
+		mutex_release(&dlock);
+		buffer_put(buf);
+		tm_schedule();
+		switch(tm_thread_got_signal(current_thread)) {
+			case SA_RESTART:
+				return -ERESTART;
+			case 0:
+				break;
+			default:
+				return -EINTR;
+		}
+		mutex_acquire(&dlock);
+	}
+	mutex_release(&dlock);
+	return 0;
 }
 
 struct buffer *buffer_create(blockdevice_t *bd, uint64_t block, int flags, char *data)

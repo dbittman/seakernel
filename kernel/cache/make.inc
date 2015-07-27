@@ -1,1 +1,1 @@
-KOBJS += kernel/cache/cache.o
+#KOBJS += kernel/cache/cache.o

@@ -1,66 +1,73 @@
-/* Provides access layer to the kernel cache for block devices 
- * (write-through block cache. Speeds up writing */
-#include <sea/config.h>
-#if CONFIG_BLOCK_CACHE
-#include <sea/dm/dev.h>
 #include <sea/dm/block.h>
-#include <sea/lib/cache.h>
-#include <sea/loader/symbol.h>
-#include <sea/string.h>
+#include <sea/lib/hash.h>
+#include <sea/errno.h>
 
-static cache_t *blk_cache=0;
-
-int dm_block_cache_sync(struct ce_t *c)
+int dm_block_cache_insert(blockdevice_t *bd, uint64_t block, struct buffer *buf, int flags)
 {
-	u64 dev = c->id;
-	u64 blk = c->key;
-	if(c->dirty)
-		dm_do_block_rw(WRITE, dev, blk, c->data, 0);
-	return 1;
-}
+	mutex_acquire(&bd->cachelock);
 
-int dm_disconnect_block_cache(int dev)
-{
-	return cache_destroy_all_id(blk_cache, dev);
-}
+	struct buffer *prev = 0;
+	int exist = hash_table_get_entry(&bd->cache, &block, sizeof(block), 1, &prev) == 0;
 
-int dm_write_block_cache(int dev, u64 blk)
-{
-	struct ce_t *c = cache_find_element(blk_cache, dev, blk);
-	dm_block_cache_sync(c);
-	return 1;
-}
+	if(exist && !(flags & BLOCK_CACHE_OVERWRITE)) {
+		mutex_release(&bd->cachelock);
+		return -EEXIST;
+	}
 
-void dm_block_cache_init(void)
-{
-#if CONFIG_MODULES
-#if CONFIG_BLOCK_CACHE
-	loader_add_kernel_symbol(dm_write_block_cache);
-	loader_add_kernel_symbol(dm_disconnect_block_cache);
-#endif
-#endif
-	
-	blk_cache = cache_create(0, dm_block_cache_sync, "block", 0);
-}
+	if(exist) {
+		hash_table_delete_entry(&bd->cache, &block, sizeof(block), 1);
+	}
+	hash_table_set_entry(&bd->cache, &block, sizeof(block), 1, buf);
 
-int dm_cache_block(int dev, u64 blk, int sz, char *buf)
-{
-	return do_cache_object(blk_cache, dev < 0 ? -dev : dev, blk, sz, buf, 
-		dev < 0 ? 0 : 1);
-}
-
-int dm_get_block_cache(int dev, u64 blk, char *buf)
-{
-	struct ce_t *c = cache_find_element(blk_cache, dev, blk);
-	if(!c)
-		return 0;
-	if(buf)
-		memcpy(buf, c->data, c->length);
-	return 1;
-}
-
-int dm_proc_read_bcache(char *buf, int off, int len)
-{
+	mutex_release(&bd->cachelock);
+	buffer_inc_refcount(buf);
+	if(exist)
+		buffer_put(prev);
 	return 0;
 }
-#endif
+
+struct buffer *dm_block_cache_get(blockdevice_t *bd, uint64_t block)
+{
+	mutex_acquire(&bd->cachelock);
+
+	struct buffer *e;
+	if(hash_table_get_entry(&bd->cache, &block, sizeof(block), 1, &e) == -ENOENT) {
+		mutex_release(&bd->cachelock);
+		return 0;
+	}
+
+	mutex_release(&bd->cachelock);
+	buffer_inc_refcount(e);
+	return e;
+}
+
+int block_cache_request(struct ioreq *req, off_t initial_offset, size_t total_bytecount, char *buffer)
+{
+	struct llist list;
+	ll_create_lockless(&list);
+	size_t block = req->block;
+	size_t bytecount = total_bytecount;
+	int numread = block_cache_get_bufferlist(&list, req);
+	if(numread != req->count)
+		return 0;
+
+	struct llistnode *ln;
+	struct buffer *br;
+	ll_for_each_entry(&list, ln, struct buffer *, br) {
+		off_t offset = 0;
+		if(br->block == block) {
+			offset = initial_offset;
+		}
+		size_t copy_amount = req->bd->blksz - offset;
+		if(copy_amount > bytecount)
+			copy_amount = bytecount;
+		size_t position = (br->block - block) * req->bd->blksz;
+		memcpy(buffer + position, br->data + offset, copy_amount);
+		bytecount -= copy_amount;
+		position += copy_amount;
+		buffer_put(br);
+	}
+	return total_bytecount;
+}
+
+

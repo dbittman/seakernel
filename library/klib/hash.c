@@ -79,7 +79,8 @@ struct hash_table *hash_table_create(struct hash_table *h, unsigned flags, unsig
 	h->entries = 0;
 	h->count=0;
 	h->fn = 0;
-	rwlock_create(&h->lock);
+	if(!(h->flags & HASH_NOLOCK))
+		rwlock_create(&h->lock);
 	h->magic = HASH_MAGIC;
 	return h;
 }
@@ -88,19 +89,22 @@ void hash_table_specify_function(struct hash_table *h, unsigned fn)
 {
 	assert(fn < NUM_HASH_FUNCTIONS);
 	assert(h && h->magic == HASH_MAGIC);
-	rwlock_acquire(&h->lock, RWL_WRITER);
+	if(!(h->flags & HASH_NOLOCK))
+		rwlock_acquire(&h->lock, RWL_WRITER);
 	assert(!h->fn || (h->count==0));
 	h->fn = hash_functions_list[fn];
-	rwlock_release(&h->lock, RWL_WRITER);
+	if(!(h->flags & HASH_NOLOCK))
+		rwlock_release(&h->lock, RWL_WRITER);
 }
 
 int hash_table_resize(struct hash_table *h, unsigned mode, size_t new_size)
 {
 	if(!h || h->magic != HASH_MAGIC) panic(0, "hash resize on invalid hash table");
 	int old_size = h->size;
-	
+
 	void **ne = kmalloc(sizeof(void *) * new_size);
-	rwlock_acquire(&h->lock, RWL_WRITER);
+	if(!(h->flags & HASH_NOLOCK))
+		rwlock_acquire(&h->lock, RWL_WRITER);
 	if(h->entries) {
 		if(mode == HASH_RESIZE_MODE_REHASH) {
 			uint64_t i = 0;
@@ -121,32 +125,37 @@ int hash_table_resize(struct hash_table *h, unsigned mode, size_t new_size)
 			panic(0, "hash resize got invalid mode %d", mode);
 		kfree(h->entries);
 	}
-	
+
 	h->size = new_size;
 	h->entries = ne;
-	
-	rwlock_release(&h->lock, RWL_WRITER);
-	
+
+	if(!(h->flags & HASH_NOLOCK))
+		rwlock_release(&h->lock, RWL_WRITER);
+
 	return old_size;
 }
 
 int hash_table_get_entry(struct hash_table *h, void *key, size_t key_element_size, size_t key_len, void **value)
 {
 	if(!h || !key || !h->entries || h->magic != HASH_MAGIC) panic(0, "invalid hash table for hash_table_get_entry");
-	rwlock_acquire(&h->lock, RWL_READER);
+	if(!(h->flags & HASH_NOLOCK))
+		rwlock_acquire(&h->lock, RWL_READER);
 	int ret = __hash_table_get(h, h->entries, h->size, key, key_element_size, key_len, value);
-	rwlock_release(&h->lock, RWL_READER);
+	if(!(h->flags & HASH_NOLOCK))
+		rwlock_release(&h->lock, RWL_READER);
 	return ret;
 }
 
 int hash_table_set_or_get_entry(struct hash_table *h, void *key, size_t key_element_size, size_t key_len, void *value, void **result)
 {
 	if(!h || !key || !h->entries || h->magic != HASH_MAGIC) panic(0, "invalid hash table for hash_table_set_entry");
-	rwlock_acquire(&h->lock, RWL_WRITER);
+	if(!(h->flags & HASH_NOLOCK))
+		rwlock_acquire(&h->lock, RWL_WRITER);
 	int ret = __hash_table_set_or_get(h, h->entries, h->size, key, key_element_size, key_len, value, result);
 	if(ret == 0)
 		h->count++;
-	rwlock_release(&h->lock, RWL_WRITER);
+	if(!(h->flags & HASH_NOLOCK))
+		rwlock_release(&h->lock, RWL_WRITER);
 	return ret;
 }
 
@@ -154,38 +163,44 @@ int hash_table_set_or_get_entry(struct hash_table *h, void *key, size_t key_elem
 int hash_table_set_entry(struct hash_table *h, void *key, size_t key_element_size, size_t key_len, void *value)
 {
 	if(!h || !key || !h->entries || h->magic != HASH_MAGIC) panic(0, "invalid hash table for hash_table_set_entry");
-	rwlock_acquire(&h->lock, RWL_WRITER);
+	if(!(h->flags & HASH_NOLOCK))
+		rwlock_acquire(&h->lock, RWL_WRITER);
 	int ret = __hash_table_set(h, h->entries, h->size, key, key_element_size, key_len, value);
 	if(ret == 0)
 		h->count++;
-	rwlock_release(&h->lock, RWL_WRITER);
+	if(!(h->flags & HASH_NOLOCK))
+		rwlock_release(&h->lock, RWL_WRITER);
 	return ret;
 }
 
 int hash_table_delete_entry(struct hash_table *h, void *key, size_t key_element_size, size_t key_len)
 {
 	if(!h || !key || !h->entries || h->magic != HASH_MAGIC) panic(0, "invalid hash table for hash_table_delete_entry");
-	rwlock_acquire(&h->lock, RWL_WRITER);
+	if(!(h->flags & HASH_NOLOCK))
+		rwlock_acquire(&h->lock, RWL_WRITER);
 	int ret = __hash_table_delete(h, h->entries, h->size, key, key_element_size, key_len);
 	if(ret == 0)
 		h->count--;
-	rwlock_release(&h->lock, RWL_WRITER);
+	if(!(h->flags & HASH_NOLOCK))
+		rwlock_release(&h->lock, RWL_WRITER);
 	return ret;
 }
 
 int hash_table_enumerate_entries(struct hash_table *h, uint64_t num, void **key, size_t *key_element_size, size_t *key_len, void **value)
 {
 	if(!h || !h->entries || h->magic != HASH_MAGIC) panic(0, "invalid hash table for hash_table_enumerate_entries");
-	rwlock_acquire(&h->lock, RWL_READER);
+	if(!(h->flags & HASH_NOLOCK))
+		rwlock_acquire(&h->lock, RWL_READER);
 	int ret = __hash_table_enumerate(h, h->entries, h->size, num, key, key_element_size, key_len, value);
-	rwlock_release(&h->lock, RWL_READER);
+	if(!(h->flags & HASH_NOLOCK))
+		rwlock_release(&h->lock, RWL_READER);
 	return ret;
 }
 
 void hash_table_destroy(struct hash_table *h)
 {
 	if(!h || h->magic != HASH_MAGIC) panic(0, "tried to destroy invalid hash table");
-	
+
 	uint64_t i = 0;
 	void *key;
 	size_t elem_sz, len;
@@ -193,7 +208,8 @@ void hash_table_destroy(struct hash_table *h)
 	while(__hash_table_enumerate(h, h->entries, h->size, i++, &key, &elem_sz, &len, 0) != -ENOENT)
 		__hash_table_delete(h, h->entries, h->size, key, elem_sz, len);
 	kfree(h->entries);
-	rwlock_destroy(&h->lock);
+	if(!(h->flags & HASH_NOLOCK))
+		rwlock_destroy(&h->lock);
 	h->magic=0;
 	if(h->flags & HASH_ALLOC)
 		kfree(h);

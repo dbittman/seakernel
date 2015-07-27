@@ -141,7 +141,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	console_init_stage2();
 	parse_kernel_cmd((char *)(addr_t)mtboot->cmdline);
 	tm_init_multitasking();
-	init_cache();
+	//init_cache();
 	dm_init();
 	fs_init();
 	net_init();

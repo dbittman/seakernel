@@ -18,7 +18,7 @@ mutex_t *ic_lock;
 void vfs_icache_init(void)
 {
 	icache = hash_table_create(0, 0, HASH_TYPE_CHAIN);
-	hash_table_resize(icache, HASH_RESIZE_MODE_IGNORE,1000);
+	hash_table_resize(icache, HASH_RESIZE_MODE_IGNORE,1000); /* TODO: initial value? */
 	hash_table_specify_function(icache, HASH_FUNCTION_BYTE_SUM);
 
 	ic_inuse = ll_create(0);

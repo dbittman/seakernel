@@ -161,7 +161,6 @@ int module_install(void)
 	device_t *dev = dm_get_device(DT_BLOCK, loop_maj);
 	if(dev && dev->ptr) {
 		blockdevice_t *bd = dev->ptr;
-		bd->cache=0;
 	} else {
 		dm_unregister_block_device(loop_maj);
 		return EINVAL;

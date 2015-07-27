@@ -251,7 +251,7 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
  * decremented */
 void cpu_interrupt_post_handling(void)
 {
-	if(!current_thread->interrupt_level) {
+	if(!current_thread->interrupt_level && !current_thread->system) {
 		if(current_thread->flags & THREAD_EXIT)
 			tm_thread_do_exit();
 		if(current_thread->flags & THREAD_SCHEDULE)

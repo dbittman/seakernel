@@ -27,6 +27,7 @@ struct hash_collision_resolver {
 #define HASH_MAGIC 0xABCD1234
 
 #define HASH_ALLOC     1
+#define HASH_NOLOCK    2
 
 #define HASH_RESIZE_MODE_IGNORE 0
 #define HASH_RESIZE_MODE_REHASH 1

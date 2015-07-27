@@ -37,7 +37,9 @@ int __elevator_main(struct kthread *kt, void *arg)
 				int ret = dm_do_block_rw_multiple(req->direction, req->dev, block, buf, this, dev);
 				if(ret == dev->blksz * this) {
 					for(int i=0;i<this;i++) {
-						dm_cache_block(-req->dev, block+i, dev->blksz, buf+i*dev->blksz);
+						struct buffer *buffer = buffer_create(dev, block + i, 0, buf + i * dev->blksz);
+						dm_block_cache_insert(dev, block + i, buffer, 0);
+						buffer_put(buffer);
 					}
 				} else {
 					req->flags |= IOREQ_FAILED;
@@ -47,8 +49,7 @@ int __elevator_main(struct kthread *kt, void *arg)
 			}
 			req->flags |= IOREQ_COMPLETE;
 			tm_blocklist_wakeall(&req->blocklist);
-			if(sub_atomic(&req->refs, 1) == 0)
-				kfree(req);
+			ioreq_put(req);
 		} else {
 			tm_thread_set_state(current_thread, THREADSTATE_INTERRUPTIBLE);
 			tm_schedule();
@@ -70,10 +71,13 @@ blockdevice_t *dm_set_block_device(int maj, int (*f)(int, int, u64, char*), int 
 	mutex_create(&dev->acl, 0);
 	if(!c)
 		dev->ioctl=ioctl_stub;
-	dev->cache = BCACHE_WRITE | (CONFIG_BLOCK_READ_CACHE ? BCACHE_READ : 0);
 	dm_add_device(DT_BLOCK, maj, dev);
 	queue_create(&dev->wq, 0);
 	kthread_create(&dev->elevator, "[kelevator]", 0, __elevator_main, dev);
+	hash_table_create(&dev->cache, HASH_NOLOCK, HASH_TYPE_CHAIN);
+	hash_table_resize(&dev->cache, HASH_RESIZE_MODE_IGNORE,1000000); /* TODO: initial value? */
+	hash_table_specify_function(&dev->cache, HASH_FUNCTION_BYTE_SUM);
+	mutex_create(&dev->cachelock, MT_NOSCHED);
 	return dev;
 }
 
@@ -116,9 +120,6 @@ void dm_unregister_block_device(int n)
 void dm_init_block_devices(void)
 {
 	mutex_create(&bd_search_lock, 0);
-#if CONFIG_BLOCK_CACHE
-	dm_block_cache_init();
-#endif
 }
 
 int dm_do_block_rw(int rw, dev_t dev, u64 blk, char *buf, blockdevice_t *bd)
@@ -163,55 +164,6 @@ int dm_do_block_rw_multiple(int rw, dev_t dev, u64 blk, char *buf, int count, bl
 	return -EIO;
 }
 
-void __add_request(struct ioreq *req)
-{
-	add_atomic(&req->refs, 1);
-	queue_enqueue_item(&req->bd->wq, &req->qi, req);
-	tm_thread_set_state(req->bd->elevator.thread, THREADSTATE_RUNNING);
-}
-
-int block_cache_request(struct ioreq *req, off_t offset, size_t bytecount)
-{
-	int ret;
-	size_t count = req->count;
-	size_t block = req->block;
-	size_t position = 0;
-	char *buffer = req->buffer;
-	while(count) {
-		char tmp[req->bd->blksz];
-		ret = dm_get_block_cache(req->dev, block, tmp);
-		if(!ret) {
-			/* TODO: cleanup patterns like this */
-			cpu_disable_preemption();
-			tm_thread_add_to_blocklist(current_thread, &req->blocklist);
-			mutex_acquire(&current_thread->block_mutex);
-			__add_request(req);
-			if(current_thread->blocklist)
-				tm_thread_set_state(current_thread, THREADSTATE_UNINTERRUPTIBLE);
-			mutex_release(&current_thread->block_mutex);
-			cpu_enable_preemption();
-			tm_schedule();
-			assert(req->flags & IOREQ_COMPLETE);
-			if(req->flags & IOREQ_FAILED) {
-				return position;
-			}
-		} else {
-			size_t copy_amount = req->bd->blksz - offset;
-			if(copy_amount > bytecount)
-				copy_amount = bytecount;
-			memcpy(buffer + position, tmp + offset, copy_amount);
-			block++;
-			count--;
-			bytecount -= copy_amount;
-			position += copy_amount;
-			offset = 0;
-			if(!bytecount)
-				assert(!count);
-		}
-	}
-	return position;
-}
-
 int dm_block_read(dev_t dev, off_t pos, char *buf, size_t count)
 {
 	device_t *dt = dm_get_device(DT_BLOCK, MAJOR(dev));
@@ -222,20 +174,10 @@ int dm_block_read(dev_t dev, off_t pos, char *buf, size_t count)
 	uint64_t end_block = ((pos + count - 1) / bd->blksz);
 	size_t num_blocks = (end_block - start_block) + 1;
 
-	struct ioreq *req = kmalloc(sizeof(*req));
-	req->block = start_block;
-	req->count = num_blocks;
-	req->direction = READ;
-	req->bd = bd;
-	req->dev = dev;
-	req->flags = 0;
-	req->buffer = buf;
-	req->refs = 1;
-	ll_create(&req->blocklist);
+	struct ioreq *req = ioreq_create(bd, dev, start_block, num_blocks);
 
-	int ret = block_cache_request(req, pos % bd->blksz, count);
-	if(sub_atomic(&req->refs, 1) == 0)
-		kfree(req);
+	int ret = block_cache_request(req, pos % bd->blksz, count, buf);
+	ioreq_put(req);
 	return ret;
 }
 
@@ -245,22 +187,27 @@ int dm_block_write(dev_t dev, off_t posit, char *buf, size_t count)
 	if(!dt)
 		return -ENXIO;
 	blockdevice_t *bd = (blockdevice_t *)dt->ptr;
-	if(!count) return 0;
 	int blk_size = bd->blksz;
 	unsigned pos = posit;
-	char buffer[blk_size];
+
 	/* If we are offset in a block, we dont wanna overwrite stuff */
 	if(pos % blk_size)
 	{
-		if(dm_block_read(dev, pos & ~(blk_size - 1), buffer, blk_size) != blk_size) {
+		struct llist blist;
+		ll_create_lockless(&blist);
+		struct ioreq *req = ioreq_create(bd, dev, pos / blk_size, 1);
+		if(block_cache_get_bufferlist(&blist, req) != 1) {
+			ioreq_put(req);
 			return 0;
 		}
+		ioreq_put(req);
+		struct buffer *br = ll_entry(struct buffer *, blist.head);
 		/* If count is less than whats remaining, just use count */
 		int write = (blk_size-(pos % blk_size));
 		if(count < (unsigned)write)
 			write=count;
-		memcpy(buffer+(pos % blk_size), buf, write);
-		dm_cache_block(dev, pos/blk_size, bd->blksz, buffer);
+		memcpy(br->data+(pos % blk_size), buf, write);
+		buffer_put(br);
 		buf += write;
 		count -= write;
 		pos += write;
@@ -268,7 +215,16 @@ int dm_block_write(dev_t dev, off_t posit, char *buf, size_t count)
 	while(count >= (unsigned int)blk_size)
 	{
 		assert((pos & ~(blk_size - 1)) == pos);
-		dm_cache_block(dev, pos/blk_size, bd->blksz, buf);
+
+		struct buffer *entry = dm_block_cache_get(bd, pos / blk_size);
+		if(!entry) {
+			entry = buffer_create(bd, pos / blk_size, BUFFER_DIRTY, buf);
+			memcpy(entry->data, buf, blk_size);
+			dm_block_cache_insert(bd, pos/blk_size, entry, BLOCK_CACHE_OVERWRITE);
+		} else {
+			memcpy(entry->data, buf, blk_size);
+		}
+		buffer_put(entry);
 		count -= blk_size;
 		pos += blk_size;
 		buf += blk_size;
@@ -276,11 +232,17 @@ int dm_block_write(dev_t dev, off_t posit, char *buf, size_t count)
 	/* Anything left over? */
 	if(count > 0)
 	{
-		if(dm_block_read(dev, pos & ~(blk_size - 1), buffer, blk_size) != blk_size) {
-			return pos-posit;
+		struct llist blist;
+		ll_create_lockless(&blist);
+		struct ioreq *req = ioreq_create(bd, dev, pos/blk_size, 1);
+		if(block_cache_get_bufferlist(&blist, req) != 1) {
+			ioreq_put(req);
+			return 0;
 		}
-		memcpy(buffer, buf, count);
-		dm_cache_block(dev, pos/blk_size, bd->blksz, buffer);
+		ioreq_put(req);
+		struct buffer *br = ll_entry(struct buffer *, blist.head);
+		memcpy(br->data, buf, count);
+		buffer_put(br);
 		pos+=count;
 	}
 	return pos-posit;

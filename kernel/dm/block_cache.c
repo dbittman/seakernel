@@ -1,6 +1,28 @@
 #include <sea/dm/block.h>
 #include <sea/lib/hash.h>
 #include <sea/errno.h>
+#include <sea/lib/queue.h>
+static struct queue lru;
+
+void block_cache_init(void)
+{
+	queue_create(&lru, 0);
+}
+
+void dm_block_cache_reclaim(void)
+{
+	struct buffer *br = queue_dequeue(&lru);
+	mutex_acquire(&br->bd->cachelock);
+	if(br->refs > 1 || (br->flags & BUFFER_DIRTY)) {
+		mutex_release(&br->bd->cachelock);
+		queue_enqueue_item(&lru, &br->qi, br);
+		return;
+	}
+
+	hash_table_delete_entry(&br->bd->cache, &br->block, sizeof(br->block), 1);
+	mutex_release(&br->bd->cachelock);
+	buffer_put(br);
+}
 
 int dm_block_cache_insert(blockdevice_t *bd, uint64_t block, struct buffer *buf, int flags)
 {
@@ -19,10 +41,14 @@ int dm_block_cache_insert(blockdevice_t *bd, uint64_t block, struct buffer *buf,
 	}
 	hash_table_set_entry(&bd->cache, &block, sizeof(block), 1, buf);
 
-	mutex_release(&bd->cachelock);
 	buffer_inc_refcount(buf);
-	if(exist)
+	mutex_release(&bd->cachelock);
+	queue_enqueue_item(&lru, &buf->qi, buf);
+	if(exist) {
+		/* overwritten, so will not writeback */
+		queue_remove(&lru, &prev->qi);
 		buffer_put(prev);
+	}
 	return 0;
 }
 
@@ -36,8 +62,10 @@ struct buffer *dm_block_cache_get(blockdevice_t *bd, uint64_t block)
 		return 0;
 	}
 
-	mutex_release(&bd->cachelock);
 	buffer_inc_refcount(e);
+	mutex_release(&bd->cachelock);
+	queue_remove(&lru, &e->qi);
+	queue_enqueue_item(&lru, &e->qi, e);
 	return e;
 }
 
@@ -69,5 +97,4 @@ int block_cache_request(struct ioreq *req, off_t initial_offset, size_t total_by
 	}
 	return total_bytecount;
 }
-
 

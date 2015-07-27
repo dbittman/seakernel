@@ -120,6 +120,8 @@ void dm_unregister_block_device(int n)
 void dm_init_block_devices(void)
 {
 	mutex_create(&bd_search_lock, 0);
+	block_cache_init();
+	block_buffer_init();
 }
 
 int dm_do_block_rw(int rw, dev_t dev, u64 blk, char *buf, blockdevice_t *bd)
@@ -207,6 +209,7 @@ int dm_block_write(dev_t dev, off_t posit, char *buf, size_t count)
 		if(count < (unsigned)write)
 			write=count;
 		memcpy(br->data+(pos % blk_size), buf, write);
+		or_atomic(&br->flags, BUFFER_DIRTY);
 		buffer_put(br);
 		buf += write;
 		count -= write;
@@ -223,6 +226,7 @@ int dm_block_write(dev_t dev, off_t posit, char *buf, size_t count)
 			dm_block_cache_insert(bd, pos/blk_size, entry, BLOCK_CACHE_OVERWRITE);
 		} else {
 			memcpy(entry->data, buf, blk_size);
+			or_atomic(&entry->flags, BUFFER_DIRTY);
 		}
 		buffer_put(entry);
 		count -= blk_size;
@@ -242,6 +246,7 @@ int dm_block_write(dev_t dev, off_t posit, char *buf, size_t count)
 		ioreq_put(req);
 		struct buffer *br = ll_entry(struct buffer *, blist.head);
 		memcpy(br->data, buf, count);
+		or_atomic(&br->flags, BUFFER_DIRTY);
 		buffer_put(br);
 		pos+=count;
 	}

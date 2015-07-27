@@ -1,5 +1,14 @@
 #include <sea/dm/block.h>
 
+struct llist dirty_list;
+mutex_t dlock;
+
+void block_buffer_init(void)
+{
+	mutex_create(&dlock, MT_NOSCHED);
+	ll_create_lockless(&dirty_list);
+}
+
 struct buffer *buffer_create(blockdevice_t *bd, uint64_t block, int flags, char *data)
 {
 	struct buffer *b = kmalloc(sizeof(struct buffer) + bd->blksz);
@@ -15,7 +24,23 @@ void buffer_put(struct buffer *buf)
 {
 	assert(buf->refs > 0);
 	if(sub_atomic(&buf->refs, 1) == 0) {
+		assert(!(buf->flags & BUFFER_DIRTY) && !(buf->flags & BUFFER_DLIST));
 		kfree(buf);
+	} else {
+		mutex_acquire(&dlock);
+		if(buf->flags & BUFFER_DIRTY) {
+			if(!(buf->flags & BUFFER_DLIST)) {
+				/* changed to dirty, so add to list */
+				ll_do_insert(&dirty_list, &buf->dlistnode, buf);
+				or_atomic(&buf->flags, BUFFER_DLIST);
+			}
+		} else {
+			if(buf->flags & BUFFER_DLIST) {
+				ll_remove(&dirty_list, &buf->dlistnode);
+				and_atomic(&buf->flags, ~BUFFER_DLIST);
+			}
+		}
+		mutex_release(&dlock);
 	}
 }
 

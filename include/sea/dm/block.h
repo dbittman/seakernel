@@ -46,11 +46,13 @@ struct buffer {
 	int refs;
 	int flags;
 	uint64_t block;
-	struct llistnode lnode;
+	struct llistnode lnode, dlistnode;
+	struct queue_item qi;
 	char data[];
 };
 
 #define BUFFER_DIRTY 1
+#define BUFFER_DLIST 2
 
 blockdevice_t *dm_set_block_device(int maj, int (*f)(int, int, u64, char*), int bs, 
 	int (*c)(int, int, long), int (*m)(int, int, u64, char *, int), int (*s)(int, int));
@@ -70,6 +72,8 @@ int dm_block_ioctl(dev_t dev, int cmd, long arg);
 int dm_block_device_select(dev_t dev, int rw);
 int dm_blockdev_select(struct inode *in, int rw);
 void dm_send_sync_block();
+void block_cache_init(void);
+void block_buffer_init(void);
 
 struct buffer *dm_block_cache_get(blockdevice_t *bd, uint64_t block);
 int dm_block_cache_insert(blockdevice_t *bd, uint64_t block, struct buffer *, int flags);

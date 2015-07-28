@@ -39,7 +39,6 @@ int block_elevator_main(struct kthread *kt, void *arg)
 
 					for(int i=0;i<this;i++) {
 						struct buffer *buffer = dm_block_cache_get(req->bd, block + i);
-						printk(0, "elev: write %d\n", block + i);
 						assert(buffer);
 						memcpy(buf + i * dev->blksz, buffer->data, dev->blksz);
 						and_atomic(&buffer->flags, ~(BUFFER_DIRTY | BUFFER_WRITEPENDING)); //Should we wait to do this?

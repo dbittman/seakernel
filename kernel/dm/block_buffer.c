@@ -14,7 +14,6 @@ void buffer_sync(struct buffer *buf)
 {
 	if(!(ff_or_atomic(&buf->flags, BUFFER_WRITEPENDING) & BUFFER_WRITEPENDING)) {
 		assert(buf->flags & BUFFER_DLIST);
-		printk(0, "sync: %d\n", buf->block);
 		struct ioreq *req = ioreq_create(buf->bd, buf->dev, WRITE, buf->block, 1);
 		block_elevator_add_request(req);
 		ioreq_put(req);
@@ -29,7 +28,6 @@ int buffer_sync_all_dirty(void)
 	while(dirty_list.num > 0) {
 		struct buffer *buf = ll_entry(struct buffer *, dirty_list.head);
 		buffer_inc_refcount(buf);
-		//printk(0, "check: %d\n", buf->block);
 		if(buf->flags & BUFFER_DIRTY)
 			buffer_sync(buf);
 		mutex_release(&dlock);

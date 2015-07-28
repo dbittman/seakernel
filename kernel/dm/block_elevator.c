@@ -12,23 +12,48 @@ int block_elevator_main(struct kthread *kt, void *arg)
 			struct ioreq *req = qi->ent;
 			size_t count = req->count;
 			size_t block = req->block;
-			while(count) {
-				int this = 8;
-				if(this > count)
-					this = count;
-				assert(req->direction == READ);
-				int ret = dm_do_block_rw_multiple(req->direction, req->dev, block, buf, this, dev);
-				if(ret == dev->blksz * this) {
+
+			if(req->direction == READ) {
+				while(count) {
+					int this = 8;
+					if(this > count)
+						this = count;
+					int ret = dm_do_block_rw_multiple(req->direction, req->dev, block, buf, this, dev);
+					if(ret == dev->blksz * this) {
+						for(int i=0;i<this;i++) {
+							struct buffer *buffer = buffer_create(dev, req->dev, block + i, 0, buf + i * dev->blksz);
+							dm_block_cache_insert(dev, block + i, buffer, 0);
+							buffer_put(buffer);
+						}
+					} else {
+						req->flags |= IOREQ_FAILED;
+					}
+					block+=this;
+					count-=this;
+				}
+			} else {
+				while(count) {
+					int this = 8;
+					if(this > count)
+						this = count;
+
 					for(int i=0;i<this;i++) {
-						struct buffer *buffer = buffer_create(dev, block + i, 0, buf + i * dev->blksz);
-						dm_block_cache_insert(dev, block + i, buffer, 0);
+						struct buffer *buffer = dm_block_cache_get(req->bd, block + i);
+						printk(0, "elev: write %d\n", block + i);
+						assert(buffer);
+						memcpy(buf + i * dev->blksz, buffer->data, dev->blksz);
+						and_atomic(&buffer->flags, ~(BUFFER_DIRTY | BUFFER_WRITEPENDING)); //Should we wait to do this?
 						buffer_put(buffer);
 					}
-				} else {
-					req->flags |= IOREQ_FAILED;
+
+					int ret = dm_do_block_rw_multiple(WRITE, req->dev, block, buf, this, dev);
+					if(ret != dev->blksz * this) {
+						req->flags |= IOREQ_FAILED;
+						break;
+					}
+					block += this;
+					count -= this;
 				}
-				block+=this;
-				count-=this;
 			}
 			req->flags |= IOREQ_COMPLETE;
 			tm_blocklist_wakeall(&req->blocklist);
@@ -40,5 +65,4 @@ int block_elevator_main(struct kthread *kt, void *arg)
 	}
 	return 0;
 }
-
 

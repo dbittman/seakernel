@@ -1,11 +1,11 @@
 #include <sea/dm/block.h>
 #include <sea/mm/kmalloc.h>
-struct ioreq *ioreq_create(blockdevice_t *bd, dev_t dev, uint64_t start, size_t count)
+struct ioreq *ioreq_create(blockdevice_t *bd, dev_t dev, int direction, uint64_t start, size_t count)
 {
 	struct ioreq *req = kmalloc(sizeof(*req));
 	req->block = start;
 	req->count = count;
-	req->direction = READ;
+	req->direction = direction;
 	req->bd = bd;
 	req->flags = 0;
 	req->refs = 1;

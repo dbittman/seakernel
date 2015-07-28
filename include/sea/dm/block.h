@@ -46,6 +46,7 @@ struct buffer {
 	int refs;
 	int flags;
 	uint64_t block;
+	dev_t dev; //TODO: please, please, fix this crap
 	struct llistnode lnode, dlistnode;
 	struct queue_item qi;
 	char data[];
@@ -53,6 +54,7 @@ struct buffer {
 
 #define BUFFER_DIRTY 1
 #define BUFFER_DLIST 2
+#define BUFFER_WRITEPENDING 4
 
 blockdevice_t *dm_set_block_device(int maj, int (*f)(int, int, u64, char*), int bs, 
 	int (*c)(int, int, long), int (*m)(int, int, u64, char *, int), int (*s)(int, int));
@@ -76,16 +78,17 @@ void block_cache_init(void);
 void block_buffer_init(void);
 int buffer_sync_all_dirty(void);
 int block_elevator_main(struct kthread *kt, void *arg);
+void block_elevator_add_request(struct ioreq *req);
 
 struct buffer *dm_block_cache_get(blockdevice_t *bd, uint64_t block);
 int dm_block_cache_insert(blockdevice_t *bd, uint64_t block, struct buffer *, int flags);
 
 int block_cache_request(struct ioreq *req, off_t initial_offset, size_t total_bytecount, char *buffer);
 
-struct buffer *buffer_create(blockdevice_t *bd, uint64_t block, int flags, char *data);
+struct buffer *buffer_create(blockdevice_t *bd, dev_t dev, uint64_t block, int flags, char *data);
 void buffer_put(struct buffer *buf);
 void buffer_inc_refcount(struct buffer *buf);
 int block_cache_get_bufferlist(struct llist *blist, struct ioreq *req);
-struct ioreq *ioreq_create(blockdevice_t *bd, dev_t dev, uint64_t start, size_t count);
+struct ioreq *ioreq_create(blockdevice_t *bd, dev_t dev, int, uint64_t start, size_t count);
 void ioreq_put(struct ioreq *req);
 #endif

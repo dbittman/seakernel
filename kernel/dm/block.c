@@ -136,7 +136,7 @@ int dm_block_read(dev_t dev, off_t pos, char *buf, size_t count)
 	uint64_t end_block = ((pos + count - 1) / bd->blksz);
 	size_t num_blocks = (end_block - start_block) + 1;
 
-	struct ioreq *req = ioreq_create(bd, dev, start_block, num_blocks);
+	struct ioreq *req = ioreq_create(bd, dev, READ, start_block, num_blocks);
 
 	int ret = block_cache_request(req, pos % bd->blksz, count, buf);
 	ioreq_put(req);
@@ -157,7 +157,7 @@ int dm_block_write(dev_t dev, off_t posit, char *buf, size_t count)
 	{
 		struct llist blist;
 		ll_create_lockless(&blist);
-		struct ioreq *req = ioreq_create(bd, dev, pos / blk_size, 1);
+		struct ioreq *req = ioreq_create(bd, dev, READ, pos / blk_size, 1);
 		if(block_cache_get_bufferlist(&blist, req) != 1) {
 			ioreq_put(req);
 			return 0;
@@ -181,7 +181,7 @@ int dm_block_write(dev_t dev, off_t posit, char *buf, size_t count)
 
 		struct buffer *entry = dm_block_cache_get(bd, pos / blk_size);
 		if(!entry) {
-			entry = buffer_create(bd, pos / blk_size, BUFFER_DIRTY, buf);
+			entry = buffer_create(bd, dev, pos / blk_size, BUFFER_DIRTY, buf);
 			memcpy(entry->data, buf, blk_size);
 			dm_block_cache_insert(bd, pos/blk_size, entry, BLOCK_CACHE_OVERWRITE);
 		} else {
@@ -198,7 +198,7 @@ int dm_block_write(dev_t dev, off_t posit, char *buf, size_t count)
 	{
 		struct llist blist;
 		ll_create_lockless(&blist);
-		struct ioreq *req = ioreq_create(bd, dev, pos/blk_size, 1);
+		struct ioreq *req = ioreq_create(bd, dev, READ, pos/blk_size, 1);
 		if(block_cache_get_bufferlist(&blist, req) != 1) {
 			ioreq_put(req);
 			return 0;

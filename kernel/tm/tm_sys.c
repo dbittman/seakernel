@@ -205,14 +205,4 @@ int tm_get_euid(void)
 	return current_process->effective_uid;
 }
 
-int sys_times(struct tms *buf)
-{
-	if(buf) {
-		buf->tms_utime = current_process->utime;
-		buf->tms_stime = current_process->stime;
-		buf->tms_cstime = current_process->cstime;
-		buf->tms_cutime = current_process->cutime;
-	}
-	return tm_timing_get_microseconds();
-}
 

@@ -41,3 +41,14 @@ void tm_timer_handler(registers_t *r, int int_no, int flags)
 	}
 }
 
+int sys_times(struct tms *buf)
+{
+	if(buf) {
+		buf->tms_utime = current_process->utime * current_hz / ONE_SECOND;
+		buf->tms_stime = current_process->stime * current_hz / ONE_SECOND;
+		buf->tms_cstime = current_process->cstime * current_hz / ONE_SECOND;
+		buf->tms_cutime = current_process->cutime * current_hz / ONE_SECOND;
+	}
+	return tm_timing_get_microseconds() * current_hz / ONE_SECOND;
+}
+

@@ -59,6 +59,7 @@ static void finish_schedule(void)
 
 static void post_schedule(void)
 {
+#warning "Figure out when this is actually safe to do, and then also do work for the CPU's workqueue"
 	if(current_thread->resume_work.count) {
 		while(workqueue_dowork(&current_thread->resume_work) != -1) {
 			tm_schedule();

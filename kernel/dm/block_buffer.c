@@ -15,6 +15,7 @@ void buffer_sync(struct buffer *buf)
 	if(!(ff_or_atomic(&buf->flags, BUFFER_WRITEPENDING) & BUFFER_WRITEPENDING)) {
 		assert(buf->flags & BUFFER_DLIST);
 		struct ioreq *req = ioreq_create(buf->bd, buf->dev, WRITE, buf->block, 1);
+		add_atomic(&req->refs, 1);
 		block_elevator_add_request(req);
 		ioreq_put(req);
 	}
@@ -91,7 +92,6 @@ void buffer_inc_refcount(struct buffer *buf)
 
 void block_elevator_add_request(struct ioreq *req)
 {
-	add_atomic(&req->refs, 1);
 	queue_enqueue_item(&req->bd->wq, &req->qi, req);
 	tm_thread_set_state(req->bd->elevator.thread, THREADSTATE_RUNNING);
 }
@@ -104,16 +104,12 @@ int block_cache_get_bufferlist(struct llist *blist, struct ioreq *req)
 	while(count) {
 		struct buffer *br = dm_block_cache_get(req->bd, block);
 		if(!br) {
-			/* TODO: cleanup patterns like this */
-			cpu_disable_preemption();
-			tm_thread_add_to_blocklist(current_thread, &req->blocklist);
-			mutex_acquire(&current_thread->block_mutex);
-			block_elevator_add_request(req);
-			if(current_thread->blocklist)
-				tm_thread_set_state(current_thread, THREADSTATE_UNINTERRUPTIBLE);
-			mutex_release(&current_thread->block_mutex);
-			cpu_enable_preemption();
-			tm_schedule();
+			
+			struct async_call work;
+			add_atomic(&req->refs, 1);
+			async_call_create(&work, 0, block_elevator_add_request, (unsigned long)req, ASYNC_CALL_PRIORITY_MEDIUM);
+
+			tm_thread_block_schedule_work(&req->blocklist, THREADSTATE_UNINTERRUPTIBLE, &work);
 			assert(req->flags & IOREQ_COMPLETE);
 			if(req->flags & IOREQ_FAILED) {
 				return ret;
@@ -127,5 +123,4 @@ int block_cache_get_bufferlist(struct llist *blist, struct ioreq *req)
 	}
 	return ret;
 }
-
 

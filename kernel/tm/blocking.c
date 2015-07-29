@@ -60,6 +60,27 @@ int tm_thread_block(struct llist *blocklist, int state)
 	return 0;
 }
 
+int tm_thread_block_schedule_work(struct llist *blocklist, int state, struct async_call *work)
+{
+	cpu_disable_preemption();
+	assert(!current_thread->blocklist);
+	assert(state != THREADSTATE_RUNNING);
+	int ret;
+	if(state == THREADSTATE_INTERRUPTIBLE && (ret=tm_thread_got_signal(current_thread))) {
+		cpu_enable_preemption();
+		return ret == SA_RESTART ? -ERESTART : -EINTR;
+	}
+	tm_thread_add_to_blocklist(current_thread, blocklist);
+	tm_thread_set_state(current_thread, state);
+	workqueue_insert(&__current_cpu->work, work);
+	cpu_enable_preemption();
+	tm_schedule();
+	if((ret=tm_thread_got_signal(current_thread)) && state != THREADSTATE_UNINTERRUPTIBLE) {
+		return ret == SA_RESTART ? -ERESTART : -EINTR;
+	}
+	return 0;
+}
+
 void tm_thread_unblock(struct thread *t)
 {
 	tm_thread_set_state(t, THREADSTATE_RUNNING);

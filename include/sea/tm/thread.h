@@ -84,6 +84,7 @@ int tm_thread_block_timeout(struct llist *blocklist, time_t microseconds);
 void tm_thread_set_state(struct thread *t, int state);
 void tm_thread_add_to_blocklist(struct thread *t, struct llist *blocklist);
 void tm_thread_remove_from_blocklist(struct thread *t);
+int tm_thread_block_schedule_work(struct llist *blocklist, int state, struct async_call *work);
 int tm_thread_block(struct llist *blocklist, int state);
 int tm_thread_reserve_usermode_stack(struct thread *thr);
 void tm_thread_release_usermode_stack(struct thread *thr, int stack);

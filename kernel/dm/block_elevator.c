@@ -60,7 +60,6 @@ int block_elevator_main(struct kthread *kt, void *arg)
 			ioreq_put(req);
 		} else {
 			tm_thread_set_state(current_thread, THREADSTATE_INTERRUPTIBLE);
-			tm_schedule();
 		}
 	}
 	return 0;

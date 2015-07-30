@@ -5,12 +5,31 @@
 #include <sea/cpu/processor.h>
 #include <sea/cpu/atomic.h>
 
+static void check_signals(struct thread *thread)
+{
+	if(thread->signals_pending && !thread->signal) {
+		int index = 0;
+		/* find the next signal in signals_pending and set signal to it */
+		for(; index < 32; ++index) {
+			if(thread->signals_pending & (1 << index))
+				break;
+		}
+		if(index < 32) {
+			thread->signal = index + 1;
+			and_atomic(&thread->signals_pending, ~(1 << (index)));
+			if(thread->state == THREADSTATE_INTERRUPTIBLE)
+				thread->state = THREADSTATE_RUNNING;
+		}
+	}
+}
+
 static struct thread *get_next_thread (void)
 {
 	struct thread *n = 0;
 	while(1) {
 		n = tqueue_next(current_thread->cpu->active_queue);
 		assert(n->cpu == current_thread->cpu);
+		check_signals(n);
 		if(n && tm_thread_runnable(n))
 			break;
 		if(!n || n == current_thread) {
@@ -27,18 +46,6 @@ static void prepare_schedule(void)
 	/* threads that are in the kernel ignore signals until they're out of a syscall, in case
 	 * there's an interrupt. A syscall that waits or blocks is responsible for checking signals
 	 * manually. Kernel threads must do this as well if they want to handle signals. */
-	if(current_thread->signals_pending && !current_thread->signal) {
-		int index = 0;
-		/* find the next signal in signals_pending and set signal to it */
-		for(; index < 32; ++index) {
-			if(current_thread->signals_pending & (1 << index))
-				break;
-		}
-		if(index < 32) {
-			current_thread->signal = index + 1;
-			and_atomic(&current_thread->signals_pending, ~(1 << (index)));
-		}
-	}
 	if(current_thread->signal) {
 		if(current_thread->state == THREADSTATE_INTERRUPTIBLE)
 			tm_thread_unblock(current_thread);
@@ -59,17 +66,17 @@ static void finish_schedule(void)
 
 static void post_schedule(void)
 {
-	if(current_thread->resume_work.count) {
-		while(workqueue_dowork(&current_thread->resume_work) != -1) {
-			tm_schedule();
-		}
-	}
 	struct workqueue *wq = &__current_cpu->work;
 	if(wq->count > 0) {
 		if(wq->count > 10) {
 			printk(0, "[sched]: warning - work is piling up (%d tasks)!\n", wq->count);
 		}
 		workqueue_dowork(&__current_cpu->work);
+	}
+	if(current_thread->resume_work.count) {
+		while(workqueue_dowork(&current_thread->resume_work) != -1) {
+			tm_schedule();
+		}
 	}
 }
 

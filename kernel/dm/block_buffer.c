@@ -104,10 +104,10 @@ int block_cache_get_bufferlist(struct llist *blist, struct ioreq *req)
 	while(count) {
 		struct buffer *br = dm_block_cache_get(req->bd, block);
 		if(!br) {
-			
 			struct async_call work;
 			add_atomic(&req->refs, 1);
-			async_call_create(&work, 0, block_elevator_add_request, (unsigned long)req, ASYNC_CALL_PRIORITY_MEDIUM);
+			async_call_create(&work, 0, (void (*)(unsigned long))block_elevator_add_request,
+					(unsigned long)req, ASYNC_CALL_PRIORITY_MEDIUM);
 
 			tm_thread_block_schedule_work(&req->blocklist, THREADSTATE_UNINTERRUPTIBLE, &work);
 			assert(req->flags & IOREQ_COMPLETE);
@@ -115,6 +115,7 @@ int block_cache_get_bufferlist(struct llist *blist, struct ioreq *req)
 				return ret;
 			}
 			br = dm_block_cache_get(req->bd, block); // TODO: get this from elevator
+			assert(br); //TODO: this may not work in the case that it gets evicted immediately
 		}
 		ll_do_insert(blist, &br->lnode, br);
 		ret++;

@@ -93,7 +93,7 @@ void buffer_inc_refcount(struct buffer *buf)
 void block_elevator_add_request(struct ioreq *req)
 {
 	queue_enqueue_item(&req->bd->wq, &req->qi, req);
-	tm_thread_set_state(req->bd->elevator.thread, THREADSTATE_RUNNING);
+	tm_thread_poke(req->bd->elevator.thread);
 }
 
 int block_cache_get_bufferlist(struct llist *blist, struct ioreq *req)

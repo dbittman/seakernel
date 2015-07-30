@@ -25,6 +25,8 @@
                                        task's userspace */
 #define THREAD_SCHEDULE        0x8  /* we request a reschedule after this interrupt completes */
 #define THREAD_EXIT            0x10 /* we plan to exit when returning from this interrupt */
+#define THREAD_WAKEUP          0x20 /* the scheduler won't let the state -> THREADSTATE_INTERRUPTIBLE
+									   if this flag is set, but it will then reset the flag */
 
 #define THREADSTATE_RUNNING 0
 #define THREADSTATE_INTERRUPTIBLE 1
@@ -86,6 +88,7 @@ void tm_thread_add_to_blocklist(struct thread *t, struct llist *blocklist);
 void tm_thread_remove_from_blocklist(struct thread *t);
 int tm_thread_block_schedule_work(struct llist *blocklist, int state, struct async_call *work);
 int tm_thread_block(struct llist *blocklist, int state);
+void tm_thread_poke(struct thread *t);
 int tm_thread_reserve_usermode_stack(struct thread *thr);
 void tm_thread_release_usermode_stack(struct thread *thr, int stack);
 addr_t tm_thread_usermode_stack_end(int stack);

@@ -56,7 +56,10 @@ static void prepare_schedule(void)
 		if(!current_thread->system && current_thread->state == THREADSTATE_RUNNING)
 			tm_thread_handle_signal(current_thread->signal);
 	}
-
+	if(current_thread->state == THREADSTATE_INTERRUPTIBLE && current_thread->flags & THREAD_WAKEUP) {
+		current_thread->state = THREADSTATE_RUNNING;
+		tm_thread_lower_flag(current_thread, THREAD_WAKEUP);
+	}
 	tm_thread_lower_flag(current_thread, THREAD_SCHEDULE);
 }
 

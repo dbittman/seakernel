@@ -21,7 +21,7 @@ void fs_fsm_init(void)
 	ll_create(&fslist);
 	hash_table_create(&fsdrivershash, 0, HASH_TYPE_CHAIN);
 	hash_table_resize(&fsdrivershash, HASH_RESIZE_MODE_IGNORE,10);
-	hash_table_specify_function(&fsdrivershash, HASH_FUNCTION_BYTE_SUM);
+	hash_table_specify_function(&fsdrivershash, HASH_FUNCTION_DEFAULT);
 }
 
 static void __kfs_mnt_rp_write(struct filesystem *fs, size_t *offset, size_t length, char *buf, size_t *current)

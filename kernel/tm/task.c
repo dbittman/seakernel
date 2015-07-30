@@ -26,7 +26,7 @@ void tm_init_multitasking(void)
 	
 	process_table = hash_table_create(0, 0, HASH_TYPE_CHAIN);
 	hash_table_resize(process_table, HASH_RESIZE_MODE_IGNORE, 1000);
-	hash_table_specify_function(process_table, HASH_FUNCTION_BYTE_SUM);
+	hash_table_specify_function(process_table, HASH_FUNCTION_DEFAULT);
 
 	process_list = ll_create(0);
 	mutex_create(&process_refs_lock, MT_NOSCHED);
@@ -34,7 +34,7 @@ void tm_init_multitasking(void)
 	
 	thread_table = hash_table_create(0, 0, HASH_TYPE_CHAIN);
 	hash_table_resize(thread_table, HASH_RESIZE_MODE_IGNORE, 1000);
-	hash_table_specify_function(thread_table, HASH_FUNCTION_BYTE_SUM);
+	hash_table_specify_function(thread_table, HASH_FUNCTION_DEFAULT);
 
 	/* TODO: roll this out for usermode stacks? */
 	valloc_create(&km_stacks, KERNELMODE_STACKS_START, KERNELMODE_STACKS_END, KERN_STACK_SIZE, 0);

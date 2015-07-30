@@ -42,7 +42,7 @@ int ramfs_mount(struct filesystem *fs)
 {
 	struct hash_table *h = hash_table_create(0, 0, HASH_TYPE_CHAIN);
 	hash_table_resize(h, HASH_RESIZE_MODE_IGNORE,1000);
-	hash_table_specify_function(h, HASH_FUNCTION_BYTE_SUM);
+	hash_table_specify_function(h, HASH_FUNCTION_DEFAULT);
 	struct rfsnode *root = kmalloc(sizeof(struct rfsnode));
 	root->mode = S_IFDIR | 0755;
 	root->ents = ll_create(0);

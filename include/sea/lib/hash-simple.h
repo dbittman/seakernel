@@ -7,7 +7,7 @@ static inline struct hash_table *hash_table_create_default(struct hash_table *h,
 {
 	h = hash_table_create(h, 0, HASH_TYPE_CHAIN);
 	hash_table_resize(h, HASH_RESIZE_MODE_IGNORE, count);
-	hash_table_specify_function(h, HASH_FUNCTION_BYTE_SUM);
+	hash_table_specify_function(h, HASH_FUNCTION_DEFAULT);
 	return h;
 }
 

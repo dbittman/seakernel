@@ -31,7 +31,7 @@ static void __init_physicals(struct inode *node)
 	if(!node->physicals) {
 		node->physicals = hash_table_create(0, 0, HASH_TYPE_CHAIN);
 		hash_table_resize(node->physicals, HASH_RESIZE_MODE_IGNORE, 1000);
-		hash_table_specify_function(node->physicals, HASH_FUNCTION_BYTE_SUM);
+		hash_table_specify_function(node->physicals, HASH_FUNCTION_DEFAULT);
 	}
 }
 

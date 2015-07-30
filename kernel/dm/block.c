@@ -36,7 +36,7 @@ blockdevice_t *dm_set_block_device(int maj, int (*f)(int, int, u64, char*), int 
 	kthread_create(&dev->elevator, "[kelevator]", 0, block_elevator_main, dev);
 	hash_table_create(&dev->cache, HASH_NOLOCK, HASH_TYPE_CHAIN);
 	hash_table_resize(&dev->cache, HASH_RESIZE_MODE_IGNORE,1000000); /* TODO: initial value? */
-	hash_table_specify_function(&dev->cache, HASH_FUNCTION_BYTE_SUM);
+	hash_table_specify_function(&dev->cache, HASH_FUNCTION_DEFAULT);
 	mutex_create(&dev->cachelock, MT_NOSCHED);
 	return dev;
 }

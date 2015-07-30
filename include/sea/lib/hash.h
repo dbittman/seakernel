@@ -40,9 +40,12 @@ struct hash_collision_resolver {
 #define HASH_TYPE_DOUBLE    4
 
 #define HASH_FUNCTION_BYTE_SUM 0
+#define HASH_FUNCTION_DJB2     1
+
+#define HASH_FUNCTION_DEFAULT  1
 
 #define NUM_HASH_COLLISION_RESOLVERS 5
-#define NUM_HASH_FUNCTIONS           1
+#define NUM_HASH_FUNCTIONS           2
 
 int __hash_table_compare_keys(void *key_1, size_t es_1, size_t len_1, void *key_2, size_t es_2, size_t len_2);
 

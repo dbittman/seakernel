@@ -196,7 +196,8 @@ void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_addres
 		current_thread->regs = regs;
 	else
 		already_in_kernel = 1;
-	assert(add_atomic(&current_thread->interrupt_level, 1) > 0);
+	/* TODO: does this count as interrupt context? */
+	//assert(add_atomic(&current_thread->interrupt_level, 1) > 0);
 	int started = timer_start(&interrupt_timers[int_no]);
 	char called = 0;
 	for(int i=0;i<MAX_HANDLERS;i++)
@@ -212,7 +213,7 @@ void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_addres
 	/* if it went unhandled, kill the process or panic */
 	if(!called)
 		faulted(int_no, !already_in_kernel, return_address, regs->err_code, regs);
-	assert(sub_atomic(&current_thread->interrupt_level, 1) >= 0);
+	//assert(sub_atomic(&current_thread->interrupt_level, 1) >= 0);
 	if(!already_in_kernel) {
 		__setup_signal_handler(regs);
 		current_thread->regs = 0;

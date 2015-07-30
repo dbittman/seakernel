@@ -19,7 +19,7 @@ void vfs_icache_init(void)
 {
 	icache = hash_table_create(0, 0, HASH_TYPE_CHAIN);
 	hash_table_resize(icache, HASH_RESIZE_MODE_IGNORE,1000); /* TODO: initial value? */
-	hash_table_specify_function(icache, HASH_FUNCTION_BYTE_SUM);
+	hash_table_specify_function(icache, HASH_FUNCTION_DEFAULT);
 
 	ic_inuse = ll_create(0);
 	ic_dirty = ll_create(0);
@@ -76,7 +76,7 @@ struct inode *vfs_inode_create (void)
 
 	node->dirents = hash_table_create(0, 0, HASH_TYPE_CHAIN);
 	hash_table_resize(node->dirents, HASH_RESIZE_MODE_IGNORE,1000);
-	hash_table_specify_function(node->dirents, HASH_FUNCTION_BYTE_SUM);
+	hash_table_specify_function(node->dirents, HASH_FUNCTION_DEFAULT);
 	node->flags = INODE_INUSE;
 	ll_do_insert(ic_inuse, &node->inuse_item, node);
 

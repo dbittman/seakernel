@@ -142,7 +142,7 @@ static struct arp_database *arp_create_database(uint16_t et)
 {
 	struct hash_table *hash = hash_table_create(0, 0, HASH_TYPE_CHAIN);
 	hash_table_resize(hash, HASH_RESIZE_MODE_IGNORE, 100);
-	hash_table_specify_function(hash, HASH_FUNCTION_BYTE_SUM);
+	hash_table_specify_function(hash, HASH_FUNCTION_DEFAULT);
 	mutex_acquire(&databaselock);
 	int i;
 	for(i=0;i<MAX_PROTS;i++) {

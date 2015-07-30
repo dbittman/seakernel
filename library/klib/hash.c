@@ -28,8 +28,21 @@ int __default_byte_sum_fn(int sz, void *key, size_t kesz, size_t len, int iterat
 	return sum % sz;
 }
 
+int __hash_fn_djb2(int sz, void *key, size_t kesz, size_t len, int iteration)
+{
+	unsigned long hash = 5381;
+	unsigned char *buf = key;
+	for(int i = 0;i < kesz*len;i++) {
+		unsigned char e = buf[i];
+		hash = ((hash << 5) + hash) + e;
+	}
+	hash += iteration;
+	return hash % sz;
+}
+
 static void *hash_functions_list[NUM_HASH_FUNCTIONS] = {
-	__default_byte_sum_fn
+	__default_byte_sum_fn,
+	__hash_fn_djb2
 };
 
 int __hash_table_compare_keys(void *key_1, size_t es_1, size_t len_1, void *key_2, size_t es_2, size_t len_2)

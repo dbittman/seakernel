@@ -32,7 +32,7 @@ int net_tlayer_register_protocol(int prot, struct tlayer_prot_interface *inter)
 	protocols[prot] = inter;
 	hash_table_create(&pool[prot], 0, HASH_TYPE_CHAIN);
 	hash_table_resize(&pool[prot], HASH_RESIZE_MODE_IGNORE, 100);
-	hash_table_specify_function(&pool[prot], HASH_FUNCTION_BYTE_SUM);
+	hash_table_specify_function(&pool[prot], HASH_FUNCTION_DEFAULT);
 	return 0;
 }
 

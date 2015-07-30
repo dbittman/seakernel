@@ -125,6 +125,8 @@ __attribute__((noinline)) static void tm_process_exit(int code)
 	mm_free_self_directory();
 	/* TODO: free everything else? */
 
+	/* this is done before SIGCHILD is sent out */
+	or_atomic(&current_process->flags, PROCESS_EXITED);
 	if(current_process->parent) {
 		struct process *init = tm_process_get(0);
 		rwlock_acquire(&process_list->rwl, RWL_READER);
@@ -139,9 +141,9 @@ __attribute__((noinline)) static void tm_process_exit(int code)
 		}
 		rwlock_release(&process_list->rwl, RWL_READER);
 		tm_signal_send_process(current_process->parent, SIGCHILD);
+		tm_blocklist_wakeall(&current_process->waitlist);
 		tm_process_put(init);
 	}
-	or_atomic(&current_process->flags, PROCESS_EXITED);
 	tm_process_put(current_process); /* fork starts us out at refs = 1 */
 }
 

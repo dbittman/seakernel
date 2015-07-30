@@ -59,19 +59,27 @@ static void finish_schedule(void)
 
 static void post_schedule(void)
 {
-#warning "Figure out when this is actually safe to do, and then also do work for the CPU's workqueue"
 	if(current_thread->resume_work.count) {
 		while(workqueue_dowork(&current_thread->resume_work) != -1) {
 			tm_schedule();
 		}
+	}
+	struct workqueue *wq = &__current_cpu->work;
+	if(wq->count > 0) {
+		if(wq->count > 10) {
+			printk(0, "[sched]: warning - work is piling up (%d tasks)!\n", wq->count);
+		}
+		workqueue_dowork(&__current_cpu->work);
 	}
 }
 
 void tm_schedule(void)
 {
 	int old = cpu_interrupt_set(0);
-	//if(current_thread->interrupt_level)
-	//	panic(PANIC_NOSYNC | PANIC_INSTANT, "tried to reschedule within interrupt context (%d)", current_thread->interrupt_level);
+	if(current_thread->interrupt_level)
+		panic(PANIC_NOSYNC | PANIC_INSTANT,
+				"tried to reschedule within interrupt context (%d)",
+				current_thread->interrupt_level);
 	assert(__current_cpu->preempt_disable >= 0);
 	if(__current_cpu->preempt_disable > 0 || !(__current_cpu->flags & CPU_RUNNING)) {
 		cpu_interrupt_set(old);
@@ -85,7 +93,8 @@ void tm_schedule(void)
 		addr_t jump = next->jump_point;
 		next->jump_point = 0;
 		if(!(next->stack_pointer > (addr_t)next->kernel_stack + sizeof(addr_t))) {
-			panic(0, "kernel stack overrun! thread=%x:%d %x (min = %x)", next, next->tid, next->stack_pointer, next->kernel_stack);
+			panic(0, "kernel stack overrun! thread=%x:%d %x (min = %x)",
+					next, next->tid, next->stack_pointer, next->kernel_stack);
 		}
 		cpu_set_kernel_stack(next->cpu, (addr_t)next->kernel_stack,
 				(addr_t)next->kernel_stack + (KERN_STACK_SIZE));

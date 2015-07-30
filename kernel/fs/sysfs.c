@@ -154,6 +154,6 @@ void kerfs_init(void)
 {
 	table = hash_table_create(0, 0, HASH_TYPE_CHAIN);
 	hash_table_resize(table, HASH_RESIZE_MODE_IGNORE,1000);
-	hash_table_specify_function(table, HASH_FUNCTION_BYTE_SUM);
+	hash_table_specify_function(table, HASH_FUNCTION_DEFAULT);
 }
 

@@ -94,11 +94,14 @@ addr_t mm_establish_mapping(struct inode *node, addr_t virt,
 	if(!(flags & MAP_ANONYMOUS) && (offset >= (size_t)node->length)) {
 		return -EINVAL;
 	}
+	vfs_inode_get(node);
 	mutex_acquire(&current_process->map_lock);
 	/* get a virtual region to use */
 	struct valloc_region vr;
 	int ret = acquire_virtual_location(&vr, &virt, flags & MAP_FIXED, length);
 	if(!ret && !virt) {
+		mutex_release(&current_process->map_lock);
+		vfs_icache_put(node);
 		return -ENOMEM;
 	}
 	if(vr.start)
@@ -109,7 +112,6 @@ addr_t mm_establish_mapping(struct inode *node, addr_t virt,
 	if(vr.start)
 		memcpy(&(map->vr), &vr, sizeof(struct valloc_region));
 	
-	vfs_inode_get(node);
 	record_mapping(map);
 	/* unmap the region of previous pages */
 	for(addr_t s=virt;s < (virt + length);s+=PAGE_SIZE)

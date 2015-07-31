@@ -55,7 +55,6 @@ int block_elevator_main(struct kthread *kt, void *arg)
 				}
 			}
 			req->flags |= IOREQ_COMPLETE;
-			assert(req->blocklist.num > 0);
 			tm_blocklist_wakeall(&req->blocklist);
 			ioreq_put(req);
 		} else {

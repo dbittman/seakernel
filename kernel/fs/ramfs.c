@@ -259,11 +259,21 @@ int ramfs_inode_unlink(struct filesystem *fs, struct inode *parent, const char *
 	int r = sub_atomic(&rfstarget->nlinks, 1);
 	if(!r) {
 		hash_table_delete_entry(info->nodes, &target->id, sizeof(found->ino), 1);
-		ll_destroy(rfstarget->ents);
-		kfree(rfstarget);
+		if(rfstarget->ents->num == 0) {
+			ll_destroy(rfstarget->ents);
+			kfree(rfstarget);
+		}
 	}
 
-	ll_remove(rfsparent->ents, found->lnode);
+	rwlock_acquire(&rfsparent->ents->rwl, RWL_WRITER);
+	ll_do_remove(rfsparent->ents, found->lnode, 1);
+	if(rfsparent->ents->num == 0 && rfsparent->nlinks == 0) {
+		rwlock_release(&rfsparent->ents->rwl, RWL_WRITER);
+		ll_destroy(rfstarget->ents);
+		kfree(rfstarget);
+	} else {
+		rwlock_release(&rfsparent->ents->rwl, RWL_WRITER);
+	}
 	kfree(found);
 	return 0;
 }

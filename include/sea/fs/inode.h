@@ -98,6 +98,7 @@ struct inode *fs_path_resolve_inode(const char *path, int flags, int *error);
 struct dirent *fs_resolve_symlink(struct dirent *dir, struct inode *node, int level, int *err);
 int fs_resolve_iter_symlink(struct dirent **dir, struct inode **node, int);
 size_t fs_inode_reclaim_lru();
+int fs_inode_dirempty(struct inode *dir);
 
 struct inode *fs_read_root_inode(struct filesystem *fs);
 int vfs_inode_chdir(struct inode *node);

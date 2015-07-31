@@ -17,12 +17,16 @@ static int do_fs_unlink(struct inode *node, const char *name, size_t namelen, in
 	if(!dir)
 		return -ENOENT;
 	struct inode *target = fs_dirent_readinode(dir, 1);
+	if(S_ISDIR(target->mode) && !fs_inode_dirempty(target)) {
+		vfs_icache_put(target);
+		return -ENOTEMPTY;
+	}
+	or_atomic(&dir->flags, DIRENT_UNLINK);
 	if(S_ISDIR(target->mode) && rec) {
-		do_fs_unlink(target, "..", 2, 0);
 		do_fs_unlink(target, ".", 1, 0);
+		do_fs_unlink(target, "..", 2, 0);
 	}
 	vfs_icache_put(target);
-	or_atomic(&dir->flags, DIRENT_UNLINK);
 	vfs_dirent_release(dir);
 	return 0;
 }
@@ -39,6 +43,10 @@ int fs_link(struct inode *dir, struct inode *target, const char *name, size_t na
 	if(!S_ISDIR(dir->mode))
 		return -ENOTDIR;
 	rwlock_acquire(&dir->lock, RWL_WRITER);
+	if(S_ISDIR(dir->mode) && (dir->nlink == 1)) {
+		rwlock_release(&dir->lock, RWL_WRITER);
+		return -ENOSPC;
+	}
 	rwlock_acquire(&target->metalock, RWL_WRITER);
 	int r = fs_callback_inode_link(dir, target, name, namelen);
 	if(!r)

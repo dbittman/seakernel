@@ -64,6 +64,16 @@ int sys_stat(char *f, struct stat *statbuf, int lin)
 	return 0;
 }
 
+int fs_inode_dirempty(struct inode *dir)
+{
+	char tmp[512];
+	int n;
+	int r = fs_callback_inode_getdents(dir, 0, tmp, 512, &n);
+	if(r >= 32)
+		return 0;
+	return 1;
+}
+
 int sys_getdents(int fd, struct dirent_posix *dirs, unsigned int count)
 {
 	struct file *f = fs_get_file_pointer(current_process, fd);

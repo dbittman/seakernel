@@ -31,6 +31,11 @@ pmode_enter:
   mov es, ax
   mov fs, ax
   mov ss, ax
+  
+  ; un-set the cache-disable bit
+  mov eax, cr0
+  and eax, 0x1FFFFFFF
+  mov cr0, eax
   ; set the stack to be right below the GDT data
   ; this will get changed almost immediately
   mov esp, (0x7100-4)

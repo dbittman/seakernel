@@ -54,6 +54,9 @@ gdtable:
 ;
 ; Here is where the 32-bit entry code is.
 start:
+	mov eax, cr0
+	and eax, 0x1FFFFFFF
+	mov cr0, eax
 	mov esp, initial_kernel_stack+STACKSIZE  ; set up the stack
 	cli
 	mov [ebx_backup], ebx       ; the kernel expects this as an argument later, so save it

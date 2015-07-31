@@ -32,6 +32,9 @@ section .text
 STACKSIZE equ 0x4000
 
 start:
+   mov eax, cr0
+   and eax, 0x1FFFFFFF
+   mov cr0, eax
    mov esp, initial_kernel_stack+STACKSIZE     ; set up the stack
    push esp                     ; kernel expects and esp value in the arguments
    push ebx                     ; pass Multiboot info structure

@@ -17,14 +17,15 @@ static int do_fs_unlink(struct inode *node, const char *name, size_t namelen, in
 	if(!dir)
 		return -ENOENT;
 	struct inode *target = fs_dirent_readinode(dir, 1);
-	if(S_ISDIR(target->mode) && !fs_inode_dirempty(target)) {
+	if(rec && S_ISDIR(target->mode) && !fs_inode_dirempty(target)) {
 		vfs_icache_put(target);
+		vfs_dirent_release(dir);
 		return -ENOTEMPTY;
 	}
 	or_atomic(&dir->flags, DIRENT_UNLINK);
 	if(S_ISDIR(target->mode) && rec) {
-		do_fs_unlink(target, ".", 1, 0);
 		do_fs_unlink(target, "..", 2, 0);
+		do_fs_unlink(target, ".", 1, 0);
 	}
 	vfs_icache_put(target);
 	vfs_dirent_release(dir);

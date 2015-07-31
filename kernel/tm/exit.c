@@ -156,13 +156,13 @@ void tm_thread_do_exit(void)
 
 	tm_thread_release_usermode_stack(current_thread, current_thread->usermode_stack_num);
 
+	tm_thread_remove_kerfs_entries(current_thread);
 	if(current_process->thread_count == 1) {
 		tm_process_remove_kerfs_entries(current_process);
 	}
 
 	ll_do_remove(&current_process->threadlist, &current_thread->pnode, 0);
 	tm_process_put(current_process); /* thread releases it's process pointer */
-	tm_thread_remove_kerfs_entries(current_thread);
 
 	sub_atomic(&running_threads, 1);
 	if(sub_atomic(&current_process->thread_count, 1) == 0) {

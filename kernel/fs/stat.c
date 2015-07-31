@@ -67,10 +67,15 @@ int sys_stat(char *f, struct stat *statbuf, int lin)
 int fs_inode_dirempty(struct inode *dir)
 {
 	char tmp[512];
-	int n;
-	int r = fs_callback_inode_getdents(dir, 0, tmp, 512, &n);
-	if(r >= 32)
-		return 0;
+	unsigned int n;
+	int r = fs_callback_inode_getdents(dir, 0, (void *)tmp, 512, &n);
+	struct dirent_posix *des = (void *)tmp;
+	while((addr_t)des < (addr_t)(tmp + r)) {
+		if(strcmp(des->d_name, ".") && strcmp(des->d_name, "..")) {
+			return 0;
+		}
+		des = (void *)((addr_t)des + des->d_reclen);
+	}
 	return 1;
 }
 

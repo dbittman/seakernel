@@ -11,7 +11,7 @@ KOBJS+= kernel/mm/fault.o \
 		kernel/mm/pmap.o \
 		kernel/mm/pmm.o \
 		kernel/mm/reclaim.o \
-		kernel/mm/slab.o \
+		kernel/mm/newslab.o \
 		kernel/mm/valloc.o \
 		kernel/mm/vmm.o
 

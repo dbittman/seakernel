@@ -13,7 +13,7 @@
 #include <sea/arch-include/tm-thread.h>
 #include <sea/mm/valloc.h>
 #include <sea/tm/workqueue.h>
-#define KERN_STACK_SIZE 0x4000
+#define KERN_STACK_SIZE 0x20000
 #define THREAD_MAGIC 0xBABECAFE
 #define PRIO_PROCESS 1
 #define PRIO_PGRP    2
@@ -27,6 +27,7 @@
 #define THREAD_EXIT            0x10 /* we plan to exit when returning from this interrupt */
 #define THREAD_WAKEUP          0x20 /* the scheduler won't let the state -> THREADSTATE_INTERRUPTIBLE
 									   if this flag is set, but it will then reset the flag */
+#define THREAD_DEAD            0x40 /* thread is dead, AND has scheduled away */
 
 #define THREADSTATE_RUNNING 0
 #define THREADSTATE_INTERRUPTIBLE 1
@@ -36,6 +37,7 @@
 #define tm_thread_raise_flag(t,f) or_atomic(&(t->flags), f)
 #define tm_thread_lower_flag(t,f) and_atomic(&(t->flags), ~f)
 
+/* TODO: make sure this really does get optimized away */
 #define current_thread ((struct thread *)arch_tm_get_current_thread(kernel_state_flags))
 
 struct process;

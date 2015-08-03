@@ -300,6 +300,20 @@ int ramfs_inode_read(struct filesystem *fs, struct inode *node,
 	return amount;
 }
 
+void ramfs_point_to_data(struct inode *node, void *data, size_t len)
+{
+	struct rfsinfo *info = node->filesystem->data;
+	struct rfsnode *rfsnode;
+	
+	if(hash_table_get_entry(info->nodes, &node->id, sizeof(node->id), 1, (void **)&rfsnode))
+		return;
+
+	if((addr_t)rfsnode->data >= KMALLOC_ADDR_START && (addr_t)rfsnode->data < KMALLOC_ADDR_END)
+		kfree(rfsnode->data);
+	rfsnode->data = data;
+	rfsnode->length = node->length = len;
+}
+
 int ramfs_inode_write(struct filesystem *fs, struct inode *node,
 		size_t offset, size_t length, const char *buffer)
 {
@@ -314,10 +328,15 @@ int ramfs_inode_write(struct filesystem *fs, struct inode *node,
 	size_t end = length + offset;
 	rwlock_acquire(&node->metalock, RWL_WRITER);
 	if(end > node->length) {
+		if(end > 0x2000) {
+			rwlock_release(&node->metalock, RWL_WRITER);
+			return -EIO;
+		}
 		void *newdata = kmalloc(end);
 		if(rfsnode->data) {
 			memcpy(newdata, rfsnode->data, rfsnode->length);
-			kfree(rfsnode->data);
+			if((addr_t)rfsnode->data >= KMALLOC_ADDR_START && (addr_t)rfsnode->data < KMALLOC_ADDR_END)
+				kfree(rfsnode->data);
 		}
 		rfsnode->data = newdata;
 		rfsnode->length = end;

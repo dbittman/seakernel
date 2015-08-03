@@ -133,9 +133,11 @@ int hash_chain_enumerate(void **h, size_t size, uint64_t num, void **key, size_t
 
 struct hash_collision_resolver __hash_chain_resolver = {
 	"chain",
+	sizeof(void *),
 	hash_chain_get,
 	hash_chain_set,
 	hash_chain_set_or_get,
 	hash_chain_del,
 	hash_chain_enumerate
 };
+

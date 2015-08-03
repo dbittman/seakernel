@@ -8,6 +8,7 @@ void arch_mm_page_fault_handle(registers_t *regs, int int_no, int flags)
 	assert(regs);
 	addr_t cr2, err_code = regs->err_code;
 	__asm__ volatile ("mov %%cr2, %0" : "=r" (cr2));
+	__asm__ volatile ("mov $0, %%eax; mov %%eax, %%cr2" ::: "eax");
 	int pf_error=0;
 	if(!(err_code & 1))
 		pf_error |= PF_CAUSE_NONPRESENT;

@@ -17,7 +17,8 @@ void kmalloc_init(void)
 {
 	strncpy(kmalloc_name, "slab", 128);
 	mutex_create(&km_m, MT_NOSCHED); //TODO
-	__mm_slab_init(KMALLOC_ADDR_START, KMALLOC_ADDR_END);
+	slab_init(KMALLOC_ADDR_START, KMALLOC_ADDR_END);
+	
 }
 
 /* TODO: remove a lot of the file-line stuff */
@@ -25,9 +26,8 @@ static addr_t do_kmalloc(size_t sz, char align, char *file, int line)
 {
 	//if(current_thread && current_thread->interrupt_level)
 	//	panic(PANIC_NOSYNC, "cannot allocate memory within interrupt context");
-	mutex_acquire(&km_m);
-	addr_t ret = __mm_do_kmalloc_slab(sz, align);
-	mutex_release(&km_m);
+	addr_t ret;
+	ret = (addr_t)slab_kmalloc(sz);
 	if(!ret || ret >= KMALLOC_ADDR_END || ret < KMALLOC_ADDR_START)
 		panic(PANIC_MEM | PANIC_NOSYNC, "kmalloc returned impossible address");
 	memset((void *)ret, 0, sz);
@@ -65,7 +65,6 @@ void kfree(void *pt)
 	//if(current_thread && current_thread->interrupt_level)
 	//	panic(PANIC_NOSYNC, "cannot free memory within interrupt context");
 	assert(pt);
-	mutex_acquire(&km_m);
-	__mm_do_kfree_slab(pt);
-	mutex_release(&km_m);
+	//__mm_do_kfree_slab(pt);
+	slab_kfree(pt);
 }

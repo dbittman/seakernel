@@ -9,7 +9,7 @@
 static struct hash_collision_resolver *hash_collision_resolvers[NUM_HASH_COLLISION_RESOLVERS] = {
 	0,
 	&__hash_chain_resolver,
-	0,
+	&__hash_linear_resolver,
 	0,
 	0
 };
@@ -40,6 +40,7 @@ int __hash_fn_djb2(int sz, void *key, size_t kesz, size_t len, int iteration)
 	return hash % sz;
 }
 
+#warning "redesign hashing system to not need to do allocations beyond The Big Array"
 static void *hash_functions_list[NUM_HASH_FUNCTIONS] = {
 	__default_byte_sum_fn,
 	__hash_fn_djb2
@@ -115,7 +116,7 @@ int hash_table_resize(struct hash_table *h, unsigned mode, size_t new_size)
 	if(!h || h->magic != HASH_MAGIC) panic(0, "hash resize on invalid hash table");
 	int old_size = h->size;
 
-	void **ne = kmalloc(sizeof(void *) * new_size);
+	void **ne = kmalloc(h->resolver->entrysz * new_size);
 	if(!(h->flags & HASH_NOLOCK))
 		rwlock_acquire(&h->lock, RWL_WRITER);
 	if(h->entries) {

@@ -105,6 +105,7 @@ addr_t tm_thread_reserve_kernelmode_stack(void)
 
 void tm_thread_release_kernelmode_stack(addr_t base)
 {
+	assert(base >= current_thread->kernel_stack + KERN_STACK_SIZE || base < current_thread->kernel_stack);
 	struct valloc_region va;
 	va.start = base;
 	va.npages = 1;

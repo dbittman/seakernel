@@ -10,10 +10,13 @@ struct pd_data {
 };
 
 struct vmm_context {
+	uint32_t magic;
 	addr_t root_physical;
 	addr_t root_virtual;
 	mutex_t lock;
 };
+
+#define CONTEXT_MAGIC 0xC047387F
 
 extern struct vmm_context kernel_context;
 

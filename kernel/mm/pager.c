@@ -15,7 +15,8 @@ int __KT_pager(struct kthread *kt, void *arg)
 	while(!kthread_is_joining(kt)) {
 		/* reclaim memory if needed */
 		int pm_use = (pm_used_pages * 100) / pm_num_pages;
-		int km_use = slab_get_usage();
+		int km_use = 0;//slab_get_usage();
+#warning "FIX"
 		if(pm_use > 50 || km_use > 50) {
 			if(!mm_reclaim_size(PAGE_SIZE)) {
 				tm_thread_delay(ONE_SECOND / 2);

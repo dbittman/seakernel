@@ -75,7 +75,7 @@ int kt_kernel_idle_task(void)
 	}
 	cpu_interrupt_set(1);
 	/* Now enter the main idle loop, waiting to do periodic cleanup */
-	printk(0, "[idle]: entering background loop\n");
+	printk(0, "[idle]: entering background loop %x\n", current_thread->kernel_stack);
 	for(;;) {
 		if(__current_cpu->work.count > 0)
 			workqueue_dowork(&__current_cpu->work);

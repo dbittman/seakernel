@@ -73,11 +73,10 @@ static void tm_thread_destroy(unsigned long data)
 
 	/* if the thread still hasn't been rescheduled, don't destroy it yet */
 	assert(thr->state == THREADSTATE_DEAD);
-	if(thr->flags & THREAD_SCHEDULE) {
+	if(!(thr->flags & THREAD_DEAD)) {
 		struct async_call *thread_cleanup_call = async_call_create(0, 0, 
 				tm_thread_destroy, data, 0);
 		workqueue_insert(&__current_cpu->work, thread_cleanup_call);
-		tm_thread_raise_flag(current_thread, THREAD_SCHEDULE);
 		return;
 	}
 	tm_thread_release_kernelmode_stack(thr->kernel_stack);
@@ -129,13 +128,14 @@ __attribute__((noinline)) static void tm_process_exit(int code)
 	or_atomic(&current_process->flags, PROCESS_EXITED);
 	if(current_process->parent) {
 		struct process *init = tm_process_get(0);
+		assert(init);
 		rwlock_acquire(&process_list->rwl, RWL_READER);
 		struct process *child;
 		struct llistnode *node;
 		ll_for_each_entry(process_list, node, struct process *, child) {
 			if(child->parent == current_process) {
-				child->parent = init;
 				tm_process_inc_reference(init);
+				child->parent = init;
 				tm_process_put(current_process);
 			}
 		}

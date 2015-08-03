@@ -50,7 +50,7 @@ static long __valloc_get_start_index(struct valloc *va, long np)
 	long start = -1;
 	long count = 0;
 	long idx = va->last;
-	if(idx > va->npages)
+	if(idx >= va->npages)
 		idx=0;
 	long prev = idx;
 	do {
@@ -60,7 +60,9 @@ static long __valloc_get_start_index(struct valloc *va, long np)
 			 * and we found an empty bit. Start checking
 			 * this region for length */
 			start = idx;
-			count=0;
+			count=1;/*TODO: UH, is this right? */
+			if(count == np)
+				break;
 		} else {
 			/* we're checking a region for length. If this
 			 * bit is 0, then we add to the count. Otherwise,
@@ -117,8 +119,9 @@ static void __valloc_depopulate_index(struct valloc *va)
 struct valloc *valloc_create(struct valloc *va, addr_t start, addr_t end, size_t page_size,
 		int flags)
 {
-	assert(!(page_size & ~PAGE_MASK));
-	assert(!((start - end) & (page_size - 1)));
+	int leftover = (end - start) % page_size;
+	end -= leftover;
+	assert(!((end - start) % page_size));
 	if(!va) {
 		/* careful! kmalloc uses valloc... */
 		va = (void *)kmalloc(sizeof(struct valloc));

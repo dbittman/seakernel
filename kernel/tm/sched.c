@@ -100,6 +100,9 @@ void tm_schedule(void)
 	struct thread *next = get_next_thread();
 
 	if(current_thread != next) {
+		/* save this somewhere that's not on the stack so that it still is correct
+		 * after a context switch */
+		__current_cpu->prev = current_thread;
 		addr_t jump = next->jump_point;
 		next->jump_point = 0;
 		if(!(next->stack_pointer > (addr_t)next->kernel_stack + sizeof(addr_t))) {
@@ -113,6 +116,9 @@ void tm_schedule(void)
 		}
 
 		arch_tm_thread_switch(current_thread, next, jump);
+		if(__current_cpu->prev->state == THREADSTATE_DEAD)
+			tm_thread_raise_flag(__current_cpu->prev, THREAD_DEAD);
+		__current_cpu->prev = 0;
 	}
 
 	struct cpu *thiscpu = current_thread->cpu;

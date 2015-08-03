@@ -1,5 +1,6 @@
 KOBJS += library/klib/hash.o \
 		 library/klib/hash_chain.o \
+		 library/klib/hash_linear.o \
 		 library/klib/heap.o \
 		 library/klib/ll.o \
 		 library/klib/queue.o \

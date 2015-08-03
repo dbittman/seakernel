@@ -112,6 +112,7 @@ void arch_mm_vm_init(addr_t id_map_to)
 	page_dir_t *pd = (page_dir_t *)vm_init_directory(id_map_to);
 	minimal_context.root_physical = (addr_t)pd;
 	minimal_context.root_virtual = (addr_t)page_directory;
+	minimal_context.magic = CONTEXT_MAGIC;
 	mutex_create(&minimal_context.lock, MT_NOSCHED);
 	/* CR3 requires the physical address, so we directly 
 	 * set it because we have the physical address */
@@ -121,8 +122,12 @@ void arch_mm_vm_init(addr_t id_map_to)
 	set_ksf(KSF_PAGING);
 }
 
+addr_t arch_mm_vm_get_map(addr_t v, addr_t *p, unsigned locked);
 void arch_mm_vm_switch_context(struct vmm_context *context)
 {
+	assert(context->magic == CONTEXT_MAGIC);
+	assert(arch_mm_vm_get_map(context->root_virtual, 0, 1));
+ 	assert(context && context->root_virtual && ((addr_t *)context->root_virtual)[0] && context->root_physical);
  	__asm__ __volatile__ ("mov %0, %%cr3" :: "r" (context->root_physical):"memory");
 }
 /* This relocates the stack to a safe place which is copied 
@@ -132,7 +137,6 @@ void arch_mm_vm_init_2(void)
 	mm_vm_clone(&minimal_context, &kernel_context);
 	arch_mm_vm_switch_context(&kernel_context);
 }
-
 
 addr_t arch_mm_vm_get_map(addr_t v, addr_t *p, unsigned locked)
 {

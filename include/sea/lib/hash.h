@@ -16,6 +16,7 @@ struct hash_table {
 
 struct hash_collision_resolver {
 	char *name;
+	size_t entrysz;
 	int (*get)(void **h, int (*fn)(int, void *, size_t, size_t, int), size_t size, void *key, size_t elem_sz, size_t len, void **value);
 	int (*set)(void **h, int (*fn)(int, void *, size_t, size_t, int), size_t size, void *key, size_t elem_sz, size_t len, void *value);
 	int (*set_or_get)(void **h, int (*fn)(int, void *, size_t, size_t, int), size_t size, void *key, size_t elem_sz, size_t len, void *value, void **result);
@@ -70,5 +71,6 @@ struct hash_table_chain_node {
 };
 
 extern struct hash_collision_resolver __hash_chain_resolver;
+extern struct hash_collision_resolver __hash_linear_resolver;
 
 #endif

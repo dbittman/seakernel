@@ -400,6 +400,7 @@ addr_t __slab_do_kmalloc_aligned(size_t sz)
 	/* we only need to map one page, since page-aligned allocations are only
 	 * a single page size */
 	map_if_not_mapped(vr.start);
+	assert(mm_vm_get_map(vr.start, 0, 0));
 	return vr.start;
 }
 

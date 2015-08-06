@@ -203,6 +203,7 @@ void valloc_deallocate(struct valloc *va, struct valloc_region *reg)
 	int start_index = (reg->start - va->start) / va->psize;
 	assert(start_index+reg->npages <= va->npages && start_index >= va->nindex);
 	__valloc_clear_bits(va, start_index, reg->npages);
+	va->last = start_index;
 	mutex_release(&va->lock);
 	if(reg->flags & VALLOC_ALLOC)
 		kfree(reg);

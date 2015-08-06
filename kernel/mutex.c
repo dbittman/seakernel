@@ -26,7 +26,7 @@ int mutex_is_locked(mutex_t *m)
 		return 1;
 	return m->lock;
 }
-
+#define MUTEX_DEBUG 0
 void __mutex_acquire(mutex_t *m, char *file, int line)
 {
 	assert(m->magic == MUTEX_MAGIC);
@@ -40,7 +40,9 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 	if(current_thread && m->lock && ((m->pid == (pid_t)current_thread->tid)))
 		panic(0, "task %d tried to relock mutex %x (%s:%d)", m->pid, m->lock, file, line);
 	/* wait until we can set bit 0. once this is done, we have the lock */
+#if MUTEX_DEBUG
 	int timeout = 800000000;
+#endif
 	cpu_disable_preemption();
 	while(bts_atomic(&m->lock, 0)) {
 		if(!(m->flags & MT_NOSCHED)) {
@@ -50,8 +52,10 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 		} else {
 			cpu_pause();
 		}
+#if MUTEX_DEBUG
 		if(--timeout == 0)
 			panic(PANIC_NOSYNC | PANIC_INSTANT, "timeout locking mutex (owned by %d)", m->pid);
+#endif
 	}
 	assert(m->lock);
 	if(!(m->flags & MT_NOSCHED))

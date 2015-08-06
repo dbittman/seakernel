@@ -29,7 +29,7 @@ extern struct filesystem *devfs;
 	do { \
 		char file[128];\
 		snprintf(file, 128, "/dev/process/%d/%s", proc->pid, #field); \
-		kerfs_register_parameter(file, &proc->field, sizeof(proc->field), \
+		kerfs_register_parameter(file, (void *)&proc->field, sizeof(proc->field), \
 				KERFS_PARAM_READONLY, type); \
 	} while(0)
 #define __expose_thread_field(thr, field, type) \

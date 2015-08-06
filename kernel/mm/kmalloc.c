@@ -5,7 +5,6 @@
 #include <sea/mm/vmm.h>
 #include <sea/tm/process.h>
 
-
 void slab_kfree(void *data);
 void *slab_kmalloc(size_t __size);
 void slab_init(addr_t start, addr_t end);
@@ -23,8 +22,8 @@ void kmalloc_init(void)
 /* TODO: remove a lot of the file-line stuff */
 static addr_t do_kmalloc(size_t sz, char align, char *file, int line)
 {
-	//if(current_thread && current_thread->interrupt_level)
-	//	panic(PANIC_NOSYNC, "cannot allocate memory within interrupt context");
+	if(current_thread && current_thread->interrupt_level)
+		panic(PANIC_NOSYNC, "cannot allocate memory within interrupt context");
 	addr_t ret;
 	ret = (addr_t)slab_kmalloc(sz);
 	if(!ret || ret >= KMALLOC_ADDR_END || ret < KMALLOC_ADDR_START)
@@ -68,8 +67,8 @@ void *__kmalloc_ap(size_t s, addr_t *p, char *file, int line)
 
 void kfree(void *pt)
 {
-	//if(current_thread && current_thread->interrupt_level)
-	//	panic(PANIC_NOSYNC, "cannot free memory within interrupt context");
+	if(current_thread && current_thread->interrupt_level)
+		panic(PANIC_NOSYNC, "cannot free memory within interrupt context");
 	addr_t address = (addr_t)pt;
 	if(address >= VIRTPAGES_START && address < VIRTPAGES_END) {
 		struct valloc_region reg;

@@ -326,17 +326,17 @@ int ramfs_inode_write(struct filesystem *fs, struct inode *node,
 	if(hash_table_get_entry(info->nodes, &node->id, sizeof(node->id), 1, (void **)&rfsnode))
 		return -EIO;
 	size_t end = length + offset;
+	if(end > node->length && end > 0x1000)
+		return -EIO;
 	rwlock_acquire(&node->metalock, RWL_WRITER);
 	if(end > node->length) {
-		if(end > 0x2000) {
-			rwlock_release(&node->metalock, RWL_WRITER);
-			return -EIO;
-		}
 		void *newdata = kmalloc(end);
 		if(rfsnode->data) {
 			memcpy(newdata, rfsnode->data, rfsnode->length);
 			if((addr_t)rfsnode->data >= KMALLOC_ADDR_START && (addr_t)rfsnode->data < KMALLOC_ADDR_END)
+			{
 				kfree(rfsnode->data);
+			}
 		}
 		rfsnode->data = newdata;
 		rfsnode->length = end;

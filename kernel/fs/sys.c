@@ -94,7 +94,7 @@ int sys_setup(int a)
 	kerfs_register_report("/dev/int", kerfs_int_report);
 	kerfs_register_report("/dev/mounts", kerfs_mount_report);
 	kerfs_register_report("/dev/pmm", kerfs_pmm_report);
-	//kerfs_register_report("/dev/kmm", kerfs_kmalloc_report);
+	kerfs_register_report("/dev/kmm", kerfs_kmalloc_report);
 	kerfs_register_report("/dev/fs_icache", kerfs_icache_report);
 	kerfs_register_report("/dev/modules", kerfs_module_report);
 	current_process->tty=1;

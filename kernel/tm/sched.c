@@ -63,12 +63,14 @@ static void prepare_schedule(void)
 	tm_thread_lower_flag(current_thread, THREAD_SCHEDULE);
 }
 
-static void finish_schedule(void)
+static void post_schedule(struct thread *prev)
 {
-}
-
-static void post_schedule(void)
-{
+	if(prev) {
+		if(prev->state == THREADSTATE_DEAD) {
+			tm_thread_raise_flag(prev, THREAD_DEAD);
+		}
+	}
+	return;
 	struct workqueue *wq = &__current_cpu->work;
 	if(wq->count > 0) {
 		if(wq->count > 10) {
@@ -99,6 +101,7 @@ void tm_schedule(void)
 	prepare_schedule();
 	struct thread *next = get_next_thread();
 
+	struct thread *prev = 0;
 	if(current_thread != next) {
 		/* save this somewhere that's not on the stack so that it still is correct
 		 * after a context switch */
@@ -111,21 +114,19 @@ void tm_schedule(void)
 		}
 		cpu_set_kernel_stack(next->cpu, (addr_t)next->kernel_stack,
 				(addr_t)next->kernel_stack + (KERN_STACK_SIZE));
+		assert(next->process->refs > 0);
 		if(next->process != current_thread->process) {
 			mm_vm_switch_context(&next->process->vmm_context);
 		}
 
 		arch_tm_thread_switch(current_thread, next, jump);
-		if(__current_cpu->prev->state == THREADSTATE_DEAD)
-			tm_thread_raise_flag(__current_cpu->prev, THREAD_DEAD);
+		prev = __current_cpu->prev;
 		__current_cpu->prev = 0;
 	}
 
-	struct cpu *thiscpu = current_thread->cpu;
-	finish_schedule();
 	cpu_enable_preemption();
 	cpu_interrupt_set(old);
-	post_schedule();
+	post_schedule(prev);
 	if(current_thread->flags & THREAD_SCHEDULE)
 		tm_schedule();
 }

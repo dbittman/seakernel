@@ -14,6 +14,7 @@ static int vm_do_copy_table(int i, page_dir_t *new, page_dir_t *from, char cow)
 	addr_t table_phys;
 	table = (addr_t *)VIRT_TEMP;
 	table_phys = mm_alloc_physical_page();
+	cpu_disable_preemption();
 	mm_vm_map((addr_t)table, table_phys, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_PDLOCKED);
 	/* TODO: remove these flushes */
 	flush_pd();
@@ -44,6 +45,7 @@ static int vm_do_copy_table(int i, page_dir_t *new, page_dir_t *from, char cow)
 	}
 	new[i] = table_phys | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
 	mm_vm_unmap_only((addr_t)table, 1);
+	cpu_enable_preemption();
 	return 0;
 }
 
@@ -65,7 +67,7 @@ static int vm_copy_dir(page_dir_t *from, page_dir_t *new, char flags)
 		 *  * we request only linking
 		 * BUT ONLY IF we're not in the stack memory
 		 */
-		if(((i < id_tables) || (i >= D) || (flags & 1)) && !(i < D && i >= stack))
+		if((i < id_tables) || (i >= D))
 			new[i] = from[i];
 		else
 			vm_do_copy_table(i, new, from, flags);
@@ -85,12 +87,14 @@ void arch_mm_vm_clone(struct vmm_context *oldcontext, struct vmm_context *newcon
 	new[1023] = new_p | PAGE_PRESENT | PAGE_WRITE;
 	addr_t *tmp = (addr_t *)VIRT_TEMP;
 	addr_t tmp_p = mm_alloc_physical_page();
+	cpu_disable_preemption();
 	mm_vm_map((unsigned)tmp, tmp_p, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_PDLOCKED);
 	flush_pd();
 	memset(tmp, 0, PAGE_SIZE);
 	tmp[1023] = new_p | PAGE_PRESENT | PAGE_WRITE;
 	new[1022] = tmp_p | PAGE_PRESENT | PAGE_WRITE;
 	mm_vm_unmap_only((unsigned)tmp, 1);
+	cpu_enable_preemption();
 	
 	if(pd_cur_data)
 		mutex_release(&pd_cur_data->lock);

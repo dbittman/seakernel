@@ -39,7 +39,7 @@ int mm_is_valid_user_pointer(int num, void *p, char flags);
 void mm_page_fault_handler(registers_t *, addr_t, int);
 void mm_flush_page_tables();
 void mm_destroy_directory(struct vmm_context *dir);
-void mm_free_self_directory(void);
+void mm_free_self_directory(int);
 
 static inline void map_if_not_mapped(addr_t loc)
 {

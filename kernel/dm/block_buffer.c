@@ -1,13 +1,40 @@
 #include <sea/dm/block.h>
 #include <sea/errno.h>
 #include <sea/tm/thread.h>
+#include <sea/tm/kthread.h>
+#include <sea/tm/timing.h>
 struct llist dirty_list;
 mutex_t dlock;
+struct kthread syncer;
 
+#if 0
+void buffer_sync(struct buffer *buf);
+int block_buffer_syncer(struct kthread *kt, void *arg)
+{
+	while(!kthread_is_joining(kt)) {
+		mutex_acquire(&dlock);
+		if(dirty_list.num > 0) {
+			struct buffer *buf = ll_entry(struct buffer *, dirty_list.head);
+			buffer_inc_refcount(buf);
+			int count = buf->bd->wq.count;
+			if(buf->flags & BUFFER_DIRTY)
+				buffer_sync(buf);
+			mutex_release(&dlock);
+			buffer_put(buf);
+			if(count > 0)
+				tm_thread_delay(ONE_MILLISECOND * 10);
+		} else {
+			mutex_release(&dlock);
+			tm_thread_delay(ONE_SECOND);
+		}
+	}
+}
+#endif
 void block_buffer_init(void)
 {
 	mutex_create(&dlock, MT_NOSCHED);
 	ll_create_lockless(&dirty_list);
+	//kthread_create(&syncer, "[ksync]", 0, block_buffer_syncer, 0);
 }
 
 void buffer_sync(struct buffer *buf)
@@ -115,7 +142,8 @@ int block_cache_get_bufferlist(struct llist *blist, struct ioreq *req)
 				return ret;
 			}
 			br = dm_block_cache_get(req->bd, block); // TODO: get this from elevator
-			assert(br); //TODO: this may not work in the case that it gets evicted immediately
+			assert(br);
+			and_atomic(&br->flags, ~BUFFER_LOCKED);
 		}
 		ll_do_insert(blist, &br->lnode, br);
 		ret++;

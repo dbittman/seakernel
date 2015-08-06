@@ -48,7 +48,7 @@ void tm_process_create_kerfs_entries(struct process *proc)
 	snprintf(path, 32, "/dev/process/%d", proc->pid);
 	int ret = sys_mkdir(path, 0755);
 	if(ret < 0) {
-		printk(2, "[tm]: failed to create process entry: %d\n", proc->pid);
+		printk(2, "[tm]: failed to create process entry %d: err=%d\n", proc->pid, -ret);
 		return;
 	}
 	__expose_proc_field(proc, heap_start, KERFS_TYPE_ADDRESS);
@@ -82,7 +82,7 @@ void tm_thread_create_kerfs_entries(struct thread *thr)
 	snprintf(path, 48, "/dev/process/%d/%d", proc->pid, thr->tid);
 	int ret = sys_mkdir(path, 0755);
 	if(ret < 0) {
-		printk(2, "[tm]: failed to create thread entry: %d\n", thr->tid);
+		printk(2, "[tm]: failed to create thread entry %d: err=%d\n", thr->tid, -ret);
 		return;
 	}
 	__expose_thread_field(thr, refs, KERFS_TYPE_INTEGER);

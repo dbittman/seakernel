@@ -48,16 +48,19 @@ int workqueue_dowork(struct workqueue *wq)
 {
 	struct async_call *call;
 	/* TODO: this can cause a relock if an IRQ fires inside here ... */
+	int old = cpu_interrupt_set(0);
 	mutex_acquire(&wq->lock);
 	if(heap_pop(&wq->tasks, 0, (void **)&call) == 0) {
 		mutex_release(&wq->lock);
 		sub_atomic(&wq->count, 1);
+		cpu_interrupt_set(old);
 		/* handle async_call */
 		async_call_execute(call);
 		async_call_destroy(call);
 		return 0;
 	}
 	mutex_release(&wq->lock);
+	cpu_interrupt_set(old);
 	return -1;
 }
 

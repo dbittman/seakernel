@@ -24,6 +24,13 @@ struct hash_collision_resolver {
 	int (*enumerate)(void **h, size_t size, uint64_t num, void **key, size_t *elem_sz, size_t *len, void **value);
 };
 
+struct hash_linear_entry {
+	void *key;
+	uint64_t __key;
+	size_t len;
+	size_t elem_sz;
+	void *data;
+};
 
 #define HASH_MAGIC 0xABCD1234
 
@@ -59,6 +66,7 @@ int hash_table_set_or_get_entry(struct hash_table *h, void *key, size_t key_elem
 int hash_table_delete_entry(struct hash_table *h, void *key, size_t key_element_size, size_t key_len);
 int hash_table_enumerate_entries(struct hash_table *h, uint64_t num, void **key, size_t *key_element_size, size_t *key_len, void **value);
 void hash_table_destroy(struct hash_table *h);
+void *hash_table_rehash(struct hash_table *h, void *new, size_t new_size);
 
 /* hash_chain */
 

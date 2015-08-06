@@ -344,7 +344,7 @@ int syscall_handler(registers_t *regs)
 
 #ifdef SC_DEBUG
 		if(current_process->tty == current_console->tty && SYSCALL_NUM_AND_RET != 0
-				&& (current_process->pid == 29 || 0))
+				&& (current_process->pid == 29 || 1))
 			printk(SC_DEBUG, "tty %d: syscall %d(%d) (from: %x): enter %d\n",
 					current_process->tty, current_thread->tid, current_process->pid,
 					current_thread->regs->eip, SYSCALL_NUM_AND_RET);
@@ -361,7 +361,7 @@ int syscall_handler(registers_t *regs)
 #endif
 #ifdef SC_DEBUG
 		if((current_process->tty == current_console->tty || 0)
-				&& (ret < 0 || 0) && (ret == -EINTR || 1))
+				&& (ret < 0 || 1) && (ret == -EINTR || 1))
 			printk(SC_DEBUG, "syscall pid %3d: #%3d ret %4d\n",
 			   		current_thread->tid, current_thread->system, ret < 0 ? -ret : ret);
 #endif

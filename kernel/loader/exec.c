@@ -22,13 +22,14 @@
  * the executable. We keep it open through here so that we dont have to 
  * re-open it. */
 void arch_loader_exec_initializer(unsigned argc, addr_t eip);
-
+#undef EXEC_LOG
+#define EXEC_LOG 0
 static void preexec(int desc)
 {
 	struct thread *t = current_thread;
 	/* unmap all mappings, specified by POSIX */
 	mm_destroy_all_mappings(t->process);
-	mm_free_self_directory();
+	mm_free_self_directory(0);
 	/* we need to re-create the vmem for memory mappings */
 	valloc_create(&(t->process->mmf_valloc), MMF_BEGIN, MMF_END, PAGE_SIZE, VALLOC_USERMAP);
 	for(addr_t a = MMF_BEGIN;a < (MMF_BEGIN + (size_t)t->process->mmf_valloc.nindex);a+=PAGE_SIZE)

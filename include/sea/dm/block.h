@@ -55,6 +55,7 @@ struct buffer {
 #define BUFFER_DIRTY 1
 #define BUFFER_DLIST 2
 #define BUFFER_WRITEPENDING 4
+#define BUFFER_LOCKED       8
 
 blockdevice_t *dm_set_block_device(int maj, int (*f)(int, int, u64, char*), int bs, 
 	int (*c)(int, int, long), int (*m)(int, int, u64, char *, int), int (*s)(int, int));

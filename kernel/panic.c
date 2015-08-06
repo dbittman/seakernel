@@ -24,7 +24,7 @@ static void __panic_print_extra_data(int flags, struct thread *t)
 	if(t) 
 		printk_safe(9,"current_task=%x:%d, sys=%d, flags=%x. Stack trace:\n", t, 
 				t->tid, t->system, t->flags);
-	cpu_print_stack_trace(64);
+	//cpu_print_stack_trace(64);
 #if 0
 	if(flags & PANIC_VERBOSE)
 	{
@@ -93,7 +93,7 @@ void panic(int flags, char *fmt, ...)
 	if(t && t->process->pid && !(flags & PANIC_NOSYNC) && !(flags & PANIC_INSTANT))
 	{
 		printk_safe(9,"[panic]: syncing...");
-		sys_sync();
+		//sys_sync(); TODO
 		printk_safe(9,"\n[panic]: Done\n");
 	} else
 		printk_safe(9,"[panic]: not syncing\n");

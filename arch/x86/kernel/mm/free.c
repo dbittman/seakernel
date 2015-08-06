@@ -16,10 +16,11 @@ __attribute__ ((noinline)) static void self_free_table(int t)
 	}
 }
 
-void arch_mm_free_self_directory(void)
+void arch_mm_free_self_directory(int exiting)
 {
 	unsigned int *pd = (unsigned *)current_process->vmm_context.root_virtual;
-	int D = PAGE_DIR_IDX(TOP_TASK_MEM_EXEC/PAGE_SIZE);
+	int D = exiting ? PAGE_DIR_IDX(TOP_TASK_MEM/PAGE_SIZE) 
+		: PAGE_DIR_IDX(TOP_TASK_MEM_EXEC/PAGE_SIZE);
 	int i=0;
 	for(i=id_tables;i<D;++i)
 	{

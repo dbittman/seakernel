@@ -111,6 +111,25 @@ void hash_table_specify_function(struct hash_table *h, unsigned fn)
 		rwlock_release(&h->lock, RWL_WRITER);
 }
 
+void *hash_table_rehash(struct hash_table *h, void *new, size_t new_size)
+{
+	uint64_t i = 0;
+	void *key, *value;
+	size_t elem_sz, len;
+	if(!(h->flags & HASH_NOLOCK))
+		rwlock_acquire(&h->lock, RWL_WRITER);
+	while(__hash_table_enumerate(h, h->entries, h->size, i++, &key, &elem_sz, &len, &value) != -ENOENT) {
+		__hash_table_set(h, new, new_size, key, elem_sz, len, value);
+		__hash_table_delete(h, h->entries, h->size, key, elem_sz, len);
+	}
+	void *old = h->entries;
+	h->entries = new;
+	h->size = new_size;
+	if(!(h->flags & HASH_NOLOCK))
+		rwlock_release(&h->lock, RWL_WRITER);
+	return old;
+}
+
 int hash_table_resize(struct hash_table *h, unsigned mode, size_t new_size)
 {
 	if(!h || h->magic != HASH_MAGIC) panic(0, "hash resize on invalid hash table");
@@ -119,15 +138,10 @@ int hash_table_resize(struct hash_table *h, unsigned mode, size_t new_size)
 	void **ne = kmalloc(h->resolver->entrysz * new_size);
 	if(!(h->flags & HASH_NOLOCK))
 		rwlock_acquire(&h->lock, RWL_WRITER);
+	void *old = h->entries;
 	if(h->entries) {
 		if(mode == HASH_RESIZE_MODE_REHASH) {
-			uint64_t i = 0;
-			void *key, *value;
-			size_t elem_sz, len;
-			while(__hash_table_enumerate(h, h->entries, h->size, i++, &key, &elem_sz, &len, &value) != -ENOENT) {
-				__hash_table_set(h, ne, new_size, key, elem_sz, len, value);
-				__hash_table_delete(h, h->entries, h->size, key, elem_sz, len);
-			}
+			hash_table_rehash(h, ne, new_size);
 		} else if(mode == HASH_RESIZE_MODE_DELETE) {
 			uint64_t i = 0;
 			void *key, *value;
@@ -137,7 +151,6 @@ int hash_table_resize(struct hash_table *h, unsigned mode, size_t new_size)
 			h->count=0;
 		} else if(mode != HASH_RESIZE_MODE_IGNORE)
 			panic(0, "hash resize got invalid mode %d", mode);
-		kfree(h->entries);
 	}
 
 	h->size = new_size;
@@ -145,6 +158,9 @@ int hash_table_resize(struct hash_table *h, unsigned mode, size_t new_size)
 
 	if(!(h->flags & HASH_NOLOCK))
 		rwlock_release(&h->lock, RWL_WRITER);
+
+	if(old)
+		kfree(old);
 
 	return old_size;
 }

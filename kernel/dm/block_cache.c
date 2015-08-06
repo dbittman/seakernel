@@ -4,24 +4,33 @@
 #include <sea/lib/queue.h>
 static struct queue lru;
 
+void dm_block_cache_reclaim(void);
+mutex_t reclaim_lock;
 void block_cache_init(void)
 {
 	queue_create(&lru, 0);
+	mm_reclaim_register(dm_block_cache_reclaim, sizeof(struct buffer) + 512);
+	mutex_create(&reclaim_lock, 0);
 }
 
 void dm_block_cache_reclaim(void)
 {
-	struct buffer *br = queue_dequeue(&lru);
+	return;
+	mutex_acquire(&reclaim_lock);
+	struct queue_item *item = queue_dequeue_item(&lru);
+	struct buffer *br = item->ent;
 	mutex_acquire(&br->bd->cachelock);
-	if(br->refs > 1 || (br->flags & BUFFER_DIRTY)) {
+	if((br->flags & BUFFER_DIRTY) || (br->flags & BUFFER_LOCKED)) {
 		mutex_release(&br->bd->cachelock);
 		queue_enqueue_item(&lru, &br->qi, br);
+		mutex_release(&reclaim_lock);
 		return;
 	}
 
 	hash_table_delete_entry(&br->bd->cache, &br->block, sizeof(br->block), 1);
 	mutex_release(&br->bd->cachelock);
 	buffer_put(br);
+	mutex_release(&reclaim_lock);
 }
 
 int dm_block_cache_insert(blockdevice_t *bd, uint64_t block, struct buffer *buf, int flags)
@@ -36,12 +45,12 @@ int dm_block_cache_insert(blockdevice_t *bd, uint64_t block, struct buffer *buf,
 		return -EEXIST;
 	}
 
+	buffer_inc_refcount(buf);
 	if(exist) {
 		hash_table_delete_entry(&bd->cache, &block, sizeof(block), 1);
 	}
 	hash_table_set_entry(&bd->cache, &block, sizeof(block), 1, buf);
 
-	buffer_inc_refcount(buf);
 	mutex_release(&bd->cachelock);
 	queue_enqueue_item(&lru, &buf->qi, buf);
 	if(exist) {

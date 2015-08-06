@@ -35,15 +35,26 @@ static void __valloc_set_bits(struct valloc *va, long start, long count)
 	}
 }
 
+static int __valloc_count_bits(struct valloc *va)
+{
+	int count = 0;
+	for(long idx = 0;idx < va->npages; idx++) {
+		if(TEST_BIT(va->start, idx))
+			++count;
+	}
+	return count;
+}
+
 static void __valloc_clear_bits(struct valloc *va, long start, long count)
 {
 	for(long idx = start;idx < (start + count); idx++) {
 		if(start >= va->nindex)
 			assert(TEST_BIT(va->start, idx));
 		CLEAR_BIT(va->start, idx);
+		assert(!TEST_BIT(va->start, idx));
 	}
 }
-
+#include <sea/tm/thread.h>
 /* performs a linear next-fit search */
 static long __valloc_get_start_index(struct valloc *va, long np)
 {
@@ -53,8 +64,12 @@ static long __valloc_get_start_index(struct valloc *va, long np)
 	if(idx >= va->npages)
 		idx=0;
 	long prev = idx;
+	/* if(current_thread->tid == 222 || current_thread->tid == 1177) */
+	/* printk(0, "SEARCH %d\n", np); */
 	do {
 		int res = TEST_BIT(va->start, idx);
+	/* if(current_thread->tid == 222 || current_thread->tid == 1177) */
+	/* 	printk(0, "-> %d %d %d %d\n", res, start, idx, count); */
 		if(start == -1 && res == 0) {
 			/* we aren't checking a region for length, 
 			 * and we found an empty bit. Start checking
@@ -69,8 +84,10 @@ static long __valloc_get_start_index(struct valloc *va, long np)
 			 * we reset start to start looking for a new region */
 			if(res == 0)
 				count++;
-			else
+			else {
 				start = -1;
+				count = 0;
+			}
 			/* if this region is long enough, break out */
 			if(count == np)
 				break;
@@ -157,6 +174,7 @@ struct valloc_region *valloc_allocate(struct valloc *va, struct valloc_region *r
 	/* find and set the region */
 	long index = __valloc_get_start_index(va, np);
 	__valloc_set_bits(va, index, np);
+	assert(index < va->npages);
 	mutex_release(&va->lock);
 	if(index == -1)
 		return 0;
@@ -171,10 +189,19 @@ struct valloc_region *valloc_allocate(struct valloc *va, struct valloc_region *r
 	return reg;
 }
 
+int valloc_count_used(struct valloc *va)
+{
+	mutex_acquire(&va->lock);
+	int ret = __valloc_count_bits(va);
+	mutex_release(&va->lock);
+	return ret;
+}
+
 void valloc_deallocate(struct valloc *va, struct valloc_region *reg)
 {
 	mutex_acquire(&va->lock);
 	int start_index = (reg->start - va->start) / va->psize;
+	assert(start_index+reg->npages <= va->npages && start_index >= va->nindex);
 	__valloc_clear_bits(va, start_index, reg->npages);
 	mutex_release(&va->lock);
 	if(reg->flags & VALLOC_ALLOC)

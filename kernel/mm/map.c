@@ -52,7 +52,7 @@ static int acquire_virtual_location(struct valloc_region *vr, addr_t *virt, int 
 
 static void release_virtual_location(struct valloc_region *vr)
 {
-	if(!vr)
+	if(!vr || !vr->start)
 		return;
 	valloc_deallocate(&(current_process->mmf_valloc), vr);
 }

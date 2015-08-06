@@ -29,7 +29,11 @@ int mutex_is_locked(mutex_t *m)
 
 void __mutex_acquire(mutex_t *m, char *file, int line)
 {
+	if(m->magic != MUTEX_MAGIC) {
+		panic(PANIC_NOSYNC, "invalid mutex %x (%x): %s:%d", m, m->magic, file, line);
+	}
 	assert(m->magic == MUTEX_MAGIC);
+
 	if(kernel_state_flags & KSF_DEBUGGING)
 		return;
 	if(current_thread && current_thread->interrupt_level && !(m->flags & MT_NOSCHED))

@@ -22,6 +22,7 @@ int block_elevator_main(struct kthread *kt, void *arg)
 					if(ret == dev->blksz * this) {
 						for(int i=0;i<this;i++) {
 							struct buffer *buffer = buffer_create(dev, req->dev, block + i, 0, buf + i * dev->blksz);
+							or_atomic(&buffer->flags, BUFFER_LOCKED);
 							dm_block_cache_insert(dev, block + i, buffer, 0);
 							buffer_put(buffer);
 						}
@@ -58,7 +59,12 @@ int block_elevator_main(struct kthread *kt, void *arg)
 			tm_blocklist_wakeall(&req->blocklist);
 			ioreq_put(req);
 		} else {
-			tm_thread_set_state(current_thread, THREADSTATE_INTERRUPTIBLE);
+			if(dev->cache.size && (dev->cache.count * 100) / dev->cache.size > 300) {
+				dm_block_cache_reclaim();
+				tm_schedule();
+			} else {
+				tm_thread_set_state(current_thread, THREADSTATE_INTERRUPTIBLE);
+			}
 		}
 	}
 	return 0;

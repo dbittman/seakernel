@@ -80,6 +80,7 @@ static void tm_thread_destroy(unsigned long data)
 		return;
 	}
 	tm_thread_release_kernelmode_stack(thr->kernel_stack);
+	tm_process_put(thr->process); /* thread releases it's process pointer */
 	tm_thread_put(thr);
 }
 
@@ -88,7 +89,7 @@ void tm_process_wait_cleanup(struct process *proc)
 	assert(proc != current_process);
 	/* prevent this process from being "cleaned up" multiple times */
 	if(!(ff_or_atomic(&proc->flags, PROCESS_CLEANED) & PROCESS_CLEANED)) {
-		mm_destroy_directory(&proc->vmm_context);
+		assert(proc->thread_count == 0);
 		ll_do_remove(process_list, &proc->listnode, 0);
 		if(proc->parent)
 			tm_process_put(proc->parent);
@@ -121,7 +122,7 @@ __attribute__((noinline)) static void tm_process_exit(int code)
 	ll_destroy(&(current_process->mappings));
 	mutex_destroy(&current_process->map_lock);
 	valloc_destroy(&current_process->mmf_valloc);
-	mm_free_self_directory();
+	mm_free_self_directory(1);
 	/* TODO: free everything else? */
 
 	/* this is done before SIGCHILD is sent out */
@@ -162,7 +163,6 @@ void tm_thread_do_exit(void)
 	}
 
 	ll_do_remove(&current_process->threadlist, &current_thread->pnode, 0);
-	tm_process_put(current_process); /* thread releases it's process pointer */
 
 	sub_atomic(&running_threads, 1);
 	if(sub_atomic(&current_process->thread_count, 1) == 0) {

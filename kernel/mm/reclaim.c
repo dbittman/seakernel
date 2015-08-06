@@ -29,8 +29,8 @@ size_t mm_reclaim_size(size_t size)
 			size_t freed = rec->fn();
 			amount += freed;
 			thisround += freed;
-			if(amount > size)
-				break;
+			//if(amount > size)
+			//	break;
 		}
 		rwlock_release(&reclaimers.rwl, RWL_READER);
 	}
@@ -44,8 +44,8 @@ void mm_reclaim(void)
 	rwlock_acquire(&reclaimers.rwl, RWL_READER);
 	ll_for_each_entry(&reclaimers, node, struct reclaimer *, rec) {
 		size_t amount = rec->fn();
-		if(amount > 0)
-			break;
+		//if(amount > 0)
+		//	break;
 	}
 	rwlock_release(&reclaimers.rwl, RWL_READER);
 }

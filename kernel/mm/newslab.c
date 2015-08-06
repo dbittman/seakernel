@@ -6,7 +6,9 @@
 #include <sea/errno.h>
 #include <sea/kernel.h>
 #include <sea/mm/vmm.h>
+#include <sea/mm/kmalloc.h>
 #include <sea/cpu/atomic.h>
+#include <sea/fs/kerfs.h>
 struct slab {
 	struct cache *cache;
 	struct llistnode node;
@@ -17,34 +19,61 @@ struct slab {
 
 struct cache {
 	struct llist empty, partial, full;
+	size_t slabcount;
 	size_t object_size;
 	mutex_t lock;
 };
 
-#define SLAB_SIZE 0x20000
+#define SLAB_SIZE 0x40000
 #define SLAB_MAGIC 0xADA5A54B
 struct cache cache_cache;
 mutex_t cache_lock;
-struct hash_table cache_hash, address_hash;
+struct hash_table cache_hash;
 struct valloc slabs_reg;
+
+int full_slabs_count=0, partial_slabs_count=0, empty_slabs_count=0;
+
+int slab_get_usage(void)
+{
+	return (full_slabs_count * 100 + partial_slabs_count * 50) / slabs_reg.npages;
+}
+
+int kerfs_kmalloc_report(size_t offset, size_t length, char *buf)
+{
+	size_t current = 0;
+	KERFS_PRINTF(offset, length, buf, current,
+			"Region Usage: %d / %d, Slab Usage: %d %d %d, cache hash load: %d%%\n",
+			valloc_count_used(&slabs_reg), slabs_reg.npages,
+			full_slabs_count, partial_slabs_count, empty_slabs_count,
+			(cache_hash.count * 100) / cache_hash.size);
+	void *ent;
+	uint64_t n=0;
+	while(hash_table_enumerate_entries(&cache_hash, n++, 0, 0, 0, &ent) != -ENOENT) {
+		struct cache *cache = ent;
+		KERFS_PRINTF(offset, length, buf, current,
+				"cache %d: size=%d, slabcount=%d\n", (int)n, cache->object_size, cache->slabcount);
+	}
+	return current;
+}
 
 static struct slab *allocate_new_slab(struct cache *cache)
 {
 	struct valloc_region reg;
-	valloc_allocate(&slabs_reg, &reg, 1);
-	for(addr_t a = reg.start; a < reg.start + SLAB_SIZE; a += PAGE_SIZE) {
-		map_if_not_mapped(a);
+	if(valloc_allocate(&slabs_reg, &reg, 1) == 0) {
+		panic(PANIC_NOSYNC, "could not allocate new slab");
 	}
+	map_if_not_mapped(reg.start);
+	map_if_not_mapped(reg.start + PAGE_SIZE);
+	memset((void *)reg.start, 0, PAGE_SIZE * 2);
 	struct slab *slab = (void *)reg.start;
 	size_t slab_header_size = sizeof(struct slab);
-	/* HACK ... */
-	if(cache->object_size == PAGE_SIZE)
-		slab_header_size = PAGE_SIZE;
-	valloc_create(&slab->allocator, reg.start + slab_header_size, reg.start + reg.npages * SLAB_SIZE, cache->object_size, 0);
+	valloc_create(&slab->allocator, reg.start + slab_header_size,
+			reg.start + reg.npages * SLAB_SIZE, cache->object_size, 0);
 	slab->count = 0;
 	slab->magic = SLAB_MAGIC;
-	slab->max = (slab->allocator.npages - slab->allocator.nindex) - 1;
+	slab->max = (slab->allocator.npages - slab->allocator.nindex);
 	slab->cache = cache;
+	cache->slabcount++;
 	assert(slab->max > 2);
 
 	return slab;
@@ -68,25 +97,25 @@ static void free_object(void *object)
 	valloc_deallocate(&slab->allocator, &reg);
 	
 	mutex_acquire(&cache->lock);
-	if(slab->count == slab->max) {
-		printk(0, "moving %x from full to partial\n", slab);
+	int count = sub_atomic(&slab->count, 1);
+	if(count == slab->max - 1) {
+		sub_atomic(&full_slabs_count, 1);
+		add_atomic(&partial_slabs_count, 1);
 		ll_do_remove(&cache->full, &slab->node, 0);
 		ll_do_insert(&cache->partial, &slab->node, slab);
-	} else if(slab->count == 1) {
-		printk(0, "moving %x from partial to empty\n", slab);
+	} else if(count == 0) {
+		sub_atomic(&partial_slabs_count, 1);
+		add_atomic(&empty_slabs_count, 1);
 		ll_do_remove(&cache->partial, &slab->node, 0);
 		ll_do_insert(&cache->empty, &slab->node, slab);
 	}
-	sub_atomic(&slab->count, 1);
 	mutex_release(&cache->lock);
 }
 
 static void *allocate_object(struct slab *slab)
 {
 	struct valloc_region reg;
-	/* printk(0, "alloc from %x: %d / %d\n", slab, slab->count, slab->max); */
 	assert(valloc_allocate(&slab->allocator, &reg, 1));
-	//printk(0, ":: %x %d\n", reg.start, reg.npages);
 	return (void *)(reg.start);
 }
 
@@ -97,18 +126,20 @@ static void *allocate_object_from_cache(struct cache *cache)
 	if(cache->partial.num > 0) {
 		slab = ll_entry(struct slab *, cache->partial.head);
 		if(slab->count == slab->max-1) {
-		printk(0, "moving %x from partial to full\n", slab);
+			sub_atomic(&partial_slabs_count, 1);
+			add_atomic(&full_slabs_count, 1);
 			ll_do_remove(&cache->partial, &slab->node, 0);
 			ll_do_insert(&cache->full, &slab->node, slab);
 		}
 	} else if(cache->empty.num > 0) {
+		sub_atomic(&empty_slabs_count, 1);
+		add_atomic(&partial_slabs_count, 1);
 		slab = ll_entry(struct slab *, cache->empty.head);
-		printk(0, "moving %x from empty to partial\n", slab);
 		ll_do_remove(&cache->empty, &slab->node, 0);
 		ll_do_insert(&cache->partial, &slab->node, slab);
 	} else {
-		//printk(0, "gotta make new slab\n");
 		slab = allocate_new_slab(cache);
+		add_atomic(&partial_slabs_count, 1);
 		ll_do_insert(&cache->partial, &slab->node, slab);
 	}
 	assert(slab->magic = SLAB_MAGIC);
@@ -124,6 +155,7 @@ static void construct_cache(struct cache *cache, size_t sz)
 	ll_create_lockless(&cache->full);
 	mutex_create(&cache->lock, MT_NOSCHED);
 	cache->object_size = sz;
+	cache->slabcount=0;
 }
 
 static struct cache *select_cache(size_t size)
@@ -131,75 +163,87 @@ static struct cache *select_cache(size_t size)
 	mutex_acquire(&cache_lock);
 	struct cache *cache;
 	if(hash_table_get_entry(&cache_hash, &size, sizeof(size), 1, (void **)&cache) == -ENOENT) {
-		printk(0, "creating new cache for %d\n", size);
 		size_t cachesize = ((sizeof(struct cache) - 1) & ~63) + 64;
 		assert(hash_table_get_entry(&cache_hash, &cachesize, sizeof(cachesize), 1, (void **)&cache) == 0);
 		cache = allocate_object_from_cache(cache);
 		construct_cache(cache, size);
-		hash_table_set_entry(&cache_hash, &size, sizeof(size), 1, cache);
+		hash_table_set_entry(&cache_hash, &cache->object_size, sizeof(cache->object_size), 1, cache);
 	}
 	mutex_release(&cache_lock);
 	return cache;
 }
 
-#define NUM_ENTRIES 128
-static void *__entries[NUM_ENTRIES];
-
+#define NUM_ENTRIES 256
+static struct hash_linear_entry __entries[NUM_ENTRIES];
+mutex_t tmplock;
 void slab_init(addr_t start, addr_t end)
 {
+	for(addr_t a = start; a < end;a+= PAGE_SIZE)
+		map_if_not_mapped(a);
 	/* init the hash table */
 	hash_table_create(&cache_hash, HASH_NOLOCK, HASH_TYPE_LINEAR);
 	hash_table_specify_function(&cache_hash, HASH_FUNCTION_DEFAULT);
-	cache_hash.entries = __entries;
+	memset(__entries, 0, sizeof(__entries));
+	cache_hash.entries = (void **)__entries;
 	cache_hash.size = NUM_ENTRIES;
 
 	/* init the cache_cache */
-	construct_cache(&cache_cache, sizeof(struct cache));
 	size_t cachesize = ((sizeof(struct cache) - 1) & ~63) + 64;
-	hash_table_set_entry(&cache_hash, &cachesize, sizeof(cachesize), 1, &cache_cache);
+	construct_cache(&cache_cache, cachesize);
+	hash_table_set_entry(&cache_hash, &cache_cache.object_size, sizeof(cache_cache.object_size), 1, &cache_cache);
 	mutex_create(&cache_lock, MT_NOSCHED);
+	mutex_create(&tmplock, MT_NOSCHED);
 
 	/* init the region */
 	valloc_create(&slabs_reg, start, end, SLAB_SIZE, 0);
-
-#warning "make this linear probing"
-	hash_table_create(&address_hash, 0, HASH_TYPE_CHAIN);
-	hash_table_specify_function(&address_hash, HASH_FUNCTION_DEFAULT);
-	hash_table_resize(&address_hash, HASH_RESIZE_MODE_IGNORE, 1000);
 }
 
-void *slab_kmalloc(size_t size)
+void *slab_kmalloc(size_t __size)
 {
-	size = ((size-1) & ~(63)) + 64;
+	assert(__size);
+	size_t size = (((__size + sizeof(uint32_t)*2 + sizeof(size_t))-1) & ~(63)) + 64;
+	if(size >= 0x1000) {
+		size = ((__size - 1) & ~(0x1000 - 1)) + 0x1000;
+	}
+	assert(size >= __size);
 	void *obj;
-	if(size < SLAB_SIZE / 5) {
+	mutex_acquire(&tmplock);
+	if(size <= SLAB_SIZE / 4) {
 		struct cache *cache = select_cache(size);
 		obj = allocate_object_from_cache(cache);
 	} else {
-		struct valloc_region reg;
-		valloc_allocate(&slabs_reg, &reg, ((size-1) / SLAB_SIZE) + 1);
-		for(addr_t a = reg.start; a < reg.start + reg.npages * SLAB_SIZE; a+=PAGE_SIZE)
-			map_if_not_mapped(a);
-
-		hash_table_set_entry(&address_hash, &reg.start, sizeof(addr_t), 1,
-				(void *)(reg.start + reg.npages * SLAB_SIZE));
-		obj = (void *)reg.start;
+		panic(PANIC_NOSYNC, "cannot allocate things that big (%d)!", size);
 	}
+	mutex_release(&tmplock);
+	for(addr_t a = (addr_t)(obj) & PAGE_MASK;a < (addr_t)obj + size + PAGE_SIZE;a+=PAGE_SIZE)
+		map_if_not_mapped_noclear(a);
+	uint32_t *canary = (uint32_t *)(obj);
+	uint32_t *canary2 = (uint32_t *)((addr_t)obj + __size + sizeof(uint32_t) + sizeof(size_t));
+	size_t *sz = (size_t *)((addr_t)obj + sizeof(*canary));
+	*sz = __size;
+	obj = (void *)((addr_t)obj + sizeof(*canary) + sizeof(size_t));
+	assert(*canary != 0x5a5a6b6b);
+	assert(*canary2 != 0x5a5a7c7c);
+	*canary = 0x5a5a6b6b;
+	*canary2 = 0x5a5a7c7c;
 	return obj;
 }
 
 void slab_kfree(void *data)
 {
 	void *ent;
-	if(hash_table_get_entry(&address_hash, &data, sizeof(addr_t), 1, &ent) == 0) {
-		struct valloc_region reg;
-		reg.start = (addr_t)data;
-		reg.npages = ((addr_t)ent - reg.start) / SLAB_SIZE;
-		reg.flags = 0;
-		valloc_deallocate(&slabs_reg, &reg);
-		hash_table_delete_entry(&address_hash, &data, sizeof(addr_t), 1);
-	} else {
-		free_object(data);
-	}
+	data = (void *)((addr_t)data - (sizeof(uint32_t) + sizeof(size_t)) );
+	uint32_t *canary = data;
+	size_t sz = *(size_t *)((addr_t)data + sizeof(*canary));
+	uint32_t *canary2 = (uint32_t *)((addr_t)data + sizeof(uint32_t) + sz + sizeof(size_t));
+	
+	assert(*canary2 == 0x5a5a7c7c);
+	assert(*canary == 0x5a5a6b6b);
+	memset(data, 0x4A, sz + sizeof(uint32_t) + sizeof(size_t));
+	*canary = 0;
+	*canary2 = 0;
+	mutex_acquire(&tmplock);
+	free_object(data);
+	mutex_release(&tmplock);
 }
 

@@ -28,12 +28,12 @@ int arch_mm_vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned opt)
 	if(!(opt & MAP_NOCLEAR))
 		memset((void *)(virt&PAGE_MASK), 0, 0x1000);
 #if CONFIG_SMP
-	if(pd_cur_data) {
-		if(IS_KERN_MEM(virt))
+	//if(pd_cur_data) {
+	//	if(IS_KERN_MEM(virt))
 			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
-		else if((IS_THREAD_SHARED_MEM(virt)))
-			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
-	}
+	//	else if((IS_THREAD_SHARED_MEM(virt)))
+			//x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
+	//}
 #endif
 	if(pd_cur_data && !(opt & MAP_PDLOCKED))
 		mutex_release(&pd_cur_data->lock);

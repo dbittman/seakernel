@@ -4,21 +4,14 @@
 #include <sea/errno.h>
 #include <sea/mm/kmalloc.h>
 
-struct entry {
-	void *key;
-	uint64_t __key;
-	size_t len;
-	size_t elem_sz;
-	void *data;
-};
-
 int hash_linear_get(void **h, int (*fn)(int, void *, size_t, size_t, int), size_t size, void *key, size_t elem_sz, size_t len, void **value)
 {
 	assert(fn);
 	size_t loc = fn(size, key, elem_sz, len, 0);
 	size_t start = loc;
-	struct entry *entry;
-	while((entry = &((struct entry *)h)[loc]) && __hash_table_compare_keys(entry->key, entry->elem_sz, entry->len, key, elem_sz, len)) {
+	struct hash_linear_entry *entry;
+	struct hash_linear_entry *entries = (struct hash_linear_entry *)h;
+	while((entry = &entries[loc]) && entry->data && __hash_table_compare_keys(entry->key, entry->elem_sz, entry->len, key, elem_sz, len)) {
 		loc++;
 		if(loc >= size)
 			loc = 0;
@@ -26,6 +19,8 @@ int hash_linear_get(void **h, int (*fn)(int, void *, size_t, size_t, int), size_
 			return -ENOENT;
 		}
 	}
+	if(!entry->data)
+		return -ENOENT;
 	if(value)
 		*value = entry->data;
 	return 0;
@@ -33,7 +28,7 @@ int hash_linear_get(void **h, int (*fn)(int, void *, size_t, size_t, int), size_
 
 int hash_linear_set_or_get(void **h, int (*fn)(int, void *, size_t, size_t, int), size_t size, void *key, size_t elem_sz, size_t len, void *value, void **result)
 {
-		panic(0, "not implemented");
+	panic(0, "not implemented");
 }
 
 int hash_linear_set(void **h, int (*fn)(int, void *, size_t, size_t, int), size_t size, void *key, size_t elem_sz, size_t len, void *value)
@@ -42,42 +37,74 @@ int hash_linear_set(void **h, int (*fn)(int, void *, size_t, size_t, int), size_
 	size_t loc = fn(size, key, elem_sz, len, 0);
 	size_t start = loc;
 
-	struct entry *entry;
-	while((entry = &((struct entry *)h)[loc]) && entry->data) {
+	struct hash_linear_entry *entry;
+	struct hash_linear_entry *entries = (struct hash_linear_entry *)h;
+	while((entry = &entries[loc]) && entry->data) {
 		if(!__hash_table_compare_keys(entry->key, entry->elem_sz, entry->len, key, elem_sz, len))
 			return -EEXIST;
 		loc++;
 		if(loc == size)
 			loc = 0;
 		if(loc == start)
-			panic(0, "hash table full");
+			panic(PANIC_NOSYNC, "hash table full");
 	}
-	
-	if(elem_sz <= sizeof(entry->__key) && len == 1) {
-		entry->__key = *(size_t *)key;
-		entry->key = &entry->__key;
-		entry->elem_sz = elem_sz;
-		entry->len = len;
-		entry->data = value;
-	} else {
-		panic(0, "not implemented");
-	}
+	assert(!entry->data && !entry->key);
+	entry->key = key;
+	entry->elem_sz = elem_sz;
+	entry->len = len;
+	entry->data = value;
 	return 0;
 }
 
 int hash_linear_del(void **h, int (*fn)(int, void *, size_t, size_t, int), size_t size, void *key, size_t elem_sz, size_t len)
 {
-		panic(0, "not implemented");
+	size_t loc = fn(size, key, elem_sz, len, 0);
+	size_t start = loc;
+	struct hash_linear_entry *entry;
+	struct hash_linear_entry *entries = (struct hash_linear_entry *)h;
+	while((entry = &entries[loc]) && __hash_table_compare_keys(entry->key, entry->elem_sz, entry->len, key, elem_sz, len)) {
+		loc++;
+		if(loc >= size)
+			loc = 0;
+		if(loc == start || !entry->data) {
+			return -ENOENT;
+		}
+	}
+	entry->data = entry->key = 0;
+	return 0;
 }
 
 int hash_linear_enumerate(void **h, size_t size, uint64_t num, void **key, size_t *elem_sz, size_t *len, void **value)
 {
-		panic(0, "not implemented");
+	size_t loc = 0;
+	struct hash_linear_entry *entry;
+	struct hash_linear_entry *entries = (struct hash_linear_entry *)h;
+	while((entry = &entries[loc])) {
+		if(entry->data) {
+			if(!num--)
+				break;
+		}
+		loc++;
+		if(loc >= size) {
+			return -ENOENT;
+		}
+	}
+
+	if(key)
+		*key = entry->key;
+	if(elem_sz)
+		*elem_sz = entry->elem_sz;
+	if(len)
+		*len = entry->len;
+	if(value)
+		*value = entry->data;
+
+	return 0;
 }
 
 struct hash_collision_resolver __hash_linear_resolver = {
 	"linear-probe",
-	sizeof(struct entry),
+	sizeof(struct hash_linear_entry),
 	hash_linear_get,
 	hash_linear_set,
 	hash_linear_set_or_get,

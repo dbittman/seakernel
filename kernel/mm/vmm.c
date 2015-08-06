@@ -3,7 +3,7 @@
 
 void arch_mm_vm_clone(struct vmm_context *old, struct vmm_context *new);
 void arch_mm_destroy_directory(struct vmm_context *dir);
-void arch_mm_free_self_directory(void);
+void arch_mm_free_self_directory(int);
 void arch_mm_vm_init(addr_t id_map_to);
 void arch_mm_vm_init_2();
 void arch_mm_vm_switch_context(struct vmm_context *context);
@@ -25,9 +25,9 @@ void mm_destroy_directory(struct vmm_context *dir)
 	arch_mm_destroy_directory(dir);
 }
 
-void mm_free_self_directory(void)
+void mm_free_self_directory(int e)
 {
-	arch_mm_free_self_directory();
+	arch_mm_free_self_directory(e);
 }
 
 void mm_vm_init(addr_t id_map_to)

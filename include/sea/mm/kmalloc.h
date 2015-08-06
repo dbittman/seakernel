@@ -10,6 +10,9 @@ void *__kmalloc_ap(size_t s, addr_t *, char *, int);
 void *__kmalloc_p(size_t s, addr_t *, char *, int);
 
 void kmalloc_init(void);
+void slab_kfree(void *data);
+void *slab_kmalloc(size_t size);
+void slab_init(addr_t start, addr_t end);
 
 #define kmalloc(a) __kmalloc(a, __FILE__, __LINE__)
 #define kmalloc_a(a) __kmalloc_a(a, __FILE__, __LINE__)

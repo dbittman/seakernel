@@ -73,6 +73,14 @@ static addr_t vm_init_directory(addr_t id_map_to)
 		pt = (unsigned int *)(pd[i] & PAGE_MASK);
 		memset(pt, 0, 0x1000);
 	}
+	/* premap the virtpage tables */
+	unsigned pages_pd_idx = PAGE_DIR_IDX(VIRTPAGES_START / 0x1000);
+	for(i=pages_pd_idx;i<(int)PAGE_DIR_IDX(VIRTPAGES_END / 0x1000);i++)
+	{
+		pd[i] = mm_alloc_physical_page() | PAGE_PRESENT | PAGE_WRITE;
+		pt = (unsigned int *)(pd[i] & PAGE_MASK);
+		memset(pt, 0, 0x1000);
+	}
 	/* Pre-map the PMM's tables */
 	unsigned pm_pd_idx = PAGE_DIR_IDX(PM_STACK_ADDR / 0x1000);
 	for(i=pm_pd_idx;i<(int)PAGE_DIR_IDX(PM_STACK_ADDR_TOP / 0x1000);i++)
@@ -127,7 +135,6 @@ void arch_mm_vm_switch_context(struct vmm_context *context)
 {
 	assert(context->magic == CONTEXT_MAGIC);
 	assert(arch_mm_vm_get_map(context->root_virtual, 0, 1));
- 	assert(context && context->root_virtual && ((addr_t *)context->root_virtual)[0] && context->root_physical);
  	__asm__ __volatile__ ("mov %0, %%cr3" :: "r" (context->root_physical):"memory");
 }
 /* This relocates the stack to a safe place which is copied 
@@ -141,6 +148,7 @@ void arch_mm_vm_init_2(void)
 addr_t arch_mm_vm_get_map(addr_t v, addr_t *p, unsigned locked)
 {
 	unsigned *pd = page_directory;
+	assert(!pd_cur_data || pd_cur_data->magic == CONTEXT_MAGIC);
 	unsigned int vp = (v&PAGE_MASK) / 0x1000;
 	unsigned int pt_idx = PAGE_DIR_IDX(vp);
 	if(pd_cur_data && !locked)
@@ -178,9 +186,10 @@ void arch_mm_vm_set_attrib(addr_t v, short attr)
 	__asm__ __volatile__ ("invlpg (%0)"::"r" (v));
 #if CONFIG_SMP
 	if(pd_cur_data) {
-		if(IS_KERN_MEM(v))
-			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
-		else if((IS_THREAD_SHARED_MEM(v))) /* TODO: we don't need to lock when there's only one thread...
+		//if(IS_KERN_MEM(v))
+		//	x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
+		//else if((IS_THREAD_SHARED_MEM(v)))
+			/* TODO: we don't need to lock when there's only one thread...
 											  actually, we should figure out locking rules for threads shared
 											  address space... we need to redesign all these function anyway */
 			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);

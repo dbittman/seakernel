@@ -15,6 +15,7 @@ void block_cache_init(void)
 
 void dm_block_cache_reclaim(void)
 {
+	/* TODO */
 	return;
 	mutex_acquire(&reclaim_lock);
 	struct queue_item *item = queue_dequeue_item(&lru);

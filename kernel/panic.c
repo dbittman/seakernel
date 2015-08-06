@@ -24,7 +24,7 @@ static void __panic_print_extra_data(int flags, struct thread *t)
 	if(t) 
 		printk_safe(9,"current_task=%x:%d, sys=%d, flags=%x. Stack trace:\n", t, 
 				t->tid, t->system, t->flags);
-	//cpu_print_stack_trace(64);
+	cpu_print_stack_trace(64);
 #if 0
 	if(flags & PANIC_VERBOSE)
 	{

@@ -70,10 +70,9 @@ static void post_schedule(struct thread *prev)
 			tm_thread_raise_flag(prev, THREAD_DEAD);
 		}
 	}
-	return;
 	struct workqueue *wq = &__current_cpu->work;
 	if(wq->count > 0) {
-		if(wq->count > 10) {
+		if(wq->count > 30) {
 			printk(0, "[sched]: warning - work is piling up (%d tasks)!\n", wq->count);
 		}
 		workqueue_dowork(&__current_cpu->work);
@@ -114,7 +113,6 @@ void tm_schedule(void)
 		}
 		cpu_set_kernel_stack(next->cpu, (addr_t)next->kernel_stack,
 				(addr_t)next->kernel_stack + (KERN_STACK_SIZE));
-		assert(next->process->refs > 0);
 		if(next->process != current_thread->process) {
 			mm_vm_switch_context(&next->process->vmm_context);
 		}

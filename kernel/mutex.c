@@ -29,9 +29,6 @@ int mutex_is_locked(mutex_t *m)
 
 void __mutex_acquire(mutex_t *m, char *file, int line)
 {
-	if(m->magic != MUTEX_MAGIC) {
-		panic(PANIC_NOSYNC, "invalid mutex %x (%x): %s:%d", m, m->magic, file, line);
-	}
 	assert(m->magic == MUTEX_MAGIC);
 
 	if(kernel_state_flags & KSF_DEBUGGING)
@@ -43,7 +40,7 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 	if(current_thread && m->lock && ((m->pid == (pid_t)current_thread->tid)))
 		panic(0, "task %d tried to relock mutex %x (%s:%d)", m->pid, m->lock, file, line);
 	/* wait until we can set bit 0. once this is done, we have the lock */
-	int timeout = 100000000;
+	int timeout = 800000000;
 	cpu_disable_preemption();
 	while(bts_atomic(&m->lock, 0)) {
 		if(!(m->flags & MT_NOSCHED)) {

@@ -73,7 +73,6 @@ void mm_page_fault_handler(registers_t *regs, addr_t address, int pf_cause)
 		tm_signal_send_thread(current_thread, SIGSEGV);
 		return;
 	} else {
-		/* WARNING: TODO: this might not be safe */
 		if(pd_cur_data && !IS_KERN_MEM(address)) {
 			if(mm_page_fault_test_mappings(address, pf_cause) == 0)
 				return;

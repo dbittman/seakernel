@@ -2,6 +2,7 @@
 #define __SEA_FS_KERFS
 
 #include <sea/fs/inode.h>
+#include <sea/vsprintf.h>
 
 #define KERFS_TYPE_INTEGER 1
 #define KERFS_TYPE_ADDRESS 2

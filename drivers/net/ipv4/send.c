@@ -77,12 +77,12 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 	union ipv4_address packet_destination;
 	union ipv4_address dest = (union ipv4_address)packet->header->dest_ip;
 	
-	if(packet->tries > 0 && (tm_get_ticks() <= packet->last_attempt_time)) {
+	if(packet->tries > 0 && (tm_timing_get_microseconds() <= packet->last_attempt_time)) {
 		ipv4_do_enqueue_packet(packet);
 		return 0;
 	}
 	packet->tries++;
-	packet->last_attempt_time = tm_get_ticks();
+	packet->last_attempt_time = tm_timing_get_microseconds();
 
 	struct route *r = net_route_select_entry(dest.address);
 	uint8_t hwaddr[6];
@@ -114,7 +114,7 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 		nl_flags = NLAYER_FLAG_HW_BROADCAST;
 	if(ipv4_resolve_hwaddr(nd, ETHERTYPE_IPV4, packet_destination.addr_bytes, hwaddr, nl_flags) == -ENOENT) {
 		if(packet->tries > 5)
-			packet->last_attempt_time = tm_get_ticks() + 20;
+			packet->last_attempt_time = tm_timing_get_microseconds() + 20 * ONE_MILLISECOND;
 		ipv4_do_enqueue_packet(packet);
 		return 0;
 	}
@@ -177,7 +177,7 @@ int ipv4_enqueue_packet(struct net_packet *netpacket, struct ipv4_header *header
 		return -ENETUNREACH;
 	}
 	struct ipv4_packet *packet = kmalloc(sizeof(struct ipv4_packet));
-	packet->enqueue_time = tm_get_ticks();
+	packet->enqueue_time = tm_timing_get_microseconds();
 	packet->header = header;
 	net_packet_get(netpacket);
 	packet->netpacket = netpacket;
@@ -196,7 +196,7 @@ int ipv4_copy_enqueue_packet(struct net_packet *netpacket, struct ipv4_header *h
 	}
 	memcpy(netpacket->data + r->interface->data_header_len, header, BIG_TO_HOST16(header->length));
 	struct ipv4_packet *packet = kmalloc(sizeof(struct ipv4_packet));
-	packet->enqueue_time = tm_get_ticks();
+	packet->enqueue_time = tm_timing_get_microseconds();
 	packet->header = (void *)(netpacket->data + r->interface->data_header_len);
 	net_packet_get(netpacket);
 	packet->netpacket = netpacket;
@@ -231,7 +231,7 @@ int ipv4_enqueue_sockaddr(void *payload, size_t len, struct sockaddr *addr, stru
 
 	memcpy(header->data, payload, len);
 	struct ipv4_packet *packet = kmalloc(sizeof(struct ipv4_packet));
-	packet->enqueue_time = tm_get_ticks();
+	packet->enqueue_time = tm_timing_get_microseconds();
 	packet->header = header;
 	packet->netpacket = np;
 	TRACE(0, "[ipv4]: enqueue packet to %x\n", header->dest_ip);
@@ -247,7 +247,7 @@ int ipv4_sending_thread(struct kthread *kt, void *arg)
 			struct ipv4_packet *packet = queue_dequeue(ipv4_tx_queue);
 			if(packet) {
 				/* got packet entry! */
-				if(tm_get_ticks() > packet->enqueue_time + TICKS_SECONDS(10)) {
+				if(tm_timing_get_microseconds() > packet->enqueue_time + ONE_SECOND * (10)) {
 					/* timeout! */
 					TRACE(0, "[kipv4-send]: packet timed out\n");
 					net_packet_put(packet->netpacket, 0);
@@ -262,9 +262,9 @@ int ipv4_sending_thread(struct kthread *kt, void *arg)
 					}
 				}
 			}
-			ipv4_thread_lastwork = tm_get_ticks();
+			ipv4_thread_lastwork = tm_timing_get_microseconds();
 		}
-		if(tm_get_ticks() > ipv4_thread_lastwork + TICKS_SECONDS(5))
+		if(tm_timing_get_microseconds() > ipv4_thread_lastwork + ONE_SECOND * (5))
 			tm_thread_pause(current_thread);
 		else if(!queue_count(ipv4_tx_queue))
 			tm_schedule();

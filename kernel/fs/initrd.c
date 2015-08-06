@@ -56,7 +56,7 @@ void fs_initrd_parse(void)
 				break;
 			case '0': case '7':
 				q = fs_path_resolve_create(uh->name, 0, S_IFREG | 0777, &err);
-				ramfs_point_to_data(q, datastart, len);
+				ramfs_point_to_data(q, (void *)datastart, len);
 				//fs_inode_write(q, 0, len, (char *)datastart);
 				break;
 			default:

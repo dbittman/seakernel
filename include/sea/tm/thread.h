@@ -78,6 +78,7 @@ extern struct hash_table *thread_table;
 const struct thread *arch_tm_get_current_thread(int) __attribute__((const));
 
 int tm_thread_got_signal(struct thread *);
+int tm_clone(int);
 void tm_thread_enter_system(int sys);
 void tm_thread_exit_system(void);
 int sys_vfork(void);

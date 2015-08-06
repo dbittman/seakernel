@@ -270,7 +270,7 @@ unsigned char last_sc=0;
 unsigned char key_stack[64];
 int ks_idx=0;
 struct async_call keyboard_s2_call;
-void keyboard_int_stage1(registers_t *regs)
+void keyboard_int_stage1(registers_t *regs, int int_no, int flags)
 {
 	unsigned char scancode = inb(0x60);
 	int x = add_atomic(&ks_idx, 1)-1;
@@ -287,7 +287,7 @@ void keyboard_int_stage1(registers_t *regs)
 	return;
 }
 
-void keyboard_int_stage2(int int_no)
+void keyboard_int_stage2(unsigned long __int_no)
 {
 	/* TODO: read all the keys in the stack */
 	int x = sub_atomic(&ks_idx, 1);
@@ -356,7 +356,7 @@ addr_t get_keymap_callback(void)
 	return (addr_t)_keymap_callback;
 }
 int irqk=0;
-int __int_no = 33;
+unsigned long __int_no = 33;
 int module_install(void)
 {
 	printk(1, "[keyboard]: Driver loading\n");
@@ -369,7 +369,7 @@ int module_install(void)
 	_keymap_callback=0;
 	loader_add_kernel_symbol(set_keymap_callback);
 	loader_add_kernel_symbol(get_keymap_callback);
-	async_call_create(&keyboard_s2_call, 0, keyboard_int_stage2, &__int_no, 100 /* TODO */);
+	async_call_create(&keyboard_s2_call, 0, keyboard_int_stage2, __int_no, 100 /* TODO */);
 	irqk = cpu_interrupt_register_handler(IRQ1, keyboard_int_stage1);
 	flush_port();
 	printk(1, "[keyboard]: initialized keyboard\n");

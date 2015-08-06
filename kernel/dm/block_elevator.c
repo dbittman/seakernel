@@ -1,6 +1,7 @@
 #include <sea/tm/kthread.h>
 #include <sea/tm/thread.h>
 #include <sea/dm/block.h>
+void dm_block_cache_reclaim(void);
 int block_elevator_main(struct kthread *kt, void *arg)
 {
 	blockdevice_t *dev = arg;
@@ -16,7 +17,7 @@ int block_elevator_main(struct kthread *kt, void *arg)
 			if(req->direction == READ) {
 				while(count) {
 					int this = 8;
-					if(this > count)
+					if(this > (int)count)
 						this = count;
 					int ret = dm_do_block_rw_multiple(req->direction, req->dev, block, buf, this, dev);
 					if(ret == dev->blksz * this) {
@@ -35,7 +36,7 @@ int block_elevator_main(struct kthread *kt, void *arg)
 			} else {
 				while(count) {
 					int this = 8;
-					if(this > count)
+					if(this > (int)count)
 						this = count;
 
 					for(int i=0;i<this;i++) {

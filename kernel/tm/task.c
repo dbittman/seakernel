@@ -62,7 +62,7 @@ void tm_init_multitasking(void)
 	thread->state = THREADSTATE_RUNNING;
 	thread->magic = THREAD_MAGIC;
 	workqueue_create(&thread->resume_work, 0);
-	thread->kernel_stack = &initial_kernel_stack;
+	thread->kernel_stack = (addr_t)&initial_kernel_stack;
 	mutex_create(&thread->block_mutex, MT_NOSCHED);
 	*(struct thread **)(thread->kernel_stack) = thread;
 
@@ -79,6 +79,21 @@ void tm_init_multitasking(void)
 	primary_cpu->flags |= CPU_RUNNING;
 #if CONFIG_MODULES
 	loader_add_kernel_symbol(tm_thread_delay_sleep);
+	loader_add_kernel_symbol(tm_thread_delay);
+	loader_add_kernel_symbol(tm_timing_get_microseconds);
+	loader_add_kernel_symbol(tm_thread_set_state);
+	loader_add_kernel_symbol(tm_thread_exit);
+	loader_add_kernel_symbol(tm_thread_poke);
+	loader_add_kernel_symbol(tm_thread_add_to_blocklist);
+	loader_add_kernel_symbol(tm_thread_remove_from_blocklist);
+	loader_add_kernel_symbol(tm_thread_block);
+	loader_add_kernel_symbol(tm_thread_got_signal);
+	loader_add_kernel_symbol(tm_thread_unblock);
+	loader_add_kernel_symbol(tm_blocklist_wakeall);
+	loader_add_kernel_symbol(kthread_create);
+	loader_add_kernel_symbol(kthread_wait);
+	loader_add_kernel_symbol(kthread_join);
+	loader_add_kernel_symbol(kthread_kill);
 	loader_add_kernel_symbol(tm_schedule);
 	loader_add_kernel_symbol(arch_tm_get_current_thread);
 #endif

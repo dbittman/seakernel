@@ -4,6 +4,7 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/processor.h>
 #include <sea/cpu/atomic.h>
+#include <sea/vsprintf.h>
 
 static void check_signals(struct thread *thread)
 {

@@ -13,7 +13,7 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
 #include <sea/errno.h>
-
+#include <sea/tm/timing.h>
 int i350_int;
 struct pmap i350_pmap;
 struct i350_device *i350_dev;
@@ -218,7 +218,7 @@ void i350_init(struct i350_device *dev)
 	tmp |= E1000_PCS_LCTL_AN_ENABLE;
 	i350_write32(dev, E1000_PCS_LCTL, tmp);
 	
-	tm_delay_sleep(10);
+	tm_thread_delay_sleep(ONE_MILLISECOND * 10);
 	
 	i350_allocate_receive_buffers(dev);
 	i350_allocate_transmit_buffers(dev);
@@ -234,7 +234,7 @@ void i350_init(struct i350_device *dev)
 	{
 		//tmp2 = i350_read32(dev, E1000_GPTC);
 		//kprintf("**%d**\n", tmp2);
-		tm_delay_sleep(2000);
+		tm_thread_delay_sleep(ONE_MILLISECOND * 2000);
 	}
 
 }
@@ -319,7 +319,7 @@ void i350_error_interrupt(void)
 	kprintf("[i350]: error - fatal error interrupt received\n");
 }
 
-void i350_interrupt(registers_t *regs)
+void i350_interrupt(registers_t *regs, int int_no, int flags)
 {
 	uint32_t t = i350_read32(i350_dev, E1000_ICR);
 	if(!(t & (1 << 31)))
@@ -364,7 +364,7 @@ int module_install(void)
 	pmap_create(&i350_pmap, 0);
 	struct i350_device *dev = kmalloc(sizeof(struct i350_device));
 	dev->pci = i350;
-	i350_irq1=interrupt_register_handler(i350_int, i350_interrupt, 0);
+	i350_irq1=cpu_interrupt_register_handler(i350_int, i350_interrupt);
 	i350_dev = dev;
 	dev->tx_queue_lock[0] = mutex_create(0, 0);
 	dev->rx_queue_lock[0] = mutex_create(0, 0);

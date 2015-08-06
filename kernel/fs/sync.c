@@ -7,6 +7,7 @@
 
 /* This syncs things in order. That is, the block level cache syncs before 
  * the devices do because the block cache may modify the device cache */
+void buffer_sync_all_dirty(void);
 int sys_sync(int disp)
 {
 	if(disp == -1)

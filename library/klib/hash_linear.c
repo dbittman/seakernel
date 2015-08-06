@@ -29,6 +29,7 @@ int hash_linear_get(void **h, int (*fn)(int, void *, size_t, size_t, int), size_
 int hash_linear_set_or_get(void **h, int (*fn)(int, void *, size_t, size_t, int), size_t size, void *key, size_t elem_sz, size_t len, void *value, void **result)
 {
 	panic(0, "not implemented");
+	return 0;
 }
 
 int hash_linear_set(void **h, int (*fn)(int, void *, size_t, size_t, int), size_t size, void *key, size_t elem_sz, size_t len, void *value)

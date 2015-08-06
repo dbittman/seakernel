@@ -18,6 +18,7 @@
 #include <sea/errno.h>
 #include <sea/cpu/atomic.h>
 #include <sea/types.h>
+#include <sea/tm/timing.h>
 int rtl8139_maj=-1;
 typedef struct rtl8139_dev_s
 {
@@ -116,12 +117,12 @@ int rtl8139_reset(int base_addr)
 	while(1) {
 		//outb(base_addr+0x50, inb(base_addr+0x50)|(0x03 << 6));
 
-		tm_delay(10);
+		tm_thread_delay(ONE_MILLISECOND * 10);
 		if(done)
 			break;
 		outb(base_addr+0x37, 0x10);
 		while(--timeout){
-			tm_delay(10);
+		tm_thread_delay(ONE_MILLISECOND * 10);
 			if(!(inb(base_addr+0x37)&(1<<4)))
 				break;
 		}
@@ -139,7 +140,7 @@ int rtl8139_reset(int base_addr)
 	{
 		if((inw(base_addr+0x64) & 0x2C) == 0x2C)
 			break;
-		tm_delay(50);
+		tm_thread_delay(ONE_MILLISECOND * 10);
 	}
 	if(timeout < 1) {
 		printk(KERN_WARN, "RTL8139: An error occured\n");
@@ -327,7 +328,7 @@ void do_recieve(rtl8139dev_t *dev, unsigned short data)
 	net_notify_packet_ready(dev->net_dev);
 }
 
-void rtl8139_int_1(registers_t *regs)
+void rtl8139_int_1(registers_t *regs, int int_no, int flags)
 {
 	for(int i = 0;i<16;i++) {
 		rtl8139dev_t *t=devs[i];
@@ -380,7 +381,7 @@ rtl8139dev_t *rtl8139_load_device_pci(struct pci_device *device)
 	device->flags |= PCI_ENGAGED;
 	device->flags |= PCI_DRIVEN;
 	dev->inter = device->pcs->interrupt_line;
-	dev->inter_id = interrupt_register_handler(dev->inter + IRQ0, rtl8139_int_1, 0);
+	dev->inter_id = cpu_interrupt_register_handler(dev->inter + IRQ0, rtl8139_int_1);
 	mutex_create(&dev->tx_lock, 0);
 	printk(1, "[rtl8139]: registered interrupt line %d\n", dev->inter);
 	printk(1, "[rtl8139]: Success!\n");
@@ -398,7 +399,7 @@ int rtl8139_unload_device_pci(rtl8139dev_t *dev)
 	mutex_destroy(&dev->tx_lock);
 	/* TODO */
 	//devfs_remove(dev->node);
-	interrupt_unregister_handler(dev->inter, dev->inter_id);
+	cpu_interrupt_unregister_handler(dev->inter, dev->inter_id);
 	return 0;
 }
 

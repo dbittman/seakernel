@@ -3,6 +3,8 @@
 #include <modules/ata.h>
 #include <sea/dm/block.h> 
 #include <sea/tm/process.h>
+#include <sea/tm/thread.h>
+#include <sea/tm/timing.h>
 
 int atapi_pio_rw(struct ata_controller *cont, struct ata_device *dev, int rw, 
 	unsigned long long lba, unsigned char *buffer)
@@ -38,7 +40,7 @@ int atapi_pio_rw(struct ata_controller *cont, struct ata_device *dev, int rw,
 	outsw (cont->port_cmd_base+REG_DATA, (uint16 *) read_cmd, 6);
 	/* Wait for IRQ that says the data is ready. */
 	// schedule ();
-	tm_thread_delay_sleep(6);
+	tm_thread_delay_sleep(6 * ONE_MILLISECOND);
 	
 	/* Read actual size */
 	size =

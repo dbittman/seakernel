@@ -9,6 +9,7 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/fs/file.h>
 #include <sea/vsprintf.h>
+#include <sea/debugger.h>
 static inline void _set_lowercase(char *b)
 {
 	while(*b) {

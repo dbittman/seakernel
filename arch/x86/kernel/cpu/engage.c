@@ -86,7 +86,7 @@ int boot_cpu(struct cpu *cpu)
 	thread->tid = tm_thread_next_tid();
 	thread->magic = THREAD_MAGIC;
 	workqueue_create(&thread->resume_work, 0);
-	thread->kernel_stack = (void *)cpu->stack;
+	thread->kernel_stack = cpu->stack;
 	mutex_create(&thread->block_mutex, MT_NOSCHED);
 	*(struct thread **)(thread->kernel_stack) = thread;
 	assert(!hash_table_set_entry(thread_table, &thread->tid, sizeof(thread->tid), 1, thread));

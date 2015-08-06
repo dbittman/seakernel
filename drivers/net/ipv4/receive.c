@@ -41,7 +41,7 @@ static struct ipv4_fragment *__ipv4_find_fragment(struct ipv4_header *header)
 				&& f->dest == header->dest_ip
 				&& f->id == header->id
 				&& f->prot == header->ptype
-				&& tm_get_ticks() < f->start_time + TICKS_SECONDS(FRAG_TIMEOUT)) {
+				&& tm_timing_get_microseconds() < f->start_time + ONE_SECOND * FRAG_TIMEOUT) {
 			rwlock_release(&frag_list->rwl, RWL_READER);
 			return f;
 		}
@@ -148,7 +148,7 @@ static void __ipv4_new_fragment(struct net_packet *np, struct ipv4_header *heade
 	frag->dest = header->dest_ip;
 	frag->prot = header->ptype;
 	frag->id = header->id;
-	frag->start_time = tm_get_ticks();
+	frag->start_time = tm_timing_get_microseconds();
 	net_packet_get(np);
 	frag->netpacket = np;
 	frag->first_hole = 0;
@@ -169,7 +169,7 @@ int __ipv4_cleanup_fragments(int do_remove)
 	struct llistnode *node;
 	struct ipv4_fragment *f, *rem = 0;
 	ll_for_each_entry(frag_list, node, struct ipv4_fragment *, f) {
-		if(do_remove || (!f->complete && (tm_get_ticks() > f->start_time + TICKS_SECONDS(FRAG_TIMEOUT)))) {
+		if(do_remove || (!f->complete && (tm_timing_get_microseconds() > f->start_time + ONE_SECOND * (FRAG_TIMEOUT)))) {
 			printk(1, "[ipv4]: removing old incomplete fragment\n");
 			rem = f;
 			break;

@@ -52,7 +52,7 @@ struct ata_device *get_ata_device(int min)
 	return &primary->devices[dev];
 }
 
-void ata_irq_handler(registers_t *regs, int int_no)
+void ata_irq_handler(registers_t *regs, int int_no, int flags)
 {
 	assert(regs);
 	struct ata_controller *cont = (int_no == (32+ATA_PRIMARY_IRQ) ? primary : secondary);

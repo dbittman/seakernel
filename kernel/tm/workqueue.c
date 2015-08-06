@@ -5,6 +5,7 @@
 #include <sea/tm/async_call.h>
 #include <sea/tm/workqueue.h>
 #include <sea/cpu/processor.h>
+#include <sea/cpu/interrupt.h>
 /* TODO: roll this out to all kernel objects */
 #define KOBJ_CREATE(obj,flags,alloc_flag) do {\
 	if(!obj) {\

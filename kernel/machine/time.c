@@ -18,5 +18,6 @@ int sys_gettimeofday(struct timeval *tv, void *g)
 		return -EINVAL;
 	tv->tv_sec = arch_time_get_epoch();
 	tv->tv_usec = tm_timing_get_microseconds() % (1000 * 1000);
+	return 0;
 }
 

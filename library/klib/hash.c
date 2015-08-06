@@ -32,7 +32,7 @@ int __hash_fn_djb2(int sz, void *key, size_t kesz, size_t len, int iteration)
 {
 	unsigned long hash = 5381;
 	unsigned char *buf = key;
-	for(int i = 0;i < kesz*len;i++) {
+	for(unsigned int i = 0;i < kesz*len;i++) {
 		unsigned char e = buf[i];
 		hash = ((hash << 5) + hash) + e;
 	}

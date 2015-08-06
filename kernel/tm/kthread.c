@@ -1,4 +1,5 @@
 #include <sea/kernel.h>
+#include <sea/tm/thread.h>
 #include <sea/tm/process.h>
 #include <sea/tm/kthread.h>
 #include <sea/mm/vmm.h>

@@ -23,7 +23,7 @@
  * re-open it. */
 void arch_loader_exec_initializer(unsigned argc, addr_t eip);
 #undef EXEC_LOG
-#define EXEC_LOG 0
+#define EXEC_LOG 1
 static void preexec(int desc)
 {
 	struct thread *t = current_thread;

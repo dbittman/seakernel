@@ -14,7 +14,7 @@ void tm_thread_handle_signal(int signal)
 {
 	struct sigaction *sa = &current_process->signal_act[signal];
 	if(signal != SIGKILL && signal != SIGSTOP) {
-		if((current_thread->sig_mask & (1 << signal)) || (current_process->global_sig_mask & (1 << signal))) {
+		if((current_thread->sig_mask & (1 << signal))) {
 			current_thread->signal = 0;
 			return;
 		}
@@ -50,9 +50,6 @@ void tm_thread_handle_signal(int signal)
 				/* Fall through */
 			case SIGISLEEP:
 				current_thread->state = THREADSTATE_INTERRUPTIBLE;
-				break;
-			default:
-				current_thread->signal = 0;
 				break;
 		}
 	} else if(!current_thread->system && ((current_thread->flags & THREAD_KERNEL) || (addr_t)sa->_sa_func._sa_handler == SIG_IGN)) {
@@ -119,8 +116,7 @@ int sys_kill(pid_t pid, int signal)
 		tm_process_put(proc);
 		return -EPERM;
 	}
-	if(!(proc->global_sig_mask & (1 << signal)))
-		tm_signal_send_process(proc, signal);
+	tm_signal_send_process(proc, signal);
 	tm_process_put(proc);
 	return 0;
 }

@@ -161,6 +161,10 @@ static void faulted(int fuckoff, int userspace, addr_t ip, long err_code, regist
 
 static inline void __setup_signal_handler(registers_t *regs)
 {
+	if((current_thread->flags & THREAD_SIGNALED) && !current_thread->signal)
+		panic(0, "thread is signaled with null signal");
+	if(current_thread->signal && !(current_thread->flags & THREAD_SIGNALED))
+		tm_thread_raise_flag(current_thread, THREAD_SCHEDULE);
 	if(!current_thread->signal || !(current_thread->flags & THREAD_SIGNALED))
 		return;
 	struct sigaction *sa = &current_process->signal_act[current_thread->signal];
@@ -253,10 +257,12 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 void cpu_interrupt_post_handling(void)
 {
 	if(!current_thread->interrupt_level && !current_thread->system) {
-		if(current_thread->flags & THREAD_EXIT)
-			tm_thread_do_exit();
 		if(current_thread->flags & THREAD_SCHEDULE)
 			tm_schedule();
+		if(current_thread->flags & THREAD_EXIT) {
+			tm_thread_do_exit();
+			tm_schedule();
+		}
 	}
 }
 

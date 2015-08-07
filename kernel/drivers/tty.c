@@ -147,6 +147,8 @@ int tty_write(int min, char *buf, size_t len)
 	 * We handle escape codes */
 	while(i<len) {
 		if(tm_thread_got_signal(current_thread)) {
+			if(con->rend->update_cursor)
+				con->rend->update_cursor(con);
 			mutex_release(&con->wlock);
 			return -EINTR;
 		}

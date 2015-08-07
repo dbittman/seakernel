@@ -54,8 +54,12 @@ int sys_alarm(int dur)
 	cpu_put_current(cpu);
 
 	if(dur == 0) {
+		int old = cpu_interrupt_set(0);
+		ticker = current_thread->alarm_ticker;
+		if(ticker)
+			ticker_delete(ticker, call);
 		current_thread->alarm_ticker = 0;
-		ticker_delete(ticker, call);
+		cpu_interrupt_set(old);
 	} else {
 		current_thread->alarm_ticker = ticker;
 		ticker_insert(ticker, dur * ONE_SECOND, call);

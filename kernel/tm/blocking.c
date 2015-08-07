@@ -24,7 +24,7 @@ void tm_thread_set_state(struct thread *t, int state)
 void tm_thread_poke(struct thread *t)
 {
 	tm_thread_raise_flag(t, THREAD_WAKEUP);
-	tm_thread_set_state(t, THREADSTATE_RUNNING);
+	tm_thread_unblock(t);
 }
 
 void tm_thread_add_to_blocklist(struct thread *t, struct llist *blocklist)

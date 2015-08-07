@@ -8,19 +8,21 @@
 
 static void check_signals(struct thread *thread)
 {
-	if(thread->signals_pending && !thread->signal) {
+	if(thread->signals_pending && !thread->signal && !(thread->flags & THREAD_SIGNALED)) {
 		int index = 0;
 		/* find the next signal in signals_pending and set signal to it */
 		for(; index < 32; ++index) {
-			if(thread->signals_pending & (1 << index))
+			if(thread->signals_pending & (1 << index) && !(thread->process->global_sig_mask & (1 << (index + 1))))
 				break;
 		}
 		if(index < 32) {
 			thread->signal = index + 1;
 			and_atomic(&thread->signals_pending, ~(1 << (index)));
-			if(thread->state == THREADSTATE_INTERRUPTIBLE)
-				thread->state = THREADSTATE_RUNNING;
 		}
+	}
+	if(thread->signal || thread->signals_pending) {
+		if(thread->state == THREADSTATE_INTERRUPTIBLE)
+			tm_thread_unblock(thread);
 	}
 }
 
@@ -54,11 +56,11 @@ static void prepare_schedule(void)
 		 * called exit and got a signal during the exit would exit twice. This is because
 		 * it would finish the syscall and then reschedule, which would then handle the signal
 		 * here, which would then call exit...again. */
-		if(!current_thread->system && current_thread->state == THREADSTATE_RUNNING)
+		if(!current_thread->system && current_thread->state == THREADSTATE_RUNNING && !(current_thread->flags & THREAD_SIGNALED))
 			tm_thread_handle_signal(current_thread->signal);
 	}
-	if(current_thread->state == THREADSTATE_INTERRUPTIBLE && current_thread->flags & THREAD_WAKEUP) {
-		current_thread->state = THREADSTATE_RUNNING;
+	if(current_thread->state == THREADSTATE_INTERRUPTIBLE && (current_thread->flags & THREAD_WAKEUP)) {
+		tm_thread_unblock(current_thread);
 		tm_thread_lower_flag(current_thread, THREAD_WAKEUP);
 	}
 	tm_thread_lower_flag(current_thread, THREAD_SCHEDULE);
@@ -126,7 +128,5 @@ void tm_schedule(void)
 	cpu_enable_preemption();
 	cpu_interrupt_set(old);
 	post_schedule(prev);
-	if(current_thread->flags & THREAD_SCHEDULE)
-		tm_schedule();
 }
 

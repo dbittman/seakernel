@@ -38,7 +38,8 @@
 #define tm_thread_lower_flag(t,f) and_atomic(&(t->flags), ~f)
 
 /* TODO: make sure this really does get optimized away */
-#define current_thread ((struct thread *)arch_tm_get_current_thread(kernel_state_flags))
+#define current_thread ((struct thread *)*arch_tm_get_current_thread())
+const struct thread **arch_tm_get_current_thread(void) __attribute__((const));
 
 struct process;
 struct thread {
@@ -68,6 +69,7 @@ struct thread {
 	mutex_t block_mutex;
 	struct async_call block_timeout;
 	struct async_call alarm_timeout;
+	struct ticker *alarm_ticker;
 	struct process *process;
 	struct workqueue resume_work;
 };
@@ -75,7 +77,6 @@ struct thread {
 extern size_t running_threads;
 extern struct hash_table *thread_table;
 
-const struct thread *arch_tm_get_current_thread(int) __attribute__((const));
 
 int tm_thread_got_signal(struct thread *);
 int tm_clone(int);

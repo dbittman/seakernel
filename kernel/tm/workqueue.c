@@ -39,9 +39,11 @@ void workqueue_destroy(struct workqueue *wq)
 
 void workqueue_insert(struct workqueue *wq, struct async_call *call)
 {
+	int old = cpu_interrupt_set(0);
 	mutex_acquire(&wq->lock);
 	heap_insert(&wq->tasks, call->priority, call);
 	mutex_release(&wq->lock);
+	cpu_interrupt_set(old);
 	add_atomic(&wq->count, 1);
 }
 

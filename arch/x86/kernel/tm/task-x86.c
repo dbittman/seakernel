@@ -14,13 +14,10 @@ void arch_cpu_set_kernel_stack(struct cpu *cpu, addr_t start, addr_t end)
  * current thread, but before that, it will need to return 0. In order to
  * be able to define it as constant for optimization reasons, we need to
  * pass in the kernel state flags so that the optimizer knows. */
-__attribute__((const)) const struct thread *arch_tm_get_current_thread(int flags)
+__attribute__((const)) const struct thread **arch_tm_get_current_thread(void)
 {
-	if(!(flags & KSF_THREADING))
-		return 0;
 	register uint32_t stack __asm__("esp");
-	struct thread *ret = *(struct thread **)(stack & ~(KERN_STACK_SIZE - 1));
-	return ret;
+	return (const struct thread **)(stack & ~(KERN_STACK_SIZE - 1));
 }
 
 void arch_tm_jump_to_user_mode(addr_t jmp)

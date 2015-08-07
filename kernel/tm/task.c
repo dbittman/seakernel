@@ -64,7 +64,6 @@ void tm_init_multitasking(void)
 	workqueue_create(&thread->resume_work, 0);
 	thread->kernel_stack = (addr_t)&initial_kernel_stack;
 	mutex_create(&thread->block_mutex, MT_NOSCHED);
-	*(struct thread **)(thread->kernel_stack) = thread;
 
 	primary_cpu->active_queue = tqueue_create(0, 0);
 	primary_cpu->idle_thread = thread;
@@ -76,6 +75,7 @@ void tm_init_multitasking(void)
 	add_atomic(&running_processes, 1);
 	add_atomic(&running_threads, 1);
 	set_ksf(KSF_THREADING);
+	*(struct thread **)(thread->kernel_stack) = thread;
 	primary_cpu->flags |= CPU_RUNNING;
 #if CONFIG_MODULES
 	loader_add_kernel_symbol(tm_thread_delay_sleep);

@@ -40,7 +40,9 @@ int sys_sbrk(long inc)
 static void __alarm_timeout(unsigned long data)
 {
 	struct thread *thr = (struct thread *)data;
-	tm_signal_send_thread(thr, SIGALRM);
+	if(thr->alarm_ticker)
+		tm_signal_send_thread(thr, SIGALRM);
+	current_thread->alarm_ticker = 0;
 }
 
 int sys_alarm(int dur)
@@ -52,8 +54,10 @@ int sys_alarm(int dur)
 	cpu_put_current(cpu);
 
 	if(dur == 0) {
+		current_thread->alarm_ticker = 0;
 		ticker_delete(ticker, call);
 	} else {
+		current_thread->alarm_ticker = ticker;
 		ticker_insert(ticker, dur * ONE_SECOND, call);
 	}
 	return 0;

@@ -156,6 +156,10 @@ void tm_thread_do_exit(void)
 							tm_thread_destroy, (unsigned long)current_thread, 0);
 
 	tm_thread_release_usermode_stack(current_thread, current_thread->usermode_stack_num);
+	if(current_thread->alarm_ticker) {
+		ticker_delete(current_thread->alarm_ticker, &current_thread->alarm_timeout);
+		current_thread->alarm_ticker = 0;
+	}
 
 	tm_thread_remove_kerfs_entries(current_thread);
 	if(current_process->thread_count == 1) {

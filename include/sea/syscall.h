@@ -43,7 +43,8 @@ int sys_setup();
 #define SYS_GETPPID      32
 #define SYS_LINK         33
 #define SYS_UNLINK       34
-
+#define SYS_THREAD_SETPRI 35
+#define SYS_THREAD_KILL  36
 
 
 #define SYS_GETSOCKNAME  38
@@ -131,11 +132,6 @@ int sys_setup();
 #define SYS_SYSLOG       120
 #define SYS_POSFSSTAT    121
 #define SYS_GETTIMEOFDAY 122
-
-
-
-
-#define SYS_WAITAGAIN    127 /* TODO ??? */
 
 /* These are special */
 #define SYS_RET_FROM_SIG 128

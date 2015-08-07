@@ -16,8 +16,6 @@ static int vm_do_copy_table(int i, page_dir_t *new, page_dir_t *from, char cow)
 	table_phys = mm_alloc_physical_page();
 	cpu_disable_preemption();
 	mm_vm_map((addr_t)table, table_phys, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_PDLOCKED);
-	/* TODO: remove these flushes */
-	flush_pd();
 	memset((void *)table, 0, PAGE_SIZE);
 	addr_t virt = i*PAGE_SIZE*1024;
 	addr_t phyz;
@@ -89,7 +87,6 @@ void arch_mm_vm_clone(struct vmm_context *oldcontext, struct vmm_context *newcon
 	addr_t tmp_p = mm_alloc_physical_page();
 	cpu_disable_preemption();
 	mm_vm_map((unsigned)tmp, tmp_p, PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_PDLOCKED);
-	flush_pd();
 	memset(tmp, 0, PAGE_SIZE);
 	tmp[1023] = new_p | PAGE_PRESENT | PAGE_WRITE;
 	new[1022] = tmp_p | PAGE_PRESENT | PAGE_WRITE;

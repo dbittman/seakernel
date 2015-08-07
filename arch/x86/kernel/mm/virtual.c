@@ -149,16 +149,16 @@ addr_t arch_mm_vm_get_map(addr_t v, addr_t *p, unsigned locked)
 	unsigned *pd = page_directory;
 	unsigned int vp = (v&PAGE_MASK) / 0x1000;
 	unsigned int pt_idx = PAGE_DIR_IDX(vp);
-	if(pd_cur_data && !locked)
+	if(pd_cur_data && !locked && current_process->thread_count > 1)
 		mutex_acquire(&pd_cur_data->lock);
 	if(!pd[pt_idx])
 	{
-		if(pd_cur_data && !locked)
+		if(pd_cur_data && !locked && current_process->thread_count > 1)
 			mutex_release(&pd_cur_data->lock);
 		return 0;
 	}
 	unsigned ret = page_tables[vp] & PAGE_MASK;
-	if(pd_cur_data && !locked)
+	if(pd_cur_data && !locked && current_process->thread_count > 1)
 		mutex_release(&pd_cur_data->lock);
 	if(p)
 		*p = ret;
@@ -170,11 +170,11 @@ void arch_mm_vm_set_attrib(addr_t v, short attr)
 	unsigned *pd = page_directory;
 	unsigned int vp = (v&PAGE_MASK) / 0x1000;
 	unsigned int pt_idx = PAGE_DIR_IDX(vp);
-	if(pd_cur_data)
+	if(pd_cur_data && current_process->thread_count > 1)
 		mutex_acquire(&pd_cur_data->lock);
 	if(!pd[pt_idx])
 	{
-		if(pd_cur_data)
+		if(pd_cur_data && current_process->thread_count > 1)
 			mutex_release(&pd_cur_data->lock);
 		return;
 	}
@@ -187,13 +187,10 @@ void arch_mm_vm_set_attrib(addr_t v, short attr)
 		if(IS_KERN_MEM(v))
 			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
 		else if((IS_THREAD_SHARED_MEM(v)))
-			/* TODO: we don't need to lock when there's only one thread...
-											  actually, we should figure out locking rules for threads shared
-											  address space... we need to redesign all these function anyway */
 			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
 	}
 #endif
-	if(pd_cur_data)
+	if(pd_cur_data && current_process->thread_count > 1)
 		mutex_release(&pd_cur_data->lock);
 }
 
@@ -202,16 +199,16 @@ unsigned int arch_mm_vm_get_attrib(addr_t v, unsigned *p, unsigned locked)
 	unsigned *pd = page_directory;
 	unsigned int vp = (v&PAGE_MASK) / 0x1000;
 	unsigned int pt_idx = PAGE_DIR_IDX(vp);
-	if(pd_cur_data && !locked)
+	if(pd_cur_data && !locked && current_process->thread_count > 1)
 		mutex_acquire(&pd_cur_data->lock);
 	if(!pd[pt_idx])
 	{
-		if(pd_cur_data && !locked)
+		if(pd_cur_data && !locked && current_process->thread_count > 1)
 			mutex_release(&pd_cur_data->lock);
 		return 0;
 	}
 	unsigned ret = page_tables[vp] & ATTRIB_MASK;
-	if(pd_cur_data && !locked)
+	if(pd_cur_data && !locked && current_process->thread_count > 1)
 		mutex_release(&pd_cur_data->lock);
 	if(p)
 		*p = ret;

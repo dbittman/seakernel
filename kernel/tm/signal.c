@@ -121,7 +121,6 @@ int sys_kill(pid_t pid, int signal)
 	return 0;
 }
 
-/* TODO: add to syscall table */
 int sys_kill_thread(pid_t tid, int signal)
 {
 	if(tid == 0 || signal < 0 || signal >= NUM_SIGNALS)

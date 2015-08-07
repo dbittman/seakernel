@@ -50,7 +50,6 @@ void workqueue_insert(struct workqueue *wq, struct async_call *call)
 int workqueue_dowork(struct workqueue *wq)
 {
 	struct async_call *call;
-	/* TODO: this can cause a relock if an IRQ fires inside here ... */
 	int old = cpu_interrupt_set(0);
 	mutex_acquire(&wq->lock);
 	if(heap_pop(&wq->tasks, 0, (void **)&call) == 0) {

@@ -75,7 +75,7 @@ static long __valloc_get_start_index(struct valloc *va, long np)
 			 * and we found an empty bit. Start checking
 			 * this region for length */
 			start = idx;
-			count=1;/*TODO: UH, is this right? */
+			count=1;
 			if(count == np)
 				break;
 		} else {

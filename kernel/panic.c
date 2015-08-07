@@ -21,42 +21,10 @@ static inline void _set_lowercase(char *b)
 
 static void __panic_print_extra_data(int flags, struct thread *t)
 {
-	/* TODO */
 	if(t) 
 		printk_safe(9,"current_task=%x:%d, sys=%d, flags=%x. Stack trace:\n", t, 
 				t->tid, t->system, t->flags);
 	cpu_print_stack_trace(64);
-#if 0
-	if(flags & PANIC_VERBOSE)
-	{
-		printk_safe(9, "task listing:\n");
-		struct llistnode *cur;
-		t=0;
-		ll_for_each_entry(&primary_queue->tql, cur, task_t *, t)
-		{
-			printk_safe(9, "\ntask %5d: magic=%x, state=%d, flags=0x%x, F=%d, sys=%d\n"
-					, t->pid, t->magic, t->state, t->flags, t->flag, t->system);
-			addr_t a=0;
-			if(t->regs) a = t->regs->eip;
-			else if(t->sysregs) a = t->sysregs->eip;
-			printk_safe(9, "          : cpu=%x (%d), regs eip=%x\n"
-					, t->cpu, t->cpu->snum, a);
-		}
-		cur=0;
-		t=0;
-		printk_safe(9, "primary CPU active task listing:\n");
-		ll_for_each_entry(&primary_cpu->active_queue->tql, cur, task_t *, t)
-		{
-			printk_safe(9, "\ntask %5d: magic=%x, state=%d, flags=0x%x, F=%d, sys=%d\n"
-					, t->pid, t->magic, t->state, t->flags, t->flag, t->system);
-			addr_t a=0;
-			if(t->regs) a = t->regs->eip;
-			else if(t->sysregs) a = t->sysregs->eip;
-			printk_safe(9, "          : cpu=%x (%d), regs eip=%x\n"
-					, t->cpu, t->cpu->snum, a);
-		}
-	}
-#endif
 }
 
 void panic(int flags, char *fmt, ...)

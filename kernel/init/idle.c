@@ -23,48 +23,19 @@
 #include <sea/string.h>
 #include <sea/tm/kthread.h>
 
-int __KT_try_releasing_tasks();
-void __KT_try_handle_stage2_interrupts();
-
-static inline int __KT_clear_args(void)
-{
-	/* Clear out the alloc'ed arguments */
-	/* TODO */
-#if 0
-	if(next_pid > (unsigned)(init_pid+1) && init_pid)
-	{
-		printk(1, "[idle]: clearing unused kernel memory...\n");
-		int w=0;
-		for(;w<128;w++)
-		{
-			if(stuff_to_pass[w] && (addr_t)stuff_to_pass[w] > KMALLOC_ADDR_START)
-				kfree(stuff_to_pass[w]);
-		}
-		return 1;
-	}
-#endif
-	return 1;
-}
-
 struct kthread kthread_pager;
 
 int kt_kernel_idle_task(void)
 {
 	tm_thread_raise_flag(current_thread, THREAD_KERNEL);
 	kthread_create(&kthread_pager, "[kpager]", 0, __KT_pager, 0);
-	strncpy((char *)current_process->command, "[kidle]", 128);
+	strncpy((char *)current_process->command, "[kernel]", 128);
 	/* First stage is to wait until we can clear various allocated things
 	 * that we wont need anymore */
-	while(!__KT_clear_args())
-	{
-		tm_schedule();
-		cpu_interrupt_set(1);
-	}
 	cpu_interrupt_set(0);
 	printk(1, "[kernel]: remapping lower memory with protection flags...\n");
 	addr_t addr = 0;
-	/* TODO */
-	while(addr != TOP_LOWER_KERNEL && 0)
+	while(addr != TOP_LOWER_KERNEL)
 	{
 		/* set it to write. We don't actually have to do this, because
 		 * ring0 code may always access memory. As long as the PAGE_USER

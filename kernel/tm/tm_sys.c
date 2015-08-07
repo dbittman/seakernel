@@ -74,7 +74,6 @@ int sys_gsetpriority(int set, int which, int id, int val)
 	return current_thread->priority;
 }
 
-/* TODO: add to syscalls */
 int sys_thread_setpriority(pid_t tid, int val, int flags)
 {
 	struct thread *thr = tm_thread_get(tid);

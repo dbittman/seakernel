@@ -25,7 +25,6 @@ struct kthread *kthread_create(struct kthread *kt, const char *name, int flags,
 	if(!tid) {
 		tm_thread_raise_flag(current_thread, THREAD_KERNEL);
 		current_thread->regs = 0;
-		strncpy((char *)current_process->command, name, 128);
 		
 		/* okay, call the thread entry function */
 		kt->code = entry(kt, arg);

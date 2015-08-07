@@ -43,9 +43,6 @@ void ticker_tick(struct ticker *ticker, uint64_t microseconds)
 			if(res == 0) {
 				/* handle the time-event */
 				struct async_call *call = (struct async_call *)data;
-				/* TODO: globally make sure of this stuff */
-				if(call->flags & ASYNC_CALL_KMALLOC)
-					panic(0, "not allowed to call kfree inside interrupt context");
 				async_call_execute(call);
 				async_call_destroy(call);
 			}

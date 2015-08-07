@@ -37,7 +37,6 @@
 #define tm_thread_raise_flag(t,f) or_atomic(&(t->flags), f)
 #define tm_thread_lower_flag(t,f) and_atomic(&(t->flags), ~f)
 
-/* TODO: make sure this really does get optimized away */
 #define current_thread ((struct thread *)*arch_tm_get_current_thread())
 const struct thread **arch_tm_get_current_thread(void) __attribute__((const));
 
@@ -93,6 +92,7 @@ void tm_thread_remove_from_blocklist(struct thread *t);
 int tm_thread_block_schedule_work(struct llist *blocklist, int state, struct async_call *work);
 int tm_thread_block(struct llist *blocklist, int state);
 void tm_thread_poke(struct thread *t);
+int sys_thread_setpriority(pid_t tid, int val, int flags);
 int tm_thread_reserve_usermode_stack(struct thread *thr);
 void tm_thread_release_usermode_stack(struct thread *thr, int stack);
 addr_t tm_thread_usermode_stack_end(int stack);

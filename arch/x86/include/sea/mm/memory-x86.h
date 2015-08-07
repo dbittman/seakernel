@@ -52,7 +52,7 @@
 #define IS_KERN_MEM(x) (x < TOP_LOWER_KERNEL || (x >= DEVICE_MAP_START))
 
 /* TODO: these are ugly anyway */
-#define IS_THREAD_SHARED_MEM(x) (!IS_KERN_MEM(x))
+#define IS_THREAD_SHARED_MEM(x) (!IS_KERN_MEM(x) && current_process->thread_count > 1)
 #define page_directory ((unsigned *)DIR_PHYS)
 #define page_tables ((unsigned *)TBL_PHYS)
 

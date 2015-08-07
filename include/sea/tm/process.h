@@ -13,16 +13,7 @@
 #include <sea/lib/hash.h>
 #include <sea/tm/thread.h>
 
-#define current_process (__tm_get_current_process())
-
-/* TODO: const? thr->process CAN change... */
-static inline struct process *__tm_get_current_process(void)
-{
-	struct thread *thr = current_thread;
-	if(thr == 0)
-		return 0;
-	return thr->process;
-}
+#define current_process (current_thread ? current_thread->process : 0)
 
 #define FILP_HASH_LEN 512
 

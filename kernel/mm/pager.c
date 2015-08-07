@@ -24,7 +24,6 @@ int __KT_pager(struct kthread *kt, void *arg)
 					printk(0, "[mm]: activating memory reclaimer\n");
 			}
 		} else {
-			/* TODO: Need a good clean API for this */
 			tm_thread_delay(ONE_SECOND);
 			if(active > 0) active /= 2;
 		}

@@ -64,7 +64,6 @@ int sys_syslog(int level, char *buf, int len, int ctl)
 	return 0;
 }
 
-int sys_get_timer_th(int *t); /* TODO: this is shit */
 static void *syscall_table[129] = {
 	[SYS_SETUP]           = SC sys_setup,
 	[SYS_EXIT]            = SC sys_exit,
@@ -108,8 +107,8 @@ static void *syscall_table[129] = {
 	[SYS_GETPPID]         = SC sys_getppid,
 	[SYS_LINK]            = SC sys_link,
 	[SYS_UNLINK]          = SC sys_unlink,
-	//[SYS_GETREFCOUNT]     = SC vfs_inode_get_ref_count,
-	//[SYS_GETPWD]          = SC sys_get_pwd,
+	[SYS_THREAD_SETPRI]   = SC sys_thread_setpriority,
+	[SYS_THREAD_KILL]     = SC sys_kill_thread,
 	//[SYS_GETPATH]         = SC sys_getpath,
 	[SYS_GETSOCKNAME]     = SC sys_getsockname,
 	[SYS_CHROOT]          = SC sys_chroot,

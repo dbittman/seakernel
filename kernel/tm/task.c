@@ -36,7 +36,6 @@ void tm_init_multitasking(void)
 	hash_table_resize(thread_table, HASH_RESIZE_MODE_IGNORE, 1000);
 	hash_table_specify_function(thread_table, HASH_FUNCTION_DEFAULT);
 
-	/* TODO: roll this out for usermode stacks? */
 	valloc_create(&km_stacks, KERNELMODE_STACKS_START, KERNELMODE_STACKS_END, KERN_STACK_SIZE, 0);
 
 	struct thread *thread = kmalloc(sizeof(struct thread));

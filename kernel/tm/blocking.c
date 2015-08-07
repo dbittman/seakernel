@@ -5,6 +5,7 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/atomic.h>
 #include <sea/errno.h>
+#include <sea/tm/timing.h>
 
 /* a thread may not block another thread. Only a thread may block itself.
  * However, ANY thread may unblock another thread. */
@@ -135,6 +136,22 @@ int tm_thread_delay(time_t microseconds)
 	int ret;
 	if((ret=tm_thread_got_signal(current_thread))) {
 		return ret == SA_RESTART ? -ERESTART : -EINTR;
+	}
+	return 0;
+}
+
+int sys_delay(long time)
+{
+	time_t start = tm_timing_get_microseconds();
+	switch(tm_thread_delay(time * ONE_MILLISECOND)) {
+		signed long remaining = 0;
+		case -ERESTART:
+			return -ERESTART;
+		case -EINTR:
+			remaining = time - (tm_timing_get_microseconds() - start) / ONE_MILLISECOND;
+			if(remaining <= 0)
+				return 0;
+			return remaining;
 	}
 	return 0;
 }

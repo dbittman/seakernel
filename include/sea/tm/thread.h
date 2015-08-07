@@ -100,6 +100,7 @@ int tm_thread_runnable(struct thread *thr);
 void tm_thread_inc_reference(struct thread *thr);
 void tm_thread_put(struct thread *thr);
 void tm_thread_handle_signal(int signal);
+int sys_delay(long);
 void tm_signal_send_thread(struct thread *thr, int signal);
 int sys_kill_thread(pid_t tid, int signal);
 int tm_signal_will_be_fatal(struct thread *t, int sig);

@@ -130,9 +130,13 @@ int tm_thread_delay(time_t microseconds)
 	call->priority = ASYNC_CALL_PRIORITY_MEDIUM;
 	call->data = (unsigned long)current_thread;
 	struct cpu *cpu = cpu_get_current();
-	ticker_insert(&cpu->ticker, microseconds, call);
+	struct ticker *ticker = &cpu->ticker;
+	ticker_insert(ticker, microseconds, call);
 	cpu_put_current(cpu);
 	tm_thread_set_state(current_thread, THREADSTATE_INTERRUPTIBLE);
+	int old = cpu_interrupt_set(0);
+	ticker_delete(ticker, call);
+	cpu_interrupt_set(old);
 	int ret;
 	if((ret=tm_thread_got_signal(current_thread))) {
 		return ret == SA_RESTART ? -ERESTART : -EINTR;
@@ -179,8 +183,10 @@ int tm_thread_block_timeout(struct llist *blocklist, time_t microseconds)
 		tm_thread_set_state(current_thread, THREADSTATE_INTERRUPTIBLE);
 		cpu_enable_preemption();
 		tm_schedule();
+		int old = cpu_interrupt_set(0);
 		cpu_disable_preemption();
 		ticker_delete(&current_thread->cpu->ticker, call);
+		cpu_interrupt_set(old);
 	}
 	if(current_thread->flags & THREAD_TIMEOUT_EXPIRED) {
 		tm_thread_lower_flag(current_thread, THREAD_TIMEOUT_EXPIRED);

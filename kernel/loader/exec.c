@@ -153,6 +153,7 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 		printk(5, "[exec]: Tried to execute an invalid ELF file!\n");
 		free_dp(backup_argv, argc);
 		free_dp(backup_env, envc);
+		kfree(path);
 		tm_thread_exit(0);
 	}
 	

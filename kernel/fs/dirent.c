@@ -59,7 +59,12 @@ int vfs_dirent_release(struct dirent *dir)
 			vfs_dirent_destroy(dir);
 		} else {
 			/* add to LRU */
-			queue_enqueue_item(dirent_lru, &dir->lru_item, dir);
+			if(dir->parent->flags & INODE_NOLRU) {
+				vfs_inode_del_dirent(parent, dir);
+				vfs_dirent_destroy(dir);
+			} else {
+				queue_enqueue_item(dirent_lru, &dir->lru_item, dir);
+			}
 		}
 		rwlock_release(&parent->lock, RWL_WRITER);
 		/* So, here's the thing. Technically, we still have a pointer that points
@@ -130,7 +135,8 @@ struct dirent *fs_dirent_lookup(struct inode *node, const char *name, size_t nam
 		vfs_inode_add_dirent(node, dir);
 	} else {
 		if(add_atomic(&dir->count, 1) == 1) {
-			fs_dirent_remove_lru(dir);
+			if(!(dir->parent->flags & INODE_NOLRU))
+				fs_dirent_remove_lru(dir);
 			vfs_inode_get(node);
 		}
 	}

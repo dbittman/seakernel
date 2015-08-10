@@ -33,6 +33,7 @@ struct hash_table cache_hash;
 struct valloc slabs_reg;
 
 int full_slabs_count=0, partial_slabs_count=0, empty_slabs_count=0;
+size_t total_allocated=0;
 
 int slab_get_usage(void)
 {
@@ -43,10 +44,10 @@ int kerfs_kmalloc_report(size_t offset, size_t length, char *buf)
 {
 	size_t current = 0;
 	KERFS_PRINTF(offset, length, buf, current,
-			"Region Usage: %d / %d, Slab Usage: %d %d %d, cache hash load: %d%%\n",
+			"Region Usage: %d / %d, Slab Usage: %d %d %d, cache hash load: %d%%\nTotal bytes allocated: %d\n",
 			valloc_count_used(&slabs_reg), slabs_reg.npages,
 			full_slabs_count, partial_slabs_count, empty_slabs_count,
-			(cache_hash.count * 100) / cache_hash.size);
+			(cache_hash.count * 100) / cache_hash.size, total_allocated);
 	void *ent;
 	uint64_t n=0;
 	while(hash_table_enumerate_entries(&cache_hash, n++, 0, 0, 0, &ent) != -ENOENT) {
@@ -97,6 +98,7 @@ static void free_object(void *object)
 	reg.npages = 1;
 	reg.flags = 0;
 	valloc_deallocate(&slab->allocator, &reg);
+	sub_atomic(&total_allocated, slab->cache->object_size);
 	
 	mutex_acquire(&cache->lock);
 	int count = sub_atomic(&slab->count, 1);
@@ -125,6 +127,7 @@ static void *allocate_object(struct slab *slab)
 	for(addr_t a = reg.start;a < reg.start + slab->cache->object_size + PAGE_SIZE;a+=PAGE_SIZE)
 		map_if_not_mapped_noclear(a);
 	mutex_release(&slab->lock);
+	add_atomic(&total_allocated, slab->cache->object_size);
 	return (void *)(reg.start);
 }
 

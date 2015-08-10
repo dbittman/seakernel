@@ -58,7 +58,6 @@ int workqueue_dowork(struct workqueue *wq)
 		cpu_interrupt_set(old);
 		/* handle async_call */
 		async_call_execute(call);
-		async_call_destroy(call);
 		return 0;
 	}
 	mutex_release(&wq->lock);

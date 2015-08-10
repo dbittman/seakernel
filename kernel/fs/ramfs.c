@@ -114,6 +114,8 @@ int ramfs_inode_pull(struct filesystem *fs, struct inode *node)
 	node->nlink = rfsnode->nlinks;
 	node->id = rfsnode->num;
 	node->phys_dev = rfsnode->dev;
+	/* TODO: benchmark this */
+	or_atomic(&node->flags, INODE_NOLRU);
 	return 0;
 }
 
@@ -259,15 +261,15 @@ int ramfs_inode_unlink(struct filesystem *fs, struct inode *parent, const char *
 	int r = sub_atomic(&rfstarget->nlinks, 1);
 	if(!r) {
 		hash_table_delete_entry(info->nodes, &target->id, sizeof(found->ino), 1);
-		if(rfstarget->ents->num == 0) {
+		//if(rfstarget->ents->num == 0) {
 			ll_destroy(rfstarget->ents);
 			kfree(rfstarget);
-		}
+		//}
 	}
 
 	rwlock_acquire(&rfsparent->ents->rwl, RWL_WRITER);
 	ll_do_remove(rfsparent->ents, found->lnode, 1);
-	if(rfsparent->ents->num == 0 && rfsparent->nlinks == 0) {
+	if(0 && rfsparent->ents->num == 0 && rfsparent->nlinks == 0) {
 		rwlock_release(&rfsparent->ents->rwl, RWL_WRITER);
 		ll_destroy(rfstarget->ents);
 		kfree(rfstarget);

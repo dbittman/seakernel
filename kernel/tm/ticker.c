@@ -44,7 +44,6 @@ void ticker_tick(struct ticker *ticker, uint64_t microseconds)
 				/* handle the time-event */
 				struct async_call *call = (struct async_call *)data;
 				async_call_execute(call);
-				async_call_destroy(call);
 			}
 		}
 	}

@@ -22,6 +22,7 @@ static inline struct async_call *async_call_create(struct async_call *ac, int fl
 		unsigned long data, int priority)
 {
 	if(!ac) {
+		panic(0, "NO");
 		ac = kmalloc(sizeof(struct async_call));
 		ac->flags = ASYNC_CALL_KMALLOC | flags;
 	} else {

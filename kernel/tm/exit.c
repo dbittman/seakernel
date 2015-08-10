@@ -74,7 +74,7 @@ static void tm_thread_destroy(unsigned long data)
 	/* if the thread still hasn't been rescheduled, don't destroy it yet */
 	assert(thr->state == THREADSTATE_DEAD);
 	if(!(thr->flags & THREAD_DEAD)) {
-		struct async_call *thread_cleanup_call = async_call_create(0, 0, 
+		struct async_call *thread_cleanup_call = async_call_create(&thr->cleanup_call, 0, 
 				tm_thread_destroy, data, 0);
 		workqueue_insert(&__current_cpu->work, thread_cleanup_call);
 		return;
@@ -152,7 +152,7 @@ void tm_thread_do_exit(void)
 {
 	assert(current_thread->blocklist == 0);
 
-	struct async_call *thread_cleanup_call = async_call_create(0, 0, 
+	struct async_call *thread_cleanup_call = async_call_create(&current_thread->cleanup_call, 0, 
 							tm_thread_destroy, (unsigned long)current_thread, 0);
 
 	tm_thread_release_usermode_stack(current_thread, current_thread->usermode_stack_num);

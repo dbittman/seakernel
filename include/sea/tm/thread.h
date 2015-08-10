@@ -68,6 +68,7 @@ struct thread {
 	mutex_t block_mutex;
 	struct async_call block_timeout;
 	struct async_call alarm_timeout;
+	struct async_call cleanup_call;
 	struct ticker *alarm_ticker;
 	struct process *process;
 	struct workqueue resume_work;

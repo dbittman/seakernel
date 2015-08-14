@@ -2,8 +2,7 @@
 #define __SEA_TM_ASYNC_CALL_H
 
 #include <sea/mm/kmalloc.h>
-
-#define ASYNC_CALL_KMALLOC 1
+#include <sea/kernel.h>
 
 #define ASYNC_CALL_PRIORITY_HIGH   100
 #define ASYNC_CALL_PRIORITY_MEDIUM 50
@@ -22,9 +21,7 @@ static inline struct async_call *async_call_create(struct async_call *ac, int fl
 		unsigned long data, int priority)
 {
 	if(!ac) {
-		panic(0, "NO");
-		ac = kmalloc(sizeof(struct async_call));
-		ac->flags = ASYNC_CALL_KMALLOC | flags;
+		panic(0, "async_call may not be allocated at runtime");
 	} else {
 		ac->flags = flags;
 	}
@@ -41,8 +38,6 @@ static inline void async_call_execute(struct async_call *ac)
 
 static inline void async_call_destroy(struct async_call *ac)
 {
-	if(ac->flags & ASYNC_CALL_KMALLOC)
-		kfree(ac);
 }
 
 #endif

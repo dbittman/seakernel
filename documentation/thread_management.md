@@ -100,9 +100,66 @@ The scheduler runs on a per-cpu basis.
 
 Timing
 ------
+Timing is done by storing an integer in a time_t. Timing is resolved in microseconds,
+though in practice, only goes as specific as the CPU timing interrupts (typically one
+millisecond). But it can totally pretend that it knows about microseconds!
+
+Two macros are defined in sea/tm/timing.h, ONE_SECOND and ONC_MILLISECOND. These
+are useful when talking about timing, so tm_thread_delay(ONE_SECOND * 2) will sleep
+for 2 seconds.
+
+Critical Sections
+-----------------
+Sometimes it matters that a thread not be scheduled away for a section of code. For
+this, two functions have been defined: cpu_disable_preemption, and cpu_enable_preemption.
+Disabling preemption makes it so that the scheduler will not change processes for
+this CPU. Other CPUs and their threads are not affected.
 
 Blocking
 --------
+Threads don't want to run all the time. Typically, they stall on IO, or call waitpid,
+or delay, or whatever.
+
+Blocklists are used in situations where a thread might block for quite some time. They
+are used in situations like IO (waiting for a block to be read, waiting for a packet
+to send), or waitpid (waiting for a process to exit).
+
+Blocklists are actually linked lists that store threads. The function
+tm_thread_add_to_blocklist can be used to move a thread from an active queue in a CPU
+to a given blocklist. However, this does not actually stop a thread from running, but
+the next time it schedules away, it won't schedule back until the thread has been
+unblocked. tm_thread_remove_from_blocklist does the opposite: removes a thread from
+a blocklist and adds it to a runqueue.
+
+A more helpful function is tm_thread_block, which adds a thread to a blocklist, sets
+the thread's state to something other than RUNNING, and schedules away. It does this
+safely, by disabling preemption before doing the work. If the state gets set to
+something other than THREADSTATE_UNINTERRUPTIBLE, the function returns 0 if the thread
+is unblocked normally, -ERESTART if the thread was signaled and the signal specifies
+that the syscall be restarted (see Signals, below), or -EINTR if it was signaled and
+the signal does not specify that the syscall be restarted.
+
+The function tm_thread_unblock unblocks a given thread (and moves it from the blocklist
+to the active queue). tm_blocklist_wakeall does this for every thread in a blocklist.
+A common usage patterns for these functions is a thread calls tm_thread_block to add
+itself to a blocklist waiting for a resource. Then a worker thread, interrupt handler,
+or whatever wakes up the thread when the resource is ready.
+
+Sometimes, the thread wants to wait with a timeout. tm_thread_block_timeout does the
+same as tm_thread_block, but will return -ETIME if the timeout expired before it
+was woken up for any reason (including recieving a signal).
+
+Other times, a thread might want to schedule some work as it is in the process of
+blocking. tm_thread_block_schedule_work is used in this case. It takes an async_call
+which gets enqueued in a workqueue as the function is setting up the blocking.
+Otherwise, this function works the same as tm_thread_block.
+
+Finally, a thread might want to sleep for an amount of time. tm_thread_delay sleeps
+a specified number of microseconds. It returns 0 if it timeouts, or -ERESTART or -EINTR
+if it was signaled. Additionally, tm_thread_delay_sleep sleeps for a specified number
+of microseconds, ignores signals, and tt DOES NOT block. This is good for a thread
+that might need to sleep for a really small amount of time, and doesn't want to incur
+the overhead of a context switch along with blocklists and such.
 
 Signals
 -------

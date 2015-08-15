@@ -196,8 +196,11 @@ void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_addres
 	int already_in_kernel = 0;
 	cpu_interrupt_set(0);
 	add_atomic(&interrupt_counts[int_no], 1);
-	if(!current_thread->regs)
+	if(!current_thread->regs) {
 		current_thread->regs = regs;
+		/* TODO: do we need this? */
+		current_thread->system = 255;
+	}
 	else
 		already_in_kernel = 1;
 	int started = timer_start(&interrupt_timers[int_no]);
@@ -216,6 +219,7 @@ void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_addres
 	if(!called)
 		faulted(int_no, !already_in_kernel, return_address, regs->err_code, regs);
 	if(!already_in_kernel) {
+		current_thread->system = 0;
 		__setup_signal_handler(regs);
 		current_thread->regs = 0;
 	}

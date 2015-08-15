@@ -164,6 +164,104 @@ the overhead of a context switch along with blocklists and such.
 Signals
 -------
 
+Signals may be delivered to a thread or a process. If delivered to a thread, that
+thread specifically will field it if its signal mask doesn't mask it. If delivered to
+a process, the signal will be handled by the first thread in the thread list that
+doesn't mask the signal. It will be handled by only one signal.
 
+Signals sent to a thread are enqueued in a bitset within the thread structure. Upon
+scheduling, when the scheduler considers a thread, it searches the bitset for a signal.
+If it finds one, it resets that bit, and sets the threads signal field to the number
+of that signal. Note that because the signal queue is a bitset, multiple signals of the
+same number may not be handled multiple times. While the threads signal field is set,
+the above checking for signals in the bitset is skipped during scheduling (in order to
+prevent the signal field from being overwritten).
 
+When a thread gets considered by the scheduler, if its signal field is set, it calls
+the tm_thread_handle_signal function. This function checks to see if the signal is being
+handled by userspace or ignored. If ignored, it resets the signal field to 0, allowing
+the next signal in the bitset to be considered. If it's handled by userspace, the
+function sets a flag that tells the thread that when it returns from the interrupt
+it's currently in (see Interrupts, below), to handle setting up the userspace signal
+handler. If neither of these conditions are true, the thread does the default action
+for a signal. Most of the time, this involves calling tm_thread_exit to die. Some
+signals, like SIGCHLD, do not kill the process by default. If the signal is handled
+as the default action, the signal flag in the process is reset to zero.
+
+Both threads and processes have signal masks, however each works differently. A process
+signal mask prevents the delivery of a signal but keeps it in the signal queue bitset.
+That is, a thread is still given the signal, but won't handle it until the process's
+signal mask allows it. It will stay in the bitset until then. Thread signal masks,
+on the other hand, completely prevent a signal from being delivered (and enqueued) to
+a thread.
+
+A function exists to test if a thread has been delivered a signal: tm_thread_got_signal.
+This function checks if the thread has gotten a signal and if it will be handled. It
+returns -ERESTART if the signal has been specified to restart a syscall, 0 if there is
+not waiting signal, or the signal number otherwise. When a syscall blocks, it is good
+practice to check for signals when convenient, and return appropriately.
+
+Interrupts
+----------
+There are three ways for a thread to enter the kernel: Voluntarily via a syscall, involuntarily via a hardware interrupt, and involuntarily via a software interrupt.
+Additionally, the kernel itself may be interrupted by a hardware or software
+interrupt.
+
+Syscalls set a threads system field to the number of a syscall. This field being
+set imposes some restrictions on kernel code. For example, a signal will not be handled
+while this field is non-zero, thus preventing signals from being processed while inside
+a system call. This is because a signal may cause the thread to exit or stop, and it
+is dangerous to do this while executing a syscall except in very specific locations.
+Syscalls that need to block, or otherwise take a lot of time to complete an operation
+should check to see if the thread has been delivered a signal at times when it is safe
+to do so, and potentially cleanup and return -EINTR or -ERESTART to indicate that the
+syscall was interrupted (see Signals, above).
+
+A syscall that returns -ERESTART will be restarted with the same arguments before
+leaving the kernel. However, signals will be given the upportunity to be handled at
+this point, and may end up killing the thread.
+
+Hardware interrupts need to execute FAST. They must never block or do any operation
+that may take some time. They execute with interrupts DISABLED. Blocking, scheduling,
+allocating memory, and acquiring locks that are not mutexes with the MT_NOSCHED option
+enabled are all disallowed in hardware interrupt context (the kernel will panic if
+you try to do these things). If more work needs to be done, then a second stage interrupt
+handler must be used. This can be done by setting up an async_call and then calling
+cpu_interrupt_schedule_stage2. Note that the second stage interrupt handler may not
+run the exact number of times that a hardware interrupt fires, though it will run
+at least once. Note that once the hardware interrupt is acknowledged, then it is
+totally safe to do normal kernel operations again.
+
+Software interrupts operate in the same context of a syscall.
+
+Both software interrupts and hardware interrupts may interrupt another interrupt or
+syscall. In doing so, they check to see if they're interrupting kernel code or
+userspace code. If they're interrupting userspace code, any interrupt or syscall
+will set current_thread->regs to point to the stored thread context from before
+the interrupt. This is used by signals and by exec. If they're interrupting kernel
+code, then this assignment is skipped. Thus, the regs pointer always points to
+context from the thread's actual program code.
+
+At the end of an interrupt or syscall, several flags are checked. THREAD_SIGNALED
+indicates that a thread was signaled and the signal needs to be handled by userspace.
+If this is set, and the interrupt code is returning to userspace, then the stored
+context in the regs field is modified to return to the signal handler.
+
+The flag THREAD_EXIT indicates that the thread needs to exit before the end of this
+interrupt of syscall. The kernel doesn't immediately exit a thread when that thread
+calls tm_thread_exit, because it might be from handling an error or from a signal.
+Instead, tm_thread_exit sets this flag so that the actual exit function may be called
+from a known, safe location. The end of an interrupt handler or syscall is such a
+location. If the flag is set, the thread is exited.
+
+THREAD_SCHEDULE indicates that the thread needs to be rescheduled. This is used because
+a lot of the time a thread might do something and needs to be rescheduled, but can't
+yet. For example, during a critical section a thread may recieve a signal, but cannot
+reschedule to dequeue it from the bitset. Or a thread may set up a block during a
+critical section, and then return from an interrupt. Or any number of reasons. The main
+one is when handling a hardware timer interrupt, the kernel may choose to reschedule a
+thread due to its timeslice running out. Instead of rescheduling during the handler (
+this is not safe, and is not allowed), it sets the flag and continues on its way. At
+the end of the interrupt handler, the flag is checked, and if set, the tm_schedule
+function is called to reschedule.
 

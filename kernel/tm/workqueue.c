@@ -39,6 +39,8 @@ void workqueue_destroy(struct workqueue *wq)
 
 void workqueue_insert(struct workqueue *wq, struct async_call *call)
 {
+	/* Workqueues can be used by interrupts, so disable them while
+	 * we operate on the data structures */
 	int old = cpu_interrupt_set(0);
 	mutex_acquire(&wq->lock);
 	heap_insert(&wq->tasks, call->priority, call);

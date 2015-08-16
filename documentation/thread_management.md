@@ -45,7 +45,7 @@ task in the workqueue is executed before the schedule finishes.
 
 Ticker
 ------
-Each CPU has its own ticker structure, which has a monotomically increasing value
+Each CPU has its own ticker structure, which has a monotonically increasing value
 that gets incremented on the CPU's timing interrupt firing. The ticker has a heap
 of async_calls organized by a timeout. When adding an async_call, the insert function
 is also passed a timeout value (see timing, below). When this amount of time has passed,
@@ -147,7 +147,7 @@ or whatever wakes up the thread when the resource is ready.
 
 Sometimes, the thread wants to wait with a timeout. tm_thread_block_timeout does the
 same as tm_thread_block, but will return -ETIME if the timeout expired before it
-was woken up for any reason (including recieving a signal).
+was woken up for any reason (including receiving a signal).
 
 Other times, a thread might want to schedule some work as it is in the process of
 blocking. tm_thread_block_schedule_work is used in this case. It takes an async_call
@@ -157,7 +157,7 @@ Otherwise, this function works the same as tm_thread_block.
 Finally, a thread might want to sleep for an amount of time. tm_thread_delay sleeps
 a specified number of microseconds. It returns 0 if it timeouts, or -ERESTART or -EINTR
 if it was signaled. Additionally, tm_thread_delay_sleep sleeps for a specified number
-of microseconds, ignores signals, and tt DOES NOT block. This is good for a thread
+of microseconds, ignores signals, and it DOES NOT block. This is good for a thread
 that might need to sleep for a really small amount of time, and doesn't want to incur
 the overhead of a context switch along with blocklists and such.
 
@@ -167,7 +167,7 @@ Signals
 Signals may be delivered to a thread or a process. If delivered to a thread, that
 thread specifically will field it if its signal mask doesn't mask it. If delivered to
 a process, the signal will be handled by the first thread in the thread list that
-doesn't mask the signal. It will be handled by only one signal.
+doesn't mask the signal. It will be handled by only one thread.
 
 Signals sent to a thread are enqueued in a bitset within the thread structure. Upon
 scheduling, when the scheduler considers a thread, it searches the bitset for a signal.
@@ -218,7 +218,7 @@ to do so, and potentially cleanup and return -EINTR or -ERESTART to indicate tha
 syscall was interrupted (see Signals, above).
 
 A syscall that returns -ERESTART will be restarted with the same arguments before
-leaving the kernel. However, signals will be given the upportunity to be handled at
+leaving the kernel. However, signals will be given the opportunity to be handled at
 this point, and may end up killing the thread.
 
 Hardware interrupts need to execute FAST. They must never block or do any operation
@@ -256,7 +256,7 @@ location. If the flag is set, the thread is exited.
 
 THREAD_SCHEDULE indicates that the thread needs to be rescheduled. This is used because
 a lot of the time a thread might do something and needs to be rescheduled, but can't
-yet. For example, during a critical section a thread may recieve a signal, but cannot
+yet. For example, during a critical section a thread may receive a signal, but cannot
 reschedule to dequeue it from the bitset. Or a thread may set up a block during a
 critical section, and then return from an interrupt. Or any number of reasons. The main
 one is when handling a hardware timer interrupt, the kernel may choose to reschedule a

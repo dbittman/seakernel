@@ -54,8 +54,6 @@ int fs_link(struct inode *dir, struct inode *target, const char *name, size_t na
 		add_atomic(&target->nlink, 1);
 	rwlock_release(&target->metalock, RWL_WRITER);
 	rwlock_release(&dir->lock, RWL_WRITER);
-	if(r)
-		return r;
-	return 0;
+	return r;
 }
 

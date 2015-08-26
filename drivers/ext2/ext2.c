@@ -49,8 +49,9 @@ int ext2_mount(struct filesystem *seafs)
 	}
 	if(!(rof&0x1) || (rof & 0x2) || (rof&0x4))
 	{
-		//printk(5, "[ext2]: Filesystem on %s must be mounted read-only due to feature flags\n", node);
-		fs->flags |= EXT2_FS_READONLY;
+		printk(0, "[ext2]: Filesystem must be mounted read-only due to feature flags\n");
+		//fs->flags |= EXT2_FS_READONLY;
+		//TODO: support this... (also: TODO: VFS-aware read only FS?)
 	}
 	if(fs->sb->mount_count > fs->sb->max_mount_count)
 		fs->sb->mount_count=0;

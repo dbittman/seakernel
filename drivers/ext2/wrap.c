@@ -99,8 +99,8 @@ int ext2_wrap_inode_link(struct filesystem *fs, struct inode *parent, struct ino
 		const char *name, size_t namelen)
 {
 	struct ext2_info *info = fs->data;
-	if(info->flags & EXT2_FS_READONLY)
-		return -EROFS;
+	//if(info->flags & EXT2_FS_READONLY)
+	//	return -EROFS;
 	ext2_inode_t dir, tar;
 	if(!ext2_inode_read(info, parent->id, &dir))
 		return -EIO;

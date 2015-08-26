@@ -141,7 +141,6 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	console_init_stage2();
 	parse_kernel_cmd((char *)(addr_t)mtboot->cmdline);
 	tm_init_multitasking();
-	//init_cache();
 	dm_init();
 	fs_init();
 	net_init();
@@ -187,7 +186,6 @@ void user_mode_init(void)
 	 * a page fault) because you can't do fancy kernel stuff in ring 3!
 	 * So we write simple wrapper functions for common functions that 
 	 * we will need */
-	//sys_setup();
 
 	int ret = u_execve("/sh", (char **)stuff_to_pass, (char **)init_env);
 	ret = u_execve("/bin/sh", (char **)stuff_to_pass, (char **)init_env);

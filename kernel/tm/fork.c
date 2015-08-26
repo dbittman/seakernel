@@ -217,6 +217,11 @@ struct cpu *tm_fork_pick_cpu(void)
 #endif
 }
 
+__attribute__((optimize("-O0"))) __attribute__((noinline)) static struct thread *__post_fork_get_current()
+{
+	return current_thread;
+}
+
 int tm_clone(int flags)
 {
 	struct process *proc = current_process;
@@ -243,8 +248,10 @@ int tm_clone(int flags)
 	int old = cpu_interrupt_set(0);
 	arch_tm_fork_setup_stack(thr);
 
-	if(current_thread == thr) {
-		current_thread->jump_point = 0;
+	struct thread *this_thread = __post_fork_get_current();
+
+	if(this_thread == thr) {
+		this_thread->jump_point = 0;
 		cpu_interrupt_set(old);
 		cpu_enable_preemption();
 		return 0;

@@ -54,7 +54,6 @@ static void __valloc_clear_bits(struct valloc *va, long start, long count)
 		assert(!TEST_BIT(va->start, idx));
 	}
 }
-#include <sea/tm/thread.h>
 /* performs a linear next-fit search */
 static long __valloc_get_start_index(struct valloc *va, long np)
 {
@@ -64,12 +63,8 @@ static long __valloc_get_start_index(struct valloc *va, long np)
 	if(idx >= va->npages)
 		idx=0;
 	long prev = idx;
-	/* if(current_thread->tid == 222 || current_thread->tid == 1177) */
-	/* printk(0, "SEARCH %d\n", np); */
 	do {
 		int res = TEST_BIT(va->start, idx);
-	/* if(current_thread->tid == 222 || current_thread->tid == 1177) */
-	/* 	printk(0, "-> %d %d %d %d\n", res, start, idx, count); */
 		if(start == -1 && res == 0) {
 			/* we aren't checking a region for length, 
 			 * and we found an empty bit. Start checking

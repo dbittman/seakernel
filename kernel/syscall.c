@@ -29,7 +29,7 @@
 #include <sea/fs/kerfs.h>
 #include <sea/tm/thread.h>
 static unsigned int num_syscalls=0;
-/* #define SC_DEBUG 1 */
+#define SC_DEBUG 1
 #define SC_TIMING 1
 int sys_null(long a, long b, long c, long d, long e)
 {

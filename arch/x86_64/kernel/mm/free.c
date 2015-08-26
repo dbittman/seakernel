@@ -66,7 +66,7 @@ void arch_mm_free_self_directory()
 void arch_mm_destroy_directory(struct vmm_context *vc)
 {
 	addr_t *tmp;
-	pml4_t *pml4 = (pml4_t *)current_process->vmm_context.root_virtual;
+	pml4_t *pml4 = (pml4_t *)vc->root_virtual;
 	kfree(pml4);
 }
 

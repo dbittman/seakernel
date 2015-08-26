@@ -22,14 +22,16 @@ int probe_smp();
 void init_acpi();
 void arch_cpu_processor_init_1(void)
 {
-	primary_cpu = &primary_cpu_data;
-	memset(primary_cpu, 0, sizeof(struct cpu));
 #if CONFIG_SMP
+	primary_cpu = &cpu_array[0];
+	primary_cpu->knum = 0;
 	mutex_create(&ipi_mutex, MT_NOSCHED);
 	memset(cpu_array, 0, sizeof(struct cpu) * CONFIG_MAX_CPUS);
 	cpu_array_num = 1;
 	load_tables_ap(primary_cpu);
 #else
+	primary_cpu = &primary_cpu_data;
+	memset(primary_cpu, 0, sizeof(struct cpu));
 	load_tables_ap(primary_cpu);
 #endif
 	assert(primary_cpu);

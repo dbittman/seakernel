@@ -52,6 +52,7 @@ static struct process *__find_first_child(struct process *parent)
 
 int sys_waitpid(int pid, int *st, int opt)
 {
+	if(current_process->pid)
 	if(!pid || pid < -1)
 		return -ENOSYS;
 

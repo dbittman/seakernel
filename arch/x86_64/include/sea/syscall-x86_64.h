@@ -10,8 +10,11 @@ static long dosyscall(int num, long a, long b, long c, long d, long e)
 }
 
 /* backwards because of the calling conventions...it works. */
+/* TODO: here we're returing an int, and casting it to a long, since most
+ * syscalls return an int. Make this every syscall. syscalls only return
+ * error values, any other return value must be through pointer parameters */
 #define __do_syscall_jump(ret, location, a, b, c, d, e) \
-	ret = ((long (*)(long, long, long, long, long))location)(e, d, c, b, a)
+	ret = (long)((int (*)(long, long, long, long, long))location)(e, d, c, b, a)
 
 #define SYSCALL_NUM_AND_RET regs->rax
 #define _E_ regs->rdi
@@ -37,3 +40,4 @@ static unsigned char signal_return_injector[SIGNAL_INJECT_SIZE] = {
 };
 
 #endif
+

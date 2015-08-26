@@ -596,8 +596,6 @@ int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 	/* TODO: add blocking, make non-polling */
 	if(nfds < 0)
 		return -EINVAL;
-	if(!nfds)
-		return 0;
 	unsigned long wait=0;
 	int i;
 	if(timeout)

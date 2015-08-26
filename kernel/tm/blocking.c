@@ -146,6 +146,7 @@ int tm_thread_delay(time_t microseconds)
 
 int sys_delay(long time)
 {
+	printk(0, "delay: %d\n", time);
 	time_t start = tm_timing_get_microseconds();
 	switch(tm_thread_delay(time * ONE_MILLISECOND)) {
 		signed long remaining = 0;

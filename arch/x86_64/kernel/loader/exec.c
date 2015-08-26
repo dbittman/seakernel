@@ -9,7 +9,7 @@ void arch_loader_exec_initializer(unsigned argc, addr_t eip)
 	t->regs->rdi = argc;
 	t->regs->rsi = (uint64_t)t->process->argv;
 	t->regs->rdx = (uint64_t)t->process->env;
-	t->regs->useresp = t->regs->rbp = t->usermode_stack_end;
+	t->regs->useresp = t->regs->rbp = t->usermode_stack_end - 8;
 	
 	t->regs->eip = eip;
 }

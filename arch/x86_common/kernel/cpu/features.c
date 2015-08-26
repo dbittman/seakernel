@@ -33,3 +33,4 @@ void x86_cpu_init_sse(struct cpu *me)
 		__asm__ __volatile__ ("mov %0, %%cr0;"::"r"(cr0)); /* restore CR0 */
 	}
 }
+

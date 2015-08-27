@@ -1,11 +1,11 @@
-#include <sea/tm/thread.h>
-#include <sea/tm/process.h>
-#include <sea/cpu/processor.h>
 #include <sea/cpu/atomic.h>
+#include <sea/cpu/interrupt.h>
+#include <sea/cpu/processor.h>
 #include <sea/fs/file.h>
 #include <sea/fs/inode.h>
-#include <sea/cpu/interrupt.h>
 #include <sea/mm/map.h>
+#include <sea/tm/process.h>
+#include <sea/tm/thread.h>
 #include <sea/vsprintf.h>
 #include <sea/fs/kerfs.h>
 
@@ -24,16 +24,16 @@
 
 void tm_thread_remove_kerfs_entries(struct thread *thr)
 {
-	__remove_kerfs_thread_entry(thr, "refs");
-	__remove_kerfs_thread_entry(thr, "state");
+	__remove_kerfs_thread_entry(thr, "blocklist");
+	__remove_kerfs_thread_entry(thr, "cpuid");
 	__remove_kerfs_thread_entry(thr, "flags");
-	__remove_kerfs_thread_entry(thr, "system");
 	__remove_kerfs_thread_entry(thr, "priority");
+	__remove_kerfs_thread_entry(thr, "refs");
+	__remove_kerfs_thread_entry(thr, "sig_mask");
+	__remove_kerfs_thread_entry(thr, "state");
+	__remove_kerfs_thread_entry(thr, "system");
 	__remove_kerfs_thread_entry(thr, "timeslice");
 	__remove_kerfs_thread_entry(thr, "usermode_stack_end");
-	__remove_kerfs_thread_entry(thr, "sig_mask");
-	__remove_kerfs_thread_entry(thr, "cpuid");
-	__remove_kerfs_thread_entry(thr, "blocklist");
 	char dir[128];
 	snprintf(dir, 128, "/dev/process/%d/%d", thr->process->pid, thr->tid);
 	sys_rmdir(dir);
@@ -41,26 +41,26 @@ void tm_thread_remove_kerfs_entries(struct thread *thr)
 
 void tm_process_remove_kerfs_entries(struct process *proc)
 {
-	__remove_kerfs_proc_entry(proc, "heap_start");
-	__remove_kerfs_proc_entry(proc, "heap_end");
-	__remove_kerfs_proc_entry(proc, "flags");
-	__remove_kerfs_proc_entry(proc, "refs");
 	__remove_kerfs_proc_entry(proc, "cmask");
-	__remove_kerfs_proc_entry(proc, "tty");
-	__remove_kerfs_proc_entry(proc, "utime");
-	__remove_kerfs_proc_entry(proc, "stime");
-	__remove_kerfs_proc_entry(proc, "thread_count");
-	__remove_kerfs_proc_entry(proc, "effective_uid");
-	__remove_kerfs_proc_entry(proc, "effective_gid");
-	__remove_kerfs_proc_entry(proc, "real_uid");
-	__remove_kerfs_proc_entry(proc, "real_gid");
-	__remove_kerfs_proc_entry(proc, "global_sig_mask");
 	__remove_kerfs_proc_entry(proc, "command");
-	__remove_kerfs_proc_entry(proc, "exit_reason.sig");
-	__remove_kerfs_proc_entry(proc, "exit_reason.pid");
-	__remove_kerfs_proc_entry(proc, "exit_reason.ret");
+	__remove_kerfs_proc_entry(proc, "effective_gid");
+	__remove_kerfs_proc_entry(proc, "effective_uid");
 	__remove_kerfs_proc_entry(proc, "exit_reason.cause");
 	__remove_kerfs_proc_entry(proc, "exit_reason.coredump");
+	__remove_kerfs_proc_entry(proc, "exit_reason.pid");
+	__remove_kerfs_proc_entry(proc, "exit_reason.ret");
+	__remove_kerfs_proc_entry(proc, "exit_reason.sig");
+	__remove_kerfs_proc_entry(proc, "flags");
+	__remove_kerfs_proc_entry(proc, "global_sig_mask");
+	__remove_kerfs_proc_entry(proc, "heap_end");
+	__remove_kerfs_proc_entry(proc, "heap_start");
+	__remove_kerfs_proc_entry(proc, "real_gid");
+	__remove_kerfs_proc_entry(proc, "real_uid");
+	__remove_kerfs_proc_entry(proc, "refs");
+	__remove_kerfs_proc_entry(proc, "stime");
+	__remove_kerfs_proc_entry(proc, "thread_count");
+	__remove_kerfs_proc_entry(proc, "tty");
+	__remove_kerfs_proc_entry(proc, "utime");
 	char dir[128];
 	snprintf(dir, 128, "/dev/process/%d", proc->pid);
 	sys_rmdir(dir);
@@ -100,7 +100,7 @@ void tm_process_wait_cleanup(struct process *proc)
 __attribute__((noinline)) static void tm_process_exit(int code)
 {
 	if(code != -9) 
-		current_process->exit_reason.cause = 0;
+		current_process->exit_reason.cause = __EXIT;
 	current_process->exit_reason.ret = code;
 	current_process->exit_reason.pid = current_process->pid;
 
@@ -162,6 +162,11 @@ void tm_thread_do_exit(void)
 		ticker_delete(ticker, &current_thread->alarm_timeout);
 		current_thread->alarm_ticker = 0;
 		cpu_interrupt_set(old);
+	}
+
+	if(current_thread->tracer) {
+		tm_thread_put(current_thread->tracer); //TODO: thread safe?
+		current_thread->tracer = 0;
 	}
 
 	tm_thread_remove_kerfs_entries(current_thread);

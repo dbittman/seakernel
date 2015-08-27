@@ -4,18 +4,39 @@
 #include <sea/errno.h>
 #include <sea/lib/bitmap.h>
 #include <sea/mm/valloc.h>
+#include <sea/tm/ptrace.h>
 size_t running_threads = 0;
 struct hash_table *thread_table;
 mutex_t thread_refs_lock;
 struct valloc km_stacks;
 void tm_thread_enter_system(int sys)
 {
+	/* check for PTRACE event */
+	if(current_thread->flags & THREAD_PTRACED
+			&& current_thread->tracee_flags & TRACEE_STOPON_SYSCALL) {
+		printk(0, "stopping on syscall %d\n", sys);
+		current_thread->tracee_flags &= ~TRACEE_STOPON_SYSCALL;
+		tm_signal_send_thread(current_thread, SIGTRAP);
+		tm_schedule();
+
+	}
+
 	current_thread->system=(!sys ? -1 : sys);
 }
 
 void tm_thread_exit_system(void)
 {
+	int sys = current_thread->system;
 	current_thread->system=0;
+	/* check for PTRACE event */
+	if(current_thread->flags & THREAD_PTRACED
+			&& current_thread->tracee_flags & TRACEE_STOPON_SYSCALL) {
+		printk(0, "stopping after syscall %d\n", sys);
+		current_thread->tracee_flags &= ~TRACEE_STOPON_SYSCALL;
+		tm_signal_send_thread(current_thread, SIGTRAP);
+		tm_schedule();
+	}
+
 	/* if we have a signal, then we've been ignoring it up until now
 	 * because we were inside a syscall. Set the schedule flag so we
 	 * can handle that now */

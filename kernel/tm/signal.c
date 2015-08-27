@@ -1,13 +1,12 @@
 /* Functions for signaling threads and processes
  * signal.c: Copyright (c) 2015 Daniel Bittman
  */
-#include <sea/kernel.h>
-#include <sea/cpu/interrupt.h>
-#include <sea/tm/process.h>
 #include <sea/boot/init.h>
-#include <sea/cpu/interrupt.h>
 #include <sea/cpu/atomic.h>
+#include <sea/cpu/interrupt.h>
 #include <sea/errno.h>
+#include <sea/kernel.h>
+#include <sea/tm/process.h>
 #include <sea/vsprintf.h>
 
 void tm_thread_handle_signal(int signal)
@@ -35,9 +34,11 @@ void tm_thread_handle_signal(int signal)
 			case SIGBUS : case SIGABRT: case SIGTRAP: case SIGSEGV:
 			case SIGALRM: case SIGFPE : case SIGILL : case SIGPAGE:
 			case SIGINT : case SIGTERM: case SIGUSR1: case SIGUSR2:
-				current_process->exit_reason.cause=__EXITSIG;
-				current_process->exit_reason.sig=signal;
-				tm_thread_exit(-9);
+				if(!(current_thread->flags & THREAD_PTRACED)) {
+					current_process->exit_reason.cause=__EXITSIG;
+					current_process->exit_reason.sig=signal;
+					tm_thread_exit(-9);
+				}
 				break;
 			case SIGUSLEEP:
 				current_thread->state = THREADSTATE_UNINTERRUPTIBLE;
@@ -47,7 +48,8 @@ void tm_thread_handle_signal(int signal)
 					tm_signal_send_process(current_process->parent, SIGCHILD);
 				current_process->exit_reason.cause=__STOPSIG;
 				current_process->exit_reason.sig=signal;
-				/* Fall through */
+				current_thread->state = THREADSTATE_STOPPED;
+				break;
 			case SIGISLEEP:
 				current_thread->state = THREADSTATE_INTERRUPTIBLE;
 				break;
@@ -79,11 +81,21 @@ void tm_signal_send_thread(struct thread *thr, int signal)
 {
 	assert(signal < NUM_SIGNALS);
 	mutex_acquire(&thr->block_mutex);
-	or_atomic(&thr->signals_pending, 1 << (signal - 1));
+	if(!(thr->flags & THREAD_PTRACED && signal != SIGKILL)) {
+		or_atomic(&thr->signals_pending, 1 << (signal - 1));
+	}
 	tm_thread_raise_flag(thr, THREAD_SCHEDULE);
 	mutex_release(&thr->block_mutex);
 	if(thr->state == THREADSTATE_INTERRUPTIBLE) {
 		tm_thread_unblock(thr);
+	}
+	if(thr->state == THREADSTATE_STOPPED && (signal == SIGCONT || signal == SIGKILL)) {
+		thr->state = THREADSTATE_RUNNING;
+	} else if(thr->flags & THREAD_PTRACED && signal != SIGKILL) {
+		thr->process->exit_reason.cause = __STOPSIG;
+		thr->process->exit_reason.sig = signal;
+		tm_blocklist_wakeall(&thr->process->waitlist);
+		thr->state = THREADSTATE_STOPPED;
 	}
 }
 
@@ -95,7 +107,7 @@ int tm_signal_send_process(struct process *proc, int signal)
 	struct thread *thr;
 	/* find the first thread that is willing to handle the signal */
 	ll_for_each_entry(&proc->threadlist, node, struct thread *, thr) {
-		if(!(thr->sig_mask & (1 << signal))) {
+		if(!(thr->sig_mask & (1 << signal)) && signal != SIGKILL && signal != SIGSTOP) {
 			rwlock_release(&proc->threadlist.rwl, RWL_READER);
 			tm_signal_send_thread(thr, signal);
 			return 0;

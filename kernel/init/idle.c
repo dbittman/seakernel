@@ -52,7 +52,11 @@ int kt_kernel_idle_task(void)
 			workqueue_dowork(&__current_cpu->work);
 		else
 			tm_schedule();
-		sys_waitpid(-1, 0, WNOHANG);
+		int status;
+		int pid = sys_waitpid(-1, &status, WNOHANG);
+		if(WIFSTOPPED(status)) {
+			sys_kill(pid, SIGKILL);
+		}
 	}
 }
 

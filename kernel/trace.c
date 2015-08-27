@@ -21,15 +21,11 @@ int trace(char *subsys, char *msg, ...){
 	int value=0;
 	int *val=&value;
 	if(!hash_table_get_entry(&h_table, subsys, 1, strlen(subsys)+1,(void **)&val)){
-		char printbuf[2024];
+		char printbuf[2065];
+		int len = snprintf(printbuf, 64, "[%s]: ", subsys);
 		va_list args;
 		va_start(args, msg);
-		int len=strlen(subsys)+1;
-		printbuf[0]='[';
-		strncpy(printbuf+1, subsys, len);
-		printbuf[len+1]=']';
-		printbuf[len+2]=':';
-		vsnprintf(2024, printbuf+len+3, msg, args);
+		vsnprintf(2000, printbuf+len-1, msg, args);
 		printk(0, printbuf);
 		va_end(args);
 	}
@@ -45,3 +41,4 @@ int trace_on(char *subsys){
 int trace_off(char *subsys){	
 	return hash_table_delete_entry(&h_table, subsys, 1, strlen(subsys)+1);
 }
+

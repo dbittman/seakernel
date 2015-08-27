@@ -8,30 +8,28 @@
 static void get_status_int(struct process *t, int *st, int *__pid)
 {
 	int ret_val, sig_number;
-	//int status = (t->state == TASK_DEAD) ? __EXIT : __STOPPED;
-	int status = __EXIT;
+	int status = t->exit_reason.cause;
 	
 	sig_number = t->exit_reason.sig;
 	ret_val = t->exit_reason.ret;
 	status |= t->exit_reason.cause | t->exit_reason.coredump;
-	if(__pid) *__pid = t->exit_reason.pid;
+	if(__pid) *__pid = t->pid;
 	/* yeah, lots of weird posix stuff going on here */
 	short code=0;
 	short info=0;
-	if(status & __COREDUMP) code |= 0x80;
-	if(status & __EXITSIG)  code |= 0x7e, info=(char)sig_number << 8;
-	if(status & __STOPSIG) {
+	if(status == __EXITSIG)  code = 0x7e, info=(char)sig_number << 8;
+	if(status == __STOPSIG) {
 		if(status & __EXITSIG) panic(PANIC_NOSYNC, 
 			"Stat of dead task returned nonsense data!");
 		code |= 0x7f, info=(char)sig_number << 8;
 	}
-	if(status == __EXIT || status == __COREDUMP) {
+	if(status == __EXIT) {
 		info=ret_val<<8;
 	}
-	if(status & __STOPPED)
+	if(status == __STOPPED)
 		info=0, code = 0x7f;
 	if(st)
-		*st = code << 16 | info;
+		*st = code | info;
 }
 
 static struct process *__find_first_child(struct process *parent)
@@ -69,7 +67,10 @@ int sys_waitpid(int pid, int *st, int opt)
 		return -ECHILD;
 	}
 
-	while(!(proc->flags & PROCESS_EXITED) && !(opt & WNOHANG)) {
+	while(!(proc->flags & PROCESS_EXITED)
+			&& (proc->exit_reason.cause != __STOPSIG)
+			&& (proc->exit_reason.cause != __STOPPED)
+			&& !(opt & WNOHANG)) {
 		switch(tm_thread_block(&proc->waitlist, THREADSTATE_INTERRUPTIBLE)) {
 			case -ERESTART:
 				tm_process_put(proc);
@@ -78,6 +79,15 @@ int sys_waitpid(int pid, int *st, int opt)
 				tm_process_put(proc);
 				return -EINTR;
 		}
+	}
+
+	if(proc->exit_reason.cause == __STOPPED || proc->exit_reason.cause == __STOPSIG) {
+		int code, gotpid;
+		get_status_int(proc, &code, &gotpid);
+		tm_process_put(proc);
+		if(st)
+			*st = code;
+		return gotpid;
 	}
 
 	if(!(proc->flags & PROCESS_EXITED)) {

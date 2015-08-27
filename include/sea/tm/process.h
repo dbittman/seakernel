@@ -47,6 +47,8 @@ struct exit_status {
 
 #define NUM_SIGNALS 32
 
+#define WIFSTOPPED(w)   (((w) & 0xff) == 0x7f)
+
 struct process {
 	unsigned magic;
 	struct vmm_context vmm_context;
@@ -135,5 +137,7 @@ void tm_process_put(struct process *proc);
 int tm_signal_send_process(struct process *proc, int signal);
 int sys_kill(pid_t pid, int signal);
 void tm_process_create_kerfs_entries(struct process *proc);
+struct thread *tm_process_get_head_thread(struct process *proc);
 
 #endif
+

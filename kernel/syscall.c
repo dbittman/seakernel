@@ -1,36 +1,33 @@
-#include <sea/kernel.h>
-#include <sea/syscall.h>
-#include <sea/cpu/interrupt.h>
-#include <sea/tm/process.h>
-#include <sea/dm/dev.h>
-#include <sea/fs/inode.h>
-#include <sea/sys/stat.h>
-#include <sea/loader/module.h>
-#include <sea/sys/sysconf.h>
-#include <sea/mm/swap.h>
-#include <sea/cpu/processor.h>
-#include <sea/syscall.h>
-#include <sea/uname.h>
-#include <sea/fs/mount.h>
-#include <sea/tty/terminal.h>
-#include <sea/fs/stat.h>
-#include <sea/fs/dir.h>
-#include <sea/cpu/interrupt.h>
-#include <sea/fs/pipe.h>
-#include <sea/loader/exec.h>
 #include <sea/cpu/atomic.h>
-#include <sea/mm/map.h>
+#include <sea/cpu/interrupt.h>
+#include <sea/cpu/processor.h>
+#include <sea/dm/dev.h>
 #include <sea/errno.h>
-#include <sea/vsprintf.h>
-#include <sea/fs/socket.h>
-#include <sea/lib/timer.h>
-#include <sea/tm/thread.h>
 #include <sea/fs/dir.h>
+#include <sea/fs/inode.h>
 #include <sea/fs/kerfs.h>
+#include <sea/fs/mount.h>
+#include <sea/fs/pipe.h>
+#include <sea/fs/socket.h>
+#include <sea/fs/stat.h>
+#include <sea/kernel.h>
+#include <sea/lib/timer.h>
+#include <sea/loader/exec.h>
+#include <sea/loader/module.h>
+#include <sea/mm/map.h>
+#include <sea/mm/swap.h>
+#include <sea/sys/stat.h>
+#include <sea/sys/sysconf.h>
+#include <sea/syscall.h>
+#include <sea/tm/process.h>
+#include <sea/tm/ptrace.h>
 #include <sea/tm/thread.h>
-static unsigned int num_syscalls=0;
+#include <sea/tty/terminal.h>
+#include <sea/uname.h>
+#include <sea/vsprintf.h>
 /* #define SC_DEBUG 1 */
 #define SC_TIMING 1
+static unsigned int num_syscalls=0;
 int sys_null(long a, long b, long c, long d, long e)
 {
 	#if CONFIG_DEBUG
@@ -147,6 +144,7 @@ static void *syscall_table[129] = {
 	[SYS_MUNMAP]          = SC sys_munmap,
 	[SYS_MSYNC]           = SC sys_msync,
 	//[SYS_TSTAT]           = SC sys_task_stat,
+	[SYS_PTRACE]          = SC sys_ptrace,
 
 	[SYS_DELAY]           = SC sys_delay,
 	[SYS_KRESET]          = SC kernel_reset,

@@ -36,6 +36,10 @@ static void preexec(int desc)
 		mm_vm_set_attrib(a, PAGE_PRESENT | PAGE_WRITE);
 	t->signal = t->signals_pending = 0;
 	memset((void *)t->process->signal_act, 0, sizeof(struct sigaction) * NUM_SIGNALS);
+
+	if(t->flags & THREAD_PTRACED) {
+		tm_signal_send_thread(t, SIGTRAP);
+	}
 }
 
 static void free_dp(char **mem, int num)

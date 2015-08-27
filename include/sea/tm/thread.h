@@ -28,11 +28,13 @@
 #define THREAD_WAKEUP          0x20 /* the scheduler won't let the state -> THREADSTATE_INTERRUPTIBLE
 									   if this flag is set, but it will then reset the flag */
 #define THREAD_DEAD            0x40 /* thread is dead, AND has scheduled away */
+#define THREAD_PTRACED         0x80 /* this thread is being traced */
 
 #define THREADSTATE_RUNNING 0
 #define THREADSTATE_INTERRUPTIBLE 1
 #define THREADSTATE_UNINTERRUPTIBLE 2
 #define THREADSTATE_DEAD 3
+#define THREADSTATE_STOPPED 4
 
 #define tm_thread_raise_flag(t,f) or_atomic(&(t->flags), f)
 #define tm_thread_lower_flag(t,f) and_atomic(&(t->flags), ~f)
@@ -72,6 +74,10 @@ struct thread {
 	struct ticker *alarm_ticker;
 	struct process *process;
 	struct workqueue resume_work;
+
+	/* ptrace */
+	struct thread *tracer;
+	int tracee_flags;
 };
 
 extern size_t running_threads;

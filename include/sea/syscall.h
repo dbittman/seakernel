@@ -78,7 +78,7 @@ int sys_setup();
 #define SYS_MUNMAP       66
 #define SYS_MSYNC        67
 #define SYS_TSTAT        68
-
+#define SYS_PTRACE       69
 
 #define SYS_DELAY        71
 #define SYS_KRESET       72

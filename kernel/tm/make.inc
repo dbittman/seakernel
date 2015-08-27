@@ -3,6 +3,7 @@ KOBJS+= kernel/tm/blocking.o \
 		kernel/tm/fork.o \
 		kernel/tm/kthread.o \
 		kernel/tm/process.o \
+		kernel/tm/ptrace.o \
 		kernel/tm/sched.o \
 		kernel/tm/signal.o \
 		kernel/tm/task.o \

@@ -56,11 +56,10 @@ static struct process *__find_first_child(struct process *parent)
 static void __wait_check_reset(unsigned long arg)
 {
 	struct process *proc = (void *)arg;
-	if(proc->flags & PROCESS_EXITED
-			|| proc->exit_reason.cause == __STOPSIG
-			|| proc->exit_reason.cause == __STOPPED)
+	if((proc->flags & PROCESS_EXITED)
+			|| proc->exit_reason.cause) {
 		tm_blocklist_wakeall(&proc->waitlist);
-	tm_process_put(proc);
+	}
 }
 
 int sys_waitpid(int pid, int *st, int opt)
@@ -86,10 +85,15 @@ int sys_waitpid(int pid, int *st, int opt)
 			&& (proc->exit_reason.cause != __STOPSIG)
 			&& (proc->exit_reason.cause != __STOPPED)
 			&& !(opt & WNOHANG)) {
-		struct async_call work;
-		async_call_create(&work, 0, &__wait_check_reset, (unsigned long)proc, ASYNC_CALL_PRIORITY_LOW);
-		tm_process_inc_reference(proc);
-		switch(tm_thread_block_schedule_work(&proc->waitlist, THREADSTATE_INTERRUPTIBLE, &work)) {
+		/* do this inside the loop, as it's rare for this loop body to execute more than once */
+		async_call_create(&current_thread->waitcheck_call, 0,
+				__wait_check_reset, (unsigned long)proc, ASYNC_CALL_PRIORITY_LOW);
+		int r = tm_thread_block_schedule_work(&proc->waitlist, THREADSTATE_INTERRUPTIBLE,
+				&current_thread->waitcheck_call); 
+		struct workqueue *wq = current_thread->waitcheck_call.queue;
+		if(wq)
+			workqueue_delete(wq, &current_thread->waitcheck_call);
+		switch(r) {
 			case -ERESTART:
 				tm_process_put(proc);
 				return -ERESTART;

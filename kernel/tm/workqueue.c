@@ -44,9 +44,22 @@ void workqueue_insert(struct workqueue *wq, struct async_call *call)
 	int old = cpu_interrupt_set(0);
 	mutex_acquire(&wq->lock);
 	heap_insert(&wq->tasks, call->priority, call);
+	call->queue = wq;
 	mutex_release(&wq->lock);
 	cpu_interrupt_set(old);
 	add_atomic(&wq->count, 1);
+}
+
+int workqueue_delete(struct workqueue *wq, struct async_call *call)
+{
+	assert(call);
+	int old = cpu_interrupt_set(0);
+	mutex_acquire(&wq->lock);
+	int r = heap_delete(&wq->tasks, call);
+	call->queue = 0;
+	mutex_release(&wq->lock);
+	cpu_interrupt_set(old);
+	return r;
 }
 
 int workqueue_dowork(struct workqueue *wq)
@@ -55,6 +68,7 @@ int workqueue_dowork(struct workqueue *wq)
 	int old = cpu_interrupt_set(0);
 	mutex_acquire(&wq->lock);
 	if(heap_pop(&wq->tasks, 0, (void **)&call) == 0) {
+		call->queue = 0;
 		mutex_release(&wq->lock);
 		sub_atomic(&wq->count, 1);
 		cpu_interrupt_set(old);

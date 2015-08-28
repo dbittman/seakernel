@@ -1,11 +1,12 @@
-#include <sea/tm/ticker.h>
-#include <sea/mm/kmalloc.h>
-#include <sea/types.h>
-#include <sea/lib/heap.h>
-#include <sea/tm/async_call.h>
-#include <sea/mutex.h>
-#include <sea/kernel.h>
+#include <sea/cpu/interrupt.h>
 #include <sea/cpu/processor.h>
+#include <sea/kernel.h>
+#include <sea/lib/heap.h>
+#include <sea/mm/kmalloc.h>
+#include <sea/mutex.h>
+#include <sea/tm/async_call.h>
+#include <sea/tm/ticker.h>
+#include <sea/types.h>
 
 struct ticker *ticker_create(struct ticker *ticker, int flags)
 {
@@ -37,12 +38,15 @@ void ticker_tick(struct ticker *ticker, uint64_t microseconds)
 			 * we need to in case something bubbled up
 			 * through the heap between the call to
 			 * peak and now */
+			int old = cpu_interrupt_set(0);
 			mutex_acquire(&ticker->lock);
 			int res = heap_pop(&ticker->heap, &key, &data);
 			mutex_release(&ticker->lock);
+			cpu_interrupt_set(old);
 			if(res == 0) {
 				/* handle the time-event */
 				struct async_call *call = (struct async_call *)data;
+				call->queue = 0;
 				async_call_execute(call);
 			}
 		}
@@ -53,17 +57,22 @@ void ticker_tick(struct ticker *ticker, uint64_t microseconds)
 void ticker_insert(struct ticker *ticker, time_t microseconds, struct async_call *call)
 {
 	assert(call);
+	int old = cpu_interrupt_set(0);
 	mutex_acquire(&ticker->lock);
 	heap_insert(&ticker->heap, microseconds + ticker->tick, call);
+	call->queue = ticker;
 	mutex_release(&ticker->lock);
+	cpu_interrupt_set(old);
 }
 
 int ticker_delete(struct ticker *ticker, struct async_call *call)
 {
-	assert(call);
+	int old = cpu_interrupt_set(0);
 	mutex_acquire(&ticker->lock);
 	int r = heap_delete(&ticker->heap, call);
+	call->queue = 0;
 	mutex_release(&ticker->lock);
+	cpu_interrupt_set(old);
 	return r;
 }
 

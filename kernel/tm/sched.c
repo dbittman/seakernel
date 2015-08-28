@@ -78,7 +78,7 @@ static void post_schedule(struct thread *prev)
 		if(wq->count > 30) {
 			printk(0, "[sched]: warning - work is piling up (%d tasks)!\n", wq->count);
 		}
-		workqueue_dowork(&__current_cpu->work);
+		workqueue_dowork(wq);
 	}
 	if(current_thread->resume_work.count) {
 		while(workqueue_dowork(&current_thread->resume_work) != -1) {

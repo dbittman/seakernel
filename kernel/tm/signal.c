@@ -83,21 +83,19 @@ void tm_signal_send_thread(struct thread *thr, int signal)
 		or_atomic(&thr->signals_pending, 1 << (signal - 1));
 	}
 	tm_thread_raise_flag(thr, THREAD_SCHEDULE);
-	mutex_release(&thr->block_mutex);
-	if(thr->state == THREADSTATE_INTERRUPTIBLE) {
-		tm_thread_unblock(thr);
-	}
 	if(thr->state == THREADSTATE_STOPPED && (signal == SIGCONT || signal == SIGKILL)) {
 		thr->state = THREADSTATE_RUNNING;
 		thr->process->exit_reason.cause = 0;
 		thr->process->exit_reason.sig = 0;
 	} else if((thr->flags & THREAD_PTRACED) && signal != SIGKILL) {
-		cpu_disable_preemption();
 		thr->process->exit_reason.cause = __STOPSIG;
 		thr->process->exit_reason.sig = signal;
-		thr->state = THREADSTATE_STOPPED;
 		tm_blocklist_wakeall(&thr->process->waitlist);
-		cpu_enable_preemption();
+		thr->state = THREADSTATE_STOPPED;
+	}
+	mutex_release(&thr->block_mutex);
+	if(thr->state == THREADSTATE_INTERRUPTIBLE) {
+		tm_thread_unblock(thr);
 	}
 }
 

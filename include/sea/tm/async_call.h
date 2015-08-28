@@ -13,6 +13,7 @@ struct async_call {
 	void (*func)(unsigned long data);
 	int flags;
 	int priority;
+	void *queue;
 	unsigned long data;
 };
 
@@ -26,6 +27,7 @@ static inline struct async_call *async_call_create(struct async_call *ac, int fl
 		ac->flags = flags;
 	}
 	ac->func = func;
+	ac->queue = 0;
 	ac->priority = priority;
 	ac->data = data;
 	return ac;

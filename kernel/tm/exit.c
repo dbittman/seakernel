@@ -164,11 +164,6 @@ void tm_thread_do_exit(void)
 		cpu_interrupt_set(old);
 	}
 
-	if(current_thread->tracer) {
-		tm_thread_put(current_thread->tracer); //TODO: thread safe?
-		current_thread->tracer = 0;
-	}
-
 	tm_thread_remove_kerfs_entries(current_thread);
 	if(current_process->thread_count == 1) {
 		tm_process_remove_kerfs_entries(current_process);
@@ -205,6 +200,11 @@ void tm_thread_do_exit(void)
 void tm_thread_exit(int code)
 {
 	current_thread->exit_code = code;
+	if(tm_thread_lower_flag(current_thread, THREAD_PTRACED) & THREAD_PTRACED) {
+		assert(current_thread->tracer);
+		tm_thread_put(current_thread->tracer);
+		current_thread->tracer = 0;
+	}
 	tm_thread_raise_flag(current_thread, THREAD_EXIT);
 }
 

@@ -75,6 +75,7 @@ int tm_thread_block_schedule_work(struct llist *blocklist, int state, struct asy
 	assert(state != THREADSTATE_RUNNING);
 	int ret;
 	if(state == THREADSTATE_INTERRUPTIBLE && (ret=tm_thread_got_signal(current_thread))) {
+		workqueue_insert(&__current_cpu->work, work);
 		cpu_enable_preemption();
 		return ret == SA_RESTART ? -ERESTART : -EINTR;
 	}

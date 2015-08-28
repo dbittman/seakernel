@@ -36,7 +36,7 @@
 #define THREADSTATE_DEAD 3
 #define THREADSTATE_STOPPED 4
 
-#define tm_thread_raise_flag(t,f) or_atomic(&(t->flags), f)
+#define tm_thread_raise_flag(t,f) ff_or_atomic(&(t->flags), f)
 #define tm_thread_lower_flag(t,f) and_atomic(&(t->flags), ~f)
 
 #define current_thread ((struct thread *)*arch_tm_get_current_thread())
@@ -78,6 +78,8 @@ struct thread {
 	/* ptrace */
 	struct thread *tracer;
 	int tracee_flags;
+	unsigned long orig_syscall;
+	long syscall_return;
 };
 
 extern size_t running_threads;
@@ -87,7 +89,7 @@ extern struct hash_table *thread_table;
 int tm_thread_got_signal(struct thread *);
 int tm_clone(int);
 void tm_thread_enter_system(int sys);
-void tm_thread_exit_system(void);
+void tm_thread_exit_system(long, long);
 int sys_vfork(void);
 void tm_thread_kill(struct thread *);
 void tm_blocklist_wakeall(struct llist *blocklist);

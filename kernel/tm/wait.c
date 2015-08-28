@@ -48,6 +48,21 @@ static struct process *__find_first_child(struct process *parent)
 	return 0;
 }
 
+/* So, if a process enters the while loop below, but before it
+ * blocks another process actually sets it's state to stopped or
+ * whatever and then wakes the blocklist before the waiting process
+ * can block, we'll lock up. Scheduling a final check for after the
+ * process blocks solves this problem. */
+static void __wait_check_reset(unsigned long arg)
+{
+	struct process *proc = (void *)arg;
+	if(proc->flags & PROCESS_EXITED
+			|| proc->exit_reason.cause == __STOPSIG
+			|| proc->exit_reason.cause == __STOPPED)
+		tm_blocklist_wakeall(&proc->waitlist);
+	tm_process_put(proc);
+}
+
 int sys_waitpid(int pid, int *st, int opt)
 {
 	if(current_process->pid)
@@ -71,7 +86,10 @@ int sys_waitpid(int pid, int *st, int opt)
 			&& (proc->exit_reason.cause != __STOPSIG)
 			&& (proc->exit_reason.cause != __STOPPED)
 			&& !(opt & WNOHANG)) {
-		switch(tm_thread_block(&proc->waitlist, THREADSTATE_INTERRUPTIBLE)) {
+		struct async_call work;
+		async_call_create(&work, 0, &__wait_check_reset, (unsigned long)proc, ASYNC_CALL_PRIORITY_LOW);
+		tm_process_inc_reference(proc);
+		switch(tm_thread_block_schedule_work(&proc->waitlist, THREADSTATE_INTERRUPTIBLE, &work)) {
 			case -ERESTART:
 				tm_process_put(proc);
 				return -ERESTART;

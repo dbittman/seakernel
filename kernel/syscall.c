@@ -363,7 +363,7 @@ int syscall_handler(registers_t *regs)
 			   		current_thread->tid, current_thread->system, ret < 0 ? -ret : ret);
 #endif
 		cpu_interrupt_set(0);
-		tm_thread_exit_system();
+		tm_thread_exit_system(SYSCALL_NUM_AND_RET, ret);
 		/* if we need to reschedule, or we have overused our timeslice
 	 	 * then we need to reschedule. this prevents tasks that do a continuous call
 	 	 * to write() from starving the resources of other tasks. syscall_count resets

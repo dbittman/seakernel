@@ -12,27 +12,27 @@ struct valloc km_stacks;
 void tm_thread_enter_system(int sys)
 {
 	/* check for PTRACE event */
-	if(current_thread->flags & THREAD_PTRACED
-			&& current_thread->tracee_flags & TRACEE_STOPON_SYSCALL) {
-		printk(0, "stopping on syscall %d\n", sys);
+	if((current_thread->flags & THREAD_PTRACED)
+			&& (current_thread->tracee_flags & TRACEE_STOPON_SYSCALL)) {
 		current_thread->tracee_flags &= ~TRACEE_STOPON_SYSCALL;
+		current_thread->orig_syscall = sys;
+		current_thread->syscall_return = 0;
 		tm_signal_send_thread(current_thread, SIGTRAP);
 		tm_schedule();
-
 	}
 
 	current_thread->system=(!sys ? -1 : sys);
 }
 
-void tm_thread_exit_system(void)
+void tm_thread_exit_system(long sys, long ret)
 {
-	int sys = current_thread->system;
 	current_thread->system=0;
 	/* check for PTRACE event */
-	if(current_thread->flags & THREAD_PTRACED
-			&& current_thread->tracee_flags & TRACEE_STOPON_SYSCALL) {
-		printk(0, "stopping after syscall %d\n", sys);
+	if((current_thread->flags & THREAD_PTRACED)
+			&& (current_thread->tracee_flags & TRACEE_STOPON_SYSCALL)) {
 		current_thread->tracee_flags &= ~TRACEE_STOPON_SYSCALL;
+		current_thread->orig_syscall = sys;
+		current_thread->syscall_return = ret;
 		tm_signal_send_thread(current_thread, SIGTRAP);
 		tm_schedule();
 	}

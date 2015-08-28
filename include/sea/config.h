@@ -5,6 +5,8 @@
 
 #include <sea/version.h>
 
+#include <sea/arch_config.h>
+
 #define TYPE_ARCH_X86 1
 #define TYPE_ARCH_X86_64 2
 

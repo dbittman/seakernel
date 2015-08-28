@@ -5,23 +5,23 @@
  * cleanup code can run slowly and when theres
  * nothing else to do. So we reschedule often.
  */
-#include <sea/boot/multiboot.h>
-#include <sea/tty/terminal.h>
-#include <sea/mm/vmm.h>
 #include <sea/asm/system.h>
-#include <sea/tm/process.h>
+#include <sea/boot/init.h>
+#include <sea/boot/multiboot.h>
+#include <sea/cpu/atomic.h>
+#include <sea/cpu/interrupt.h>
 #include <sea/dm/dev.h>
 #include <sea/fs/inode.h>
-#include <sea/boot/init.h>
-#include <sea/loader/symbol.h>
 #include <sea/lib/cache.h>
-#include <sea/mm/swap.h>
-#include <sea/cpu/interrupt.h>
-#include <sea/cpu/atomic.h>
+#include <sea/loader/symbol.h>
 #include <sea/mm/kmalloc.h>
-#include <sea/vsprintf.h>
+#include <sea/mm/swap.h>
+#include <sea/mm/vmm.h>
 #include <sea/string.h>
 #include <sea/tm/kthread.h>
+#include <sea/tm/process.h>
+#include <sea/tty/terminal.h>
+#include <sea/vsprintf.h>
 
 struct kthread kthread_pager;
 

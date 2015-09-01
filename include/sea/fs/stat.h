@@ -3,6 +3,7 @@
 
 #include <sea/types.h>
 #include <sea/cpu/time.h>
+#include <stdbool.h>
 #define S_IFMT  00170000
 #define	S_IFSOCK 0140000	/* socket */
 #define	S_IFLNK  0120000
@@ -80,6 +81,7 @@ struct posix_statfs
 
 int sys_posix_fsstat(int fd, struct posix_statfs *sb);
 int sys_fstat(int fp, struct stat *sb);
-int sys_stat(char *f, struct stat *statbuf, int);
+int sys_stat(char *f, struct stat *statbuf, bool);
 
 #endif
+

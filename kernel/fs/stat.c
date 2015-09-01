@@ -50,7 +50,7 @@ static void do_stat(struct inode * inode, struct stat * tmp)
 		tmp->st_blksize = 512;
 }
 
-int sys_stat(char *f, struct stat *statbuf, int lin)
+int sys_stat(char *f, struct stat *statbuf, bool lin)
 {
 	if(!f || !statbuf) return -EINVAL;
 	struct inode *i;

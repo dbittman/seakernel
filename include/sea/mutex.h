@@ -2,7 +2,8 @@
 #define NEW_MUTEX_H
 
 #include <sea/types.h>
-
+#include <stdatomic.h>
+#include <stdalign.h>
 #define MUTEX_MAGIC 0xDEADBEEF
 #define MT_ALLOC 1
 #define MT_NOSCHED 2
@@ -14,7 +15,7 @@
 
 typedef struct {
 	unsigned magic;
-	unsigned lock;
+	_Atomic unsigned alignas(8) lock;
 	unsigned flags;
 	long pid;
 } mutex_t;

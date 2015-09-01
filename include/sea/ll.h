@@ -18,7 +18,7 @@ struct llist {
 	struct llistnode *head;
 	rwlock_t rwl;
 	char flags;
-	unsigned num;
+	_Atomic size_t num;
 };
 
 #define LL_ACTIVE   1

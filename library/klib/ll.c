@@ -9,7 +9,7 @@
 #include <sea/ll.h>
 #include <sea/mutex.h>
 #include <sea/tm/process.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 #include <sea/mm/kmalloc.h>
 struct llistnode *ll_do_insert(struct llist *list, struct llistnode *n, void *entry)
 {
@@ -28,7 +28,7 @@ struct llistnode *ll_do_insert(struct llist *list, struct llistnode *n, void *en
 	n->entry = entry;
 	n->memberof = list;
 	n->magic = LLISTNODE_MAGIC;
-	add_atomic(&list->num, 1);
+	atomic_fetch_add_explicit(&list->num, 1, memory_order_release);
 	if(!(list->flags & LL_LOCKLESS))
 		rwlock_release(&list->rwl, RWL_WRITER);
 	return n;
@@ -50,7 +50,7 @@ void *ll_do_remove(struct llist *list, struct llistnode *node, char locked)
 	assert(node->magic == LLISTNODE_MAGIC);
 	if(node->memberof == list) {
 		node->memberof = 0;
-		sub_atomic(&list->num, 1);
+		atomic_fetch_sub_explicit(&list->num, 1, memory_order_release);
 		if(list->head == node) {
 			/* Now, is this the only node in the list? */
 			if(list->head->next == 0) {
@@ -110,7 +110,7 @@ struct llist *ll_do_create(struct llist *list, char flags)
 		memset(list, 0, sizeof(struct llist));
 	rwlock_create(&list->rwl);
 	list->head = 0;
-	list->num = 0;
+	list->num = ATOMIC_VAR_INIT(0);
 	list->magic = LLIST_MAGIC;
 	list->flags |= (LL_ACTIVE | flags);
 	return list;

@@ -67,7 +67,7 @@ void loader_init_kernel_symbols(void)
 	loader_add_kernel_symbol(__mutex_acquire);
 	loader_add_kernel_symbol(__rwlock_acquire);
 	loader_add_kernel_symbol(rwlock_release);
-	loader_add_kernel_symbol(__rwlock_escalate);
+	loader_add_kernel_symbol(__rwlock_deescalate);
 	loader_add_kernel_symbol(rwlock_create);
 	loader_add_kernel_symbol(rwlock_destroy);
 

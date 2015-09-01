@@ -44,7 +44,15 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 	int timeout = 800000000;
 #endif
 	cpu_disable_preemption();
-	while(bts_atomic(&m->lock, 0)) {
+
+	int unlocked = 0;
+	int locked = 1;
+	/* success is given memory_order_acquire because the loop body will not run, but
+	 * we mustn't let any memory accesses bubble up above the exchange. fail is given
+	 * memory_order_acquire because we musn't let the resetting of unlocked
+	 * bubble up anywhere. */
+	while(!atomic_compare_exchange_weak_explicit(&m->lock, &unlocked, locked, memory_order_acquire, memory_order_acquire)) {
+		unlocked = 0;
 		if(!(m->flags & MT_NOSCHED)) {
 			cpu_enable_preemption();
 			tm_schedule();
@@ -52,10 +60,6 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 		} else {
 			cpu_pause();
 		}
-#if MUTEX_DEBUG
-		if(--timeout == 0)
-			panic(PANIC_NOSYNC | PANIC_INSTANT, "timeout locking mutex (owned by %d)", m->pid);
-#endif
 	}
 	assert(m->lock);
 	if(!(m->flags & MT_NOSCHED))
@@ -73,7 +77,9 @@ void __mutex_release(mutex_t *m, char *file, int line)
 	if(current_thread && m->pid != (int)current_thread->tid)
 		panic(0, "task %d tried to release mutex it didn't own (%s:%d)", m->pid, file, line);
 	m->pid = -1;
-	btr_atomic(&m->lock, 0);
+	/* must be memory_order_release because we don't want m->pid to bubble-down below
+	 * this line */
+	atomic_store_explicit(&m->lock, 0, memory_order_release);
 	if(m->flags & MT_NOSCHED)
 		cpu_enable_preemption();
 }

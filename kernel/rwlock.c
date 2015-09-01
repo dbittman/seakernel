@@ -7,11 +7,11 @@
  * acquired, it will go into sleep until the lock can be acquired
  */
 #include <sea/kernel.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 #include <sea/rwlock.h>
 #include <sea/tm/process.h>
 #include <sea/mm/kmalloc.h>
-void __rwlock_acquire(rwlock_t *lock, unsigned flags, char *file, int line)
+void __rwlock_acquire(rwlock_t *lock, enum rwlock_locktype type, char *file, int line)
 {
 	if(kernel_state_flags & KSF_DEBUGGING)
 		return;
@@ -19,83 +19,42 @@ void __rwlock_acquire(rwlock_t *lock, unsigned flags, char *file, int line)
 		panic(PANIC_NOSYNC, "cannot lock an rwlock within interrupt context");
 	assert(lock->magic == RWLOCK_MAGIC);
 	if(kernel_state_flags & KSF_SHUTDOWN) return;
-	while(1) 
-	{
-		/* if we're trying to get a writer lock, we need to wait until the
-		* lock is completely cleared */
-		while((flags & RWL_WRITER) && lock->locks) tm_schedule();
-		/* now try to get the write lock so we have exclusive access
-		 * to the lock itself */
-		while(bts_atomic(&lock->locks, 0))
+	while(atomic_flag_test_and_set_explicit(&lock->writer, memory_order_acquire)) {
+		tm_schedule();
+	}
+
+	if(type == RWL_READER) {
+		atomic_fetch_add(&lock->readers, 1);
+		atomic_flag_clear_explicit(&lock->writer, memory_order_release);
+	} else {
+		while(lock->readers != 0)
 			tm_schedule();
-		/* if we're trying to read, we need to increment the locks by 2
-		 * thus skipping over the write_lock bit */
-		if(flags & RWL_READER) {
-			add_atomic(&lock->locks, 2);
-			/* and now reset the write_lock */
-			btr_atomic(&lock->locks, 0);
-			break;
-		}
-		if(flags & RWL_WRITER) {
-			/* if we were able to get the lock (write_lock bit is set, 
-			 * and there are no readers), then we break. Otherwise, we 
-			 * reset the write_bit and try again */
-			if(lock->locks == 1)
-				break;
-			else
-				btr_atomic(&lock->locks, 0);
-		}
 	}
 }
 
-void __rwlock_escalate(rwlock_t *lock, unsigned flags, char *file, int line)
+void __rwlock_deescalate(rwlock_t *lock, char *file, int line)
 {
 	assert(lock->magic == RWLOCK_MAGIC);
 	if(kernel_state_flags & KSF_DEBUGGING)
 		return;
 	if(kernel_state_flags & KSF_SHUTDOWN) return;
-	assert(lock->locks);
-	if(lock->locks == 1 && (flags & RWL_READER)) {
-		/* change from a writer lock to a reader lock. This is easy. */
-		add_atomic(&lock->locks, 2);
-		/* and now reset the write_lock */
-		btr_atomic(&lock->locks, 0);
-	} else if(lock->locks % 2 == 0 && (flags & RWL_WRITER)) {
-		/* change from a reader to a writer. This is, of course,
-		 * less simple. We must wait until we are the only reader, and
-		 * then attempt a switch */
-		while(1) {
-			while(lock->locks != 2) tm_schedule();
-			/* now, spinlock-acquire the write_lock bit */
-			while(bts_atomic(&lock->locks, 0))
-				tm_schedule();
-			if(lock->locks == 3)
-			{
-				/* remove our read lock */
-				sub_atomic(&lock->locks, 2);
-				break;
-			}
-			/* failed to grab the write_lock bit before a task
-			 * added itself */
-			btr_atomic(&lock->locks, 0);
-		}
-	}
+	
+	atomic_fetch_add_explicit(&lock->readers, 1, memory_order_acquire);
+	atomic_flag_clear_explicit(&lock->writer, memory_order_release);
 }
 
-void rwlock_release(rwlock_t *lock, unsigned flags)
+void rwlock_release(rwlock_t *lock, enum rwlock_locktype type)
 {
 	assert(lock->magic == RWLOCK_MAGIC);
 	if(kernel_state_flags & KSF_DEBUGGING)
 		return;
 	if(kernel_state_flags & KSF_SHUTDOWN) return;
-	assert(lock->locks);
-	if(flags & RWL_READER) {
-		assert(lock->locks >= 2);
-		sub_atomic(&lock->locks, 2);
-	}
-	else if(flags & RWL_WRITER) {
-		assert(lock->locks == 1);
-		btr_atomic(&lock->locks, 0);
+	if(type == RWL_READER) {
+		assert(lock->readers >= 1);
+		atomic_fetch_sub_explicit(&lock->readers, 1, memory_order_release);
+	} else {
+		assert(lock->readers == 0);
+		atomic_flag_clear_explicit(&lock->writer, memory_order_release);
 	}
 }
 
@@ -104,9 +63,9 @@ rwlock_t *rwlock_create(rwlock_t *lock)
 	if(!lock) {
 		lock = (void *)kmalloc(sizeof(rwlock_t));
 		lock->flags = RWL_ALLOC;
-	} else
+	} else {
 		memset((void *)lock, 0, sizeof(rwlock_t));
-	lock->locks = 0;
+	}
 	lock->magic = RWLOCK_MAGIC;
 	return lock;
 }

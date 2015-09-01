@@ -1,0 +1,8 @@
+#ifndef __ARCH_SEA_ARCH_CONFIG_H
+#define __ARCH_SEA_ARCH_CONFIG_H
+
+#define ARCH_HAS_PTRACE_READ_USER 1
+#define ARCH_HAS_PTRACE_WRITE_USER 1
+
+#endif
+

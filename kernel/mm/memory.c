@@ -3,7 +3,6 @@
 #include <sea/mm/vmm.h>
 #include <sea/boot/multiboot.h>
 #include <sea/tm/process.h>
-#include <sea/mm/swap.h>
 #include <sea/cpu/processor.h>
 #include <sea/loader/symbol.h>
 #include <sea/cpu/atomic.h>
@@ -100,9 +99,6 @@ void mm_init(struct multiboot *m)
 	set_ksf(KSF_MMU);
 	/* hey, look at that, we have happy memory times! */
 	mm_reclaim_init();
-#if CONFIG_SWAP
-	init_swap();
-#endif
 #if CONFIG_MODULES
 	loader_add_kernel_symbol(__kmalloc);
 	loader_add_kernel_symbol(__kmalloc_ap);

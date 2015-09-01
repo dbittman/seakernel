@@ -15,7 +15,6 @@
 #include <sea/loader/exec.h>
 #include <sea/loader/module.h>
 #include <sea/mm/map.h>
-#include <sea/mm/swap.h>
 #include <sea/sys/stat.h>
 #include <sea/sys/sysconf.h>
 #include <sea/syscall.h>
@@ -133,13 +132,10 @@ static void *syscall_table[129] = {
 	[SYS_SYSCONF]         = SC sys_sysconf,
 	[SYS_SETSID]          = SC sys_setsid,
 	[SYS_SETPGID]         = SC sys_setpgid,
-	#if CONFIG_SWAP
-	[SYS_SWAPON]          = SC sys_swapon,
-	[SYS_SWAPOFF]         = SC sys_swapoff,
-	#else
+
 	[SYS_SWAPON]          = SC sys_null,
 	[SYS_SWAPOFF]         = SC sys_null,
-	#endif
+
 	[SYS_NICE]            = SC sys_nice,
 	[SYS_MMAP]            = SC sys_mmap,
 	[SYS_MUNMAP]          = SC sys_munmap,
@@ -251,7 +247,7 @@ int mm_is_valid_user_pointer(int num, void *p, char flags)
  * to syscalls that have pointers are arguments, so that we make sure
  * we only ever modify user-space data when we think we're modifying
  * user-space data. */
-int check_pointers(volatile registers_t *regs)
+int check_pointers(registers_t *regs)
 {
 	switch(SYSCALL_NUM_AND_RET) {
 		case SYS_READ: case SYS_FSTAT: case SYS_STAT: /*case SYS_GETPATH:*/

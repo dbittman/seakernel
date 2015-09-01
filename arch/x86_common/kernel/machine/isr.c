@@ -27,7 +27,7 @@ static void ack_pic(int n)
 	}
 }
 
-void arch_interrupt_ipi_handler(volatile registers_t regs)
+void arch_interrupt_ipi_handler(registers_t regs)
 {
 #if CONFIG_ARCH == TYPE_ARCH_X86_64
 	assert(((regs.ds&(~0x7)) == 0x10 || (regs.ds&(~0x7)) == 0x20) && ((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));
@@ -41,16 +41,16 @@ void arch_interrupt_ipi_handler(volatile registers_t regs)
 		case IPI_SHUTDOWN:
 		case IPI_PANIC:
 			LAPIC_WRITE(LAPIC_TPR, 0xFFFFFFFF);
-			cpu_handle_ipi_halt(regs);
+			cpu_handle_ipi_halt(&regs);
 			break;
 		case IPI_SCHED:
-			cpu_handle_ipi_reschedule(regs);
+			cpu_handle_ipi_reschedule(&regs);
 			break;
 		case IPI_TLB:
-			cpu_handle_ipi_tlb(regs);
+			cpu_handle_ipi_tlb(&regs);
 			break;
 		case IPI_TLB_ACK:
-			cpu_handle_ipi_tlb_ack(regs);
+			cpu_handle_ipi_tlb_ack(&regs);
 			break;
 		default:
 			panic(PANIC_NOSYNC, "invalid interprocessor interrupt number: %d", regs.int_no);
@@ -65,7 +65,7 @@ void arch_interrupt_ipi_handler(volatile registers_t regs)
 /* this should NEVER enter from an interrupt handler, 
  * and only from kernel code in the one case of calling
  * sys_setup() */
-void arch_interrupt_syscall_handler(volatile registers_t regs)
+void arch_interrupt_syscall_handler(registers_t regs)
 {
 	/* don't need to save the flag here, since it will always be true */
 #if CONFIG_ARCH == TYPE_ARCH_X86_64
@@ -85,7 +85,7 @@ void arch_interrupt_syscall_handler(volatile registers_t regs)
 }
 
 /* This gets called from our ASM interrupt handler stub. */
-void arch_interrupt_isr_handler(volatile registers_t regs)
+void arch_interrupt_isr_handler(registers_t regs)
 {
 #if CONFIG_ARCH == TYPE_ARCH_X86_64
 	assert(((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));
@@ -99,7 +99,7 @@ void arch_interrupt_isr_handler(volatile registers_t regs)
 	cpu_interrupt_post_handling();
 }
 
-void arch_interrupt_irq_handler(volatile registers_t regs)
+void arch_interrupt_irq_handler(registers_t regs)
 {
 #if CONFIG_ARCH == TYPE_ARCH_X86_64
 	assert(((regs.ds&(~0x7)) == 0x10 || (regs.ds&(~0x7)) == 0x20) && ((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));

@@ -129,6 +129,7 @@ int fs_pipe_read(struct inode *ino, int flags, char *buffer, size_t length)
 	return count;
 }
 
+/* TODO: make these ring buffers */
 int fs_pipe_write(struct inode *ino, int flags, char *initialbuffer, size_t totallength)
 {
 	if(!ino || !initialbuffer)

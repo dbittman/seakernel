@@ -56,7 +56,7 @@ struct cpu *cpu_get_snum(unsigned id);
 
 #endif
 
-extern volatile unsigned num_halted_cpus;
+extern _Atomic unsigned num_halted_cpus;
 extern unsigned num_cpus, num_booted_cpus, num_failed_cpus;
 
 extern struct cpu *primary_cpu;

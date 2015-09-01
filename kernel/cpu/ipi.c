@@ -12,17 +12,17 @@ void cpu_send_ipi(int dest, unsigned signal, unsigned flags)
 /* note! cpu_get_interrupt_flag lies here! it reports what the
  * interrupt state WILL BE when these return. interrupts are
  * indeed disabled */
-void cpu_handle_ipi_tlb(volatile registers_t regs)
+void cpu_handle_ipi_tlb(registers_t *regs)
 {
 	mm_flush_page_tables();
 }
 
-void cpu_handle_ipi_tlb_ack(volatile registers_t regs)
+void cpu_handle_ipi_tlb_ack(registers_t *regs)
 {
 	
 }
 
-void cpu_handle_ipi_reschedule(volatile registers_t regs)
+void cpu_handle_ipi_reschedule(registers_t *regs)
 {
 	/* we don't allow a reschedule request if this cpu has
 	 * interrupts disabled */
@@ -31,7 +31,7 @@ void cpu_handle_ipi_reschedule(volatile registers_t regs)
 	tm_schedule();
 }
 
-void cpu_handle_ipi_halt(volatile registers_t regs)
+void cpu_handle_ipi_halt(registers_t *regs)
 {
 	add_atomic(&num_halted_cpus, 1);
 	cpu_halt();

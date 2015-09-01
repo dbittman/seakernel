@@ -8,8 +8,8 @@
 
 #define PIPE_NAMED 1
 typedef struct pipe_struct {
-	volatile unsigned pending;
-	volatile unsigned write_pos, read_pos;
+	unsigned pending;
+	unsigned write_pos, read_pos;
 	char *buffer;
 	off_t length;
 	mutex_t *lock;

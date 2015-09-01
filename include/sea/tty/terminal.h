@@ -11,12 +11,12 @@ struct vterm {
 	int x, ox, y, oy, f, b, w, h, bd, fw, fh, mode, es, scrollt, scrollb;
 	char *vmem, *cur_mem, *video;
 	char input[TTY_IBLEN];
- 	volatile int inpos;
-	volatile int reading;
+ 	int inpos;
+	int reading;
 	unsigned char *font;
 	int tty;
 	char no_wrap, disable_scroll;
-	mutex_t wlock, inlock;
+	mutex_t wlock;
 	struct llist input_block;
 	struct termios term;
 	struct renderer *rend;

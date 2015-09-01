@@ -31,7 +31,6 @@ void console_destroy(struct vterm *con)
 		current_console = kernel_console;
 	kfree(con->vmem);
 	mutex_destroy(&con->wlock);
-	mutex_destroy(&con->inlock);
 	con->flag=0;
 }
 
@@ -42,7 +41,6 @@ void console_create(struct vterm *con)
 	con->term.c_oflag=OPOST | ONLCR;
 	con->term.c_iflag=ICRNL;
 	mutex_create(&con->wlock, 0);
-	mutex_create(&con->inlock, 0);
 	ll_create(&con->input_block);
 	con->flag=1;
 }

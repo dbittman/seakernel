@@ -2,7 +2,6 @@
  * Handles cloning an address space */
 #include <sea/mm/vmm.h>
 #include <sea/tm/process.h>
-#include <sea/mm/swap.h>
 #include <sea/cpu/processor.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/cpu-x86.h>

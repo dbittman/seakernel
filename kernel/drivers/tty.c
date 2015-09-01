@@ -90,22 +90,22 @@ int tty_read(int min, char *buf, size_t len)
 	size_t count=0;
 	int cb = !(con->term.c_lflag & ICANON);
 	int x = con->x;
+	if(con->rend->update_cursor)
+		con->rend->update_cursor(con);
 	while(1) {
-		if(con->rend->update_cursor)
-			con->rend->update_cursor(con);
-		mutex_acquire(&con->inlock);
-		while(!con->inpos) {
-			mutex_release(&con->inlock);
+		int position = atomic_load(&con->inpos);
+		t = con->input[0];
+		if(!position) {
 			if(tm_thread_block(&con->input_block, THREADSTATE_INTERRUPTIBLE) == -EINTR) {
 				return -EINTR;
 			}
-			mutex_acquire(&con->inlock);
+			continue;
 		}
-		t=con->input[0];
-		con->inpos--;
-		if(con->inpos)
-			memmove(con->input, con->input+1, con->inpos+1);
-		mutex_release(&con->inlock);
+		if(atomic_compare_exchange_strong(&con->inpos, &position, position - 1)
+				&& position > 0)
+			memmove(con->input, con->input+1, position);
+		else
+			continue;
 		if(con->rend->update_cursor)
 			con->rend->update_cursor(con);
 		if(t == '\b' && !cb && count)
@@ -260,13 +260,12 @@ int ttyx_ioctl(int min, int cmd, long arg)
 				arg = '\n';
 			if(con->term.c_iflag & IGNCR && arg == '\r')
 				break;
-			mutex_acquire(&con->inlock);
 			if(con->inpos < 256) {
-				con->input[con->inpos] = (char)arg;
-				con->inpos++;
+				int position = atomic_load(&con->inpos);
+				con->input[position] = (char)arg;
+				atomic_fetch_add(&con->inpos, 1);
 			}
 			tm_blocklist_wakeall(&con->input_block);
-			mutex_release(&con->inlock);
 			if(!(con->term.c_lflag & ECHO) && arg != '\b' && arg != '\n')
 				break;
 			if(!(con->term.c_lflag & ECHOE) && arg == '\b')

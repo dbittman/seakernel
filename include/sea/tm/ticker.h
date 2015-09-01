@@ -10,7 +10,7 @@
 
 struct ticker {
 	int flags;
-	volatile uint64_t tick;
+	uint64_t tick;
 	struct heap heap;
 	mutex_t lock;
 };

@@ -15,7 +15,6 @@
 #include <sea/lib/cache.h>
 #include <sea/loader/symbol.h>
 #include <sea/mm/kmalloc.h>
-#include <sea/mm/swap.h>
 #include <sea/mm/vmm.h>
 #include <sea/string.h>
 #include <sea/tm/kthread.h>
@@ -24,7 +23,7 @@
 #include <sea/vsprintf.h>
 
 struct kthread kthread_pager;
-
+int __KT_pager(struct kthread *, void *);
 int kt_kernel_idle_task(void)
 {
 	tm_thread_raise_flag(current_thread, THREAD_KERNEL);

@@ -170,6 +170,8 @@ void tm_thread_delay_sleep(time_t microseconds)
 	uint64_t end = cpu->ticker.tick + microseconds;
 	while(cpu->ticker.tick < end) {
 		cpu_pause();
+		/* force the compiler to load the value of tick on each iteration */
+		atomic_thread_fence(memory_order_release);
 	}
 }
 

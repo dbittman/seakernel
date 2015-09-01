@@ -39,16 +39,13 @@ static char root_device[64] = "/";
 static int count_ie=0;
 static char *init_env[12];
 static char cleared_args=0;
-static char kernel_name[128];
 static unsigned long long start_epoch;
 
 void parse_kernel_cmd(char *buf)
 {
 	char *current = buf;
 	char *tmp;
-	unsigned argc=0;
 	char a[128];
-	int type=0;
 	int init_mods=0;
 	memset(stuff_to_pass, 0, 128 * sizeof(char *));
 	while(current && *current)
@@ -58,46 +55,33 @@ void parse_kernel_cmd(char *buf)
 		addr_t len = (addr_t)tmp ? (addr_t)(tmp-current) 
 			: (addr_t)strlen(current);
 		strncpy(a, current, len >= 128 ? 127 : len);
-		if(!argc)
+		if(!strncmp("init=", a, 5))
 		{
-			memset(kernel_name, 0, 128);
-			strncpy(kernel_name, a, 128);
-		} else if(!type) {
-			if(!strncmp("init=\"", a, 6))
-			{
-				strncpy(init_path, a+6, 128);
-				init_path[strlen(init_path)-1]=0;
-				printk(KERN_INFO, "[kernel]: init=%s\n", init_path);
-			}
-			else if(!strncmp("root=\"", a, 6))
-			{
-				memset(root_device, 0, 64);
-				strncpy(root_device, a+6, 64);
-				root_device[strlen(root_device)-1]=0;
-				printk(KERN_INFO, "[kernel]: root=%s\n", root_device);
-			}
-			else if(!strcmp("aprilfools", a))
-				april_fools = !april_fools;
-			else if(!strncmp("loglevel=", a, 9))
-			{
-				char *lev = ((char *)a) + 9;
-				int logl = strtoint(lev);
-				printk(1, "[kernel]: Setting loglevel to %d\n", logl);
-				PRINT_LEVEL = logl;
-			} else if(!strncmp("noserial", a, 8)) {
-				serial_disable();
-			} else {
-				stuff_to_pass[argc_STP] = (char *)kmalloc(strlen(a)+1);
-				_strcpy(stuff_to_pass[argc_STP++], a);
-			}
-		} else
+			strncpy(init_path, a+6, 128);
+			printk(KERN_INFO, "[kernel]: init=%s\n", init_path);
+		}
+		else if(!strncmp("root=", a, 5))
 		{
-			/* switch type */
-			type=0;
+			memset(root_device, 0, 64);
+			strncpy(root_device, a+6, 64);
+			printk(KERN_INFO, "[kernel]: root=%s\n", root_device);
+		}
+		else if(!strcmp("aprilfools", a))
+			april_fools = !april_fools;
+		else if(!strncmp("loglevel=", a, 9))
+		{
+			char *lev = ((char *)a) + 9;
+			int logl = strtoint(lev);
+			printk(1, "[kernel]: Setting loglevel to %d\n", logl);
+			PRINT_LEVEL = logl;
+		} else if(!strncmp("noserial", a, 8)) {
+			serial_disable();
+		} else {
+			stuff_to_pass[argc_STP] = (char *)kmalloc(strlen(a)+1);
+			_strcpy(stuff_to_pass[argc_STP++], a);
 		}
 		if(!tmp)
 			break;
-		argc++;
 		current = tmp+1;
 	}
 	stuff_to_pass[0] = (char *)kmalloc(9);

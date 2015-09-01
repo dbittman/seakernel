@@ -10,6 +10,7 @@
 #include <sea/lib/hash.h>
 #include <sea/lib/queue.h>
 #include <sea/fs/fs.h>
+#include <stdbool.h>
 #define MAY_EXEC      0100
 #define MAY_WRITE     0200
 #define MAY_READ      0400
@@ -68,7 +69,7 @@ int sys_umount();
 int sys_chroot(char *path);
 
 int fs_unlink(struct inode *node, const char *name, size_t namelen);
-int fs_link(struct inode *dir, struct inode *target, const char *name, size_t namelen);
+int fs_link(struct inode *dir, struct inode *target, const char *name, size_t namelen, bool allow_incomplete_directories);
 
 void vfs_icache_init();
 void vfs_inode_umount(struct inode *node);

@@ -1,11 +1,11 @@
-#include <sea/kernel.h>
-#include <sea/tm/process.h>
-#include <sea/fs/inode.h>
-#include <sea/string.h>
-#include <sea/rwlock.h>
 #include <sea/cpu/atomic.h>
 #include <sea/errno.h>
 #include <sea/fs/dir.h>
+#include <sea/fs/inode.h>
+#include <sea/kernel.h>
+#include <sea/rwlock.h>
+#include <sea/string.h>
+#include <sea/tm/process.h>
 
 /* translate a mount point to the root node of the mounted filesystem */
 struct inode *fs_resolve_mount(struct inode *node)
@@ -273,14 +273,14 @@ struct inode *fs_path_resolve_create_get(const char *path,
 	/* if we're making a directory, create the . and .. entries */
 	if(S_ISDIR(mode)) {
 		/* create . and .. */
-		if(fs_link(node, node, ".", 1))
+		if(fs_link(node, node, ".", 1, true))
 			r = -EPERM;
-		if(fs_link(node, dir, "..", 2))
+		if(fs_link(node, dir, "..", 2, true))
 			r = -EMLINK;
 	}
 
 	/* step 4c: create the link for the directory entry to the inode */
-	r = fs_link(dir, node, name, strlen(name));
+	r = fs_link(dir, node, name, strlen(name), false);
 
 	if(result)
 		*result = !r ? 1 : r;

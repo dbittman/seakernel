@@ -341,7 +341,7 @@ int sys_link(char *oldpath, char *newpath)
 	}
 	int r = -ENOSPC;
 	if(parent->nlink > 1)
-		r = fs_link(parent, target, name, strlen(name));
+		r = fs_link(parent, target, name, strlen(name), false);
 	vfs_icache_put(parent);
 	vfs_icache_put(target);
 	return r;

@@ -37,14 +37,14 @@ int fs_unlink(struct inode *node, const char *name, size_t namelen)
 	return do_fs_unlink(node, name, namelen, 1);
 }
 
-int fs_link(struct inode *dir, struct inode *target, const char *name, size_t namelen)
+int fs_link(struct inode *dir, struct inode *target, const char *name, size_t namelen, bool allow_incomplete_directories)
 {
 	if(!vfs_inode_check_permissions(dir, MAY_WRITE, 0))
 		return -EACCES;
 	if(!S_ISDIR(dir->mode))
 		return -ENOTDIR;
 	rwlock_acquire(&dir->lock, RWL_WRITER);
-	if(S_ISDIR(dir->mode) && (dir->nlink == 1)) {
+	if(S_ISDIR(dir->mode) && (dir->nlink == 1) && !allow_incomplete_directories) {
 		rwlock_release(&dir->lock, RWL_WRITER);
 		return -ENOSPC;
 	}

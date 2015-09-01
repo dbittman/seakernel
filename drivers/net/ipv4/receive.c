@@ -58,7 +58,7 @@ static struct ipv4_fragment *__ipv4_find_fragment(struct ipv4_header *header)
 struct hole {
 	uint16_t first;
 	uint16_t last;
-	sint16_t next;
+	int16_t next;
 	uint16_t deleted;
 } __attribute__((packed));
 
@@ -92,7 +92,7 @@ static void __ipv4_add_fragment(struct ipv4_fragment *frag, struct ipv4_header *
 		else
 			frag->first_hole = hole->next;
 		hole->deleted = 1;
-		sint16_t next = hole->next;
+		int16_t next = hole->next;
 		/* if we're offset from this hole start, we un-delete it and change
 		 * it's size. If the start of the fragment is equal to the start
 		 * of the hole, we would just delete it, which we've already done. */

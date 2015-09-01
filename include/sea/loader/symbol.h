@@ -1,6 +1,7 @@
 #ifndef __SEA_LOADER_SYMBOL_H
 #define __SEA_LOADER_SYMBOL_H
 
+#include <stdint.h>
 #include <sea/types.h>
 #include <sea/mutex.h>
 

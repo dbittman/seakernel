@@ -1,5 +1,6 @@
 #ifndef __NET_IPV4_H
 #define __NET_IPV4_H
+#include <stdint.h>
 #include <sea/types.h>
 #include <sea/net/interface.h>
 #include <sea/asm/system.h>
@@ -49,7 +50,7 @@ struct ipv4_fragment {
 	uint16_t id;
 	time_t start_time;
 	struct llistnode *node;
-	sint16_t first_hole;
+	int16_t first_hole;
 };
 
 void ipv4_receive_packet(struct net_dev *nd, struct net_packet *, void *);

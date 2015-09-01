@@ -25,6 +25,7 @@
 #include <sea/tty/terminal.h>
 #include <sea/uname.h>
 #include <sea/vsprintf.h>
+#include <sea/string.h>
 /* #define SC_DEBUG 1 */
 #define SC_TIMING 1
 static unsigned int num_syscalls=0;

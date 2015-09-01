@@ -2,7 +2,7 @@
 
 int memcmp(const void* m1,
            const void* m2,
-           unsigned int n)
+           size_t n)
 {
 	unsigned char *s1 = (unsigned char *) m1;
 	unsigned char *s2 = (unsigned char *) m2;
@@ -17,3 +17,4 @@ int memcmp(const void* m1,
 	}
 	return 0;
 }
+

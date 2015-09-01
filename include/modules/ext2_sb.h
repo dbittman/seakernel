@@ -4,9 +4,6 @@
 #if CONFIG_MODULE_EXT2
 
 #include <sea/types.h>
-typedef int int32_t;
-typedef short int16_t;
-typedef char int8_t;
 typedef struct ext2_superblock_t {
 	/// Anzahl der Inodes
 	uint32_t inode_count;

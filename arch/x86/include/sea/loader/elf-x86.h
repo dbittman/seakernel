@@ -1,5 +1,6 @@
 #ifndef ELF_x86_H
 #define ELF_x86_H
+#include <stdint.h>
 #include <sea/loader/module.h>
 #include <sea/types.h>
 extern void * kernel_start;

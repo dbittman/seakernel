@@ -26,7 +26,7 @@ endif
 
 # TODO: That no-isolate-erroneous-paths-dereference should not be here
 # no-tree-loop-distribute-patterns is required because of stupid gcc.
-CFLAGS_NOARCH = -std=gnu11 -nostdlib -nodefaultlibs \
+CFLAGS_NOARCH = -std=gnu11 \
                 -ffreestanding \
                 -mno-red-zone \
                 -mpush-args -mno-accumulate-outgoing-args \
@@ -34,13 +34,13 @@ CFLAGS_NOARCH = -std=gnu11 -nostdlib -nodefaultlibs \
                 -Iinclude \
                 -D__KERNEL__ \
                 -Wall -Wextra -Wformat-security -Wformat-nonliteral \
-	        -Wno-strict-aliasing -Wshadow -Wpointer-arith -Wcast-align \
-	        -Wno-unused -Wnested-externs -Waddress -Winline \
-	        -Wno-long-long -Wno-unused-parameter -Wno-unused-but-set-parameter\
-	        -mno-mmx -mno-sse -mno-sse2 -mno-sse3 -mno-3dnow \
-	        -fno-omit-frame-pointer \
-	        -fno-tree-loop-distribute-patterns \
-			-fno-isolate-erroneous-paths-dereference
+	            -Wno-strict-aliasing -Wshadow -Wpointer-arith -Wcast-align \
+	            -Wno-unused -Wnested-externs -Waddress -Winline \
+	            -Wno-long-long -Wno-unused-parameter -Wno-unused-but-set-parameter\
+	            -mno-mmx -mno-sse -mno-sse2 -mno-sse3 -mno-3dnow \
+	            -fno-omit-frame-pointer \
+	            -fno-tree-loop-distribute-patterns \
+			    -fno-isolate-erroneous-paths-dereference
 	        
 	        
 CFLAGS_NOARCH += -O$(CONFIG_OPTIMIZATION_LEVEL)
@@ -142,7 +142,7 @@ $(ADHEADS):
 
 $(KERNEL_STAGE1): $(VERSION_H) $(ADHEADS) $(AOBJS) $(KOBJS)
 	@echo "[LD]	${KERNEL}"
-	@$(CC) $(CFLAGS) $(LDFLAGS) -o $(KERNEL_STAGE1) $(AOBJS) $(KOBJS) -lgcc -static-libgcc -static
+	@$(CC) $(CFLAGS) $(LDFLAGS) -o $(KERNEL_STAGE1) $(AOBJS) $(KOBJS) -nostdlib -lgcc -static-libgcc -static
 
 $(KERNEL): $(KERNEL_STAGE1)
 	@cp ${KERNEL_STAGE1} ${KERNEL}

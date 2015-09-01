@@ -25,73 +25,48 @@
 #include <sea/trace.h>
 #include <sea/tm/thread.h>
 
-
 static struct multiboot *mtboot;
-addr_t initial_boot_stack=0;
-char *stuff_to_pass[128];
-static int argc_STP=3;
-unsigned init_pid=0;
+static time_t start_epoch;
+static char *root_device = "/";
+static char *init_path = "/bin/sh";
 elf32_t kernel_elf;
-int april_fools=0;
+addr_t initial_boot_stack=0;
 
-static char init_path[128] = "*";
-static char root_device[64] = "/";
-static int count_ie=0;
-static char *init_env[12];
-static char cleared_args=0;
-static unsigned long long start_epoch;
-
-void parse_kernel_cmd(char *buf)
+static void parse_kernel_command_line(char *buf)
 {
-	char *current = buf;
-	char *tmp;
-	char a[128];
-	int init_mods=0;
-	memset(stuff_to_pass, 0, 128 * sizeof(char *));
-	while(current && *current)
-	{
-		tmp = strchr(current, ' ');
-		memset(a, 0, 128);
-		addr_t len = (addr_t)tmp ? (addr_t)(tmp-current) 
-			: (addr_t)strlen(current);
-		strncpy(a, current, len >= 128 ? 127 : len);
-		if(!strncmp("init=", a, 5))
-		{
-			strncpy(init_path, a+6, 128);
-			printk(KERN_INFO, "[kernel]: init=%s\n", init_path);
+	char *c = buf;
+	while(c && *c) {
+		char *tmp = strchr(c, ' ');
+		if(tmp) *tmp++ = 0;
+
+		char *val = strchr(c, '=');
+		if(!val) {
+			printk(5, "[kernel]: malformed option: %s\n", c);
+			c = tmp;
+			continue;
 		}
-		else if(!strncmp("root=", a, 5))
-		{
-			memset(root_device, 0, 64);
-			strncpy(root_device, a+6, 64);
-			printk(KERN_INFO, "[kernel]: root=%s\n", root_device);
-		}
-		else if(!strcmp("aprilfools", a))
-			april_fools = !april_fools;
-		else if(!strncmp("loglevel=", a, 9))
-		{
-			char *lev = ((char *)a) + 9;
-			int logl = strtoint(lev);
-			printk(1, "[kernel]: Setting loglevel to %d\n", logl);
-			PRINT_LEVEL = logl;
-		} else if(!strncmp("noserial", a, 8)) {
-			serial_disable();
+
+		*val++ = 0;
+		if(!strcmp(c, "init")) {
+			init_path = val;
+		} else if(!strcmp(c, "root")) {
+			root_device = val;
+		} else if(!strcmp(c, "loglevel")) {
+			PRINT_LEVEL = strtoint(val);
+		} else if(!strcmp(c, "serial")) {
+			if(!strcmp(val, "off"))
+				serial_disable();
 		} else {
-			stuff_to_pass[argc_STP] = (char *)kmalloc(strlen(a)+1);
-			_strcpy(stuff_to_pass[argc_STP++], a);
+			printk(0, "[kernel]: unknown option: %s=%s\n", c, val);
 		}
-		if(!tmp)
-			break;
-		current = tmp+1;
+
+		c = tmp;
 	}
-	stuff_to_pass[0] = (char *)kmalloc(9);
-	_strcpy(stuff_to_pass[0], "ird-sh");
-	stuff_to_pass[1] = (char *)kmalloc(9);
-	_strcpy(stuff_to_pass[1], "-c");
-	stuff_to_pass[2] = (char *)kmalloc(90);
-	snprintf(stuff_to_pass[2], 90, "/preinit.sh %s", root_device);
-	
+	printk(1, "[kernel]: root=%s\n", root_device);
+	printk(1, "[kernel]: init=%s\n", init_path);
 }
+
+static void user_mode_init(void);
 /* This is the C kernel entry point */
 void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 {
@@ -123,7 +98,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	printk(1, "[kernel]: Starting system management\n");
 	mm_init(mtboot);
 	console_init_stage2();
-	parse_kernel_cmd((char *)(addr_t)mtboot->cmdline);
+	parse_kernel_command_line((char *)(addr_t)mtboot->cmdline);
 	tm_init_multitasking();
 	dm_init();
 	fs_init();
@@ -140,8 +115,9 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 #if CONFIG_SMP
 	cpu_boot_all_aps();
 #endif
-	if(!sys_clone(0))
-		init();
+	if(!sys_clone(0)) {
+		tm_thread_user_mode_jump(user_mode_init);
+	}
 
 	sys_setsid();
 	kt_kernel_idle_task();
@@ -152,7 +128,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
  * we don't have to worry about it faulting there. Besides that, everything
  * this function does is either on the stack or just in code, so none
  * of it will cause problems */
-void printf(const char *fmt, ...)
+static void printf(const char *fmt, ...)
 {
 	char printbuf[1024];
 	memset(printbuf, 0, 1024);
@@ -163,30 +139,31 @@ void printf(const char *fmt, ...)
 	va_end(args);
 }
 
-void user_mode_init(void)
+static void user_mode_init(void)
 {
 	/* We have to be careful now. If we try to call any kernel functions
 	 * without doing a system call, the processor will generate a GPF (or 
 	 * a page fault) because you can't do fancy kernel stuff in ring 3!
 	 * So we write simple wrapper functions for common functions that 
 	 * we will need */
-
-	int ret = u_execve("/sh", (char **)stuff_to_pass, (char **)init_env);
-	ret = u_execve("/bin/sh", (char **)stuff_to_pass, (char **)init_env);
+	char *init_env[5] = {
+		"PATH=/bin/:/usr/bin/:/usr/sbin:",
+		"TERM=seaos",
+		"HOME=/",
+		"SHELL=/bin/sh",
+		NULL
+	};
+	int ret;
+	char *init_argv[4] = {
+		"sh",
+		"/preinit.sh",
+		root_device,
+		NULL
+	};
+	ret = u_execve(init_path, (char **)init_argv, (char **)init_env);
+	ret = u_execve("/sh", (char **)init_argv, (char **)init_env);
+	ret = u_execve("/bin/sh", (char **)init_argv, (char **)init_env);
 	printf("Failed to start the init process (err=%d). Halting.\n", -ret);
 	u_exit(0);
-}
-
-void init(void)
-{
-	/* Set some basic environment variables. These allow simple root execution, 
-	 * basic terminal access, and a shell to run from */
-	add_init_env("PATH=/bin/:/usr/bin/:/usr/sbin:");
-	add_init_env("TERM=seaos");
-	add_init_env("HOME=/");
-	add_init_env("SHELL=/bin/sh");
-	int pid;
-	init_pid = current_process->pid+1;
-	tm_thread_user_mode_jump(user_mode_init);
 }
 

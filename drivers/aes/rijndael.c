@@ -16,9 +16,6 @@
 #include "rijndael.h"
 #include <sea/types.h>
 
-typedef uint32_t u32;
-typedef uint8_t u8;
-
 static const u32 Te0[256] =
 {
   0xc66363a5U, 0xf87c7c84U, 0xee777799U, 0xf67b7b8dU,

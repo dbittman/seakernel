@@ -14,14 +14,14 @@
 
 #include <sea/types.h>
 
-int rijndaelSetupEncrypt(uint32_t *rk, const unsigned char *key,
+int rijndaelSetupEncrypt(u32 *rk, const u8 *key,
   int keybits);
-int rijndaelSetupDecrypt(uint32_t *rk, const unsigned char *key,
+int rijndaelSetupDecrypt(u32 *rk, const u8 *key,
   int keybits);
-void rijndaelEncrypt(const uint32_t *rk, int nrounds,
-  const unsigned char plaintext[16], unsigned char ciphertext[16]);
-void rijndaelDecrypt(const uint32_t *rk, int nrounds,
-  const unsigned char ciphertext[16], unsigned char plaintext[16]);
+void rijndaelEncrypt(const u32 *rk, int nrounds,
+  const u8 plaintext[16], u8 ciphertext[16]);
+void rijndaelDecrypt(const u32 *rk, int nrounds,
+  const u8 ciphertext[16], u8 plaintext[16]);
 
 #define KEYLENGTH(keybits) ((keybits)/8)
 //#define RKLENGTH(keybits)  ((keybits)/8+28)

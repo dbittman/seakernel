@@ -1,6 +1,6 @@
 #ifndef TYPES_x86_H
 #define TYPES_x86_H
-
+#include <stdint.h>
 typedef unsigned int   u32int;
 typedef          int   s32int;
 typedef unsigned long long   u64int;
@@ -29,7 +29,7 @@ typedef unsigned short uint16;
 typedef          short sint16;
 typedef unsigned char  uint8;
 typedef          char  sint8;
-
+/*
 typedef unsigned int   uint32_t;
 typedef          int   sint32_t;
 typedef unsigned long long   uint64_t;
@@ -38,7 +38,7 @@ typedef unsigned short uint16_t;
 typedef          short sint16_t;
 typedef unsigned char  uint8_t;
 typedef          char  sint8_t;
-typedef unsigned int    intptr_t;
+*/
 typedef s32 off_t;
 typedef u32 size_t;
 typedef s32 ssize_t;

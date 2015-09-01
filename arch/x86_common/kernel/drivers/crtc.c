@@ -80,13 +80,8 @@ void crtc_console_put(struct vterm *con, char c)
 void crtc_putchar(char *mem, char c, char attr, int x, int y, int w)
 {
 	int offset = y * w + x;
-	if(april_fools) {
-		*(char *)((char *)mem + offset*2+1) = c;
-		*(char *)((char *)mem + offset*2) = attr;
-	} else {
-		*(unsigned char *)((unsigned char *)mem + offset*2) = c;
-		*(unsigned char *)((unsigned char *)mem + offset*2 + 1) = attr;
-	}
+	*(unsigned char *)((unsigned char *)mem + offset*2) = c;
+	*(unsigned char *)((unsigned char *)mem + offset*2 + 1) = attr;
 }
 
 void crtc_clear(struct vterm *con)

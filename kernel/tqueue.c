@@ -4,7 +4,7 @@
 #include <sea/mutex.h>
 #include <sea/ll.h>
 #include <sea/cpu/processor.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/mm/kmalloc.h>
 /* the rules for tqueue's are simple:
@@ -46,7 +46,7 @@ struct llistnode *tqueue_insert(struct tqueue *tq, void *item, struct llistnode 
 	ll_do_insert(&tq->tql, node, item);
 	if(!tq->current)
 		tq->current = tq->tql.head;
-	add_atomic(&tq->num, 1);
+	atomic_fetch_add_explicit(&tq->num, 1, memory_order_release);
 	mutex_release(&tq->lock);
 	cpu_interrupt_set(old);
 	return node;
@@ -59,7 +59,7 @@ void tqueue_remove(struct tqueue *tq, struct llistnode *node)
 	assert(tq->magic == TQ_MAGIC);
 	if(tq->current == node) tq->current=0;
 	ll_do_remove(&tq->tql, node, 0);
-	sub_atomic(&tq->num, 1);
+	atomic_fetch_sub_explicit(&tq->num, 1, memory_order_release);
 	mutex_release(&tq->lock);
 	cpu_interrupt_set(old);
 }

@@ -5,6 +5,8 @@ typedef struct {
 	unsigned magic, flags;
 	_Atomic unsigned long readers;
 	atomic_flag writer;
+	char *holderfile;
+	int holderline;
 } rwlock_t;
 
 enum rwlock_locktype {

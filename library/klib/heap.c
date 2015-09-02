@@ -24,6 +24,10 @@ struct heap *heap_create(struct heap *heap, int flags, int heapmode)
 	return heap;
 }
 
+/* TODO: heaps are used by workqueues, and an insert may be in an
+ * interrupt context, which would make this invalid. We need a way
+ * to disallow resizing... fail condition in heap_insert? */
+#warning "^^"
 static void __heap_resize(struct heap *heap)
 {
 	size_t newcap = heap->capacity * 2;

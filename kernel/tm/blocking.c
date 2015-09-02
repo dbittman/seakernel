@@ -39,13 +39,15 @@ void tm_thread_add_to_blocklist(struct thread *t, struct llist *blocklist)
 
 void tm_thread_remove_from_blocklist(struct thread *t)
 {
-	mutex_acquire(&t->block_mutex);
-	if(t->blocklist) {
-		ll_do_remove(t->blocklist, &t->blocknode, 0);
-		t->blocklist = 0;
+	struct llist *bl = atomic_exchange(&t->blocklist, NULL);
+	if(bl) {
+		rwlock_acquire(&bl->rwl, RWL_WRITER);
+		mutex_acquire(&t->block_mutex);
+		ll_do_remove(bl, &t->blocknode, 1);
 		tqueue_insert(t->cpu->active_queue, (void *)t, &t->activenode);
+		mutex_release(&t->block_mutex);
+		rwlock_release(&bl->rwl, RWL_WRITER);
 	}
-	mutex_release(&t->block_mutex);
 }
 
 int tm_thread_block(struct llist *blocklist, int state)
@@ -91,30 +93,28 @@ int tm_thread_block_schedule_work(struct llist *blocklist, int state, struct asy
 
 void tm_thread_unblock(struct thread *t)
 {
-	cpu_disable_preemption();
 	tm_thread_set_state(t, THREADSTATE_RUNNING);
 	tm_thread_remove_from_blocklist(t);
-	cpu_enable_preemption();
 }
 
 void tm_blocklist_wakeall(struct llist *blocklist)
 {
 	struct llistnode *node, *next;
 	struct thread *t;
-	cpu_disable_preemption();
 	rwlock_acquire(&blocklist->rwl, RWL_WRITER);
+	cpu_disable_preemption();
 	ll_for_each_entry_safe(blocklist, node, next, struct thread *, t) {
 		mutex_acquire(&t->block_mutex);
-		if(t->blocklist) {
-			ll_do_remove(t->blocklist, &t->blocknode, 1);
-			t->blocklist = 0;
+		struct llist *bl = atomic_exchange(&t->blocklist, NULL);
+		if(bl) {
+			ll_do_remove(bl, &t->blocknode, 1);
 			tqueue_insert(t->cpu->active_queue, (void *)t, &t->activenode);
 		}
 		t->state = THREADSTATE_RUNNING;
 		mutex_release(&t->block_mutex);
 	}
-	rwlock_release(&blocklist->rwl, RWL_WRITER);
 	cpu_enable_preemption();
+	rwlock_release(&blocklist->rwl, RWL_WRITER);
 }
 
 static void __timeout_expired(unsigned long data)

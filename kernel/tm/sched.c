@@ -31,7 +31,8 @@ static struct thread *get_next_thread (void)
 	struct thread *n = 0;
 	while(1) {
 		n = tqueue_next(current_thread->cpu->active_queue);
-		assert(n->cpu == current_thread->cpu);
+		if(n->cpu != current_thread->cpu)
+			panic(PANIC_NOSYNC, ":: %x %x %x\n", n, n->cpu, current_thread->cpu);
 		check_signals(n);
 		if(n && tm_thread_runnable(n))
 			break;

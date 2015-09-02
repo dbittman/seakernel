@@ -19,7 +19,10 @@ void __rwlock_acquire(rwlock_t *lock, enum rwlock_locktype type, char *file, int
 		panic(PANIC_NOSYNC, "cannot lock an rwlock within interrupt context");
 	assert(lock->magic == RWLOCK_MAGIC);
 	if(kernel_state_flags & KSF_SHUTDOWN) return;
+	int timeout = 50000000;
 	while(atomic_flag_test_and_set_explicit(&lock->writer, memory_order_acquire)) {
+		if(!--timeout)
+			panic(0, "timeout1: %s %d (held by %s:%d)", file, line, lock->holderfile ? lock->holderfile : "?", lock->holderline);
 		tm_schedule();
 	}
 
@@ -27,9 +30,14 @@ void __rwlock_acquire(rwlock_t *lock, enum rwlock_locktype type, char *file, int
 		atomic_fetch_add(&lock->readers, 1);
 		atomic_flag_clear_explicit(&lock->writer, memory_order_release);
 	} else {
-		while(lock->readers != 0)
+		timeout = 50000000;
+		while(atomic_load(&lock->readers) != 0) {
+			if(!--timeout) panic(0, "timeout2: %s %d", file, line);
 			tm_schedule();
+		}
 	}
+	lock->holderline = line;
+	lock->holderfile = file;
 }
 
 void __rwlock_deescalate(rwlock_t *lock, char *file, int line)
@@ -49,6 +57,8 @@ void rwlock_release(rwlock_t *lock, enum rwlock_locktype type)
 	if(kernel_state_flags & KSF_DEBUGGING)
 		return;
 	if(kernel_state_flags & KSF_SHUTDOWN) return;
+	lock->holderline=0;
+	lock->holderfile=0;
 	if(type == RWL_READER) {
 		assert(lock->readers >= 1);
 		atomic_fetch_sub_explicit(&lock->readers, 1, memory_order_release);

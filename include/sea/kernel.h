@@ -18,16 +18,16 @@
 #define KSF_MEMMAPPED      0x80 /* is memory mapped? (used by pmm) */
 #define KSF_THREADING      0x100
 #define KSF_DEBUGGING      0x200
-extern unsigned kernel_state_flags;
-#define set_ksf(flag) or_atomic(&kernel_state_flags, flag)
-#define unset_ksf(flag) and_atomic(&kernel_state_flags, ~flag)
+extern _Atomic unsigned kernel_state_flags;
+#define set_ksf(flag) atomic_fetch_or(&kernel_state_flags, flag)
+#define unset_ksf(flag) atomic_fetch_and(&kernel_state_flags, ~flag)
 
 #define PANIC_NOSYNC  1
 #define PANIC_MEM     2
 #define PANIC_VERBOSE 4
 #define PANIC_INSTANT 8
 
-#if CONFIG_ENABLE_ASSERTS
+#if CONFIG_ENABLE_ASSERTSadawd
   #define assert(c) \
 	do {\
 		if(__builtin_expect((!(c)),0)) \
@@ -42,6 +42,7 @@ extern unsigned kernel_state_flags;
 
 #else
   #define assert(c)
+#define assertmsg(condition, msg, ...)
 #endif
 
 void panic(int flags, char *fmt, ...);

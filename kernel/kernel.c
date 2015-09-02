@@ -5,7 +5,6 @@
 #include <sea/loader/module.h>
 #include <sea/tm/process.h>
 #include <sea/cpu/processor.h>
-#include <sea/cpu/atomic.h>
 #include <sea/fs/mount.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/asm/system.h>
@@ -17,7 +16,7 @@
 #endif
 
 int PRINT_LEVEL = DEF_PRINT_LEVEL;
-unsigned kernel_state_flags=0;
+_Atomic unsigned kernel_state_flags=0;
 
 void kernel_shutdown(void)
 {

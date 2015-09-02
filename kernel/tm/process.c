@@ -19,7 +19,7 @@ struct process *tm_process_get(pid_t pid)
 		mutex_release(&process_refs_lock);
 		return 0;
 	}
-	add_atomic(&proc->refs, 1);
+	atomic_fetch_add(&proc->refs, 1);
 	mutex_release(&process_refs_lock);
 	return proc;
 }
@@ -29,7 +29,7 @@ void tm_process_inc_reference(struct process *proc)
 	assert(proc->magic == PROCESS_MAGIC);
 	if(!(proc->refs >= 1))
 		panic(PANIC_NOSYNC, "process refcount error (inc): %d refs = %d\n", proc->pid, proc->refs);
-	add_atomic(&proc->refs, 1);
+	atomic_fetch_add(&proc->refs, 1);
 }
 
 void tm_process_put(struct process *proc)
@@ -38,7 +38,7 @@ void tm_process_put(struct process *proc)
 	mutex_acquire(&process_refs_lock);
 	if(!(proc->refs >= 1))
 		panic(PANIC_NOSYNC, "process refcount error (put): %d (%s) refs = %d\n", proc->pid, proc->command, proc->refs);
-	if(sub_atomic(&proc->refs, 1) == 0) {
+	if(atomic_fetch_sub(&proc->refs, 1) == 1) {
 		hash_table_delete_entry(process_table, &proc->pid, sizeof(proc->pid), 1);
 		mutex_release(&process_refs_lock);
 		/* do this here...since we must wait for every thread to give up

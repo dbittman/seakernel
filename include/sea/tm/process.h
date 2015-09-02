@@ -54,7 +54,7 @@ struct process {
 	struct vmm_context vmm_context;
 	pid_t pid;
 	int flags;
-	int refs;
+	_Atomic int refs;
 
 	struct llistnode listnode;
 

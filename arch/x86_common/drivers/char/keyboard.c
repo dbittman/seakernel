@@ -6,7 +6,7 @@
 #include <sea/tm/process.h>
 #include <sea/loader/symbol.h>
 #include <sea/cpu/interrupt.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 #include <sea/asm/system.h>
 #include <sea/errno.h>
 #include <sea/cpu/cpu-io.h>
@@ -273,9 +273,9 @@ struct async_call keyboard_s2_call;
 void keyboard_int_stage1(registers_t *regs, int int_no, int flags)
 {
 	unsigned char scancode = inb(0x60);
-	int x = add_atomic(&ks_idx, 1)-1;
+	int x = atomic_fetch_add(&ks_idx, 1);
 	if(ks_idx > 63) {
-		sub_atomic(&ks_idx, 1);
+		atomic_fetch_sub(&ks_idx, 1);
 		return;
 	}
 	key_stack[x] = scancode;
@@ -290,7 +290,7 @@ void keyboard_int_stage1(registers_t *regs, int int_no, int flags)
 void keyboard_int_stage2(unsigned long __int_no)
 {
 	/* TODO: read all the keys in the stack */
-	int x = sub_atomic(&ks_idx, 1);
+	int x = atomic_fetch_sub(&ks_idx, 1)-1;
 	if(x < 0) {
 		ks_idx=0;
 		return;

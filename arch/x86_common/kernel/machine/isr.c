@@ -5,7 +5,6 @@
 #include <sea/tm/process.h>
 #include <sea/cpu/processor.h>
 #include <sea/loader/symbol.h>
-#include <sea/cpu/atomic.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/fs/proc.h>
 #include <sea/cpu/cpu-io.h>
@@ -33,7 +32,6 @@ void arch_interrupt_ipi_handler(registers_t regs)
 	assert(((regs.ds&(~0x7)) == 0x10 || (regs.ds&(~0x7)) == 0x20) && ((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));
 #endif
 	cpu_interrupt_set(0);
-	add_atomic(&interrupt_counts[regs.int_no], 1);
 #if CONFIG_SMP
 	/* delegate to the proper handler, in ipi.c */
 	switch(regs.int_no) {

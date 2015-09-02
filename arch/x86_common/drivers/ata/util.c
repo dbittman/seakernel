@@ -3,7 +3,7 @@
 #include <modules/pci.h>
 #include <modules/ata.h>
 #include <sea/dm/block.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 
 int ata_disk_sync(struct ata_controller *cont)
 {
@@ -58,7 +58,7 @@ void ata_irq_handler(registers_t *regs, int int_no, int flags)
 	struct ata_controller *cont = (int_no == (32+ATA_PRIMARY_IRQ) ? primary : secondary);
 	char st = inb(cont->port_bmr_base + BMR_STATUS);
 	if(st & 0x4) {
-		add_atomic(&cont->irqwait, 1);
+		atomic_fetch_add(&cont->irqwait, 1);
 		ata_reg_inb(cont, REG_STATUS);
 		outb(cont->port_bmr_base + BMR_STATUS, 0x4);
 	}

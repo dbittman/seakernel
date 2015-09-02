@@ -13,7 +13,8 @@ struct slab {
 	struct cache *cache;
 	struct llistnode node;
 	struct valloc allocator;
-	int count, max;
+	_Atomic int count;
+	int max;
 	uint32_t magic;
 	mutex_t lock;
 };

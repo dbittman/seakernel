@@ -7,7 +7,7 @@ initialization */
 #include <sea/mutex.h>
 #include <sea/cpu/processor.h>
 #include <sea/mm/vmm.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 #include <sea/cpu/imps-x86.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/cmos-x86_common.h>
@@ -92,7 +92,7 @@ int boot_cpu(struct cpu *cpu)
 	hash_table_set_entry(thread_table, &thread->tid, sizeof(thread->tid), 1, thread);
 	tm_thread_add_to_process(thread, kernel_process);
 	tm_thread_add_to_cpu(thread, cpu);
-	add_atomic(&running_threads, 1);
+	atomic_fetch_add(&running_threads, 1);
 
 	/* choose this as the bios reset vector */
 	bootaddr = 0x7000;

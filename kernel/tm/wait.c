@@ -17,7 +17,10 @@ static void get_status_int(struct process *t, int *st, int *__pid)
 	/* yeah, lots of weird posix stuff going on here */
 	short code=0;
 	short info=0;
-	if(status == __EXITSIG)  code = 0x7e, info=(char)sig_number << 8;
+	if(status == __EXITSIG) {
+		code = 0x7e;
+		info=(char)sig_number << 8;
+	}
 	if(status == __STOPSIG) {
 		if(status & __EXITSIG) panic(PANIC_NOSYNC, 
 			"Stat of dead task returned nonsense data!");

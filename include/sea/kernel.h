@@ -33,8 +33,15 @@ extern unsigned kernel_state_flags;
 		if(__builtin_expect((!(c)),0)) \
 			panic_assert(__FILE__, __LINE__, #c); \
 	} while(0)
+
+	#define assertmsg(condition, msg, ...) \
+		do {\
+			if(__builtin_expect((!(condition)),0)) \
+				panic(0, "%s:%d - %s: " msg, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__);\
+		} while(0)
+
 #else
-  #define assert(c) {}
+  #define assert(c)
 #endif
 
 void panic(int flags, char *fmt, ...);

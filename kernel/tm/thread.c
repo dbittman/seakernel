@@ -5,6 +5,7 @@
 #include <sea/lib/bitmap.h>
 #include <sea/mm/valloc.h>
 #include <sea/tm/ptrace.h>
+#include <stdatomic.h>
 size_t running_threads = 0;
 struct hash_table *thread_table;
 mutex_t thread_refs_lock;
@@ -61,22 +62,21 @@ struct thread *tm_thread_get(pid_t tid)
 		mutex_release(&thread_refs_lock);
 		return 0;
 	}
-	add_atomic(&thr->refs, 1);
+	atomic_fetch_add_explicit(&thr->refs, 1, memory_order_release);
 	mutex_release(&thread_refs_lock);
 	return thr;
 }
 
 void tm_thread_inc_reference(struct thread *thr)
 {
-	assert(thr->refs >= 1);
-	add_atomic(&thr->refs, 1);
+	assert(atomic_fetch_add(&thr->refs, 1) > 1);
 }
 
 void tm_thread_put(struct thread *thr)
 {
 	assert(thr->refs >= 1);
 	mutex_acquire(&thread_refs_lock);
-	if(sub_atomic(&thr->refs, 1) == 0) {
+	if(atomic_fetch_sub(&thr->refs, 1) == 1) {
 		assert(!hash_table_delete_entry(thread_table, &thr->tid, sizeof(thr->tid), 1));
 		mutex_release(&thread_refs_lock);
 		kfree(thr);

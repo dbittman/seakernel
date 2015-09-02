@@ -2,7 +2,7 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/string.h>
 #include <sea/loader/symbol.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 #include <sea/vsprintf.h>
 #include <sea/tm/timing.h>
 
@@ -117,7 +117,7 @@ void cpu_disable_preemption(void)
 {
 	int old = cpu_interrupt_set(0);
 	if(current_thread)
-		add_atomic(&__current_cpu->preempt_disable, 1);
+		atomic_fetch_add(&__current_cpu->preempt_disable, 1);
 	cpu_interrupt_set(old);
 }
 
@@ -125,7 +125,7 @@ void cpu_enable_preemption(void)
 {
 	int old = cpu_interrupt_set(0);
 	if(current_thread)
-		sub_atomic(&__current_cpu->preempt_disable, 1);
+		atomic_fetch_sub(&__current_cpu->preempt_disable, 1);
 	cpu_interrupt_set(old);
 }
 

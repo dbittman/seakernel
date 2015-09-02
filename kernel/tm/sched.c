@@ -3,7 +3,7 @@
 #include <sea/tm/process.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/processor.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 #include <sea/vsprintf.h>
 
 static void check_signals(struct thread *thread)
@@ -17,7 +17,7 @@ static void check_signals(struct thread *thread)
 		}
 		if(index < 32) {
 			thread->signal = index + 1;
-			and_atomic(&thread->signals_pending, ~(1 << (index)));
+			atomic_fetch_and_explicit(&thread->signals_pending, ~(1 << (index)), memory_order_relaxed);
 		}
 	}
 	if(thread->signal || thread->signals_pending) {

@@ -32,7 +32,7 @@ struct cpu {
 	unsigned numtasks;
 	addr_t stack;
 	struct ticker ticker;
-	int preempt_disable;
+	_Atomic int preempt_disable;
 	struct arch_cpu arch_cpu_data;
 };
 

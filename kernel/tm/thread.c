@@ -69,7 +69,7 @@ struct thread *tm_thread_get(pid_t tid)
 
 void tm_thread_inc_reference(struct thread *thr)
 {
-	assert(atomic_fetch_add(&thr->refs, 1) > 1);
+	assert(atomic_fetch_add(&thr->refs, 1) >= 1);
 }
 
 void tm_thread_put(struct thread *thr)

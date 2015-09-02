@@ -24,7 +24,7 @@ int mutex_is_locked(mutex_t *m)
 	 * this function */
 	if(kernel_state_flags & KSF_SHUTDOWN)
 		return 1;
-	return m->lock;
+	return atomic_load(&m->lock);
 }
 #define MUTEX_DEBUG 0
 void __mutex_acquire(mutex_t *m, char *file, int line)
@@ -93,7 +93,7 @@ mutex_t *mutex_create(mutex_t *m, unsigned flags)
 		memset(m, 0, sizeof(mutex_t));
 		m->flags=flags;
 	}
-	m->lock=0;
+	m->lock=ATOMIC_VAR_INIT(0);
 	m->magic = MUTEX_MAGIC;
 	m->pid = -1;
 	return m;

@@ -62,7 +62,7 @@ struct thread *tm_thread_get(pid_t tid)
 		mutex_release(&thread_refs_lock);
 		return 0;
 	}
-	atomic_fetch_add_explicit(&thr->refs, 1, memory_order_release);
+	atomic_fetch_add(&thr->refs, 1);
 	mutex_release(&thread_refs_lock);
 	return thr;
 }

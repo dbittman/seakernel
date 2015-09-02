@@ -104,7 +104,8 @@ void vfs_inode_destroy(struct inode *node)
 void vfs_inode_get(struct inode *node)
 {
 	mutex_acquire(ic_lock);
-	assert(add_atomic(&node->count, 1) > 1);
+	add_atomic(&node->count, 1);
+	assert(node->count > 1);
 	assert((node->flags & INODE_INUSE));
 	mutex_release(ic_lock);
 }
@@ -181,7 +182,7 @@ void vfs_icache_put(struct inode *node)
 		assert(node->flags & INODE_INUSE);
 		and_atomic(&node->flags, ~INODE_INUSE);
 		if(node->filesystem) {
-			assert(sub_atomic(&node->filesystem->usecount, 1) >= 0);
+			sub_atomic(&node->filesystem->usecount, 1);
 		}
 
 		ll_do_remove(ic_inuse, &node->inuse_item, 0);

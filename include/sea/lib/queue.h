@@ -9,7 +9,8 @@ struct queue_item {
 };
 
 struct queue {
-	int flags, count;
+	int flags;
+	_Atomic int count;
 	mutex_t lock;
 	struct queue_item *head, *tail;
 };

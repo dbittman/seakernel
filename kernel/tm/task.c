@@ -43,8 +43,8 @@ void tm_init_multitasking(void)
 
 	proc->refs = 2;
 	thread->refs = 1;
-	assert(!hash_table_set_entry(process_table, &proc->pid, sizeof(proc->pid), 1, proc));
-	assert(!hash_table_set_entry(thread_table, &thread->tid, sizeof(thread->tid), 1, thread));
+	hash_table_set_entry(process_table, &proc->pid, sizeof(proc->pid), 1, proc);
+	hash_table_set_entry(thread_table, &thread->tid, sizeof(thread->tid), 1, thread);
 	ll_do_insert(process_list, &proc->listnode, proc);
 
 	valloc_create(&proc->mmf_valloc, MMF_BEGIN, MMF_END, PAGE_SIZE, VALLOC_USERMAP);

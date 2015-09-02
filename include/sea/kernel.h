@@ -37,7 +37,7 @@ extern unsigned kernel_state_flags;
 	#define assertmsg(condition, msg, ...) \
 		do {\
 			if(__builtin_expect((!(condition)),0)) \
-				panic(0, "%s:%d - %s: " msg, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__);\
+				panic(PANIC_NOSYNC, "%s:%d - %s: " msg, __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__);\
 		} while(0)
 
 #else

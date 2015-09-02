@@ -119,7 +119,8 @@ static void free_object(void *object)
 static void *allocate_object(struct slab *slab)
 {
 	struct valloc_region reg;
-	assert(valloc_allocate(&slab->allocator, &reg, 1));
+	void *test = valloc_allocate(&slab->allocator, &reg, 1);
+	assertmsg(test, "could not allocate object from valloc in slab");
 	
 	/* NOTE: do this while we're still locked, because objects can share physical pages,
 	 * so if two processes try to map a page at the same time, sadness can happpen. */
@@ -176,7 +177,8 @@ static struct cache *select_cache(size_t size)
 	struct cache *cache;
 	if(hash_table_get_entry(&cache_hash, &size, sizeof(size), 1, (void **)&cache) == -ENOENT) {
 		size_t cachesize = ((sizeof(struct cache) - 1) & ~63) + 64;
-		assert(hash_table_get_entry(&cache_hash, &cachesize, sizeof(cachesize), 1, (void **)&cache) == 0);
+		int v = hash_table_get_entry(&cache_hash, &cachesize, sizeof(cachesize), 1, (void **)&cache);
+		assert(!v);
 		cache = allocate_object_from_cache(cache);
 		construct_cache(cache, size);
 		hash_table_set_entry(&cache_hash, &cache->object_size, sizeof(cache->object_size), 1, cache);

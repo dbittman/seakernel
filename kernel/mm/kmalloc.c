@@ -41,7 +41,10 @@ void *__kmalloc_a(size_t s, char *file, int line)
 {
 	assert(s == PAGE_SIZE);
 	struct valloc_region reg;
-	assert(valloc_allocate(&virtpages, &reg, 1));
+	void *test = valloc_allocate(&virtpages, &reg, 1);
+	if(!test) {
+		panic(PANIC_NOSYNC, "could not allocate aligned region (out of memory?)");
+	}
 	/* NOTE: we don't need to lock this operation because
 	 * allocations cannot share physical pages. */
 	map_if_not_mapped(reg.start);

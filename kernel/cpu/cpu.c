@@ -125,7 +125,7 @@ void cpu_enable_preemption(void)
 {
 	int old = cpu_interrupt_set(0);
 	if(current_thread)
-		assert(sub_atomic(&__current_cpu->preempt_disable, 1) >= 0);
+		sub_atomic(&__current_cpu->preempt_disable, 1);
 	cpu_interrupt_set(old);
 }
 

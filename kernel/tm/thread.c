@@ -69,7 +69,8 @@ struct thread *tm_thread_get(pid_t tid)
 
 void tm_thread_inc_reference(struct thread *thr)
 {
-	assert(atomic_fetch_add(&thr->refs, 1) >= 1);
+	atomic_fetch_add(&thr->refs, 1);
+	assert(thr->refs > 1);
 }
 
 void tm_thread_put(struct thread *thr)
@@ -77,7 +78,7 @@ void tm_thread_put(struct thread *thr)
 	assert(thr->refs >= 1);
 	mutex_acquire(&thread_refs_lock);
 	if(atomic_fetch_sub(&thr->refs, 1) == 1) {
-		assert(!hash_table_delete_entry(thread_table, &thr->tid, sizeof(thr->tid), 1));
+		hash_table_delete_entry(thread_table, &thr->tid, sizeof(thr->tid), 1);
 		mutex_release(&thread_refs_lock);
 		kfree(thr);
 	} else {

@@ -6,7 +6,7 @@
 #include <sea/vsprintf.h>
 #include <sea/tm/process.h>
 #include <sea/fs/kerfs.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 #include <sea/loader/symbol.h>
 #include <sea/cpu/processor.h>
 #include <sea/tm/workqueue.h>
@@ -179,7 +179,7 @@ void cpu_interrupt_syscall_entry(registers_t *regs, int syscall_num)
 	cpu_interrupt_set(0);
 	assert(!current_thread->regs);
 	current_thread->regs = regs;
-	add_atomic(&interrupt_counts[0x80], 1);
+	atomic_fetch_add_explicit(&interrupt_counts[0x80], 1, memory_order_relaxed);
 	if(syscall_num == 128) {
 		arch_tm_userspace_signal_cleanup(regs);
 	} else {
@@ -195,7 +195,7 @@ void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_addres
 {
 	int already_in_kernel = 0;
 	cpu_interrupt_set(0);
-	add_atomic(&interrupt_counts[int_no], 1);
+	atomic_fetch_add_explicit(&interrupt_counts[int_no], 1, memory_order_relaxed);
 	if(!current_thread->regs) {
 		current_thread->regs = regs;
 		/* TODO: do we need this? */
@@ -228,13 +228,13 @@ void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_addres
 void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 {
 	cpu_interrupt_set(0);
-	add_atomic(&interrupt_counts[int_no], 1);
+	atomic_fetch_add_explicit(&interrupt_counts[int_no], 1, memory_order_relaxed);
 	int already_in_kernel = 0;
 	if(!current_thread->regs)
 		current_thread->regs = regs;
 	else
 		already_in_kernel = 1;
-	assert(add_atomic(&current_thread->interrupt_level, 1) > 0);
+	atomic_fetch_add(&current_thread->interrupt_level, 1);
 	/* now, run through the stage1 handlers, and see if we need any
 	 * stage2 handlers to run later */
 	int s1started = timer_start(&interrupt_timers[int_no]);
@@ -245,7 +245,7 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 	}
 	if(s1started) timer_stop(&interrupt_timers[int_no]);
 	cpu_interrupt_set(0);
-	assert(sub_atomic(&current_thread->interrupt_level, 1) >= 0);
+	atomic_fetch_sub(&current_thread->interrupt_level, 1);
 	if(!already_in_kernel) {
 		__setup_signal_handler(regs);
 		current_thread->regs = 0;

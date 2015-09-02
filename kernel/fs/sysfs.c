@@ -35,7 +35,8 @@ int kerfs_register_parameter(char *path, void *param, size_t size, int flags, in
 	kn->flags = flags | KERFS_PARAM;
 	kn->type = type;
 
-	assert(!hash_table_set_entry(table, &num, sizeof(num), 1, kn));
+	int v = hash_table_set_entry(table, &num, sizeof(num), 1, kn);
+	assertmsg(!v, "failed to register kerfs parameter");
 	return 0;
 }
 
@@ -53,7 +54,8 @@ int kerfs_register_report(char *path, int (*fn)(size_t, size_t, char *))
 	kn->num = num;
 	kn->fn = fn;
 
-	assert(!hash_table_set_entry(table, &num, sizeof(num), 1, kn));
+	int v = hash_table_set_entry(table, &num, sizeof(num), 1, kn);
+	assertmsg(!v, "failed to register kerfs report");
 	current_process->effective_uid = old;
 	return 0;
 }

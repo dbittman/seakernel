@@ -88,7 +88,7 @@ int boot_cpu(struct cpu *cpu)
 	workqueue_create(&thread->resume_work, 0);
 	mutex_create(&thread->block_mutex, MT_NOSCHED);
 	*(struct thread **)(thread->kernel_stack) = thread;
-	assert(!hash_table_set_entry(thread_table, &thread->tid, sizeof(thread->tid), 1, thread));
+	hash_table_set_entry(thread_table, &thread->tid, sizeof(thread->tid), 1, thread);
 	tm_thread_add_to_process(thread, kernel_process);
 	tm_thread_add_to_cpu(thread, cpu);
 	add_atomic(&running_threads, 1);

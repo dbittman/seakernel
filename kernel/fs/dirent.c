@@ -51,7 +51,8 @@ int vfs_dirent_release(struct dirent *dir)
 			vfs_inode_del_dirent(parent, dir);
 			r = fs_callback_inode_unlink(parent, dir->name, dir->namelen, target);
 			if(!r) {
-				assert(sub_atomic(&target->nlink, 1) >= 0);
+				assert(target->nlink > 0);
+				sub_atomic(&target->nlink, 1);
 				if(!target->nlink && (target->flags & INODE_DIRTY))
 					vfs_inode_unset_dirty(target);
 			}

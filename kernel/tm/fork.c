@@ -229,13 +229,13 @@ int tm_clone(int flags)
 		proc = tm_process_copy(flags);
 		add_atomic(&running_processes, 1);
 		tm_process_inc_reference(proc);
-		assert(!hash_table_set_entry(process_table, &proc->pid, sizeof(proc->pid), 1, proc));
+		hash_table_set_entry(process_table, &proc->pid, sizeof(proc->pid), 1, proc);
 		ll_do_insert(process_list, &proc->listnode, proc);
 	} else if(flags & CLONE_KTHREAD) {
 		proc = kernel_process;
 	}
 	struct thread *thr = tm_thread_fork(flags);
-	assert(!hash_table_set_entry(thread_table, &thr->tid, sizeof(thr->tid), 1, thr));
+	hash_table_set_entry(thread_table, &thr->tid, sizeof(thr->tid), 1, thr);
 	add_atomic(&running_threads, 1);
 	tm_thread_add_to_process(thr, proc);
 	thr->state = THREADSTATE_UNINTERRUPTIBLE;

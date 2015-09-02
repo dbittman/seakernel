@@ -2,7 +2,7 @@
 #include <sea/mutex.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/kernel.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 
 struct queue *queue_create(struct queue *q, int flags)
 {
@@ -13,7 +13,7 @@ struct queue *queue_create(struct queue *q, int flags)
 		q->flags = flags;
 	}
 	q->head = q->tail = 0;
-	q->count = 0;
+	q->count = ATOMIC_VAR_INIT(0);
 	mutex_create(&q->lock, MT_NOSCHED);
 	return q;
 }
@@ -33,7 +33,7 @@ void *queue_remove(struct queue *q, struct queue_item *item)
 	else
 		q->tail = item->prev;
 
-	sub_atomic(&q->count, 1);
+	atomic_fetch_sub_explicit(&q->count, 1, memory_order_release);
 	ret = item->ent;
 	mutex_release(&q->lock);
 	return ret;
@@ -59,7 +59,7 @@ struct queue_item *queue_dequeue_item(struct queue *q)
 	else
 		q->tail = item->prev;
 
-	sub_atomic(&q->count, 1);
+	atomic_fetch_sub_explicit(&q->count, 1, memory_order_release);
 	mutex_release(&q->lock);
 	return item;
 }
@@ -89,7 +89,7 @@ void queue_enqueue_item(struct queue *q, struct queue_item *i, void *ent)
 		assert(!q->count);
 		q->head = q->tail = i;
 	}
-	add_atomic(&q->count, 1);
+	atomic_fetch_add_explicit(&q->count, 1, memory_order_release);
 	mutex_release(&q->lock);
 }
 

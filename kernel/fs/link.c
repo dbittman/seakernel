@@ -1,7 +1,7 @@
 #include <sea/types.h>
 #include <sea/fs/inode.h>
 #include <sea/errno.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 #include <sea/fs/dir.h>
 
 /* note that this function doesn't actually delete the dirent. It just sets a flag that
@@ -22,7 +22,7 @@ static int do_fs_unlink(struct inode *node, const char *name, size_t namelen, in
 		vfs_dirent_release(dir);
 		return -ENOTEMPTY;
 	}
-	or_atomic(&dir->flags, DIRENT_UNLINK);
+	atomic_fetch_or_explicit(&dir->flags, DIRENT_UNLINK, memory_order_release);
 	if(S_ISDIR(target->mode) && rec) {
 		do_fs_unlink(target, "..", 2, 0);
 		do_fs_unlink(target, ".", 1, 0);
@@ -51,7 +51,7 @@ int fs_link(struct inode *dir, struct inode *target, const char *name, size_t na
 	rwlock_acquire(&target->metalock, RWL_WRITER);
 	int r = fs_callback_inode_link(dir, target, name, namelen);
 	if(!r)
-		add_atomic(&target->nlink, 1);
+		atomic_fetch_add(&target->nlink, 1);
 	rwlock_release(&target->metalock, RWL_WRITER);
 	rwlock_release(&dir->lock, RWL_WRITER);
 	return r;

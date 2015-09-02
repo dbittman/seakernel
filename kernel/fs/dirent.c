@@ -1,6 +1,6 @@
 #include <sea/kernel.h>
 #include <sea/fs/inode.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/mm/reclaim.h>
 #include <sea/fs/dir.h>
@@ -28,10 +28,9 @@ void vfs_dirent_init(void)
 	mm_reclaim_register(fs_dirent_reclaim_lru, sizeof(struct dirent));
 }
 
-int vfs_dirent_acquire(struct dirent *dir)
+void vfs_dirent_acquire(struct dirent *dir)
 {
-	add_atomic(&dir->count, 1);
-	return 0;
+	atomic_fetch_add(&dir->count, 1);
 }
 
 /* this function is called when a reference to a dirent is released. There is one
@@ -44,7 +43,7 @@ int vfs_dirent_release(struct dirent *dir)
 	int r = 0;
 	struct inode *parent = dir->parent;
 	rwlock_acquire(&parent->lock, RWL_WRITER);
-	if(!sub_atomic(&dir->count, 1)) {
+	if(atomic_fetch_sub(&dir->count, 1) == 1) {
 		if(dir->flags & DIRENT_UNLINK) {
 			struct inode *target = fs_dirent_readinode(dir, 1);
 /* TODO: FIX HANDLING OF NULL RETURN FROM READINODE */
@@ -52,7 +51,7 @@ int vfs_dirent_release(struct dirent *dir)
 			r = fs_callback_inode_unlink(parent, dir->name, dir->namelen, target);
 			if(!r) {
 				assert(target->nlink > 0);
-				sub_atomic(&target->nlink, 1);
+				atomic_fetch_sub(&target->nlink, 1);
 				if(!target->nlink && (target->flags & INODE_DIRTY))
 					vfs_inode_unset_dirty(target);
 			}
@@ -94,13 +93,13 @@ size_t fs_dirent_reclaim_lru(void)
 	struct dirent *dir = qi->ent;
 	struct inode *parent = dir->parent;
 	rwlock_acquire(&parent->lock, RWL_WRITER);
-	add_atomic(&parent->count, 1);
+	atomic_fetch_add(&parent->count, 1);
 	if(dir && dir->count == 0) {
 		/* reclaim this node */
 		vfs_inode_del_dirent(parent, dir);
 		vfs_dirent_destroy(dir);
 	}
-	sub_atomic(&parent->count, 1);
+	atomic_fetch_sub(&parent->count, 1);
 	rwlock_release(&parent->lock, RWL_WRITER);
 	mutex_release(dirent_cache_lock);
 	return sizeof(struct dirent);
@@ -135,7 +134,7 @@ struct dirent *fs_dirent_lookup(struct inode *node, const char *name, size_t nam
 		vfs_inode_get(node);
 		vfs_inode_add_dirent(node, dir);
 	} else {
-		if(add_atomic(&dir->count, 1) == 1) {
+		if(atomic_fetch_add(&dir->count, 1) == 0) {
 			if(!(dir->parent->flags & INODE_NOLRU))
 				fs_dirent_remove_lru(dir);
 			vfs_inode_get(node);

@@ -5,7 +5,7 @@
 #include <sea/lib/hash.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/fs/dir.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 #include <sea/ll.h>
 #include <sea/errno.h>
 #include <sea/dm/dev.h>
@@ -74,7 +74,7 @@ int ramfs_mount(struct filesystem *fs)
 int ramfs_alloc_inode(struct filesystem *fs, uint32_t *id)
 {
 	struct rfsinfo *info = fs->data;
-	*id = add_atomic(&info->next_id, 1);
+	*id = atomic_fetch_add(&info->next_id, 1) + 1;
 	struct rfsnode *node = kmalloc(sizeof(struct rfsnode));
 	node->num = *id;
 	node->ents = ll_create(0);
@@ -115,7 +115,7 @@ int ramfs_inode_pull(struct filesystem *fs, struct inode *node)
 	node->id = rfsnode->num;
 	node->phys_dev = rfsnode->dev;
 	/* TODO: benchmark this */
-	or_atomic(&node->flags, INODE_NOLRU);
+	atomic_fetch_or_explicit(&node->flags, INODE_NOLRU, memory_order_relaxed);
 	return 0;
 }
 
@@ -222,7 +222,7 @@ int ramfs_inode_link(struct filesystem *fs, struct inode *parent, struct inode *
 	if(hash_table_get_entry(info->nodes, &target->id, sizeof(target->id), 1, (void **)&rfstarget))
 		return -EIO;
 
-	add_atomic(&rfstarget->nlinks, 1);
+	atomic_fetch_add_explicit(&rfstarget->nlinks, 1, memory_order_relaxed);
 	struct rfsdirent *dir = kmalloc(sizeof(struct rfsdirent));
 	dir->ino = target->id;
 	memcpy(dir->name, name, namelen);
@@ -258,8 +258,8 @@ int ramfs_inode_unlink(struct filesystem *fs, struct inode *parent, const char *
 		return -EIO;
 
 	found->ino = 0;
-	int r = sub_atomic(&rfstarget->nlinks, 1);
-	if(!r) {
+	int r = atomic_fetch_sub_explicit(&rfstarget->nlinks, 1, memory_order_relaxed);
+	if(r == 1) {
 		hash_table_delete_entry(info->nodes, &target->id, sizeof(found->ino), 1);
 		//if(rfstarget->ents->num == 0) {
 			ll_destroy(rfstarget->ents);

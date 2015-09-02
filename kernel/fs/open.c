@@ -9,7 +9,7 @@
 #include <sea/sys/fcntl.h>
 #include <sea/dm/char.h>
 #include <sea/dm/block.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 #include <sea/fs/file.h>
 #include <sea/fs/pipe.h>
 #include <sea/errno.h>
@@ -113,9 +113,9 @@ struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int
 		vfs_inode_set_dirty(inode);
 	}
 	if(S_ISFIFO(inode->mode) && inode->pipe) {
-		mutex_acquire(inode->pipe->lock);
-		add_atomic(&inode->pipe->count, 1);
-		mutex_release(inode->pipe->lock);
+		atomic_fetch_add(&inode->pipe->count, 1);
+		if(f->flags & _FWRITE)
+			atomic_fetch_add(&f->inode->pipe->wrcount, 1);
 	}
 	fs_fput(current_process, ret, 0);
 	return f;
@@ -163,8 +163,9 @@ static int duplicate(struct process *t, int fp, int n)
 	new->fd_flags &= ~FD_CLOEXEC;
 	new->pos = f->pos;
 	if(f->inode->pipe && !f->inode->pipe->type) {
-		add_atomic(&f->inode->pipe->count, 1);
-		if(f->flags & _FWRITE) add_atomic(&f->inode->pipe->wrcount, 1);
+		atomic_fetch_add(&f->inode->pipe->count, 1);
+		if(f->flags & _FWRITE)
+			atomic_fetch_add(&f->inode->pipe->wrcount, 1);
 		tm_blocklist_wakeall(f->inode->pipe->read_blocked);
 		tm_blocklist_wakeall(f->inode->pipe->write_blocked);
 	}

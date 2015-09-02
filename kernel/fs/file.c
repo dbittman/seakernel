@@ -2,7 +2,7 @@
 #include <sea/kernel.h>
 #include <sea/tm/process.h>
 #include <sea/fs/inode.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 #include <sea/fs/file.h>
 #include <sea/tm/process.h>
 #include <sea/fs/pipe.h>
@@ -25,7 +25,7 @@ struct file *fs_get_file_pointer(struct process *t, int n)
 		panic(PANIC_NOSYNC, "found empty file handle in task %d pointer list", t->pid);
 	struct file *ret=0;
 	if(fp) {
-		add_atomic(&fp->count, 1);
+		atomic_fetch_add(&fp->count, 1);
 		ret = fp->fi;
 		assert(ret);
 	}
@@ -42,7 +42,7 @@ static void remove_file_pointer(struct process *t, int n)
 	if(!f)
 		return;
 	t->filp[n] = 0;
-	sub_atomic(&f->fi->count, 1);
+	atomic_fetch_sub(&f->fi->count, 1);
 	if(!f->fi->count) {
 		kfree(f->fi);
 	}
@@ -54,8 +54,8 @@ void fs_fput(struct process *t, int fd, char flags)
 	mutex_acquire(&t->files_lock);
 	struct file_ptr *fp = get_file_handle(t, fd);
 	assert(fp);
-	int r = sub_atomic(&fp->count, (flags & FPUT_CLOSE) ? 2 : 1);
-	if(!r)
+	atomic_fetch_sub(&fp->count, (flags & FPUT_CLOSE) ? 2 : 1);
+	if(!fp->count)
 		remove_file_pointer(t, fd);
 	mutex_release(&t->files_lock);
 }
@@ -122,15 +122,15 @@ void fs_copy_file_handles(struct process *p, struct process *n)
 			fp->num = c;
 			fp->fi = p->filp[c]->fi;
 			fp->count = p->filp[c]->count;
-			add_atomic(&fp->fi->count, 1);
+			atomic_fetch_add_explicit(&fp->fi->count, 1, memory_order_relaxed);
 			struct inode *i = fp->fi->inode;
 			vfs_inode_get(i);
 			if(fp->fi->dirent)
 				vfs_dirent_acquire(fp->fi->dirent);
 			if(i->pipe && !i->pipe->type) {
-				add_atomic(&i->pipe->count, 1);
+				atomic_fetch_add_explicit(&i->pipe->count, 1, memory_order_relaxed);
 				if(fp->fi->flags & _FWRITE)
-					add_atomic(&i->pipe->wrcount, 1);
+					atomic_fetch_add_explicit(&i->pipe->wrcount, 1, memory_order_relaxed);
 				tm_blocklist_wakeall(i->pipe->read_blocked);
 				tm_blocklist_wakeall(i->pipe->write_blocked);
 			}

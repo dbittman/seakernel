@@ -27,7 +27,7 @@ extern _Atomic unsigned kernel_state_flags;
 #define PANIC_VERBOSE 4
 #define PANIC_INSTANT 8
 
-#if CONFIG_ENABLE_ASSERTSadawd
+#if CONFIG_ENABLE_ASSERTS
   #define assert(c) \
 	do {\
 		if(__builtin_expect((!(c)),0)) \

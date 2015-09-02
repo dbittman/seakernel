@@ -37,8 +37,8 @@ struct inode {
 	struct hash_table *dirents;
 	struct filesystem *filesystem;
 	
-	int count;
-	int flags;
+	_Atomic int count;
+	_Atomic int flags;
 	
 	dev_t phys_dev;
 	struct filesystem *mount;

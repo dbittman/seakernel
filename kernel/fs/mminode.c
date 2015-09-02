@@ -7,7 +7,7 @@
 #include <sea/types.h>
 #include <sea/fs/inode.h>
 #include <sea/mm/vmm.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 #include <sea/errno.h>
 #include <sea/vsprintf.h>
 #include <sea/mm/kmalloc.h>
@@ -106,7 +106,7 @@ addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt,
 			if(node->filesystem && (err=fs_inode_read(node, offset, len, (void *)virt) < 0))
 				printk(0, "[mminode]: read inode failed with %d\n", err);
 		}
-		add_atomic(&node->mapped_pages_count, 1);
+		atomic_fetch_add(&node->mapped_pages_count, 1);
 	} else if(entry->page) {
 		if(mm_vm_get_map(virt, 0, 0))
 			panic(0, "trying to remap mminode shared section");
@@ -141,18 +141,17 @@ void fs_inode_map_region(struct inode *node, size_t offset, size_t length)
 			/* create the entry, and add it */
 			entry = __create_entry();
 			hash_table_set_entry(node->physicals, &i, sizeof(i), 1, entry);
-			add_atomic(&node->mapped_entries_count, 1);
+			atomic_fetch_add_explicit(&node->mapped_entries_count, 1, memory_order_relaxed);
 		}
 		else
 			entry = value;
 
 		/* bump the count... */
-		mutex_acquire(&entry->lock);
-		add_atomic(&entry->count, 1);
-		mutex_release(&entry->lock);
+		atomic_fetch_add_explicit(&entry->count, 1, memory_order_relaxed);
 		/* NOTE: we're not actually allocating or mapping anything here, really. All we're doing
 		 * is indicating our intent to map a certain section, so we don't free pages. */
 	}
+	atomic_thread_fence(memory_order_acq_rel);
 	mutex_release(&node->mappings_lock);
 }
 
@@ -195,7 +194,7 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 			 */
 			entry = value;
 			mutex_acquire(&entry->lock);
-			if(!sub_atomic(&entry->count, 1))
+			if(atomic_fetch_sub(&entry->count, 1) == 1)
 			{
 				/* count is now zero. write back data, 
 				 * free the page, delete the entry, free the entry */
@@ -212,7 +211,7 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 				mutex_destroy(&entry->lock);
 				kfree(entry);
 				hash_table_delete_entry(node->physicals, &i, sizeof(i), 1);
-				sub_atomic(&node->mapped_entries_count, 1);
+				atomic_fetch_sub(&node->mapped_entries_count, 1);
 			} else
 				mutex_release(&entry->lock);
 		}

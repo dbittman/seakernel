@@ -3,7 +3,7 @@
 #include <sea/fs/inode.h>
 #include <sea/fs/kerfs.h>
 #include <sea/kernel.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/errno.h>
 #include <sea/vsprintf.h>
@@ -140,7 +140,7 @@ int fs_umount(struct filesystem *fs)
 struct filesystem *fs_filesystem_create (void)
 {
 	struct filesystem *fs = kmalloc(sizeof(struct filesystem));
-	fs->id = add_atomic(&fsids, 1)-1;
+	fs->id = atomic_fetch_add_explicit(&fsids, 1, memory_order_relaxed);
 	return fs;
 }
 

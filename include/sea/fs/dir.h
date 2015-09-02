@@ -6,8 +6,8 @@ struct inode;
 #define DNAME_LEN 256
 #define DIRENT_UNLINK 1
 struct dirent {
-	int count;
-	int flags;
+	_Atomic int count;
+	_Atomic int flags;
 	rwlock_t lock;
 	struct inode *parent;
 	struct filesystem *filesystem;
@@ -46,7 +46,7 @@ struct inode *fs_dirent_readinode(struct dirent *dir, int);
 struct dirent *vfs_dirent_create(struct inode *node);
 int vfs_dirent_release(struct dirent *dir);
 void vfs_dirent_destroy(struct dirent *dir);
-int vfs_dirent_acquire(struct dirent *dir);
+void vfs_dirent_acquire(struct dirent *dir);
 void vfs_dirent_init();
 void fs_dirent_remove_lru(struct dirent *dir);
 size_t fs_dirent_reclaim_lru();

@@ -2,7 +2,7 @@
 #include <sea/fs/inode.h>
 #include <sea/types.h>
 #include <sea/lib/hash.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 #include <sea/errno.h>
 #include <sea/fs/kerfs.h>
 #include <sea/mm/kmalloc.h>
@@ -23,7 +23,7 @@ int kerfs_register_parameter(char *path, void *param, size_t size, int flags, in
 {
 	uid_t old = current_process->effective_uid;
 	current_process->effective_uid = 0;
-	dev_t num = add_atomic(&dev_num, 1);
+	dev_t num = atomic_fetch_add(&dev_num, 1) + 1;
 	int r = sys_mknod(path, S_IFREG | 0600, num);
 	current_process->effective_uid = old;
 	if(r < 0)
@@ -44,7 +44,7 @@ int kerfs_register_report(char *path, int (*fn)(size_t, size_t, char *))
 {
 	uid_t old = current_process->effective_uid;
 	current_process->effective_uid = 0;
-	dev_t num = add_atomic(&dev_num, 1);
+	dev_t num = atomic_fetch_add(&dev_num, 1) + 1;
 	int r = sys_mknod(path, S_IFREG | 0600, num);
 	if(r < 0) {
 		current_process->effective_uid = old;

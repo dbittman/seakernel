@@ -2,7 +2,7 @@
 #include <sea/fs/inode.h>
 #include <sea/errno.h>
 #include <sea/lib/hash.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/mm/reclaim.h>
 #include <sea/vsprintf.h>
@@ -104,7 +104,7 @@ void vfs_inode_destroy(struct inode *node)
 void vfs_inode_get(struct inode *node)
 {
 	mutex_acquire(ic_lock);
-	add_atomic(&node->count, 1);
+	atomic_fetch_add(&node->count, 1);
 	assert(node->count > 1);
 	assert((node->flags & INODE_INUSE));
 	mutex_release(ic_lock);
@@ -129,11 +129,11 @@ struct inode *vfs_icache_get(struct filesystem *fs, uint32_t num)
 		newly_created = 1;
 	}
 	assert(node->filesystem == fs);
-	add_atomic(&node->count, 1);
+	atomic_fetch_add(&node->count, 1);
 
 	/* move to in-use */
-	if(!(ff_or_atomic(&node->flags, INODE_INUSE) & INODE_INUSE)) {
-		add_atomic(&fs->usecount, 1);
+	if(!(atomic_fetch_or(&node->flags, INODE_INUSE) & INODE_INUSE)) {
+		atomic_fetch_add(&fs->usecount, 1);
 		if(!newly_created) {
 			if(!(node->flags & INODE_NOLRU))
 				queue_remove(ic_lru, &node->lru_item);
@@ -150,14 +150,14 @@ struct inode *vfs_icache_get(struct filesystem *fs, uint32_t num)
 void vfs_inode_set_needread(struct inode *node)
 {
 	assert(!(node->flags & INODE_DIRTY));
-	or_atomic(&node->flags, INODE_NEEDREAD);
+	atomic_fetch_add(&node->flags, INODE_NEEDREAD);
 }
 
 /* indicates that the inode needs to be written back to the filesystem */
 void vfs_inode_set_dirty(struct inode *node)
 {
 	assert(!(node->flags & INODE_NEEDREAD));
-	if(!(ff_or_atomic(&node->flags, INODE_DIRTY) & INODE_DIRTY)) {
+	if(!(atomic_fetch_or(&node->flags, INODE_DIRTY) & INODE_DIRTY)) {
 		assert(node->dirty_item.memberof == 0);
 		ll_do_insert(ic_dirty, &node->dirty_item, node);
 		assert(node->dirty_item.memberof == ic_dirty);
@@ -170,7 +170,7 @@ void vfs_inode_unset_dirty(struct inode *node)
 	assert(node->flags & INODE_DIRTY);
 	assert(node->dirty_item.memberof == ic_dirty);
 	ll_do_remove(ic_dirty, &node->dirty_item, 0);
-	and_atomic(&node->flags, ~INODE_DIRTY);
+	atomic_fetch_and(&node->flags, ~INODE_DIRTY);
 }
 
 /* drop a reference to an inode. */
@@ -178,11 +178,11 @@ void vfs_icache_put(struct inode *node)
 {
 	assert(node->count > 0);
 	mutex_acquire(ic_lock);
-	if(!sub_atomic(&node->count, 1)) {
+	if(atomic_fetch_sub(&node->count, 1) == 1) {
 		assert(node->flags & INODE_INUSE);
-		and_atomic(&node->flags, ~INODE_INUSE);
+		atomic_fetch_and(&node->flags, ~INODE_INUSE);
 		if(node->filesystem) {
-			sub_atomic(&node->filesystem->usecount, 1);
+			atomic_fetch_sub(&node->filesystem->usecount, 1);
 		}
 
 		ll_do_remove(ic_inuse, &node->inuse_item, 0);
@@ -242,7 +242,7 @@ int fs_inode_pull(struct inode *node)
 	if(node->flags & INODE_NEEDREAD) {
 		r = fs_callback_inode_pull(node);
 		if(!r)
-			and_atomic(&node->flags, ~INODE_NEEDREAD);
+			atomic_fetch_and(&node->flags, ~INODE_NEEDREAD);
 	}
 	return r;
 }
@@ -333,7 +333,7 @@ int fs_icache_sync(void)
 		if(node->flags & INODE_DIRTY)
 			fs_callback_inode_push(node);
 		ll_do_remove(ic_dirty, &node->dirty_item, 1);
-		and_atomic(&node->flags, ~INODE_DIRTY);
+		atomic_fetch_and(&node->flags, ~INODE_DIRTY);
 		prev = ln;
 	}
 	rwlock_release(&ic_dirty->rwl, RWL_WRITER);

@@ -334,7 +334,7 @@ int syscall_handler(registers_t *regs)
 	 	 * expect handlers to disable them if needed */
 		cpu_interrupt_set(1);
 		/* start accounting information! */
-		add_atomic(&syscounts[SYSCALL_NUM_AND_RET], 1);
+		atomic_fetch_add_explicit(&syscounts[SYSCALL_NUM_AND_RET], 1, memory_order_relaxed);
 
 #ifdef SC_DEBUG
 		if(current_process->tty == current_console->tty && SYSCALL_NUM_AND_RET != 0

@@ -33,7 +33,7 @@ void cpu_handle_ipi_reschedule(registers_t *regs)
 
 void cpu_handle_ipi_halt(registers_t *regs)
 {
-	add_atomic(&num_halted_cpus, 1);
+	atomic_fetch_add(&num_halted_cpus, 1);
 	cpu_halt();
 }
 

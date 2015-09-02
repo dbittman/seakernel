@@ -1,6 +1,6 @@
 #include <sea/cpu/processor.h>
 #include <sea/mm/vmm.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 #include <sea/syscall.h>
 
 #if CONFIG_SMP

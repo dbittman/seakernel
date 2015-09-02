@@ -7,7 +7,7 @@
 #include <sea/kernel.h>
 #include <sea/mm/vmm.h>
 #include <sea/mm/kmalloc.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 #include <sea/fs/kerfs.h>
 struct slab {
 	struct cache *cache;
@@ -98,18 +98,18 @@ static void free_object(void *object)
 	reg.npages = 1;
 	reg.flags = 0;
 	valloc_deallocate(&slab->allocator, &reg);
-	sub_atomic(&total_allocated, slab->cache->object_size);
+	atomic_fetch_sub_explicit(&total_allocated, slab->cache->object_size, memory_order_relaxed);
 	
 	mutex_acquire(&cache->lock);
-	int count = sub_atomic(&slab->count, 1);
-	if(count == slab->max - 1) {
-		sub_atomic(&full_slabs_count, 1);
-		add_atomic(&partial_slabs_count, 1);
+	int count = atomic_fetch_sub(&slab->count, 1);
+	if(count == slab->max) {
+		atomic_fetch_sub_explicit(&full_slabs_count, 1, memory_order_relaxed);
+		atomic_fetch_add_explicit(&partial_slabs_count, 1, memory_order_relaxed);
 		ll_do_remove(&cache->full, &slab->node, 0);
 		ll_do_insert(&cache->partial, &slab->node, slab);
-	} else if(count == 0) {
-		sub_atomic(&partial_slabs_count, 1);
-		add_atomic(&empty_slabs_count, 1);
+	} else if(count == 1) {
+		atomic_fetch_sub_explicit(&partial_slabs_count, 1, memory_order_relaxed);
+		atomic_fetch_add_explicit(&empty_slabs_count, 1, memory_order_relaxed);
 		ll_do_remove(&cache->partial, &slab->node, 0);
 		ll_do_insert(&cache->empty, &slab->node, slab);
 	}
@@ -128,7 +128,7 @@ static void *allocate_object(struct slab *slab)
 	for(addr_t a = reg.start;a < reg.start + slab->cache->object_size + PAGE_SIZE;a+=PAGE_SIZE)
 		map_if_not_mapped_noclear(a);
 	mutex_release(&slab->lock);
-	add_atomic(&total_allocated, slab->cache->object_size);
+	atomic_fetch_add_explicit(&total_allocated, slab->cache->object_size, memory_order_relaxed);
 	return (void *)(reg.start);
 }
 
@@ -139,24 +139,24 @@ static void *allocate_object_from_cache(struct cache *cache)
 	if(cache->partial.num > 0) {
 		slab = ll_entry(struct slab *, cache->partial.head);
 		if(slab->count == slab->max-1) {
-			sub_atomic(&partial_slabs_count, 1);
-			add_atomic(&full_slabs_count, 1);
+			atomic_fetch_sub_explicit(&partial_slabs_count, 1, memory_order_relaxed);
+			atomic_fetch_add_explicit(&full_slabs_count, 1, memory_order_relaxed);
 			ll_do_remove(&cache->partial, &slab->node, 0);
 			ll_do_insert(&cache->full, &slab->node, slab);
 		}
 	} else if(cache->empty.num > 0) {
-		sub_atomic(&empty_slabs_count, 1);
-		add_atomic(&partial_slabs_count, 1);
+		atomic_fetch_sub_explicit(&empty_slabs_count, 1, memory_order_relaxed);
+		atomic_fetch_add_explicit(&partial_slabs_count, 1, memory_order_relaxed);
 		slab = ll_entry(struct slab *, cache->empty.head);
 		ll_do_remove(&cache->empty, &slab->node, 0);
 		ll_do_insert(&cache->partial, &slab->node, slab);
 	} else {
 		slab = allocate_new_slab(cache);
-		add_atomic(&partial_slabs_count, 1);
+		atomic_fetch_add_explicit(&partial_slabs_count, 1, memory_order_relaxed);
 		ll_do_insert(&cache->partial, &slab->node, slab);
 	}
 	assert(slab->magic = SLAB_MAGIC);
-	add_atomic(&slab->count, 1);
+	atomic_fetch_add(&slab->count, 1);
 	mutex_release(&cache->lock);
 	return allocate_object(slab);
 }

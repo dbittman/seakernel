@@ -3,6 +3,7 @@
 #include <sea/tm/thread.h>
 #include <sea/tm/kthread.h>
 #include <sea/tm/timing.h>
+#include <sea/cpu/atomic.h>
 struct llist dirty_list;
 mutex_t dlock;
 struct kthread syncer;

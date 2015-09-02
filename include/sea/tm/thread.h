@@ -9,7 +9,7 @@
 #include <sea/cpu/registers.h>
 #include <sea/lib/hash.h>
 #include <sea/cpu/processor.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 #include <sea/arch-include/tm-thread.h>
 #include <sea/mm/valloc.h>
 #include <sea/tm/workqueue.h>
@@ -36,8 +36,8 @@
 #define THREADSTATE_DEAD 3
 #define THREADSTATE_STOPPED 4
 
-#define tm_thread_raise_flag(t,f) ff_or_atomic(&(t->flags), f)
-#define tm_thread_lower_flag(t,f) and_atomic(&(t->flags), ~f)
+#define tm_thread_raise_flag(t,f) atomic_fetch_or(&(t->flags), f)
+#define tm_thread_lower_flag(t,f) atomic_fetch_and(&(t->flags), ~f)
 
 #define current_thread ((struct thread *)*arch_tm_get_current_thread())
 const struct thread **arch_tm_get_current_thread(void) __attribute__((const));
@@ -48,7 +48,8 @@ struct thread {
 	pid_t tid;
 	_Atomic int refs;
 	int cpuid;
-	int state, flags;
+	int state;
+	_Atomic int flags;
 	int system;
 	int interrupt_level;
 	int priority, timeslice;

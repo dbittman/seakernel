@@ -1,6 +1,7 @@
 #include <sea/tm/kthread.h>
 #include <sea/tm/thread.h>
 #include <sea/dm/block.h>
+#include <sea/cpu/atomic.h>
 void dm_block_cache_reclaim(void);
 int block_elevator_main(struct kthread *kt, void *arg)
 {

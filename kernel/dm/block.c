@@ -8,6 +8,7 @@
 #include <sea/errno.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
+#include <sea/cpu/atomic.h>
 #include <sea/tm/timing.h>
 #undef DT_CHAR
 

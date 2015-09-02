@@ -4,7 +4,7 @@
 #include <sea/tm/kthread.h>
 #include <sea/mm/vmm.h>
 #include <sea/mm/kmalloc.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 #include <sea/string.h>
 #include <sea/boot/init.h>
 
@@ -31,7 +31,7 @@ struct kthread *kthread_create(struct kthread *kt, const char *name, int flags,
 		/* get the code FIRST, since once we set KT_EXITED, we can't rely on kt
 		 * being a valid pointer */
 		int code = kt->code;
-		or_atomic(&kt->flags, KT_EXITED);
+		atomic_fetch_or_explicit(&kt->flags, KT_EXITED, memory_order_release);
 		tm_thread_exit(0);
 		tm_schedule();
 	}
@@ -51,24 +51,24 @@ void kthread_destroy(struct kthread *kt)
 int kthread_wait(struct kthread *kt, int flags)
 {
 	/* eh, the thread may wish to know this */
-	or_atomic(&kt->flags, KT_WAITING);
+	atomic_fetch_or_explicit(&kt->flags, KT_WAITING, memory_order_acquire);
 	while(!(kt->flags & KT_EXITED)) {
 		/* if we don't want to block, and the thread hasn't exited,
 		 * then return -1 */
 		if(flags & KT_WAIT_NONBLOCK) {
-			and_atomic(&kt->flags, ~KT_WAITING);
+			atomic_fetch_and_explicit(&kt->flags, ~KT_WAITING, memory_order_release);
 			return -1;
 		}
 		tm_schedule();
 	}
 	/* the thread has exited. return the exit code */
-	and_atomic(&kt->flags, ~KT_WAITING);
+	atomic_fetch_and_explicit(&kt->flags, ~KT_WAITING, memory_order_release);
 	return kt->code;
 }
 
 int kthread_join(struct kthread *kt, int flags)
 {
-	or_atomic(&kt->flags, KT_JOIN);
+	atomic_fetch_or(&kt->flags, KT_JOIN);
 	tm_thread_resume(kt->thread); /* in case it's sleeping */
 	if(!(flags & KT_JOIN_NONBLOCK))
 		kthread_wait(kt, 0);

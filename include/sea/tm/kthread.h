@@ -5,7 +5,8 @@
 #include <sea/types.h>
 
 struct kthread {
-	int flags, code;
+	_Atomic int flags;
+	int code;
 	int (*entry)(struct kthread *, void *);
 	void *arg;
 	struct thread *thread;

@@ -8,7 +8,7 @@
 #include <sea/dm/block.h>
 #include <sea/dm/char.h>
 #include <sea/rwlock.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 #include <sea/fs/file.h>
 #include <sea/fs/pipe.h>
 #include <sea/errno.h>
@@ -34,10 +34,10 @@ int sys_close(int fp)
 		 * If the counts reach zero, we free it */
 		mutex_acquire(f->inode->pipe->lock);
 		if(f->inode->pipe->count)
-			sub_atomic(&f->inode->pipe->count, 1);
+			atomic_fetch_sub(&f->inode->pipe->count, 1);
 		if(f->flags & _FWRITE && f->inode->pipe->wrcount 
 				&& f->inode->pipe->type != PIPE_NAMED)
-			sub_atomic(&f->inode->pipe->wrcount, 1);
+			atomic_fetch_sub(&f->inode->pipe->wrcount, 1);
 		if(!f->inode->pipe->count && f->inode->pipe->type != PIPE_NAMED) {
 			assert(!f->inode->pipe->read_blocked->num);
 			assert(!f->inode->pipe->write_blocked->num);

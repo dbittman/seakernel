@@ -2,7 +2,7 @@
  * signal.c: Copyright (c) 2015 Daniel Bittman
  */
 #include <sea/boot/init.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/errno.h>
 #include <sea/kernel.h>
@@ -80,7 +80,7 @@ void tm_signal_send_thread(struct thread *thr, int signal)
 	assert(signal < NUM_SIGNALS);
 	mutex_acquire(&thr->block_mutex);
 	if(!(thr->flags & THREAD_PTRACED) || signal == SIGKILL) {
-		or_atomic(&thr->signals_pending, 1 << (signal - 1));
+		atomic_fetch_or(&thr->signals_pending, 1 << (signal - 1));
 	}
 	tm_thread_raise_flag(thr, THREAD_SCHEDULE);
 	if(thr->state == THREADSTATE_STOPPED && (signal == SIGCONT || signal == SIGKILL)) {

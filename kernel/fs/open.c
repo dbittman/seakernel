@@ -162,6 +162,7 @@ static int duplicate(struct process *t, int fp, int n)
 	new->fd_flags = f->fd_flags;
 	new->fd_flags &= ~FD_CLOEXEC;
 	new->pos = f->pos;
+	/* TODO: pipe stuff isn't thread safe ... */
 	if(f->inode->pipe && !f->inode->pipe->type) {
 		atomic_fetch_add(&f->inode->pipe->count, 1);
 		if(f->flags & _FWRITE)

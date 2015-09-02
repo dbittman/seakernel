@@ -129,7 +129,7 @@ __attribute__((noinline)) static void tm_process_exit(int code)
 	/* TODO: free everything else? */
 
 	/* this is done before SIGCHILD is sent out */
-	or_atomic(&current_process->flags, PROCESS_EXITED);
+	atomic_fetch_or(&current_process->flags, PROCESS_EXITED);
 	if(current_process->parent) {
 		struct process *init = tm_process_get(0);
 		assert(init);
@@ -175,7 +175,7 @@ void tm_thread_do_exit(void)
 	ll_do_remove(&current_process->threadlist, &current_thread->pnode, 0);
 
 	atomic_fetch_sub_explicit(&running_threads, 1, memory_order_relaxed);
-	if(sub_atomic(&current_process->thread_count, 1) == 0) {
+	if(atomic_fetch_sub(&current_process->thread_count, 1) == 1) {
 		atomic_fetch_sub_explicit(&running_processes, 1, memory_order_relaxed);
 		tm_process_exit(current_thread->exit_code);
 	}

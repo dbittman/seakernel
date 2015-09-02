@@ -13,7 +13,8 @@
 struct socket;
 
 struct file {
-	unsigned int flags, fd_flags, count;
+	_Atomic unsigned int flags, count;
+	unsigned int fd_flags;
 	off_t pos;
 	struct inode * inode;
 	struct dirent *dirent;

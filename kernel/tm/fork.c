@@ -16,12 +16,12 @@ static pid_t __next_tid = 0;
 
 pid_t tm_thread_next_tid(void)
 {
-	return add_atomic(&__next_tid, 1);
+	return atomic_fetch_add(&__next_tid, 1) + 1;
 }
 
 pid_t tm_process_next_pid(void)
 {
-	return add_atomic(&__next_pid, 1);
+	return atomic_fetch_add(&__next_pid, 1) + 1;
 }
 
 extern struct filesystem *devfs;
@@ -188,7 +188,7 @@ void tm_thread_add_to_process(struct thread *thr, struct process *proc)
 	ll_do_insert(&proc->threadlist, &thr->pnode, thr);
 	thr->process = proc;
 	tm_process_inc_reference(proc);
-	add_atomic(&proc->thread_count, 1);
+	atomic_fetch_add(&proc->thread_count, 1);
 	tm_thread_create_kerfs_entries(thr);
 }
 
@@ -196,7 +196,7 @@ void tm_thread_add_to_cpu(struct thread *thr, struct cpu *cpu)
 {
 	thr->cpu = cpu;
 	thr->cpuid = cpu->knum;
-	add_atomic(&cpu->numtasks, 1);
+	atomic_fetch_add(&cpu->numtasks, 1);
 	tqueue_insert(cpu->active_queue, thr, &thr->activenode);
 }
 
@@ -204,7 +204,7 @@ struct cpu *tm_fork_pick_cpu(void)
 {
 #if CONFIG_SMP
 	static int last_cpu = 0;
-	struct cpu *cpu = cpu_get(add_atomic(&last_cpu, 1));
+	struct cpu *cpu = cpu_get(atomic_fetch_add(&last_cpu, 1)+1);
 	if(!(cpu->flags & CPU_RUNNING))
 		cpu = 0;
 	if(!cpu) {
@@ -227,7 +227,7 @@ int tm_clone(int flags)
 	struct process *proc = current_process;
 	if(!(flags & CLONE_SHARE_PROCESS) && !(flags & CLONE_KTHREAD)) {
 		proc = tm_process_copy(flags);
-		add_atomic(&running_processes, 1);
+		atomic_fetch_add_explicit(&running_processes, 1, memory_order_relaxed);
 		tm_process_inc_reference(proc);
 		hash_table_set_entry(process_table, &proc->pid, sizeof(proc->pid), 1, proc);
 		ll_do_insert(process_list, &proc->listnode, proc);
@@ -236,7 +236,7 @@ int tm_clone(int flags)
 	}
 	struct thread *thr = tm_thread_fork(flags);
 	hash_table_set_entry(thread_table, &thr->tid, sizeof(thr->tid), 1, thr);
-	add_atomic(&running_threads, 1);
+	atomic_fetch_add_explicit(&running_threads, 1, memory_order_relaxed);
 	tm_thread_add_to_process(thr, proc);
 	thr->state = THREADSTATE_UNINTERRUPTIBLE;
 	thr->usermode_stack_num = tm_thread_reserve_usermode_stack(thr);

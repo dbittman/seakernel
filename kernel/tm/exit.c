@@ -3,11 +3,12 @@
 #include <sea/cpu/processor.h>
 #include <sea/fs/file.h>
 #include <sea/fs/inode.h>
+#include <sea/fs/kerfs.h>
 #include <sea/mm/map.h>
 #include <sea/tm/process.h>
 #include <sea/tm/thread.h>
 #include <sea/vsprintf.h>
-#include <sea/fs/kerfs.h>
+#include <stdatomic.h>
 
 #define __remove_kerfs_thread_entry(thr,name) \
 	do {\
@@ -88,7 +89,7 @@ void tm_process_wait_cleanup(struct process *proc)
 {
 	assert(proc != current_process);
 	/* prevent this process from being "cleaned up" multiple times */
-	if(!(ff_or_atomic(&proc->flags, PROCESS_CLEANED) & PROCESS_CLEANED)) {
+	if(!(atomic_fetch_or(&proc->flags, PROCESS_CLEANED) & PROCESS_CLEANED)) {
 		assert(proc->thread_count == 0);
 		ll_do_remove(process_list, &proc->listnode, 0);
 		if(proc->parent)
@@ -108,8 +109,10 @@ __attribute__((noinline)) static void tm_process_exit(int code)
 	if(current_process->parent) {
 		time_t total_utime = current_process->utime + current_process->cutime;
 		time_t total_stime = current_process->stime + current_process->cstime;
-		add_atomic(&current_process->parent->cutime, total_utime);
-		add_atomic(&current_process->parent->cstime, total_stime);
+		atomic_fetch_add_explicit(&current_process->parent->cutime,
+				total_utime, memory_order_relaxed);
+		atomic_fetch_add_explicit(&current_process->parent->cstime,
+				total_stime, memory_order_relaxed);
 	}
 
 	fs_close_all_files(current_process);
@@ -171,9 +174,9 @@ void tm_thread_do_exit(void)
 
 	ll_do_remove(&current_process->threadlist, &current_thread->pnode, 0);
 
-	sub_atomic(&running_threads, 1);
+	atomic_fetch_sub_explicit(&running_threads, 1, memory_order_relaxed);
 	if(sub_atomic(&current_process->thread_count, 1) == 0) {
-		sub_atomic(&running_processes, 1);
+		atomic_fetch_sub_explicit(&running_processes, 1, memory_order_relaxed);
 		tm_process_exit(current_thread->exit_code);
 	}
 
@@ -187,7 +190,7 @@ void tm_thread_do_exit(void)
 		tqueue_remove(current_thread->cpu->active_queue, &current_thread->activenode);
 	}
 	mutex_release(&current_thread->block_mutex);
-	sub_atomic(&current_thread->cpu->numtasks, 1);
+	atomic_fetch_sub_explicit(&current_thread->cpu->numtasks, 1, memory_order_relaxed);
 	current_thread->state = THREADSTATE_DEAD;
 	tm_thread_raise_flag(current_thread, THREAD_SCHEDULE);
 	

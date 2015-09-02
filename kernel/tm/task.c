@@ -1,20 +1,19 @@
-#include <sea/tm/process.h>
-#include <sea/tm/tqueue.h>
-#include <sea/tm/kthread.h>
-#include <sea/tm/timing.h>
-#include <sea/mm/vmm.h>
-#include <sea/mm/kmalloc.h>
-#include <sea/loader/symbol.h>
-#include <sea/cpu/atomic.h>
-#include <sea/cpu/processor.h>
-#include <sea/cpu/interrupt.h>
-#include <sea/cpu/atomic.h>
 #include <sea/asm/system.h>
-#include <sea/syscall.h>
-#include <sea/ll.h>
+#include <sea/cpu/interrupt.h>
+#include <sea/cpu/processor.h>
 #include <sea/kernel.h>
-#include <sea/vsprintf.h>
+#include <sea/ll.h>
+#include <sea/loader/symbol.h>
+#include <sea/mm/kmalloc.h>
+#include <sea/mm/vmm.h>
+#include <sea/syscall.h>
+#include <sea/tm/kthread.h>
+#include <sea/tm/process.h>
 #include <sea/tm/thread.h>
+#include <sea/tm/timing.h>
+#include <sea/tm/tqueue.h>
+#include <sea/vsprintf.h>
+#include <stdatomic.h>
 
 extern mutex_t process_refs_lock;
 extern mutex_t thread_refs_lock;
@@ -71,8 +70,8 @@ void tm_init_multitasking(void)
 	workqueue_create(&primary_cpu->work, 0);
 	tm_thread_add_to_process(thread, proc);
 	tm_thread_add_to_cpu(thread, primary_cpu);
-	add_atomic(&running_processes, 1);
-	add_atomic(&running_threads, 1);
+	atomic_fetch_add_explicit(&running_processes, 1, memory_order_relaxed);
+	atomic_fetch_add_explicit(&running_threads, 1, memory_order_relaxed);
 	set_ksf(KSF_THREADING);
 	*(struct thread **)(thread->kernel_stack) = thread;
 	primary_cpu->flags |= CPU_RUNNING;

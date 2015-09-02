@@ -1,13 +1,11 @@
-#include <sea/tm/process.h>
-#include <sea/kernel.h>
-#include <sea/cpu/interrupt.h>
-#include <sea/tm/process.h>
-#include <sea/cpu/processor.h>
-#include <sea/cpu/interrupt.h>
-#include <sea/cpu/atomic.h>
 #include <sea/asm/system.h>
+#include <sea/cpu/interrupt.h>
+#include <sea/cpu/processor.h>
+#include <sea/kernel.h>
+#include <sea/tm/process.h>
 #include <sea/tm/timing.h>
 #include <sea/vsprintf.h>
+#include <stdatomic.h>
 static int current_hz=1000;
 
 int tm_get_current_frequency(void)
@@ -30,9 +28,11 @@ void tm_timer_handler(registers_t *r, int int_no, int flags)
 	if(current_thread) {
 		ticker_tick(&current_thread->cpu->ticker, ONE_SECOND / current_hz);
 		if(current_thread->system)
-			add_atomic(&current_process->stime, ONE_SECOND / current_hz);
+			atomic_fetch_add_explicit(&current_process->stime,
+					ONE_SECOND / current_hz, memory_order_relaxed);
 		else
-			add_atomic(&current_process->utime, ONE_SECOND / current_hz);
+			atomic_fetch_add_explicit(&current_process->utime,
+					ONE_SECOND / current_hz, memory_order_relaxed);
 		//current_thread->timeslice /= 2;
 		//if(!current_thread->timeslice) {
 			current_thread->flags |= THREAD_SCHEDULE;

@@ -4,6 +4,7 @@
 #include <sea/tm/tqueue.h>
 #include <sea/errno.h>
 #include <sea/tm/timing.h>
+#include <sea/cpu/interrupt.h>
 
 int sys_sbrk(long inc)
 {

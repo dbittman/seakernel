@@ -22,7 +22,7 @@ typedef struct {
 
 #define loader_add_kernel_symbol(x) loader_do_add_kernel_symbol((addr_t)x, #x)
 
-void loader_do_add_kernel_symbol(const intptr_t func, const char * funcstr);
+void loader_do_add_kernel_symbol(const addr_t func, const char * funcstr);
 intptr_t loader_find_kernel_function(char * unres);
 void loader_init_kernel_symbols(void);
 int loader_remove_kernel_symbol(char * unres);

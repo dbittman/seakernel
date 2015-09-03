@@ -9,7 +9,7 @@
 struct workqueue {
 	int flags;
 	struct heap tasks;
-	int count;
+	_Atomic int count;
 	mutex_t lock;
 };
 
@@ -20,3 +20,4 @@ int workqueue_delete(struct workqueue *wq, struct async_call *call);
 int workqueue_dowork(struct workqueue *wq);
 
 #endif
+

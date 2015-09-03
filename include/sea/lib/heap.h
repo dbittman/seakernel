@@ -6,6 +6,7 @@
 
 #define HEAP_KMALLOC  1
 #define HEAP_LOCKLESS 2
+#define HEAP_NORESIZE 4
 #define HEAPMODE_MAX 0
 #define HEAPMODE_MIN 1
 
@@ -24,7 +25,7 @@ struct heap {
 };
 
 struct heap *heap_create(struct heap *heap, int flags, int heapmode);
-void heap_insert(struct heap *heap, uint64_t key, void *data);
+int heap_insert(struct heap *heap, uint64_t key, void *data);
 int heap_peek(struct heap *heap, uint64_t *key, void **data);
 int heap_pop(struct heap *heap, uint64_t *key, void **data);
 void heap_destroy(struct heap *heap);

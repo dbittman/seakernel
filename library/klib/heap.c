@@ -16,7 +16,7 @@ struct heap *heap_create(struct heap *heap, int flags, int heapmode)
 		heap->flags = flags;
 	}
 	heap->count = 0;
-	heap->capacity = 64;
+	heap->capacity = 128;
 	heap->mode = heapmode;
 	if(!(flags & HEAP_LOCKLESS))
 		rwlock_create(&heap->rwl);
@@ -24,10 +24,6 @@ struct heap *heap_create(struct heap *heap, int flags, int heapmode)
 	return heap;
 }
 
-/* TODO: heaps are used by workqueues, and an insert may be in an
- * interrupt context, which would make this invalid. We need a way
- * to disallow resizing... fail condition in heap_insert? */
-#warning "^^"
 static void __heap_resize(struct heap *heap)
 {
 	size_t newcap = heap->capacity * 2;
@@ -113,12 +109,17 @@ static void __heap_bubbledown(struct heap *heap, size_t elem)
 	}
 }
 
-void heap_insert(struct heap *heap, uint64_t key, void *data)
+int heap_insert(struct heap *heap, uint64_t key, void *data)
 {
 	if(!(heap->flags & HEAP_LOCKLESS))
 		rwlock_acquire(&heap->rwl, RWL_WRITER);
 
 	if(heap->count == heap->capacity) {
+		if(heap->flags & HEAP_NORESIZE) {
+			if(!(heap->flags & HEAP_LOCKLESS))
+				rwlock_release(&heap->rwl, RWL_WRITER);
+			return -ERANGE;
+		}
 		__heap_resize(heap);
 	}
 

@@ -93,7 +93,7 @@ const char *loader_lookup_module_symbol(addr_t addr, char **modname)
 	return arch_loader_lookup_module_symbol(found, addr, modname);
 }
 
-void loader_do_add_kernel_symbol(const intptr_t func, const char * funcstr)
+void loader_do_add_kernel_symbol(const addr_t func, const char * funcstr)
 {
 	uint32_t i;
 	if(func < (addr_t)&kernel_start)

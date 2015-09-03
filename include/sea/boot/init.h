@@ -3,6 +3,7 @@
 
 #include <sea/boot/multiboot.h>
 #include <sea/syscall.h>
+#include <sea/cpu/time.h>
 
 void init();
 void setup_kernelstack();

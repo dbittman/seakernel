@@ -15,13 +15,14 @@ struct timer {
 	unsigned long runs;
 	unsigned long long start_time;
 	unsigned long long max, min, last;
-	double mean;
+	double mean, recent_mean;
 };
 
 void timer_stop(struct timer *t);
 int timer_start(struct timer *t);
 void timer_destroy(struct timer *t);
 struct timer *timer_create(struct timer *t, int flags);
+void timer_calibrate(void);
 
 static inline int __do_start_timer(struct timer *timer)
 {

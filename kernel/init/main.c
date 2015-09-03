@@ -1,29 +1,28 @@
 /* init/main.c: Copyright (c) 2010 Daniel Bittman
  * Provides initialization functions for the kernel */
-#include <sea/kernel.h>
-#include <sea/boot/multiboot.h>
-#include <sea/tty/terminal.h>
-#include <sea/mm/vmm.h>
 #include <sea/asm/system.h>
-#include <sea/tm/process.h>
-#include <sea/dm/dev.h>
-#include <sea/fs/inode.h>
 #include <sea/boot/init.h>
-#include <sea/lib/cache.h>
-#include <sea/loader/symbol.h>
-#include <sea/loader/elf.h>
+#include <sea/boot/multiboot.h>
+#include <sea/cpu/interrupt.h>
 #include <sea/cpu/processor.h>
-#include <sea/mm/init.h>
 #include <sea/dm/dev.h>
 #include <sea/fs/initrd.h>
-#include <sea/cpu/interrupt.h>
+#include <sea/fs/inode.h>
+#include <sea/kernel.h>
+#include <sea/lib/cache.h>
+#include <sea/lib/timer.h>
+#include <sea/loader/elf.h>
+#include <sea/loader/symbol.h>
+#include <sea/mm/init.h>
+#include <sea/mm/kmalloc.h>
+#include <sea/mm/vmm.h>
 #include <sea/serial.h>
-
+#include <sea/tm/process.h>
+#include <sea/tm/thread.h>
+#include <sea/trace.h>
+#include <sea/tty/terminal.h>
 #include <sea/vsprintf.h>
 #include <stdarg.h>
-#include <sea/mm/kmalloc.h>
-#include <sea/trace.h>
-#include <sea/tm/thread.h>
 
 static struct multiboot *mtboot;
 static time_t start_epoch;
@@ -112,6 +111,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	cpu_interrupt_set(1);
 	sys_setup();
 	cpu_processor_init_2();
+	timer_calibrate();
 #if CONFIG_SMP
 	cpu_boot_all_aps();
 #endif

@@ -6,6 +6,7 @@
 #include <stdatomic.h>
 #include <sea/vsprintf.h>
 
+#include <sea/lib/timer.h>
 static void check_signals(struct thread *thread)
 {
 	if(thread->signals_pending && !thread->signal && !(thread->flags & THREAD_SIGNALED)) {
@@ -26,13 +27,21 @@ static void check_signals(struct thread *thread)
 	}
 }
 
+//struct timer timer;
+//static uint64_t _c = 0;
 static struct thread *get_next_thread (void)
 {
+	//if(!_c++) { timer_create(&timer, 0);}
 	struct thread *n = 0;
 	while(1) {
 		n = tqueue_next(current_thread->cpu->active_queue);
+//	BEGIN_TIMER(&timer);
+//	END_TIMER(&timer);
+
 		assert(n->cpu == current_thread->cpu);
 		check_signals(n);
+		if(!(_c % 10000))
+	printk(0, ":: %5d %5d %5d\n", (uint32_t)timer.last, (uint32_t)timer.mean, (uint32_t)timer.recent_mean);
 		if(n && tm_thread_runnable(n))
 			break;
 		if(!n || n == current_thread) {
@@ -89,6 +98,7 @@ static void post_schedule(struct thread *prev)
 		}
 	}
 }
+
 
 void tm_schedule(void)
 {

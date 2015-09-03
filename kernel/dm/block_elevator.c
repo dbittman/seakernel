@@ -69,6 +69,7 @@ int block_elevator_main(struct kthread *kt, void *arg)
 			}
 		}
 	}
+	kfree(buf);
 	return 0;
 }
 

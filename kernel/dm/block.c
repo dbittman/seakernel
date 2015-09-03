@@ -29,7 +29,6 @@ blockdevice_t *dm_set_block_device(int maj, int (*f)(int, int, u64, char*), int 
 	dev->ioctl=c;
 	dev->rw_multiple=m;
 	dev->select = s;
-	mutex_create(&dev->acl, 0);
 	if(!c)
 		dev->ioctl=ioctl_stub;
 	dm_add_device(DT_BLOCK, maj, dev);
@@ -74,7 +73,6 @@ void dm_unregister_block_device(int n)
 	dm_remove_device(DT_BLOCK, n);
 	mutex_release(&bd_search_lock);
 	kthread_join(&((blockdevice_t *)(dev->ptr))->elevator, 0);
-	mutex_destroy(&((blockdevice_t *)(dev->ptr))->acl);
 	kfree(fr);
 }
 

@@ -20,20 +20,19 @@ _Atomic unsigned kernel_state_flags=0;
 
 void kernel_shutdown(void)
 {
-	cpu_interrupt_set(0);
+	current_process->effective_uid=current_process->real_uid=0;
+	set_ksf(KSF_SHUTDOWN);
+	sys_sync(PRINT_LEVEL);
+	fs_unmount_all();
+#if CONFIG_MODULES
+	//loader_unload_all_modules(1);
+#endif
 #if CONFIG_SMP
 	printk(0, "[smp]: shutting down application processors\n");
 	cpu_send_ipi(CPU_IPI_DEST_OTHERS, IPI_SHUTDOWN, 0);
 	while(cpu_get_num_halted_processors() 
 			< cpu_get_num_secondary_processors())
 		cpu_pause();
-#endif
-	current_process->effective_uid=current_process->real_uid=0;
-	set_ksf(KSF_SHUTDOWN);
-	sys_sync(PRINT_LEVEL);
-	fs_unmount_all();
-#if CONFIG_MODULES
-	loader_unload_all_modules(1);
 #endif
 	kprintf("Everything under the sun is in tune, but the sun is eclipsed by the moon.\n");
 }

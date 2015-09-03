@@ -32,7 +32,7 @@ struct kthread *kthread_create(struct kthread *kt, const char *name, int flags,
 		 * being a valid pointer */
 		int code = kt->code;
 		atomic_fetch_or_explicit(&kt->flags, KT_EXITED, memory_order_release);
-		tm_thread_exit(0);
+		tm_thread_do_exit();
 		tm_schedule();
 	}
 	kt->thread = tm_thread_get(tid);
@@ -69,7 +69,7 @@ int kthread_wait(struct kthread *kt, int flags)
 int kthread_join(struct kthread *kt, int flags)
 {
 	atomic_fetch_or(&kt->flags, KT_JOIN);
-	tm_thread_resume(kt->thread); /* in case it's sleeping */
+	tm_thread_poke(kt->thread); /* in case it's sleeping */
 	if(!(flags & KT_JOIN_NONBLOCK))
 		kthread_wait(kt, 0);
 	if(kt->flags & KT_EXITED)

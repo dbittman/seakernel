@@ -1,19 +1,19 @@
-#include <sea/kernel.h>
-#include <sea/loader/module.h>
-#include <modules/pci.h>
 #include <modules/i350.h>
-#include <sea/mm/pmap.h>
-#include <sea/net/packet.h>
-#include <sea/net/interface.h>
-#include <sea/mutex.h>
-#include <sea/tm/process.h>
-#include <sea/cpu/atomic.h>
+#include <modules/pci.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/processor.h>
-#include <sea/mm/kmalloc.h>
-#include <sea/vsprintf.h>
 #include <sea/errno.h>
+#include <sea/kernel.h>
+#include <sea/loader/module.h>
+#include <sea/mm/kmalloc.h>
+#include <sea/mm/pmap.h>
+#include <sea/mutex.h>
+#include <sea/net/interface.h>
+#include <sea/net/packet.h>
+#include <sea/tm/process.h>
 #include <sea/tm/timing.h>
+#include <sea/vsprintf.h>
+#include <stdatomic.h>
 int i350_int;
 struct pmap i350_pmap;
 struct i350_device *i350_dev;
@@ -266,7 +266,7 @@ int i350_receive_packet(struct net_dev *nd, struct net_packet *packets, int coun
 	struct i350_receive_descriptor *r = &dev->receive_ring[next];
 	
 	kprintf("PACKET (%d %d %d): %x, %d\n", head, tail, next, r->status, r->length);
-	sub_atomic(&nd->rx_pending, 1);
+	atomic_fetch_sub(&nd->rx_pending, 1);
 	
 	memcpy(packets[0].data, (void *)(dev->rx_ring_virt_buffers[next]), r->length);
 	packets[0].length = r->length;

@@ -1,6 +1,6 @@
 #include <sea/dm/block.h>
-#include <sea/cpu/atomic.h>
 #include <sea/mm/kmalloc.h>
+#include <stdatomic.h>
 struct ioreq *ioreq_create(blockdevice_t *bd, dev_t dev, int direction, uint64_t start, size_t count)
 {
 	struct ioreq *req = kmalloc(sizeof(*req));
@@ -17,7 +17,7 @@ struct ioreq *ioreq_create(blockdevice_t *bd, dev_t dev, int direction, uint64_t
 
 void ioreq_put(struct ioreq *req)
 {
-	if(sub_atomic(&req->refs, 1) == 0)
+	if(atomic_fetch_sub(&req->refs, 1) == 1)
 		kfree(req);
 }
 

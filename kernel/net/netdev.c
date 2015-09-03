@@ -1,22 +1,22 @@
-#include <sea/config.h>
-#include <sea/string.h>
-#include <sea/kernel.h>
-#include <sea/net/packet.h>
-#include <sea/net/interface.h>
-#include <sea/mm/kmalloc.h>
-#include <sea/loader/symbol.h>
-#include <sea/cpu/atomic.h>
-#include <sea/vsprintf.h>
-#include <sea/net/arp.h>
-#include <sea/net/route.h>
-#include <sea/net/datalayer.h>
-#include <sea/fs/devfs.h>
-#include <sea/errno.h>
-#include <sea/net/tlayer.h>
-#include <sea/net/nlayer.h>
-#include <sea/net/data_queue.h>
 #include <sea/asm/system.h>
+#include <sea/config.h>
+#include <stdatomic.h>
+#include <sea/errno.h>
+#include <sea/fs/devfs.h>
+#include <sea/kernel.h>
+#include <sea/loader/symbol.h>
+#include <sea/mm/kmalloc.h>
+#include <sea/net/arp.h>
+#include <sea/net/data_queue.h>
+#include <sea/net/datalayer.h>
+#include <sea/net/interface.h>
+#include <sea/net/nlayer.h>
+#include <sea/net/packet.h>
+#include <sea/net/route.h>
+#include <sea/net/tlayer.h>
+#include <sea/string.h>
 #include <sea/tm/timing.h>
+#include <sea/vsprintf.h>
 uint16_t af_to_ethertype_map[PF_MAX] = {
 	[AF_INET] = 0x800,
 };
@@ -80,7 +80,7 @@ static int kt_packet_rec_thread(struct kthread *kt, void *arg)
 			TRACE(0, "[kpacket]: got packet (%d %d : %d)\n", nd->rx_pending, packets, ret);
 			if(ret > 0) {
 				if(nd->rx_pending > 0)
-					sub_atomic(&nd->rx_pending, 1);
+					atomic_fetch_sub(&nd->rx_pending, 1);
 				net_receive_packet(nd, pack, 1);
 			} else {
 				tm_schedule();
@@ -112,7 +112,7 @@ struct net_dev *net_add_device(struct net_dev_calls *fn, void *data)
 		nd->rec_thread.thread->priority = 100;
 	}
 	net_iface_set_flags(nd, IFACE_FLAGS_DEFAULT);
-	int num = add_atomic(&nd_num, 1);
+	int num = atomic_fetch_add_explicit(&nd_num, 1, memory_order_relaxed) + 1;
 	if(num > 255)
 		panic(0, "cannot add new netdev");
 	snprintf(nd->name, 16, "nd%d", num);

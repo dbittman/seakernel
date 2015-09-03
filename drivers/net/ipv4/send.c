@@ -12,7 +12,7 @@
 #include <sea/tm/timing.h>
 
 #include <sea/cpu/time.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 
 #include <sea/mm/kmalloc.h>
 #include <sea/lib/queue.h>
@@ -129,7 +129,7 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 	uint16_t parent_offset = (BIG_TO_HOST16(packet->header->frag_offset) & ~0xF000) * 8;
 	if(r->interface->mtu && r->interface->mtu < total_packet_length) {
 		if(parent_flags & IP_FLAG_DF) {
-			add_atomic(&nd->dropped, 1);
+			atomic_fetch_add_explicit(&nd->dropped, 1, memory_order_relaxed);
 			/* TODO: ICMP back */
 			return -1;
 		}

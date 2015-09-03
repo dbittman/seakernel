@@ -12,7 +12,7 @@
 #include <sea/tm/timing.h>
 
 #include <sea/cpu/time.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 
 #include <sea/mm/kmalloc.h>
 #include <sea/lib/queue.h>
@@ -247,7 +247,7 @@ static void ipv4_accept_packet(struct net_dev *nd, struct net_packet *netpacket,
 void ipv4_forward_packet(struct net_dev *nd, struct net_packet *netpacket, struct ipv4_header *header)
 {
 	if(!(header->ttl--)) {
-		add_atomic(&nd->dropped, 1);
+		atomic_fetch_add_explicit(&nd->dropped, 1, memory_order_relaxed);
 		/* send an ICMP message back */
 		struct net_packet *resp = net_packet_create(0, 0);
 		unsigned char data[header->header_len * 8 + 8 + sizeof(struct icmp_packet)];
@@ -305,7 +305,7 @@ void ipv4_receive_packet(struct net_dev *nd, struct net_packet *netpacket, void 
 	} else if(nd->flags & IFACE_FLAG_FORWARD || 1/*TODO */) {
 		ipv4_forward_packet(nd, netpacket, packet);
 	} else {
-		add_atomic(&nd->dropped, 1);
+		atomic_fetch_add_explicit(&nd->dropped, 1, memory_order_relaxed);
 	}
 }
 

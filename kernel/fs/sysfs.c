@@ -17,9 +17,10 @@ struct kerfs_node {
 	size_t size;
 	int flags, type;
 	int (*fn)(size_t, size_t, char *);
+	void (*callback)(size_t, size_t, const char *);
 };
 
-int kerfs_register_parameter(char *path, void *param, size_t size, int flags, int type)
+int kerfs_register_parameter(char *path, void *param, size_t size, int flags, int type, void (*call)(size_t, size_t, const char *))
 {
 	uid_t old = current_process->effective_uid;
 	current_process->effective_uid = 0;
@@ -34,7 +35,7 @@ int kerfs_register_parameter(char *path, void *param, size_t size, int flags, in
 	kn->size = size;
 	kn->flags = flags | KERFS_PARAM;
 	kn->type = type;
-
+	kn->callback = call;
 	int v = hash_table_set_entry(table, &num, sizeof(num), 1, kn);
 	assertmsg(!v, "failed to register kerfs parameter");
 	return 0;
@@ -108,6 +109,12 @@ int kerfs_read(struct inode *node, size_t offset, size_t length, char *buffer)
 		}
 	} else if(kn->type == KERFS_TYPE_STRING) {
 		strncpy(tmp, (char *)kn->param, 128);
+	} else if(kn->type == KERFS_TYPE_BOOL) {
+		bool val = *(bool *)kn->param;
+		if(val)
+			strncpy(tmp, "true", 128);
+		else
+			strncpy(tmp, "false", 128);
 	}
 	
 	if(offset > strlen(tmp))
@@ -125,10 +132,14 @@ int kerfs_write(struct inode *node, size_t offset, size_t length, const char *bu
 	if(hash_table_get_entry(table, &node->phys_dev, sizeof(node->phys_dev), 1, (void **)&kn) < 0)
 		return -ENOENT;
 
-	if(!(kn->flags & KERFS_PARAM) || offset > 0) {
+	if(!(kn->flags & KERFS_PARAM) || offset > 0 || !(kn->flags & KERFS_PARAM_WRITE)) {
 		return -EIO;
 	}
 
+	if(kn->callback) {
+		kn->callback(offset, length, buffer);
+		return length;
+	}
 	char tmp[128];
 	memset(tmp, 0, 128);
 	if(length > 127)
@@ -150,6 +161,14 @@ int kerfs_write(struct inode *node, size_t offset, size_t length, const char *bu
 			case 8:
 				*(uint64_t *)kn->param = (uint64_t)strtoint(tmp);
 				break;
+		}
+	} else if(kn->type == KERFS_TYPE_BOOL) {
+		if(!strcmp(tmp, "false") || !strcmp(tmp, "off")) {
+			*(bool *)kn->param = false;
+		} else if(!strcmp(tmp, "true") || !strcmp(tmp, "on")) {
+			*(bool *)kn->param = true;
+		} else {
+			return -EIO;
 		}
 	}
 	return length;

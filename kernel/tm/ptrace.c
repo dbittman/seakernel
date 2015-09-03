@@ -25,7 +25,6 @@ int ptrace_write_user(struct thread *thread, struct ptrace_user *user)
 long sys_ptrace_thread(enum __ptrace_request request, pid_t tid, void *addr, void *data)
 {
 	int ret = 0;
-	trace_on("ptrace");
 	if(request == PTRACE_TRACEME) {
 		struct thread *tracer;
 		tracer = tm_process_get_head_thread(current_process->parent);

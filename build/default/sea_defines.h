@@ -19,7 +19,7 @@
 #define CONFIG_TRACE 1
 #define CONFIG_GDB_STUB 0
 #define CONFIG_MODULE_PATH "/sys/modules/"
-#define CONFIG_DEBUG 1
+#define CONFIG_DEBUG 0
 #define CONFIG_SERIAL_DEBUG 1
 #define CONFIG_MODULES 1
 #define CONFIG_SWAP 0

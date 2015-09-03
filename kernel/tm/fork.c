@@ -30,14 +30,14 @@ extern struct filesystem *devfs;
 		char file[128];\
 		snprintf(file, 128, "/dev/process/%d/%s", proc->pid, #field); \
 		kerfs_register_parameter(file, (void *)&proc->field, sizeof(proc->field), \
-				KERFS_PARAM_READONLY, type); \
+				0, type, 0); \
 	} while(0)
 #define __expose_thread_field(thr, field, type) \
 	do { \
 		char file[128];\
 		snprintf(file, 128, "/dev/process/%d/%d/%s", proc->pid, thr->tid, #field); \
 		kerfs_register_parameter(file, &thr->field, sizeof(thr->field), \
-				KERFS_PARAM_READONLY, type); \
+				0, type, 0); \
 	} while(0)
 
 void tm_process_create_kerfs_entries(struct process *proc)

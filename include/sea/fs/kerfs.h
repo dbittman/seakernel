@@ -5,17 +5,19 @@
 #include <sea/vsprintf.h>
 #include <sea/string.h>
 
+#define KERFS_TYPE_NONE    0
 #define KERFS_TYPE_INTEGER 1
 #define KERFS_TYPE_ADDRESS 2
 #define KERFS_TYPE_STRING  3
+#define KERFS_TYPE_BOOL    4
 
 #define KERFS_PARAM 1
-#define KERFS_PARAM_READONLY 2
+#define KERFS_PARAM_WRITE 4
 
 void kerfs_init();
 int kerfs_read(struct inode *node, size_t offset, size_t length, char *buffer);
 int kerfs_write(struct inode *node, size_t offset, size_t length, const char *buffer);
-int kerfs_register_parameter(char *path, void *param, size_t size, int flags, int type);
+int kerfs_register_parameter(char *path, void *param, size_t size, int flags, int type, void (*)(size_t, size_t, const char *));
 int kerfs_register_report(char *path, int (*fn)(size_t, size_t, char *));
 int kerfs_syscall_report(size_t offset, size_t length, char *buf);
 int kerfs_int_report(size_t offset, size_t length, char *buf);

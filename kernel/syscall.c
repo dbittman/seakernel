@@ -384,14 +384,15 @@ int kerfs_syscall_report(size_t offset, size_t length, char *buf)
 {
 	size_t current = 0;
 	KERFS_PRINTF(offset, length, buf, current,
-			" SC   # CALLS\t      MIN\t      MAX\t     MEAN\n");
+			"Times are in microseconds, CALLS*MEAN in milliseconds.\n SC   # CALLS\t      MIN\t      MAX\t     MEAN\tCALLS*MEAN\n");
 	for(int i=0;i<129;i++) {
 		if(!syscounts[i])
 			continue;
 		KERFS_PRINTF(offset, length, buf, current,
-				"%3d:\t%5d\t%9d\t%9d\t%9d\n", i,
+				"%3d:\t%5d\t%9d\t%9d\t%9d\t%10d\n", i,
 				syscounts[i], (uint32_t)systimers[i].min / 1000,
-				(uint32_t)systimers[i].max / 1000, (uint32_t)systimers[i].mean / 1000);
+				(uint32_t)systimers[i].max / 1000, (uint32_t)systimers[i].mean / 1000,
+				(uint32_t)((syscounts[i] * systimers[i].mean) / (1000 * 1000)));
 	}
 	return current;
 }

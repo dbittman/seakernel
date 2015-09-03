@@ -33,8 +33,8 @@ int sys_sbrk(long inc)
 		tm_signal_send_thread(current_thread, SIGSEGV);
 	current_process->heap_end += inc;
 	addr_t page = end & PAGE_MASK;
-	for(;page <=(current_process->heap_end&PAGE_MASK);page += PAGE_SIZE)
-		user_map_if_not_mapped(page);
+	//for(;page <=(current_process->heap_end&PAGE_MASK);page += PAGE_SIZE)
+	//	user_map_if_not_mapped(page);
 	return end;
 }
 

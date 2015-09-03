@@ -76,6 +76,15 @@ void mm_page_fault_handler(registers_t *regs, addr_t address, int pf_cause)
 		if(pd_cur_data && !IS_KERN_MEM(address)) {
 			if(mm_page_fault_test_mappings(address, pf_cause) == 0)
 				return;
+			mutex_acquire(&pd_cur_data->lock);
+			if(map_in_page(address)) {
+				mutex_release(&pd_cur_data->lock);
+				return;
+			}
+			/* ...and if that didn't work, the task did something evil */
+			mutex_release(&pd_cur_data->lock);
+			tm_signal_send_thread(current_thread, SIGSEGV);
+			return;
 		}
 	}
 	if(!current_thread) {

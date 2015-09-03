@@ -169,26 +169,19 @@ int sys_sigact(int sig, const struct sigaction *act, struct sigaction *oact)
 
 int sys_sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict oset)
 {
-	if(oset)
-		*oset = current_process->global_sig_mask;
-	if(!set)
+	sigset_t old = current_process->global_sig_mask;
+	if(oset) *oset = old;
+	if(!set) {
 		return 0;
-	sigset_t nm=0;
-	switch(how)
-	{
-		case SIG_UNBLOCK:
-			nm = current_process->global_sig_mask & ~(*set);
-			break;
-		case SIG_SETMASK:
-			nm = *set;
-			break;
-		case SIG_BLOCK:
-			nm = current_process->global_sig_mask | *set;
-			break;
-		default:
-			return -EINVAL;
 	}
-	current_process->global_sig_mask = nm;
+	sigset_t nm[3];
+	sigset_t ns = *set;
+	/* it's actually faster to do all three calculations and then only pick one
+	 * than to setup a jump table using a switch */
+	nm[SIG_UNBLOCK] = old & ~ns;
+	nm[SIG_BLOCK]   = old | ns;
+	nm[SIG_SETMASK] = ns;
+	current_process->global_sig_mask = nm[how];
 	return 0;
 }
 

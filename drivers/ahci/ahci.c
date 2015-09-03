@@ -181,11 +181,11 @@ void ahci_init_hba(struct hba_memory *abar)
 	
 	/* enable the AHCI and reset it */
 	abar->global_host_control |= HBA_GHC_AHCI_ENABLE;
-	abar->global_host_control |= HBA_GHC_RESET;
+	//abar->global_host_control |= HBA_GHC_RESET;
 	/* wait for reset to complete */
-	while(abar->global_host_control & HBA_GHC_RESET) cpu_pause();
+	//while(abar->global_host_control & HBA_GHC_RESET) cpu_pause();
 	/* enable the AHCI and interrupts */
-	abar->global_host_control |= HBA_GHC_AHCI_ENABLE;
+	//abar->global_host_control |= HBA_GHC_AHCI_ENABLE;
 	abar->global_host_control |= HBA_GHC_INTERRUPT_ENABLE;
 	tm_thread_delay_sleep(20 * ONE_MILLISECOND);
 	printk(KERN_DEBUG, "[ahci]: caps and ver: %x %x v %x\n", abar->capability, abar->ext_capabilities, abar->version);

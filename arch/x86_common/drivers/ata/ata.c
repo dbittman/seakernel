@@ -81,7 +81,7 @@ int module_install(void)
 			kprintf("Error in init'ing ATA controller\n");
 		kfree(primary);
 		kfree(secondary);
-		kfree(nodes);
+		if(nodes) kfree(nodes);
 		return EEXIST;
 	}
 	irq_primary = cpu_interrupt_register_handler(32 + ATA_PRIMARY_IRQ, ata_irq_handler);

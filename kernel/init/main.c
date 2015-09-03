@@ -28,6 +28,9 @@ static struct multiboot *mtboot;
 static time_t start_epoch;
 static char *root_device = "/";
 static char *init_path = "/bin/sh";
+#if CONFIG_SMP
+static bool boot_cpus = true;
+#endif
 elf32_t kernel_elf;
 addr_t initial_boot_stack=0;
 
@@ -55,6 +58,11 @@ static void parse_kernel_command_line(char *buf)
 		} else if(!strcmp(c, "serial")) {
 			if(!strcmp(val, "off"))
 				serial_disable();
+#if CONFIG_SMP
+		} else if(!strcmp(c, "smp")) {
+			if(!strcmp(val, "off"))
+				boot_cpus = false;
+#endif
 		} else {
 			printk(0, "[kernel]: unknown option: %s=%s\n", c, val);
 		}
@@ -113,7 +121,8 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	cpu_processor_init_2();
 	timer_calibrate();
 #if CONFIG_SMP
-	cpu_boot_all_aps();
+	if(boot_cpus)
+		cpu_boot_all_aps();
 #endif
 	if(!sys_clone(0)) {
 		tm_thread_user_mode_jump(user_mode_init);

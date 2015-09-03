@@ -40,8 +40,8 @@ static struct thread *get_next_thread (void)
 
 		assert(n->cpu == current_thread->cpu);
 		check_signals(n);
-		if(!(_c % 10000))
-	printk(0, ":: %5d %5d %5d\n", (uint32_t)timer.last, (uint32_t)timer.mean, (uint32_t)timer.recent_mean);
+		//if(!(_c % 10000))
+	//printk(0, ":: %5d %5d %5d\n", (uint32_t)timer.last, (uint32_t)timer.mean, (uint32_t)timer.recent_mean);
 		if(n && tm_thread_runnable(n))
 			break;
 		if(!n || n == current_thread) {

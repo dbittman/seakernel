@@ -1,4 +1,4 @@
-#include <sea/cpu/atomic.h>
+
 #include <sea/errno.h>
 #include <sea/fs/dir.h>
 #include <sea/fs/inode.h>

@@ -4,7 +4,7 @@
 #include <sea/cpu/cpu-x86.h>
 #include <sea/tm/process.h>
 #include <sea/mutex.h>
-#include <sea/cpu/atomic.h>
+
 #include <sea/loader/symbol.h>
 #include <sea/cpu/acpi.h>
 #include <sea/cpu/interrupt.h>

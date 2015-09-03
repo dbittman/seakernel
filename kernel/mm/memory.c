@@ -5,7 +5,7 @@
 #include <sea/tm/process.h>
 #include <sea/cpu/processor.h>
 #include <sea/loader/symbol.h>
-#include <sea/cpu/atomic.h>
+
 #include <sea/mm/pmap.h>
 #include <sea/mm/pmm.h>
 #include <sea/mm/vmm.h>

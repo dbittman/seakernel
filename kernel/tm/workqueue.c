@@ -1,7 +1,7 @@
 #include <sea/types.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/kernel.h>
-#include <sea/cpu/atomic.h>
+
 #include <sea/tm/async_call.h>
 #include <sea/tm/workqueue.h>
 #include <sea/cpu/processor.h>

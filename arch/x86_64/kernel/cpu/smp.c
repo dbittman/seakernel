@@ -5,7 +5,7 @@
 #include <sea/mutex.h>
 #include <sea/cpu/processor.h>
 #include <sea/mm/vmm.h>
-#include <sea/cpu/atomic.h>
+
 #include <sea/vsprintf.h>
 
 unsigned num_cpus=0, num_booted_cpus=0, num_failed_cpus=0;

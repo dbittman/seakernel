@@ -4,7 +4,7 @@
 #include <sea/fs/inode.h>
 #include <sea/ll.h>
 #include <sea/mm/map.h>
-#include <sea/cpu/atomic.h>
+
 #include <sea/mm/valloc.h>
 #include <sea/errno.h>
 #include <sea/mm/kmalloc.h>

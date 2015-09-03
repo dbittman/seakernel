@@ -4,7 +4,7 @@
 #include <sea/lib/hash.h>
 #include <sea/errno.h>
 #include <sea/ll.h>
-#include <sea/cpu/atomic.h>
+
 struct hash_table *process_table;
 struct llist *process_list;
 size_t running_processes = 0;

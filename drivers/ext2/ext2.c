@@ -5,7 +5,7 @@
 #include <sea/dm/dev.h>
 #include <sea/ll.h>
 #include <sea/rwlock.h>
-#include <sea/cpu/atomic.h>
+
 #include <sea/types.h>
 #include <sea/fs/mount.h>
 #include <sea/mm/kmalloc.h>

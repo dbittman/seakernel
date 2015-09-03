@@ -18,7 +18,7 @@
 #include <sea/fs/initrd.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/serial.h>
-#include <sea/cpu/atomic.h>
+
 #include <sea/vsprintf.h>
 #include <stdarg.h>
 #include <sea/mm/kmalloc.h>

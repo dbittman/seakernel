@@ -8,7 +8,7 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/string.h>
 #include <sea/fs/fs.h>
-#include <sea/cpu/atomic.h>
+
 #include <sea/fs/dir.h>
 
 int ext2_wrap_alloc_inode(struct filesystem *fs, uint32_t *id)

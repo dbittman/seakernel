@@ -4,7 +4,7 @@
  * These are much simpler than RWlocks. They only use 1 bit and can be
  * in only two states: locked or unlocked.
  */
-#include <sea/cpu/atomic.h>
+
 #include <sea/mutex.h>
 #include <sea/kernel.h>
 #include <sea/tm/process.h>

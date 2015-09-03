@@ -5,7 +5,7 @@
 #include <sea/cpu/processor.h>
 #include <sea/mm/vmm.h>
 #include <sea/cpu/interrupt.h>
-#include <sea/cpu/atomic.h>
+
 #include <sea/cpu/imps-x86.h>
 #include <sea/cpu/cpu-x86.h>
 #include <sea/cpu/x86msr.h>

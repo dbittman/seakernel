@@ -12,7 +12,7 @@
 #include <sea/fs/file.h>
 #include <sea/mm/vmm.h>
 #include <sea/cpu/interrupt.h>
-#include <sea/cpu/atomic.h>
+
 #include <sea/mm/map.h>
 #include <sea/loader/exec.h>
 #include <sea/errno.h>

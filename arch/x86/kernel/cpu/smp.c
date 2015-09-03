@@ -5,7 +5,7 @@
 #include <sea/mutex.h>
 #include <sea/cpu/processor.h>
 #include <sea/mm/vmm.h>
-#include <sea/cpu/atomic.h>
+
 #include <sea/cpu/imps-x86.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/cmos-x86_common.h>

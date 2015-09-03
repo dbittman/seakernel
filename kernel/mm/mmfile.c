@@ -41,7 +41,7 @@
 #include <sea/mm/map.h>
 #include <sea/types.h>
 #include <sea/fs/file.h>
-#include <sea/cpu/atomic.h>
+
 #include <sea/sys/fcntl.h>
 #include <sea/errno.h>
 #include <sea/mm/kmalloc.h>

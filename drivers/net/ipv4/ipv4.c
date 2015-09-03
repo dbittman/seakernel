@@ -12,7 +12,7 @@
 #include <sea/tm/timing.h>
 
 #include <sea/cpu/time.h>
-#include <sea/cpu/atomic.h>
+
 
 #include <sea/mm/kmalloc.h>
 #include <sea/lib/queue.h>

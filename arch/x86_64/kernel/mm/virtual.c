@@ -4,7 +4,7 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/tm/process.h>
 #include <sea/cpu/processor.h>
-#include <sea/cpu/atomic.h>
+
 #include <sea/cpu/interrupt.h>
 #include <sea/boot/init.h>
 #include <sea/asm/system.h>

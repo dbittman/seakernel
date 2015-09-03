@@ -5,7 +5,7 @@
 #include <sea/asm/system.h>
 #include <sea/tm/process.h>
 #include <sea/cpu/processor.h>
-#include <sea/cpu/atomic.h>
+
 #include <sea/cpu/interrupt.h>
 #include <sea/fs/file.h>
 #include <sea/vsprintf.h>

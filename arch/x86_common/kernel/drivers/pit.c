@@ -3,7 +3,7 @@
  */
 #include <sea/cpu/interrupt.h>
 #include <sea/tm/process.h>
-#include <sea/cpu/atomic.h>
+
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/cpu-io.h>
 #include <sea/tm/timing.h>

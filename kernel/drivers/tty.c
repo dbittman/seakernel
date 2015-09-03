@@ -11,7 +11,7 @@
 #include <sea/tty/termios.h>
 #include <sea/loader/symbol.h>
 #include <sea/tm/tqueue.h>
-#include <sea/cpu/atomic.h>
+
 #include <sea/errno.h>
 #include <sea/syscall.h>
 #include <sea/mm/kmalloc.h>

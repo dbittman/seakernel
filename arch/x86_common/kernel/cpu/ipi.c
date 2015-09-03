@@ -15,7 +15,7 @@
 #include <sea/mutex.h>
 #include <sea/cpu/processor.h>
 #include <sea/mm/vmm.h>
-#include <sea/cpu/atomic.h>
+
 #include <sea/cpu/interrupt.h>
 #include <sea/asm/system.h>
 #if CONFIG_ARCH == TYPE_ARCH_X86

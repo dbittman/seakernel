@@ -1,6 +1,6 @@
 #include <sea/kernel.h>
 #include <sea/vsprintf.h>
-#include <sea/cpu/atomic.h>
+
 #include <sea/debugger.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/processor.h>

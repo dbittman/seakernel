@@ -1,4 +1,4 @@
-#include <sea/cpu/atomic.h>
+
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/processor.h>
 #include <sea/dm/dev.h>

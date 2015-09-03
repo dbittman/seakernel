@@ -2,7 +2,7 @@
 #include <sea/tm/process.h>
 #include <sea/boot/init.h>
 #include <sea/mm/vmm.h>
-#include <sea/cpu/atomic.h>
+
 #include <sea/tm/thread.h>
 
 void arch_tm_userspace_signal_initializer(registers_t *regs, struct sigaction *sa)

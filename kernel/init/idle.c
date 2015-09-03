@@ -8,7 +8,7 @@
 #include <sea/asm/system.h>
 #include <sea/boot/init.h>
 #include <sea/boot/multiboot.h>
-#include <sea/cpu/atomic.h>
+
 #include <sea/cpu/interrupt.h>
 #include <sea/dm/dev.h>
 #include <sea/fs/inode.h>

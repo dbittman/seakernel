@@ -1,7 +1,7 @@
 #include <sea/tm/process.h>
 #include <sea/tm/thread.h>
 #include <sea/ll.h>
-#include <sea/cpu/atomic.h>
+
 #include <sea/mm/kmalloc.h>
 #include <sea/mm/map.h>
 #include <sea/fs/inode.h>

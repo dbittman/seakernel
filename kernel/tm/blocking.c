@@ -3,7 +3,7 @@
 #include <sea/tm/async_call.h>
 #include <sea/tm/ticker.h>
 #include <sea/cpu/interrupt.h>
-#include <sea/cpu/atomic.h>
+
 #include <sea/errno.h>
 #include <sea/tm/timing.h>
 

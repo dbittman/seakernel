@@ -16,7 +16,7 @@
 #include <sea/mutex.h>
 #include <sea/cpu/processor.h>
 #include <sea/errno.h>
-#include <sea/cpu/atomic.h>
+
 #include <sea/types.h>
 #include <sea/tm/timing.h>
 int rtl8139_maj=-1;

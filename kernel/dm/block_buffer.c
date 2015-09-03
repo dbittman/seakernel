@@ -3,7 +3,7 @@
 #include <sea/tm/thread.h>
 #include <sea/tm/kthread.h>
 #include <sea/tm/timing.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 struct llist dirty_list;
 mutex_t dlock;
 struct kthread syncer;
@@ -40,10 +40,10 @@ void block_buffer_init(void)
 
 void buffer_sync(struct buffer *buf)
 {
-	if(!(ff_or_atomic(&buf->flags, BUFFER_WRITEPENDING) & BUFFER_WRITEPENDING)) {
+	if(!(atomic_fetch_or(&buf->flags, BUFFER_WRITEPENDING) & BUFFER_WRITEPENDING)) {
 		assert(buf->flags & BUFFER_DLIST);
 		struct ioreq *req = ioreq_create(buf->bd, buf->dev, WRITE, buf->block, 1);
-		add_atomic(&req->refs, 1);
+		atomic_fetch_add(&req->refs, 1);
 		block_elevator_add_request(req);
 		ioreq_put(req);
 	}
@@ -91,7 +91,7 @@ struct buffer *buffer_create(blockdevice_t *bd, dev_t dev, uint64_t block, int f
 void buffer_put(struct buffer *buf)
 {
 	assert(buf->refs > 0);
-	if(sub_atomic(&buf->refs, 1) == 0) {
+	if(atomic_fetch_sub(&buf->refs, 1) == 1) {
 		assert(!(buf->flags & BUFFER_DIRTY) && !(buf->flags & BUFFER_DLIST));
 		kfree(buf);
 	} else {
@@ -100,12 +100,12 @@ void buffer_put(struct buffer *buf)
 			if(!(buf->flags & BUFFER_DLIST)) {
 				/* changed to dirty, so add to list */
 				ll_do_insert(&dirty_list, &buf->dlistnode, buf);
-				or_atomic(&buf->flags, BUFFER_DLIST);
+				atomic_fetch_or(&buf->flags, BUFFER_DLIST);
 			}
 		} else {
 			if(buf->flags & BUFFER_DLIST) {
 				ll_do_remove(&dirty_list, &buf->dlistnode, 0);
-				and_atomic(&buf->flags, ~BUFFER_DLIST);
+				atomic_fetch_and(&buf->flags, ~BUFFER_DLIST);
 			}
 		}
 		mutex_release(&dlock);
@@ -115,7 +115,7 @@ void buffer_put(struct buffer *buf)
 void buffer_inc_refcount(struct buffer *buf)
 {
 	assert(buf->refs > 0);
-	add_atomic(&buf->refs, 1);
+	atomic_fetch_add(&buf->refs, 1);
 }
 
 void block_elevator_add_request(struct ioreq *req)
@@ -133,7 +133,7 @@ int block_cache_get_bufferlist(struct llist *blist, struct ioreq *req)
 		struct buffer *br = dm_block_cache_get(req->bd, block);
 		if(!br) {
 			struct async_call work;
-			add_atomic(&req->refs, 1);
+			atomic_fetch_add(&req->refs, 1);
 			async_call_create(&work, 0, (void (*)(unsigned long))block_elevator_add_request,
 					(unsigned long)req, ASYNC_CALL_PRIORITY_MEDIUM);
 
@@ -144,7 +144,7 @@ int block_cache_get_bufferlist(struct llist *blist, struct ioreq *req)
 			}
 			br = dm_block_cache_get(req->bd, block); // TODO: get this from elevator
 			assert(br);
-			and_atomic(&br->flags, ~BUFFER_LOCKED);
+			atomic_fetch_and(&br->flags, ~BUFFER_LOCKED);
 		}
 		ll_do_insert(blist, &br->lnode, br);
 		ret++;

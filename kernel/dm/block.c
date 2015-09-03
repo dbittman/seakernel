@@ -8,7 +8,7 @@
 #include <sea/errno.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 #include <sea/tm/timing.h>
 #undef DT_CHAR
 
@@ -170,7 +170,7 @@ int dm_block_write(dev_t dev, off_t posit, char *buf, size_t count)
 		if(count < (unsigned)write)
 			write=count;
 		memcpy(br->data+(pos % blk_size), buf, write);
-		or_atomic(&br->flags, BUFFER_DIRTY);
+		atomic_fetch_or(&br->flags, BUFFER_DIRTY);
 		buffer_put(br);
 		buf += write;
 		count -= write;
@@ -187,7 +187,7 @@ int dm_block_write(dev_t dev, off_t posit, char *buf, size_t count)
 			dm_block_cache_insert(bd, pos/blk_size, entry, BLOCK_CACHE_OVERWRITE);
 		} else {
 			memcpy(entry->data, buf, blk_size);
-			or_atomic(&entry->flags, BUFFER_DIRTY);
+			atomic_fetch_or(&entry->flags, BUFFER_DIRTY);
 		}
 		buffer_put(entry);
 		count -= blk_size;
@@ -207,7 +207,7 @@ int dm_block_write(dev_t dev, off_t posit, char *buf, size_t count)
 		ioreq_put(req);
 		struct buffer *br = ll_entry(struct buffer *, blist.head);
 		memcpy(br->data, buf, count);
-		or_atomic(&br->flags, BUFFER_DIRTY);
+		atomic_fetch_or(&br->flags, BUFFER_DIRTY);
 		buffer_put(br);
 		pos+=count;
 	}

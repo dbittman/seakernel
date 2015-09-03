@@ -1,7 +1,7 @@
 #include <sea/tm/kthread.h>
 #include <sea/tm/thread.h>
 #include <sea/dm/block.h>
-#include <sea/cpu/atomic.h>
+#include <stdatomic.h>
 void dm_block_cache_reclaim(void);
 int block_elevator_main(struct kthread *kt, void *arg)
 {
@@ -24,7 +24,7 @@ int block_elevator_main(struct kthread *kt, void *arg)
 					if(ret == dev->blksz * this) {
 						for(int i=0;i<this;i++) {
 							struct buffer *buffer = buffer_create(dev, req->dev, block + i, 0, buf + i * dev->blksz);
-							or_atomic(&buffer->flags, BUFFER_LOCKED);
+							atomic_fetch_or(&buffer->flags, BUFFER_LOCKED);
 							dm_block_cache_insert(dev, block + i, buffer, 0);
 							buffer_put(buffer);
 						}
@@ -44,7 +44,7 @@ int block_elevator_main(struct kthread *kt, void *arg)
 						struct buffer *buffer = dm_block_cache_get(req->bd, block + i);
 						assert(buffer);
 						memcpy(buf + i * dev->blksz, buffer->data, dev->blksz);
-						and_atomic(&buffer->flags, ~(BUFFER_DIRTY | BUFFER_WRITEPENDING)); //Should we wait to do this?
+						atomic_fetch_and(&buffer->flags, ~(BUFFER_DIRTY | BUFFER_WRITEPENDING)); //Should we wait to do this?
 						buffer_put(buffer);
 					}
 

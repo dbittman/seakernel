@@ -5,6 +5,7 @@
 
 #include <sea/tm/thread.h>
 
+/* TODO: we need to protect this stuff from userspace ... */
 void arch_tm_userspace_signal_initializer(registers_t *regs, struct sigaction *sa)
 {
 	/* user-space signal handing design:
@@ -27,6 +28,8 @@ void arch_tm_userspace_signal_initializer(registers_t *regs, struct sigaction *s
 	/* push the argument (signal number) */
 	*(unsigned *)(regs->useresp) = current_thread->signal;
 	regs->useresp -= STACK_ELEMENT_SIZE;
+	*(unsigned *)(regs->useresp) = current_thread->signal;
+	regs->useresp -= STACK_ELEMENT_SIZE;
 	/* push the return address. this function is mapped in when
 		* paging is set up */
 	*(unsigned *)(regs->useresp) = (unsigned)SIGNAL_INJECT;
@@ -35,6 +38,7 @@ void arch_tm_userspace_signal_initializer(registers_t *regs, struct sigaction *s
 
 void arch_tm_userspace_signal_cleanup(registers_t *regs)
 {
+	regs->useresp += STACK_ELEMENT_SIZE;
 	int signal = *(int *)(regs->useresp);
 	struct sigaction *sa = &current_process->signal_act[signal];
 	if(!(sa->sa_flags & SA_NODEFER))

@@ -9,6 +9,7 @@
 #include <sea/net/data_queue.h>
 #include <sea/fs/fcntl.h>
 #include <sea/dm/dev.h>
+#include <sea/trace.h>
 /* network worker threads just add the packet to the
  * queues that read from them (can be multiple queues)
  * and give proper refcounts. user programs are then woken
@@ -321,7 +322,7 @@ ssize_t sys_recv(int socket, void *buffer, size_t length, int flags)
 		ret = sock->calls->recvfrom(sock, buffer, length, flags, 0, 0);
 	if(ret)
 		return ret;
-	TRACE(0, "[socket]: trace: recv, waiting\n");
+	TRACE_MSG("socket", "trace: recv, waiting\n");
 	size_t nbytes = 0;
 	while(nbytes == 0) {
 		/* TODO: better blocking */

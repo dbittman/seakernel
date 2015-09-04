@@ -97,6 +97,7 @@ void kerfs_trace_off(size_t offset, size_t length, const char *buf)
 	trace_off(tmp);
 }
 
+int kerfs_route_report(size_t offset, size_t length, char *buf);
 int sys_setup(int a)
 {
 	if(system_setup)
@@ -125,6 +126,7 @@ int sys_setup(int a)
 	kerfs_register_report("/dev/mounts", kerfs_mount_report);
 	kerfs_register_report("/dev/pmm", kerfs_pmm_report);
 	kerfs_register_report("/dev/kmm", kerfs_kmalloc_report);
+	kerfs_register_report("/dev/route", kerfs_route_report);
 	kerfs_register_report("/dev/fs_icache", kerfs_icache_report);
 	kerfs_register_report("/dev/modules", kerfs_module_report);
 	kerfs_register_parameter("/dev/trace_on", NULL, 0, KERFS_PARAM_WRITE, KERFS_TYPE_NONE, kerfs_trace_on);

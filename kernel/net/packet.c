@@ -11,7 +11,7 @@
 #include <sea/tm/process.h>
 #include <sea/vsprintf.h>
 #include <stdatomic.h>
-
+#include <sea/trace.h>
 struct net_packet *net_packet_create(struct net_packet *packet, int flags)
 {
 	if(!packet) {
@@ -20,7 +20,7 @@ struct net_packet *net_packet_create(struct net_packet *packet, int flags)
 	} else {
 		packet->flags = flags;
 	}
-	TRACE(0, "[packet]: creating new packet %x\n", packet);
+	TRACE_MSG("net.packet", "creating new packet %x\n", packet);
 	packet->count = 1;
 	packet->data_header = packet->data;
 	return packet;
@@ -29,21 +29,21 @@ struct net_packet *net_packet_create(struct net_packet *packet, int flags)
 void net_packet_destroy(struct net_packet *packet)
 {
 	assert(packet->count == 0);
-	TRACE(0, "[packet]: destroying packet %x\n", packet);
+	TRACE_MSG("net.packet", "destroying packet %x\n", packet);
 	if(packet->flags & NP_FLAG_ALLOC)
 		kfree(packet);
 }
 
 void net_packet_get(struct net_packet *packet)
 {
-	TRACE(0, "[packet]: inc ref count packet %x\n", packet);
+	TRACE_MSG("net.packet", "inc ref count packet %x\n", packet);
 	assert(packet->count > 0);
 	atomic_fetch_add(&packet->count, 1);
 }
 
 void net_packet_put(struct net_packet *packet, int flag)
 {
-	TRACE(0, "[packet]: dec ref count packet %x\n", packet);
+	TRACE_MSG("net.packet", "dec ref count packet %x\n", packet);
 	assert(packet->count > 0);
 	int r = atomic_fetch_sub(&packet->count, 1) - 1;
 	if((flag & NP_FLAG_DESTROY) && r)
@@ -63,7 +63,7 @@ void net_notify_packet_ready(struct net_dev *nd)
 
 void net_receive_packet(struct net_dev *nd, struct net_packet *packets, int count)
 {
-	TRACE(0, "[packet]: receive %d packets\n", count);
+	TRACE_MSG("net.packet", "receive %d packets\n", count);
 	atomic_fetch_add_explicit(&nd->rx_count, count, memory_order_relaxed);
 	for(int i=0;i<count;i++) {
 		atomic_fetch_add_explicit(&nd->rx_bytes, packets[i].length, memory_order_relaxed);
@@ -76,9 +76,9 @@ int net_transmit_packet(struct net_dev *nd, struct net_packet *packets, int coun
 	atomic_fetch_add_explicit(&nd->tx_count, count, memory_order_relaxed);
 	for(int i=0;i<count;i++)
 		atomic_fetch_add_explicit(&nd->tx_bytes, packets[i].length, memory_order_relaxed);
-	TRACE(0, "[packet]: send #%d\n", nd->tx_count);
+	TRACE_MSG("net.packet", "send #%d\n", nd->tx_count);
 	int ret = net_callback_send(nd, packets, count);
-	TRACE(0, "[packet]: send returned %d\n", ret);
+	TRACE_MSG("net.packet", "send returned %d\n", ret);
 	return ret;
 }
 

@@ -20,10 +20,9 @@ int trace_init(){
 
 /*print out optional arguments formatted by msg if subsys is subscribed*/
 int trace(char *subsys, char *msg, ...){
-	bool value;
-	bool *val=&value;
+	long value;
+	void *val=&value;
 	if(!hash_table_get_entry(&h_table, subsys, 1, strlen(subsys)+1,(void **)&val)){
-		if(value) {
 			char printbuf[2065];
 			int len = snprintf(printbuf, 64, "[%s]: ", subsys);
 			va_list args;
@@ -31,7 +30,6 @@ int trace(char *subsys, char *msg, ...){
 			vsnprintf(2000, printbuf+len-1, msg, args);
 			printk(0, printbuf);
 			va_end(args);
-		}
 	}
 	return value;
 }
@@ -39,7 +37,7 @@ int trace(char *subsys, char *msg, ...){
 /*subscribe subsys to tracing service*/
 int trace_on(char *subsys)
 {
-	bool val=true;
+	long val;
 	printk(0, "[trace]: enable %s\n", subsys);
 	return hash_table_set_entry(&h_table, subsys, 1, strlen(subsys)+1, &val);
 }

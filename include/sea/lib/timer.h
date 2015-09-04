@@ -18,6 +18,18 @@ struct timer {
 	double mean, recent_mean;
 };
 
+#define TIMER_INIT_DEFAULT { \
+	.flags=0, \
+	.magic=TIMER_MAGIC,\
+	.runs=0, \
+	.start_time=0, \
+	.max=0,\
+	.min=0, \
+	.last=0,\
+	.mean=0, \
+	.recent_mean = 0\
+}
+
 void timer_stop(struct timer *t);
 int timer_start(struct timer *t);
 void timer_destroy(struct timer *t);

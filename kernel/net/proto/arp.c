@@ -11,6 +11,7 @@
 #include <sea/net/datalayer.h>
 #include <sea/mutex.h>
 #include <sea/tm/timing.h>
+#include <sea/trace.h>
 #define MAX_PROTS 64
 
 static struct arp_database {
@@ -133,7 +134,7 @@ static void arp_add_entry_to_database(struct arp_database *db, uint16_t prot_add
 		hash_table_delete_entry(db->table, prot_addr, sizeof(uint16_t), 2);
 		kfree(tmp);
 	}
-	TRACE(0, "[arp]: adding entry %x:%x -- %x\n", prot_addr[0], prot_addr[1], entry->hw_addr[0]);
+	TRACE_MSG("arp", "adding entry %x:%x -- %x\n", prot_addr[0], prot_addr[1], entry->hw_addr[0]);
 	hash_table_set_entry(db->table, prot_addr, sizeof(uint16_t), 2, entry);
 	mutex_release(&db->hashlock);
 }
@@ -179,6 +180,8 @@ void arp_send_request(struct net_dev *nd, uint16_t prot_type, uint8_t prot_addr[
 	 * NOTE: if we find a request that is over 1 second old, we re-send the request
 	 * and reset the timeout value for it.
 	 */
+	TRACE_MSG("arp", "sending request to %d-%d-%d-%d\n", prot_addr[0],
+			prot_addr[1], prot_addr[2], prot_addr[3]);
 	struct arp_packet packet;
 	arp_write_short(prot_addr, &packet.tar_p_addr_1, &packet.tar_p_addr_2);
 	uint16_t addr[2];
@@ -269,6 +272,7 @@ int arp_receive_packet(struct net_dev *nd, struct net_packet *netpacket, struct 
 		net_iface_get_netaddr(nd, __arp_convert_af(ptype), &s);
 		if(!__arp_compare_address(s.sa_data + 2, packet->tar_p_addr_1, packet->tar_p_addr_2))
 		{
+			TRACE_MSG("arp", "handling request\n");
 			/* this is us! Form the reply packet */
 			packet->tar_hw_addr_1 = packet->src_hw_addr_1;
 			packet->tar_hw_addr_2 = packet->src_hw_addr_2;
@@ -291,6 +295,7 @@ int arp_receive_packet(struct net_dev *nd, struct net_packet *netpacket, struct 
 	p_addr[1] = packet->src_p_addr_2;
 	if((oper == ARP_OPER_REQUEST || oper == ARP_OPER_REPLY) 
 			&& !arp_do_lookup(BIG_TO_HOST16(packet->p_type), p_addr)) {
+		TRACE_MSG("arp", "storing ARP data: %x %x\n", p_addr[0], p_addr[1]);
 		/* cache the ARP info from the source */
 		struct arp_entry *entry = kmalloc(sizeof(struct arp_entry));
 		entry->prot_addr[0] = p_addr[0];

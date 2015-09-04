@@ -2,7 +2,7 @@
 #define __SEA_CPU_TRACE_H
 
 #if CONFIG_TRACE
-#define TRACE_MSG(x,y,...)	(trace(x,y, __VA_ARGS__))
+#define TRACE_MSG(x,y,...)	(trace(x,y, ##__VA_ARGS__))
 #else
 #define TRACE_MSG(x,y,...)
 #endif

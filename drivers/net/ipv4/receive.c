@@ -22,6 +22,7 @@
 #include <sea/vsprintf.h>
 #include <sea/string.h>
 #include <sea/kernel.h>
+#include <sea/trace.h>
 
 #include <limits.h>
 
@@ -194,7 +195,7 @@ static int ipv4_handle_fragmentation(struct net_packet **np, struct ipv4_header 
 	*ff = 0;
 	if(offset == 0 && !(flags & IP_FLAG_MF))
 		return 1;
-	TRACE(0, "[ipv4]: UNTESTED: handling fragmentation\n");
+	TRACE_MSG("ipv4", "[ipv4]: UNTESTED: handling fragmentation\n");
 	/* wake up the worker thread (since it handles timed-out fragments */
 	tm_thread_resume(ipv4_send_thread->thread);
 	/* okay, this is a fragment. Do we have other fragments of this packet yet? */
@@ -272,20 +273,20 @@ void ipv4_forward_packet(struct net_dev *nd, struct net_packet *netpacket, struc
 void ipv4_receive_packet(struct net_dev *nd, struct net_packet *netpacket, void *__packet)
 {
 	/* check if we are to accept this packet */
-	TRACE(0, "[ipv4]: receive_packet\n");
+	TRACE_MSG("ipv4", "[ipv4]: receive_packet\n");
 	struct ipv4_header *packet = __packet;
 	netpacket->network_header = packet;
 	uint16_t checksum = packet->checksum;
 	packet->checksum = 0;
 	uint16_t sum = ipv4_calc_checksum(packet, packet->header_len * 4);
 	if(sum != checksum) {
-		TRACE(0, "[ipv4]: discarding bad packet!\n");
+		TRACE_MSG("ipv4", "[ipv4]: discarding bad packet!\n");
 		return;
 	}
 	/* check IP address */
 	union ipv4_address src = (union ipv4_address)(uint32_t)packet->src_ip;
 	union ipv4_address dest = (union ipv4_address)(uint32_t)packet->dest_ip;
-	TRACE(0, "[ipv4]: packet from %x (%d.%d.%d.%d)\n",
+	TRACE_MSG("ipv4", "[ipv4]: packet from %x (%d.%d.%d.%d)\n",
 			src.address, src.addr_bytes[0], src.addr_bytes[1], src.addr_bytes[2], src.addr_bytes[3]);
 	union ipv4_address ifaddr;
 	uint32_t mask;
@@ -299,7 +300,7 @@ void ipv4_receive_packet(struct net_dev *nd, struct net_packet *netpacket, void 
 			|| (dest.address == BROADCAST_ADDRESS(ifaddr.address, mask)
 				&& (nd->flags & IFACE_FLAG_ACCBROADCAST))) {
 		/* accepted unicast or broadcast packet for us */
-		TRACE(0, "[ipv4]: got packet for us of size %d!\n", BIG_TO_HOST16(packet->length));
+		TRACE_MSG("ipv4", "[ipv4]: got packet for us of size %d!\n", BIG_TO_HOST16(packet->length));
 		ipv4_accept_packet(nd, netpacket, packet, 
 				src, BIG_TO_HOST16(packet->length) - (packet->header_len * 4));
 	} else if(nd->flags & IFACE_FLAG_FORWARD || 1/*TODO */) {

@@ -41,11 +41,13 @@ int sys_sbrk(long inc)
 static void __alarm_timeout(unsigned long data)
 {
 	struct thread *thr = (struct thread *)data;
-	if(thr->alarm_ticker)
+	if(thr->alarm_ticker) {
 		tm_signal_send_thread(thr, SIGALRM);
-	current_thread->alarm_ticker = 0;
+	}
+	thr->alarm_ticker = 0;
 }
 
+/* TODO: make this all thread safe with atomics */
 int sys_alarm(int dur)
 {
 	struct async_call *call = async_call_create(&current_thread->alarm_timeout,
@@ -62,8 +64,10 @@ int sys_alarm(int dur)
 		current_thread->alarm_ticker = 0;
 		cpu_interrupt_set(old);
 	} else {
-		current_thread->alarm_ticker = ticker;
-		ticker_insert(ticker, dur * ONE_SECOND, call);
+		if(!current_thread->alarm_ticker) {
+			current_thread->alarm_ticker = ticker;
+			ticker_insert(ticker, dur * ONE_SECOND, call);
+		}
 	}
 	return 0;
 }

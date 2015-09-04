@@ -73,19 +73,21 @@ void timer_calibrate(void)
 	timer_create(&t, 0);
 	printk(0, "[timer]: calibrating HPT timers...\n");
 	int old = cpu_interrupt_set(0);
-	for(int i=0;i<10000;i++) {
-		int r = timer_start(&t);
+	for(int i=0;i<100;i++) {
 		atomic_thread_fence(memory_order_seq_cst);
+		int r = timer_start(&t);
+		cpu_pause();
+		atomic_thread_fence(memory_order_seq_cst);
+		cpu_pause();
 		timer_stop(&t);
 		atomic_thread_fence(memory_order_seq_cst);
 		mean = ((mean * i) + t.last) / (i+1);
 		cpu_pause();
-		assert(r);
 	}
 	mean_difference = mean;
 	atomic_thread_fence(memory_order_seq_cst);
 	timers_calibrated = true;
-	printk(0, "[timer]: found mean base value of %d\n", mean_difference);
+	printk(5, "[timer]: found mean base value of %d\n", mean_difference);
 	cpu_interrupt_set(old);
 	timer_destroy(&t);
 }

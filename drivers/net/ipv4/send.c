@@ -22,6 +22,7 @@
 #include <sea/vsprintf.h>
 #include <sea/string.h>
 #include <sea/kernel.h>
+#include <sea/trace.h>
 
 #include <limits.h>
 
@@ -37,7 +38,7 @@ static int ipv4_do_enqueue_packet(struct ipv4_packet *packet)
 {
 	/* error checking */
 	queue_enqueue(ipv4_tx_queue, packet);
-	tm_thread_resume(ipv4_send_thread->thread);
+	tm_thread_poke(ipv4_send_thread->thread);
 	return 0;
 }
 
@@ -86,8 +87,9 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 
 	struct route *r = net_route_select_entry(dest.address);
 	uint8_t hwaddr[6];
-	if(!r)
+	if(!r) {
 		return -1;
+	}
 	nd = r->interface;
 	if(r->flags & ROUTE_FLAG_GATEWAY) {
 		packet_destination = (union ipv4_address)r->gateway;
@@ -100,7 +102,7 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 	memcpy(&ifaddr.address, s.sa_data + 2, 4);
 	if(packet_destination.address == ifaddr.address) {
 		/* we're sending a packet to an address of an interface on this system! Loop it around... */
-		TRACE(0, "[ipv4]: sending packet to interface on this system! Re-receiving...\n");
+		TRACE_MSG("ipv4", "[ipv4]: sending packet to interface on this system! Re-receiving...\n");
 		ipv4_finish_constructing_packet(nd, r, packet);
 		ipv4_receive_packet(nd, packet->netpacket, packet->header);
 		return 1;
@@ -119,7 +121,7 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 		return 0;
 	}
 
-	TRACE(0, "[ipv4]: send_packet: sending\n");
+	TRACE_MSG("ipv4", "[ipv4]: send_packet: sending\n");
 	ipv4_finish_constructing_packet(nd, r, packet);
 	
 	/* split the packet if we need to... */
@@ -173,7 +175,7 @@ int ipv4_enqueue_packet(struct net_packet *netpacket, struct ipv4_header *header
 	union ipv4_address dest = (union ipv4_address)header->dest_ip;
 	struct route *r = net_route_select_entry(dest.address);
 	if(!r) {
-		TRACE(0, "[ipv4]: destination unavailable\n");
+		TRACE_MSG("ipv4", "[ipv4]: destination unavailable\n");
 		return -ENETUNREACH;
 	}
 	struct ipv4_packet *packet = kmalloc(sizeof(struct ipv4_packet));
@@ -181,7 +183,7 @@ int ipv4_enqueue_packet(struct net_packet *netpacket, struct ipv4_header *header
 	packet->header = header;
 	net_packet_get(netpacket);
 	packet->netpacket = netpacket;
-	TRACE(0, "[ipv4]: enqueue packet to %x\n", header->dest_ip);
+	TRACE_MSG("ipv4", "[ipv4]: enqueue packet to %x\n", header->dest_ip);
 	ipv4_do_enqueue_packet(packet);
 	return 0;
 }
@@ -191,7 +193,7 @@ int ipv4_copy_enqueue_packet(struct net_packet *netpacket, struct ipv4_header *h
 	union ipv4_address dest = (union ipv4_address)header->dest_ip;
 	struct route *r = net_route_select_entry(dest.address);
 	if(!r) {
-		TRACE(0, "[ipv4]: destination unavailable\n");
+		TRACE_MSG("ipv4", "[ipv4]: destination unavailable\n");
 		return -ENETUNREACH;
 	}
 	memcpy(netpacket->data + r->interface->data_header_len, header, BIG_TO_HOST16(header->length));
@@ -200,7 +202,7 @@ int ipv4_copy_enqueue_packet(struct net_packet *netpacket, struct ipv4_header *h
 	packet->header = (void *)(netpacket->data + r->interface->data_header_len);
 	net_packet_get(netpacket);
 	packet->netpacket = netpacket;
-	TRACE(0, "[ipv4]: enqueue packet to %x\n", header->dest_ip);
+	TRACE_MSG("ipv4", "[ipv4]: enqueue packet to %x\n", header->dest_ip);
 	ipv4_do_enqueue_packet(packet);
 	return BIG_TO_HOST32(header->length);
 }
@@ -234,7 +236,7 @@ int ipv4_enqueue_sockaddr(void *payload, size_t len, struct sockaddr *addr, stru
 	packet->enqueue_time = tm_timing_get_microseconds();
 	packet->header = header;
 	packet->netpacket = np;
-	TRACE(0, "[ipv4]: enqueue packet to %x\n", header->dest_ip);
+	TRACE_MSG("ipv4", "[ipv4]: enqueue packet to %x\n", header->dest_ip);
 	ipv4_do_enqueue_packet(packet);
 	return 0;
 }
@@ -249,7 +251,7 @@ int ipv4_sending_thread(struct kthread *kt, void *arg)
 				/* got packet entry! */
 				if(tm_timing_get_microseconds() > packet->enqueue_time + ONE_SECOND * (10)) {
 					/* timeout! */
-					TRACE(0, "[kipv4-send]: packet timed out\n");
+					TRACE_MSG("ipv4", "[kipv4-send]: packet timed out\n");
 					net_packet_put(packet->netpacket, 0);
 					kfree(packet);
 				} else { 

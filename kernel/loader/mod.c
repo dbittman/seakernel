@@ -15,6 +15,7 @@
 #include <sea/fs/kerfs.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/ll.h>
+#include <sea/trace.h>
 
 struct llist module_list;
 static mutex_t sym_mutex;
@@ -70,6 +71,7 @@ void loader_init_kernel_symbols(void)
 	loader_add_kernel_symbol(__rwlock_deescalate);
 	loader_add_kernel_symbol(rwlock_create);
 	loader_add_kernel_symbol(rwlock_destroy);
+	loader_add_kernel_symbol(trace);
 
 	/* these systems export these, but have no initialization function */
 	loader_add_kernel_symbol(time_get_epoch);

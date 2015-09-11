@@ -35,7 +35,7 @@ static void __kfs_mnt_rp_write(struct filesystem *fs, size_t *offset, size_t len
 			fs->nodename, point, fs->type, fs->opts);
 }
 
-int kerfs_mount_report(size_t offset, size_t length, char *buf)
+int kerfs_mount_report(int direction, void *param, size_t size, size_t offset, size_t length, char *buf)
 {
 	size_t current = 0;
 

@@ -23,6 +23,7 @@ void mm_free_contiguous_region(struct mm_physical_region *p);
 void mm_alloc_contiguous_region(struct mm_physical_region *p);
 
 addr_t mm_physical_allocate(size_t, bool);
+void mm_physical_deallocate(addr_t address);
 addr_t pmm_buddy_allocate(size_t length);
 void pmm_buddy_deallocate(addr_t address);
 

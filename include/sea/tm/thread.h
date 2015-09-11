@@ -50,7 +50,7 @@ struct thread {
 	int cpuid;
 	int state;
 	_Atomic int flags;
-	int system;
+	uint64_t system;
 	int interrupt_level;
 	int priority, timeslice;
 	int exit_code;

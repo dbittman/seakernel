@@ -13,8 +13,11 @@ static int do_map_page(addr_t addr, unsigned attr)
 	 * we tell the functions that the directory is locked (since it always
 	 * will be) */
 	addr &= PAGE_MASK;
-	if(!mm_vm_get_map(addr, 0, 1))
-		mm_vm_map(addr, mm_alloc_physical_page(), attr, MAP_CRIT | MAP_PDLOCKED);
+	if(!mm_vm_get_map(addr, 0, 1)) {
+		addr_t phys = mm_physical_allocate(0x1000, true);
+		if(!mm_virtual_map(addr, phys, attr, 0x1000))
+			mm_physical_deallocate(phys);
+	}
 	return 1;
 }
 

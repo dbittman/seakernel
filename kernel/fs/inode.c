@@ -343,7 +343,7 @@ int fs_icache_sync(void)
 	return 0;
 }
 
-int kerfs_icache_report(size_t offset, size_t length, char *buf)
+int kerfs_icache_report(int direction, void *param, size_t size, size_t offset, size_t length, char *buf)
 {
 	size_t current = 0;
 	KERFS_PRINTF(offset, length, buf, current,

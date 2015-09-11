@@ -80,7 +80,6 @@ int fs_callback_inode_select(struct inode *node, int rw);
 int fs_callback_fs_alloc_inode(struct filesystem *fs, uint32_t *id);
 int fs_callback_fs_stat(struct filesystem *fs, struct posix_statfs *p);
 int fs_callback_fs_dealloc_inode(struct filesystem *fs, uint32_t *id);
-int kerfs_mount_report(size_t offset, size_t length, char *buf);
 
 int ramfs_mount(struct filesystem *fs);
 struct filesystem *fs_filesystem_create();

@@ -50,11 +50,6 @@ unsigned int mm_vm_get_attrib(addr_t v, unsigned *p, unsigned locked)
 	return arch_mm_vm_get_attrib(v, p, locked);
 }
 
-int mm_vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned opt)
-{
-	return arch_mm_vm_map(virt, phys, attr, opt);
-}
-
 void mm_flush_page_tables(void)
 {
 	arch_mm_flush_page_tables();

@@ -5,6 +5,7 @@
 #include <sea/arch-include/mm-memory.h>
 #include <sea/mm/valloc.h>
 #include <stdbool.h>
+
 struct thread;
 struct pd_data {
 	unsigned count;
@@ -57,33 +58,44 @@ bool mm_context_read(struct vmm_context *ctx, void *output,
 addr_t mm_context_virtual_unmap(struct vmm_context *ctx, addr_t address);
 static inline void map_if_not_mapped(addr_t loc)
 {
-	if(!mm_vm_get_map(loc & PAGE_MASK, 0, 0))
-		mm_vm_map(loc & PAGE_MASK, mm_alloc_physical_page(), 
-		       PAGE_PRESENT | PAGE_WRITE, MAP_CRIT);
+	if(!mm_vm_get_map(loc & PAGE_MASK, 0, 0)) {
+		addr_t phys = mm_physical_allocate(0x1000, true);
+		if(!mm_virtual_map(loc & PAGE_MASK, phys, PAGE_PRESENT | PAGE_WRITE, 0x1000)) {
+			mm_physical_deallocate(phys);
+		}
+	}
 }
 
 static inline void map_if_not_mapped_noclear(addr_t loc)
 {
-	if(!mm_vm_get_map(loc & PAGE_MASK, 0, 0))
-		mm_vm_map(loc & PAGE_MASK, mm_alloc_physical_page(), 
-		       PAGE_PRESENT | PAGE_WRITE, MAP_CRIT | MAP_NOCLEAR);
+	if(!mm_vm_get_map(loc & PAGE_MASK, 0, 0)) {
+		addr_t phys = mm_physical_allocate(0x1000, false);
+		if(!mm_virtual_map(loc & PAGE_MASK, phys, PAGE_PRESENT | PAGE_WRITE, 0x1000))
+			mm_physical_deallocate(phys);
+	}
 }
 
 static inline void user_map_if_not_mapped(addr_t loc)
 {
-	if(!mm_vm_get_map(loc & PAGE_MASK, 0, 0))
-		mm_vm_map(loc & PAGE_MASK, mm_alloc_physical_page(), 
-		       PAGE_PRESENT | PAGE_WRITE | PAGE_USER, MAP_CRIT);
-	else
+	if(!mm_vm_get_map(loc & PAGE_MASK, 0, 0)) {
+		addr_t phys = mm_physical_allocate(0x1000, true);
+		if(!mm_virtual_map(loc & PAGE_MASK, phys, PAGE_PRESENT | PAGE_WRITE | PAGE_USER, 0x1000)) {
+			mm_physical_deallocate(phys);
+			mm_vm_set_attrib(loc & PAGE_MASK, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
+		}
+	} else
 		mm_vm_set_attrib(loc & PAGE_MASK, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
 }
 
 static inline void user_map_if_not_mapped_noclear(addr_t loc)
 {
-	if(!mm_vm_get_map(loc & PAGE_MASK, 0, 0))
-		mm_vm_map(loc & PAGE_MASK, mm_alloc_physical_page(), 
-		       PAGE_PRESENT | PAGE_WRITE | PAGE_USER, MAP_CRIT | MAP_NOCLEAR);
-	else
+	if(!mm_vm_get_map(loc & PAGE_MASK, 0, 0)) {
+		addr_t phys = mm_physical_allocate(0x1000, false);
+		if(!mm_virtual_map(loc & PAGE_MASK, phys, PAGE_PRESENT | PAGE_WRITE | PAGE_USER, 0x1000)) {
+			mm_physical_deallocate(phys);
+			mm_vm_set_attrib(loc & PAGE_MASK, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
+		}
+	} else
 		mm_vm_set_attrib(loc & PAGE_MASK, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
 }
 

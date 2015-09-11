@@ -55,6 +55,13 @@ addr_t arch_mm_context_virtual_unmap(struct vmm_context *ctx, addr_t address)
 
 addr_t arch_mm_virtual_unmap(addr_t address)
 {
-	return arch_mm_context_virtual_unmap(&current_process->vmm_context, address);
+	struct vmm_context *ctx;
+	if(current_process) {
+		ctx = &current_process->vmm_context;
+	} else {
+		ctx = &kernel_context;
+	}
+
+	return arch_mm_context_virtual_unmap(ctx, address);
 }
 

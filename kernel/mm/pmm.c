@@ -115,7 +115,7 @@ int mm_allocate_dma_buffer(struct dma_region *d)
 
 	int npages = ((d->p.size-1) / PAGE_SIZE) + 1;
 	for(int i = 0;i<npages;i++)
-		mm_vm_map(CONTIGUOUS_VIRT_START + offset + i * PAGE_SIZE, d->p.address + i*PAGE_SIZE, PAGE_PRESENT | PAGE_WRITE, 0);
+		mm_virtual_map(CONTIGUOUS_VIRT_START + offset + i * PAGE_SIZE, d->p.address + i*PAGE_SIZE, PAGE_PRESENT | PAGE_WRITE, 0x1000);
 	d->v = CONTIGUOUS_VIRT_START + offset;
 	return 0;
 }

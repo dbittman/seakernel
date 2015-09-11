@@ -304,7 +304,7 @@ int cpu_interrupt_get_flag(void)
 	return arch_cpu_get_interrupt_flag();
 }
 
-int kerfs_int_report(size_t offset, size_t length, char *buf)
+int kerfs_int_report(int direction, void *param, size_t size, size_t offset, size_t length, char *buf)
 {
 	size_t current = 0;
 	KERFS_PRINTF(offset, length, buf, current,

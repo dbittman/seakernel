@@ -112,7 +112,7 @@ void mm_init(struct multiboot *m)
 	loader_add_kernel_symbol(__kmalloc_a);
 	loader_add_kernel_symbol(__kmalloc_p);
 	loader_add_kernel_symbol(kfree);
-	loader_add_kernel_symbol(mm_vm_map);
+	loader_add_kernel_symbol(mm_virtual_map);
 	loader_add_kernel_symbol(pmap_get_mapping);
 	loader_add_kernel_symbol(pmap_create);
 	loader_add_kernel_symbol(pmap_destroy);

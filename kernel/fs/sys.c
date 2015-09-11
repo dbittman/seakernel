@@ -67,10 +67,12 @@ void devfs_init(void)
 	sys_mkdir("/dev/process", 0755);
 }
 
-void kerfs_trace_on(size_t offset, size_t length, const char *buf)
+int kerfs_trace_on(int direction, void *_, size_t __, size_t offset, size_t length, char *buf)
 {
+	if(direction != WRITE)
+		return -EIO;
 	if(offset > 0)
-		return;
+		return 0;
 	if(length > 128)
 		length = 128;
 	char tmp[length + 1];
@@ -80,12 +82,15 @@ void kerfs_trace_on(size_t offset, size_t length, const char *buf)
 	if((n = strrchr(tmp, '\n')))
 		*n = 0;
 	trace_on(tmp);
+	return length;
 }
 
-void kerfs_trace_off(size_t offset, size_t length, const char *buf)
+int kerfs_trace_off(int direction, void *_, size_t __, size_t offset, size_t length, char *buf)
 {
+	if(direction != WRITE)
+		return -EIO;
 	if(offset > 0)
-		return;
+		return 0;
 	if(length > 128)
 		length = 128;
 	char tmp[length + 1];
@@ -95,9 +100,9 @@ void kerfs_trace_off(size_t offset, size_t length, const char *buf)
 	if((n = strrchr(tmp, '\n')))
 		*n = 0;
 	trace_off(tmp);
+	return length;
 }
 
-int kerfs_route_report(size_t offset, size_t length, char *buf);
 int sys_setup(int a)
 {
 	if(system_setup)
@@ -129,8 +134,8 @@ int sys_setup(int a)
 	kerfs_register_report("/dev/route", kerfs_route_report);
 	kerfs_register_report("/dev/fs_icache", kerfs_icache_report);
 	kerfs_register_report("/dev/modules", kerfs_module_report);
-	kerfs_register_parameter("/dev/trace_on", NULL, 0, KERFS_PARAM_WRITE, KERFS_TYPE_NONE, kerfs_trace_on);
-	kerfs_register_parameter("/dev/trace_off", NULL, 0, KERFS_PARAM_WRITE, KERFS_TYPE_NONE, kerfs_trace_off);
+	kerfs_register_parameter("/dev/trace_on", NULL, 0, KERFS_PARAM_WRITE, kerfs_trace_on);
+	kerfs_register_parameter("/dev/trace_off", NULL, 0, KERFS_PARAM_WRITE, kerfs_trace_off);
 	current_process->tty=1;
 	tm_process_create_kerfs_entries(current_process);
 	tm_thread_create_kerfs_entries(current_thread);

@@ -297,7 +297,7 @@ int sys_unload_module(char *path, int flags)
 	return do_unload_module(path, flags);
 }
 
-int kerfs_module_report(size_t offset, size_t length, char *buf)
+int kerfs_module_report(int direction, void *param, size_t size, size_t offset, size_t length, char *buf)
 {
 	size_t current = 0;
 	KERFS_PRINTF(offset, length, buf, current,

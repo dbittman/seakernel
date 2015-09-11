@@ -30,15 +30,37 @@ extern struct filesystem *devfs;
 		char file[128];\
 		snprintf(file, 128, "/dev/process/%d/%s", proc->pid, #field); \
 		kerfs_register_parameter(file, (void *)&proc->field, sizeof(proc->field), \
-				0, type, 0); \
+				0, type); \
 	} while(0)
 #define __expose_thread_field(thr, field, type) \
 	do { \
 		char file[128];\
 		snprintf(file, 128, "/dev/process/%d/%d/%s", proc->pid, thr->tid, #field); \
 		kerfs_register_parameter(file, &thr->field, sizeof(thr->field), \
-				0, type, 0); \
+				0, type); \
 	} while(0)
+
+int kerfs_mappings_report(int direction, void *param, size_t size, size_t offset, size_t length, char *buf)
+{
+	size_t current = 0;
+	struct process *proc = param;
+	assert(proc->magic == PROCESS_MAGIC);
+	KERFS_PRINTF(offset, length, buf, current,
+				"           START              END   LENGTH    INODE   OFFSET\n");
+	mutex_acquire(&proc->map_lock);
+	
+	struct llistnode *node;
+	struct memmap *map;
+	ll_for_each_entry(&proc->mappings, node, struct memmap *, map) {
+		KERFS_PRINTF(offset, length, buf, current,
+				"%16x %16x %8x %8d %8x\n",
+				map->virtual, map->virtual + map->length, map->length, map->node->id, map->offset);
+	}
+
+	mutex_release(&proc->map_lock);
+	
+	return current;
+}
 
 void tm_process_create_kerfs_entries(struct process *proc)
 {
@@ -51,26 +73,29 @@ void tm_process_create_kerfs_entries(struct process *proc)
 		printk(2, "[tm]: failed to create process entry %d: err=%d\n", proc->pid, -ret);
 		return;
 	}
-	__expose_proc_field(proc, heap_start, KERFS_TYPE_ADDRESS);
-	__expose_proc_field(proc, flags, KERFS_TYPE_ADDRESS);
-	__expose_proc_field(proc, refs, KERFS_TYPE_INTEGER);
-	__expose_proc_field(proc, heap_end, KERFS_TYPE_ADDRESS);
-	__expose_proc_field(proc, cmask, KERFS_TYPE_ADDRESS);
-	__expose_proc_field(proc, effective_uid, KERFS_TYPE_INTEGER);
-	__expose_proc_field(proc, effective_gid, KERFS_TYPE_INTEGER);
-	__expose_proc_field(proc, real_uid, KERFS_TYPE_INTEGER);
-	__expose_proc_field(proc, real_gid, KERFS_TYPE_INTEGER);
-	__expose_proc_field(proc, tty, KERFS_TYPE_INTEGER);
-	__expose_proc_field(proc, utime, KERFS_TYPE_INTEGER);
-	__expose_proc_field(proc, stime, KERFS_TYPE_INTEGER);
-	__expose_proc_field(proc, thread_count, KERFS_TYPE_INTEGER);
-	__expose_proc_field(proc, global_sig_mask, KERFS_TYPE_ADDRESS);
-	__expose_proc_field(proc, command, KERFS_TYPE_STRING);
-	__expose_proc_field(proc, exit_reason.sig, KERFS_TYPE_INTEGER);
-	__expose_proc_field(proc, exit_reason.pid, KERFS_TYPE_INTEGER);
-	__expose_proc_field(proc, exit_reason.ret, KERFS_TYPE_INTEGER);
-	__expose_proc_field(proc, exit_reason.coredump, KERFS_TYPE_INTEGER);
-	__expose_proc_field(proc, exit_reason.cause, KERFS_TYPE_INTEGER);
+	__expose_proc_field(proc, heap_start, kerfs_rw_address);
+	__expose_proc_field(proc, flags, kerfs_rw_address);
+	__expose_proc_field(proc, refs, kerfs_rw_integer);
+	__expose_proc_field(proc, heap_end, kerfs_rw_address);
+	__expose_proc_field(proc, cmask, kerfs_rw_address);
+	__expose_proc_field(proc, effective_uid, kerfs_rw_integer);
+	__expose_proc_field(proc, effective_gid, kerfs_rw_integer);
+	__expose_proc_field(proc, real_uid, kerfs_rw_integer);
+	__expose_proc_field(proc, real_gid, kerfs_rw_integer);
+	__expose_proc_field(proc, tty, kerfs_rw_integer);
+	__expose_proc_field(proc, utime, kerfs_rw_integer);
+	__expose_proc_field(proc, stime, kerfs_rw_integer);
+	__expose_proc_field(proc, thread_count, kerfs_rw_integer);
+	__expose_proc_field(proc, global_sig_mask, kerfs_rw_address);
+	__expose_proc_field(proc, command, kerfs_rw_string);
+	__expose_proc_field(proc, exit_reason.sig, kerfs_rw_integer);
+	__expose_proc_field(proc, exit_reason.pid, kerfs_rw_integer);
+	__expose_proc_field(proc, exit_reason.ret, kerfs_rw_integer);
+	__expose_proc_field(proc, exit_reason.coredump, kerfs_rw_integer);
+	__expose_proc_field(proc, exit_reason.cause, kerfs_rw_integer);
+	char file[128];
+	snprintf(file, 128, "/dev/process/%d/maps", proc->pid);
+	kerfs_register_parameter(file, proc, sizeof(void *), 0, kerfs_mappings_report);
 }
 
 void tm_thread_create_kerfs_entries(struct thread *thr)
@@ -85,16 +110,16 @@ void tm_thread_create_kerfs_entries(struct thread *thr)
 		printk(2, "[tm]: failed to create thread entry %d: err=%d\n", thr->tid, -ret);
 		return;
 	}
-	__expose_thread_field(thr, refs, KERFS_TYPE_INTEGER);
-	__expose_thread_field(thr, state, KERFS_TYPE_INTEGER);
-	__expose_thread_field(thr, flags, KERFS_TYPE_ADDRESS);
-	__expose_thread_field(thr, system, KERFS_TYPE_INTEGER);
-	__expose_thread_field(thr, priority, KERFS_TYPE_INTEGER);
-	__expose_thread_field(thr, timeslice, KERFS_TYPE_INTEGER);
-	__expose_thread_field(thr, usermode_stack_end, KERFS_TYPE_ADDRESS);
-	__expose_thread_field(thr, sig_mask, KERFS_TYPE_ADDRESS);
-	__expose_thread_field(thr, cpuid, KERFS_TYPE_ADDRESS);
-	__expose_thread_field(thr, blocklist, KERFS_TYPE_ADDRESS);
+	__expose_thread_field(thr, refs, kerfs_rw_integer);
+	__expose_thread_field(thr, state, kerfs_rw_integer);
+	__expose_thread_field(thr, flags, kerfs_rw_address);
+	__expose_thread_field(thr, system, kerfs_rw_integer);
+	__expose_thread_field(thr, priority, kerfs_rw_integer);
+	__expose_thread_field(thr, timeslice, kerfs_rw_integer);
+	__expose_thread_field(thr, usermode_stack_end, kerfs_rw_address);
+	__expose_thread_field(thr, sig_mask, kerfs_rw_address);
+	__expose_thread_field(thr, cpuid, kerfs_rw_address);
+	__expose_thread_field(thr, blocklist, kerfs_rw_address);
 }
 
 struct thread *tm_thread_fork(int flags)

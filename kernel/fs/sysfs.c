@@ -15,12 +15,11 @@ struct kerfs_node {
 	dev_t num;
 	void *param;
 	size_t size;
-	int flags, type;
-	int (*fn)(size_t, size_t, char *);
-	void (*callback)(size_t, size_t, const char *);
+	int flags;
+	int (*fn)(int direction, void *, size_t, size_t, size_t, char *);
 };
 
-int kerfs_register_parameter(char *path, void *param, size_t size, int flags, int type, void (*call)(size_t, size_t, const char *))
+int kerfs_register_parameter(char *path, void *param, size_t size, int flags, int (*call)(int, void *, size_t, size_t, size_t, char *))
 {
 	uid_t old = current_process->effective_uid;
 	current_process->effective_uid = 0;
@@ -33,31 +32,10 @@ int kerfs_register_parameter(char *path, void *param, size_t size, int flags, in
 	kn->num = num;
 	kn->param = param;
 	kn->size = size;
-	kn->flags = flags | KERFS_PARAM;
-	kn->type = type;
-	kn->callback = call;
+	kn->flags = flags;
+	kn->fn = call;
 	int v = hash_table_set_entry(table, &num, sizeof(num), 1, kn);
 	assertmsg(!v, "failed to register kerfs parameter");
-	return 0;
-}
-
-int kerfs_register_report(char *path, int (*fn)(size_t, size_t, char *))
-{
-	uid_t old = current_process->effective_uid;
-	current_process->effective_uid = 0;
-	dev_t num = atomic_fetch_add(&dev_num, 1) + 1;
-	int r = sys_mknod(path, S_IFREG | 0600, num);
-	if(r < 0) {
-		current_process->effective_uid = old;
-		return r;
-	}
-	struct kerfs_node *kn = kmalloc(sizeof(struct kerfs_node));
-	kn->num = num;
-	kn->fn = fn;
-
-	int v = hash_table_set_entry(table, &num, sizeof(num), 1, kn);
-	assertmsg(!v, "failed to register kerfs report");
-	current_process->effective_uid = old;
 	return 0;
 }
 
@@ -81,98 +59,77 @@ int kerfs_unregister_entry(char *path)
 	return 0;
 }
 
+int kerfs_rw_string(int direction, void *param, size_t sz,
+		size_t offset, size_t length, char *buf)
+{
+	size_t current = 0;
+	if(direction == READ) {
+		KERFS_PRINTF(offset, length, buf, current,
+				"%s", (char *)param);
+	}
+	return current;
+}
+
+int kerfs_rw_address(int direction, void *param, size_t sz,
+		size_t offset, size_t length, char *buf)
+{
+	size_t current = 0;
+	if(direction == READ) {
+		KERFS_PRINTF(offset, length, buf, current,
+				"%x", *(addr_t *)param);
+	}
+	return current;
+}
+
+int kerfs_rw_integer(int direction, void *param, size_t sz, size_t offset, size_t length,
+		char *buf)
+{
+	size_t current = 0;
+	uint64_t val = 0;
+	memcpy(&val, param, sz);
+	if(direction == READ) {
+		KERFS_PRINTF(offset, length, buf, current,
+				"%d", val);
+	} else {
+		val = strtoint(buf);
+		switch(sz) {
+			case 1:
+				*(uint8_t *)param = sz;
+				break;
+			case 2:
+				*(uint16_t *)param = sz;
+				break;
+			case 4:
+				*(uint32_t *)param = sz;
+				break;
+			case 8:
+				*(uint64_t *)param = sz;
+				break;
+		}
+		current = sz;
+	}
+	return current;
+}
+
 int kerfs_read(struct inode *node, size_t offset, size_t length, char *buffer)
 {
 	struct kerfs_node *kn;
 	if(hash_table_get_entry(table, &node->phys_dev, sizeof(node->phys_dev), 1, (void **)&kn) < 0)
 		return -ENOENT;
 
-	if(!(kn->flags & KERFS_PARAM)) {
-		return kn->fn(offset, length, buffer);
-	}
-
-	char tmp[128];
-	if(kn->type == KERFS_TYPE_INTEGER || kn->type == KERFS_TYPE_ADDRESS) {
-		char *str = kn->type == KERFS_TYPE_INTEGER ? "%d" : "%x";
-		switch(kn->size) {
-			case 1:
-				snprintf(tmp, 128, str, *(uint8_t *)kn->param);
-				break;
-			case 2:
-				snprintf(tmp, 128, str, *(uint16_t *)kn->param);
-				break;
-			case 4:
-				snprintf(tmp, 128, str, *(uint32_t *)kn->param);
-				break;
-			case 8:
-				snprintf(tmp, 128, str, *(uint64_t *)kn->param);
-				break;
-		}
-	} else if(kn->type == KERFS_TYPE_STRING) {
-		strncpy(tmp, (char *)kn->param, 128);
-	} else if(kn->type == KERFS_TYPE_BOOL) {
-		bool val = *(bool *)kn->param;
-		if(val)
-			strncpy(tmp, "true", 128);
-		else
-			strncpy(tmp, "false", 128);
-	}
-	
-	if(offset > strlen(tmp))
-		return 0;
-	if(offset + length > strlen(tmp))
-		length = strlen(tmp) - offset;
-
-	memcpy(buffer, tmp + offset, length);
-	return length;
+	return kn->fn(READ, kn->param, kn->size, offset, length, buffer);
 }
 
-int kerfs_write(struct inode *node, size_t offset, size_t length, const char *buffer)
+int kerfs_write(struct inode *node, size_t offset, size_t length, char *buffer)
 {
 	struct kerfs_node *kn;
 	if(hash_table_get_entry(table, &node->phys_dev, sizeof(node->phys_dev), 1, (void **)&kn) < 0)
 		return -ENOENT;
 
-	if(!(kn->flags & KERFS_PARAM) || offset > 0 || !(kn->flags & KERFS_PARAM_WRITE)) {
+	if(!(kn->flags & KERFS_PARAM_WRITE))
 		return -EIO;
-	}
 
-	if(kn->callback) {
-		kn->callback(offset, length, buffer);
-		return length;
-	}
-	char tmp[128];
-	memset(tmp, 0, 128);
-	if(length > 127)
-		length = 127;
-	memcpy(tmp, buffer, length);
-	char *nl = strchr(tmp, '\n');
-	if(nl) *nl=0;
-	if(kn->type == KERFS_TYPE_INTEGER) {
-		switch(kn->size) {
-			case 1:
-				*(uint8_t *)kn->param = (uint8_t)strtoint(tmp);
-				break;
-			case 2:
-				*(uint16_t *)kn->param = (uint16_t)strtoint(tmp);
-				break;
-			case 4:
-				*(uint32_t *)kn->param = (uint32_t)strtoint(tmp);
-				break;
-			case 8:
-				*(uint64_t *)kn->param = (uint64_t)strtoint(tmp);
-				break;
-		}
-	} else if(kn->type == KERFS_TYPE_BOOL) {
-		if(!strcmp(tmp, "false") || !strcmp(tmp, "off")) {
-			*(bool *)kn->param = false;
-		} else if(!strcmp(tmp, "true") || !strcmp(tmp, "on")) {
-			*(bool *)kn->param = true;
-		} else {
-			return -EIO;
-		}
-	}
-	return length;
+	return kn->fn(WRITE, kn->param, kn->size, offset, length, buffer);
 }
 
 void kerfs_init(void)

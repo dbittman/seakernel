@@ -62,6 +62,7 @@ void tm_process_remove_kerfs_entries(struct process *proc)
 	__remove_kerfs_proc_entry(proc, "thread_count");
 	__remove_kerfs_proc_entry(proc, "tty");
 	__remove_kerfs_proc_entry(proc, "utime");
+	__remove_kerfs_proc_entry(proc, "maps");
 	char dir[128];
 	snprintf(dir, 128, "/dev/process/%d", proc->pid);
 	sys_rmdir(dir);

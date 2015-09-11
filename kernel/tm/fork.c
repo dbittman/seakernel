@@ -243,10 +243,12 @@ int tm_clone(int flags, void *entry, struct kthread *kt)
 	struct valloc_region reg;
 	valloc_allocate(&proc->km_stacks, &reg, 1);
 	for(int i = 0;i<(KERN_STACK_SIZE / PAGE_SIZE);i++) {
+		addr_t phys = mm_physical_allocate(PAGE_SIZE, false);
 		bool r = mm_context_virtual_map(&proc->vmm_context, reg.start + i * PAGE_SIZE,
-				mm_physical_allocate(PAGE_SIZE, false),
+				phys,
 				PAGE_PRESENT | PAGE_WRITE, PAGE_SIZE);
-		//assertmsg(r, "kernel stack is already mapped");
+		if(!r)
+			mm_physical_deallocate(phys);
 	}
 	thr->kernel_stack = reg.start;
 	if(current_thread->regs) {

@@ -1,1 +1,0 @@
-KOBJS += arch/x86/kernel/loader/elf32.o arch/x86/kernel/loader/exec.o arch/x86/kernel/loader/sym32.o

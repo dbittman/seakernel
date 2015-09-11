@@ -126,33 +126,10 @@ int mm_free_dma_buffer(struct dma_region *d)
 	addr_t offset = d->p.address - pmm_contiguous_address_start;
 	assert((offset&PAGE_MASK) == offset);
 	for(int i=0;i<npages;i++)
-		mm_vm_unmap_only(CONTIGUOUS_VIRT_START + offset + i * PAGE_SIZE, 0);
+		mm_virtual_unmap(CONTIGUOUS_VIRT_START + offset + i * PAGE_SIZE);
 	mm_physical_deallocate(d->p.address);
 	d->p.address = d->v = 0;
 	return 0;
 }
 
-int kerfs_pmm_report(size_t offset, size_t length, char *buf)
-{
-	size_t current = 0;
-	KERFS_PRINTF(offset, length, buf, current, 
-			"Total: %d KB, Used: %d KB (%d%%)\nContiguous region bitmap:\n",
-			pm_num_pages * 4, pm_used_pages * 4,
-			(pm_used_pages * 100) / pm_num_pages);
-	for(int i=0;i<512;i++) {
-		int val = 0;
-		for(int j=0;j<8;j++) {
-			val += pmm_contiguous_index[i+j];
-		}
-		char c = '-';
-		if(val > 0 && val <=60) {
-			c = '+';
-		} else if (val > 60) {
-			c = '*';
-		}
-		KERFS_PRINTF(offset, length, buf, current, "%c", c);
-	}
-	KERFS_PRINTF(offset, length, buf, current, "\n");
-	return current;
-}
 

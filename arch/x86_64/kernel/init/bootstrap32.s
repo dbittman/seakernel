@@ -46,7 +46,9 @@ boot_pd:
 	dq 0x85
 	dq 0x200085
 	dq 0x400085
-	times 509 dq 0
+	dq 0x600085
+	dq 0x800085
+	times 507 dq 0
 
 align 0x1000
 global boot_pml4

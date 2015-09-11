@@ -74,12 +74,7 @@ long sys_ptrace_thread(enum __ptrace_request request, pid_t tid, void *addr, voi
 			}
 			break;
 		case PTRACE_PEEKDATA:
-			/* oh dear god, what the fuck. */
-			cpu_disable_preemption();
-			mm_vm_switch_context(&tracee->process->vmm_context);
-			ret = *(long *)(addr);
-			mm_vm_switch_context(&current_process->vmm_context);
-			cpu_enable_preemption();
+			mm_context_read(&tracee->process->vmm_context, &ret, addr, sizeof(long));
 			break;
 		case PTRACE_DETACH:
 			if(tm_thread_lower_flag(tracee, THREAD_PTRACED) & THREAD_PTRACED) {

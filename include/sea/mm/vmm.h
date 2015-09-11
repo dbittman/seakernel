@@ -40,8 +40,6 @@ addr_t mm_vm_get_map(addr_t v, addr_t *p, unsigned locked);
 void mm_vm_set_attrib(addr_t v, short attr);
 unsigned int mm_vm_get_attrib(addr_t v, unsigned *p, unsigned locked);
 int mm_vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned opt);
-int mm_vm_unmap_only(addr_t virt, unsigned locked);
-int mm_vm_unmap(addr_t virt, unsigned locked);
 int mm_is_valid_user_pointer(int num, void *p, char flags);
 void mm_page_fault_handler(registers_t *, addr_t, int);
 void mm_flush_page_tables();
@@ -52,6 +50,9 @@ bool mm_context_virtual_map(struct vmm_context *ctx,
 		addr_t virtual, addr_t physical, int flags, size_t length);
 bool mm_context_write(struct vmm_context *ctx, addr_t address, void *src, size_t length);
 bool mm_virtual_map(addr_t virtual, addr_t physical, int flags, size_t length);
+addr_t mm_virtual_unmap(addr_t address);
+bool mm_context_read(struct vmm_context *ctx, void *output,
+		addr_t address, size_t length);
 
 addr_t mm_context_virtual_unmap(struct vmm_context *ctx, addr_t address);
 static inline void map_if_not_mapped(addr_t loc)

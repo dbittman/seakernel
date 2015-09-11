@@ -38,50 +38,6 @@ static void early_mm_vm_map(pml4_t *pml4, addr_t addr, addr_t map)
 	pt[PAGE_TABLE_IDX(addr/0x1000)] = map;
 }
 
-static pml4_t *create_initial_directory (void)
-{
-	/* Create kernel directory */
-	pml4_t *pml4 = (addr_t *)arch_mm_alloc_physical_page_zero();
-	memset(pml4, 0, 0x1000);
-	/* Identity map the kernel */
-	pml4[0] = arch_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_USER;
-	pdpt_t *pdpt = (addr_t *)(pml4[0] & PAGE_MASK);
-	pdpt[0] = arch_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_USER;
-	page_dir_t *pd = (addr_t *)(pdpt[0] & PAGE_MASK);
-	
-	addr_t address = 0;
-	for(int pdi = 0; pdi < 512; pdi++)
-	{
-		pd[pdi] = address | PAGE_PRESENT | PAGE_USER | (1 << 7);
-		address += 0x200000;
-	}
-
-	/* map in all possible physical memory, up to 512 GB. This way we can
-	 * access any physical page by simple accessing virtual memory (phys + PHYS_PAGE_MAP).
-	 * This should make mapping memory a LOT easier */
-	pml4[PML4_IDX(PHYS_PAGE_MAP/0x1000)] = arch_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_WRITE;
-	pdpt = (addr_t *)(pml4[PML4_IDX(PHYS_PAGE_MAP/0x1000)] & PAGE_MASK);
-
-	address = 0;
-	for(int i = 0; i < 512; i++)
-	{
-		pdpt[i] = mm_alloc_physical_page() | PAGE_PRESENT | PAGE_WRITE;
-		pd = (addr_t *)(pdpt[i] & PAGE_MASK);
-		for(int j = 0; j < 512; j++) {
-			pd[j] = address | PAGE_PRESENT | PAGE_WRITE | (1 << 7);
-			address += 0x200000;
-		}
-	}
-	/* map in the signal return inject code. we need to do this, because
-	 * user code may not run the the kernel area of the page directory */
-	early_mm_vm_map(pml4, SIGNAL_INJECT, arch_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_USER);
-	
-	/* CR3 requires the physical address, so we directly 
-	 * set it because we have the physical address */
-	asm("mov %0, %%cr3"::"r"(pml4));
-	return pml4;
-}
-
 extern void *boot_pml4;
 alignas(0x1000) static uint64_t physmap_pages [513][512];
 void arch_mm_vm_init(struct vmm_context *context)
@@ -105,17 +61,6 @@ void arch_mm_vm_init(struct vmm_context *context)
  	pml4[PML4_INDEX(PHYS_PAGE_MAP)] = ((addr_t)pdpt - MEMMAP_KERNEL_START) | PAGE_PRESENT | PAGE_WRITE;
 	/* Enable paging */
 	set_ksf(KSF_PAGING);
-}
-
-/* This relocates the stack to a safe place which is copied 
- * upon clone, and creates a new directory that is...well, complete */
-void arch_mm_vm_init_2(void)
-{
-}
-
-void arch_mm_vm_switch_context(struct vmm_context *context)
-{
-	asm ("mov %0, %%cr3" : : "r" (context->root_physical));
 }
 
 addr_t arch_mm_vm_get_map(addr_t v, addr_t *p, unsigned locked)

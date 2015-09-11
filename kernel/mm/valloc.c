@@ -124,7 +124,10 @@ static void __valloc_depopulate_index(struct valloc *va)
 {
 	int mm_pages = (va->nindex * va->psize) / PAGE_SIZE;
 	for(int i=0;i<mm_pages;i++) {
-		mm_vm_unmap(va->start + i*PAGE_SIZE, 0);
+		addr_t phys;
+		if((phys = mm_virtual_unmap(va->start + i * PAGE_SIZE))) {
+			mm_physical_deallocate(phys);
+		}
 	}
 }
 

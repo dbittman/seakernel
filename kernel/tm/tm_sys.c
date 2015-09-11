@@ -17,8 +17,10 @@ int sys_sbrk(long inc)
 		addr_t free_start = (new_end&PAGE_MASK) + PAGE_SIZE;
 		addr_t free_end = old_end&PAGE_MASK;
 		while(free_start <= free_end) {
-			if(mm_vm_get_map(free_start, 0, 0))
-				mm_vm_unmap(free_start, 0);
+			addr_t phys;
+			if((phys = mm_virtual_unmap(free_start))) {
+				mm_physical_deallocate(phys);
+			}
 			free_start += PAGE_SIZE;
 		}
 		current_process->heap_end = new_end;

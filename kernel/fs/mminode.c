@@ -220,7 +220,7 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 		if(mm_vm_get_map(virt + (i - page_number)*PAGE_SIZE, 0, 0) 
 				&& mm_vm_get_attrib(virt + (i - page_number)*PAGE_SIZE, &attr, 0)) {
 			assert(attr & PAGE_LINK);
-			mm_vm_unmap_only(virt + (i - page_number)*PAGE_SIZE, 0);
+			mm_virtual_unmap(virt + (i - page_number)*PAGE_SIZE);
 		}
 	}
 	mutex_release(&node->mappings_lock);

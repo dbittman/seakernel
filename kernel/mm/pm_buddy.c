@@ -4,6 +4,7 @@
 #include <sea/lib/bitmap.h>
 #include <sea/mutex.h>
 #include <sea/ll.h>
+#include <sea/fs/kerfs.h>
 #define IS_POWER2(x) ((x != 0) && ((x & (~x + 1)) == x))
 
 #define MAX_PHYS_MEM 0x1000000000
@@ -19,6 +20,9 @@ mutex_t pm_buddy_mutex;
 uint8_t *bitmaps[MAX_ORDER + 1];
 
 struct llist freelists[MAX_ORDER+1];
+static char static_bitmaps[((MEMORY_SIZE / MIN_SIZE) / 8) * 2];
+static bool inited = false;
+static size_t num_allocated[MAX_ORDER + 1];
 
 static inline int min_possible_order(addr_t address)
 {
@@ -31,8 +35,18 @@ static inline int min_possible_order(addr_t address)
 	return o;
 }
 
-addr_t __do_pmm_buddy_allocate(size_t length)
+static size_t buddy_order_max_blocks(int order)
 {
+	return MEMORY_SIZE / ((addr_t)MIN_SIZE << order);
+}
+
+/* TODO: - OOM
+ *       - Limit memory locations
+ */
+
+static addr_t __do_pmm_buddy_allocate(size_t length)
+{
+	assert(inited);
 	if(!IS_POWER2(length))
 		panic(0, "can only allocate in powers of 2");
 	if(length < MIN_SIZE)
@@ -56,12 +70,14 @@ addr_t __do_pmm_buddy_allocate(size_t length)
 	int bit = address / length;
 	assert(!bitmap_test(bitmaps[order], bit));
 	bitmap_set(bitmaps[order], bit);
+	num_allocated[order]++;
 
 	return address;
 }
 
 static void deallocate(addr_t address, int order)
 {
+	assert(inited);
 	int bit = address / ((addr_t)MIN_SIZE << order);
 	if(!bitmap_test(bitmaps[order], bit)) {
 		deallocate(address, order + 1);
@@ -77,6 +93,7 @@ static void deallocate(addr_t address, int order)
 			struct llistnode *node = (void *)(address + PHYS_PAGE_MAP);
 			ll_do_insert(&freelists[order], node, (void *)address);
 		}
+		num_allocated[order]--;
 	}
 }
 
@@ -99,16 +116,7 @@ void pmm_buddy_init()
 {
 	int total = ((MEMORY_SIZE / MIN_SIZE) / (8 * 1024)) * 2 - 1;
 	mutex_create(&pm_buddy_mutex, MT_NOSCHED);
-	addr_t start = mm_alloc_physical_page(); //TODO: we should be able to request total amount
-											 // dont assume this is 4K!
-	addr_t last = start;
-	for(int i=0;i<=total / 4;i++) {
-		addr_t n = mm_alloc_physical_page();
-		assert(n == last + 0x1000);
-		last = n;
-	}
-
-	start += PHYS_PAGE_MAP;
+	addr_t start = (addr_t)static_bitmaps;
 	int length = ((MEMORY_SIZE / MIN_SIZE) / (8));
 	for(int i=0;i<=MAX_ORDER;i++) {
 		bitmaps[i] = (uint8_t *)start;
@@ -116,6 +124,19 @@ void pmm_buddy_init()
 		ll_create_lockless(&freelists[i]);
 		start += length;
 		length /= 2;
+		num_allocated[i] = buddy_order_max_blocks(i);
 	}
+	inited = true;
+}
+
+int kerfs_pmm_report(size_t offset, size_t length, char *buf)
+{
+	size_t current = 0;
+	for(int i=0;i<=MAX_ORDER;i++) {
+		KERFS_PRINTF(offset, length, buf, current,
+			"Order %d: %d / %d\n", i,
+			num_allocated[i], buddy_order_max_blocks(i));
+	}
+	return current;
 }
 

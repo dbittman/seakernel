@@ -197,7 +197,7 @@ void arch_mm_physical_memset(void *addr, int c, size_t length)
 	memset((void *)start, c, length);
 }
 
-addr_t arch_mm_context_virtual_unmap(struct vmm_context *ctx, addr_t address)
+bool arch_mm_context_read(struct vmm_context *ctx, void *output, addr_t address, size_t length)
 {
 	int pml4idx = PML4_INDEX(address);
 	int pdptidx = PDPT_INDEX(address);
@@ -206,34 +206,41 @@ addr_t arch_mm_context_virtual_unmap(struct vmm_context *ctx, addr_t address)
 	addr_t destp, offset;
 	addr_t *pml4v = (addr_t *)ctx->root_virtual;
 	if(!pml4v[pml4idx]) {
-		return 0;
+		return false;
 	}
 	addr_t *pdptv = (addr_t *)((pml4v[pml4idx] & PAGE_MASK) + PHYS_PAGE_MAP);
 	if(!pdptv[pdptidx]) {
-		return 0;
+		return false;
 	}
 	addr_t *pdv = (addr_t *)((pdptv[pdptidx] & PAGE_MASK) + PHYS_PAGE_MAP); //TODO PAGE_MASK SHOULD HANDLE NOEXEC?
 	if(!(pdv[pdidx] & PAGE_LARGE)) {
 		int ptidx = PT_INDEX(address);
+		offset = address & (0x1000 - 1);
+
+		if(offset + length > 0x1000)
+			panic(0, "mm_context_read crossed page boundary");
 
 		if(!pdv[pdidx]) {
-			return 0;
+			return false;
 		}
 		addr_t *ptv = (addr_t *)((pdv[pdidx] & PAGE_MASK) + PHYS_PAGE_MAP);
 		if(!ptv[ptidx]) {
-			return 0;
+			return false;
 		}
-		destp = ptv[ptidx] & PAGE_MASK;
-		ptv[ptidx] = 0;
+		destp = ptv[ptidx] & PAGE_MASK; //TODO: physical page mask (noexec bit?)
 	} else {
+		offset = address & (0x200000 - 1);
+
+		if(offset + length > 0x200000)
+			panic(0, "mm_context_read crossed page boundary");
+
 		if(!pdv[pdidx]) {
-			return 0;
+			return false;
 		}
 		destp = pdv[pdidx] & PAGE_MASK; //TODO: different masks for diff page sizes?
-		pdv[pdidx] = 0;
 	}
-	asm volatile("invlpg (%0)" :: "r"(address));
-	return destp;
+	memcpy(output, (void *)(destp + PHYS_PAGE_MAP + offset), length);
+	return true;
 }
 
 

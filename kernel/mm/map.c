@@ -76,8 +76,10 @@ static void disengage_mapping_region(struct memmap *map, addr_t start, size_t of
 		/* we don't need to tell mminode about it, since it maps the page and the forgets
 		 * about it */
 		for(addr_t v = start;v < (start + length);v += PAGE_SIZE, o += PAGE_SIZE) {
-			if(mm_vm_get_map(v, 0, 0)) 
-				mm_vm_unmap(v, 0);
+			addr_t phys = mm_virtual_unmap(v);
+			if(phys) {
+				mm_physical_deallocate(phys);
+			}
 		}
 	}
 }
@@ -116,8 +118,10 @@ addr_t mm_establish_mapping(struct inode *node, addr_t virt,
 	/* unmap the region of previous pages */
 	for(addr_t s=virt;s < (virt + length);s+=PAGE_SIZE)
 	{
-		if(mm_vm_get_map(s, 0, 0))
-			mm_vm_unmap(s, 0);
+		addr_t phys = mm_virtual_unmap(s);
+		if(phys) {
+			mm_physical_deallocate(phys);
+		}
 	}
 	/* if it's MAP_SHARED, then notify the mminode framework. Otherwise, we just
 	 * wait for a pagefault to bring in the pages */

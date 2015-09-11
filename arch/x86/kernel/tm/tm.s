@@ -32,11 +32,20 @@ arch_tm_do_switch:
   push ebx
   push esi
   push edi
+
+  ; Load in new CR3 (maybe)
+  mov ebx, [esp + 16 + 20] ; 4th arg: new CR3 if switching contexts, 0 if not.
+  test ebx, ebx
+  je .savestack
+  mov cr3, ebx
+
+  .savestack:
   mov [eax], esp ; save stack pointer
   mov esp, [ecx] ; load new stack pointer
   test edx, edx  ; if jump location is zero, jump to .normal
   je .normal
   jmp edx ; jump to the jump location
+  
   .normal:
   pop edi ; restore the registers
   pop esi

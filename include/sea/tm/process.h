@@ -39,6 +39,11 @@ struct exit_status {
 
 #define NUM_POSSIBLE_USERMODE_STACKS ((USERMODE_STACKS_END - USERMODE_STACKS_START) / (CONFIG_STACK_PAGES * PAGE_SIZE)) 
 
+#define NUM_POSSIBLE_KERNELMODE_STACKS ((KERNELMODE_STACKS_END - KERNELMODE_STACKS_START) / (KERN_STACK_SIZE)) 
+
+_Static_assert(NUM_POSSIBLE_USERMODE_STACKS <= NUM_POSSIBLE_KERNELMODE_STACKS,
+		"memory map wrong, need at least same number of kernel stacks as user stacks per process");
+
 #if NUM_POSSIBLE_USERMODE_STACKS > 256
 	#define NUM_USERMODE_STACKS 256
 #else
@@ -55,6 +60,7 @@ struct process {
 	pid_t pid;
 	int flags;
 	_Atomic int refs;
+	struct valloc km_stacks;
 
 	struct llistnode listnode;
 

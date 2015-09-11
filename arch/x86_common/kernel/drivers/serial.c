@@ -61,7 +61,8 @@ char arch_serial_read(int minor)
 void arch_serial_init(int *serial_debug_port_minor, int *serial_enable)
 {
 	/* BIOS data area */
-	int serial_debug_port = *(unsigned short *)(0x400);
+	/* TODO */
+	int serial_debug_port = *(unsigned short *)(0x400 + MEMMAP_KERNEL_START);
 	if(serial_debug_port) {
 		init_serial_port(serial_debug_port);
 		int i;

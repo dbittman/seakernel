@@ -8,6 +8,14 @@
 #include <sea/string.h>
 #include <sea/boot/init.h>
 
+static void __do_kthread_entry(void)
+{
+	struct kthread *kt = current_thread->kernel_thread;
+	tm_thread_raise_flag(current_thread, THREAD_KERNEL);
+	current_thread->regs = 0;
+	kthread_exit(kt, kt->entry(kt, kt->arg));
+}
+
 struct kthread *kthread_create(struct kthread *kt, const char *name, int flags,
 		int (*entry)(struct kthread *, void *), void *arg)
 {
@@ -17,25 +25,10 @@ struct kthread *kthread_create(struct kthread *kt, const char *name, int flags,
 	} else {
 		kt->flags = 0;
 	}
-
 	kt->flags |= flags;
 	kt->entry = entry;
 	kt->arg = arg;
-	int tid = tm_clone(CLONE_SHARE_PROCESS | CLONE_KTHREAD);
-	if(!tid) {
-		tm_thread_raise_flag(current_thread, THREAD_KERNEL);
-		current_thread->regs = 0;
-		
-		/* okay, call the thread entry function */
-		kt->code = entry(kt, arg);
-		/* get the code FIRST, since once we set KT_EXITED, we can't rely on kt
-		 * being a valid pointer */
-		int code = kt->code;
-		atomic_fetch_or_explicit(&kt->flags, KT_EXITED, memory_order_release);
-		tm_thread_do_exit();
-		tm_schedule();
-	}
-	kt->thread = tm_thread_get(tid);
+	tm_clone(CLONE_SHARE_PROCESS | CLONE_KTHREAD, __do_kthread_entry, kt);
 	return kt;
 }
 

@@ -18,10 +18,17 @@ arch_tm_do_switch:
   push r13
   push r14
   push r15
+  
+  test rcx, rcx
+  je .savestack
+  mov cr3, rcx
+
+  .savestack:
   mov [rdi], rsp
   mov rsp, [rsi]
   test rdx, rdx
   je .normal
+  sti
   jmp rdx
   .normal:
   pop r15

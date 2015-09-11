@@ -189,8 +189,10 @@ void vfs_icache_put(struct inode *node)
 		if(node->flags & INODE_NOLRU) {
 			assert(!(node->flags & INODE_INUSE));
 			assert(!node->dirents->count);
-			uint32_t key[2] = {node->filesystem->id, node->id};
-			hash_table_delete_entry(icache, key, sizeof(uint32_t), 2);
+			if(node->filesystem) {
+				uint32_t key[2] = {node->filesystem->id, node->id};
+				hash_table_delete_entry(icache, key, sizeof(uint32_t), 2);
+			}
 			fs_inode_push(node);
 			vfs_inode_destroy(node);
 		} else {

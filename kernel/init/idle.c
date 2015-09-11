@@ -36,6 +36,7 @@ int kt_kernel_idle_task(void)
 	addr_t addr = 0;
 	while(addr != TOP_LOWER_KERNEL && 0) /* TODO: wait for init to be ready for this */
 	{
+		/* TODO: ACTUALLY DO THIS */
 		/* set it to write. We don't actually have to do this, because
 		 * ring0 code may always access memory. As long as the PAGE_USER
 		 * flag isn't set... */

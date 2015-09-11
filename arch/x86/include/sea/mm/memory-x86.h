@@ -5,10 +5,10 @@
 #include <sea/mm/memory-x86_common.h>
 #include <sea/types.h>
 /* TODO: unfuck the memory maps */
-#define TOP_TASK_MEM       0xA8000000
+#define TOP_TASK_MEM       0xB0000000
 #define TOP_TASK_MEM_EXEC  0xA0000000
 #define USERMODE_STACKS_START 0xA1000000
-#define USERMODE_STACKS_END   0xA8000000
+#define USERMODE_STACKS_END   0xA6000000
 #define TOP_USER_HEAP      0x90000000
 #define TOP_LOWER_KERNEL   0x10000000
 
@@ -23,8 +23,8 @@
 #define KMALLOC_ADDR_START 0xC0000000
 #define KMALLOC_ADDR_END   0xD0000000
 
-#define KERNELMODE_STACKS_START 0xD0000000
-#define KERNELMODE_STACKS_END   0xE0000000
+#define KERNELMODE_STACKS_START 0xA6000000
+#define KERNELMODE_STACKS_END   0xB0000000
 
 #define VIRTPAGES_START    0xE0000000
 #define VIRTPAGES_END      0xE8000000
@@ -37,8 +37,8 @@
 #define DIR_PHYS           0xFFBFF000
 #define TBL_PHYS           0xFFC00000
 
-#define DEVICE_MAP_START   0xA8000000
-#define DEVICE_MAP_END     0xB0000000
+#define DEVICE_MAP_START   0xD0000000
+#define DEVICE_MAP_END     0xE0000000
 
 #define CONTIGUOUS_VIRT_START 0xB0000000
 #define CONTIGUOUS_VIRT_END   0xB8000000
@@ -56,7 +56,6 @@
 #define page_directory ((unsigned *)DIR_PHYS)
 #define page_tables ((unsigned *)TBL_PHYS)
 
-#define PAGE_MASK      0xFFFFF000
 
 #define PAGE_SIZE_LOWER_KERNEL 0x1000
 

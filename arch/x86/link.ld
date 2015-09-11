@@ -1,30 +1,28 @@
 ENTRY(start)
 SECTIONS
 {
-    .text 0x100000 :
-    {
-	*(.boot)
-	code = .; _code = .; __code = .;
-	kernel_start = .;
-	*(.trampoline)
-    *(.text)
-	. = ALIGN(4096);
-    }
+	. = 0xC0100000;
 
-    .data :
+    .text : AT(ADDR(.text) - 0xC0000000)
+    {
+		kernel_start = .;
+    	*(.text)
+		code = .; _code = .; __code = .;
+		*(.trampoline)
+	}
+
+    .data ALIGN (0x1000) : AT(ADDR(.data) - 0xC0000000)
     {
         data = .; _data = .; __data = .;
         *(.data)
         *(.rodata)
-        . = ALIGN(4096);
     }
 
-    .bss :
+    .bss ALIGN(0x1000) : AT(ADDR(.bss) - 0xC0000000)
     {
         bss = .; _bss = .; __bss = .;
         *(.bss)
-        . = ALIGN(4096);
     }
-    /DISCARD/ : { *(.comment) *(.eh_frame) *(.debug_abbrev) *(.debug_info) *(.debug_line) *(.debug_loc) *(.debug_pubnames) *(.debug_aranges) *(.debug_str) *(.debug_macinfo) *(.debug_ranges) *(.stab) *(.stabstr) }
     end = .; _end = .; __end = .;
 }
+

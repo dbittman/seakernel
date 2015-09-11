@@ -12,6 +12,8 @@
 %define IPI_DEBUG    0xD0
 %define IPI_PANIC    0xE0
 
+global arch_tm_userspace_fork_syscall_return
+
 ; isr's that don't push an error code need to have a dummy code
 ; pushed so that the structure aligns properly later...
 %macro ISR_NOERRCODE 1
@@ -84,9 +86,8 @@
 	mov fs, ax
 	
 	mov rdi, rsp
-	
 	call %2 ; call the handler
-	
+	arch_tm_userspace_fork_%1_return:
 	; restore ds, and other segments
 	pop rax
 	mov ds, ax

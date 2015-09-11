@@ -41,11 +41,11 @@ static int rsdp_validate_checksum(struct acpi_rsdp *rsdp)
 static struct acpi_rsdp *apci_get_RSDP (void)
 {
 	/* The root structure may in the first KB of EBDA or from 0xE0000 to 0xFFFFF */
-	addr_t ebda_bottom = *(uint16_t *)(0x40e) << 4;
+	addr_t ebda_bottom = *(uint16_t *)(0x40e + PHYS_PAGE_MAP) << 4;
 	addr_t tmp = ebda_bottom;
 	addr_t end = 0xFFFFF;
 	struct acpi_rsdp *rsdp;
-	if(0xA0000 < ebda_bottom || ((0xA0000 - ebda_bottom) > (128 * 1024))) {
+	if((0xA0000) < ebda_bottom || ((0xA0000 - ebda_bottom) > (128 * 1024))) {
 		printk(0, "[acpi]: got invalid lower ebda address (%x)\n", ebda_bottom);
 		tmp = 0xE0000;
 		//return 0;
@@ -53,7 +53,7 @@ static struct acpi_rsdp *apci_get_RSDP (void)
 	/* scan the EBDA and other region */
 	while(tmp < end)
 	{
-		rsdp = (struct acpi_rsdp *)tmp;
+		rsdp = (struct acpi_rsdp *)(tmp + PHYS_PAGE_MAP);
 		if(!memcmp(rsdp->sig, "RSD PTR ", 8) && rsdp_validate_checksum(rsdp))
 			return rsdp;
 		tmp += 16;

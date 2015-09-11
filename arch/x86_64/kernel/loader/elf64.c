@@ -6,6 +6,32 @@
 #include <sea/vsprintf.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/tty/terminal.h>
+
+void arch_loader_parse_kernel_elf(struct multiboot *mb, void *__elf)
+{
+	unsigned int i;
+	elf64_t *elf = __elf;
+	elf64_section_header_t *sh = (elf64_section_header_t*)(addr_t)(mb->addr + MEMMAP_KERNEL_START);
+	elf->lookable=0;
+	uint64_t shstrtab = (sh[mb->shndx].address + MEMMAP_KERNEL_START);
+	for (i = 0; i < (unsigned)mb->num; i++)
+	{
+		const char *name = (const char *) ((addr_t)shstrtab + sh[i].name);
+		if (!strcmp (name, ".strtab"))
+		{
+			elf->lookable |= 1;
+			elf->strtab = (const char *)((addr_t)sh[i].address + MEMMAP_KERNEL_START);
+			elf->strtabsz = sh[i].size;
+		}
+		if (!strcmp (name, ".symtab"))
+		{
+			elf->lookable |= 2;
+			elf->symtab = (elf64_symtab_entry_t *)((addr_t)sh[i].address + MEMMAP_KERNEL_START);
+			elf->symtabsz = sh[i].size;
+		}
+	}
+}
+
 static int process_elf64_phdr(char *mem, int fp, addr_t *start, addr_t *end)
 {
 	uint32_t i, x;
@@ -161,6 +187,10 @@ int arch_loader_relocate_elf_module(void * buf, addr_t *entry, addr_t *tm_exiter
 			for(x = 0; x < sh->size; x += sh->sect_size)
 			{
 				symtab = (elf64_symtab_entry_t*)((addr_t)buf + sh->offset + x);
+				if(!symtab->name)
+					continue;
+				/* TODO: this is all ugly. we should check the result of get_symbol_string
+				 * ...but really, we should re-write all of the ELF parsing code. */
 				if(!memcmp((uint8_t*)get_symbol_string(buf, symtab->name), 
 						(uint8_t*)"module_install", 14))
 					module_entry = sd->vbase[symtab->shndx] + symtab->address;

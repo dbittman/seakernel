@@ -15,7 +15,6 @@ addr_t *kernel_directory=0;
 pml4_t *kernel_dir_phys=0;
 int id_tables=0;
 
-struct vmm_context kernel_context;
 
 /* This function will setup a paging environment with a basic page dir, 
  * enough to process the memory map passed by grub */
@@ -83,15 +82,28 @@ static pml4_t *create_initial_directory (void)
 	return pml4;
 }
 
-void arch_mm_vm_init(addr_t id_map_to)
+extern void *boot_pml4;
+alignas(0x1000) static uint64_t physmap_pages [513][512];
+void arch_mm_vm_init(struct vmm_context *context)
 {
-	/* Register some stuff... */
-	cpu_interrupt_register_handler (14, &arch_mm_page_fault_handle);
- 	kernel_context.root_physical = (addr_t)create_initial_directory();
- 	kernel_context.root_virtual = kernel_context.root_physical + PHYS_PAGE_MAP;
- 	//mutex_create(&kernel_context.lock, MT_NOSCHED);
+ 	context->root_physical = (addr_t)&boot_pml4;
+ 	context->root_virtual = kernel_context.root_physical + MEMMAP_KERNEL_START;
+ 	mutex_create(&kernel_context.lock, MT_NOSCHED);
+ 	/* map in all physical memory */
+ 	pml4_t *pml4 = (pml4_t *)context->root_virtual;
+ 	addr_t address = 0;
+ 	memset(physmap_pages, 0, sizeof(physmap_pages));
+	pdpt_t *pdpt = (pdpt_t *)((addr_t)physmap_pages[0]);
+	for(int i=0;i<512;i++) {
+		pdpt[i] = ((addr_t)physmap_pages[i+1] - MEMMAP_KERNEL_START) | PAGE_PRESENT | PAGE_WRITE;
+		page_dir_t *pd = (page_dir_t *)((pdpt[i] & PAGE_MASK) + MEMMAP_KERNEL_START);
+		for(int j=0;j<512;j++) {
+			pd[j] = address | PAGE_PRESENT | PAGE_WRITE | (1 << 7);
+			address += 0x200000;
+		}
+	}
+ 	pml4[PML4_INDEX(PHYS_PAGE_MAP)] = ((addr_t)pdpt - MEMMAP_KERNEL_START) | PAGE_PRESENT | PAGE_WRITE;
 	/* Enable paging */
-	memcpy((void *)SIGNAL_INJECT, (void *)signal_return_injector, SIGNAL_INJECT_SIZE);
 	set_ksf(KSF_PAGING);
 }
 
@@ -99,9 +111,6 @@ void arch_mm_vm_init(addr_t id_map_to)
  * upon clone, and creates a new directory that is...well, complete */
 void arch_mm_vm_init_2(void)
 {
-	mm_vm_clone(&kernel_context, &kernel_context);
-	asm ("mov %0, %%cr3" : : "r" (kernel_context.root_physical));
-	loader_add_kernel_symbol(arch_mm_vm_early_map);
 }
 
 void arch_mm_vm_switch_context(struct vmm_context *context)

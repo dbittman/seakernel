@@ -54,8 +54,8 @@ struct thread {
 	int interrupt_level;
 	int priority, timeslice;
 	int exit_code;
-	addr_t kernel_stack;
-	unsigned long stack_pointer, jump_point;
+	addr_t kernel_stack, kernel_stack_physical[KERN_STACK_SIZE / PAGE_SIZE];
+	addr_t stack_pointer, jump_point;
 	addr_t usermode_stack_end;
 	int usermode_stack_num;
 	struct cpu *cpu;
@@ -73,10 +73,11 @@ struct thread {
 	struct async_call alarm_timeout;
 	struct async_call cleanup_call;
 	struct async_call waitcheck_call;
+	struct async_call blockreq_call;
 	struct ticker *alarm_ticker;
 	struct process *process;
 	struct workqueue resume_work;
-
+	struct kthread *kernel_thread;
 	/* ptrace */
 	struct thread *tracer;
 	int tracee_flags;
@@ -87,9 +88,8 @@ struct thread {
 extern size_t running_threads;
 extern struct hash_table *thread_table;
 
-
 int tm_thread_got_signal(struct thread *);
-int tm_clone(int);
+int tm_clone(int, void *entry, struct kthread *);
 void tm_thread_enter_system(int sys);
 void tm_thread_exit_system(long, long);
 int sys_vfork(void);
@@ -132,8 +132,8 @@ addr_t arch_tm_read_ip(void);
 void arch_tm_jump_to_user_mode(addr_t jmp);
 __attribute__((noinline)) void arch_tm_thread_switch(struct thread *old, struct thread *, addr_t);
 __attribute__((noinline)) void arch_tm_fork_setup_stack(struct thread *thr);
-addr_t tm_thread_reserve_kernelmode_stack(void);
-void tm_thread_release_kernelmode_stack(addr_t base);
+void tm_thread_reserve_kernelmode_stack(struct thread *);
+void tm_thread_release_kernelmode_stack(struct thread *);
 int tm_thread_delay(time_t microseconds);
 void tm_thread_create_kerfs_entries(struct thread *thr);
 

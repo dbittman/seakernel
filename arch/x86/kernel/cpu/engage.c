@@ -73,7 +73,6 @@ int boot_cpu(struct cpu *cpu)
 	unsigned bios_reset_vector = BIOS_RESET_VECTOR;
 	printk(1, "[smp]: poking cpu %d\n", apicid);
 
-	cpu->stack = tm_thread_reserve_kernelmode_stack();
 	cpu->active_queue = tqueue_create(0, 0);
 	cpu->numtasks=1;
 	ticker_create(&cpu->ticker, 0);
@@ -86,11 +85,12 @@ int boot_cpu(struct cpu *cpu)
 	thread->tid = tm_thread_next_tid();
 	thread->magic = THREAD_MAGIC;
 	workqueue_create(&thread->resume_work, 0);
-	thread->kernel_stack = cpu->stack;
 	mutex_create(&thread->block_mutex, MT_NOSCHED);
+	tm_thread_add_to_process(thread, kernel_process);
+	tm_thread_reserve_kernelmode_stack(thread);
+	cpu->stack = thread->kernel_stack;
 	*(struct thread **)(thread->kernel_stack) = thread;
 	hash_table_set_entry(thread_table, &thread->tid, sizeof(thread->tid), 1, thread);
-	tm_thread_add_to_process(thread, kernel_process);
 	tm_thread_add_to_cpu(thread, cpu);
 	atomic_fetch_add(&running_threads, 1);
 

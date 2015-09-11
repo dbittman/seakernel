@@ -26,7 +26,7 @@ struct ioapic ioapic_list[MAX_IOAPIC];
 struct pmap ioapic_pmap;
 struct pmap lapic_pmap;
 
-static int lapic_inited = 0;
+int lapic_inited = 0;
 
 
 void lapic_write(int reg, uint32_t data)
@@ -134,6 +134,7 @@ void init_lapic(int extint)
 	int i;
 	if(!lapic_inited)
 		pmap_create(&lapic_pmap, 0);
+	lapic_inited=1; //TODO OH MY GOD THIS IS UHGLY
 	/* we may be in a state where there are interrupts left
 	 * in the registers that haven't been EOI'd. I'm pretending like
 	 * I know why that may be. Linux does this, and that's their

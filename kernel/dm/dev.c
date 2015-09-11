@@ -50,7 +50,7 @@ device_t *dm_get_device(int type, int major)
 	while(dt && dt->beta != beta) 
 		dt=dt->next;
 	mutex_release(&devhash[type].lock);
-	if(!dt->ptr) return 0;
+	if(dt && !dt->ptr) return 0;
 	return dt;
 }
 
@@ -71,7 +71,7 @@ device_t *dm_get_enumerated_device(int type, int n)
 		a++;
 	}
 	mutex_release(&devhash[type].lock);
-	if(!dt->ptr) return 0;
+	if(dt && !dt->ptr) return 0;
 	return dt;
 }
 

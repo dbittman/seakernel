@@ -11,12 +11,12 @@ void arch_cpu_print_stack_trace(unsigned int MaxFrames)
 	kprintf("        ADDR          MODULE FUNCTION\n");
 	for(unsigned int frame = 0; frame < MaxFrames; ++frame)
 	{
-		if((kernel_state_flags&KSF_MMU) && !mm_vm_get_map((addr_t)ebp, 0, 1)) break;
+		//if((kernel_state_flags&KSF_MMU) && !mm_vm_get_map((addr_t)ebp, 0, 1)) break;
 		addr_t eip = ebp[1];
 		if(eip == 0)
 			break;
 		ebp = (addr_t *)(ebp[0]);
-		const char *name = elf32_lookup_symbol(eip, &kernel_elf);
+		const char *name = elf64_lookup_symbol(eip, &kernel_elf);
 		char *modname = 0;
 		if(!name)
 			name = loader_lookup_module_symbol(eip, &modname);
@@ -29,12 +29,12 @@ void arch_cpu_print_stack_trace_alternate(addr_t *ebp)
 	kprintf("    ADDR      MODULE FUNCTION\n");
 	for(int frame = 0; frame < 32; ++frame)
 	{
-		if((kernel_state_flags&KSF_MMU) && !mm_vm_get_map((addr_t)ebp, 0, 1)) break;
+		//if((kernel_state_flags&KSF_MMU) && !mm_vm_get_map((addr_t)ebp, 0, 1)) break;
 		addr_t eip = ebp[1];
 		if(eip == 0)
 			break;
 		ebp = (addr_t *)(ebp[0]);
-		const char *name = elf32_lookup_symbol(eip, &kernel_elf);
+		const char *name = elf64_lookup_symbol(eip, &kernel_elf);
 		char *modname = 0;
 		if(!name)
 			name = loader_lookup_module_symbol(eip, &modname);

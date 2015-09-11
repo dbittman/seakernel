@@ -132,12 +132,17 @@ int block_cache_get_bufferlist(struct llist *blist, struct ioreq *req)
 	while(count) {
 		struct buffer *br = dm_block_cache_get(req->bd, block);
 		if(!br) {
-			struct async_call work;
 			atomic_fetch_add(&req->refs, 1);
-			async_call_create(&work, 0, (void (*)(unsigned long))block_elevator_add_request,
+			async_call_create(&current_thread->blockreq_call, 0, (void (*)(unsigned long))block_elevator_add_request,
 					(unsigned long)req, ASYNC_CALL_PRIORITY_MEDIUM);
 
-			tm_thread_block_schedule_work(&req->blocklist, THREADSTATE_UNINTERRUPTIBLE, &work);
+			tm_thread_block_schedule_work(&req->blocklist, THREADSTATE_UNINTERRUPTIBLE, &current_thread->blockreq_call);
+
+			/* TODO: do this automatically? */
+			struct workqueue *wq = current_thread->blockreq_call.queue;
+			if(wq)
+				workqueue_delete(wq, &current_thread->blockreq_call);
+
 			assert(req->flags & IOREQ_COMPLETE);
 			if(req->flags & IOREQ_FAILED) {
 				return ret;

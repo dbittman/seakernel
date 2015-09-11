@@ -184,6 +184,15 @@ struct valloc_region *valloc_allocate(struct valloc *va, struct valloc_region *r
 	return reg;
 }
 
+void valloc_reserve(struct valloc *va, struct valloc_region *reg)
+{
+	mutex_acquire(&va->lock);
+	int start_index = (reg->start - va->start) / va->psize;
+	assert(start_index+reg->npages <= va->npages && start_index >= va->nindex);
+	__valloc_set_bits(va, start_index, reg->npages);
+	mutex_release(&va->lock);
+}
+
 int valloc_count_used(struct valloc *va)
 {
 	mutex_acquire(&va->lock);

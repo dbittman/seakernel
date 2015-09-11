@@ -13,8 +13,21 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/mm/reclaim.h>
 #include <sea/vsprintf.h>
-
+#include <sea/cpu/interrupt.h>
+#include <stdbool.h>
 struct vmm_context kernel_context;
+
+extern addr_t initrd_start_page, initrd_end_page, kernel_start;
+static inline bool __is_actually_free(addr_t x)
+{
+	if(x == 0)
+		return false;
+	if(x <= pm_location)
+		return false;
+	if(x >= initrd_start_page && x <= initrd_end_page)
+		return false;
+	return true;
+}
 
 static void process_memorymap(struct multiboot *mboot)
 {
@@ -22,19 +35,11 @@ static void process_memorymap(struct multiboot *mboot)
 	unsigned long num_pages=0, unusable=0;
 	uint64_t j=0, address, length;
 	int found_contiguous=0;
+	lowest_page = ~0;
 	while(i < (mboot->mmap_addr + mboot->mmap_length)){
-		mmap_entry_t *me = (mmap_entry_t *)(i);
+		mmap_entry_t *me = (mmap_entry_t *)(i + MEMMAP_KERNEL_START);
 		address = ((uint64_t)me->base_addr_high << 32) | (uint64_t)me->base_addr_low;
 		length = (((uint64_t)me->length_high<<32) | me->length_low);
-		if(lowest_page > address)
-			lowest_page = address;
-		if(address > highest_page)
-			highest_page = address;
-		if(length >= (1024*1024*CONFIG_CONTIGUOUS_MEMORY) && !found_contiguous++) {
-			mm_pmm_register_contiguous_memory(address);
-			length -= (1024*1024*CONFIG_CONTIGUOUS_MEMORY);
-			address += (1024*1024*CONFIG_CONTIGUOUS_MEMORY);
-		}
 		if(me->type == 1 && length > 0)
 		{
 			for (j=address; 
@@ -44,24 +49,25 @@ static void process_memorymap(struct multiboot *mboot)
 #if ADDR_BITS == 32
 				/* 32-bit can only handle the lower 32 bits of the address. If we're
 				 * considering an address above 0xFFFFFFFF, we have to ignore it */
-				page = (addr_t)(j & 0xFFFFFFFF);
+				page = (addr_t)(j & 0xFFFFFFFF); /*TODO CLEAN THIS UP */
 				if((j >> 32) != 0)
 					break;
 #else
 				page = j;
 #endif
-				if(lowest_page > page)
-					lowest_page=page;
-				if(page > highest_page)
-					highest_page=page;
-				if(page >= pm_location)
-					mm_free_physical_page(page);
-				num_pages++;
+				if(__is_actually_free(page)) {
+					if(lowest_page > page)
+						lowest_page=page;
+					if(page > highest_page)
+						highest_page=page;
+					num_pages++;
+					pmm_buddy_deallocate(page);
+				}
 			}
 		}
 		i += me->size + sizeof (uint32_t);
 	}
-	printk(1, "[mm]: Highest page = %x, num_pages = %d               \n", highest_page, num_pages);
+	printk(1, "[mm]: Highest page = %x, Lowest page = %x, num_pages = %d               \n", highest_page, lowest_page, num_pages);
 	if(!j)
 		panic(PANIC_MEM | PANIC_NOSYNC, "Memory map corrupted");
 	int gbs=0;
@@ -84,18 +90,19 @@ static void process_memorymap(struct multiboot *mboot)
 	pm_num_pages=num_pages;
 	pm_used_pages=0;
 	set_ksf(KSF_MEMMAPPED);
-	mm_pmm_init_contiguous(pm_location);
 }
 
+struct vmm_context kernel_context;
 void mm_init(struct multiboot *m)
 {
 	printk(KERN_DEBUG, "[mm]: Setting up Memory Management...\n");
 	mutex_create(&pm_mutex, MT_NOSCHED); /* allocating physical memory is required inside
 										  * interrupt context because of page faults */
-	mm_vm_init(pm_location);
+	mm_vm_init(&kernel_context);
+	cpu_interrupt_register_handler (14, &arch_mm_page_fault_handle);
+	pmm_buddy_init();
 	process_memorymap(m);
 	kmalloc_init();
-	mm_vm_init_2();
 	set_ksf(KSF_MMU);
 	/* hey, look at that, we have happy memory times! */
 	mm_reclaim_init();
@@ -118,8 +125,8 @@ void mm_init(struct multiboot *m)
 	loader_add_kernel_symbol(mm_free_physical_page);
 	loader_add_kernel_symbol(mm_allocate_dma_buffer);
 	loader_add_kernel_symbol(mm_free_dma_buffer);
-	loader_add_kernel_symbol(mm_alloc_contiguous_region);
-	loader_add_kernel_symbol(mm_free_contiguous_region);
+	//loader_add_kernel_symbol(mm_alloc_contiguous_region);
+	//loader_add_kernel_symbol(mm_free_contiguous_region);
 #endif
 }
 

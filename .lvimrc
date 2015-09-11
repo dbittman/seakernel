@@ -1,3 +1,3 @@
-let g:syntastic_c_compiler_options = "-Wall -Wextra -std=gnu99 -Iinclude -Iarch/x86/include -Iarch/x86_64/include -Iarch/x86_common/include -Ibuild/default/arch/include -Ibuild/default -ffreestanding -Wno-strict-aliasing -Wshadow -Wpointer-arith -Wcast-align -Wno-unused -Wnested-externs -Waddress -Winline -Wno-long-long -Wno-unused-parameter -Wno-unused-but-set-parameter"
-let g:syntastic_c_compiler = "/opt/sea-toolchain/bin/i586-pc-seaos-gcc"
+let g:syntastic_c_compiler_options = "-Wall -Wextra -std=gnu99 -Iinclude -Iarch/x86_64/include -Iarch/x86_common/include -Ibuild/default/arch/include -Ibuild/default -ffreestanding -Wno-strict-aliasing -Wshadow -Wpointer-arith -Wcast-align -Wno-unused -Wnested-externs -Waddress -Winline -Wno-long-long -Wno-unused-parameter -Wno-unused-but-set-parameter"
+let g:syntastic_c_compiler = "/opt/sea-toolchain/bin/x86_64-pc-seaos-gcc"
 

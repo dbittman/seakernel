@@ -40,7 +40,7 @@ void arch_tm_jump_to_user_mode(addr_t jmp)
 			::"r"(jmp), "r"(current_thread->usermode_stack_end):"memory","eax","esp");
 }
 
-void arch_tm_do_switch(long unsigned *, long unsigned *, addr_t);
+void arch_tm_do_switch(long unsigned *, long unsigned *, addr_t, addr_t);
 
 __attribute__((noinline)) void arch_tm_thread_switch(struct thread *old, struct thread *new, addr_t jump)
 {
@@ -51,7 +51,10 @@ __attribute__((noinline)) void arch_tm_thread_switch(struct thread *old, struct 
 		__asm__ __volatile__ (
 				"fxrstor (%0)" :: "r" (ALIGN(new->arch_thread.fpu_save_data, 16)) : "memory");
 	}
-	arch_tm_do_switch(&old->stack_pointer, &new->stack_pointer, jump);
+	addr_t cr3 = (old->process != new->process) ? new->process->vmm_context.root_physical : 0;
+	if(jump)
+		cpu_enable_preemption();
+	arch_tm_do_switch(&old->stack_pointer, &new->stack_pointer, jump, cr3);
 	/* WARNING - we've switched stacks at this point! We must NOT use anything
 	 * stack related now until this function returns! */
 }

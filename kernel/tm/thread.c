@@ -115,23 +115,34 @@ addr_t tm_thread_usermode_stack_end(int stack)
 	return (stack + 1) * (CONFIG_STACK_PAGES * PAGE_SIZE) + USERMODE_STACKS_START;
 }
 
-addr_t tm_thread_reserve_kernelmode_stack(void)
+void tm_thread_reserve_kernelmode_stack(struct thread *thread)
 {
 	struct valloc_region va;
-	if(!valloc_allocate(&km_stacks, &va, 1))
+	assert(0);
+	/* 
+	assert(thread->process == current_process);
+	if(!valloc_allocate(&thread->process->vmm_context.km_stacks, &va, 1))
 		panic(PANIC_NOSYNC, "unable to allocate kernel mode stack");
-	for(addr_t a = va.start; a < va.start + KERN_STACK_SIZE; a += PAGE_SIZE)
+	thread->kernel_stack = va.start;
+	int i=0;
+	for(addr_t a = va.start;a < va.start + KERN_STACK_SIZE;a+=PAGE_SIZE) {
 		map_if_not_mapped(a);
-	return va.start;
+		thread->kernel_stack_physical[i++] = mm_vm_get_map(a, 0, 0);
+	}
+	*/
 }
 
-void tm_thread_release_kernelmode_stack(addr_t base)
+void tm_thread_release_kernelmode_stack(struct thread *thread)
 {
-	assert(base >= current_thread->kernel_stack + KERN_STACK_SIZE || base < current_thread->kernel_stack);
+	assert(0);
+	/*
+	assert(thread != current_thread);
 	struct valloc_region va;
-	va.start = base;
+	va.start = thread->kernel_stack;
+	printk(0, "thread %d releasing %x\n", thread->tid, thread->kernel_stack);
 	va.npages = 1;
 	va.flags = 0;
-	valloc_deallocate(&km_stacks, &va);
+	valloc_deallocate(&thread->process->vmm_context.km_stacks, &va);
+	*/
 }
 

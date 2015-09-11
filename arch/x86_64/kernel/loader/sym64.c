@@ -13,7 +13,7 @@ const char *elf64_lookup_symbol (uint64_t addr, elf64_t *elf)
 	{
 		if (ELF_ST_TYPE(elf->symtab[i].info) != 0x2)
 			continue;
-		if ( (addr >= elf->symtab[i].address) 
+		if ( (addr >= (elf->symtab[i].address)) 
 				&& (addr < (elf->symtab[i].address + elf->symtab[i].size)) )
 		{
 			const char *name = (const char *) ((uint64_t)elf->strtab

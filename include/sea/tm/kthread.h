@@ -29,5 +29,13 @@ void kthread_kill(struct kthread *kt, int flags);
 #define kthread_is_joining(kt) (kt->flags & KT_JOIN)
 #define kthread_is_waiting(kt) (kt->flags & KT_WAITING)
 
+static inline void kthread_exit(struct kthread *kt, int code)
+{
+	kt->code = code;
+	atomic_fetch_or(&kt->flags, KT_EXITED);
+	tm_thread_do_exit();
+	tm_schedule();
+}
+
 #endif
 

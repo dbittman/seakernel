@@ -196,7 +196,7 @@ void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_addres
 	int already_in_kernel = 0;
 	cpu_interrupt_set(0);
 	atomic_fetch_add_explicit(&interrupt_counts[int_no], 1, memory_order_relaxed);
-	if(!current_thread->regs) {
+	if(current_thread && !current_thread->regs) {
 		current_thread->regs = regs;
 		/* TODO: do we need this? */
 		current_thread->system = 255;

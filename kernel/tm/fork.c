@@ -1,7 +1,7 @@
 #include <sea/tm/process.h>
 #include <sea/tm/thread.h>
 #include <sea/ll.h>
-
+#include <sea/tm/kthread.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/mm/map.h>
 #include <sea/fs/inode.h>
@@ -103,7 +103,6 @@ struct thread *tm_thread_fork(int flags)
 	thr->magic = THREAD_MAGIC;
 	thr->tid = tm_thread_next_tid();
 	thr->priority = current_thread->priority;
-	thr->kernel_stack = tm_thread_reserve_kernelmode_stack();
 	thr->sig_mask = current_thread->sig_mask;
 	thr->refs = 1;
 	mutex_create(&thr->block_mutex, MT_NOSCHED);
@@ -141,14 +140,14 @@ static void __copy_mappings(struct process *ch, struct process *pa)
 	//mutex_release(&pa->map_lock);
 }
 
-static struct process *tm_process_copy(int flags)
+static struct process *tm_process_copy(int flags, struct thread *newthread)
 {
 	/* copies the current_process structure into
 	 * a new one (cloning the things that need
 	 * to be cloned) */
 	struct process *newp = kmalloc(sizeof(struct process));
 	newp->magic = PROCESS_MAGIC;
-	mm_vm_clone(&current_process->vmm_context, &newp->vmm_context);
+	mm_vm_clone(&current_process->vmm_context, &newp->vmm_context, newthread);
 	newp->pid = tm_process_next_pid();
 	newp->cmask = current_process->cmask;
 	newp->refs = 1;
@@ -164,6 +163,7 @@ static struct process *tm_process_copy(int flags)
 	ll_create_lockless(&newp->mappings);
 	mutex_create(&newp->map_lock, MT_NOSCHED); /* we need to lock this during page faults */
 	mutex_create(&newp->stacks_lock, MT_NOSCHED);
+	valloc_create(&newp->km_stacks, KERNELMODE_STACKS_START, KERNELMODE_STACKS_END, KERN_STACK_SIZE, 0);
 	/* TODO: what the fuck is this? */
 	valloc_create(&newp->mmf_valloc, MMF_BEGIN, MMF_END, PAGE_SIZE, VALLOC_USERMAP);
 	for(addr_t a = MMF_BEGIN;a < (MMF_BEGIN + (size_t)newp->mmf_valloc.nindex);a+=PAGE_SIZE)
@@ -222,11 +222,13 @@ __attribute__((optimize("-O0"))) __attribute__((noinline)) static struct thread 
 	return current_thread;
 }
 
-int tm_clone(int flags)
+void arch_tm_userspace_fork_syscall_return(void);
+int tm_clone(int flags, void *entry, struct kthread *kt)
 {
 	struct process *proc = current_process;
+	struct thread *thr = tm_thread_fork(flags);
 	if(!(flags & CLONE_SHARE_PROCESS) && !(flags & CLONE_KTHREAD)) {
-		proc = tm_process_copy(flags);
+		proc = tm_process_copy(flags, thr);
 		atomic_fetch_add_explicit(&running_processes, 1, memory_order_relaxed);
 		tm_process_inc_reference(proc);
 		hash_table_set_entry(process_table, &proc->pid, sizeof(proc->pid), 1, proc);
@@ -234,10 +236,37 @@ int tm_clone(int flags)
 	} else if(flags & CLONE_KTHREAD) {
 		proc = kernel_process;
 	}
-	struct thread *thr = tm_thread_fork(flags);
 	hash_table_set_entry(thread_table, &thr->tid, sizeof(thr->tid), 1, thr);
 	atomic_fetch_add_explicit(&running_threads, 1, memory_order_relaxed);
 	tm_thread_add_to_process(thr, proc);
+
+	struct valloc_region reg;
+	valloc_allocate(&proc->km_stacks, &reg, 1);
+	for(int i = 0;i<(KERN_STACK_SIZE / PAGE_SIZE);i++) {
+		bool r = mm_context_virtual_map(&proc->vmm_context, reg.start + i * PAGE_SIZE,
+				mm_physical_allocate(PAGE_SIZE, false),
+				PAGE_PRESENT | PAGE_WRITE, PAGE_SIZE);
+		//assertmsg(r, "kernel stack is already mapped");
+	}
+	thr->kernel_stack = reg.start;
+	if(current_thread->regs) {
+		/* TODO: this is kinda arch-dependent... */
+		current_thread->regs->rax = 0;
+		bool r = mm_context_write(&proc->vmm_context, 
+				reg.start + KERN_STACK_SIZE - sizeof(*current_thread->regs),
+				(void *)current_thread->regs, sizeof(*current_thread->regs));
+		thr->stack_pointer = reg.start + KERN_STACK_SIZE - sizeof(*current_thread->regs);
+		assertmsg(r, "need to be able to write new thread's registers");
+	} else {
+		thr->stack_pointer = reg.start + KERN_STACK_SIZE;
+	}
+	bool r = mm_context_write(&proc->vmm_context, reg.start, &thr, sizeof(&thr));
+	assert(r);
+
+	if(flags & CLONE_KTHREAD) {
+		kt->thread = thr;
+		thr->kernel_thread = kt;
+	}
 	thr->state = THREADSTATE_UNINTERRUPTIBLE;
 	thr->usermode_stack_num = tm_thread_reserve_usermode_stack(thr);
 	thr->usermode_stack_end = tm_thread_usermode_stack_end(thr->usermode_stack_num);
@@ -246,32 +275,22 @@ int tm_clone(int flags)
 
 	cpu_disable_preemption();
 	int old = cpu_interrupt_set(0);
-	arch_tm_fork_setup_stack(thr);
-
-	struct thread *this_thread = __post_fork_get_current();
-
-	if(this_thread == thr) {
-		this_thread->jump_point = 0;
-		cpu_interrupt_set(old);
-		cpu_enable_preemption();
-		return 0;
-	} else {
-		thr->state = THREADSTATE_RUNNING;
-		tm_thread_add_to_cpu(thr, target_cpu);
-		cpu_interrupt_set(old);
-		cpu_enable_preemption();
-		if(flags & CLONE_SHARE_PROCESS)
-			return thr->tid;
-		else
-			return proc->pid;
-	}
+	thr->jump_point = (addr_t)entry;
+	thr->state = THREADSTATE_RUNNING;
+	tm_thread_add_to_cpu(thr, target_cpu);
+	cpu_interrupt_set(old);
+	cpu_enable_preemption();
+	if(flags & CLONE_SHARE_PROCESS)
+		return thr->tid;
+	else
+		return proc->pid;
 }
 
 int sys_clone(int f)
 {
 	/* userspace calls aren't allowed to fork a kernel thread. */
 	f &= ~CLONE_KTHREAD;
-	return tm_clone(f);
+	return tm_clone(f, arch_tm_userspace_fork_syscall_return, NULL);
 }
 
 /* vfork is a performance hack designed to make the normal fork-exec proces

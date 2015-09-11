@@ -17,95 +17,37 @@ int id_tables=0;
 
 addr_t id_mapped_location;
 void setup_kernelstack();
+extern void *boot_directory;
+extern void *boot_pagetable;
+static char alignas(0x1000) tmp[0x1000];
 static addr_t vm_init_directory(addr_t id_map_to)
 {
-	/* Create kernel directory. 
-	 * This includes looping upon itself for self-reference */
-	page_dir_t *pd;
-	pd = (page_dir_t *)mm_alloc_physical_page();
-	memset(pd, 0, 0x1000);
-	pd[1022] = mm_alloc_physical_page() | PAGE_PRESENT | PAGE_WRITE;
-	unsigned int *pt = (unsigned int *)(pd[1022] & PAGE_MASK);
+	addr_t **pd = (void *)&boot_directory;
+	addr_t *pt = (void *)&boot_pagetable;
 	memset(pt, 0, 0x1000);
-	pt[1023] = (unsigned int) pd | PAGE_PRESENT | PAGE_WRITE;
-	pd[1023] = (unsigned int) pd | PAGE_PRESENT | PAGE_WRITE;
-	/* we don't create an accounting page for this one, since this page directory is only
-	 * temporary */
-	/* Identity map the kernel */
-	unsigned mapper=0, i;
-	while(mapper <= PAGE_DIR_IDX(((id_map_to&PAGE_MASK)+0x1000)/0x1000)) {
-		pd[mapper] = mm_alloc_physical_page() | PAGE_PRESENT | PAGE_USER;
-		pt = (unsigned int *)(pd[mapper] & PAGE_MASK);
-		memset(pt, 0, 0x1000);
-		/* we map as user for now, since the init() function runs in
-		 * ring3 for a short amount of time and needs read access to the
-		 * kernel code. This is later re-mapped by the kernel idle 
-		 * process with proper protection flags */
-		for(i=0;i<1024;i++)
-			pt[i] = (mapper*1024*0x1000 + 0x1000*i) | PAGE_PRESENT 
-						| PAGE_USER;
-		mapper++;
+	pd[1022] = (void *)(((addr_t)&boot_pagetable - 0xC0000000) | PAGE_PRESENT | PAGE_WRITE);
+	pt[1023] = ((addr_t)&boot_directory - 0xC0000000) | PAGE_PRESENT | PAGE_WRITE;
+	pd[1023] = (void *)pt[1023];
+
+	flush_pd();
+
+	int pdindex = (0x70000000 >> 22);
+	int ptindex = (0x70000000 >> 12) & 0x3FF;
+	pd = (void *)0xFFFFF000;
+	if(!pd[pdindex]) {
+		printk(0, "mapping new table %x\n", tmp);
+		pt[pdindex] = ((addr_t)tmp - 0xC0000000) | PAGE_PRESENT | PAGE_WRITE;
+		flush_pd();
+		
 	}
-	id_tables=mapper;
-	/* map in the signal return inject code. we need to do this, because
-	 * user code may not run the the kernel area of the page directory */
-	unsigned sig_pdi = PAGE_DIR_IDX(SIGNAL_INJECT / PAGE_SIZE);
-	unsigned sig_tbi = PAGE_TABLE_IDX(SIGNAL_INJECT / PAGE_SIZE);
-	assert(!pd[sig_pdi]);
-	pd[sig_pdi] = ((unsigned)(pt=(unsigned *)mm_alloc_physical_page()) | PAGE_PRESENT | PAGE_USER);
-	memset(pt, 0, 0x1000);
-	pt[sig_tbi] = (unsigned)mm_alloc_physical_page() | PAGE_PRESENT | PAGE_USER;
-	memcpy((void *)(pt[sig_tbi] & PAGE_MASK), (void *)signal_return_injector, SIGNAL_INJECT_SIZE);
-	/* premap the tables of stuff so that cloning directories works properly */
-	/* Pre-map the heap's tables */
-	unsigned heap_pd_idx = PAGE_DIR_IDX(KMALLOC_ADDR_START / 0x1000);
-	for(i=heap_pd_idx;i<(int)PAGE_DIR_IDX(KMALLOC_ADDR_END / 0x1000);i++)
-	{
-		pd[i] = mm_alloc_physical_page() | PAGE_PRESENT | PAGE_WRITE;
-		pt = (unsigned int *)(pd[i] & PAGE_MASK);
-		memset(pt, 0, 0x1000);
-	}
-	/* Pre-map the kernel stack tables */
-	unsigned stacks_pd_idx = PAGE_DIR_IDX(KERNELMODE_STACKS_START / 0x1000);
-	for(i=stacks_pd_idx;i<(int)PAGE_DIR_IDX(KERNELMODE_STACKS_END/ 0x1000);i++)
-	{
-		pd[i] = mm_alloc_physical_page() | PAGE_PRESENT | PAGE_WRITE;
-		pt = (unsigned int *)(pd[i] & PAGE_MASK);
-		memset(pt, 0, 0x1000);
-	}
-	/* premap the virtpage tables */
-	unsigned pages_pd_idx = PAGE_DIR_IDX(VIRTPAGES_START / 0x1000);
-	for(i=pages_pd_idx;i<(int)PAGE_DIR_IDX(VIRTPAGES_END / 0x1000);i++)
-	{
-		pd[i] = mm_alloc_physical_page() | PAGE_PRESENT | PAGE_WRITE;
-		pt = (unsigned int *)(pd[i] & PAGE_MASK);
-		memset(pt, 0, 0x1000);
-	}
-	/* Pre-map the PMM's tables */
-	unsigned pm_pd_idx = PAGE_DIR_IDX(PM_STACK_ADDR / 0x1000);
-	for(i=pm_pd_idx;i<(int)PAGE_DIR_IDX(PM_STACK_ADDR_TOP / 0x1000);i++)
-	{
-		pd[i] = mm_alloc_physical_page() | PAGE_PRESENT | PAGE_WRITE;
-		pt = (unsigned int *)(pd[i] & PAGE_MASK);
-		memset(pt, 0, 0x1000);
-	}
-	/* Pre-map the mmdev's tables */
-	pm_pd_idx = PAGE_DIR_IDX(DEVICE_MAP_START / 0x1000);
-	for(i=pm_pd_idx;i<(int)PAGE_DIR_IDX(DEVICE_MAP_END / 0x1000);i++)
-	{
-		pd[i] = mm_alloc_physical_page() | PAGE_PRESENT | PAGE_WRITE;
-		pt = (unsigned int *)(pd[i] & PAGE_MASK);
-		memset(pt, 0, 0x1000);
-	}
-	/* Pre-map the contiguous tables */
-	pm_pd_idx = PAGE_DIR_IDX(CONTIGUOUS_VIRT_START / 0x1000);
-	for(i=pm_pd_idx;i<(int)PAGE_DIR_IDX(CONTIGUOUS_VIRT_END / 0x1000);i++)
-	{
-		pd[i] = mm_alloc_physical_page() | PAGE_PRESENT | PAGE_WRITE;
-		pt = (unsigned int *)(pd[i] & PAGE_MASK);
-		memset(pt, 0, 0x1000);
-	}
-	return (addr_t)pd;
+	for(;;);
+	pt = (void *)(0xFFC00000 + (0x400 * pdindex));
+
+	pt[ptindex] = 0xA0000000 | PAGE_PRESENT | PAGE_WRITE;
+
+
+	for(;;);
+	return 0;
 }
 
 /* This function will setup a paging environment with a basic page dir, 
@@ -140,7 +82,7 @@ void arch_mm_vm_switch_context(struct vmm_context *context)
  * upon clone, and creates a new directory that is...well, complete */
 void arch_mm_vm_init_2(void)
 {
-	mm_vm_clone(&minimal_context, &kernel_context);
+	//mm_vm_clone(&minimal_context, &kernel_context);
 	arch_mm_vm_switch_context(&kernel_context);
 }
 

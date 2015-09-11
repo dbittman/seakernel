@@ -7,5 +7,5 @@ KOBJS += arch/x86_64/kernel/cpu/acpi_madt.o \
 		 arch/x86_64/kernel/cpu/smp.o
 
 ifeq ($(CONFIG_SMP),y)
-	AOBJS += arch/x86_64/kernel/cpu/bootstrap.o 
+AOBJS += arch/x86_64/kernel/cpu/bootstrap.o 
 endif

@@ -8,3 +8,4 @@
 #	echo "[CC]	$@"
 	echo -n -e "[CC]\t$@            \n"
 	$(CC) -c $(CFLAGS) -o $@ $<
+

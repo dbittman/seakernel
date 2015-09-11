@@ -10,8 +10,10 @@ __attribute__ ((noinline)) static void self_free_table(int t)
 	int i;
 	for(i=0;i<1024;++i)
 	{
-		if(page_tables[(virt&PAGE_MASK)/PAGE_SIZE])
-			mm_vm_unmap(virt, 0);
+		if(virt < current_thread->kernel_stack || virt >= (current_thread->kernel_stack + KERN_STACK_SIZE)) {
+			if(page_tables[(virt&PAGE_MASK)/PAGE_SIZE])
+				mm_vm_unmap(virt, 0);
+		}
 		virt += PAGE_SIZE;
 	}
 }
@@ -21,11 +23,15 @@ void arch_mm_free_self_directory(int exiting)
 	unsigned int *pd = (unsigned *)current_process->vmm_context.root_virtual;
 	int D = exiting ? PAGE_DIR_IDX(TOP_TASK_MEM/PAGE_SIZE) 
 		: PAGE_DIR_IDX(TOP_TASK_MEM_EXEC/PAGE_SIZE);
+	int kms_start = PAGE_DIR_IDX(KERNELMODE_STACKS_START / PAGE_SIZE);
+	int kms_end = PAGE_DIR_IDX(KERNELMODE_STACKS_END / PAGE_SIZE);
 	int i=0;
 	for(i=id_tables;i<D;++i)
 	{
 		if(!pd[i])
 			continue;
+		if(i >= kms_start && i < kms_end)
+			continue; //TODO: does this leak memory?
 		self_free_table(i);
 		mm_free_physical_page(pd[i]&PAGE_MASK);
 		pd[i]=0;

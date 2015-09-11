@@ -22,12 +22,12 @@ addr_t lapic_addr = 0;
 
 static inline void set_boot_flag(unsigned x)
 {
-	*(unsigned *)(BOOTFLAG_ADDR) = x;
+	*(unsigned *)(BOOTFLAG_ADDR + PHYS_PAGE_MAP) = x;
 }
 
 static inline  unsigned get_boot_flag(void)
 {
-	return *(unsigned *)(BOOTFLAG_ADDR);
+	return *(unsigned *)(BOOTFLAG_ADDR + PHYS_PAGE_MAP);
 }
 
 /* it's important that this doesn't get inlined... */
@@ -67,12 +67,22 @@ void cpu_entry(void)
 int boot_cpu(struct cpu *cpu)
 {
 	int apicid = cpu->snum, success = 1, to;
-	addr_t bootaddr, accept_status;
+	addr_t bootaddr_phys, bootaddr_virt, accept_status;
 	addr_t bios_reset_vector = BIOS_RESET_VECTOR;
 
 	printk(1, "[smp]: poking cpu %d\n", apicid);
 
-	cpu->stack = tm_thread_reserve_kernelmode_stack();
+	/* TODO: this should be its own function? We do it in fork too... */
+	struct valloc_region reg;
+	valloc_allocate(&kernel_process->km_stacks, &reg, 1);
+	for(int i = 0;i<(KERN_STACK_SIZE / PAGE_SIZE);i++) {
+		bool r = mm_virtual_map(reg.start + i * PAGE_SIZE,
+				mm_physical_allocate(PAGE_SIZE, false),
+				PAGE_PRESENT | PAGE_WRITE, PAGE_SIZE);
+		assert(r);
+	}
+	cpu->stack = reg.start;
+
 	cpu->active_queue = tqueue_create(0, 0);
 	cpu->numtasks=1;
 	ticker_create(&cpu->ticker, 0);
@@ -84,7 +94,7 @@ int boot_cpu(struct cpu *cpu)
 	thread->state = THREADSTATE_RUNNING;
 	thread->tid = tm_thread_next_tid();
 	thread->magic = THREAD_MAGIC;
-	thread->kernel_stack = (void *)cpu->stack;
+	thread->kernel_stack = cpu->stack;
 	workqueue_create(&thread->resume_work, 0);
 	mutex_create(&thread->block_mutex, MT_NOSCHED);
 	*(struct thread **)(thread->kernel_stack) = thread;
@@ -92,25 +102,25 @@ int boot_cpu(struct cpu *cpu)
 	tm_thread_add_to_process(thread, kernel_process);
 	tm_thread_add_to_cpu(thread, cpu);
 	atomic_fetch_add(&running_threads, 1);
-
 	cpu_disable_preemption();
 	/* choose this as the bios reset vector */
-	bootaddr = 0x7000;
+	bootaddr_phys = 0x7000;
+	bootaddr_virt = bootaddr_phys + PHYS_PAGE_MAP;
 	addr_t sz = (addr_t)trampoline_end - (addr_t)trampoline_start;
 	/* copy in the 16-bit real mode entry code */
-	memcpy((void *)bootaddr, (void *)trampoline_start, sz);
+	memcpy((void *)bootaddr_virt, (void *)((addr_t)trampoline_start + PHYS_PAGE_MAP), sz);
 	/* to switch into protected mode, the CPU needs access to a GDT, so
 	 * give it one... */
-	memcpy((void *)(RM_GDT_START+GDT_POINTER_SIZE), (void *)rm_gdt, RM_GDT_SIZE);
-	memcpy((void *)RM_GDT_START, (void *)rm_gdt_pointer, GDT_POINTER_SIZE);
+	memcpy((void *)(RM_GDT_START+GDT_POINTER_SIZE + PHYS_PAGE_MAP), (void *)((addr_t)rm_gdt + PHYS_PAGE_MAP), RM_GDT_SIZE);
+	memcpy((void *)(RM_GDT_START + PHYS_PAGE_MAP), (void *)((addr_t)rm_gdt_pointer + PHYS_PAGE_MAP), GDT_POINTER_SIZE);
 	/* copy down the pmode_enter code as well, since this gets called
 	 * from real mode */
-	memcpy((void *)(RM_GDT_START+RM_GDT_SIZE+GDT_POINTER_SIZE), (void *)pmode_enter, (addr_t)pmode_enter_end - (addr_t)pmode_enter);
+	memcpy((void *)(RM_GDT_START+RM_GDT_SIZE+GDT_POINTER_SIZE + PHYS_PAGE_MAP), (void *)((addr_t)pmode_enter + PHYS_PAGE_MAP), (addr_t)pmode_enter_end - (addr_t)pmode_enter);
 	/* the CPU will look here to figure out it's APICID */
 	set_boot_flag(apicid);
 	/* set BIOS reset vector */
 	CMOS_WRITE_BYTE(CMOS_RESET_CODE, CMOS_RESET_JUMP);
-	*((volatile unsigned *) bios_reset_vector) = ((bootaddr & 0xFF000) << 12);
+	*((volatile unsigned *) ((addr_t)bios_reset_vector + PHYS_PAGE_MAP)) = ((bootaddr_phys & 0xFF000) << 12);
 	/* clear the APIC error register */
 	LAPIC_WRITE(LAPIC_ESR, 0);
 	accept_status = LAPIC_READ(LAPIC_ESR);
@@ -122,7 +132,7 @@ int boot_cpu(struct cpu *cpu)
 	tm_thread_delay_sleep(ONE_MILLISECOND * 10);
 		int i;
 		for (i = 1; i <= 2; i++) {
-			x86_cpu_send_ipi(LAPIC_ICR_SHORT_DEST, apicid, LAPIC_ICR_DM_SIPI | ((bootaddr >> 12) & 0xFF));
+			x86_cpu_send_ipi(LAPIC_ICR_SHORT_DEST, apicid, LAPIC_ICR_DM_SIPI | ((bootaddr_phys >> 12) & 0xFF));
 			tm_thread_delay_sleep(ONE_MILLISECOND);
 		}
 	to = 0;
@@ -134,12 +144,12 @@ int boot_cpu(struct cpu *cpu)
 	/* clear the APIC error register */
 	LAPIC_WRITE(LAPIC_ESR, 0);
 	accept_status = LAPIC_READ(LAPIC_ESR);
-
 	/* clean up BIOS reset vector */
 	CMOS_WRITE_BYTE(CMOS_RESET_CODE, 0);
-	*((volatile unsigned *) bios_reset_vector) = 0;
+	*((volatile unsigned *) ((addr_t)bios_reset_vector + PHYS_PAGE_MAP)) = 0;
 	cpu_enable_preemption();
 	return success;
 }
 
 #endif
+

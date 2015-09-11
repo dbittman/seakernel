@@ -5,7 +5,6 @@
 #include <sea/cpu/processor.h>
 #include <stdatomic.h>
 #include <sea/vsprintf.h>
-
 #include <sea/lib/timer.h>
 static void check_signals(struct thread *thread)
 {
@@ -69,6 +68,7 @@ static void prepare_schedule(void)
 	tm_thread_lower_flag(current_thread, THREAD_SCHEDULE);
 }
 
+#include <sea/tm/timing.h>
 static void post_schedule(struct thread *prev)
 {
 	if(prev) {
@@ -78,13 +78,15 @@ static void post_schedule(struct thread *prev)
 	}
 	struct workqueue *wq = &__current_cpu->work;
 	if(wq->count > 0) {
-		if(wq->count > 30) {
-			printk(0, "[sched]: warning - work is piling up (%d tasks)!\n", wq->count);
+		if(wq->count > 30 && ((tm_timing_get_microseconds() / 100000) % 10) == 0) {
+			printk(0, "[sched]: cpu %d: warning - work is piling up (%d tasks)!\n",
+					__current_cpu->knum, wq->count);
 		}
 		/* if work is piling up, clear out tasks */
-		do {
+		//do {
 			workqueue_dowork(wq);
-		} while(wq->count >= 30);
+			atomic_thread_fence(memory_order_seq_cst);
+		//} while(wq->count >= 30);
 	}
 	if(current_thread->resume_work.count) {
 		while(workqueue_dowork(&current_thread->resume_work) != -1) {
@@ -92,7 +94,6 @@ static void post_schedule(struct thread *prev)
 		}
 	}
 }
-
 
 void tm_schedule(void)
 {
@@ -117,16 +118,13 @@ void tm_schedule(void)
 		__current_cpu->prev = current_thread;
 		addr_t jump = next->jump_point;
 		next->jump_point = 0;
+		/* printk(0, "switch %d %d: %x %x %x\n", next->tid, __current_cpu->knum, jump, next->kernel_stack, next->stack_pointer); */
 		if(!(next->stack_pointer > (addr_t)next->kernel_stack + sizeof(addr_t))) {
 			panic(0, "kernel stack overrun! thread=%x:%d %x (min = %x)",
 					next, next->tid, next->stack_pointer, next->kernel_stack);
 		}
 		cpu_set_kernel_stack(next->cpu, (addr_t)next->kernel_stack,
 				(addr_t)next->kernel_stack + (KERN_STACK_SIZE));
-		if(next->process != current_thread->process) {
-			mm_vm_switch_context(&next->process->vmm_context);
-		}
-
 		arch_tm_thread_switch(current_thread, next, jump);
 		prev = __current_cpu->prev;
 		__current_cpu->prev = 0;

@@ -48,7 +48,7 @@ int net_nlayer_send_packet(void *payload, size_t len, struct sockaddr *dest, str
 
 void net_nlayer_init(void)
 {
-	memcpy(protocols, 0, sizeof(protocols));
+	memset(protocols, 0, sizeof(protocols));
 	protocols[PF_ARP] = &arp;
 }
 

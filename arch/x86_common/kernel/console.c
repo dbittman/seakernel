@@ -1,9 +1,9 @@
 #include <sea/asm/system.h>
 #include <sea/mutex.h>
 #include <sea/tty/terminal.h>
-
+#include <sea/mm/vmm.h>
 extern struct console_driver crtc_drv;
-#define VIDEO_MEMORY 0xb8000
+#define VIDEO_MEMORY (0xb8000 + MEMMAP_KERNEL_START) //TODO: audit all references to this...
 
 void arch_console_init_stage1(void)
 {

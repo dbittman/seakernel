@@ -29,6 +29,7 @@ endif
 CFLAGS_NOARCH = -std=gnu11 \
                 -ffreestanding \
                 -mno-red-zone \
+                -nostdlib \
                 -mpush-args -mno-accumulate-outgoing-args \
                 -Iarch/${ARCH}/include \
                 -Iinclude \
@@ -82,7 +83,6 @@ include library/make.inc
 
 ADHEADS := $(addprefix $(BUILDDIR)/, $(ADHEADS))
 DEPSFILE=$(BUILDDIR)/make.deps
-KERNEL_STAGE1 = $(BUILDDIR)/skernel.1
 KERNEL = $(BUILDDIR)/skernel
 
 all:
@@ -140,15 +140,9 @@ $(ADHEADS):
 	@echo "[GH]    $@"
 	@tools/arch-dep-header-gen.sh $@ > $@
 
-$(KERNEL_STAGE1): $(VERSION_H) $(ADHEADS) $(AOBJS) $(KOBJS)
+$(KERNEL): $(VERSION_H) $(ADHEADS) $(AOBJS) $(KOBJS)
 	@echo "[LD]	${KERNEL}"
-	@$(CC) $(CFLAGS) $(LDFLAGS) -o $(KERNEL_STAGE1) $(AOBJS) $(KOBJS) -nostdlib -lgcc -static-libgcc -static
-
-$(KERNEL): $(KERNEL_STAGE1)
-	@cp ${KERNEL_STAGE1} ${KERNEL}
-	@if [ "${ARCH}" = "x86_64" ]; then \
-		objcopy -I elf64-x86-64 -O elf32-i386 ${KERNEL} ;\
-	fi
+	@$(CC) $(CFLAGS) $(LDFLAGS) -o $(KERNEL) $(AOBJS) $(KOBJS) -nostdlib -lgcc -static-libgcc -static
 
 modules: $(VERSION_H) $(ADHEADS)
 	@echo Building modules, pass 1...

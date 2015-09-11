@@ -68,30 +68,22 @@ void copy_pml4e(pml4_t *pml4, pml4_t *parent_pml4, int idx)
 /* Accepts virtual, returns virtual */
 void arch_mm_vm_clone(struct vmm_context *oldcontext, struct vmm_context *newcontext)
 {
-	addr_t pml4_phys;
-	pml4_t *pml4 = kmalloc_ap(0x1000, &pml4_phys);
+	addr_t pml4_phys = mm_physical_allocate(0x1000, true);
+	pml4_t *pml4 = (void *)(pml4_phys + PHYS_PAGE_MAP);
 	pml4_t *parent_pml4 = (pml4_t *)oldcontext->root_virtual;
 	
 	if(pd_cur_data)
 		mutex_acquire(&pd_cur_data->lock);
-	unsigned int i;
-	/* manually set up the pml4e #0 */
-	pml4[0] = arch_mm_alloc_physical_page_zero() | PAGE_PRESENT | PAGE_USER | PAGE_WRITE;
-	pdpt_t *pdpt = (addr_t *)((pml4[0] & PAGE_MASK) + PHYS_PAGE_MAP);
-	memset(pdpt, 0, 0x1000);
-	pdpt_t *parent_pdpt = (addr_t *)((parent_pml4[0] & PAGE_MASK) + PHYS_PAGE_MAP);
-	pdpt[0] = parent_pdpt[0];
-	for(i=1;i<512;i++)
-		copy_pdpte(pdpt, parent_pdpt, i);
 	
-	for(i=1;i<512;i++)
-	{
-		if(i >= PML4_IDX(BOTTOM_HIGHER_KERNEL/0x1000) || parent_pml4[i] == 0)
+	pml4[511] = parent_pml4[511];
+	pml4[PML4_INDEX(MEMMAP_KERNEL_START)] = parent_pml4[PML4_INDEX(MEMMAP_KERNEL_START)];
+	for(unsigned int i=0;i<512;i++) {
+		if(i >= PML4_INDEX(MEMMAP_KERNEL_START)) {
 			pml4[i] = parent_pml4[i];
-		else
+		} else {
 			copy_pml4e(pml4, parent_pml4, i);
+		}
 	}
-	pml4[PML4_IDX(PHYSICAL_PML4_INDEX/0x1000)] = pml4_phys;
 	
 	if(pd_cur_data)
 		mutex_release(&pd_cur_data->lock);

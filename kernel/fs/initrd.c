@@ -7,17 +7,20 @@
 #include <sea/fs/ramfs.h>
 #include <sea/vsprintf.h>
 
-static addr_t initrd_location=0;
-static addr_t initrd_end=0;
+addr_t initrd_location=0;
+addr_t initrd_end=0;
+
+addr_t initrd_start_page, initrd_end_page;
 
 void fs_initrd_load(struct multiboot *mb)
 {
 	if(mb->mods_count > 0)
 	{
-		initrd_location = *((u32int*)(addr_t)mb->mods_addr);
-		initrd_end = *(u32int*)((addr_t)mb->mods_addr+4);
+		initrd_location = *(u32int*)(mb->mods_addr + MEMMAP_KERNEL_START);
+		initrd_end = *(u32int*)(mb->mods_addr+4 + MEMMAP_KERNEL_START);
+		initrd_start_page = initrd_location & ~(PAGE_SIZE-1);
+		initrd_end_page = (initrd_end & ~(PAGE_SIZE-1)) + PAGE_SIZE;
 		/* Place the start of temporary usable memory to the end of the initrd */
-		placement = initrd_end;
 		return;
 	}
 	not_found:
@@ -28,15 +31,17 @@ void fs_initrd_load(struct multiboot *mb)
 void ramfs_point_to_data(struct inode *node, void *data, size_t len);
 void fs_initrd_parse(void)
 {
-	struct ustar_header *uh = (struct ustar_header *)initrd_location;
-	while((addr_t)uh < initrd_end) {
+	struct ustar_header *uh = (struct ustar_header *)(initrd_location + PHYS_PAGE_MAP);
+	int err;
+	while((addr_t)uh < initrd_end + PHYS_PAGE_MAP) {
+		if(!*uh->name)
+			break;
 		/* tar is retarded. It stores field data as octal encoded ASCII because reasons.
 		 * All of which are stupid */
 		size_t len = strtoint_oct(uh->size);
 		size_t recordlen = (len + 511) & ~511;
 		addr_t datastart = (addr_t)uh + 512;
 		struct inode *q = 0;
-		int err;
 		if(strncmp(uh->magic, "ustar", 5)) {
 			break;
 		}
@@ -70,8 +75,7 @@ void fs_initrd_parse(void)
 
 		uh = (struct ustar_header *)((addr_t)uh + 512 /* header length */ + recordlen);
 	}
-
-	fs_path_resolve_create("/dev", 0, S_IFDIR | 0777, 0);
-	fs_path_resolve_create("/mnt", 0, S_IFDIR | 0777, 0);
+	fs_path_resolve_create("/dev", 0, S_IFDIR | 0777, &err);
+	fs_path_resolve_create("/mnt", 0, S_IFDIR | 0777, &err);
 }
 

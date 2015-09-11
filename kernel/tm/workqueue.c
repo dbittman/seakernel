@@ -41,6 +41,8 @@ void workqueue_insert(struct workqueue *wq, struct async_call *call)
 {
 	/* Workqueues can be used by interrupts, so disable them while
 	 * we operate on the data structures */
+	if((addr_t)call >= KERNELMODE_STACKS_START && (addr_t)call < KERNELMODE_STACKS_END)
+		panic(0, ">>>");
 	int old = cpu_interrupt_set(0);
 	mutex_acquire(&wq->lock);
 	heap_insert(&wq->tasks, call->priority, call);

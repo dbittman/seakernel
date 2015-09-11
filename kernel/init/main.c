@@ -31,12 +31,12 @@ static char *init_path = "/bin/sh";
 #if CONFIG_SMP
 static bool boot_cpus = true;
 #endif
-elf32_t kernel_elf;
+elf64_t kernel_elf;
 addr_t initial_boot_stack=0;
 
 static void parse_kernel_command_line(char *buf)
 {
-	char *c = buf;
+	char *c = buf + PHYS_PAGE_MAP; //TODO: something like mm_physical_read
 	while(c && *c) {
 		char *tmp = strchr(c, ' ');
 		if(tmp) *tmp++ = 0;
@@ -73,6 +73,7 @@ static void parse_kernel_command_line(char *buf)
 	printk(1, "[kernel]: init=%s\n", init_path);
 }
 
+void __init_entry(void);
 static void user_mode_init(void);
 /* This is the C kernel entry point */
 void kmain(struct multiboot *mboot_header, addr_t initial_stack)
@@ -98,14 +99,14 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	syscall_init();
 	fs_initrd_load(mtboot);
 	cpu_timer_install(1000);
-	mm_pm_init(placement, mtboot);
+	mm_pm_init();
 	cpu_processor_init_1();
 
 	/* Now get the management stuff going */
 	printk(1, "[kernel]: Starting system management\n");
 	mm_init(mtboot);
-	console_init_stage2();
 	parse_kernel_command_line((char *)(addr_t)mtboot->cmdline);
+	console_init_stage2();
 	tm_init_multitasking();
 	dm_init();
 	fs_init();
@@ -124,12 +125,15 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	if(boot_cpus)
 		cpu_boot_all_aps();
 #endif
-	if(!sys_clone(0)) {
-		tm_thread_user_mode_jump(user_mode_init);
-	}
+	tm_clone(0, __init_entry, 0);
 
 	sys_setsid();
 	kt_kernel_idle_task();
+}
+
+void __init_entry(void)
+{
+	tm_thread_user_mode_jump(user_mode_init);
 }
 
 /* this function must exist entirely within ring 3. Because the kernel

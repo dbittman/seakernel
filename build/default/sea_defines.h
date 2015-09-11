@@ -3,8 +3,8 @@
  * and re-process the config file!
  */
 
-#define CONFIG_OPTIMIZATION_LEVEL 3
-#define CONFIG_ARCH 1
+#define CONFIG_OPTIMIZATION_LEVEL 0
+#define CONFIG_ARCH 2
 #define CONFIG_WERROR 0
 #define CONFIG_SMP 1
 #define CONFIG_MAX_CPUS 64
@@ -19,7 +19,7 @@
 #define CONFIG_TRACE 1
 #define CONFIG_GDB_STUB 0
 #define CONFIG_MODULE_PATH "/sys/modules/"
-#define CONFIG_DEBUG 0
+#define CONFIG_DEBUG 1
 #define CONFIG_SERIAL_DEBUG 1
 #define CONFIG_MODULES 1
 #define CONFIG_SWAP 0

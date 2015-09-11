@@ -65,10 +65,11 @@ int kerfs_unregister_entry(char *path)
 {
 	uid_t old = current_process->effective_uid;
 	current_process->effective_uid = 0;
-	struct inode *node = fs_path_resolve_inode(path, RESOLVE_NOLINK, 0);
+	int err;
+	struct inode *node = fs_path_resolve_inode(path, RESOLVE_NOLINK, &err);
 	if(!node) {
 		current_process->effective_uid = old;
-		return -ENOENT;
+		return err;
 	}
 	dev_t num = node->phys_dev;
 	vfs_icache_put(node);

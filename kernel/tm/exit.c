@@ -80,7 +80,11 @@ static void tm_thread_destroy(unsigned long data)
 		workqueue_insert(&__current_cpu->work, thread_cleanup_call);
 		return;
 	}
-	tm_thread_release_kernelmode_stack(thr->kernel_stack);
+	for(int i=0;i<KERN_STACK_SIZE / PAGE_SIZE;i++) {
+		addr_t p = mm_context_virtual_unmap(&thr->process->vmm_context, thr->kernel_stack + i * PAGE_SIZE);
+		assert(p);
+		mm_physical_deallocate(p);
+	}
 	tm_process_put(thr->process); /* thread releases it's process pointer */
 	tm_thread_put(thr);
 }
@@ -178,6 +182,13 @@ void tm_thread_do_exit(void)
 	if(atomic_fetch_sub(&current_process->thread_count, 1) == 1) {
 		atomic_fetch_sub_explicit(&running_processes, 1, memory_order_relaxed);
 		tm_process_exit(current_thread->exit_code);
+	} else {
+		/* we're not the last thread exiting, we're not gonna clean up the directory.
+		 * the thread that cleans up the directory will free all the other kernel
+		 * stacks except it's own, and so it won't zero this array out. That way
+		 * when the thread gets finally cleaned up, those final physical pages can
+		 * get freed */
+		memset(current_thread->kernel_stack_physical, 0, sizeof(current_thread->kernel_stack_physical));
 	}
 
 	cpu_disable_preemption();

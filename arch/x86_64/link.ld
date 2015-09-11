@@ -1,32 +1,44 @@
-ENTRY(start)
-OUTPUT_FORMAT("elf64-x86-64", "elf64-x86-64", "elf64-x86-64")
+ENTRY(bootstrap)
+OUTPUT_FORMAT("elf64-x86-64")
 SECTIONS
 {
-    .text 0x101000 :
-    {
-		*(.boot)
-		code = .; _code = .; __code = .;
-		kernel_start = .;
-		*(.trampoline)
-		*(.text)
-		. = ALIGN(4096);
-    }
+	. = 0x100000;
+	kernel_start = .;
 
-    .data :
+	.bootstrap :
+	{
+		*(.boot)
+		*(.trampoline)
+	}
+
+	. += 0xffff800000000000;
+
+    .text ALIGN (0x1000) : AT(ADDR(.text) - 0xffff800000000000)
     {
-        data = .; _data = .; __data = .;
+    	*(.text)
+	}
+
+    .data ALIGN (0x1000) : AT(ADDR(.data) - 0xffff800000000000)
+    {
         *(.data)
         *(.rodata)
-        . = ALIGN(4096);
     }
+	
+	.eh_frame ALIGN(0x1000) : AT(ADDR(.eh_frame) - 0xffff800000000000)
+   	{
+   	    *(.eh_frame)
+   	}
 
-    .bss :
+    .bss ALIGN(0x1000) : AT(ADDR(.bss) - 0xffff800000000000)
     {
-        . = ALIGN(4096);
-        bss = .; _bss = .; __bss = .;
         *(.bss)
-        . = ALIGN(4096);
+        *(COMMON)
     }
-/DISCARD/ : { *(.comment) *(.eh_frame) *(.debug_abbrev) *(.debug_info) *(.debug_line) *(.debug_loc) *(.debug_pubnames) *(.debug_aranges) *(.debug_str) *(.debug_macinfo) *(.debug_ranges) *(.stab) *(.stabstr) }
-    end = .; _end = .; __end = .;
+	
+    kernel_end = .;
+    /DISCARD/ :
+    {
+       	*(.comment)
+    }
 }
+

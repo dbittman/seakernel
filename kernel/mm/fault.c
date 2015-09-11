@@ -6,7 +6,7 @@
 #include <sea/cpu/processor.h>
 #include <sea/vsprintf.h>
 #include <sea/cpu/interrupt.h>
-
+#include <sea/syscall.h>
 static int do_map_page(addr_t addr, unsigned attr)
 {
 	/* only map a new page if one isn't already mapped. In addition,
@@ -49,6 +49,11 @@ void mm_page_fault_handler(registers_t *regs, addr_t address, int pf_cause)
 	if(pf_cause & PF_CAUSE_USER) {
 		/* check if we need to map a page for mmap, etc */
 		if(pd_cur_data) {
+			if((address & PAGE_MASK) == SIGNAL_INJECT) {
+				do_map_page(SIGNAL_INJECT, PAGE_PRESENT | PAGE_USER);
+				memcpy((void *)SIGNAL_INJECT, (void *)signal_return_injector, SIGNAL_INJECT_SIZE);
+				return;
+			}
 			if(mm_page_fault_test_mappings(address, pf_cause) == 0) {
 				return;
 			}

@@ -47,6 +47,7 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 
 	int unlocked = 0;
 	int locked = 1;
+	int backoff = 1;
 	/* success is given memory_order_acquire because the loop body will not run, but
 	 * we mustn't let any memory accesses bubble up above the exchange. fail is given
 	 * memory_order_acquire because we musn't let the resetting of unlocked
@@ -58,7 +59,11 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 			tm_schedule();
 			cpu_disable_preemption();
 		} else {
-			cpu_pause();
+			for(int i=0;i<backoff;i++) {
+				cpu_pause();
+			}
+			if(backoff < 2000) /* TODO: backoff strats */
+				backoff *= 2;
 		}
 	}
 	assert(m->lock);

@@ -11,6 +11,7 @@
 [section .trampoline]
 trampoline_start:
   cli
+  xchg bx, bx
   xor ax, ax
   mov ds, ax
   mov si, 0x7100
@@ -23,7 +24,7 @@ trampoline_start:
 trampoline_end:
 
 [BITS 32]
-[section .text]
+[section .trampoline]
 
 pmode_enter:
   mov ax, 0x10
@@ -81,35 +82,22 @@ gdtable:
 	dw	0xFFFF, 0               ; 64-bit kernel data segment
 	db	0, 0x92, 0xAF, 0
 
+extern boot_pdpt
+align 0x1000
+boot_ap_pml4:
+	dq boot_pdpt
+	times 255 dq 0
+	dq boot_pdpt
+	times 255 dq 0
 
 cpu_start32:
 	mov eax, cr4
 	bts eax, 5
 	mov cr4, eax
-	; now, set up a basic PML4 paging setup, since 64-bit requires paging
-	mov edi, 0x70000            ; Set the destination index to 0x7000.
-	mov cr3, edi                ; Set control register 3 to the destination index.
-	xor eax, eax                ; Nullify the A-register.
-	mov ecx, 4096               ; Set the C-register to 4096.
-	rep stosd                   ; Clear the memory.
-	mov edi, cr3                ; Set the destination index to control register 3.
-
-	mov DWORD [edi], (0x71003)  ; Set the qword at the destination index to 0x71003.
-	mov DWORD [edi+4], (0) 
 	
-	add edi, 0x1000             ; Add 0x1000 to the destination index.
-	mov DWORD [edi], (0x72003)  ; Set the qword at the destination index to 0x72003.
-	mov DWORD [edi+4], (0)
-
-    add edi, 0x1000
-	mov ebx, (0x00000003 | (1 << 7))
-	mov ecx, (512)
-.set_entry:
-	mov DWORD [edi], ebx        ; Set the qword at the destination index to the B-register.
-	mov DWORD [edi+4], 0
-	add ebx, 0x200000           ; Add 0x1000 to the B-register.
-	add edi, 8                  ; Add eight to the destination index.
-	loop .set_entry 
+	mov ebx, boot_ap_pml4
+	or dword [ebx], 5
+	or dword [ebx + 256*8], 5
 	
 	; enable long mode
 	mov ecx, 0xC0000080
@@ -118,17 +106,22 @@ cpu_start32:
 	wrmsr
 
 	; enable paging
+	mov cr3, ebx
 	mov eax, cr0
 	bts eax, 31
 	mov cr0, eax
-	mov edi, 0x70000            ; Set the destination index to 0x7000.
-	mov cr3, edi                ; Set control register 3 to the destination index.
-	; lead the GDT with 64-bit segments
+	; load the GDT with 64-bit segments
 	lgdt [gdtdesc]
 	; long jump into 64-bit mode
-	jmp 0x08:(cpu_start64)
+	jmp 0x08:(cpu_start64_low)
 
 [BITS 64]
+cpu_start64_low:
+	mov rcx, cpu_start64
+	jmp rcx
+
+section .text
+extern boot_pml4
 cpu_start64:
 	; set the segments...
 	mov ax, 0x10
@@ -136,5 +129,13 @@ cpu_start64:
     mov es, ax
     mov fs, ax
     mov gs, ax
+	mov rax, boot_pml4
+	mov cr3, rax
+	mov rsp, cpu_tmp_stack + 0x1000
+	mov rcx, cpu_entry
+    call rcx
 
-    call cpu_entry
+section .bss
+align 8
+cpu_tmp_stack:
+	resb 0x1000

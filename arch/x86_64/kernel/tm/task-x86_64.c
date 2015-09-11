@@ -32,8 +32,7 @@ void arch_tm_jump_to_user_mode(addr_t jmp)
 			::"r"(jmp), "r"(current_thread->usermode_stack_end):"memory","rax","rsp");
 }
 
-void arch_tm_do_switch(long unsigned *, long unsigned *, addr_t);
-void arch_tm_do_fork_setup(long unsigned *stack, long unsigned *jmp, signed long offset);
+void arch_tm_do_switch(addr_t *, addr_t *, addr_t, addr_t);
 
 __attribute__((noinline)) void arch_tm_thread_switch(struct thread *old, struct thread *new, addr_t jump)
 {
@@ -44,16 +43,11 @@ __attribute__((noinline)) void arch_tm_thread_switch(struct thread *old, struct 
 		__asm__ __volatile__ (
 				"fxrstor (%0)" :: "r" (ALIGN(new->arch_thread.fpu_save_data, 16)) : "memory");
 	}
-	arch_tm_do_switch(&old->stack_pointer, &new->stack_pointer, jump);
+	addr_t cr3 = (old->process != new->process) ? new->process->vmm_context.root_physical : 0;
+	if(jump)
+		cpu_enable_preemption();
+	arch_tm_do_switch(&old->stack_pointer, &new->stack_pointer, jump, cr3);
 	/* WARNING - we've switched stacks at this point! We must NOT use anything
 	 * stack related now until this function returns! */
-}
-
-__attribute__((noinline)) void arch_tm_fork_setup_stack(struct thread *thr)
-{
-	arch_cpu_copy_fixup_stack((addr_t)thr->kernel_stack, (addr_t)current_thread->kernel_stack, KERN_STACK_SIZE);
-	*(struct thread **)(thr->kernel_stack) = thr;
-
-	arch_tm_do_fork_setup(&thr->stack_pointer, &thr->jump_point, (signed long)((addr_t)thr->kernel_stack - (addr_t)current_thread->kernel_stack));
 }
 

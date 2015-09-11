@@ -117,5 +117,5 @@ typedef struct
 const char *elf32_lookup_symbol (uint32_t addr, elf32_t *elf);
 int arch_loader_process_elf32_phdr(char *mem, int fp, addr_t *start, addr_t *end);
 
-extern elf32_t kernel_elf;
+extern elf64_t kernel_elf; /* TODO: fix this... we should have the actual bitsize depend on the arch */
 #endif

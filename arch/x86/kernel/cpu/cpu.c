@@ -20,7 +20,7 @@ int probe_smp();
 
 void arch_cpu_processor_init_1(void)
 {
-#if CONFIG_SMP
+#if 0 /* TODO CONFIG_SMP */
 	mutex_create(&ipi_mutex, MT_NOSCHED);
 	memset(cpu_array, 0, sizeof(struct cpu) * CONFIG_MAX_CPUS);
 	cpu_array_num = 0;

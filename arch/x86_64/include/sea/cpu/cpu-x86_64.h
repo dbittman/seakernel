@@ -28,8 +28,13 @@ void add_ioapic(addr_t address, int id, int int_start);
 #undef LAPIC_READ
 #undef LAPIC_WRITE
 
-#define LAPIC_READ(x)  (*((volatile unsigned *) (lapic_addr+(x))))
-#define LAPIC_WRITE(x, y)   \
-	(*((volatile unsigned *) (lapic_addr+(x))) = (y))
+extern int lapic_inited;
+#define LAPIC_READ(x)  \
+		(lapic_inited ? (*((volatile unsigned *) (lapic_addr+(x)))) : 0)
+
+#define LAPIC_WRITE(x,y)   do {\
+	if(lapic_inited) \
+		(*((volatile unsigned *) (lapic_addr+(x))) = (y)); \
+	} while(0)
 #endif
 

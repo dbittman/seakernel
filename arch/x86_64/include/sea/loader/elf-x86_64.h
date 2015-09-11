@@ -23,7 +23,7 @@ typedef struct __attribute__((packed))
 	uint16_t strndx;
 	/* these aren't....real. */
 	char *shbuf;
-	unsigned strtab_addr, symtab_addr, strtabsz, syment_len;
+	addr_t strtab_addr, symtab_addr, strtabsz, syment_len;
 } elf64_header_t;
 
 typedef elf64_header_t elf_header_t;

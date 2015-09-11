@@ -118,8 +118,6 @@ void mm_init(struct multiboot *m)
 	loader_add_kernel_symbol(pmap_destroy);
 	loader_add_kernel_symbol(mm_alloc_physical_page);
 	loader_add_kernel_symbol(mm_vm_get_map);
-	loader_add_kernel_symbol(mm_vm_get_attrib);
-	loader_add_kernel_symbol(mm_vm_set_attrib);
 	loader_add_kernel_symbol(mm_free_physical_page);
 	loader_add_kernel_symbol(mm_allocate_dma_buffer);
 	loader_add_kernel_symbol(mm_free_dma_buffer);

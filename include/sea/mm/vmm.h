@@ -19,7 +19,7 @@ struct vmm_context {
 	mutex_t lock;
 };
 
-#define MAP_ZERO 0x100000
+#define MAP_ZERO    0x100000
 #define __ALL_ATTRS MAP_ZERO
 _Static_assert((__ALL_ATTRS & ATTRIB_MASK) == 0,
 		"tried to redefine paging attribute");
@@ -38,7 +38,6 @@ void mm_vm_switch_context(struct vmm_context *);
 void mm_vm_init(addr_t id_map_to);
 void mm_vm_init_2();
 addr_t mm_vm_get_map(addr_t v, addr_t *p, unsigned locked);
-void mm_vm_set_attrib(addr_t v, short attr);
 unsigned int mm_vm_get_attrib(addr_t v, unsigned *p, unsigned locked);
 int mm_vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned opt);
 int mm_is_valid_user_pointer(int num, void *p, char flags);
@@ -54,6 +53,10 @@ bool mm_virtual_map(addr_t virtual, addr_t physical, int flags, size_t length);
 addr_t mm_virtual_unmap(addr_t address);
 bool mm_context_read(struct vmm_context *ctx, void *output,
 		addr_t address, size_t length);
+bool mm_virtual_getmap(addr_t address, addr_t *phys, int *flags);
+bool mm_context_virtual_getmap(struct vmm_context *ctx, addr_t address, addr_t *phys, int *flags);
+bool mm_context_virtual_changeattr(struct vmm_context *ctx, addr_t virtual, int flags, size_t length);
+bool mm_virtual_changeattr(addr_t virtual, int flags, size_t length);
 
 addr_t mm_context_virtual_unmap(struct vmm_context *ctx, addr_t address);
 static inline void map_if_not_mapped(addr_t loc)
@@ -81,10 +84,10 @@ static inline void user_map_if_not_mapped(addr_t loc)
 		addr_t phys = mm_physical_allocate(0x1000, true);
 		if(!mm_virtual_map(loc & PAGE_MASK, phys, PAGE_PRESENT | PAGE_WRITE | PAGE_USER, 0x1000)) {
 			mm_physical_deallocate(phys);
-			mm_vm_set_attrib(loc & PAGE_MASK, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
+			mm_virtual_changeattr(loc & PAGE_MASK, PAGE_PRESENT | PAGE_WRITE | PAGE_USER, 0x1000);
 		}
 	} else
-		mm_vm_set_attrib(loc & PAGE_MASK, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
+		mm_virtual_changeattr(loc & PAGE_MASK, PAGE_PRESENT | PAGE_WRITE | PAGE_USER, 0x1000);
 }
 
 static inline void user_map_if_not_mapped_noclear(addr_t loc)
@@ -93,10 +96,10 @@ static inline void user_map_if_not_mapped_noclear(addr_t loc)
 		addr_t phys = mm_physical_allocate(0x1000, false);
 		if(!mm_virtual_map(loc & PAGE_MASK, phys, PAGE_PRESENT | PAGE_WRITE | PAGE_USER, 0x1000)) {
 			mm_physical_deallocate(phys);
-			mm_vm_set_attrib(loc & PAGE_MASK, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
+			mm_virtual_changeattr(loc & PAGE_MASK, PAGE_PRESENT | PAGE_WRITE | PAGE_USER, 0x1000);
 		}
 	} else
-		mm_vm_set_attrib(loc & PAGE_MASK, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
+		mm_virtual_changeattr(loc & PAGE_MASK, PAGE_PRESENT | PAGE_WRITE | PAGE_USER, 0x1000);
 }
 
 #define PF_CAUSE_NONPRESENT  1

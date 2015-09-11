@@ -32,8 +32,9 @@ static void preexec(int desc)
 	mm_free_self_directory(0);
 	/* we need to re-create the vmem for memory mappings */
 	valloc_create(&(t->process->mmf_valloc), MMF_BEGIN, MMF_END, PAGE_SIZE, VALLOC_USERMAP);
-	for(addr_t a = MMF_BEGIN;a < (MMF_BEGIN + (size_t)t->process->mmf_valloc.nindex);a+=PAGE_SIZE)
-		mm_vm_set_attrib(a, PAGE_PRESENT | PAGE_WRITE);
+	for(addr_t a = MMF_BEGIN;a < (MMF_BEGIN + (size_t)t->process->mmf_valloc.nindex);a+=PAGE_SIZE) {
+		mm_virtual_changeattr(a, PAGE_PRESENT | PAGE_WRITE, 0x1000); //TODO again, fix this page size thing
+	}
 	t->signal = t->signals_pending = 0;
 	memset((void *)t->process->signal_act, 0, sizeof(struct sigaction) * NUM_SIGNALS);
 

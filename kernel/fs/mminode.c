@@ -41,9 +41,9 @@ addr_t fs_inode_map_private_physical_page(struct inode *node, addr_t virt,
 	addr_t ph;
 	assert(!(virt & ~PAGE_MASK));
 	assert(!(offset & ~PAGE_MASK));
-	/* DON'T specify NOCLEAR, since read_inode may not fill up the whole page */
-	ph = mm_physical_allocate(0x1000, true); //TODO: make sizes be req_len?
-	bool result = mm_virtual_map(virt, ph, attrib, 0x1000);
+	/* specify MAP_ZERO, since read_inode may not fill up the whole page */
+	ph = mm_physical_allocate(0x1000, false); //TODO: make sizes be req_len?
+	bool result = mm_virtual_map(virt, ph, MAP_ZERO | attrib, 0x1000);
 	if(!result)
 		panic(0, "trying to remap mminode private section %x", virt);
 	int err=-1;
@@ -91,9 +91,9 @@ addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt,
 	{
 		/* map a new page into virt, and load data into it */
 		entry->page = mm_alloc_physical_page();
-		/* DON'T specify NOCLEAR, since read_inode may not fill up the whole page. Also,
+		/* specify ZERO, since read_inode may not fill up the whole page. Also,
 		 * specify PAGE_LINK so that mm_vm_clone doesn't copy shared pages */
-		if(!mm_virtual_map(virt, entry->page, attrib, 0x1000))
+		if(!mm_virtual_map(virt, entry->page, MAP_ZERO | attrib, 0x1000))
 			panic(0, "trying to remap mminode shared section");
 
 		int err=-1;
@@ -217,8 +217,7 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 		}
 		/* we'll actually do the unmapping too */
 		unsigned attr;
-		if(mm_vm_get_map(virt + (i - page_number)*PAGE_SIZE, 0, 0) 
-				&& mm_vm_get_attrib(virt + (i - page_number)*PAGE_SIZE, &attr, 0)) {
+		if(mm_virtual_getmap(virt + (i - page_number)*PAGE_SIZE, NULL, &attr)) {
 			assert(attr & PAGE_LINK);
 			mm_virtual_unmap(virt + (i - page_number)*PAGE_SIZE);
 		}

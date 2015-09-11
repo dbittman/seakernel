@@ -9,7 +9,6 @@ void arch_mm_vm_init_2();
 void arch_mm_vm_switch_context(struct vmm_context *context);
 addr_t arch_mm_vm_get_map(addr_t v, addr_t *p, unsigned locked);
 void arch_mm_vm_set_attrib(addr_t v, short attr);
-unsigned int arch_mm_vm_get_attrib(addr_t v, unsigned *p, unsigned locked);
 int arch_mm_vm_map(addr_t virt, addr_t phys, unsigned attr, unsigned opt);
 int arch_mm_vm_unmap_only(addr_t virt, unsigned locked);
 int arch_mm_vm_unmap(addr_t virt, unsigned locked);
@@ -40,21 +39,10 @@ addr_t mm_vm_get_map(addr_t v, addr_t *p, unsigned locked)
 	return arch_mm_vm_get_map(v, p, locked);
 }
 
-void mm_vm_set_attrib(addr_t v, short attr)
-{
-	arch_mm_vm_set_attrib(v, attr);
-}
-
-unsigned int mm_vm_get_attrib(addr_t v, unsigned *p, unsigned locked)
-{
-	return arch_mm_vm_get_attrib(v, p, locked);
-}
-
 void mm_flush_page_tables(void)
 {
 	arch_mm_flush_page_tables();
 }
-
 
 bool arch_mm_context_virtual_map(struct vmm_context *ctx,
 		addr_t virtual, addr_t physical, int flags, size_t length);
@@ -95,5 +83,33 @@ bool mm_context_read(struct vmm_context *ctx, void *output,
 		addr_t address, size_t length)
 {
 	return arch_mm_context_read(ctx, output, address, length);
+}
+
+
+bool arch_mm_virtual_getmap(addr_t address, addr_t *phys, int *flags);
+bool arch_mm_context_virtual_getmap(struct vmm_context *ctx, addr_t address, addr_t *phys, int *flags);
+
+bool mm_virtual_getmap(addr_t address, addr_t *phys, int *flags)
+{
+	return arch_mm_virtual_getmap(address, phys, flags);
+}
+
+bool mm_context_virtual_getmap(struct vmm_context *ctx, addr_t address, addr_t *phys, int *flags)
+{
+	return arch_mm_context_virtual_getmap(ctx, address, phys, flags);
+}
+
+
+bool arch_mm_virtual_changeattr(addr_t virtual, int flags, size_t length);
+bool arch_mm_context_virtual_changeattr(struct vmm_context *ctx, addr_t virtual, int flags, size_t length);
+
+bool mm_virtual_changeattr(addr_t virtual, int flags, size_t length)
+{
+	return arch_mm_virtual_changeattr(virtual, flags, length);
+}
+
+bool mm_context_virtual_changeattr(struct vmm_context *ctx, addr_t virtual, int flags, size_t length)
+{
+	return arch_mm_context_virtual_changeattr(ctx, virtual, flags, length);
 }
 

@@ -192,7 +192,7 @@ static struct process *tm_process_copy(int flags, struct thread *newthread)
 	/* TODO: what the fuck is this? */
 	valloc_create(&newp->mmf_valloc, MMF_BEGIN, MMF_END, PAGE_SIZE, VALLOC_USERMAP);
 	for(addr_t a = MMF_BEGIN;a < (MMF_BEGIN + (size_t)newp->mmf_valloc.nindex);a+=PAGE_SIZE)
-		mm_vm_set_attrib(a, PAGE_PRESENT | PAGE_WRITE);
+		mm_virtual_changeattr(a, PAGE_PRESENT | PAGE_WRITE, 0x1000); //TODO: hmmm, do we really need this function?
 	__copy_mappings(newp, current_process);
 	if(current_process->root) {
 		newp->root = current_process->root;

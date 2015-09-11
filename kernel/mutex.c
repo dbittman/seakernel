@@ -27,6 +27,7 @@ int mutex_is_locked(mutex_t *m)
 	return atomic_load(&m->lock);
 }
 #define MUTEX_DEBUG 0
+/* TODO: split MT_NOSCHED into struct spinlock */
 void __mutex_acquire(mutex_t *m, char *file, int line)
 {
 	assert(m->magic == MUTEX_MAGIC);

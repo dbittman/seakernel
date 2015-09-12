@@ -108,8 +108,8 @@ addr_t mm_establish_mapping(struct inode *node, addr_t virt,
 	}
 	if(vr.start)
 		virt = vr.start;
-	//printk(0, "[mmap]: mapping %x for %x, f=%x, p=%x: %s:%x\n", 
-	//		virt, length, flags, prot, node->i_ops ? node->name : "(ANON)", offset);
+	//printk(0, "[mmap]: mapping %x for %x, f=%x, p=%x: %d:%x\n", 
+	//		virt, length, flags, prot, node->id, offset);
 	struct memmap *map = initialize_map(node, virt, prot, flags, offset, length);
 	if(vr.start)
 		memcpy(&(map->vr), &vr, sizeof(struct valloc_region));
@@ -156,7 +156,7 @@ int mm_sync_mapping(struct memmap *map, addr_t start, size_t length, int flags)
 		return 0;
 	size_t fo = (start - map->virtual);
 	for(addr_t v = 0;v < length;v += PAGE_SIZE) {
-		if(mm_vm_get_map(start + v, 0, 0)) {
+		if(mm_virtual_getmap(start + v, NULL, NULL)) {
 			size_t page_len = PAGE_SIZE;
 			if((length - v) < PAGE_SIZE)
 				page_len = length - v;

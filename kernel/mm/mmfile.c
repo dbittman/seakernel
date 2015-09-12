@@ -46,7 +46,7 @@
 #include <sea/errno.h>
 #include <sea/mm/kmalloc.h>
 
-addr_t mm_mmap(addr_t address, size_t length, int prot, int flags, int fd, size_t offset)
+addr_t mm_mmap(addr_t address, size_t length, int prot, int flags, int fd, size_t offset, int *err)
 {
 	struct inode *node;
 	if(flags & MAP_ANONYMOUS) {
@@ -56,20 +56,25 @@ addr_t mm_mmap(addr_t address, size_t length, int prot, int flags, int fd, size_
 		node->flags = INODE_INUSE;
 	} else {
 		struct file *f = fs_get_file_pointer(current_process, fd);
-		if(!f)
-			return -EBADF;
+		if(!f) {
+			if(err) *err = -EBADF;
+			return -1;
+		}
 		/* check permissions */
 		if(!(f->flags & _FREAD)) {
 			fs_fput(current_process, fd, 0);
-			return -EACCES;
+			if(err) *err = -EACCES;
+			return -1;
 		}
 		if(!(flags & MAP_PRIVATE) && (prot & PROT_WRITE) && !(f->flags & _FWRITE)) {
 			fs_fput(current_process, fd, 0);
-			return -EACCES;
+			if(err) *err = -EACCES;
+			return -1;
 		}
 		if(!S_ISREG(f->inode->mode)) {
 			fs_fput(current_process, fd, 0);
-			return -ENODEV;
+			if(err) *err = -ENODEV;
+			return -1;
 		}
 		vfs_inode_get(f->inode);
 		node = f->inode;
@@ -82,11 +87,11 @@ addr_t mm_mmap(addr_t address, size_t length, int prot, int flags, int fd, size_
 	return mapped_address;
 }
 
-void *sys_mmap(void *address, struct __mmap_args *args)
+void *sys_mmap(void *address, struct __mmap_args *args, int *result)
 {
 	if(((addr_t)address & ~PAGE_MASK))
 		return (void *)-EINVAL;
-	return (void *)mm_mmap((addr_t)address, args->length, args->prot, args->flags, args->fd, (size_t)args->offset);
+	return (void *)mm_mmap((addr_t)address, args->length, args->prot, args->flags, args->fd, (size_t)args->offset, result);
 }
 
 int sys_munmap(void *addr, size_t length)

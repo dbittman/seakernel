@@ -73,33 +73,37 @@ int boot_cpu(struct cpu *cpu)
 	printk(1, "[smp]: poking cpu %d\n", apicid);
 
 	/* TODO: this should be its own function? We do it in fork too... */
-	struct valloc_region reg;
-	valloc_allocate(&kernel_process->km_stacks, &reg, 1);
-	for(int i = 0;i<(KERN_STACK_SIZE / PAGE_SIZE);i++) {
-		bool r = mm_virtual_map(reg.start + i * PAGE_SIZE,
-				mm_physical_allocate(PAGE_SIZE, false),
-				PAGE_PRESENT | PAGE_WRITE, PAGE_SIZE);
-		assert(r);
-	}
-	cpu->stack = reg.start;
+	struct thread *thread = kmalloc(sizeof(struct thread));
+	
 
 	cpu->active_queue = tqueue_create(0, 0);
 	cpu->numtasks=1;
 	ticker_create(&cpu->ticker, 0);
 	workqueue_create(&cpu->work, 0);
-	struct thread *thread = kmalloc(sizeof(struct thread));
 	thread->refs = 1;
 	cpu->idle_thread = thread;
 	thread->process = kernel_process; /* we have to do this early, so that the vmm system can use the lock... */
 	thread->state = THREADSTATE_RUNNING;
 	thread->tid = tm_thread_next_tid();
 	thread->magic = THREAD_MAGIC;
-	thread->kernel_stack = cpu->stack;
 	workqueue_create(&thread->resume_work, 0);
 	mutex_create(&thread->block_mutex, MT_NOSCHED);
-	*(struct thread **)(thread->kernel_stack) = thread;
 	hash_table_set_entry(thread_table, &thread->tid, sizeof(thread->tid), 1, thread);
+	
 	tm_thread_add_to_process(thread, kernel_process);
+	tm_thread_reserve_stacks(thread);
+	cpu->stack = thread->kernel_stack;
+	printk(0, ":: %x\n", cpu->stack);
+	size_t kms_page_size = mm_page_size_closest(KERN_STACK_SIZE);
+	for(int i = 0;i<((KERN_STACK_SIZE-1) / kms_page_size)+1;i++) {
+		addr_t phys = mm_physical_allocate(kms_page_size, false);
+		bool r = mm_virtual_map(thread->kernel_stack + i * kms_page_size,
+				phys,
+				PAGE_PRESENT | PAGE_WRITE, kms_page_size);
+		if(!r)
+			mm_physical_deallocate(phys);
+	}
+	*(struct thread **)(thread->kernel_stack) = thread;
 	tm_thread_add_to_cpu(thread, cpu);
 	atomic_fetch_add(&running_threads, 1);
 	cpu_disable_preemption();

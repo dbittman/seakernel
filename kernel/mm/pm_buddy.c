@@ -51,8 +51,9 @@ static addr_t __do_pmm_buddy_allocate(size_t length)
 		panic(0, "can only allocate in powers of 2");
 	if(length < MIN_SIZE)
 		panic(0, "length less than minimum size");
-	if(length > MAX_SIZE)
-		panic(0, "length greater than minimum size");
+	if(length > MAX_SIZE) {
+		panic(PANIC_NOSYNC, "out of physical memory");
+	}
 
 	int order = min_possible_order(length);
 

@@ -50,7 +50,9 @@ int ahci_write_prdt(struct hba_memory *abar, struct hba_port *port, struct ahci_
 	struct hba_prdt_entry *prd;
 	for(i=0;i<num_entries-1;i++)
 	{
-		addr_t phys_buffer = mm_vm_get_map(virt_buffer, 0, 0);
+		/* TODO: do we need to do this? */
+		addr_t phys_buffer;
+		mm_virtual_getmap(virt_buffer, &phys_buffer, 0);
 		prd = &tbl->prdt_entries[i+offset];
 		prd->byte_count = PRDT_MAX_COUNT-1;
 		prd->data_base_l = LOWER32(phys_buffer);
@@ -60,7 +62,8 @@ int ahci_write_prdt(struct hba_memory *abar, struct hba_port *port, struct ahci_
 		length -= PRDT_MAX_COUNT;
 		virt_buffer += PRDT_MAX_COUNT;
 	}
-	addr_t phys_buffer = mm_vm_get_map(virt_buffer, 0, 0);
+	addr_t phys_buffer;
+	mm_virtual_getmap(virt_buffer, &phys_buffer, 0);
 	prd = &tbl->prdt_entries[i+offset];
 	prd->byte_count = length-1;
 	prd->data_base_l = LOWER32(phys_buffer);

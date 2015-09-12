@@ -8,6 +8,11 @@ void free_pde(page_dir_t *pd, unsigned idx)
 {
 	if(!pd[idx]) 
 		return;
+	if(pd[idx] & PAGE_LARGE) {
+		mm_physical_deallocate(pd[idx] & PAGE_MASK);
+		pd[idx]=0;
+		return;
+	}
 	addr_t physical = pd[idx]&PAGE_MASK;
 	assert(!(pd[idx] & (1 << 7)));
 	page_table_t *table = (addr_t *)(physical + PHYS_PAGE_MAP);
@@ -49,7 +54,7 @@ void free_pml4e(pml4_t *pml4, unsigned idx)
 	mm_free_physical_page(physical);
 }
 
-void arch_mm_free_self_directory()
+void arch_mm_free_userspace(void)
 {
 	unsigned int S = 0;
 	unsigned int E = PML4_IDX(TOP_TASK_MEM_EXEC/0x1000);
@@ -59,7 +64,7 @@ void arch_mm_free_self_directory()
 }
 
 /* free the pml4, not the entries */
-void arch_mm_destroy_directory(struct vmm_context *vc)
+void arch_mm_context_destroy(struct vmm_context *vc)
 {
 	pml4_t *pml4 = (pml4_t *)vc->root_virtual;
 	unsigned int E = PML4_IDX(MEMMAP_KERNEL_START/0x1000);

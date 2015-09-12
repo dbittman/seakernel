@@ -60,7 +60,6 @@ struct process {
 	pid_t pid;
 	int flags;
 	_Atomic int refs;
-	struct valloc km_stacks;
 
 	struct llistnode listnode;
 

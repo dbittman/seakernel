@@ -98,7 +98,7 @@ void mm_init(struct multiboot *m)
 	printk(KERN_DEBUG, "[mm]: Setting up Memory Management...\n");
 	mutex_create(&pm_mutex, MT_NOSCHED); /* allocating physical memory is required inside
 										  * interrupt context because of page faults */
-	mm_vm_init(&kernel_context);
+	arch_mm_virtual_init(&kernel_context);
 	cpu_interrupt_register_handler (14, &arch_mm_page_fault_handle);
 	pmm_buddy_init();
 	process_memorymap(m);
@@ -117,12 +117,10 @@ void mm_init(struct multiboot *m)
 	loader_add_kernel_symbol(pmap_create);
 	loader_add_kernel_symbol(pmap_destroy);
 	loader_add_kernel_symbol(mm_alloc_physical_page);
-	loader_add_kernel_symbol(mm_vm_get_map);
+	loader_add_kernel_symbol(mm_virtual_getmap);
 	loader_add_kernel_symbol(mm_free_physical_page);
 	loader_add_kernel_symbol(mm_allocate_dma_buffer);
 	loader_add_kernel_symbol(mm_free_dma_buffer);
-	//loader_add_kernel_symbol(mm_alloc_contiguous_region);
-	//loader_add_kernel_symbol(mm_free_contiguous_region);
 #endif
 }
 

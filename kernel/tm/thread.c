@@ -86,7 +86,7 @@ void tm_thread_put(struct thread *thr)
 	}
 }
 
-int tm_thread_reserve_usermode_stack(struct thread *thr)
+bool tm_thread_reserve_stacks(struct thread *thr)
 {
 	unsigned i;
 	mutex_acquire(&thr->process->stacks_lock);
@@ -98,51 +98,17 @@ int tm_thread_reserve_usermode_stack(struct thread *thr)
 	}
 	mutex_release(&thr->process->stacks_lock);
 	if(i == NUM_USERMODE_STACKS)
-		return -ENOMEM;
-	return i;
+		return false;
+	thr->stack_num = i;
+	thr->kernel_stack = i * KERN_STACK_SIZE + KERNELMODE_STACKS_START;
+	thr->usermode_stack_end = (i + 1) * (CONFIG_STACK_PAGES * PAGE_SIZE) + USERMODE_STACKS_START;
+	return true;
 }
 
-void tm_thread_release_usermode_stack(struct thread *thr, int stack)
+void tm_thread_release_stacks(struct thread *thr)
 {
 	mutex_acquire(&thr->process->stacks_lock);
-	bitmap_reset(thr->process->stack_bitmap, stack);
+	bitmap_reset(thr->process->stack_bitmap, thr->stack_num);
 	mutex_release(&thr->process->stacks_lock);
-}
-
-addr_t tm_thread_usermode_stack_end(int stack)
-{
-	assert(stack >= 0 && (unsigned)stack < NUM_USERMODE_STACKS);
-	return (stack + 1) * (CONFIG_STACK_PAGES * PAGE_SIZE) + USERMODE_STACKS_START;
-}
-
-void tm_thread_reserve_kernelmode_stack(struct thread *thread)
-{
-	struct valloc_region va;
-	assert(0);
-	/* 
-	assert(thread->process == current_process);
-	if(!valloc_allocate(&thread->process->vmm_context.km_stacks, &va, 1))
-		panic(PANIC_NOSYNC, "unable to allocate kernel mode stack");
-	thread->kernel_stack = va.start;
-	int i=0;
-	for(addr_t a = va.start;a < va.start + KERN_STACK_SIZE;a+=PAGE_SIZE) {
-		map_if_not_mapped(a);
-		thread->kernel_stack_physical[i++] = mm_vm_get_map(a, 0, 0);
-	}
-	*/
-}
-
-void tm_thread_release_kernelmode_stack(struct thread *thread)
-{
-	assert(0);
-	/*
-	assert(thread != current_thread);
-	struct valloc_region va;
-	va.start = thread->kernel_stack;
-	printk(0, "thread %d releasing %x\n", thread->tid, thread->kernel_stack);
-	va.npages = 1;
-	va.flags = 0;
-	valloc_deallocate(&thread->process->vmm_context.km_stacks, &va);
-	*/
 }
 

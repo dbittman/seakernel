@@ -29,7 +29,7 @@ static void preexec(int desc)
 	struct thread *t = current_thread;
 	/* unmap all mappings, specified by POSIX */
 	mm_destroy_all_mappings(t->process);
-	mm_free_self_directory(0);
+	mm_free_userspace();
 	/* we need to re-create the vmem for memory mappings */
 	valloc_create(&(t->process->mmf_valloc), MMF_BEGIN, MMF_END, PAGE_SIZE, VALLOC_USERMAP);
 	for(addr_t a = MMF_BEGIN;a < (MMF_BEGIN + (size_t)t->process->mmf_valloc.nindex);a+=PAGE_SIZE) {

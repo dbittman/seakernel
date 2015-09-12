@@ -15,7 +15,6 @@ bool arch_mm_context_virtual_map(struct vmm_context *ctx, addr_t virtual,
 	if(length != 0x200000 && length != 0x1000) {
 		panic(0, "unsupported page size %x", length);
 	}
-
 	bool result = true;
 	int pml4idx = PML4_INDEX(virtual);
 	int pdptidx = PDPT_INDEX(virtual);

@@ -130,6 +130,7 @@ int heap_insert(struct heap *heap, uint64_t key, void *data)
 
 	if(!(heap->flags & HEAP_LOCKLESS))
 		rwlock_release(&heap->rwl, RWL_WRITER);
+	return 0;
 }
 
 int heap_peek(struct heap *heap, uint64_t *key, void **data)

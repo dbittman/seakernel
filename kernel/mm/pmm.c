@@ -69,7 +69,7 @@ addr_t mm_physical_allocate(size_t length, bool clear)
 {
 	addr_t ret = pmm_buddy_allocate(length);
 	if(clear)
-		arch_mm_physical_memset(ret, 0, length);
+		arch_mm_physical_memset((void *)ret, 0, length);
 	return ret;
 }
 

@@ -6,11 +6,26 @@
 #include <sea/string.h>
 #include <sea/mm/kmalloc.h>
 
+static void copy_pde_large(page_dir_t *pd, page_dir_t *parent_pd, int idx)
+{
+	addr_t parent = parent_pd[idx];
+	if(parent & PAGE_LINK) {
+		pd[idx] = parent;
+	} else {
+		addr_t new = mm_physical_allocate(0x200000, false);
+		memcpy((void *)(new + PHYS_PAGE_MAP), (void *)((parent&PAGE_MASK) + PHYS_PAGE_MAP), 0x200000);
+		pd[idx] = new | (parent & ATTRIB_MASK);
+	}
+}
+
 static void copy_pde(page_dir_t *pd, page_dir_t *parent_pd, int idx)
 {
 	if(!parent_pd[idx])
 		return;
-	page_table_t *parent = (addr_t *)((parent_pd[idx] & PAGE_MASK) + PHYS_PAGE_MAP);
+	if((addr_t)parent_pd[idx] & PAGE_LARGE) {
+		return copy_pde_large(pd, parent_pd, idx);
+	}
+	addr_t *parent = (addr_t *)((parent_pd[idx] & PAGE_MASK) + PHYS_PAGE_MAP);
 	page_table_t table = mm_alloc_physical_page(), *entries;
 	entries = (addr_t *)(table+PHYS_PAGE_MAP);
 	int i;
@@ -66,7 +81,7 @@ void copy_pml4e(pml4_t *pml4, pml4_t *parent_pml4, int idx)
 }
 
 /* Accepts virtual, returns virtual */
-void arch_mm_vm_clone(struct vmm_context *oldcontext, struct vmm_context *newcontext)
+void arch_mm_context_clone(struct vmm_context *oldcontext, struct vmm_context *newcontext)
 {
 	addr_t pml4_phys = mm_physical_allocate(0x1000, true);
 	pml4_t *pml4 = (void *)(pml4_phys + PHYS_PAGE_MAP);

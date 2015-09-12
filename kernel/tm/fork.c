@@ -172,7 +172,7 @@ static struct process *tm_process_copy(int flags, struct thread *newthread)
 	 * to be cloned) */
 	struct process *newp = kmalloc(sizeof(struct process));
 	newp->magic = PROCESS_MAGIC;
-	mm_vm_clone(&current_process->vmm_context, &newp->vmm_context, newthread);
+	mm_context_clone(&current_process->vmm_context, &newp->vmm_context);
 	newp->pid = tm_process_next_pid();
 	newp->cmask = current_process->cmask;
 	newp->refs = 1;
@@ -188,7 +188,6 @@ static struct process *tm_process_copy(int flags, struct thread *newthread)
 	ll_create_lockless(&newp->mappings);
 	mutex_create(&newp->map_lock, MT_NOSCHED); /* we need to lock this during page faults */
 	mutex_create(&newp->stacks_lock, MT_NOSCHED);
-	valloc_create(&newp->km_stacks, KERNELMODE_STACKS_START, KERNELMODE_STACKS_END, KERN_STACK_SIZE, 0);
 	/* TODO: what the fuck is this? */
 	valloc_create(&newp->mmf_valloc, MMF_BEGIN, MMF_END, PAGE_SIZE, VALLOC_USERMAP);
 	for(addr_t a = MMF_BEGIN;a < (MMF_BEGIN + (size_t)newp->mmf_valloc.nindex);a+=PAGE_SIZE)
@@ -264,30 +263,29 @@ int tm_clone(int flags, void *entry, struct kthread *kt)
 	hash_table_set_entry(thread_table, &thr->tid, sizeof(thr->tid), 1, thr);
 	atomic_fetch_add_explicit(&running_threads, 1, memory_order_relaxed);
 	tm_thread_add_to_process(thr, proc);
-
-	struct valloc_region reg;
-	valloc_allocate(&proc->km_stacks, &reg, 1);
-	for(int i = 0;i<(KERN_STACK_SIZE / PAGE_SIZE);i++) {
-		addr_t phys = mm_physical_allocate(PAGE_SIZE, false);
-		bool r = mm_context_virtual_map(&proc->vmm_context, reg.start + i * PAGE_SIZE,
+	if(!tm_thread_reserve_stacks(thr))
+		panic(0, "NOT IMPLEMENTED: NO MORE STACKS");
+	size_t kms_page_size = mm_page_size_closest(KERN_STACK_SIZE);
+	for(int i = 0;i<((KERN_STACK_SIZE-1) / kms_page_size)+1;i++) {
+		addr_t phys = mm_physical_allocate(kms_page_size, false);
+		bool r = mm_context_virtual_map(&proc->vmm_context, thr->kernel_stack + i * kms_page_size,
 				phys,
-				PAGE_PRESENT | PAGE_WRITE, PAGE_SIZE);
+				PAGE_PRESENT | PAGE_WRITE, kms_page_size);
 		if(!r)
 			mm_physical_deallocate(phys);
 	}
-	thr->kernel_stack = reg.start;
 	if(current_thread->regs) {
 		/* TODO: this is kinda arch-dependent... */
 		current_thread->regs->rax = 0;
 		bool r = mm_context_write(&proc->vmm_context, 
-				reg.start + KERN_STACK_SIZE - sizeof(*current_thread->regs),
+				thr->kernel_stack + KERN_STACK_SIZE - sizeof(*current_thread->regs),
 				(void *)current_thread->regs, sizeof(*current_thread->regs));
-		thr->stack_pointer = reg.start + KERN_STACK_SIZE - sizeof(*current_thread->regs);
+		thr->stack_pointer = thr->kernel_stack + KERN_STACK_SIZE - sizeof(*current_thread->regs);
 		assertmsg(r, "need to be able to write new thread's registers");
 	} else {
-		thr->stack_pointer = reg.start + KERN_STACK_SIZE;
+		thr->stack_pointer = thr->kernel_stack + KERN_STACK_SIZE;
 	}
-	bool r = mm_context_write(&proc->vmm_context, reg.start, &thr, sizeof(&thr));
+	bool r = mm_context_write(&proc->vmm_context, thr->kernel_stack, &thr, sizeof(&thr));
 	assert(r);
 
 	if(flags & CLONE_KTHREAD) {
@@ -295,8 +293,6 @@ int tm_clone(int flags, void *entry, struct kthread *kt)
 		thr->kernel_thread = kt;
 	}
 	thr->state = THREADSTATE_UNINTERRUPTIBLE;
-	thr->usermode_stack_num = tm_thread_reserve_usermode_stack(thr);
-	thr->usermode_stack_end = tm_thread_usermode_stack_end(thr->usermode_stack_num);
 
 	struct cpu *target_cpu = tm_fork_pick_cpu();
 

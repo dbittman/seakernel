@@ -3,6 +3,7 @@
 
 #include <sea/mm/memory-x86_common.h>
 #include <sea/types.h>
+#include <sea/kernel.h>
 /* due the the odd way that we are forced to address memory...
  * 
  * You can't use all 64 bits of an address, only the least significant 48.
@@ -41,8 +42,9 @@
 #define TOP_TASK_MEM              0x00006FFFFFFFFFFF
 #define TOP_TASK_MEM_EXEC         0x0000600000000000
 
-#define MMF_BEGIN                 0x0000600000000000
-#define MMF_END                   0x0000600010000000
+/* SEE TODO IN syscall-x86_64.h, and then fix this location */
+#define MMF_BEGIN                 0x0000000008000000
+#define MMF_END                   0x0000000009000000
 
 #define TOP_USER_HEAP             0x0000600000000000
 #define TOP_LOWER_KERNEL                  0x40000000
@@ -70,6 +72,21 @@
 #define IS_KERN_MEM(x) (x > TOP_TASK_MEM)
 
 #define IS_THREAD_SHARED_MEM(x) (!IS_KERN_MEM(x))
+
+#define PAGE_SIZE_ORDER_MAX 1
+static inline size_t mm_page_size(int order)
+{
+	static size_t __sizes[2] = { 0x1000, 0x200000 };
+	assertmsg(order <= 1, "invalid page size order %d\n", order);
+	return __sizes[order];
+}
+
+static inline size_t mm_page_size_closest(size_t length)
+{
+	if(length > 0x1000)
+		return 0x200000;
+	return 0x1000;
+}
 
 #define PAGE_MASK      0xFFFFFFFFFFFFF000 /* TODO: fix this / PAGE_MASK_PHYSICAL */
 #define PAGE_LARGE (1 << 7)

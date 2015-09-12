@@ -126,7 +126,6 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 		cpu_boot_all_aps();
 #endif
 	tm_clone(0, __init_entry, 0);
-
 	sys_setsid();
 	kt_kernel_idle_task();
 }

@@ -43,7 +43,7 @@ void tm_process_put(struct process *proc)
 		mutex_release(&process_refs_lock);
 		/* do this here...since we must wait for every thread to give up
 		 * their refs. This happens in schedule, after it gets scheduled away */
-		mm_destroy_directory(&proc->vmm_context);
+		mm_context_destroy(&proc->vmm_context);
 		kfree(proc);
 	} else {
 		mutex_release(&process_refs_lock);

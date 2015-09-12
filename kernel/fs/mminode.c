@@ -93,7 +93,7 @@ addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt,
 		entry->page = mm_alloc_physical_page();
 		/* specify ZERO, since read_inode may not fill up the whole page. Also,
 		 * specify PAGE_LINK so that mm_vm_clone doesn't copy shared pages */
-		if(!mm_virtual_map(virt, entry->page, MAP_ZERO | attrib, 0x1000))
+		if(!mm_virtual_map(virt, entry->page, MAP_ZERO | attrib | PAGE_LINK, 0x1000))
 			panic(0, "trying to remap mminode shared section");
 
 		int err=-1;
@@ -159,7 +159,7 @@ void fs_inode_sync_physical_page(struct inode *node, addr_t virt, size_t offset,
 {
 	assert(!(offset & ~PAGE_MASK));
 	assert(!(virt & ~PAGE_MASK));
-	if(!mm_vm_get_map(virt, 0, 0))
+	if(!mm_virtual_getmap(virt, NULL, NULL))
 		return;
 	/* again, no real good way to notify userspace of a failure */
 	size_t len = req_len;
@@ -203,8 +203,9 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 					page_len = length - (i-page_number)*PAGE_SIZE;
 				fs_inode_sync_physical_page(node, virt + (i - page_number)*PAGE_SIZE,
 						i * PAGE_SIZE, page_len);
-				addr_t p = mm_vm_get_map(virt + (i - page_number)*PAGE_SIZE, 0, 0);
-				assert(!p || p == entry->page);
+				addr_t p;
+				bool ismapped = mm_virtual_getmap(virt + (i - page_number)*PAGE_SIZE, &p, NULL);
+				assert(!ismapped || p == entry->page);
 				if(entry->page)
 					mm_free_physical_page(entry->page);
 				entry->page = 0;
@@ -218,7 +219,7 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 		/* we'll actually do the unmapping too */
 		unsigned attr;
 		if(mm_virtual_getmap(virt + (i - page_number)*PAGE_SIZE, NULL, &attr)) {
-			assert(attr & PAGE_LINK);
+			assertmsg(attr & PAGE_LINK, "need page_link here %x", attr);
 			mm_virtual_unmap(virt + (i - page_number)*PAGE_SIZE);
 		}
 	}

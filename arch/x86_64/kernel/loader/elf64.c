@@ -76,10 +76,10 @@ static int process_elf64_phdr(char *mem, int fp, addr_t *start, addr_t *end)
 
 			int flags = MAP_FIXED | MAP_PRIVATE;
 			mm_mmap(ph->p_addr & PAGE_MASK, ph->p_filesz + inpage_offset, 
-					prot, flags, fp, ph->p_offset & PAGE_MASK);
+					prot, flags, fp, ph->p_offset & PAGE_MASK, 0);
 			if(additional > page_free) {
 				mm_mmap((newend & PAGE_MASK) + PAGE_SIZE, additional - page_free,
-						prot, flags | MAP_ANONYMOUS, -1, 0);
+						prot, flags | MAP_ANONYMOUS, -1, 0, 0);
 			}
 		}
 	}

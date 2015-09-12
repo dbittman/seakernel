@@ -81,11 +81,7 @@ static void tm_thread_destroy(unsigned long data)
 		workqueue_insert(&__current_cpu->work, thread_cleanup_call);
 		return;
 	}
-	for(int i=0;i<KERN_STACK_SIZE / PAGE_SIZE;i++) {
-		addr_t p = mm_context_virtual_unmap(&thr->process->vmm_context, thr->kernel_stack + i * PAGE_SIZE);
-		assert(p);
-		mm_physical_deallocate(p);
-	}
+	tm_thread_release_stacks(thr);
 	tm_process_put(thr->process); /* thread releases it's process pointer */
 	tm_thread_put(thr);
 }
@@ -130,7 +126,7 @@ __attribute__((noinline)) static void tm_process_exit(int code)
 	ll_destroy(&(current_process->mappings));
 	mutex_destroy(&current_process->map_lock);
 	valloc_destroy(&current_process->mmf_valloc);
-	mm_free_self_directory(1);
+	mm_free_userspace();
 	/* TODO: free everything else? */
 
 	/* this is done before SIGCHILD is sent out */
@@ -163,7 +159,6 @@ void tm_thread_do_exit(void)
 	struct async_call *thread_cleanup_call = async_call_create(&current_thread->cleanup_call, 0, 
 							tm_thread_destroy, (unsigned long)current_thread, 0);
 
-	tm_thread_release_usermode_stack(current_thread, current_thread->usermode_stack_num);
 	struct ticker *ticker = current_thread->alarm_ticker;
 	if(ticker) {
 		int old = cpu_interrupt_set(0);
@@ -183,13 +178,6 @@ void tm_thread_do_exit(void)
 	if(atomic_fetch_sub(&current_process->thread_count, 1) == 1) {
 		atomic_fetch_sub_explicit(&running_processes, 1, memory_order_relaxed);
 		tm_process_exit(current_thread->exit_code);
-	} else {
-		/* we're not the last thread exiting, we're not gonna clean up the directory.
-		 * the thread that cleans up the directory will free all the other kernel
-		 * stacks except it's own, and so it won't zero this array out. That way
-		 * when the thread gets finally cleaned up, those final physical pages can
-		 * get freed */
-		memset(current_thread->kernel_stack_physical, 0, sizeof(current_thread->kernel_stack_physical));
 	}
 
 	cpu_disable_preemption();

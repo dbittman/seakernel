@@ -54,10 +54,10 @@ struct thread {
 	int interrupt_level;
 	int priority, timeslice;
 	int exit_code;
-	addr_t kernel_stack, kernel_stack_physical[KERN_STACK_SIZE / PAGE_SIZE];
+	addr_t kernel_stack;
 	addr_t stack_pointer, jump_point;
 	addr_t usermode_stack_end;
-	int usermode_stack_num;
+	int stack_num;
 	struct cpu *cpu;
 
 	sigset_t sig_mask;
@@ -104,9 +104,6 @@ int tm_thread_block_schedule_work(struct llist *blocklist, int state, struct asy
 int tm_thread_block(struct llist *blocklist, int state);
 void tm_thread_poke(struct thread *t);
 int sys_thread_setpriority(pid_t tid, int val, int flags);
-int tm_thread_reserve_usermode_stack(struct thread *thr);
-void tm_thread_release_usermode_stack(struct thread *thr, int stack);
-addr_t tm_thread_usermode_stack_end(int stack);
 struct thread *tm_thread_get(pid_t tid);
 int tm_thread_runnable(struct thread *thr);
 void tm_thread_inc_reference(struct thread *thr);
@@ -132,10 +129,10 @@ addr_t arch_tm_read_ip(void);
 void arch_tm_jump_to_user_mode(addr_t jmp);
 __attribute__((noinline)) void arch_tm_thread_switch(struct thread *old, struct thread *, addr_t);
 __attribute__((noinline)) void arch_tm_fork_setup_stack(struct thread *thr);
-void tm_thread_reserve_kernelmode_stack(struct thread *);
-void tm_thread_release_kernelmode_stack(struct thread *);
 int tm_thread_delay(time_t microseconds);
 void tm_thread_create_kerfs_entries(struct thread *thr);
+bool tm_thread_reserve_stacks(struct thread *thr);
+void tm_thread_release_stacks(struct thread *thr);
 
 #define tm_thread_pause(th) tm_thread_set_state(th, THREADSTATE_INTERRUPTIBLE)
 #define tm_thread_resume(th) tm_thread_set_state(th, THREADSTATE_RUNNING)

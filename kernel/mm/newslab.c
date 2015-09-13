@@ -65,8 +65,8 @@ static struct slab *allocate_new_slab(struct cache *cache)
 	if(valloc_allocate(&slabs_reg, &reg, 1) == 0) {
 		panic(PANIC_NOSYNC, "could not allocate new slab");
 	}
-	map_if_not_mapped(reg.start);
-	map_if_not_mapped(reg.start + PAGE_SIZE);
+	mm_virtual_trymap(reg.start, PAGE_PRESENT | PAGE_WRITE, mm_page_size(0));
+	mm_virtual_trymap(reg.start + mm_page_size(0), PAGE_PRESENT | PAGE_WRITE, mm_page_size(0));
 	memset((void *)reg.start, 0, PAGE_SIZE * 2);
 	struct slab *slab = (void *)reg.start;
 	size_t slab_header_size = sizeof(struct slab);
@@ -127,8 +127,10 @@ static void *allocate_object(struct slab *slab)
 	 * so if two processes try to map a page at the same time, sadness can happpen. */
 	/* mutex_acquire(&slab->lock); */
 	/* TODO: either this, or atomic mapping */
-	for(addr_t a = reg.start;a < reg.start + slab->cache->object_size + PAGE_SIZE;a+=PAGE_SIZE)
-		map_if_not_mapped_noclear(a);
+	for(addr_t a = reg.start;a < reg.start + slab->cache->object_size + PAGE_SIZE;a+=PAGE_SIZE) {
+		/* TODO: page size? */
+		mm_virtual_trymap(a, PAGE_PRESENT | PAGE_WRITE, PAGE_SIZE);
+	}
 	/* mutex_release(&slab->lock); */
 	atomic_fetch_add_explicit(&total_allocated, slab->cache->object_size, memory_order_relaxed);
 	return (void *)(reg.start);

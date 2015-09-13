@@ -167,7 +167,7 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 	/* Setup the task with the proper values (libc malloc stack) */
 	addr_t end_l = end;
 	end = (end&PAGE_MASK);
-	user_map_if_not_mapped_noclear(end);
+	mm_virtual_trymap(end, PAGE_PRESENT | PAGE_USER | PAGE_WRITE, mm_page_size(0));
 	/* now we need to copy back the args and env into userspace
 	 * writeable memory...yippie. */
 	addr_t args_start = end + PAGE_SIZE;
@@ -175,7 +175,7 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 	addr_t alen = 0;
 	if(backup_argv) {
 		for(i=0;i<(sizeof(addr_t) * (argc+1))/PAGE_SIZE + 2;i++)
-			user_map_if_not_mapped_noclear(args_start + i * PAGE_SIZE);
+			mm_virtual_trymap(args_start + i * mm_page_size(0), PAGE_PRESENT | PAGE_USER | PAGE_WRITE, mm_page_size(0));
 		memcpy((void *)args_start, backup_argv, sizeof(addr_t) * argc);
 		alen += sizeof(addr_t) * argc;
 		*(addr_t *)(args_start + alen) = 0; /* set last argument value to zero */
@@ -185,9 +185,9 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 		{
 			char *old = argv[i];
 			char *new = (char *)(args_start+alen);
-			user_map_if_not_mapped_noclear((addr_t)new);
+			mm_virtual_trymap((addr_t)new, PAGE_PRESENT | PAGE_USER | PAGE_WRITE, mm_page_size(0));
 			unsigned len = strlen(old) + 4;
-			user_map_if_not_mapped_noclear((addr_t)new + len + 1);
+			mm_virtual_trymap((addr_t)new + len + 1, PAGE_PRESENT | PAGE_USER | PAGE_WRITE, mm_page_size(0));
 			argv[i] = new;
 			_strcpy(new, old);
 			kfree(old);
@@ -199,7 +199,7 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 	alen = 0;
 	if(backup_env) {
 		for(i=0;i<(((sizeof(addr_t) * (envc+1))/PAGE_SIZE) + 2);i++)
-			user_map_if_not_mapped_noclear(env_start + i * PAGE_SIZE);
+			mm_virtual_trymap(env_start + i * mm_page_size(0), PAGE_PRESENT | PAGE_USER | PAGE_WRITE, mm_page_size(0));
 		memcpy((void *)env_start, backup_env, sizeof(addr_t) * envc);
 		alen += sizeof(addr_t) * envc;
 		*(addr_t *)(env_start + alen) = 0; /* set last argument value to zero */
@@ -209,9 +209,9 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 		{
 			char *old = env[i];
 			char *new = (char *)(env_start+alen);
-			user_map_if_not_mapped_noclear((addr_t)new);
+			mm_virtual_trymap((addr_t)new, PAGE_PRESENT | PAGE_USER | PAGE_WRITE, mm_page_size(0));
 			unsigned len = strlen(old) + 1;
-			user_map_if_not_mapped_noclear((addr_t)new + len + 1);
+			mm_virtual_trymap((addr_t)new + len + 1, PAGE_PRESENT | PAGE_USER | PAGE_WRITE, mm_page_size(0));
 			env[i] = new;
 			_strcpy(new, old);
 			kfree(old);
@@ -226,7 +226,7 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 	
 	/* set the heap locations, and map in the start */
 	current_process->heap_start = current_process->heap_end = end + PAGE_SIZE;
-	user_map_if_not_mapped_noclear(current_process->heap_start);
+	mm_virtual_trymap(current_process->heap_start, PAGE_PRESENT | PAGE_USER | PAGE_WRITE, mm_page_size(0));
 	/* Zero the heap and stack */
 	memset((void *)end_l, 0, PAGE_SIZE-(end_l%PAGE_SIZE));
 	memset((void *)(end+PAGE_SIZE), 0, PAGE_SIZE);

@@ -47,7 +47,8 @@ void *__kmalloc_a(size_t s, char *file, int line)
 	}
 	/* NOTE: we don't need to lock this operation because
 	 * allocations cannot share physical pages. */
-	map_if_not_mapped(reg.start);
+	mm_virtual_trymap(reg.start, PAGE_PRESENT | PAGE_WRITE, mm_page_size(0));
+
 	memset((void *)reg.start, 0, PAGE_SIZE);
 	return (void *)reg.start;
 }

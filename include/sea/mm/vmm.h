@@ -49,50 +49,7 @@ addr_t mm_context_virtual_unmap(struct vmm_context *ctx, addr_t address);
 bool mm_context_virtual_trymap(struct vmm_context *ctx, addr_t virtual, int flags, size_t length);
 bool mm_virtual_trymap(addr_t virtual, int flags, size_t length);
 
-static inline void map_if_not_mapped(addr_t loc)
-{
-	if(!mm_virtual_getmap(loc & PAGE_MASK, 0, 0)) {
-		addr_t phys = mm_physical_allocate(0x1000, true);
-		if(!mm_virtual_map(loc & PAGE_MASK, phys, PAGE_PRESENT | PAGE_WRITE, 0x1000)) {
-			mm_physical_deallocate(phys);
-		}
-	}
-}
-
-static inline void map_if_not_mapped_noclear(addr_t loc)
-{
-	if(!mm_virtual_getmap(loc & PAGE_MASK, 0, 0)) {
-		addr_t phys = mm_physical_allocate(0x1000, false);
-		if(!mm_virtual_map(loc & PAGE_MASK, phys, PAGE_PRESENT | PAGE_WRITE, 0x1000))
-			mm_physical_deallocate(phys);
-	}
-}
-
-static inline void user_map_if_not_mapped(addr_t loc)
-{
-	if(!mm_virtual_getmap(loc & PAGE_MASK, 0, 0)) {
-		addr_t phys = mm_physical_allocate(0x1000, true);
-		if(!mm_virtual_map(loc & PAGE_MASK, phys, PAGE_PRESENT | PAGE_WRITE | PAGE_USER, 0x1000)) {
-			mm_physical_deallocate(phys);
-			mm_virtual_changeattr(loc & PAGE_MASK, PAGE_PRESENT | PAGE_WRITE | PAGE_USER, 0x1000);
-		}
-	} else
-		mm_virtual_changeattr(loc & PAGE_MASK, PAGE_PRESENT | PAGE_WRITE | PAGE_USER, 0x1000);
-}
-
-static inline void user_map_if_not_mapped_noclear(addr_t loc)
-{
-	if(!mm_virtual_getmap(loc & PAGE_MASK, 0, 0)) {
-		addr_t phys = mm_physical_allocate(0x1000, false);
-		if(!mm_virtual_map(loc & PAGE_MASK, phys, PAGE_PRESENT | PAGE_WRITE | PAGE_USER, 0x1000)) {
-			mm_physical_deallocate(phys);
-			mm_virtual_changeattr(loc & PAGE_MASK, PAGE_PRESENT | PAGE_WRITE | PAGE_USER, 0x1000);
-		}
-	} else
-		mm_virtual_changeattr(loc & PAGE_MASK, PAGE_PRESENT | PAGE_WRITE | PAGE_USER, 0x1000);
-}
-
-#define PF_CAUSE_NONPRESENT  1
+#define PF_CAUSE_NONPRESENT   1
 #define PF_CAUSE_READ         2
 #define PF_CAUSE_WRITE        4
 #define PF_CAUSE_IFETCH       8

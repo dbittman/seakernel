@@ -5,7 +5,6 @@ KOBJS+= kernel/mm/fault.o \
 		kernel/mm/mmfile.o \
 		kernel/mm/pager.o \
 		kernel/mm/pmap.o \
-		kernel/mm/pmm.o \
 		kernel/mm/pm_buddy.o \
 		kernel/mm/reclaim.o \
 		kernel/mm/newslab.o \

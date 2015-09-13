@@ -19,11 +19,6 @@ ifeq ($(CONFIG_ARCH), 2)
 	ARCH_TC=x86_64
 endif
 
-ifeq ($(CONFIG_ARCH), 1)
-	ARCH=x86
-	ARCH_TC=i586
-endif
-
 # TODO: That no-isolate-erroneous-paths-dereference should not be here
 # no-tree-loop-distribute-patterns is required because of stupid gcc.
 CFLAGS_NOARCH = -std=gnu11 \

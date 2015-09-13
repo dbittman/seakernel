@@ -3,7 +3,7 @@
  * and re-process the config file!
  */
 
-#define CONFIG_OPTIMIZATION_LEVEL 0
+#define CONFIG_OPTIMIZATION_LEVEL 3
 #define CONFIG_ARCH 2
 #define CONFIG_WERROR 0
 #define CONFIG_SMP 1

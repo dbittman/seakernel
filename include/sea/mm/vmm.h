@@ -6,16 +6,11 @@
 #include <sea/mm/valloc.h>
 #include <stdbool.h>
 
-struct pd_data {
-	unsigned count;
-	mutex_t lock;
-};
-
 struct vmm_context {
-	uint32_t magic;
 	addr_t root_physical;
 	addr_t root_virtual;
 	mutex_t lock;
+	uint32_t magic;
 };
 
 #define MAP_ZERO    0x100000
@@ -51,6 +46,8 @@ bool mm_context_virtual_getmap(struct vmm_context *ctx, addr_t address, addr_t *
 bool mm_context_virtual_changeattr(struct vmm_context *ctx, addr_t virtual, int flags, size_t length);
 bool mm_virtual_changeattr(addr_t virtual, int flags, size_t length);
 addr_t mm_context_virtual_unmap(struct vmm_context *ctx, addr_t address);
+bool mm_context_virtual_trymap(struct vmm_context *ctx, addr_t virtual, int flags, size_t length);
+bool mm_virtual_trymap(addr_t virtual, int flags, size_t length);
 
 static inline void map_if_not_mapped(addr_t loc)
 {

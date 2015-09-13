@@ -93,7 +93,6 @@ int boot_cpu(struct cpu *cpu)
 	tm_thread_add_to_process(thread, kernel_process);
 	tm_thread_reserve_stacks(thread);
 	cpu->stack = thread->kernel_stack;
-	printk(0, ":: %x\n", cpu->stack);
 	size_t kms_page_size = mm_page_size_closest(KERN_STACK_SIZE);
 	for(int i = 0;i<((KERN_STACK_SIZE-1) / kms_page_size)+1;i++) {
 		addr_t phys = mm_physical_allocate(kms_page_size, false);

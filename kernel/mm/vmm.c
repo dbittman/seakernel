@@ -96,3 +96,31 @@ bool mm_context_virtual_changeattr(struct vmm_context *ctx, addr_t virtual, int 
 	return arch_mm_context_virtual_changeattr(ctx, virtual, flags, length);
 }
 
+bool mm_virtual_trymap(addr_t virtual, int flags, size_t length)
+{
+	bool result = false;
+	if(!mm_virtual_getmap(virtual, NULL, NULL)) {
+		addr_t physical = mm_physical_allocate(length, false);
+		if(!mm_virtual_map(virtual, physical, flags, length)) {
+			mm_physical_deallocate(physical);
+		} else {
+			result = true;
+		}
+	}
+	return result;
+}
+
+bool mm_context_virtual_trymap(struct vmm_context *ctx, addr_t virtual, int flags, size_t length)
+{
+	bool result = false;
+	if(!mm_context_virtual_getmap(ctx, virtual, NULL, NULL)) {
+		addr_t physical = mm_physical_allocate(length, false);
+		if(!mm_context_virtual_map(ctx, virtual, physical, flags, length)) {
+			mm_physical_deallocate(physical);
+		} else {
+			result = true;
+		}
+	}
+	return result;
+}
+

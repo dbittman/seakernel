@@ -110,12 +110,18 @@ static void __valloc_populate_index(struct valloc *va, int flags)
 	/* we can have larger pages than PAGE_SIZE, but here
 	 * we need to map it in, and we need to work in increments
 	 * of the system page size */
-	int mm_pages = (va->nindex * va->psize) / PAGE_SIZE;
+	size_t map_size = mm_page_size_closest(va->psize * va->nindex);
+	int mm_pages = ((va->nindex * va->psize - 1) / map_size) + 1;
 	for(int i=0;i<mm_pages;i++) {
+		int attr = PAGE_PRESENT | PAGE_WRITE;
 		if(flags & VALLOC_USERMAP)
-			user_map_if_not_mapped(va->start + i * PAGE_SIZE);
-		else
-			map_if_not_mapped(va->start + i * PAGE_SIZE);
+			attr |= PAGE_USER;
+		if(!mm_virtual_getmap(va->start + i * PAGE_SIZE, NULL, NULL)) {
+			addr_t phys = mm_physical_allocate(va->psize, true);
+			if(!mm_virtual_map(va->start + i * PAGE_SIZE, phys, attr, 0x1000)) {
+				mm_physical_deallocate(phys);
+			}
+		}
 	}
 	__valloc_set_bits(va, 0, va->nindex);
 }

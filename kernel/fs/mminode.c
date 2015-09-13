@@ -90,7 +90,7 @@ addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt,
 	if(!entry->page && (flags & FS_INODE_POPULATE))
 	{
 		/* map a new page into virt, and load data into it */
-		entry->page = mm_alloc_physical_page();
+		entry->page = mm_physical_allocate(0x1000, false);
 		/* specify ZERO, since read_inode may not fill up the whole page. Also,
 		 * specify PAGE_LINK so that mm_vm_clone doesn't copy shared pages */
 		if(!mm_virtual_map(virt, entry->page, MAP_ZERO | attrib | PAGE_LINK, 0x1000))
@@ -207,7 +207,7 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 				bool ismapped = mm_virtual_getmap(virt + (i - page_number)*PAGE_SIZE, &p, NULL);
 				assert(!ismapped || p == entry->page);
 				if(entry->page)
-					mm_free_physical_page(entry->page);
+					mm_physical_deallocate(entry->page);
 				entry->page = 0;
 				mutex_destroy(&entry->lock);
 				kfree(entry);
@@ -217,7 +217,7 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 				mutex_release(&entry->lock);
 		}
 		/* we'll actually do the unmapping too */
-		unsigned attr;
+		int attr;
 		if(mm_virtual_getmap(virt + (i - page_number)*PAGE_SIZE, NULL, &attr)) {
 			assertmsg(attr & PAGE_LINK, "need page_link here %x", attr);
 			mm_virtual_unmap(virt + (i - page_number)*PAGE_SIZE);

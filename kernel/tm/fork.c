@@ -266,7 +266,7 @@ int tm_clone(int flags, void *entry, struct kthread *kt)
 	if(!tm_thread_reserve_stacks(thr))
 		panic(0, "NOT IMPLEMENTED: NO MORE STACKS");
 	size_t kms_page_size = mm_page_size_closest(KERN_STACK_SIZE);
-	for(int i = 0;i<((KERN_STACK_SIZE-1) / kms_page_size)+1;i++) {
+	for(unsigned int i = 0;i<((KERN_STACK_SIZE-1) / kms_page_size)+1;i++) {
 		addr_t phys = mm_physical_allocate(kms_page_size, false);
 		bool r = mm_context_virtual_map(&proc->vmm_context, thr->kernel_stack + i * kms_page_size,
 				phys,

@@ -22,11 +22,11 @@ void free_pde(page_dir_t *pd, unsigned idx)
 		{
 			addr_t tmp = table[i];
 			table[i]=0;
-			mm_free_physical_page(tmp & PAGE_MASK_PHYSICAL);
+			mm_physical_deallocate(tmp & PAGE_MASK_PHYSICAL);
 		}
 	}
 	pd[idx]=0;
-	mm_free_physical_page(physical);
+	mm_physical_deallocate(physical);
 }
 
 void free_pdpte(pdpt_t *pdpt, unsigned idx)
@@ -39,7 +39,7 @@ void free_pdpte(pdpt_t *pdpt, unsigned idx)
 	for(unsigned i=0;i<512;i++)
 		free_pde(pd, i);
 	pdpt[idx]=0;
-	mm_free_physical_page(physical);
+	mm_physical_deallocate(physical);
 }
 
 void free_pml4e(pml4_t *pml4, unsigned idx)
@@ -51,7 +51,7 @@ void free_pml4e(pml4_t *pml4, unsigned idx)
 	for(unsigned i=0;i<512;i++)
 		free_pdpte(pdpt, i);
 	pml4[idx]=0;
-	mm_free_physical_page(physical);
+	mm_physical_deallocate(physical);
 }
 
 void arch_mm_free_userspace(void)

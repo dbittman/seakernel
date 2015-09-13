@@ -323,7 +323,7 @@ int ramfs_inode_write(struct filesystem *fs, struct inode *node,
 	struct rfsnode *rfsnode;
 	
 	if(node->phys_dev && S_ISREG(node->mode))
-		return kerfs_write(node, offset, length, buffer);
+		return kerfs_write(node, offset, length, (char *)buffer);
 
 	if(hash_table_get_entry(info->nodes, &node->id, sizeof(node->id), 1, (void **)&rfsnode))
 		return -EIO;

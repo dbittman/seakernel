@@ -35,7 +35,7 @@ static inline int min_possible_order(addr_t address)
 	return o;
 }
 
-static size_t buddy_order_max_blocks(int order)
+static inline size_t buddy_order_max_blocks(int order)
 {
 	return MEMORY_SIZE / ((addr_t)MIN_SIZE << order);
 }
@@ -98,7 +98,7 @@ static void deallocate(addr_t address, int order)
 	}
 }
 
-addr_t pmm_buddy_allocate(size_t length)
+static inline addr_t pmm_buddy_allocate(size_t length)
 {
 	mutex_acquire(&pm_buddy_mutex);
 	addr_t ret = __do_pmm_buddy_allocate(length);
@@ -106,7 +106,7 @@ addr_t pmm_buddy_allocate(size_t length)
 	return ret;
 }
 
-void pmm_buddy_deallocate(addr_t address)
+static inline void pmm_buddy_deallocate(addr_t address)
 {
 	mutex_acquire(&pm_buddy_mutex);
 	deallocate(address, 0);
@@ -140,4 +140,24 @@ int kerfs_pmm_report(int direction, void *param, size_t size, size_t offset, siz
 	}
 	return current;
 }
+
+addr_t mm_physical_allocate(size_t length, bool clear)
+{
+	addr_t ret = pmm_buddy_allocate(length);
+	if(clear)
+		arch_mm_physical_memset((void *)ret, 0, length);
+	return ret;
+}
+
+addr_t mm_physical_allocate_region(size_t length, bool clear, addr_t min, addr_t max)
+{
+	/* TODO: actually implement this */
+	return mm_physical_allocate(length, clear);
+}
+
+void mm_physical_deallocate(addr_t address)
+{
+	pmm_buddy_deallocate(address);
+}
+
 

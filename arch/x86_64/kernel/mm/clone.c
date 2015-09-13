@@ -26,7 +26,7 @@ static void copy_pde(page_dir_t *pd, page_dir_t *parent_pd, int idx)
 		return copy_pde_large(pd, parent_pd, idx);
 	}
 	addr_t *parent = (addr_t *)((parent_pd[idx] & PAGE_MASK) + PHYS_PAGE_MAP);
-	page_table_t table = mm_alloc_physical_page(), *entries;
+	page_table_t table = mm_physical_allocate(0x1000, false), *entries;
 	entries = (addr_t *)(table+PHYS_PAGE_MAP);
 	int i;
 	for(i=0;i<512;i++)
@@ -41,7 +41,7 @@ static void copy_pde(page_dir_t *pd, page_dir_t *parent_pd, int idx)
 				 * defined */
 				entries[i] = parent_page | attr;
 			} else {
-				addr_t new_page = mm_alloc_physical_page();
+				addr_t new_page = mm_physical_allocate(0x1000, false);
 				memcpy((void *)(new_page + PHYS_PAGE_MAP), (void *)(parent_page + PHYS_PAGE_MAP), PAGE_SIZE);
 				entries[i] = new_page | attr;
 			}
@@ -57,7 +57,7 @@ void copy_pdpte(pdpt_t *pdpt, pdpt_t *parent_pdpt, int idx)
 	if(!parent_pdpt[idx])
 		return;
 	page_dir_t *parent_pd = (addr_t *)((parent_pdpt[idx] & PAGE_MASK) + PHYS_PAGE_MAP);
-	page_dir_t pd = mm_alloc_physical_page();
+	page_dir_t pd = mm_physical_allocate(0x1000, false);
 	memset((void *)(pd + PHYS_PAGE_MAP), 0, PAGE_SIZE);
 	int i;
 	for(i=0;i<512;i++)
@@ -71,7 +71,7 @@ void copy_pml4e(pml4_t *pml4, pml4_t *parent_pml4, int idx)
 	if(!parent_pml4[idx])
 		return;
 	pdpt_t *parent_pdpt = (addr_t *)((parent_pml4[idx] & PAGE_MASK) + PHYS_PAGE_MAP);
-	pdpt_t pdpt = mm_alloc_physical_page();
+	pdpt_t pdpt = mm_physical_allocate(0x1000, false);
 	memset((void *)(pdpt + PHYS_PAGE_MAP), 0, PAGE_SIZE);
 	int i;
 	for(i=0;i<512;i++)

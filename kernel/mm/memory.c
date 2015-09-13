@@ -17,7 +17,11 @@
 #include <stdbool.h>
 struct vmm_context kernel_context;
 
+unsigned long pm_num_pages=0;
+
 extern addr_t initrd_start_page, initrd_end_page, kernel_start;
+static addr_t pm_location = 0;
+extern int kernel_end;
 static inline bool __is_actually_free(addr_t x)
 {
 	if(x == 0)
@@ -33,9 +37,13 @@ static void process_memorymap(struct multiboot *mboot)
 {
 	addr_t i = mboot->mmap_addr;
 	unsigned long num_pages=0, unusable=0;
-	uint64_t j=0, address, length;
+	uint64_t j=0, address, length, highest_page = 0, lowest_page = ~0;
 	int found_contiguous=0;
 	lowest_page = ~0;
+	pm_location = ((((addr_t)&kernel_end - MEMMAP_KERNEL_START) & ~(PAGE_SIZE-1)) + PAGE_SIZE + 0x100000 /* HACK */);
+	while((pm_location >= initrd_start_page && pm_location <= initrd_end_page))
+		pm_location += PAGE_SIZE;
+
 	while(i < (mboot->mmap_addr + mboot->mmap_length)){
 		mmap_entry_t *me = (mmap_entry_t *)(i + MEMMAP_KERNEL_START);
 		address = ((uint64_t)me->base_addr_high << 32) | (uint64_t)me->base_addr_low;
@@ -61,7 +69,7 @@ static void process_memorymap(struct multiboot *mboot)
 					if(page > highest_page)
 						highest_page=page;
 					num_pages++;
-					pmm_buddy_deallocate(page);
+					mm_physical_deallocate(page);
 				}
 			}
 		}
@@ -88,16 +96,14 @@ static void process_memorymap(struct multiboot *mboot)
  			, mbs, PAGE_SIZE/1024);
 	printk(1, "[mm]: num pages = %d\n", num_pages);
 	pm_num_pages=num_pages;
-	pm_used_pages=0;
 	set_ksf(KSF_MEMMAPPED);
 }
 
-struct vmm_context kernel_context;
+void pmm_buddy_init();
+void arch_mm_virtual_init(struct vmm_context *context);
 void mm_init(struct multiboot *m)
 {
 	printk(KERN_DEBUG, "[mm]: Setting up Memory Management...\n");
-	mutex_create(&pm_mutex, MT_NOSCHED); /* allocating physical memory is required inside
-										  * interrupt context because of page faults */
 	arch_mm_virtual_init(&kernel_context);
 	cpu_interrupt_register_handler (14, &arch_mm_page_fault_handle);
 	pmm_buddy_init();
@@ -116,21 +122,49 @@ void mm_init(struct multiboot *m)
 	loader_add_kernel_symbol(pmap_get_mapping);
 	loader_add_kernel_symbol(pmap_create);
 	loader_add_kernel_symbol(pmap_destroy);
-	loader_add_kernel_symbol(mm_alloc_physical_page);
 	loader_add_kernel_symbol(mm_virtual_getmap);
-	loader_add_kernel_symbol(mm_free_physical_page);
 	loader_add_kernel_symbol(mm_allocate_dma_buffer);
 	loader_add_kernel_symbol(mm_free_dma_buffer);
+	loader_add_kernel_symbol(mm_physical_allocate);
+	loader_add_kernel_symbol(mm_physical_deallocate);
 #endif
 }
 
-int mm_stat_mem(struct mem_stat *s)
+/* TODO: specify maximum */
+static struct valloc dma_virtual;
+static bool dma_virtual_init = false;
+int mm_allocate_dma_buffer(struct dma_region *d)
 {
-	if(!s) return -1;
-	s->total = pm_num_pages * PAGE_SIZE;
-	s->free = (pm_num_pages-pm_used_pages)*PAGE_SIZE;
-	s->used = pm_used_pages*PAGE_SIZE;
-	s->perc = ((float)pm_used_pages*100) / ((float)pm_num_pages);
+	if(!atomic_exchange(&dma_virtual_init, true)) {
+		valloc_create(&dma_virtual, CONTIGUOUS_VIRT_START, CONTIGUOUS_VIRT_END, mm_page_size(0), 0);
+	}
+	d->p.address = mm_physical_allocate(d->p.size, false);
+	if(d->p.address == 0)
+		return -1;
+
+	struct valloc_region reg;
+	int npages = (d->p.size - 1) / mm_page_size(0) + 1;
+	valloc_allocate(&dma_virtual, &reg, npages);
+
+	for(int i = 0;i<npages;i++)
+		mm_virtual_map(reg.start + i * mm_page_size(0), d->p.address + i*mm_page_size(0), PAGE_PRESENT | PAGE_WRITE, mm_page_size(0));
+	d->v = reg.start;
 	return 0;
 }
+
+int mm_free_dma_buffer(struct dma_region *d)
+{
+	int npages = ((d->p.size-1) / mm_page_size(0)) + 1;
+	for(int i=0;i<npages;i++)
+		mm_virtual_unmap(d->v + i * mm_page_size(0));
+	mm_physical_deallocate(d->p.address);
+	struct valloc_region reg;
+	reg.flags = 0;
+	reg.start = d->v;
+	reg.npages = npages;
+	valloc_deallocate(&dma_virtual, &reg);
+	d->p.address = d->v = 0;
+	return 0;
+}
+
 

@@ -126,6 +126,7 @@ static void *allocate_object(struct slab *slab)
 	/* NOTE: do this while we're still locked, because objects can share physical pages,
 	 * so if two processes try to map a page at the same time, sadness can happpen. */
 	/* mutex_acquire(&slab->lock); */
+	/* TODO: either this, or atomic mapping */
 	for(addr_t a = reg.start;a < reg.start + slab->cache->object_size + PAGE_SIZE;a+=PAGE_SIZE)
 		map_if_not_mapped_noclear(a);
 	/* mutex_release(&slab->lock); */

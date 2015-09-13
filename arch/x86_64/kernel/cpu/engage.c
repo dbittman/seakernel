@@ -10,7 +10,6 @@ initialization */
 #include <stdatomic.h>
 #include <sea/cpu/cpu-x86_64.h>
 #include <sea/cpu/features-x86_common.h>
-#include <sea/mm/context.h>
 #include <sea/cpu/cmos-x86_common.h>
 #include <sea/asm/system.h>
 #include <sea/cpu/interrupt.h>

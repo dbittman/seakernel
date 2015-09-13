@@ -16,6 +16,7 @@ void init_dm();
 void kb_install();
 void load_initrd(struct multiboot *mb);
 void process_initrd();
+void mm_init(struct multiboot *m);
 void init_module_system();
 void mount_root(char *path);
 void load_all_boot_mods();

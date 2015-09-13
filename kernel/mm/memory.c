@@ -1,4 +1,3 @@
-#include <sea/mm/init.h>
 #include <sea/kernel.h>
 #include <sea/mm/vmm.h>
 #include <sea/boot/multiboot.h>

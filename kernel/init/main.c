@@ -13,7 +13,6 @@
 #include <sea/lib/timer.h>
 #include <sea/loader/elf.h>
 #include <sea/loader/symbol.h>
-#include <sea/mm/init.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/mm/vmm.h>
 #include <sea/serial.h>

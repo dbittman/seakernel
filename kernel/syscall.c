@@ -226,7 +226,7 @@ int mm_is_valid_user_pointer(int num, void *p, char flags)
 	if(!addr && !flags) return 0;
 	if(!(kernel_state_flags & KSF_HAVEEXECED))
 		return 1;
-	if(addr >= TOP_TASK_MEM) {
+	if(addr >= MEMMAP_USERSPACE_MAXIMUM) {
 		#if CONFIG_DEBUG
 		printk(0, "[kernel]: warning - task %d passed ptr %x to syscall %d (invalid)\n",
 			   current_thread->tid, addr, num);

@@ -31,7 +31,7 @@ int sys_sbrk(long inc)
 		return current_process->heap_end;
 	addr_t end = current_process->heap_end;
 	assert(end);
-	if(end + inc >= TOP_TASK_MEM)
+	if(end + inc >= MEMMAP_USERSPACE_MAXIMUM)
 		tm_signal_send_thread(current_thread, SIGSEGV);
 	current_process->heap_end += inc;
 	addr_t page = end & PAGE_MASK;

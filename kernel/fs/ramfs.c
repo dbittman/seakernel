@@ -310,7 +310,7 @@ void ramfs_point_to_data(struct inode *node, void *data, size_t len)
 	if(hash_table_get_entry(info->nodes, &node->id, sizeof(node->id), 1, (void **)&rfsnode))
 		return;
 
-	if((addr_t)rfsnode->data >= KMALLOC_ADDR_START && (addr_t)rfsnode->data < KMALLOC_ADDR_END)
+	if((addr_t)rfsnode->data >= MEMMAP_KMALLOC_START && (addr_t)rfsnode->data < MEMMAP_KMALLOC_END)
 		kfree(rfsnode->data);
 	rfsnode->data = data;
 	rfsnode->length = node->length = len;
@@ -335,7 +335,7 @@ int ramfs_inode_write(struct filesystem *fs, struct inode *node,
 		void *newdata = kmalloc(end);
 		if(rfsnode->data) {
 			memcpy(newdata, rfsnode->data, rfsnode->length);
-			if((addr_t)rfsnode->data >= KMALLOC_ADDR_START && (addr_t)rfsnode->data < KMALLOC_ADDR_END)
+			if((addr_t)rfsnode->data >= MEMMAP_KMALLOC_START && (addr_t)rfsnode->data < MEMMAP_KMALLOC_END)
 			{
 				kfree(rfsnode->data);
 			}

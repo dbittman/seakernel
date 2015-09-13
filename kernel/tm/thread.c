@@ -100,8 +100,8 @@ bool tm_thread_reserve_stacks(struct thread *thr)
 	if(i == NUM_USERMODE_STACKS)
 		return false;
 	thr->stack_num = i;
-	thr->kernel_stack = i * KERN_STACK_SIZE + KERNELMODE_STACKS_START;
-	thr->usermode_stack_end = (i + 1) * (CONFIG_STACK_PAGES * PAGE_SIZE) + USERMODE_STACKS_START;
+	thr->kernel_stack = i * KERN_STACK_SIZE + MEMMAP_KERNELSTACKS_START;
+	thr->usermode_stack_end = (i + 1) * (CONFIG_STACK_PAGES * PAGE_SIZE) + MEMMAP_USERSTACKS_START;
 	return true;
 }
 

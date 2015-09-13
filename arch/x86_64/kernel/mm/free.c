@@ -57,7 +57,7 @@ void free_pml4e(pml4_t *pml4, unsigned idx)
 void arch_mm_free_userspace(void)
 {
 	unsigned int S = 0;
-	unsigned int E = PML4_INDEX(TOP_TASK_MEM_EXEC);
+	unsigned int E = PML4_INDEX(MEMMAP_IMAGE_MAXIMUM);
 	pml4_t *pml4 = (pml4_t *)current_process->vmm_context.root_virtual;
 	for(unsigned i=S;i<E;i++)
 		free_pml4e(pml4, i);

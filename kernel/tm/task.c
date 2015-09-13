@@ -45,8 +45,8 @@ void tm_init_multitasking(void)
 	ll_do_insert(process_list, &proc->listnode, proc);
 
 	/* TODO: this stuff is pretty hacky... */
-	valloc_create(&proc->mmf_valloc, MMF_BEGIN, MMF_END, PAGE_SIZE, VALLOC_USERMAP);
-	for(addr_t a = MMF_BEGIN;a < (MMF_BEGIN + (size_t)proc->mmf_valloc.nindex);a+=PAGE_SIZE)
+	valloc_create(&proc->mmf_valloc, MEMMAP_MMAP_BEGIN, MEMMAP_MMAP_END, PAGE_SIZE, VALLOC_USERMAP);
+	for(addr_t a = MEMMAP_MMAP_BEGIN;a < (MEMMAP_MMAP_BEGIN + (size_t)proc->mmf_valloc.nindex);a+=PAGE_SIZE)
 		mm_virtual_changeattr(a, PAGE_PRESENT | PAGE_WRITE, 0x1000);
 	ll_create(&proc->threadlist);
 	mutex_create(&proc->map_lock, MT_NOSCHED);

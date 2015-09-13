@@ -28,7 +28,7 @@ static int map_in_page(addr_t address)
 	if(address >= current_process->heap_start && address <= current_process->heap_end)
 		return do_map_page(address, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
 	/* and check if the memory is for the stack */
-	if(address >= TOP_TASK_MEM_EXEC && address < (TOP_TASK_MEM)) {
+	if(address >= MEMMAP_IMAGE_MAXIMUM && address < (MEMMAP_USERSPACE_MAXIMUM)) {
 		return do_map_page(address, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
 	}
 	return 0;
@@ -53,9 +53,9 @@ void mm_page_fault_handler(registers_t *regs, addr_t address, int pf_cause)
 	if(pf_cause & PF_CAUSE_USER) {
 		/* check if we need to map a page for mmap, etc */
 		if(pd_cur_data) {
-			if((address & PAGE_MASK) == SIGNAL_INJECT) {
-				do_map_page(SIGNAL_INJECT, PAGE_PRESENT | PAGE_USER);
-				memcpy((void *)SIGNAL_INJECT, (void *)signal_return_injector, SIGNAL_INJECT_SIZE);
+			if((address & PAGE_MASK) == MEMMAP_SYSGATE_ADDRESS) {
+				do_map_page(MEMMAP_SYSGATE_ADDRESS, PAGE_PRESENT | PAGE_USER);
+				memcpy((void *)MEMMAP_SYSGATE_ADDRESS, (void *)signal_return_injector, MEMMAP_SYSGATE_ADDRESS_SIZE);
 				return;
 			}
 			if(mm_page_fault_test_mappings(address, pf_cause) == 0) {

@@ -17,10 +17,10 @@ static addr_t get_next_mm_device_page(void)
 {
 	if(!mmdev_addr) {
 		mutex_create(&mmd_lock, 0);
-		mmdev_addr = DEVICE_MAP_START;
+		mmdev_addr = MEMMAP_DEVICEMAP_START;
 	}
 	mutex_acquire(&mmd_lock);
-	if(mmdev_addr >= DEVICE_MAP_END)
+	if(mmdev_addr >= MEMMAP_DEVICEMAP_END)
 		panic(0, "ran out of mmdev space");
 	addr_t ret = mmdev_addr;
 	mmdev_addr += PAGE_SIZE;

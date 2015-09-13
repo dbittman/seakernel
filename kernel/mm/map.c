@@ -25,7 +25,7 @@ static struct memmap *initialize_map(struct inode *node,
 
 static int is_valid_location(addr_t addr)
 {
-	if(addr >= TOP_TASK_MEM_EXEC || addr < EXEC_MINIMUM)
+	if(addr >= MEMMAP_IMAGE_MAXIMUM || addr < MEMMAP_IMAGE_MINIMUM)
 		return 0;
 	return 1;
 }

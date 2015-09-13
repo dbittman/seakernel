@@ -15,7 +15,7 @@
  * passed to mmap, it uses it. MAP_FIXED then only serves to cause mmap to fail
  * if the address is invalid, since the default behavior is to use the program's
  * specified address. If an invalid address is specified, a section of the address
- * space in MMF_BEGIN and MMF_END is used. This is accomplished with the vmem code
+ * space in MEMMAP_MMAP_BEGIN and MEMMAP_MMAP_END is used. This is accomplished with the vmem code
  * (kernel/mm/area.c).
  *
  * Each mmap section has an inode backing it. For MAP_ANONYMOUS files, this inode

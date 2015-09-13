@@ -31,8 +31,8 @@ static void preexec(int desc)
 	mm_destroy_all_mappings(t->process);
 	mm_free_userspace();
 	/* we need to re-create the vmem for memory mappings */
-	valloc_create(&(t->process->mmf_valloc), MMF_BEGIN, MMF_END, PAGE_SIZE, VALLOC_USERMAP);
-	for(addr_t a = MMF_BEGIN;a < (MMF_BEGIN + (size_t)t->process->mmf_valloc.nindex);a+=PAGE_SIZE) {
+	valloc_create(&(t->process->mmf_valloc), MEMMAP_MMAP_BEGIN, MEMMAP_MMAP_END, PAGE_SIZE, VALLOC_USERMAP);
+	for(addr_t a = MEMMAP_MMAP_BEGIN;a < (MEMMAP_MMAP_BEGIN + (size_t)t->process->mmf_valloc.nindex);a+=PAGE_SIZE) {
 		mm_virtual_changeattr(a, PAGE_PRESENT | PAGE_WRITE, 0x1000); //TODO again, fix this page size thing
 	}
 	t->signal = t->signals_pending = 0;

@@ -135,7 +135,7 @@ static bool dma_virtual_init = false;
 int mm_allocate_dma_buffer(struct dma_region *d)
 {
 	if(!atomic_exchange(&dma_virtual_init, true)) {
-		valloc_create(&dma_virtual, CONTIGUOUS_VIRT_START, CONTIGUOUS_VIRT_END, mm_page_size(0), 0);
+		valloc_create(&dma_virtual, MEMMAP_VIRTDMA_START, MEMMAP_VIRTDMA_END, mm_page_size(0), 0);
 	}
 	d->p.address = mm_physical_allocate(d->p.size, false);
 	if(d->p.address == 0)

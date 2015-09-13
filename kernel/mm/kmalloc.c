@@ -15,8 +15,8 @@ static char kmalloc_name[128];
 void kmalloc_init(void)
 {
 	strncpy(kmalloc_name, "slab", 128);
-	slab_init(KMALLOC_ADDR_START, KMALLOC_ADDR_END);
-	valloc_create(&virtpages, VIRTPAGES_START, VIRTPAGES_END, PAGE_SIZE, 0);
+	slab_init(MEMMAP_KMALLOC_START, MEMMAP_KMALLOC_END);
+	valloc_create(&virtpages, MEMMAP_VIRTPAGES_START, MEMMAP_VIRTPAGES_END, PAGE_SIZE, 0);
 }
 
 /* TODO: remove a lot of the file-line stuff */
@@ -26,7 +26,7 @@ static addr_t do_kmalloc(size_t sz, char align, char *file, int line)
 		panic(PANIC_NOSYNC, "cannot allocate memory within interrupt context");
 	addr_t ret;
 	ret = (addr_t)slab_kmalloc(sz);
-	if(!ret || ret >= KMALLOC_ADDR_END || ret < KMALLOC_ADDR_START)
+	if(!ret || ret >= MEMMAP_KMALLOC_END || ret < MEMMAP_KMALLOC_START)
 		panic(PANIC_MEM | PANIC_NOSYNC, "kmalloc returned impossible address %x", ret);
 	memset((void *)ret, 0, sz);
 	return ret;
@@ -74,7 +74,7 @@ void kfree(void *pt)
 	if(current_thread && current_thread->interrupt_level)
 		panic(PANIC_NOSYNC, "cannot free memory within interrupt context");
 	addr_t address = (addr_t)pt;
-	if(address >= VIRTPAGES_START && address < VIRTPAGES_END) {
+	if(address >= MEMMAP_VIRTPAGES_START && address < MEMMAP_VIRTPAGES_END) {
 		struct valloc_region reg;
 		reg.flags = 0;
 		reg.npages = 1;
@@ -82,7 +82,7 @@ void kfree(void *pt)
 		assert((address & ~PAGE_MASK) == 0);
 		valloc_deallocate(&virtpages, &reg);
 	} else {
-		assert(address >= KMALLOC_ADDR_START && address < KMALLOC_ADDR_END);
+		assert(address >= MEMMAP_KMALLOC_START && address < MEMMAP_KMALLOC_END);
 		slab_kfree(pt);
 	}
 }

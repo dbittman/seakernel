@@ -83,8 +83,8 @@ static inline int is_valid_elf(char *buf, short type)
 		|| eh->machine != 62
 		|| eh->type != type
 		|| eh->id[4] != 2 /* 64 bit */
-		|| ((eh->entry < EXEC_MINIMUM
-			|| eh->entry >= TOP_TASK_MEM_EXEC) && eh->entry))
+		|| ((eh->entry < MEMMAP_IMAGE_MINIMUM
+			|| eh->entry >= MEMMAP_IMAGE_MAXIMUM) && eh->entry))
 		return 0;
 	return 1;
 }
@@ -136,7 +136,7 @@ static inline int is_valid_elf32_otherarch(char *buf, short type)
 		|| eh->machine != 0x03
 		|| eh->type != type
 		|| eh->id[4] != 1 /* 32-bit */
-		|| ((eh->entry < EXEC_MINIMUM) && eh->entry))
+		|| ((eh->entry < MEMMAP_IMAGE_MINIMUM) && eh->entry))
 		return 0;
 	return 1;
 }

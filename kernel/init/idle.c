@@ -40,7 +40,7 @@ int kt_kernel_idle_task(void)
 		/* set it to write. We don't actually have to do this, because
 		 * ring0 code may always access memory. As long as the PAGE_USER
 		 * flag isn't set... */
-		//if(!(SIGNAL_INJECT >= addr && SIGNAL_INJECT < (addr + PAGE_SIZE_LOWER_KERNEL)))
+		//if(!(MEMMAP_SYSGATE_ADDRESS >= addr && MEMMAP_SYSGATE_ADDRESS < (addr + PAGE_SIZE_LOWER_KERNEL)))
 		//	mm_vm_set_attrib(addr, PAGE_PRESENT | PAGE_WRITE);
 		//addr += PAGE_SIZE_LOWER_KERNEL;
 	}

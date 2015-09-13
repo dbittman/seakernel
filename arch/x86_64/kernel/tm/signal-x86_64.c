@@ -37,7 +37,7 @@ void arch_tm_userspace_signal_initializer(registers_t *regs, struct sigaction *s
 	regs->useresp -= STACK_ELEMENT_SIZE;
 	/* push the return address. this function is mapped in when
 		* paging is set up */
-	*(addr_t *)(regs->useresp) = (addr_t)SIGNAL_INJECT;
+	*(addr_t *)(regs->useresp) = (addr_t)MEMMAP_SYSGATE_ADDRESS;
 	regs->eip = (addr_t)sa->_sa_func._sa_handler;
 }
 

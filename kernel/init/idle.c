@@ -34,7 +34,7 @@ int kt_kernel_idle_task(void)
 	cpu_interrupt_set(0);
 	printk(1, "[kernel]: remapping lower memory with protection flags...\n");
 	addr_t addr = 0;
-	while(addr != TOP_LOWER_KERNEL && 0) /* TODO: wait for init to be ready for this */
+	while(0) /* TODO: wait for init to be ready for this */
 	{
 		/* TODO: ACTUALLY DO THIS */
 		/* set it to write. We don't actually have to do this, because
@@ -42,7 +42,7 @@ int kt_kernel_idle_task(void)
 		 * flag isn't set... */
 		//if(!(SIGNAL_INJECT >= addr && SIGNAL_INJECT < (addr + PAGE_SIZE_LOWER_KERNEL)))
 		//	mm_vm_set_attrib(addr, PAGE_PRESENT | PAGE_WRITE);
-		addr += PAGE_SIZE_LOWER_KERNEL;
+		//addr += PAGE_SIZE_LOWER_KERNEL;
 	}
 	cpu_interrupt_set(1);
 	/* Now enter the main idle loop, waiting to do periodic cleanup */

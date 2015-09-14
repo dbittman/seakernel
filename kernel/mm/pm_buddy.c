@@ -3,8 +3,8 @@
 #include <sea/kernel.h>
 #include <sea/lib/bitmap.h>
 #include <sea/mutex.h>
-#include <sea/ll.h>
 #include <sea/fs/kerfs.h>
+#include <sea/lib/stack.h>
 #define IS_POWER2(x) ((x != 0) && ((x & (~x + 1)) == x))
 
 #define MAX_PHYS_MEM 0x1000000000
@@ -19,7 +19,7 @@
 mutex_t pm_buddy_mutex;
 uint8_t *bitmaps[MAX_ORDER + 1];
 
-struct llist freelists[MAX_ORDER+1];
+struct stack freelists[MAX_ORDER+1];
 static char static_bitmaps[((MEMORY_SIZE / MIN_SIZE) / 8) * 2];
 static bool inited = false;
 static size_t num_allocated[MAX_ORDER + 1];
@@ -57,17 +57,18 @@ static addr_t __do_pmm_buddy_allocate(size_t length)
 
 	int order = min_possible_order(length);
 
-	if(ll_is_empty(&freelists[order])) {
+	if(stack_is_empty(&freelists[order])) {
 		addr_t a = __do_pmm_buddy_allocate(length * 2);
 		int bit = a / length;
-		ll_do_insert(&freelists[order], (void *)(a + PHYS_PAGE_MAP), (void *)a);
-		ll_do_insert(&freelists[order], 
-				(void *)(a + length + PHYS_PAGE_MAP), (void *)(a + length));
+
+		struct stack_elem *elem1 = (void *)(a + PHYS_PAGE_MAP);
+		struct stack_elem *elem2 = (void *)(a + length + PHYS_PAGE_MAP);
+
+		stack_push(&freelists[order], elem1, (void *)a);
+		stack_push(&freelists[order], elem2, (void *)(a + length));
 	}
 
-	struct llistnode *node = freelists[order].head;
-	ll_do_remove(&freelists[order], node, 0);
-	addr_t address = ll_entry(addr_t, node);
+	addr_t address = (addr_t)stack_pop(&freelists[order]);
 	int bit = address / length;
 	assert(!bitmap_test(bitmaps[order], bit));
 	bitmap_set(bitmaps[order], bit);
@@ -87,12 +88,12 @@ static void deallocate(addr_t address, int order)
 		int buddy_bit = buddy / ((addr_t)MIN_SIZE << order);
 		bitmap_reset(bitmaps[order], bit);
 		if(!bitmap_test(bitmaps[order], buddy_bit)) {
-			struct llistnode *bn = (void *)(buddy + PHYS_PAGE_MAP);
-			ll_do_remove(&freelists[order], bn, 0);
+			struct stack_elem *elem = (void *)(buddy + PHYS_PAGE_MAP);
+			stack_delete(&freelists[order], elem);
 			deallocate(buddy > address ? address : buddy, order + 1);
 		} else {
-			struct llistnode *node = (void *)(address + PHYS_PAGE_MAP);
-			ll_do_insert(&freelists[order], node, (void *)address);
+			struct stack_elem *elem = (void *)(address + PHYS_PAGE_MAP);
+			stack_push(&freelists[order], elem, (void *)address);
 		}
 		num_allocated[order]--;
 	}
@@ -122,7 +123,7 @@ void pmm_buddy_init()
 	for(int i=0;i<=MAX_ORDER;i++) {
 		bitmaps[i] = (uint8_t *)start;
 		memset(bitmaps[i], ~0, length);
-		ll_create_lockless(&freelists[i]);
+		stack_create(&freelists[i], STACK_LOCKLESS);
 		start += length;
 		length /= 2;
 		num_allocated[i] = buddy_order_max_blocks(i);

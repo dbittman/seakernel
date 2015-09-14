@@ -1,6 +1,7 @@
 #include <sea/lib/stack.h>
 #include <sea/kobj.h>
 #include <sea/mutex.h>
+#include <sea/kernel.h>
 
 static struct stack_elem __sentry;
 
@@ -9,7 +10,7 @@ struct stack *stack_create(struct stack *stack, int flags)
 	KOBJ_CREATE(stack, flags, STACK_KMALLOC);
 	mutex_create(&stack->lock, 0);
 	memset(&__sentry, 0, sizeof(__sentry));
-	stack->base = stack->top = &__sentry;
+	stack->top = &__sentry;
 	return stack;
 }
 
@@ -26,11 +27,27 @@ void stack_push(struct stack *stack, struct stack_elem *elem, void *obj)
 	
 	stack->top->next = elem;
 	elem->obj = obj;
-	elem->next = 0;
+	elem->next = &__sentry;
 	elem->prev = stack->top;
 	stack->top = elem;
 	stack->count++;
 
+	if(!(stack->flags & STACK_LOCKLESS))
+		mutex_release(&stack->lock);
+}
+
+void stack_delete(struct stack *stack, struct stack_elem *elem)
+{
+	if(!(stack->flags & STACK_LOCKLESS))
+		mutex_acquire(&stack->lock);
+	
+	assert(stack->count > 0);
+	elem->prev->next = elem->next;
+	elem->next->prev = elem->prev;
+	if(stack->top == elem)
+		stack->top = elem->prev;
+	stack->count--;
+	
 	if(!(stack->flags & STACK_LOCKLESS))
 		mutex_release(&stack->lock);
 }
@@ -43,7 +60,7 @@ void *stack_pop(struct stack *stack)
 	if(!stack->count)
 		return NULL;
 	void *obj = stack->top->obj;
-	stack->top->prev->next = 0;
+	stack->top->prev->next = &__sentry;
 	stack->top = stack->top->prev;
 	stack->count--;
 

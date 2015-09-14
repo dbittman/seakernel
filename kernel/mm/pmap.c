@@ -23,7 +23,7 @@ static addr_t get_next_mm_device_page(void)
 	if(mmdev_addr >= MEMMAP_DEVICEMAP_END)
 		panic(0, "ran out of mmdev space");
 	addr_t ret = mmdev_addr;
-	mmdev_addr += PAGE_SIZE;
+	mmdev_addr += mm_page_size(0);
 	mutex_release(&mmd_lock);
 	return ret;
 }
@@ -47,7 +47,7 @@ static addr_t get_virtual_address_page(struct pmap *m, addr_t p)
 	m->phys[m->idx] = masked;
 	addr_t ret;
 	m->virt[m->idx] = ret = get_next_mm_device_page();
-	mm_virtual_map(ret, masked, PAGE_PRESENT | PAGE_WRITE, 0x1000); //TODO: fix page sizes for all calls to this
+	mm_virtual_map(ret, masked, PAGE_PRESENT | PAGE_WRITE, mm_page_size(0));
 	m->idx++;
 	return ret;
 }

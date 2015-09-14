@@ -4,5 +4,6 @@ KOBJS += library/klib/hash.o \
 		 library/klib/heap.o \
 		 library/klib/ll.o \
 		 library/klib/queue.o \
+		 library/klib/stack.o \
 		 library/klib/timer.o
 

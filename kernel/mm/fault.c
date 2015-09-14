@@ -9,16 +9,7 @@
 #include <sea/syscall.h>
 static int do_map_page(addr_t addr, unsigned attr)
 {
-	/* only map a new page if one isn't already mapped. In addition,
-	 * we tell the functions that the directory is locked (since it always
-	 * will be) */
-	addr &= PAGE_MASK;
-	/* TODO: page sizes getmap? */
-	if(!mm_virtual_getmap(addr, NULL, NULL)) {
-		addr_t phys = mm_physical_allocate(0x1000, true);
-		if(!mm_virtual_map(addr, phys, attr, 0x1000))
-			mm_physical_deallocate(phys);
-	}
+	mm_virtual_trymap(addr, attr, mm_page_size(0));
 	return 1;
 }
 
@@ -83,6 +74,12 @@ void mm_page_fault_handler(registers_t *regs, addr_t address, int pf_cause)
 		return;
 	} else {
 		if(pd_cur_data && !IS_KERN_MEM(address)) {
+			/* okay, maybe we have a section of memory that a process
+			 * allocated, that wasn't mapped in during sbrk. If this
+			 * memory is used as a buffer, and passed to the kernel
+			 * during read, for example, the kernel might try to write
+			 * something to it, causing a fault. So, even though we're
+			 * in the kernel, check that case. */
 			if(mm_page_fault_test_mappings(address, pf_cause) == 0)
 				return;
 			mutex_acquire(&pd_cur_data->lock);

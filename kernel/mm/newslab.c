@@ -26,7 +26,7 @@ struct cache {
 	mutex_t lock;
 };
 
-#define SLAB_SIZE 0x40000
+#define SLAB_SIZE mm_page_size(1)
 #define SLAB_MAGIC 0xADA5A54B
 struct cache cache_cache;
 mutex_t cache_lock;
@@ -65,9 +65,8 @@ static struct slab *allocate_new_slab(struct cache *cache)
 	if(valloc_allocate(&slabs_reg, &reg, 1) == 0) {
 		panic(PANIC_NOSYNC, "could not allocate new slab");
 	}
-	mm_virtual_trymap(reg.start, PAGE_PRESENT | PAGE_WRITE, mm_page_size(0));
-	mm_virtual_trymap(reg.start + mm_page_size(0), PAGE_PRESENT | PAGE_WRITE, mm_page_size(0));
-	memset((void *)reg.start, 0, PAGE_SIZE * 2);
+	mm_virtual_trymap(reg.start, PAGE_PRESENT | PAGE_WRITE, SLAB_SIZE);
+	memset((void *)reg.start, 0, sizeof(struct slab));
 	struct slab *slab = (void *)reg.start;
 	size_t slab_header_size = sizeof(struct slab);
 	valloc_create(&slab->allocator, reg.start + slab_header_size,
@@ -122,16 +121,6 @@ static void *allocate_object(struct slab *slab)
 	struct valloc_region reg;
 	void *test = valloc_allocate(&slab->allocator, &reg, 1);
 	assertmsg(test, "could not allocate object from valloc in slab");
-	
-	/* NOTE: do this while we're still locked, because objects can share physical pages,
-	 * so if two processes try to map a page at the same time, sadness can happpen. */
-	/* mutex_acquire(&slab->lock); */
-	/* TODO: either this, or atomic mapping */
-	for(addr_t a = reg.start;a < reg.start + slab->cache->object_size + PAGE_SIZE;a+=PAGE_SIZE) {
-		/* TODO: page size? */
-		mm_virtual_trymap(a, PAGE_PRESENT | PAGE_WRITE, PAGE_SIZE);
-	}
-	/* mutex_release(&slab->lock); */
 	atomic_fetch_add_explicit(&total_allocated, slab->cache->object_size, memory_order_relaxed);
 	return (void *)(reg.start);
 }

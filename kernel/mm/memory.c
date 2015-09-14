@@ -56,7 +56,7 @@ static void process_memorymap(struct multiboot *mboot)
 #if ADDR_BITS == 32
 				/* 32-bit can only handle the lower 32 bits of the address. If we're
 				 * considering an address above 0xFFFFFFFF, we have to ignore it */
-				page = (addr_t)(j & 0xFFFFFFFF); /*TODO CLEAN THIS UP */
+				page = (addr_t)(j & 0xFFFFFFFF);
 				if((j >> 32) != 0)
 					break;
 #else

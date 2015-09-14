@@ -6,21 +6,7 @@
 #include <sea/tm/workqueue.h>
 #include <sea/cpu/processor.h>
 #include <sea/cpu/interrupt.h>
-/* TODO: roll this out to all kernel objects */
-#define KOBJ_CREATE(obj,flags,alloc_flag) do {\
-	if(!obj) {\
-		obj = kmalloc(sizeof(*obj)); \
-		obj->flags = flags | alloc_flag; \
-	} else {\
-		memset(obj, 0, sizeof(*obj)); \
-		obj->flags = flags; \
-	} \
-	} while(0)
-
-#define KOBJ_DESTROY(obj,alloc_flag) do {\
-	if(obj->flags & alloc_flag)\
-		kfree(obj);\
-	} while(0)
+#include <sea/kobj.h>
 
 struct workqueue *workqueue_create(struct workqueue *wq, int flags)
 {

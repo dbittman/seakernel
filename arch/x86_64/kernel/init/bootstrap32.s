@@ -43,11 +43,11 @@ boot_pdpt:
 align 0x1000
 global boot_pd
 boot_pd:
-	dq 0x85
-	dq 0x200085
-	dq 0x400085
-	dq 0x600085
-	dq 0x800085
+	dq 0x87
+	dq 0x200087
+	dq 0x400087
+	dq 0x600087
+	dq 0x800087
 	times 507 dq 0
 
 align 0x1000
@@ -61,15 +61,16 @@ boot_pml4:
 bootstrap:
 	mov eax, cr0
 	and eax, 0x1FFFFFFF
+	or eax, (1 << 16)
 	mov cr0, eax
 	cli
 	
 	mov eax, boot_pml4
-	or dword [eax], 5
-	or dword [eax + 256*8], 5
+	or dword [eax], 7
+	or dword [eax + 256*8], 7
 	
 	mov eax, boot_pdpt
-	or dword [eax], 5
+	or dword [eax], 7
 	
 	; enable PAE
 	mov eax, cr4

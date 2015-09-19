@@ -9,7 +9,7 @@ struct thread_switch_context {
 	uint64_t r15, r14, r13, r12, rbx, rbp, rflags;
 };
 
-#define tm_thread_context_basepointer(tsc) (tsc->rbp)
+#define tm_thread_context_basepointer(tsc) ((tsc)->rbp)
 
 #endif
 

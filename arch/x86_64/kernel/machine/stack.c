@@ -3,8 +3,10 @@
 #include <sea/loader/elf-x86_64.h>
 #include <sea/asm/system.h>
 #include <sea/vsprintf.h>
+#include <sea/tm/thread.h>
+#include <sea/tm/process.h>
 
-void arch_cpu_print_stack_trace(unsigned int MaxFrames)
+void arch_cpu_print_stack_trace(int MaxFrames)
 {
 	addr_t * ebp;
 	__asm__ __volatile__ ("mov %%rbp, %0" : "=r"(ebp));
@@ -24,16 +26,21 @@ void arch_cpu_print_stack_trace(unsigned int MaxFrames)
 	}
 }
 
-void arch_cpu_print_stack_trace_alternate(addr_t *ebp)
+void arch_cpu_print_stack_trace_alternate(struct thread *thr, addr_t *ebp)
 {
 	kprintf("    ADDR      MODULE FUNCTION\n");
 	for(int frame = 0; frame < 32; ++frame)
 	{
 		//if((kernel_state_flags&KSF_MMU) && !mm_vm_get_map((addr_t)ebp, 0, 1)) break;
-		addr_t eip = ebp[1];
+		addr_t eip;
+		if(!mm_context_read(&thr->process->vmm_context, &eip, ebp + 8, 8))
+			break;
+		printk(0, ":: %x %x\n", ebp, eip);
 		if(eip == 0)
 			break;
-		ebp = (addr_t *)(ebp[0]);
+		if(!mm_context_read(&thr->process->vmm_context, &ebp, ebp, 8))
+			break;
+		printk(0, "-> %x\n", ebp);
 		const char *name = elf64_lookup_symbol(eip, &kernel_elf);
 		char *modname = 0;
 		if(!name)
@@ -42,20 +49,3 @@ void arch_cpu_print_stack_trace_alternate(addr_t *ebp)
 	}
 }
 
-void arch_cpu_copy_fixup_stack(addr_t new, addr_t old, size_t length)
-{
-	memcpy((void *)new, (void *)old, length);
-	u64int offset=0;
-	offset = new-old;
-	addr_t i;
-	for(i = (addr_t)new+(length-8); i >= (addr_t)new; i -= 8)
-	{
-		u64int tmp = * (u64int*)i;
-		if (tmp >= old && tmp < old+length)
-		{
-			tmp = tmp + offset;
-			u64int *tmp2 = (u64int*)i;
-			*tmp2 = tmp;
-		}
-	}
-}

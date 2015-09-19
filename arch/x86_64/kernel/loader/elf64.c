@@ -74,7 +74,11 @@ static int process_elf64_phdr(char *mem, int fp, addr_t *start, addr_t *end)
 			if(ph->p_flags & ELF_PF_X)
 				prot |= PROT_EXEC;
 
-			int flags = MAP_FIXED | MAP_PRIVATE;
+			int flags = MAP_FIXED;
+			if(prot & PROT_WRITE)
+				flags |= MAP_PRIVATE;
+			else
+				flags |= MAP_SHARED;
 			mm_mmap(ph->p_addr & PAGE_MASK, ph->p_filesz + inpage_offset, 
 					prot, flags, fp, ph->p_offset & PAGE_MASK, 0);
 			if(additional > page_free) {

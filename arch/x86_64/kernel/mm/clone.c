@@ -6,7 +6,7 @@
 #include <sea/string.h>
 #include <sea/mm/kmalloc.h>
 
-static void copy_pde_large(page_dir_t *pd, page_dir_t *parent_pd, int idx)
+static void copy_pde_large(page_dir_t *pd, page_dir_t *parent_pd, int idx, bool cow)
 {
 	addr_t parent = parent_pd[idx];
 	if(parent & PAGE_LINK) {
@@ -18,12 +18,12 @@ static void copy_pde_large(page_dir_t *pd, page_dir_t *parent_pd, int idx)
 	}
 }
 
-static void copy_pde(page_dir_t *pd, page_dir_t *parent_pd, int idx)
+static void copy_pde(page_dir_t *pd, page_dir_t *parent_pd, int idx, bool cow)
 {
 	if(!parent_pd[idx])
 		return;
 	if((addr_t)parent_pd[idx] & PAGE_LARGE) {
-		return copy_pde_large(pd, parent_pd, idx);
+		return copy_pde_large(pd, parent_pd, idx, cow);
 	}
 	addr_t *parent = (addr_t *)((parent_pd[idx] & PAGE_MASK) + PHYS_PAGE_MAP);
 	page_table_t table = mm_physical_allocate(0x1000, false), *entries;
@@ -35,7 +35,7 @@ static void copy_pde(page_dir_t *pd, page_dir_t *parent_pd, int idx)
 		{
 			unsigned attr = parent[i] & ATTRIB_MASK;
 			addr_t parent_page = parent[i] & PAGE_MASK;
-			if(attr & PAGE_LINK) {
+			if((attr & PAGE_LINK)) {
 				/* we're just linking to the paren't physical page.
 				 * see warnings about PAGE_LINK where PAGE_LINK is
 				 * defined */
@@ -52,7 +52,7 @@ static void copy_pde(page_dir_t *pd, page_dir_t *parent_pd, int idx)
 	pd[idx] = table | attr;
 }
 
-void copy_pdpte(pdpt_t *pdpt, pdpt_t *parent_pdpt, int idx)
+void copy_pdpte(pdpt_t *pdpt, pdpt_t *parent_pdpt, int idx, bool cow)
 {
 	if(!parent_pdpt[idx])
 		return;
@@ -61,12 +61,12 @@ void copy_pdpte(pdpt_t *pdpt, pdpt_t *parent_pdpt, int idx)
 	memset((void *)(pd + PHYS_PAGE_MAP), 0, PAGE_SIZE);
 	int i;
 	for(i=0;i<512;i++)
-		copy_pde((addr_t *)(pd+PHYS_PAGE_MAP), parent_pd, i);
+		copy_pde((addr_t *)(pd+PHYS_PAGE_MAP), parent_pd, i, cow);
 	unsigned attr = parent_pdpt[idx] & ATTRIB_MASK;
 	pdpt[idx] = pd | attr;
 }
 
-void copy_pml4e(pml4_t *pml4, pml4_t *parent_pml4, int idx)
+void copy_pml4e(pml4_t *pml4, pml4_t *parent_pml4, int idx, bool cow)
 {
 	if(!parent_pml4[idx])
 		return;
@@ -75,7 +75,7 @@ void copy_pml4e(pml4_t *pml4, pml4_t *parent_pml4, int idx)
 	memset((void *)(pdpt + PHYS_PAGE_MAP), 0, PAGE_SIZE);
 	int i;
 	for(i=0;i<512;i++)
-		copy_pdpte((addr_t *)(pdpt+PHYS_PAGE_MAP), parent_pdpt, i);
+		copy_pdpte((addr_t *)(pdpt+PHYS_PAGE_MAP), parent_pdpt, i, cow);
 	unsigned attr = parent_pml4[idx] & ATTRIB_MASK;
 	pml4[idx] = pdpt | attr;
 }
@@ -91,12 +91,13 @@ void arch_mm_context_clone(struct vmm_context *oldcontext, struct vmm_context *n
 		mutex_acquire(&pd_cur_data->lock);
 	
 	pml4[511] = parent_pml4[511];
-	pml4[PML4_INDEX(MEMMAP_KERNEL_START)] = parent_pml4[PML4_INDEX(MEMMAP_KERNEL_START)];
 	for(unsigned int i=0;i<512;i++) {
 		if(i >= PML4_INDEX(MEMMAP_KERNEL_START)) {
 			pml4[i] = parent_pml4[i];
-		} else {
-			copy_pml4e(pml4, parent_pml4, i);
+		} else if(i >= PML4_INDEX(MEMMAP_USERSPACE_MAXIMUM) || !current_process->pid) {
+			copy_pml4e(pml4, parent_pml4, i, false);
+		} else if(parent_pml4[i]) {
+			copy_pml4e(pml4, parent_pml4, i, true);
 		}
 	}
 	

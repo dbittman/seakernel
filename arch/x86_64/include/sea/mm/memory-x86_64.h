@@ -37,7 +37,7 @@
 #define MEMMAP_USERSTACKS_START   0x0000600010000000
 #define MEMMAP_USERSTACKS_END     0x0000600100000000
 
-#define MEMMAP_USERSPACE_MAXIMUM  0x00006FFFFFFFFFFF
+#define MEMMAP_USERSPACE_MAXIMUM  0x0000700000000000
 #define MEMMAP_IMAGE_MINIMUM	  0x0000000000400000
 #define MEMMAP_IMAGE_MAXIMUM      0x0000600000000000
 
@@ -77,6 +77,7 @@ static inline size_t mm_page_size_closest(size_t length)
  * and/or duplicate pages in the page stack!!! 
  */
 #define PAGE_LINK      (1 << 10)
+#define PAGE_COW       (1 << 9)
 #define PAGE_LARGE     (1 << 7)
 #define PAGE_SIZE 	   0x1000
 

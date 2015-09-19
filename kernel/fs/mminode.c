@@ -43,7 +43,7 @@ addr_t fs_inode_map_private_physical_page(struct inode *node, addr_t virt,
 	assert(!(offset & ~PAGE_MASK));
 	/* specify MAP_ZERO, since read_inode may not fill up the whole page */
 	ph = mm_physical_allocate(0x1000, false); //TODO: make sizes be req_len?
-	bool result = mm_virtual_map(virt, ph, MAP_ZERO | attrib, 0x1000);
+	bool result = mm_virtual_map(virt, ph, MAP_ZERO | attrib | PAGE_WRITE, 0x1000);
 	if(!result)
 		panic(0, "trying to remap mminode private section %x", virt);
 	int err=-1;
@@ -60,6 +60,7 @@ addr_t fs_inode_map_private_physical_page(struct inode *node, addr_t virt,
 				printk(0, "[mminode]: read inode failed with %d\n", err);
 		}
 	}
+	mm_virtual_changeattr(virt, attrib, 0x1000);
 	return ph;
 }
 
@@ -75,13 +76,17 @@ addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt,
 	assert(!(virt & ~PAGE_MASK));
 	assert(!(offset & ~PAGE_MASK));
 	/* test if we have any shared mappings... */
-	if(!node->physicals)
+	if(!node->physicals) {
 		return 0;
+	}
+	mutex_acquire(&node->mappings_lock);
 	int page_number = offset / PAGE_SIZE;
 	void *value;
 	if(hash_table_get_entry(node->physicals, &page_number, sizeof(page_number), 1, &value)
-			== -ENOENT)
+			== -ENOENT) {
+		mutex_release(&node->mappings_lock);
 		return 0;
+	}
 	struct physical_page *entry = value;
 	assert(entry->count);
 	/* so, we don't have to worry about someone decreasing to count to zero while we're working, 
@@ -93,7 +98,7 @@ addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt,
 		entry->page = mm_physical_allocate(0x1000, false);
 		/* specify ZERO, since read_inode may not fill up the whole page. Also,
 		 * specify PAGE_LINK so that mm_vm_clone doesn't copy shared pages */
-		if(!mm_virtual_map(virt, entry->page, MAP_ZERO | attrib | PAGE_LINK, 0x1000))
+		if(!mm_virtual_map(virt, entry->page, MAP_ZERO | attrib | PAGE_LINK | PAGE_WRITE, 0x1000))
 			panic(0, "trying to remap mminode shared section");
 
 		int err=-1;
@@ -107,6 +112,7 @@ addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt,
 			if(node->filesystem && (err=fs_inode_read(node, offset, len, (void *)virt) < 0))
 				printk(0, "[mminode]: read inode failed with %d\n", err);
 		}
+		mm_virtual_changeattr(virt, attrib | PAGE_LINK, 0x1000);
 		atomic_fetch_add(&node->mapped_pages_count, 1);
 	} else if(entry->page) {
 		if(!mm_virtual_map(virt, entry->page, attrib | PAGE_LINK, 0x1000))
@@ -114,6 +120,7 @@ addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt,
 	}
 	addr_t ret = entry->page;
 	mutex_release(&entry->lock);
+	mutex_release(&node->mappings_lock);
 	return ret;
 }
 

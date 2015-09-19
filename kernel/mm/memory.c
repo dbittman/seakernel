@@ -4,7 +4,6 @@
 #include <sea/tm/process.h>
 #include <sea/cpu/processor.h>
 #include <sea/loader/symbol.h>
-
 #include <sea/mm/pmap.h>
 #include <sea/mm/pmm.h>
 #include <sea/mm/vmm.h>
@@ -14,13 +13,44 @@
 #include <sea/vsprintf.h>
 #include <sea/cpu/interrupt.h>
 #include <stdbool.h>
+
+static int *frame_counts;
+
 struct vmm_context kernel_context;
 
 unsigned long pm_num_pages=0;
 
 extern addr_t initrd_start_page, initrd_end_page, kernel_start;
 static addr_t pm_location = 0;
+static size_t maximum_page_number;
 extern int kernel_end;
+
+int mm_physical_get_count(addr_t page)
+{
+	if(!frame_counts)
+		return 0;
+	if((page / PAGE_SIZE) < maximum_page_number)
+		return atomic_load(&frame_counts[page / PAGE_SIZE]);
+	return 0;
+}
+
+void mm_physical_increment_count(addr_t page)
+{
+	if(!frame_counts)
+		return;
+	if((page / PAGE_SIZE) < maximum_page_number)
+		return atomic_fetch_add(&frame_counts[page / PAGE_SIZE], 1);
+}
+
+int mm_physical_decrement_count(addr_t page)
+{
+	if(!frame_counts)
+		return 0;
+	if((page / PAGE_SIZE) < maximum_page_number)
+		return atomic_fetch_sub(&frame_counts[page / PAGE_SIZE], 1);
+	return 0;
+}
+
 static inline bool __is_actually_free(addr_t x)
 {
 	if(x == 0)
@@ -28,6 +58,8 @@ static inline bool __is_actually_free(addr_t x)
 	if(x <= pm_location)
 		return false;
 	if(x >= initrd_start_page && x <= initrd_end_page)
+		return false;
+	if(x < 0x1000000) //TODO: fix this!
 		return false;
 	return true;
 }
@@ -95,6 +127,7 @@ static void process_memorymap(struct multiboot *mboot)
  			, mbs, PAGE_SIZE/1024);
 	printk(1, "[mm]: num pages = %d\n", num_pages);
 	pm_num_pages=num_pages;
+	maximum_page_number = highest_page / PAGE_SIZE;
 	set_ksf(KSF_MEMMAPPED);
 }
 
@@ -111,6 +144,8 @@ void mm_init(struct multiboot *m)
 	set_ksf(KSF_MMU);
 	/* hey, look at that, we have happy memory times! */
 	mm_reclaim_init();
+	frame_counts = (void *)kmalloc(sizeof(int) * maximum_page_number);
+	printk(0, "[mm]: allocated %d KB for page-frame counting.\n", sizeof(int) * maximum_page_number / 1024);
 #if CONFIG_MODULES
 	loader_add_kernel_symbol(__kmalloc);
 	loader_add_kernel_symbol(__kmalloc_ap);
@@ -166,4 +201,9 @@ int mm_free_dma_buffer(struct dma_region *d)
 	return 0;
 }
 
+void arch_mm_physical_memcpy(void *dest, void *src, size_t length);
+void mm_physical_memcpy(void *dest, void *src, size_t length)
+{
+	return arch_mm_physical_memcpy(dest, src, length);
+}
 

@@ -23,17 +23,19 @@ bool arch_mm_context_virtual_map(struct vmm_context *ctx, addr_t virtual,
 	/* TODO: make these all atomic? */
 	addr_t *pml4v = (addr_t *)ctx->root_virtual;
 	if(!pml4v[pml4idx]) {
-		pml4v[pml4idx] = mm_physical_allocate(0x1000, true) | flags;
+		pml4v[pml4idx] = mm_physical_allocate(0x1000, true) | flags | PAGE_WRITE; /* TODO: how to set these flags? If a mapping
+																					 changes attr, then the parent flags should
+																					 change attrs too? */
 	}
 	addr_t *pdptv = (addr_t *)((pml4v[pml4idx] & PAGE_MASK) + PHYS_PAGE_MAP);
 	if(!pdptv[pdptidx]) {
-		pdptv[pdptidx] = mm_physical_allocate(0x1000, true) | flags;
+		pdptv[pdptidx] = mm_physical_allocate(0x1000, true) | flags | PAGE_WRITE;
 	}
 	addr_t *pdv = (addr_t *)((pdptv[pdptidx] & PAGE_MASK) + PHYS_PAGE_MAP); //TODO PAGE_MASK SHOULD HANDLE NOEXEC?
 	if(length == 0x1000) {
 		int ptidx = PT_INDEX(virtual);
 		if(!pdv[pdidx]) {
-			pdv[pdidx] = mm_physical_allocate(0x1000, true) | flags;
+			pdv[pdidx] = mm_physical_allocate(0x1000, true) | flags | PAGE_WRITE;
 		} else {
 			if(pdv[pdidx] & PAGE_LARGE)
 				result = false;
@@ -42,6 +44,7 @@ bool arch_mm_context_virtual_map(struct vmm_context *ctx, addr_t virtual,
 			addr_t *ptv = (addr_t *)((pdv[pdidx] & PAGE_MASK) + PHYS_PAGE_MAP);
 			if(!ptv[ptidx]) {
 				ptv[ptidx] = physical | flags;
+				mm_physical_increment_count(physical);
 				asm volatile("invlpg (%0)" :: "r"(virtual));
 			} else {
 				result = false;
@@ -49,6 +52,7 @@ bool arch_mm_context_virtual_map(struct vmm_context *ctx, addr_t virtual,
 		}
 	} else {
 		if(!pdv[pdidx]) {
+			mm_physical_increment_count(physical);
 			pdv[pdidx] = physical | flags | PAGE_LARGE;
 			asm volatile("invlpg (%0)" :: "r"(virtual));
 		} else {
@@ -205,6 +209,14 @@ void arch_mm_physical_memset(void *addr, int c, size_t length)
 {
 	addr_t start = (addr_t)addr + PHYS_PAGE_MAP;
 	memset((void *)start, c, length);
+}
+
+void arch_mm_physical_memcpy(void *dest, void *src, size_t length)
+{
+	addr_t startd = (addr_t)dest + PHYS_PAGE_MAP;
+	addr_t starts = (addr_t)src + PHYS_PAGE_MAP;
+	printk(0, "memcpy: %x %x %d\n", dest, src, length);
+	memcpy((void *)startd, (void *)starts, length);
 }
 
 bool arch_mm_context_read(struct vmm_context *ctx, void *output, addr_t address, size_t length)

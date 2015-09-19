@@ -5,36 +5,17 @@
 #include <sea/errno.h>
 #include <sea/tm/timing.h>
 #include <sea/cpu/interrupt.h>
-
+#include <sea/mm/map.h>
 int sys_sbrk(long inc)
 {
-	if(inc < 0 && current_process->heap_start < current_process->heap_end) {
-		int dec = -inc;
-		addr_t new_end = current_process->heap_end - dec;
-		if(new_end < current_process->heap_start)
-			new_end = current_process->heap_start;
-		addr_t old_end = current_process->heap_end;
-		addr_t free_start = (new_end&PAGE_MASK) + PAGE_SIZE;
-		addr_t free_end = old_end&PAGE_MASK;
-		while(free_start <= free_end) {
-			addr_t phys;
-			if((phys = mm_virtual_unmap(free_start))) {
-				mm_physical_deallocate(phys);
-			}
-			free_start += PAGE_SIZE;
-		}
-		current_process->heap_end = new_end;
-		assert(new_end + dec == old_end);
-		return old_end;
-	}
-	if(!inc)
-		return current_process->heap_end;
 	addr_t end = current_process->heap_end;
-	assert(end);
-	if(end + inc >= MEMMAP_USERSPACE_MAXIMUM)
-		tm_signal_send_thread(current_thread, SIGSEGV);
-	current_process->heap_end += inc;
-	addr_t page = end & PAGE_MASK;
+	if(inc > 0) {
+		inc = ((inc - 1) & ~(PAGE_SIZE - 1)) + PAGE_SIZE;
+		current_process->heap_end += inc;
+#warning "TODO: this causes a lot of entries in the mappings list. Merging!"
+		addr_t ret = mm_mmap(end, inc,
+				PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0, 0);
+	}
 	return end;
 }
 

@@ -79,13 +79,14 @@ static void __print_thread(struct thread *thr, int trace)
 	if(trace && thr == current_thread) {
 		cpu_print_stack_trace(20);
 	} else if(trace) {
-		struct thread_switch_context *tsc = (void *)thr->stack_pointer;
-		addr_t bp = tm_thread_context_basepointer(tsc);
+		struct thread_switch_context tsc;
+		mm_context_read(&thr->process->vmm_context, &tsc, thr->stack_pointer, sizeof(struct thread_switch_context));
+		addr_t bp = tm_thread_context_basepointer(&tsc);
 		printk_safe(5, "    tsc->base_pointer:  %x\n", bp);
 		if(bp < thr->kernel_stack || bp > thr->kernel_stack + KERN_STACK_SIZE) {
 			printk_safe(5, "    (unable to trace due to unknown base pointer)\n");
 		} else {
-			cpu_print_stack_trace_alternate((addr_t *)bp);
+			cpu_print_stack_trace_alternate(thr, (addr_t *)bp);
 		}
 	}
 }
@@ -151,14 +152,27 @@ static void debugger_threads(char tokens[16][64])
 	}
 }
 
+static void debugger_cpus(char tokens[16][64])
+{
+	for(int i=0;i<CONFIG_MAX_CPUS;i++) {
+		struct cpu *cpu = cpu_get(i);
+		if(!cpu || !(cpu->flags & CPU_UP))
+			break;
+		printk_safe(5, "cpu %d\n", i);
+		printk_safe(5, "    flags:             %x\n", cpu->flags);
+		printk_safe(5, "    preempt_disable:   %d\n", cpu->preempt_disable);
+	}
+}
+
 struct command {
 	char *str;
 	void (*fn)(char tokens[16][64]);
 };
 
-static struct command commands[32] = {
+static struct command commands[3] = {
 	{ .str = "thread", .fn = debugger_threads },
 	{ .str = "proc", .fn = debugger_procs },
+	{ .str = "cpus", .fn = debugger_cpus },
 };
 
 void debugger_enter(void)
@@ -187,7 +201,7 @@ void debugger_enter(void)
 			continue;
 		if(!strcmp(tokens[0], "continue"))
 			break;
-		for(int i=0;i<32;i++) {
+		for(int i=0;i<3;i++) {
 			if(!strcmp(commands[i].str, tokens[0]))
 				commands[i].fn(tokens);
 		}

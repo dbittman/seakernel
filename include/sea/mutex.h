@@ -18,6 +18,8 @@ typedef struct {
 	_Atomic unsigned alignas(8) lock;
 	unsigned flags;
 	long pid;
+	char *owner_file;
+	int owner_line;
 } mutex_t;
 
 void __mutex_acquire(mutex_t *m,char*,int);

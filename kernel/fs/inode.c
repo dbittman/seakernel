@@ -91,7 +91,6 @@ void vfs_inode_destroy(struct inode *node)
 	}
 	rwlock_destroy(&node->lock);
 	rwlock_destroy(&node->metalock);
-	mutex_destroy(&node->mappings_lock);
 	assert(!node->count);
 	assert(!node->dirents->count);
 	hash_table_destroy(node->dirents);
@@ -295,7 +294,10 @@ ssize_t fs_inode_read(struct inode *node, size_t off, size_t count, char *buf)
 {
 	if(!vfs_inode_check_permissions(node, MAY_READ, 0))
 		return -EACCES;
-	return fs_callback_inode_read(node, off, count, buf);
+	ssize_t ret;
+
+	ret = fs_callback_inode_read(node, off, count, buf);
+	return ret;
 }
 
 int vfs_inode_chdir(struct inode *node)

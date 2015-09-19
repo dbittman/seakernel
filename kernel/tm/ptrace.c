@@ -74,6 +74,7 @@ long sys_ptrace_thread(enum __ptrace_request request, pid_t tid, void *addr, voi
 			}
 			break;
 		case PTRACE_PEEKDATA:
+			TRACE_MSG("ptrace", "thread %d data at %x for %d bytes read by %d\n", tracee->tid, addr, sizeof(long), current_thread->tid);
 			mm_context_read(&tracee->process->vmm_context, &ret, (addr_t)addr, sizeof(long));
 			break;
 		case PTRACE_DETACH:

@@ -42,9 +42,11 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 		panic(0, "task %d tried to relock mutex %x (%s:%d)", m->pid, m->lock, file, line);
 	/* wait until we can set bit 0. once this is done, we have the lock */
 #if MUTEX_DEBUG
-	int timeout = 800000000;
+	int timeout = 800000;
 #endif
 	cpu_disable_preemption();
+	if(current_thread && __current_cpu->preempt_disable > 1 && !(m->flags & MT_NOSCHED))
+		panic(0, "tried to lock schedulable mutex with preempt off");
 
 	int unlocked = 0;
 	int locked = 1;
@@ -57,6 +59,7 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 		unlocked = 0;
 		if(!(m->flags & MT_NOSCHED)) {
 			cpu_enable_preemption();
+			assert(__current_cpu->preempt_disable == 0);
 			tm_schedule();
 			cpu_disable_preemption();
 		} else {
@@ -66,11 +69,18 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 			if(backoff < 2000) /* TODO: backoff strats */
 				backoff *= 2;
 		}
+#if MUTEX_DEBUG
+		if(--timeout == 0) {
+			panic(0, "%s timeout from %s:%d (owned by %d: %s:%d)\n", m->flags & MT_NOSCHED ? "spinlock" : "mutex", file, line, m->pid, m->owner_file, m->owner_line);
+		}
+#endif
 	}
 	assert(m->lock);
 	if(!(m->flags & MT_NOSCHED))
 		cpu_enable_preemption();
 	if(current_thread) m->pid = current_thread->tid;
+	m->owner_file = file;
+	m->owner_line = line;
 }
 
 void __mutex_release(mutex_t *m, char *file, int line)
@@ -83,6 +93,8 @@ void __mutex_release(mutex_t *m, char *file, int line)
 	if(current_thread && m->pid != (int)current_thread->tid)
 		panic(0, "task %d tried to release mutex it didn't own (%s:%d)", m->pid, file, line);
 	m->pid = -1;
+	m->owner_file = 0;
+	m->owner_line = 0;
 	/* must be memory_order_release because we don't want m->pid to bubble-down below
 	 * this line */
 	atomic_store_explicit(&m->lock, 0, memory_order_release);

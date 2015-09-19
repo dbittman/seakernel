@@ -55,6 +55,9 @@ addr_t mm_mmap(addr_t address, size_t length, int prot, int flags, int fd, size_
 		node->count = 1;
 		node->flags = INODE_INUSE;
 	} else {
+		if(!(prot & PAGE_WRITE)) {
+		//	flags |= MAP_SHARED;
+		}
 		struct file *f = fs_get_file_pointer(current_process, fd);
 		if(!f) {
 			if(err) *err = -EBADF;

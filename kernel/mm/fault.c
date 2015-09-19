@@ -20,6 +20,8 @@ static int map_in_page(addr_t address)
 		return do_map_page(address, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
 	/* and check if the memory is for the stack */
 	if(address >= MEMMAP_IMAGE_MAXIMUM && address < (MEMMAP_USERSPACE_MAXIMUM)) {
+		printk(0, "map for stack: %x!\n", address);
+#warning: "don't do this, rely on mmap"
 		return do_map_page(address, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
 	}
 	return 0;
@@ -54,13 +56,13 @@ void mm_page_fault_handler(registers_t *regs, addr_t address, int pf_cause)
 			}
 			/* if that didn't work, lets see if we should map a page
 		 	 * for the heap, or whatever */
-			mutex_acquire(&pd_cur_data->lock);
+			//mutex_acquire(&pd_cur_data->lock);
 			if(map_in_page(address)) {
-				mutex_release(&pd_cur_data->lock);
+				//mutex_release(&pd_cur_data->lock);
 				return;
 			}
 			/* ...and if that didn't work, the task did something evil */
-			mutex_release(&pd_cur_data->lock);
+			//mutex_release(&pd_cur_data->lock);
 		} else {
 			panic(PANIC_MEM | PANIC_NOSYNC, "page fault was from userspace, but pd_cur_data is invalid");
 		}
@@ -82,13 +84,13 @@ void mm_page_fault_handler(registers_t *regs, addr_t address, int pf_cause)
 			 * in the kernel, check that case. */
 			if(mm_page_fault_test_mappings(address, pf_cause) == 0)
 				return;
-			mutex_acquire(&pd_cur_data->lock);
+			//mutex_acquire(&pd_cur_data->lock);
 			if(map_in_page(address)) {
-				mutex_release(&pd_cur_data->lock);
+				//mutex_release(&pd_cur_data->lock);
 				return;
 			}
 			/* ...and if that didn't work, the task did something evil */
-			mutex_release(&pd_cur_data->lock);
+			//mutex_release(&pd_cur_data->lock);
 			tm_signal_send_thread(current_thread, SIGSEGV);
 			return;
 		}

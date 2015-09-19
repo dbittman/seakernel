@@ -89,19 +89,25 @@ void tm_thread_put(struct thread *thr)
 bool tm_thread_reserve_stacks(struct thread *thr)
 {
 	unsigned i;
-	mutex_acquire(&thr->process->stacks_lock);
-	for(i = 0;i<NUM_USERMODE_STACKS;i++) {
-		if(!bitmap_test(thr->process->stack_bitmap, i)) {
-			bitmap_set(thr->process->stack_bitmap, i);
-			break;
+	if(thr->process == current_process || thr->process == kernel_process) {
+		mutex_acquire(&thr->process->stacks_lock);
+		for(i = 0;i<NUM_USERMODE_STACKS;i++) {
+			if(!bitmap_test(thr->process->stack_bitmap, i)) {
+				bitmap_set(thr->process->stack_bitmap, i);
+				break;
+			}
 		}
+		mutex_release(&thr->process->stacks_lock);
+		if(i == NUM_USERMODE_STACKS)
+			return false;
+	} else {
+		/* just take the stack from the thread we're forking from */
+		i = current_thread->stack_num;
 	}
-	mutex_release(&thr->process->stacks_lock);
-	if(i == NUM_USERMODE_STACKS)
-		return false;
 	thr->stack_num = i;
 	thr->kernel_stack = i * KERN_STACK_SIZE + MEMMAP_KERNELSTACKS_START;
 	thr->usermode_stack_end = (i + 1) * (CONFIG_STACK_PAGES * PAGE_SIZE) + MEMMAP_USERSTACKS_START;
+	thr->usermode_stack_start = (i) * (CONFIG_STACK_PAGES * PAGE_SIZE) + MEMMAP_USERSTACKS_START;
 	return true;
 }
 

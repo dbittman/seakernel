@@ -53,6 +53,7 @@ void tm_thread_remove_from_blocklist(struct thread *t)
 int tm_thread_block(struct llist *blocklist, int state)
 {
 	cpu_disable_preemption();
+	assert(__current_cpu->preempt_disable == 1);
 	assert(!current_thread->blocklist);
 	assert(state != THREADSTATE_RUNNING);
 	int ret;
@@ -73,6 +74,7 @@ int tm_thread_block(struct llist *blocklist, int state)
 int tm_thread_block_schedule_work(struct llist *blocklist, int state, struct async_call *work)
 {
 	cpu_disable_preemption();
+	assert(__current_cpu->preempt_disable == 1);
 	assert(!current_thread->blocklist);
 	assert(state != THREADSTATE_RUNNING);
 	int ret;
@@ -182,6 +184,7 @@ int tm_thread_block_timeout(struct llist *blocklist, time_t microseconds)
 	call->priority = ASYNC_CALL_PRIORITY_MEDIUM;
 	call->data = (unsigned long)current_thread;
 	cpu_disable_preemption();
+	assert(__current_cpu->preempt_disable == 1);
 	if(!tm_thread_got_signal(current_thread)) {
 		struct ticker *ticker = &__current_cpu->ticker;
 		ticker_insert(ticker, microseconds, call);

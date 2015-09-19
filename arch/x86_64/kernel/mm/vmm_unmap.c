@@ -41,6 +41,7 @@ addr_t arch_mm_context_virtual_unmap(struct vmm_context *ctx, addr_t address)
 		destp = pdv[pdidx] & PAGE_MASK; //TODO: different masks for diff page sizes?
 		pdv[pdidx] = 0;
 	}
+	mm_physical_decrement_count(destp);
 	asm volatile("invlpg (%0)" :: "r"(address));
 #if CONFIG_SMP
 	if(pd_cur_data) {

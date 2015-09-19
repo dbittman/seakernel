@@ -135,9 +135,7 @@ int block_cache_get_bufferlist(struct llist *blist, struct ioreq *req)
 			atomic_fetch_add(&req->refs, 1);
 			async_call_create(&current_thread->blockreq_call, 0, (void (*)(unsigned long))block_elevator_add_request,
 					(unsigned long)req, ASYNC_CALL_PRIORITY_MEDIUM);
-
 			tm_thread_block_schedule_work(&req->blocklist, THREADSTATE_UNINTERRUPTIBLE, &current_thread->blockreq_call);
-
 			/* TODO: do this automatically? */
 			struct workqueue *wq = current_thread->blockreq_call.queue;
 			if(wq)

@@ -60,8 +60,6 @@ extern _Atomic unsigned num_halted_cpus;
 extern unsigned num_cpus, num_booted_cpus, num_failed_cpus;
 
 extern struct cpu *primary_cpu;
-void arch_cpu_copy_fixup_stack(addr_t, addr_t, size_t length);
-void cpu_copy_fixup_stack(addr_t, addr_t, size_t length);
 
 void arch_cpu_send_ipi(int dest, unsigned signal, unsigned flags);
 void cpu_send_ipi(int dest, unsigned signal, unsigned flags);
@@ -71,7 +69,7 @@ void cpu_reset();
 
 void cpu_print_stack_trace(int num);
 void arch_cpu_print_stack_trace(int num);
-void cpu_print_stack_trace_alternate(addr_t *starting_base_pointer);
+void cpu_print_stack_trace_alternate(struct thread *, addr_t *starting_base_pointer);
 
 void cpu_processor_init_1();
 void cpu_processor_init_2();

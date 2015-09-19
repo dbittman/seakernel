@@ -25,7 +25,7 @@ static struct memmap *initialize_map(struct inode *node,
 
 static int is_valid_location(addr_t addr)
 {
-	if(addr >= MEMMAP_IMAGE_MAXIMUM || addr < MEMMAP_IMAGE_MINIMUM)
+	if(addr >= MEMMAP_USERSPACE_MAXIMUM || addr < MEMMAP_IMAGE_MINIMUM)
 		return 0;
 	return 1;
 }
@@ -152,7 +152,7 @@ int mm_disestablish_mapping(struct memmap *map)
 
 int mm_sync_mapping(struct memmap *map, addr_t start, size_t length, int flags)
 {
-	if(!(map->flags & MAP_SHARED) || (map->flags & MAP_ANONYMOUS))
+	if(!(map->flags & MAP_SHARED) || (map->flags & MAP_ANONYMOUS) || !(map->prot & PROT_WRITE))
 		return 0;
 	size_t fo = (start - map->virtual);
 	for(addr_t v = 0;v < length;v += PAGE_SIZE) {
@@ -200,7 +200,7 @@ static int load_file_data(struct memmap *map, addr_t fault_address)
 	size_t page_len = PAGE_SIZE;
 	if(map->length - diff < PAGE_SIZE)
 		page_len = map->length - diff;
-	if(map->flags & MAP_SHARED) {
+	if((map->flags & MAP_SHARED)) {
 		fs_inode_map_shared_physical_page(map->node, address, offset, 
 				FS_INODE_POPULATE, PAGE_PRESENT | PAGE_USER | attr);
 	} else {

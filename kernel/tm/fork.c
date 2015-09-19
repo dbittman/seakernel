@@ -46,15 +46,29 @@ int kerfs_mappings_report(int direction, void *param, size_t size, size_t offset
 	struct process *proc = param;
 	assert(proc->magic == PROCESS_MAGIC);
 	KERFS_PRINTF(offset, length, buf, current,
-				"           START              END   LENGTH    INODE   OFFSET\n");
+				"           START              END   LENGTH FLAGS    INODE   OFFSET\n");
 	mutex_acquire(&proc->map_lock);
 	
 	struct llistnode *node;
 	struct memmap *map;
 	ll_for_each_entry(&proc->mappings, node, struct memmap *, map) {
+		char flags[6];
+		memset(flags, ' ', sizeof(flags));
+		if(map->flags & MAP_SHARED)
+			flags[0] = 'S';
+		if(map->flags & MAP_FIXED)
+			flags[1] = 'F';
+		if(map->flags & MAP_ANONYMOUS)
+			flags[2] = 'A';
+		if(map->prot & PROT_WRITE)
+			flags[3] = 'W';
+		if(map->prot & PROT_EXEC)
+			flags[4] = 'E';
+		flags[5] = 0;
 		KERFS_PRINTF(offset, length, buf, current,
-				"%16x %16x %8x %8d %8x\n",
-				map->virtual, map->virtual + map->length, map->length, map->node->id, map->offset);
+				"%16x %16x %8x %s %8d %8x\n",
+				map->virtual, map->virtual + map->length, map->length,
+				flags, map->node->id, map->offset);
 	}
 
 	mutex_release(&proc->map_lock);
@@ -186,7 +200,7 @@ static struct process *tm_process_copy(int flags, struct thread *newthread)
 	ll_create(&newp->threadlist);
 	ll_create(&newp->waitlist);
 	ll_create_lockless(&newp->mappings);
-	mutex_create(&newp->map_lock, MT_NOSCHED); /* we need to lock this during page faults */
+	mutex_create(&newp->map_lock, 0); /* we need to lock this during page faults */
 	mutex_create(&newp->stacks_lock, MT_NOSCHED);
 	/* TODO: what the fuck is this? */
 	valloc_create(&newp->mmf_valloc, MEMMAP_MMAP_BEGIN, MEMMAP_MMAP_END, PAGE_SIZE, VALLOC_USERMAP);
@@ -265,12 +279,15 @@ int tm_clone(int flags, void *entry, struct kthread *kt)
 	tm_thread_add_to_process(thr, proc);
 	if(!tm_thread_reserve_stacks(thr))
 		panic(0, "NOT IMPLEMENTED: NO MORE STACKS");
+	if(proc == current_process && proc != kernel_process) {
+		addr_t ret = mm_mmap(thr->usermode_stack_start, CONFIG_STACK_PAGES * PAGE_SIZE,
+				PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0, 0);
+	}
 	size_t kms_page_size = mm_page_size_closest(KERN_STACK_SIZE);
 	for(unsigned int i = 0;i<((KERN_STACK_SIZE-1) / kms_page_size)+1;i++) {
 		addr_t phys = mm_physical_allocate(kms_page_size, false);
 		bool r = mm_context_virtual_map(&proc->vmm_context, thr->kernel_stack + i * kms_page_size,
-				phys,
-				PAGE_PRESENT | PAGE_WRITE, kms_page_size);
+				phys, PAGE_PRESENT | PAGE_WRITE, kms_page_size);
 		if(!r)
 			mm_physical_deallocate(phys);
 	}

@@ -24,6 +24,17 @@ static addr_t do_kmalloc(size_t sz, char align, char *file, int line)
 {
 	if(current_thread && current_thread->interrupt_level)
 		panic(PANIC_NOSYNC, "cannot allocate memory within interrupt context");
+	if(sz > 0x80000) {
+		struct valloc_region reg;
+		int np = (sz-1) / PAGE_SIZE + 1;
+		void *test = valloc_allocate(&virtpages, &reg, np);
+		if(!test)
+			panic(PANIC_NOSYNC, "could not allocate large region");
+		for(addr_t a = reg.start;a < reg.start + np * PAGE_SIZE;a+=PAGE_SIZE)
+			mm_virtual_trymap(a, PAGE_PRESENT | PAGE_WRITE, PAGE_SIZE);
+		memset((void *)reg.start, 0, sz);
+		return reg.start;
+	}
 	addr_t ret;
 	ret = (addr_t)slab_kmalloc(sz);
 	if(!ret || ret >= MEMMAP_KMALLOC_END || ret < MEMMAP_KMALLOC_START)

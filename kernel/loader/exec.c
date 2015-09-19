@@ -35,6 +35,9 @@ static void preexec(int desc)
 	for(addr_t a = MEMMAP_MMAP_BEGIN;a < (MEMMAP_MMAP_BEGIN + (size_t)t->process->mmf_valloc.nindex);a+=PAGE_SIZE) {
 		mm_virtual_changeattr(a, PAGE_PRESENT | PAGE_WRITE, 0x1000); //TODO again, fix this page size thing
 	}
+	addr_t ret = mm_mmap(t->usermode_stack_start, CONFIG_STACK_PAGES * PAGE_SIZE,
+			PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0, 0);
+	mm_page_fault_test_mappings(t->usermode_stack_end - PAGE_SIZE, PF_CAUSE_USER | PF_CAUSE_WRITE);
 	t->signal = t->signals_pending = 0;
 	memset((void *)t->process->signal_act, 0, sizeof(struct sigaction) * NUM_SIGNALS);
 
@@ -112,6 +115,7 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 	 * clear out the address space and not lose data...
 	 * If this call if coming from a shebang, then we don't check the pointers,
 	 * since they won't be from userspace */
+	size_t total_args_len = 0;
 	if((shebanged || mm_is_valid_user_pointer(SYS_EXECVE, argv, 0)) && argv) {
 		while((shebanged || mm_is_valid_user_pointer(SYS_EXECVE, argv[argc], 0)) && argv[argc] && *argv[argc])
 			argc++;
@@ -119,6 +123,7 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 		for(i=0;i<argc;i++) {
 			backup_argv[i] = (char *)kmalloc(strlen(argv[i]) + 1);
 			_strcpy(backup_argv[i], argv[i]);
+			total_args_len += strlen(argv[i])+1 + sizeof(char *);
 		}
 	}
 	if((shebanged || mm_is_valid_user_pointer(SYS_EXECVE, env, 0)) && env) {
@@ -127,8 +132,10 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 		for(i=0;i<envc;i++) {
 			backup_env[i] = (char *)kmalloc(strlen(env[i]) + 1);
 			_strcpy(backup_env[i], env[i]);
+			total_args_len += strlen(env[i])+1 + sizeof(char *);
 		}
 	}
+	total_args_len += 2 * sizeof(char *);
 	/* and the path too! */
 	char *path_backup = (char *)kmalloc(strlen(path) + 1);
 	_strcpy((char *)path_backup, path);
@@ -166,16 +173,16 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 		printk(0, "[%d]: Updating task values\n", current_process->pid);
 	/* Setup the task with the proper values (libc malloc stack) */
 	addr_t end_l = end;
-	end = (end&PAGE_MASK);
-	mm_virtual_trymap(end, PAGE_PRESENT | PAGE_USER | PAGE_WRITE, mm_page_size(0));
+	end = ((end-1)&PAGE_MASK) + PAGE_SIZE;
+	total_args_len += PAGE_SIZE;
 	/* now we need to copy back the args and env into userspace
 	 * writeable memory...yippie. */
 	addr_t args_start = end + PAGE_SIZE;
 	addr_t env_start = args_start;
 	addr_t alen = 0;
+	mm_mmap(end, total_args_len,
+			PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0, 0);
 	if(backup_argv) {
-		for(i=0;i<(sizeof(addr_t) * (argc+1))/PAGE_SIZE + 2;i++)
-			mm_virtual_trymap(args_start + i * mm_page_size(0), PAGE_PRESENT | PAGE_USER | PAGE_WRITE, mm_page_size(0));
 		memcpy((void *)args_start, backup_argv, sizeof(addr_t) * argc);
 		alen += sizeof(addr_t) * argc;
 		*(addr_t *)(args_start + alen) = 0; /* set last argument value to zero */
@@ -185,9 +192,7 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 		{
 			char *old = argv[i];
 			char *new = (char *)(args_start+alen);
-			mm_virtual_trymap((addr_t)new, PAGE_PRESENT | PAGE_USER | PAGE_WRITE, mm_page_size(0));
 			unsigned len = strlen(old) + 4;
-			mm_virtual_trymap((addr_t)new + len + 1, PAGE_PRESENT | PAGE_USER | PAGE_WRITE, mm_page_size(0));
 			argv[i] = new;
 			_strcpy(new, old);
 			kfree(old);
@@ -198,8 +203,6 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 	env_start = args_start + alen;
 	alen = 0;
 	if(backup_env) {
-		for(i=0;i<(((sizeof(addr_t) * (envc+1))/PAGE_SIZE) + 2);i++)
-			mm_virtual_trymap(env_start + i * mm_page_size(0), PAGE_PRESENT | PAGE_USER | PAGE_WRITE, mm_page_size(0));
 		memcpy((void *)env_start, backup_env, sizeof(addr_t) * envc);
 		alen += sizeof(addr_t) * envc;
 		*(addr_t *)(env_start + alen) = 0; /* set last argument value to zero */
@@ -209,9 +212,7 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 		{
 			char *old = env[i];
 			char *new = (char *)(env_start+alen);
-			mm_virtual_trymap((addr_t)new, PAGE_PRESENT | PAGE_USER | PAGE_WRITE, mm_page_size(0));
 			unsigned len = strlen(old) + 1;
-			mm_virtual_trymap((addr_t)new + len + 1, PAGE_PRESENT | PAGE_USER | PAGE_WRITE, mm_page_size(0));
 			env[i] = new;
 			_strcpy(new, old);
 			kfree(old);
@@ -225,15 +226,9 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 	kfree(path);
 	
 	/* set the heap locations, and map in the start */
-	current_process->heap_start = current_process->heap_end = end + PAGE_SIZE;
-	mm_virtual_trymap(current_process->heap_start, PAGE_PRESENT | PAGE_USER | PAGE_WRITE, mm_page_size(0));
-	/* Zero the heap and stack */
-	memset((void *)end_l, 0, PAGE_SIZE-(end_l%PAGE_SIZE));
-	memset((void *)(end+PAGE_SIZE), 0, PAGE_SIZE);
-	/* Release everything */
-	if(EXEC_LOG == 2) 
-		printk(0, "[%d]: Performing call\n", current_process->pid);
-	
+	current_process->heap_start = current_process->heap_end = end + PAGE_SIZE*2;
+	addr_t ret = mm_mmap(end + PAGE_SIZE, PAGE_SIZE,
+			PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0, 0);
 	/* now, we just need to deal with the syscall return stuff. When the syscall
 	 * returns, it'll just jump into the entry point of the new process */
 	tm_thread_lower_flag(current_thread, THREAD_SCHEDULE);
@@ -241,6 +236,8 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 	if(!(kernel_state_flags & KSF_HAVEEXECED))
 		set_ksf(KSF_HAVEEXECED);
 	arch_loader_exec_initializer(argc, eip);
+	if(EXEC_LOG == 2) 
+		printk(0, "[%d]: Performing call\n", current_process->pid);
 	return 0;
 }
 

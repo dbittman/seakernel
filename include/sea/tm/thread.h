@@ -56,7 +56,7 @@ struct thread {
 	int exit_code;
 	addr_t kernel_stack;
 	addr_t stack_pointer, jump_point;
-	addr_t usermode_stack_end;
+	addr_t usermode_stack_end, usermode_stack_start;
 	int stack_num;
 	struct cpu *cpu;
 

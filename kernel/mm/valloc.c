@@ -54,6 +54,7 @@ static void __valloc_clear_bits(struct valloc *va, long start, long count)
 		assert(!TEST_BIT(va->start, idx));
 	}
 }
+
 /* performs a linear next-fit search */
 static long __valloc_get_start_index(struct valloc *va, long np)
 {
@@ -116,12 +117,17 @@ static void __valloc_populate_index(struct valloc *va, int flags)
 		int attr = PAGE_PRESENT | PAGE_WRITE;
 		if(flags & VALLOC_USERMAP)
 			attr |= PAGE_USER;
-		if(!mm_virtual_getmap(va->start + i * PAGE_SIZE, NULL, NULL)) {
-			addr_t phys = mm_physical_allocate(va->psize, true);
-			if(!mm_virtual_map(va->start + i * PAGE_SIZE, phys, attr, 0x1000)) {
+		if(!mm_virtual_getmap(va->start + i * map_size, NULL, NULL)) {
+			addr_t phys = mm_physical_allocate(map_size, true);
+			if(!mm_virtual_map(va->start + i * map_size, phys, attr, map_size)) {
 				mm_physical_deallocate(phys);
+			} else {
+				memset((void *)(va->start + i * map_size), 0, map_size);
 			}
+		} else {
+			memset((void *)(va->start + i * map_size), 0, map_size);
 		}
+
 	}
 	__valloc_set_bits(va, 0, va->nindex);
 }
@@ -150,7 +156,7 @@ struct valloc *valloc_create(struct valloc *va, addr_t start, addr_t end, size_t
 	} else {
 		memset(va, 0, sizeof(*va));
 	}
-
+	va->magic = VALLOC_MAGIC;
 	va->flags |= flags;
 	va->start = start;
 	va->end = end;
@@ -165,6 +171,7 @@ struct valloc *valloc_create(struct valloc *va, addr_t start, addr_t end, size_t
 
 void valloc_destroy(struct valloc *va)
 {
+	assert(va->magic == VALLOC_MAGIC);
 	mutex_destroy(&va->lock);
 	__valloc_depopulate_index(va);
 	if(va->flags & VALLOC_ALLOC)
@@ -174,6 +181,7 @@ void valloc_destroy(struct valloc *va)
 struct valloc_region *valloc_allocate(struct valloc *va, struct valloc_region *reg,
 		size_t np)
 {
+	assert(va->magic == VALLOC_MAGIC);
 	mutex_acquire(&va->lock);
 	/* find and set the region */
 	long index = __valloc_get_start_index(va, np);
@@ -195,6 +203,7 @@ struct valloc_region *valloc_allocate(struct valloc *va, struct valloc_region *r
 
 void valloc_reserve(struct valloc *va, struct valloc_region *reg)
 {
+	assert(va->magic == VALLOC_MAGIC);
 	mutex_acquire(&va->lock);
 	int start_index = (reg->start - va->start) / va->psize;
 	assert(start_index+reg->npages <= va->npages && start_index >= va->nindex);
@@ -204,6 +213,7 @@ void valloc_reserve(struct valloc *va, struct valloc_region *reg)
 
 int valloc_count_used(struct valloc *va)
 {
+	assert(va->magic == VALLOC_MAGIC);
 	mutex_acquire(&va->lock);
 	int ret = __valloc_count_bits(va);
 	mutex_release(&va->lock);
@@ -212,6 +222,7 @@ int valloc_count_used(struct valloc *va)
 
 void valloc_deallocate(struct valloc *va, struct valloc_region *reg)
 {
+	assert(va->magic == VALLOC_MAGIC);
 	mutex_acquire(&va->lock);
 	int start_index = (reg->start - va->start) / va->psize;
 	assert(start_index+reg->npages <= va->npages && start_index >= va->nindex);
@@ -225,6 +236,7 @@ void valloc_deallocate(struct valloc *va, struct valloc_region *reg)
 struct valloc_region *valloc_split_region(struct valloc *va, struct valloc_region *reg,
 		struct valloc_region *nr, size_t np)
 {
+	assert(va->magic == VALLOC_MAGIC);
 	if(!nr) {
 		nr = (void *)kmalloc(sizeof(struct valloc_region));
 		nr->flags = VALLOC_ALLOC;

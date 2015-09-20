@@ -78,7 +78,6 @@ static struct slab *allocate_new_slab(struct cache *cache)
 	mutex_create(&slab->lock, MT_NOSCHED);
 	cache->slabcount++;
 	assert(slab->max > 2);
-
 	return slab;
 }
 
@@ -151,7 +150,8 @@ static void *allocate_object_from_cache(struct cache *cache)
 	assert(slab->magic = SLAB_MAGIC);
 	atomic_fetch_add(&slab->count, 1);
 	mutex_release(&cache->lock);
-	return allocate_object(slab);
+	void *ret = allocate_object(slab);
+	return ret;
 }
 
 static void construct_cache(struct cache *cache, size_t sz)
@@ -201,7 +201,7 @@ void slab_init(addr_t start, addr_t end)
 	valloc_create(&slabs_reg, start, end, SLAB_SIZE, 0);
 }
 
-#define CANARY 0
+#define CANARY 1
 
 void *slab_kmalloc(size_t __size)
 {
@@ -212,7 +212,7 @@ void *slab_kmalloc(size_t __size)
 	size_t size = (__size & ~(63)) + 64;
 #endif
 	if(size >= 0x1000) {
-		size = ((__size - 1) & ~(0x1000 - 1)) + 0x1000;
+		size = ((size - 1) & ~(0x1000 - 1)) + 0x1000;
 	}
 	assert(size >= __size);
 	void *obj = 0;

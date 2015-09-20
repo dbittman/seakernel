@@ -42,7 +42,7 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 		panic(0, "task %d tried to relock mutex %x (%s:%d)", m->pid, m->lock, file, line);
 	/* wait until we can set bit 0. once this is done, we have the lock */
 #if MUTEX_DEBUG
-	int timeout = 800000;
+	int timeout = 8000;
 #endif
 	cpu_disable_preemption();
 	if(current_thread && __current_cpu->preempt_disable > 1 && !(m->flags & MT_NOSCHED))

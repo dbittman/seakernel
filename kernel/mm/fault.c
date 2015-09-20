@@ -7,6 +7,7 @@
 #include <sea/vsprintf.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/syscall.h>
+#include <sea/mm/pmm.h>
 static int do_map_page(addr_t addr, unsigned attr)
 {
 	mm_virtual_trymap(addr, attr, mm_page_size(0));
@@ -46,17 +47,13 @@ void mm_page_fault_handler(registers_t *regs, addr_t address, int pf_cause)
 	if(pf_cause & PF_CAUSE_USER) {
 		/* check if we need to map a page for mmap, etc */
 		if(pd_cur_data) {
-			if((address & PAGE_MASK) == MEMMAP_SYSGATE_ADDRESS) {
-				do_map_page(MEMMAP_SYSGATE_ADDRESS, PAGE_PRESENT | PAGE_USER);
-				memcpy((void *)MEMMAP_SYSGATE_ADDRESS, (void *)signal_return_injector, MEMMAP_SYSGATE_ADDRESS_SIZE);
-				return;
-			}
 			if(mm_page_fault_test_mappings(address, pf_cause) == 0) {
 				return;
 			}
 			/* if that didn't work, lets see if we should map a page
 		 	 * for the heap, or whatever */
 			//mutex_acquire(&pd_cur_data->lock);
+#warning "DONT DO THIS"
 			if(map_in_page(address)) {
 				//mutex_release(&pd_cur_data->lock);
 				return;

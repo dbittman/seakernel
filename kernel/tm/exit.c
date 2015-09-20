@@ -181,14 +181,15 @@ void tm_thread_do_exit(void)
 
 	cpu_disable_preemption();
 
-	mutex_acquire(&current_thread->block_mutex);
-	if(current_thread->blocklist) {
-		ll_do_remove(current_thread->blocklist, &current_thread->blocknode, 0);
-		current_thread->blocklist = 0;
-	} else {
+	//mutex_acquire(&current_thread->block_mutex);
+	assert(!current_thread->blocklist);
+	//if(current_thread->blocklist) {
+	//	ll_do_remove(current_thread->blocklist, &current_thread->blocknode, 0);
+	//	current_thread->blocklist = 0;
+	//} else {
 		tqueue_remove(current_thread->cpu->active_queue, &current_thread->activenode);
-	}
-	mutex_release(&current_thread->block_mutex);
+	//}
+	//mutex_release(&current_thread->block_mutex);
 	atomic_fetch_sub_explicit(&current_thread->cpu->numtasks, 1, memory_order_relaxed);
 	current_thread->state = THREADSTATE_DEAD;
 	tm_thread_raise_flag(current_thread, THREAD_SCHEDULE);

@@ -48,6 +48,7 @@ void *__kmalloc(size_t s, char *file, int line)
 	return (void *)do_kmalloc(s, 0, file, line);
 }
 
+/* TODO: do we ever use this? */
 void *__kmalloc_a(size_t s, char *file, int line)
 {
 	assert(s == PAGE_SIZE);

@@ -5,7 +5,7 @@
 #include <sea/cpu/processor.h>
 #include <sea/string.h>
 #include <sea/mm/kmalloc.h>
-
+#include <sea/syscall.h>
 static void copy_pde_large(page_dir_t *pd, page_dir_t *parent_pd, int idx, bool cow)
 {
 	addr_t parent = parent_pd[idx];

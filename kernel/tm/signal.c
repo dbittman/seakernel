@@ -78,6 +78,7 @@ static int __can_send_signal(struct process *from, struct process *to, int signa
 void tm_signal_send_thread(struct thread *thr, int signal)
 {
 	assert(signal < NUM_SIGNALS);
+	printk(0, "send sig: %d %d\n", thr->tid, signal);
 	mutex_acquire(&thr->block_mutex);
 	if(!(thr->flags & THREAD_PTRACED) || signal == SIGKILL) {
 		atomic_fetch_or(&thr->signals_pending, 1 << (signal - 1));
@@ -95,8 +96,10 @@ void tm_signal_send_thread(struct thread *thr, int signal)
 	}
 	mutex_release(&thr->block_mutex);
 	if(thr->state == THREADSTATE_INTERRUPTIBLE) {
+		printk(0, "(SS unblocking)\n", thr->tid);
 		tm_thread_unblock(thr);
 	}
+	printk(0, "(ss %d done)\n", thr->tid);
 }
 
 int tm_signal_send_process(struct process *proc, int signal)

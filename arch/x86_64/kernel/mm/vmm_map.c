@@ -211,11 +211,14 @@ void arch_mm_physical_memset(void *addr, int c, size_t length)
 	memset((void *)start, c, length);
 }
 
-void arch_mm_physical_memcpy(void *dest, void *src, size_t length)
+void arch_mm_physical_memcpy(void *dest, void *src, size_t length, int mode)
 {
-	addr_t startd = (addr_t)dest + PHYS_PAGE_MAP;
-	addr_t starts = (addr_t)src + PHYS_PAGE_MAP;
-	printk(0, "memcpy: %x %x %d\n", dest, src, length);
+	addr_t startd = (addr_t)dest;
+	if(mode == PHYS_MEMCPY_MODE_DEST || mode == PHYS_MEMCPY_MODE_BOTH)
+		startd += PHYS_PAGE_MAP;
+	addr_t starts = (addr_t)src;
+	if(mode == PHYS_MEMCPY_MODE_SRC || mode == PHYS_MEMCPY_MODE_BOTH)
+		starts += PHYS_PAGE_MAP;
 	memcpy((void *)startd, (void *)starts, length);
 }
 

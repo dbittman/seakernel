@@ -34,6 +34,7 @@ pmode_enter:
   mov ss, ax
   mov eax, cr0
   and eax, 0x1FFFFFFF
+  or eax, (1 << 16)
   mov cr0, eax
   ; set the stack to be right below the GDT data
   ; this will get changed almost immediately
@@ -96,8 +97,8 @@ cpu_start32:
 	mov cr4, eax
 	
 	mov ebx, boot_ap_pml4
-	or dword [ebx], 5
-	or dword [ebx + 256*8], 5
+	or dword [ebx], 7
+	or dword [ebx + 256*8], 7
 	
 	; enable long mode
 	mov ecx, 0xC0000080

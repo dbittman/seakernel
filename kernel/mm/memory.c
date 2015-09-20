@@ -201,9 +201,9 @@ int mm_free_dma_buffer(struct dma_region *d)
 	return 0;
 }
 
-void arch_mm_physical_memcpy(void *dest, void *src, size_t length);
-void mm_physical_memcpy(void *dest, void *src, size_t length)
+void arch_mm_physical_memcpy(void *dest, void *src, size_t length, int mode);
+void mm_physical_memcpy(void *dest, void *src, size_t length, int mode)
 {
-	return arch_mm_physical_memcpy(dest, src, length);
+	return arch_mm_physical_memcpy(dest, src, length, mode);
 }
 

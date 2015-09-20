@@ -41,6 +41,7 @@ void tm_thread_remove_from_blocklist(struct thread *t)
 {
 	struct llist *bl = atomic_exchange(&t->blocklist, NULL);
 	if(bl) {
+#warning "this isn't okay. We need to work out a reasonable locking / atomics system for blocklists"
 		rwlock_acquire(&bl->rwl, RWL_WRITER);
 		mutex_acquire(&t->block_mutex);
 		ll_do_remove(bl, &t->blocknode, 1);

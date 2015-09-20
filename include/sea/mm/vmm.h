@@ -29,6 +29,7 @@ extern addr_t initial_boot_stack; /* TODO: don't we have another one of these? *
 int mm_is_valid_user_pointer(int num, void *p, char flags);
 
 void mm_page_fault_handler(registers_t *, addr_t, int);
+void mm_page_fault_init(void);
 void mm_flush_page_tables();
 
 void mm_context_clone(struct vmm_context *, struct vmm_context *);
@@ -48,6 +49,7 @@ bool mm_virtual_changeattr(addr_t virtual, int flags, size_t length);
 addr_t mm_context_virtual_unmap(struct vmm_context *ctx, addr_t address);
 bool mm_context_virtual_trymap(struct vmm_context *ctx, addr_t virtual, int flags, size_t length);
 bool mm_virtual_trymap(addr_t virtual, int flags, size_t length);
+
 
 #define PF_CAUSE_NONPRESENT   1
 #define PF_CAUSE_READ         2

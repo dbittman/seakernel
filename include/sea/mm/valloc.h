@@ -10,6 +10,8 @@ struct valloc_region {
 	int flags;
 };
 
+#define VALLOC_MAGIC 0x87A110C8
+
 struct valloc {
 	long npages; /* number of psize pages in this region */
 	addr_t start, end;
@@ -18,6 +20,7 @@ struct valloc {
 	mutex_t lock;
 	int flags;
 	/*at*/ long last;
+	uint32_t magic;
 };
 
 #define VALLOC_ALLOC        1

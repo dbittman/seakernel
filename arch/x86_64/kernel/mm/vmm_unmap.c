@@ -44,12 +44,10 @@ addr_t arch_mm_context_virtual_unmap(struct vmm_context *ctx, addr_t address)
 	mm_physical_decrement_count(destp);
 	asm volatile("invlpg (%0)" :: "r"(address));
 #if CONFIG_SMP
-	if(pd_cur_data) {
 		if(IS_KERN_MEM(address))
 			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
 		else if((IS_THREAD_SHARED_MEM(address)))
 			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS, 0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
-	}
 #endif
 	return destp;
 }

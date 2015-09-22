@@ -1,5 +1,4 @@
 KOBJS+= kernel/mm/fault.o \
-		kernel/mm/kmalloc.o \
 		kernel/mm/map.o \
 		kernel/mm/memory.o \
 		kernel/mm/mmfile.o \

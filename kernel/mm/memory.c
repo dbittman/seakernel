@@ -140,18 +140,15 @@ void mm_init(struct multiboot *m)
 	cpu_interrupt_register_handler (14, &arch_mm_page_fault_handle);
 	pmm_buddy_init();
 	process_memorymap(m);
-	kmalloc_init();
+	slab_init(MEMMAP_KMALLOC_START, MEMMAP_KMALLOC_END);
 	set_ksf(KSF_MMU);
 	/* hey, look at that, we have happy memory times! */
 	mm_reclaim_init();
-	frame_counts = (void *)kmalloc(sizeof(int) * maximum_page_number);
-	printk(0, "[mm]: allocated %d KB for page-frame counting.\n", sizeof(int) * maximum_page_number / 1024);
+	//frame_counts = (void *)kmalloc(sizeof(int) * maximum_page_number);
+	//printk(0, "[mm]: allocated %d KB for page-frame counting.\n", sizeof(int) * maximum_page_number / 1024);
 #if CONFIG_MODULES
-	loader_add_kernel_symbol(__kmalloc);
-	loader_add_kernel_symbol(__kmalloc_ap);
-	loader_add_kernel_symbol(__kmalloc_a);
-	loader_add_kernel_symbol(__kmalloc_p);
-	loader_add_kernel_symbol(kfree);
+	loader_add_kernel_symbol(slab_kmalloc);
+	loader_add_kernel_symbol(slab_kfree);
 	loader_add_kernel_symbol(mm_virtual_map);
 	loader_add_kernel_symbol(pmap_get_mapping);
 	loader_add_kernel_symbol(pmap_create);

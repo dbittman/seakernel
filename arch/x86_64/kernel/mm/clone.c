@@ -87,9 +87,6 @@ void arch_mm_context_clone(struct vmm_context *oldcontext, struct vmm_context *n
 	pml4_t *pml4 = (void *)(pml4_phys + PHYS_PAGE_MAP);
 	pml4_t *parent_pml4 = (pml4_t *)oldcontext->root_virtual;
 	
-	if(pd_cur_data)
-		mutex_acquire(&pd_cur_data->lock);
-	
 	pml4[511] = parent_pml4[511];
 	for(unsigned int i=0;i<512;i++) {
 		if(i >= PML4_INDEX(MEMMAP_KERNEL_START)) {
@@ -101,8 +98,6 @@ void arch_mm_context_clone(struct vmm_context *oldcontext, struct vmm_context *n
 		}
 	}
 	
-	if(pd_cur_data)
-		mutex_release(&pd_cur_data->lock);
 	newcontext->root_virtual = (addr_t)pml4;
 	newcontext->root_physical = pml4_phys;
 	/* TODO: audit these locks */

@@ -62,7 +62,7 @@ bool arch_mm_context_virtual_map(struct vmm_context *ctx, addr_t virtual,
 	if(clear)
 		memset((void *)(physical + PHYS_PAGE_MAP), 0, length);
 #if CONFIG_SMP
-	if(result && pd_cur_data) {
+	if(result) {
 		/* TODO: clean this up (make it's own function) (and figure out when to actually do this) */
 		if(IS_KERN_MEM(virtual))
 			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS,
@@ -120,7 +120,6 @@ bool arch_mm_context_virtual_changeattr(struct vmm_context *ctx, addr_t virtual,
 			return false;
 	}
 #if CONFIG_SMP
-	if(pd_cur_data) {
 		/* TODO: clean this up (make it's own function) (and figure out when to actually do this) */
 		if(IS_KERN_MEM(virtual))
 			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS,
@@ -128,7 +127,6 @@ bool arch_mm_context_virtual_changeattr(struct vmm_context *ctx, addr_t virtual,
 		else if((IS_THREAD_SHARED_MEM(virtual)))
 			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS,
 					0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
-	}
 #endif
 
 	return true;
@@ -137,8 +135,8 @@ bool arch_mm_context_virtual_changeattr(struct vmm_context *ctx, addr_t virtual,
 bool arch_mm_virtual_changeattr(addr_t virtual, int flags, size_t length)
 {
 	struct vmm_context *ctx;
-	if(pd_cur_data) {
-		ctx = pd_cur_data;
+	if(current_process) {
+		ctx = &current_process->vmm_context;
 	} else {
 		ctx = &kernel_context;
 	}
@@ -149,8 +147,8 @@ bool arch_mm_virtual_changeattr(addr_t virtual, int flags, size_t length)
 bool arch_mm_virtual_map(addr_t virtual, addr_t physical, int flags, size_t length)
 {
 	struct vmm_context *ctx;
-	if(pd_cur_data) {
-		ctx = pd_cur_data;
+	if(current_process) {
+		ctx = &current_process->vmm_context;
 	} else {
 		ctx = &kernel_context;
 	}

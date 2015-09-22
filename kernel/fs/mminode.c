@@ -212,7 +212,7 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 						i * PAGE_SIZE, page_len);
 				addr_t p;
 #warning "Don't delete the entry on each time. Make this whole thing a real page cache"
-#if 0
+#if 1
 				bool ismapped = mm_virtual_getmap(virt + (i - page_number)*PAGE_SIZE, &p, NULL);
 				assert(!ismapped || p == entry->page);
 				if(entry->page)

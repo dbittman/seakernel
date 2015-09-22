@@ -234,11 +234,13 @@ void *slab_kmalloc(size_t __size)
 	*canary = 0x5a5a6b6b;
 	*canary2 = 0x5a5a7c7c;
 #endif
+	memset(obj, 0, __size);
 	return obj;
 }
 
 void slab_kfree(void *data)
 {
+	assert((addr_t)data >= MEMMAP_KMALLOC_START && (addr_t)data < MEMMAP_KMALLOC_END);
 #if CANARY
 	data = (void *)((addr_t)data - (sizeof(uint32_t) + sizeof(size_t)) );
 	uint32_t *canary = data;

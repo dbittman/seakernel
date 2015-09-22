@@ -64,7 +64,6 @@ int tty_raise_action(int min, int sig)
 		return 0;
 	if((kernel_state_flags & KSF_SHUTDOWN))
 		return 0;
-	printk(0, "sending SIGINT\n");
 	rwlock_acquire(&process_list->rwl, RWL_READER);
 	struct process *proc;
 	struct llistnode *node;
@@ -74,7 +73,6 @@ int tty_raise_action(int min, int sig)
 		}
 	}
 	rwlock_release(&process_list->rwl, RWL_READER);
-	printk(0, "sending SIGINT done\n");
 	return 0;
 }
 

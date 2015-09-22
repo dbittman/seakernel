@@ -74,6 +74,7 @@ static void parse_kernel_command_line(char *buf)
 
 void __init_entry(void);
 static void user_mode_init(void);
+#include <sea/mm/map.h>
 /* This is the C kernel entry point */
 void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 {
@@ -130,6 +131,9 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 
 void __init_entry(void)
 {
+	/* the kernel doesn't have this mapping, so we have to create it here. */
+	addr_t ret = mm_mmap(current_thread->usermode_stack_start, CONFIG_STACK_PAGES * PAGE_SIZE,
+			PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0, 0);
 	tm_thread_user_mode_jump(user_mode_init);
 }
 

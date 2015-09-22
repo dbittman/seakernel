@@ -14,6 +14,7 @@
 #include <sea/tm/tqueue.h>
 #include <sea/vsprintf.h>
 #include <stdatomic.h>
+#include <sea/mm/map.h>
 
 extern mutex_t process_refs_lock;
 extern mutex_t thread_refs_lock;

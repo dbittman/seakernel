@@ -88,10 +88,10 @@ void tm_process_create_kerfs_entries(struct process *proc)
 		return;
 	}
 	__expose_proc_field(proc, heap_start, kerfs_rw_address);
-	__expose_proc_field(proc, flags, kerfs_rw_address);
+	__expose_proc_field(proc, flags, kerfs_rw_integer);
 	__expose_proc_field(proc, refs, kerfs_rw_integer);
 	__expose_proc_field(proc, heap_end, kerfs_rw_address);
-	__expose_proc_field(proc, cmask, kerfs_rw_address);
+	__expose_proc_field(proc, cmask, kerfs_rw_integer);
 	__expose_proc_field(proc, effective_uid, kerfs_rw_integer);
 	__expose_proc_field(proc, effective_gid, kerfs_rw_integer);
 	__expose_proc_field(proc, real_uid, kerfs_rw_integer);
@@ -100,7 +100,7 @@ void tm_process_create_kerfs_entries(struct process *proc)
 	__expose_proc_field(proc, utime, kerfs_rw_integer);
 	__expose_proc_field(proc, stime, kerfs_rw_integer);
 	__expose_proc_field(proc, thread_count, kerfs_rw_integer);
-	__expose_proc_field(proc, global_sig_mask, kerfs_rw_address);
+	__expose_proc_field(proc, global_sig_mask, kerfs_rw_integer);
 	__expose_proc_field(proc, command, kerfs_rw_string);
 	__expose_proc_field(proc, exit_reason.sig, kerfs_rw_integer);
 	__expose_proc_field(proc, exit_reason.pid, kerfs_rw_integer);

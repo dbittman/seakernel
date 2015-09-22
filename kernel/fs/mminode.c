@@ -211,6 +211,8 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 				fs_inode_sync_physical_page(node, virt + (i - page_number)*PAGE_SIZE,
 						i * PAGE_SIZE, page_len);
 				addr_t p;
+#warning "Don't delete the entry on each time. Make this whole thing a real page cache"
+#if 0
 				bool ismapped = mm_virtual_getmap(virt + (i - page_number)*PAGE_SIZE, &p, NULL);
 				assert(!ismapped || p == entry->page);
 				if(entry->page)
@@ -220,6 +222,9 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 				kfree(entry);
 				hash_table_delete_entry(node->physicals, &i, sizeof(i), 1);
 				atomic_fetch_sub(&node->mapped_entries_count, 1);
+#else
+				mutex_release(&entry->lock);
+#endif
 			} else
 				mutex_release(&entry->lock);
 		}
@@ -238,7 +243,7 @@ void fs_inode_destroy_physicals(struct inode *node)
 	/* this can only be called from free_inode, so we don't need to worry about locks */
 	if(!node->physicals)
 		return;
-	assert(!node->physicals->count);
+	//assert(!node->physicals->count);
 	hash_table_destroy(node->physicals);
 	mutex_destroy(&node->mappings_lock);
 }

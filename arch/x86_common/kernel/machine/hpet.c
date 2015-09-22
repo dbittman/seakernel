@@ -1,5 +1,6 @@
 #include <sea/cpu/acpi.h>
 #include <sea/mm/pmap.h>
+#include <sea/mm/vmm.h>
 struct hpet_header
 {
 	uint8_t hardware_rev_id;
@@ -15,7 +16,6 @@ struct hpet_header
 	uint8_t page_protection;
 } __attribute__((packed));
 
-static struct pmap hpet_pmap;
 static addr_t hpet_addr;
 static uint32_t countperiod;
 uint64_t arch_hpt_get_nanoseconds();
@@ -33,12 +33,11 @@ static void hpet_write64(int offset, uint64_t data)
 void x86_hpet_init(void)
 {
 	int len;
-	pmap_create(&hpet_pmap, 0);
 	struct hpet_header *table = acpi_get_table_data("HPET", &len);
 	if(!table)
 		return;
 	hpet_have = 1;
-	hpet_addr = pmap_get_mapping(&hpet_pmap, table->address);
+	hpet_addr = table->address + PHYS_PAGE_MAP;
 
 	uint64_t x = hpet_read64(0);
 	countperiod = (x >> 32);

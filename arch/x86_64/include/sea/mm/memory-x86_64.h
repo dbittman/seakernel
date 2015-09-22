@@ -92,5 +92,6 @@ typedef addr_t page_dir_t, page_table_t, pml4_t, pdpt_t;
 #define PD_INDEX(v) ((v >> 21) & 0x1FF)
 #define PT_INDEX(v) ((v >> 12) & 0x1FF)
 
+void x86_maybe_tlb_shootdown(addr_t);
 #endif
 

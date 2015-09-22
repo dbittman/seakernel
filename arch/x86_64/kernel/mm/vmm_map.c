@@ -7,6 +7,19 @@
 #include <sea/asm/system.h>
 #include <sea/string.h>
 
+#if CONFIG_SMP
+void x86_maybe_tlb_shootdown(addr_t virtual)
+{
+	/* TODO: when do actually send? */
+	if(IS_KERN_MEM(virtual))
+		x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS,
+				0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
+	else if((IS_THREAD_SHARED_MEM(virtual)))
+		x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS,
+				0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
+}
+#endif
+
 bool arch_mm_context_virtual_map(struct vmm_context *ctx, addr_t virtual,
 		addr_t physical, int flags, size_t length)
 {
@@ -63,13 +76,7 @@ bool arch_mm_context_virtual_map(struct vmm_context *ctx, addr_t virtual,
 		memset((void *)(physical + PHYS_PAGE_MAP), 0, length);
 #if CONFIG_SMP
 	if(result) {
-		/* TODO: clean this up (make it's own function) (and figure out when to actually do this) */
-		if(IS_KERN_MEM(virtual))
-			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS,
-					0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
-		else if((IS_THREAD_SHARED_MEM(virtual)))
-			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS,
-					0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
+		x86_maybe_tlb_shootdown(virtual);
 	}
 #endif
 
@@ -120,15 +127,8 @@ bool arch_mm_context_virtual_changeattr(struct vmm_context *ctx, addr_t virtual,
 			return false;
 	}
 #if CONFIG_SMP
-		/* TODO: clean this up (make it's own function) (and figure out when to actually do this) */
-		if(IS_KERN_MEM(virtual))
-			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS,
-					0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
-		else if((IS_THREAD_SHARED_MEM(virtual)))
-			x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS,
-					0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
+	x86_maybe_tlb_shootdown(virtual);
 #endif
-
 	return true;
 }
 

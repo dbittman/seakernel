@@ -100,7 +100,6 @@ void arch_mm_context_clone(struct vmm_context *oldcontext, struct vmm_context *n
 	
 	newcontext->root_virtual = (addr_t)pml4;
 	newcontext->root_physical = pml4_phys;
-	/* TODO: audit these locks */
 	mutex_create(&newcontext->lock, MT_NOSCHED);
 }
 

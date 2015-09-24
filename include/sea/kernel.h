@@ -5,7 +5,6 @@
 #define KERNEL_H
 
 #include <sea/string.h>
-#include <sea/tty/terminal.h>
 
 #define KSF_MMU            0x1
 #define KSF_SHUTDOWN       0x2

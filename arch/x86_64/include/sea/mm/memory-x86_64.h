@@ -46,7 +46,7 @@
 /* where the signal injector code goes */
 #define MEMMAP_SYSGATE_ADDRESS    (MEMMAP_IMAGE_MINIMUM-0x1000)
 
-#define IS_KERN_MEM(x) (x > MEMMAP_USERSPACE_MAXIMUM)
+#define IS_KERN_MEM(x) (x > MEMMAP_USERSPACE_MAXIMUM || x < MEMMAP_IMAGE_MINIMUM)
 #define IS_THREAD_SHARED_MEM(x) (!IS_KERN_MEM(x))
 
 #define PAGE_SIZE_ORDER_MAX 1

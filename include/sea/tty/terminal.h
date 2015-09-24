@@ -3,7 +3,7 @@
 
 #include <sea/tty/termios.h>
 #include <sea/mutex.h>
-#include <sea/ll.h>
+#include <sea/lib/linkedlist.h>
 #define TTY_IBLEN 256
 
 struct vterm {
@@ -17,7 +17,7 @@ struct vterm {
 	int tty;
 	char no_wrap, disable_scroll;
 	mutex_t wlock;
-	struct llist input_block;
+	struct linkedlist input_block;
 	struct termios term;
 	struct renderer *rend;
 	struct console_driver *driver;

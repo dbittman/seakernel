@@ -1,7 +1,8 @@
 #ifndef __SEA_LIB_LINKEDLIST_H
+#define __SEA_LIB_LINKEDLIST_H
 
 #include <sea/spinlock.h>
-
+#include <stdbool.h>
 #define LINKEDLIST_ALLOC 1
 
 struct linkedentry {

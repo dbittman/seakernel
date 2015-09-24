@@ -2,9 +2,8 @@
 #define __SEA_SPINLOCK_H
 
 #include <stdatomic.h>
-#include <sea/kernel.h>
+#include <sea/string.h>
 #include <sea/cpu/processor.h>
-static inline void cpu_pause(void);
 struct spinlock {
 	atomic_flag flag;
 };
@@ -18,13 +17,16 @@ static inline struct spinlock *spinlock_create(struct spinlock *s)
 
 static inline void spinlock_acquire(struct spinlock *s)
 {
-	while(atomic_flag_test_and_set_explicit(&s->flag, memory_order_relaxed))
-		cpu_pause();
+	cpu_disable_preemption();
+	while(atomic_flag_test_and_set_explicit(&s->flag, memory_order_relaxed)) {
+		asm("pause"); //TODO
+	}
 }
 
 static inline void spinlock_release(struct spinlock *s)
 {
 	atomic_flag_clear_explicit(&s->flag, memory_order_relaxed);
+	cpu_enable_preemption();
 }
 
 static inline void spinlock_destroy(struct spinlock *s)

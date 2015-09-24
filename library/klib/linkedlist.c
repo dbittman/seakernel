@@ -1,10 +1,14 @@
 #include <sea/lib/linkedlist.h>
 #include <sea/kobj.h>
+#include <stdbool.h>
+#include <sea/kernel.h>
 struct linkedlist *linkedlist_create(struct linkedlist *list, int flags)
 {
 	KOBJ_CREATE(list, flags, LINKEDLIST_ALLOC);
 	spinlock_create(&list->lock);
 	list->head = &list->sentry;
+	list->head->next = list->head;
+	list->head->prev = list->head;
 	return list;
 }
 

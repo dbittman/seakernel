@@ -8,12 +8,12 @@
 #include <sea/tm/signal.h>
 #include <sea/cpu/registers.h>
 #include <sea/lib/hash.h>
-#include <sea/cpu/processor.h>
 #include <stdatomic.h>
 #include <sea/arch-include/tm-thread.h>
 #include <sea/mm/valloc.h>
 #include <sea/tm/workqueue.h>
 #include <sea/spinlock.h>
+#include <sea/lib/linkedlist.h>
 #define KERN_STACK_SIZE 0x20000
 #define THREAD_MAGIC 0xBABECAFE
 #define PRIO_PROCESS 1
@@ -48,6 +48,7 @@ const struct thread **arch_tm_get_current_thread(void) __attribute__((const));
 #define __current_cpu ((struct cpu *)current_thread->cpu)
 
 struct process;
+struct cpu;
 struct thread {
 	unsigned magic;
 	pid_t tid;
@@ -71,8 +72,9 @@ struct thread {
 
 	struct arch_thread_data arch_thread;
 
-	struct llistnode blocknode, activenode, pnode;
-	_Atomic struct llist *blocklist;
+	struct llistnode activenode, pnode;
+	struct linkedentry blocknode;
+	_Atomic struct linkedlist *blocklist;
 	struct spinlock status_lock;
 	struct async_call block_timeout;
 	struct async_call alarm_timeout;
@@ -99,14 +101,14 @@ void tm_thread_enter_system(int sys);
 void tm_thread_exit_system(long, long);
 int sys_vfork(void);
 void tm_thread_kill(struct thread *);
-void tm_blocklist_wakeall(struct llist *blocklist);
+void tm_blocklist_wakeall(struct linkedlist *blocklist);
 void tm_thread_unblock(struct thread *t);
-int tm_thread_block_timeout(struct llist *blocklist, time_t microseconds);
+int tm_thread_block_timeout(struct linkedlist *blocklist, time_t microseconds);
 void tm_thread_set_state(struct thread *t, int state);
-void tm_thread_add_to_blocklist(struct llist *blocklist);
+void tm_thread_add_to_blocklist(struct linkedlist *blocklist);
 void tm_thread_remove_from_blocklist(struct thread *t);
-int tm_thread_block_schedule_work(struct llist *blocklist, int state, struct async_call *work);
-int tm_thread_block(struct llist *blocklist, int state);
+int tm_thread_block_schedule_work(struct linkedlist *blocklist, int state, struct async_call *work);
+int tm_thread_block(struct linkedlist *blocklist, int state);
 void tm_thread_poke(struct thread *t);
 int sys_thread_setpriority(pid_t tid, int val, int flags);
 struct thread *tm_thread_get(pid_t tid);

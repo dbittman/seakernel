@@ -15,8 +15,9 @@ pipe_t *fs_pipe_create (void)
 	pipe->length = PIPE_SIZE;
 	pipe->buffer = (char *)kmalloc(PIPE_SIZE+1);
 	pipe->lock = mutex_create(0, 0);
-	pipe->read_blocked = ll_create(0);
-	pipe->write_blocked = ll_create(0);
+	/* TODO: fix all instances of unneeded allocations like this */
+	pipe->read_blocked = linkedlist_create(0, 0);
+	pipe->write_blocked = linkedlist_create(0, 0);
 	return pipe;
 }
 
@@ -69,8 +70,8 @@ void fs_pipe_free(struct inode *i)
 	if(!i || !i->pipe) return;
 	kfree((void *)i->pipe->buffer);
 	mutex_destroy(i->pipe->lock);
-	ll_destroy(i->pipe->read_blocked);
-	ll_destroy(i->pipe->write_blocked);
+	linkedlist_destroy(i->pipe->read_blocked);
+	linkedlist_destroy(i->pipe->write_blocked);
 	kfree(i->pipe);
 	i->pipe=0;
 }

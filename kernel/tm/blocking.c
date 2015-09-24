@@ -26,29 +26,30 @@ void tm_thread_poke(struct thread *t)
 	tm_thread_unblock(t);
 }
 
-void tm_thread_add_to_blocklist(struct llist *blocklist)
+void tm_thread_add_to_blocklist(struct linkedlist *blocklist)
 {
 	/* we are the only ones that may add ourselves to a blocklist.
 	 * Thus we know that if we get here, current_thread->blocklist
 	 * must be null until WE set it otherwise.
 	 * Additionally, we require preemption to be OFF before calling this. */
+	assert(blocklist);
 	assert(!current_thread->blocklist);
 	assert(__current_cpu->preempt_disable > 0);
 	tqueue_remove(__current_cpu->active_queue, &current_thread->activenode);
 	atomic_store(&current_thread->blocklist, blocklist);
-	ll_do_insert(blocklist, &current_thread->blocknode, (void *)current_thread);
+	linkedlist_insert(blocklist, &current_thread->blocknode, (void *)current_thread);
 }
 
 void tm_thread_remove_from_blocklist(struct thread *t)
 {
-	struct llist *bl = atomic_exchange(&t->blocklist, NULL);
+	struct linkedlist *bl = atomic_exchange(&t->blocklist, NULL);
 	if(bl) {
-		ll_do_remove(bl, &t->blocknode, 0);
+		linkedlist_remove(bl, &t->blocknode);
 		tqueue_insert(t->cpu->active_queue, (void *)t, &t->activenode);
 	}
 }
 
-int tm_thread_block(struct llist *blocklist, int state)
+int tm_thread_block(struct linkedlist *blocklist, int state)
 {
 	cpu_disable_preemption();
 	assert(__current_cpu->preempt_disable == 1);
@@ -69,7 +70,7 @@ int tm_thread_block(struct llist *blocklist, int state)
 	return 0;
 }
 
-int tm_thread_block_schedule_work(struct llist *blocklist, int state, struct async_call *work)
+int tm_thread_block_schedule_work(struct linkedlist *blocklist, int state, struct async_call *work)
 {
 	cpu_disable_preemption();
 	assert(__current_cpu->preempt_disable == 1);
@@ -97,22 +98,24 @@ void tm_thread_unblock(struct thread *t)
 	tm_thread_remove_from_blocklist(t);
 }
 
-void tm_blocklist_wakeall(struct llist *blocklist)
+static bool __do_wakeup(struct linkedentry *entry)
+{
+	struct thread *t = entry->obj;
+	struct llist *bl = atomic_exchange(&t->blocklist, NULL);
+	if(bl) {
+		tqueue_insert(t->cpu->active_queue, (void *)t, &t->activenode);
+		t->state = THREADSTATE_RUNNING;
+		return true;
+	}
+	t->state = THREADSTATE_RUNNING;
+	return false;
+}
+
+void tm_blocklist_wakeall(struct linkedlist *blocklist)
 {
 	struct llistnode *node, *next;
 	struct thread *t;
-	rwlock_acquire(&blocklist->rwl, RWL_WRITER);
-	cpu_disable_preemption();
-	ll_for_each_entry_safe(blocklist, node, next, struct thread *, t) {
-		struct llist *bl = atomic_exchange(&t->blocklist, NULL);
-		if(bl) {
-			ll_do_remove(bl, &t->blocknode, 1);
-			tqueue_insert(t->cpu->active_queue, (void *)t, &t->activenode);
-		}
-		t->state = THREADSTATE_RUNNING;
-	}
-	cpu_enable_preemption();
-	rwlock_release(&blocklist->rwl, RWL_WRITER);
+	linkedlist_apply(blocklist, __do_wakeup);
 }
 
 static void __timeout_expired(unsigned long data)
@@ -173,7 +176,7 @@ void tm_thread_delay_sleep(time_t microseconds)
 	}
 }
 
-int tm_thread_block_timeout(struct llist *blocklist, time_t microseconds)
+int tm_thread_block_timeout(struct linkedlist *blocklist, time_t microseconds)
 {
 	struct async_call *call = &current_thread->block_timeout;
 	call->func = __timeout_expired;

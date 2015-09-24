@@ -1,5 +1,6 @@
 #include <sea/dm/block.h>
 #include <sea/mm/kmalloc.h>
+#include <sea/lib/linkedlist.h>
 #include <stdatomic.h>
 struct ioreq *ioreq_create(blockdevice_t *bd, dev_t dev, int direction, uint64_t start, size_t count)
 {
@@ -11,7 +12,7 @@ struct ioreq *ioreq_create(blockdevice_t *bd, dev_t dev, int direction, uint64_t
 	req->flags = 0;
 	req->refs = 1;
 	req->dev = dev; // TODO: get rid of dev;
-	ll_create(&req->blocklist);
+	linkedlist_create(&req->blocklist, 0);
 	return req;
 }
 

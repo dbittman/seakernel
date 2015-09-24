@@ -15,7 +15,7 @@ typedef struct pipe_struct {
 	mutex_t *lock;
 	char type;
 	int count, wrcount;
-	struct llist *read_blocked, *write_blocked;
+	struct linkedlist *read_blocked, *write_blocked;
 } pipe_t;
 
 int sys_mkfifo(char *path, mode_t mode);
@@ -27,3 +27,4 @@ int sys_pipe(int *files);
 pipe_t *fs_pipe_create();
 
 #endif
+

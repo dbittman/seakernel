@@ -53,7 +53,7 @@ void tm_init_multitasking(void)
 	mutex_create(&proc->map_lock, MT_NOSCHED);
 	mutex_create(&proc->stacks_lock, 0);
 	proc->magic = PROCESS_MAGIC;
-	ll_create(&proc->waitlist);
+	linkedlist_create(&proc->waitlist, 0);
 	mutex_create(&proc->files_lock, 0);
 	memcpy(&proc->vmm_context, &kernel_context, sizeof(kernel_context));
 	thread->process = proc; /* we have to do this early, so that the vmm system can use the lock... */

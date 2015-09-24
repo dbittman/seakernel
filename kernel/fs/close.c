@@ -39,8 +39,8 @@ int sys_close(int fp)
 				&& f->inode->pipe->type != PIPE_NAMED)
 			atomic_fetch_sub(&f->inode->pipe->wrcount, 1);
 		if(!f->inode->pipe->count && f->inode->pipe->type != PIPE_NAMED) {
-			assert(!f->inode->pipe->read_blocked->num);
-			assert(!f->inode->pipe->write_blocked->num);
+			assert(!f->inode->pipe->read_blocked->count);
+			assert(!f->inode->pipe->write_blocked->count);
 			fs_pipe_free(f->inode);
 			f->inode->pipe = 0;
 		} else {

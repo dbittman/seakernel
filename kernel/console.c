@@ -7,6 +7,7 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
 #include <sea/string.h>
+#include <sea/lib/linkedlist.h>
 struct vterm *current_console=0;
 struct vterm *kernel_console, *log_console=0;
 
@@ -41,7 +42,7 @@ void console_create(struct vterm *con)
 	con->term.c_oflag=OPOST | ONLCR;
 	con->term.c_iflag=ICRNL;
 	mutex_create(&con->wlock, 0);
-	ll_create(&con->input_block);
+	linkedlist_create(&con->input_block, 0);
 	con->flag=1;
 }
 

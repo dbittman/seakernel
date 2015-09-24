@@ -10,7 +10,7 @@
 #include <sea/lib/queue.h>
 #include <sea/ll.h>
 #include <sea/lib/hash.h>
-
+#include <sea/lib/linkedlist.h>
 #define BLOCK_CACHE_OVERWRITE 1
 
 typedef struct blockdevice_s {
@@ -35,7 +35,7 @@ struct ioreq {
 	blockdevice_t *bd;
 	dev_t dev;
 	struct queue_item qi;
-	struct llist blocklist;
+	struct linkedlist blocklist;
 };
 
 #define IOREQ_COMPLETE 1

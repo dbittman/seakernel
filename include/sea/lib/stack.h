@@ -4,6 +4,7 @@
 #include <sea/mutex.h>
 #include <stdbool.h>
 #include <sea/mm/kmalloc.h>
+#include <sea/spinlock.h>
 #define STACK_KMALLOC 1
 #define STACK_LOCKLESS 2
 
@@ -14,9 +15,9 @@ struct stack_elem {
 
 struct stack {
 	int flags;
-	mutex_t lock;
 	size_t count;
 	struct stack_elem *top;
+	struct spinlock lock;
 };
 
 static inline bool stack_is_empty(struct stack *stack)

@@ -44,9 +44,11 @@ void tm_thread_handle_signal(int signal)
 			case SIGSTOP: 
 				if(!(sa->sa_flags & SA_NOCLDSTOP) && current_process->parent)
 					tm_signal_send_process(current_process->parent, SIGCHILD);
+				spinlock_acquire(&current_thread->status_lock);
 				current_process->exit_reason.cause=__STOPSIG;
 				current_process->exit_reason.sig=signal;
 				current_thread->state = THREADSTATE_STOPPED;
+				spinlock_release(&current_thread->status_lock);
 				break;
 			case SIGISLEEP:
 				current_thread->state = THREADSTATE_INTERRUPTIBLE;
@@ -78,22 +80,24 @@ static int __can_send_signal(struct process *from, struct process *to, int signa
 void tm_signal_send_thread(struct thread *thr, int signal)
 {
 	assert(signal < NUM_SIGNALS);
-	mutex_acquire(&thr->block_mutex);
 	if(!(thr->flags & THREAD_PTRACED) || signal == SIGKILL) {
 		atomic_fetch_or(&thr->signals_pending, 1 << (signal - 1));
 	}
 	tm_thread_raise_flag(thr, THREAD_SCHEDULE);
 	if(thr->state == THREADSTATE_STOPPED && (signal == SIGCONT || signal == SIGKILL)) {
+		spinlock_acquire(&thr->status_lock);
 		thr->state = THREADSTATE_RUNNING;
 		thr->process->exit_reason.cause = 0;
 		thr->process->exit_reason.sig = 0;
+		spinlock_release(&thr->status_lock);
 	} else if((thr->flags & THREAD_PTRACED) && signal != SIGKILL) {
+		spinlock_acquire(&thr->status_lock);
 		thr->process->exit_reason.cause = __STOPSIG;
 		thr->process->exit_reason.sig = signal;
 		tm_blocklist_wakeall(&thr->process->waitlist);
 		thr->state = THREADSTATE_STOPPED;
+		spinlock_release(&thr->status_lock);
 	}
-	mutex_release(&thr->block_mutex);
 	if(thr->state == THREADSTATE_INTERRUPTIBLE) {
 		tm_thread_unblock(thr);
 	}

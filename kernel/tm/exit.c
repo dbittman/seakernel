@@ -101,10 +101,12 @@ void tm_process_wait_cleanup(struct process *proc)
 
 __attribute__((noinline)) static void tm_process_exit(int code)
 {
+	spinlock_acquire(&current_thread->status_lock);
 	if(code != -9) 
 		current_process->exit_reason.cause = __EXIT;
 	current_process->exit_reason.ret = code;
 	current_process->exit_reason.pid = current_process->pid;
+	spinlock_release(&current_thread->status_lock);
 
 	/* update times */
 	if(current_process->parent) {
@@ -181,15 +183,8 @@ void tm_thread_do_exit(void)
 
 	cpu_disable_preemption();
 
-	//mutex_acquire(&current_thread->block_mutex);
 	assert(!current_thread->blocklist);
-	//if(current_thread->blocklist) {
-	//	ll_do_remove(current_thread->blocklist, &current_thread->blocknode, 0);
-	//	current_thread->blocklist = 0;
-	//} else {
-		tqueue_remove(current_thread->cpu->active_queue, &current_thread->activenode);
-	//}
-	//mutex_release(&current_thread->block_mutex);
+	tqueue_remove(current_thread->cpu->active_queue, &current_thread->activenode);
 	atomic_fetch_sub_explicit(&current_thread->cpu->numtasks, 1, memory_order_relaxed);
 	current_thread->state = THREADSTATE_DEAD;
 	tm_thread_raise_flag(current_thread, THREAD_SCHEDULE);

@@ -16,7 +16,7 @@ void dm_init(void)
 	memset(devhash, 0, sizeof(struct devhash_s)*NUM_DT);
 	int i;
 	for(i=0;i<NUM_DT;i++) 
-		mutex_create(&devhash[i].lock, MT_NOSCHED);
+		mutex_create(&devhash[i].lock, 0);
 	dm_init_char_devices();
 	dm_init_block_devices();
 #if CONFIG_MODULES

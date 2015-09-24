@@ -3,7 +3,6 @@
 #include <sea/types.h>
 #include <sea/mm/vmm.h>
 #include <sea/tm/tqueue.h>
-#include <sea/tm/thread.h>
 #include <sea/mutex.h>
 #include <sea/tm/ticker.h>
 #include <sea/tm/workqueue.h>
@@ -21,6 +20,8 @@
 #define CPU_ERROR   0x2
 #define CPU_WAITING 0x4
 #define CPU_RUNNING 0x8
+
+struct thread;
 
 struct cpu {
 	unsigned knum, snum; /* knum: cpu number to the kernel, snum: cpu number to the hardware */
@@ -41,10 +42,6 @@ int cpu_get_num_running_processors();
 int cpu_get_num_halted_processors();
 int cpu_get_num_secondary_processors();
 
-/* warning: this is not "safe" to use! The cpu could change on
- * any schedule, which may happen while you're using this. Use
- * cpu_get_current to make sure that doesn't happen. */
-#define __current_cpu ((struct cpu *)current_thread->cpu)
 extern struct cpu cpu_array[CONFIG_MAX_CPUS];
 extern unsigned cpu_array_num;
 

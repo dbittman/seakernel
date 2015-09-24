@@ -5,7 +5,7 @@
 #include <stdatomic.h>
 #include <sea/vsprintf.h>
 #include <sea/tm/timing.h>
-
+#include <sea/tm/thread.h>
 struct cpu *primary_cpu=0;
 #if CONFIG_SMP
 struct cpu cpu_array[CONFIG_MAX_CPUS];

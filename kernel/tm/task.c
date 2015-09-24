@@ -61,7 +61,7 @@ void tm_init_multitasking(void)
 	thread->magic = THREAD_MAGIC;
 	workqueue_create(&thread->resume_work, 0);
 	thread->kernel_stack = (addr_t)&initial_kernel_stack;
-	mutex_create(&thread->block_mutex, MT_NOSCHED);
+	spinlock_create(&thread->status_lock);
 
 	primary_cpu->active_queue = tqueue_create(0, 0);
 	primary_cpu->idle_thread = thread;

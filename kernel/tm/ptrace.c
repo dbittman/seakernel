@@ -5,6 +5,7 @@
 #include <sea/trace.h>
 #include <sea/vsprintf.h>
 #include <sea/cpu/ptrace_user.h>
+#include <sea/spinlock.h>
 
 int ptrace_read_user(struct thread *thread, struct ptrace_user *user)
 {
@@ -48,14 +49,15 @@ long sys_ptrace_thread(enum __ptrace_request request, pid_t tid, void *addr, voi
 		tm_thread_put(tracee);
 		return -ESRCH;
 	}
-	mutex_acquire(&tracee->block_mutex);
 	switch(request) {
 		case PTRACE_SYSCALL:
 			TRACE_MSG("ptrace", "thread %d set to STOPON_SYSCALL mode by %d\n", tracee->tid, current_thread->tid);
+			spinlock_acquire(&tracee->status_lock);
 			tracee->tracee_flags |= TRACEE_STOPON_SYSCALL;
 			tracee->process->exit_reason.cause = 0;
 			tracee->process->exit_reason.sig = 0;
 			tracee->state = THREADSTATE_RUNNING;
+			spinlock_release(&tracee->status_lock);
 			break;
 		case PTRACE_READUSER:
 			TRACE_MSG("ptrace", "thread %d state read by %d\n", tracee->tid, current_thread->tid);
@@ -85,15 +87,16 @@ long sys_ptrace_thread(enum __ptrace_request request, pid_t tid, void *addr, voi
 			}
 			/* fall through */
 		case PTRACE_CONT:
+			spinlock_acquire(&tracee->status_lock);
 			tracee->process->exit_reason.cause = 0;
 			tracee->process->exit_reason.sig = 0;
 			tracee->state = THREADSTATE_RUNNING;
+			spinlock_release(&tracee->status_lock);
 			break;
 		default:
 			printk(0, "[ptrace]: unknown ptrace request: %d\n", request);
 			ret = -EINVAL;
 	}
-	mutex_release(&tracee->block_mutex);
 	tm_thread_put(tracee);
 	return ret;
 }

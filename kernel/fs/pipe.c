@@ -97,7 +97,7 @@ int fs_pipe_read(struct inode *ino, int flags, char *buffer, size_t length)
 		/* we need to block, but also release the lock. Disable interrupts
 		 * so we don't schedule before we want to */
 		cpu_disable_preemption();
-		tm_thread_add_to_blocklist(current_thread, pipe->read_blocked);
+		tm_thread_add_to_blocklist(pipe->read_blocked);
 		mutex_release(pipe->lock);
 		tm_thread_set_state(current_thread, THREADSTATE_INTERRUPTIBLE);
 		cpu_enable_preemption();
@@ -162,7 +162,7 @@ int fs_pipe_write(struct inode *ino, int flags, char *initialbuffer, size_t tota
 		while((pipe->write_pos+length)>=PIPE_SIZE) {
 			tm_blocklist_wakeall(pipe->read_blocked);
 			cpu_disable_preemption();
-			tm_thread_add_to_blocklist(current_thread, pipe->write_blocked);
+			tm_thread_add_to_blocklist(pipe->write_blocked);
 			mutex_release(pipe->lock);
 			tm_thread_set_state(current_thread, THREADSTATE_INTERRUPTIBLE);
 			cpu_enable_preemption();

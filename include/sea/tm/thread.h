@@ -13,6 +13,7 @@
 #include <sea/arch-include/tm-thread.h>
 #include <sea/mm/valloc.h>
 #include <sea/tm/workqueue.h>
+#include <sea/spinlock.h>
 #define KERN_STACK_SIZE 0x20000
 #define THREAD_MAGIC 0xBABECAFE
 #define PRIO_PROCESS 1
@@ -41,6 +42,10 @@
 
 #define current_thread ((struct thread *)*arch_tm_get_current_thread())
 const struct thread **arch_tm_get_current_thread(void) __attribute__((const));
+/* warning: this is not "safe" to use! The cpu could change on
+ * any schedule, which may happen while you're using this. Use
+ * cpu_get_current to make sure that doesn't happen. */
+#define __current_cpu ((struct cpu *)current_thread->cpu)
 
 struct process;
 struct thread {
@@ -67,8 +72,8 @@ struct thread {
 	struct arch_thread_data arch_thread;
 
 	struct llistnode blocknode, activenode, pnode;
-	struct llist *blocklist;
-	mutex_t block_mutex;
+	_Atomic struct llist *blocklist;
+	struct spinlock status_lock;
 	struct async_call block_timeout;
 	struct async_call alarm_timeout;
 	struct async_call cleanup_call;
@@ -98,7 +103,7 @@ void tm_blocklist_wakeall(struct llist *blocklist);
 void tm_thread_unblock(struct thread *t);
 int tm_thread_block_timeout(struct llist *blocklist, time_t microseconds);
 void tm_thread_set_state(struct thread *t, int state);
-void tm_thread_add_to_blocklist(struct thread *t, struct llist *blocklist);
+void tm_thread_add_to_blocklist(struct llist *blocklist);
 void tm_thread_remove_from_blocklist(struct thread *t);
 int tm_thread_block_schedule_work(struct llist *blocklist, int state, struct async_call *work);
 int tm_thread_block(struct llist *blocklist, int state);

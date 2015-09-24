@@ -14,9 +14,6 @@
 #include <sea/mm/vmm.h>
 #include <sea/mm/kmalloc.h>
 
-/* helper macros.
- * TODO: Make a bitmap class */
-
 #define SET_BIT(start,index) \
 	(*((uint8_t *)start + (index / 8)) |= (1 << (index % 8)))
 

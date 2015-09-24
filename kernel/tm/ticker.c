@@ -7,6 +7,7 @@
 #include <sea/tm/async_call.h>
 #include <sea/tm/ticker.h>
 #include <sea/types.h>
+#include <sea/tm/thread.h>
 
 struct ticker *ticker_create(struct ticker *ticker, int flags)
 {

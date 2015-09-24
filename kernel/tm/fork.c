@@ -144,7 +144,7 @@ struct thread *tm_thread_fork(int flags)
 	thr->priority = current_thread->priority;
 	thr->sig_mask = current_thread->sig_mask;
 	thr->refs = 1;
-	mutex_create(&thr->block_mutex, MT_NOSCHED);
+	spinlock_create(&thr->status_lock);
 	workqueue_create(&thr->resume_work, 0);
 	return thr;
 }

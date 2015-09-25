@@ -111,7 +111,7 @@ uint32_t lapic_read(int reg);
 
 extern addr_t lapic_addr;
 extern unsigned lapic_timer_start;
-extern mutex_t ipi_mutex;
+extern struct spinlock ipi_lock;
 
 struct cpu;
 

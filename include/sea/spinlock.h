@@ -3,11 +3,11 @@
 
 #include <stdatomic.h>
 #include <sea/string.h>
-#include <sea/cpu/processor.h>
 struct spinlock {
 	atomic_flag flag;
 };
 
+#include <sea/cpu/processor.h>
 static inline struct spinlock *spinlock_create(struct spinlock *s)
 {
 	assertmsg(s, "allocating spinlocks is not allowed");

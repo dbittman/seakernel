@@ -14,7 +14,7 @@ struct queue *queue_create(struct queue *q, int flags)
 	}
 	q->head = q->tail = 0;
 	q->count = ATOMIC_VAR_INIT(0);
-	mutex_create(&q->lock, MT_NOSCHED);
+	mutex_create(&q->lock, 0);
 	return q;
 }
 

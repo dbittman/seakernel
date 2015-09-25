@@ -1,5 +1,7 @@
 #ifndef __SEA_CPU_PROCESSOR_H
 #define __SEA_CPU_PROCESSOR_H
+void cpu_disable_preemption();
+void cpu_enable_preemption();
 #include <sea/types.h>
 #include <sea/mm/vmm.h>
 #include <sea/tm/tqueue.h>
@@ -13,8 +15,6 @@
 #elif CONFIG_ARCH == TYPE_ARCH_X86_64
   #include <sea/cpu/cpu-x86_common.h>
 #endif
-
-#define CPU_STACK_TEMP_SIZE 256
 
 #define CPU_UP      0x1
 #define CPU_ERROR   0x2
@@ -92,8 +92,6 @@ static inline void cpu_pause(void)
 struct cpu *cpu_get_current();
 void cpu_put_current(struct cpu *);
 
-void cpu_disable_preemption();
-void cpu_enable_preemption();
 
 void cpu_boot_all_aps(void);
 int arch_cpu_boot_ap(struct cpu *);

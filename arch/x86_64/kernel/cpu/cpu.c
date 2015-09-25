@@ -25,7 +25,7 @@ void arch_cpu_processor_init_1(void)
 #if CONFIG_SMP
 	primary_cpu = &cpu_array[0];
 	primary_cpu->knum = 0;
-	mutex_create(&ipi_mutex, MT_NOSCHED);
+	spinlock_create(&ipi_lock);
 	memset(cpu_array, 0, sizeof(struct cpu) * CONFIG_MAX_CPUS);
 	cpu_array_num = 1;
 	load_tables_ap(primary_cpu);

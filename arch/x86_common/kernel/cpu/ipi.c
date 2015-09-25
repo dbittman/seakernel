@@ -24,7 +24,9 @@
 #include <sea/cpu/cpu-x86_64.h>
 #endif
 
-mutex_t ipi_mutex;
+#include <sea/spinlock.h>
+
+struct spinlock ipi_lock;
 
 int x86_cpu_send_ipi(unsigned char dest_shorthand, unsigned int dst, unsigned int v)
 {
@@ -34,7 +36,7 @@ int x86_cpu_send_ipi(unsigned char dest_shorthand, unsigned int dst, unsigned in
 		return 1;
 	int to, send_status;
 	int old = cpu_interrupt_set(0);
-	mutex_acquire(&ipi_mutex);
+	spinlock_acquire(&ipi_lock);
 	/* Writing to the lower ICR register causes the interrupt
 	 * to get sent off (Intel 3A 10.6.1), so do the higher reg first */
 	LAPIC_WRITE(LAPIC_ICR+0x10, (dst << 24));
@@ -47,7 +49,7 @@ int x86_cpu_send_ipi(unsigned char dest_shorthand, unsigned int dst, unsigned in
 		asm("pause");
 		send_status = LAPIC_READ(LAPIC_ICR) & LAPIC_ICR_STATUS_PEND;
 	} while (send_status && (to++ < 1000));
-	mutex_release(&ipi_mutex);
+	spinlock_release(&ipi_lock);
 	cpu_interrupt_set(old);
 	return (to < 1000);
 }

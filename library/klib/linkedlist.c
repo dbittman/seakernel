@@ -44,6 +44,8 @@ void linkedlist_remove(struct linkedlist *list, struct linkedentry *entry)
 	spinlock_release(&list->lock);
 }
 
+/* NOTE: TODO: This would call fn with preempt disabled. Is that okay? Is it okay
+ * to disable preempt while we're looping though every element? */
 void linkedlist_apply(struct linkedlist *list, bool (*fn)(struct linkedentry *))
 {
 	assert(fn);

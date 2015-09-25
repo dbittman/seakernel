@@ -33,7 +33,7 @@ int block_buffer_syncer(struct kthread *kt, void *arg)
 #endif
 void block_buffer_init(void)
 {
-	mutex_create(&dlock, MT_NOSCHED);
+	mutex_create(&dlock, 0);
 	ll_create_lockless(&dirty_list);
 	//kthread_create(&syncer, "[ksync]", 0, block_buffer_syncer, 0);
 }

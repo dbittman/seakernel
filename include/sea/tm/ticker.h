@@ -3,7 +3,7 @@
 
 #include <sea/types.h>
 #include <sea/lib/heap.h>
-#include <sea/mutex.h>
+#include <sea/spinlock.h>
 #include <sea/tm/async_call.h>
 
 #define TICKER_KMALLOC 1
@@ -12,7 +12,7 @@ struct ticker {
 	int flags;
 	_Atomic uint64_t tick;
 	struct heap heap;
-	mutex_t lock;
+	struct spinlock lock;
 };
 
 struct ticker *ticker_create(struct ticker *ticker, int flags);

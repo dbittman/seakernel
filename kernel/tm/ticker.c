@@ -3,7 +3,7 @@
 #include <sea/kernel.h>
 #include <sea/lib/heap.h>
 #include <sea/mm/kmalloc.h>
-#include <sea/mutex.h>
+#include <sea/spinlock.h>
 #include <sea/tm/async_call.h>
 #include <sea/tm/ticker.h>
 #include <sea/types.h>
@@ -19,7 +19,7 @@ struct ticker *ticker_create(struct ticker *ticker, int flags)
 	}
 	ticker->tick = 0;
 	heap_create(&ticker->heap, HEAP_LOCKLESS, HEAPMODE_MIN);
-	mutex_create(&ticker->lock, MT_NOSCHED);
+	spinlock_create(&ticker->lock);
 	return ticker;
 }
 
@@ -40,9 +40,9 @@ void ticker_tick(struct ticker *ticker, uint64_t microseconds)
 			 * through the heap between the call to
 			 * peak and now */
 			int old = cpu_interrupt_set(0);
-			mutex_acquire(&ticker->lock);
+			spinlock_acquire(&ticker->lock);
 			int res = heap_pop(&ticker->heap, &key, &data);
-			mutex_release(&ticker->lock);
+			spinlock_release(&ticker->lock);
 			cpu_interrupt_set(old);
 			if(res == 0) {
 				/* handle the time-event */
@@ -59,20 +59,20 @@ void ticker_insert(struct ticker *ticker, time_t microseconds, struct async_call
 {
 	assert(call);
 	int old = cpu_interrupt_set(0);
-	mutex_acquire(&ticker->lock);
+	spinlock_acquire(&ticker->lock);
 	heap_insert(&ticker->heap, microseconds + ticker->tick, call);
 	call->queue = ticker;
-	mutex_release(&ticker->lock);
+	spinlock_release(&ticker->lock);
 	cpu_interrupt_set(old);
 }
 
 int ticker_delete(struct ticker *ticker, struct async_call *call)
 {
 	int old = cpu_interrupt_set(0);
-	mutex_acquire(&ticker->lock);
+	spinlock_acquire(&ticker->lock);
 	int r = heap_delete(&ticker->heap, call);
 	call->queue = 0;
-	mutex_release(&ticker->lock);
+	spinlock_release(&ticker->lock);
 	cpu_interrupt_set(old);
 	return r;
 }
@@ -80,7 +80,7 @@ int ticker_delete(struct ticker *ticker, struct async_call *call)
 void ticker_destroy(struct ticker *ticker)
 {
 	heap_destroy(&ticker->heap);
-	mutex_destroy(&ticker->lock);
+	spinlock_destroy(&ticker->lock);
 	if(ticker->flags & TICKER_KMALLOC) {
 		kfree(ticker);
 	}

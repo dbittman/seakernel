@@ -29,8 +29,8 @@ void tm_init_multitasking(void)
 	hash_table_specify_function(process_table, HASH_FUNCTION_DEFAULT);
 
 	process_list = ll_create(0);
-	mutex_create(&process_refs_lock, MT_NOSCHED);
-	mutex_create(&thread_refs_lock, MT_NOSCHED);
+	mutex_create(&process_refs_lock, 0);
+	mutex_create(&thread_refs_lock, 0);
 	
 	thread_table = hash_table_create(0, 0, HASH_TYPE_CHAIN);
 	hash_table_resize(thread_table, HASH_RESIZE_MODE_IGNORE, 1000);
@@ -50,7 +50,7 @@ void tm_init_multitasking(void)
 	for(addr_t a = MEMMAP_MMAP_BEGIN;a < (MEMMAP_MMAP_BEGIN + (size_t)proc->mmf_valloc.nindex);a+=PAGE_SIZE)
 		mm_virtual_changeattr(a, PAGE_PRESENT | PAGE_WRITE, 0x1000);
 	ll_create(&proc->threadlist);
-	mutex_create(&proc->map_lock, MT_NOSCHED);
+	mutex_create(&proc->map_lock, 0);
 	mutex_create(&proc->stacks_lock, 0);
 	proc->magic = PROCESS_MAGIC;
 	linkedlist_create(&proc->waitlist, 0);

@@ -5,11 +5,12 @@
 #include <sea/arch-include/mm-memory.h>
 #include <sea/mm/valloc.h>
 #include <stdbool.h>
+#include <sea/spinlock.h>
 
 struct vmm_context {
 	addr_t root_physical;
 	addr_t root_virtual;
-	mutex_t lock;
+	struct spinlock lock;
 	uint32_t magic;
 };
 

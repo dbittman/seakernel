@@ -17,7 +17,7 @@ void arch_mm_virtual_init(struct vmm_context *context)
 {
  	context->root_physical = (addr_t)&boot_pml4;
  	context->root_virtual = kernel_context.root_physical + MEMMAP_KERNEL_START;
- 	mutex_create(&kernel_context.lock, MT_NOSCHED);
+ 	spinlock_create(&kernel_context.lock);
  	/* map in all physical memory */
  	pml4_t *pml4 = (pml4_t *)context->root_virtual;
  	addr_t address = 0;

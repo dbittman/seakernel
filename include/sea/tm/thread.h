@@ -15,6 +15,7 @@
 #include <sea/tm/workqueue.h>
 #include <sea/spinlock.h>
 #include <sea/lib/linkedlist.h>
+#include <sea/cpu/processor.h>
 #define KERN_STACK_SIZE 0x20000
 #define THREAD_MAGIC 0xBABECAFE
 #define PRIO_PROCESS 1

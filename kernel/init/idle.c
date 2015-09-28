@@ -21,6 +21,7 @@
 #include <sea/tm/process.h>
 #include <sea/tty/terminal.h>
 #include <sea/vsprintf.h>
+#include <sea/cpu/processor.h>
 
 struct kthread kthread_pager;
 int __KT_pager(struct kthread *, void *);

@@ -12,14 +12,14 @@ struct workqueue *workqueue_create(struct workqueue *wq, int flags)
 {
 	KOBJ_CREATE(wq, flags, WORKQUEUE_KMALLOC);
 	heap_create(&wq->tasks, HEAP_LOCKLESS, HEAPMODE_MAX);
-	mutex_create(&wq->lock, MT_NOSCHED);
+	spinlock_create(&wq->lock);
 	return wq;
 }
 
 void workqueue_destroy(struct workqueue *wq)
 {
 	heap_destroy(&wq->tasks);
-	mutex_destroy(&wq->lock);
+	spinlock_destroy(&wq->lock);
 	KOBJ_DESTROY(wq, WORKQUEUE_KMALLOC);
 }
 
@@ -28,10 +28,10 @@ void workqueue_insert(struct workqueue *wq, struct async_call *call)
 	/* Workqueues can be used by interrupts, so disable them while
 	 * we operate on the data structures */
 	int old = cpu_interrupt_set(0);
-	mutex_acquire(&wq->lock);
+	spinlock_acquire(&wq->lock);
 	heap_insert(&wq->tasks, call->priority, call);
 	call->queue = wq;
-	mutex_release(&wq->lock);
+	spinlock_release(&wq->lock);
 	cpu_interrupt_set(old);
 	atomic_fetch_add(&wq->count, 1);
 }
@@ -40,10 +40,10 @@ int workqueue_delete(struct workqueue *wq, struct async_call *call)
 {
 	assert(call);
 	int old = cpu_interrupt_set(0);
-	mutex_acquire(&wq->lock);
+	spinlock_acquire(&wq->lock);
 	int r = heap_delete(&wq->tasks, call);
 	call->queue = 0;
-	mutex_release(&wq->lock);
+	spinlock_release(&wq->lock);
 	cpu_interrupt_set(old);
 	return r;
 }
@@ -65,17 +65,17 @@ int workqueue_dowork(struct workqueue *wq)
 		return -1;
 	}
 	struct async_call *call;
-	mutex_acquire(&wq->lock);
+	spinlock_acquire(&wq->lock);
 	if(heap_pop(&wq->tasks, 0, (void **)&call) == 0) {
 		call->queue = 0;
-		mutex_release(&wq->lock);
+		spinlock_release(&wq->lock);
 		atomic_fetch_sub(&wq->count, 1);
 		cpu_interrupt_set(old);
 		/* handle async_call */
 		async_call_execute(call);
 		return 0;
 	}
-	mutex_release(&wq->lock);
+	spinlock_release(&wq->lock);
 	cpu_interrupt_set(old);
 	return -1;
 }

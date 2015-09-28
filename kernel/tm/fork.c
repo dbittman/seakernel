@@ -10,6 +10,7 @@
 #include <sea/fs/kerfs.h>
 #include <sea/fs/dir.h>
 #include <sea/cpu/interrupt.h>
+#include <sea/cpu/processor.h>
 
 static pid_t __next_pid = 0;
 static pid_t __next_tid = 0;

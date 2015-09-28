@@ -3,14 +3,14 @@
 
 #include <sea/types.h>
 #include <sea/lib/heap.h>
-#include <sea/mutex.h>
+#include <sea/spinlock.h>
 #define WORKQUEUE_KMALLOC 1
 
 struct workqueue {
 	int flags;
 	struct heap tasks;
 	_Atomic int count;
-	mutex_t lock;
+	struct spinlock lock;
 };
 
 struct workqueue *workqueue_create(struct workqueue *wq, int flags);

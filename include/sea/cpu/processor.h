@@ -8,6 +8,7 @@ void cpu_enable_preemption();
 #include <sea/mutex.h>
 #include <sea/tm/ticker.h>
 #include <sea/tm/workqueue.h>
+#include <sea/tm/thread.h>
 
 #include <sea/config.h>
 #if CONFIG_ARCH == TYPE_ARCH_X86
@@ -20,8 +21,6 @@ void cpu_enable_preemption();
 #define CPU_ERROR   0x2
 #define CPU_WAITING 0x4
 #define CPU_RUNNING 0x8
-
-struct thread;
 
 struct cpu {
 	unsigned knum, snum; /* knum: cpu number to the kernel, snum: cpu number to the hardware */

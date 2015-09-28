@@ -167,7 +167,7 @@ int rtl8139_init(rtl8139dev_t *dev)
 {
 	if(!rtl8139_reset(dev->addr))
 		return -1;
-	dev->rx_reg.p.size = RX_BUF_SIZE + 0x1000;
+	dev->rx_reg.p.size = RX_BUF_SIZE;
 	dev->rx_reg.p.alignment = 0x1000;
 	int ret = mm_allocate_dma_buffer(&dev->rx_reg);
 	if(ret == -1) {

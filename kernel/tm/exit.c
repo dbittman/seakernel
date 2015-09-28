@@ -75,13 +75,10 @@ static void tm_thread_destroy(unsigned long data)
 
 	/* if the thread still hasn't been rescheduled, don't destroy it yet */
 	assert(thr->state == THREADSTATE_DEAD);
-	if(!(thr->flags & THREAD_DEAD)) {
-	printk(0, "destroy: %d: reinsert\n", thr->tid);
-		struct async_call *thread_cleanup_call = async_call_create(&thr->cleanup_call, 0, 
-				tm_thread_destroy, data, 0);
-		workqueue_insert(&__current_cpu->work, thread_cleanup_call);
-		return;
-	}
+
+	/* TODO: if this truly works, we don't need this flag... */
+	assertmsg(thr->flags & THREAD_DEAD,
+			"tried to destroy a thread before it has scheduled away");
 	tm_thread_release_stacks(thr);
 	tm_process_put(thr->process); /* thread releases it's process pointer */
 	tm_thread_put(thr);

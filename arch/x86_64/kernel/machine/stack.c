@@ -35,12 +35,10 @@ void arch_cpu_print_stack_trace_alternate(struct thread *thr, addr_t *ebp)
 		addr_t eip;
 		if(!mm_context_read(&thr->process->vmm_context, &eip, ebp + 8, 8))
 			break;
-		printk(0, ":: %x %x\n", ebp, eip);
 		if(eip == 0)
 			break;
 		if(!mm_context_read(&thr->process->vmm_context, &ebp, ebp, 8))
 			break;
-		printk(0, "-> %x\n", ebp);
 		const char *name = elf64_lookup_symbol(eip, &kernel_elf);
 		char *modname = 0;
 		if(!name)

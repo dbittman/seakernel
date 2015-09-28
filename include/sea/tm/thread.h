@@ -9,6 +9,7 @@
 #include <sea/cpu/registers.h>
 #include <sea/lib/hash.h>
 #include <stdatomic.h>
+#include <stdbool.h>
 #include <sea/arch-include/tm-thread.h>
 #include <sea/mm/valloc.h>
 #include <sea/tm/workqueue.h>
@@ -65,6 +66,7 @@ struct thread {
 	addr_t usermode_stack_end, usermode_stack_start;
 	int stack_num;
 	struct cpu *cpu;
+	int held_locks;
 
 	sigset_t sig_mask;
 	unsigned signal, signals_pending;

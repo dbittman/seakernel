@@ -26,7 +26,10 @@ void __rwlock_acquire(rwlock_t *lock, enum rwlock_locktype type, char *file, int
 #if RWLOCK_DEBUG
 	int timeout = 500;
 #endif
-	while(atomic_flag_test_and_set_explicit(&lock->writer, memory_order_acquire)) {
+	if(current_thread) {
+		current_thread->held_locks++;
+	}
+	while(atomic_flag_test_and_set_explicit(&lock->writer, memory_order_acq_rel)) {
 #if RWLOCK_DEBUG
 		if(!--timeout)
 			panic(0,
@@ -80,6 +83,8 @@ void rwlock_release(rwlock_t *lock, enum rwlock_locktype type)
 		assert(lock->readers == 0);
 		atomic_flag_clear_explicit(&lock->writer, memory_order_release);
 	}
+	if(current_thread)
+		current_thread->held_locks--;
 }
 
 rwlock_t *rwlock_create(rwlock_t *lock)
@@ -98,7 +103,10 @@ void rwlock_destroy(rwlock_t *lock)
 {
 	assert(lock->magic == RWLOCK_MAGIC);
 	if(kernel_state_flags & KSF_SHUTDOWN) return;
+	assert(lock->readers == 0);
+	assert(!atomic_flag_test_and_set(&lock->writer));
 	lock->magic=0;
 	if(lock->flags & RWL_ALLOC) 
 		kfree((void *)lock);
 }
+

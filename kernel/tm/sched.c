@@ -26,13 +26,11 @@ static void check_signals(struct thread *thread)
 	}
 }
 
-struct timer timer = TIMER_INIT_DEFAULT;
 static struct thread *get_next_thread (void)
 {
 	struct thread *n = 0;
 	while(1) {
 		n = tqueue_next(current_thread->cpu->active_queue);
-
 		assert(n->cpu == current_thread->cpu);
 		check_signals(n);
 		if(n && tm_thread_runnable(n))
@@ -69,15 +67,10 @@ static void prepare_schedule(void)
 }
 
 #include <sea/tm/timing.h>
-static void post_schedule(struct thread *prev)
+static void post_schedule(void)
 {
-	if(prev) {
-		if(prev->state == THREADSTATE_DEAD) {
-			tm_thread_raise_flag(prev, THREAD_DEAD);
-		}
-	}
 	struct workqueue *wq = &__current_cpu->work;
-	if(wq->count > 0) {
+	if(wq->count > 0 && !current_thread->held_locks) {
 		if(wq->count > 30 && ((tm_timing_get_microseconds() / 100000) % 10) == 0) {
 			printk(0, "[sched]: cpu %d: warning - work is piling up (%d tasks)!\n",
 					__current_cpu->knum, wq->count);
@@ -85,7 +78,7 @@ static void post_schedule(struct thread *prev)
 		/* if work is piling up, clear out tasks */
 		//do {
 			workqueue_dowork(wq);
-			atomic_thread_fence(memory_order_seq_cst);
+			//atomic_thread_fence(memory_order_seq_cst);
 		//} while(wq->count >= 30);
 	}
 	if(current_thread->resume_work.count) {
@@ -111,11 +104,9 @@ void tm_schedule(void)
 	prepare_schedule();
 	struct thread *next = get_next_thread();
 
-	struct thread *prev = 0;
 	if(current_thread != next) {
 		/* save this somewhere that's not on the stack so that it still is correct
 		 * after a context switch */
-		__current_cpu->prev = current_thread;
 		addr_t jump = next->jump_point;
 		next->jump_point = 0;
 		/* printk(0, "switch %d %d: %x %x %x\n", next->tid, __current_cpu->knum, jump, next->kernel_stack, next->stack_pointer); */
@@ -123,15 +114,24 @@ void tm_schedule(void)
 			panic(0, "kernel stack overrun! thread=%x:%d %x (min = %x)",
 					next, next->tid, next->stack_pointer, next->kernel_stack);
 		}
+		/* if the thread state is dead, and we're scheduling away from it, then
+		 * it's finished exiting and is waiting for cleanup. This is okay! Since
+		 * we require that the only places where we do work for this CPU's workqueue
+		 * is in it's idle thread or inside the scheduler for that that CPU, we can
+		 * ensure that work from the workqueue won't be done while that CPU is scheduling,
+		 * so the thread can't be released after this statement, until it has totally
+		 * scheduled away.
+		 */
+		if(current_thread->state == THREADSTATE_DEAD) {
+			tm_thread_raise_flag(current_thread, THREAD_DEAD);
+		}
 		cpu_set_kernel_stack(next->cpu, (addr_t)next->kernel_stack,
 				(addr_t)next->kernel_stack + (KERN_STACK_SIZE));
 		arch_tm_thread_switch(current_thread, next, jump);
-		prev = __current_cpu->prev;
-		__current_cpu->prev = 0;
 	}
 
 	cpu_enable_preemption();
 	cpu_interrupt_set(old);
-	post_schedule(prev);
+	post_schedule();
 }
 

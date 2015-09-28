@@ -234,7 +234,6 @@ void hash_table_destroy(struct hash_table *h)
 	uint64_t i = 0;
 	void *key;
 	size_t elem_sz, len;
-	rwlock_acquire(&h->lock, RWL_WRITER);
 	while(__hash_table_enumerate(h, h->entries, h->size, i++, &key, &elem_sz, &len, 0) != -ENOENT)
 		__hash_table_delete(h, h->entries, h->size, key, elem_sz, len);
 	kfree(h->entries);

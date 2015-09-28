@@ -1,10 +1,10 @@
 #include <sea/types.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/kernel.h>
-
 #include <sea/tm/async_call.h>
 #include <sea/tm/workqueue.h>
 #include <sea/cpu/processor.h>
+#include <sea/tm/thread.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/kobj.h>
 
@@ -48,10 +48,23 @@ int workqueue_delete(struct workqueue *wq, struct async_call *call)
 	return r;
 }
 
+/* TODO: easy way to enforce this? Disable preempt during locks? */
+/* not allowed to do work if it could cause a deadlock.
+ * See, the async_calls called from this function are supposed
+ * to run in normal kernel context (not interrupt, etc). So,
+ * it won't do any work if:
+ *  - preempt is disabled
+ *  - any locks are held
+ */
 int workqueue_dowork(struct workqueue *wq)
 {
-	struct async_call *call;
 	int old = cpu_interrupt_set(0);
+	assert(__current_cpu->preempt_disable == 0);
+	if(current_thread->held_locks) {
+		cpu_interrupt_set(old);
+		return -1;
+	}
+	struct async_call *call;
 	mutex_acquire(&wq->lock);
 	if(heap_pop(&wq->tasks, 0, (void **)&call) == 0) {
 		call->queue = 0;

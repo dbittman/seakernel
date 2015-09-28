@@ -29,7 +29,7 @@ struct cpu {
 	cpuid_t cpuid;
 	struct tqueue *active_queue;
 	struct workqueue work;
-	struct thread *idle_thread, *prev;
+	struct thread *idle_thread;
 	unsigned numtasks;
 	addr_t stack;
 	struct ticker ticker;

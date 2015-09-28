@@ -16,7 +16,7 @@ struct heap *heap_create(struct heap *heap, int flags, int heapmode)
 		heap->flags = flags;
 	}
 	heap->count = 0;
-	heap->capacity = 128;
+	heap->capacity = 256;
 	heap->mode = heapmode;
 	if(!(flags & HEAP_LOCKLESS))
 		rwlock_create(&heap->rwl);

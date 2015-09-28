@@ -218,9 +218,9 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 				if(entry->page)
 					mm_physical_deallocate(entry->page);
 				entry->page = 0;
+				hash_table_delete_entry(node->physicals, &i, sizeof(i), 1);
 				mutex_destroy(&entry->lock);
 				kfree(entry);
-				hash_table_delete_entry(node->physicals, &i, sizeof(i), 1);
 				atomic_fetch_sub(&node->mapped_entries_count, 1);
 #else
 				mutex_release(&entry->lock);

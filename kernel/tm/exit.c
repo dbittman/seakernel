@@ -76,6 +76,7 @@ static void tm_thread_destroy(unsigned long data)
 	/* if the thread still hasn't been rescheduled, don't destroy it yet */
 	assert(thr->state == THREADSTATE_DEAD);
 	if(!(thr->flags & THREAD_DEAD)) {
+	printk(0, "destroy: %d: reinsert\n", thr->tid);
 		struct async_call *thread_cleanup_call = async_call_create(&thr->cleanup_call, 0, 
 				tm_thread_destroy, data, 0);
 		workqueue_insert(&__current_cpu->work, thread_cleanup_call);
@@ -155,6 +156,7 @@ __attribute__((noinline)) static void tm_process_exit(int code)
 
 void tm_thread_do_exit(void)
 {
+	assert(current_thread->held_locks == 0);
 	assert(current_thread->blocklist == 0);
 
 	struct async_call *thread_cleanup_call = async_call_create(&current_thread->cleanup_call, 0, 
@@ -186,8 +188,8 @@ void tm_thread_do_exit(void)
 	assert(!current_thread->blocklist);
 	tqueue_remove(current_thread->cpu->active_queue, &current_thread->activenode);
 	atomic_fetch_sub_explicit(&current_thread->cpu->numtasks, 1, memory_order_relaxed);
-	current_thread->state = THREADSTATE_DEAD;
 	tm_thread_raise_flag(current_thread, THREAD_SCHEDULE);
+	current_thread->state = THREADSTATE_DEAD;
 	
 	workqueue_insert(&__current_cpu->work, thread_cleanup_call);
 	cpu_interrupt_set(0); /* don't schedule away until we get back

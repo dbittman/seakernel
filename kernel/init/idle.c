@@ -48,10 +48,13 @@ int kt_kernel_idle_task(void)
 	/* Now enter the main idle loop, waiting to do periodic cleanup */
 	printk(0, "[idle]: entering background loop %x\n", current_thread->kernel_stack);
 	for(;;) {
+		assert(!current_thread->held_locks);
+		int r=1;
 		if(__current_cpu->work.count > 0)
-			workqueue_dowork(&__current_cpu->work);
+			r=workqueue_dowork(&__current_cpu->work);
 		else
 			tm_schedule();
+		//printk(0, ": %d %d: %d\n", current_thread->held_locks, __current_cpu->work.count, r);
 		int status;
 		int pid = sys_waitpid(-1, &status, WNOHANG);
 		if(WIFSTOPPED(status)) {

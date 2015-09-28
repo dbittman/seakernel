@@ -51,11 +51,16 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 	int unlocked = 0;
 	int locked = 1;
 	int backoff = 1;
-	/* success is given memory_order_acquire because the loop body will not run, but
-	 * we mustn't let any memory accesses bubble up above the exchange. fail is given
+
+	if(current_thread)
+		current_thread->held_locks++;
+
+	/* success is given memory_order_acq_rel because the loop body will not run, but
+	 * we mustn't let any memory accesses bubble up above the exchange, and we want
+	 * held_locks to not bubble down. fail is given
 	 * memory_order_acquire because we musn't let the resetting of unlocked
 	 * bubble up anywhere. */
-	while(!atomic_compare_exchange_weak_explicit(&m->lock, &unlocked, locked, memory_order_acquire, memory_order_acquire)) {
+	while(!atomic_compare_exchange_weak_explicit(&m->lock, &unlocked, locked, memory_order_acq_rel, memory_order_acquire)) {
 		unlocked = 0;
 		if(!(m->flags & MT_NOSCHED)) {
 			cpu_enable_preemption();
@@ -98,6 +103,8 @@ void __mutex_release(mutex_t *m, char *file, int line)
 	/* must be memory_order_release because we don't want m->pid to bubble-down below
 	 * this line */
 	atomic_store_explicit(&m->lock, 0, memory_order_release);
+	if(current_thread)
+		current_thread->held_locks--;
 	if(m->flags & MT_NOSCHED)
 		cpu_enable_preemption();
 }
@@ -121,6 +128,8 @@ void mutex_destroy(mutex_t *m)
 {
 	assert(m->magic == MUTEX_MAGIC);
 	if(kernel_state_flags & KSF_SHUTDOWN) return;
+	if(m->lock && current_thread && m->pid == current_thread->tid)
+		current_thread->held_locks--;
 	m->lock = m->magic = 0;
 	if(m->flags & MT_ALLOC)
 		kfree(m);

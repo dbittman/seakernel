@@ -75,7 +75,7 @@ static struct slab *allocate_new_slab(struct cache *cache)
 	slab->magic = SLAB_MAGIC;
 	slab->max = (slab->allocator.npages - slab->allocator.nindex);
 	slab->cache = cache;
-	mutex_create(&slab->lock, MT_NOSCHED);
+	mutex_create(&slab->lock, 0);
 	cache->slabcount++;
 	assert(slab->max > 2);
 	return slab;
@@ -159,7 +159,7 @@ static void construct_cache(struct cache *cache, size_t sz)
 	ll_create_lockless(&cache->empty);
 	ll_create_lockless(&cache->partial);
 	ll_create_lockless(&cache->full);
-	mutex_create(&cache->lock, MT_NOSCHED);
+	mutex_create(&cache->lock, 0);
 	cache->object_size = sz;
 	cache->slabcount=0;
 }
@@ -195,7 +195,7 @@ void slab_init(addr_t start, addr_t end)
 	size_t cachesize = ((sizeof(struct cache) - 1) & ~63) + 64;
 	construct_cache(&cache_cache, cachesize);
 	hash_table_set_entry(&cache_hash, &cache_cache.object_size, sizeof(cache_cache.object_size), 1, &cache_cache);
-	mutex_create(&cache_lock, MT_NOSCHED);
+	mutex_create(&cache_lock, 0);
 
 	/* init the region */
 	valloc_create(&slabs_reg, start, end, SLAB_SIZE, 0);

@@ -117,7 +117,7 @@ static inline void pmm_buddy_deallocate(addr_t address)
 void pmm_buddy_init()
 {
 	int total = ((MEMORY_SIZE / MIN_SIZE) / (8 * 1024)) * 2 - 1;
-	mutex_create(&pm_buddy_mutex, MT_NOSCHED);
+	mutex_create(&pm_buddy_mutex, 0);
 	addr_t start = (addr_t)static_bitmaps;
 	int length = ((MEMORY_SIZE / MIN_SIZE) / (8));
 	for(int i=0;i<=MAX_ORDER;i++) {

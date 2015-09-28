@@ -176,7 +176,7 @@ static void __copy_mappings(struct process *ch, struct process *pa)
 	/* for this simple copying of data to work, we rely on the address space being cloned BEFORE
 	 * this is called, so the pointers are actually valid */
 	memcpy(&(ch->mmf_valloc), &(pa->mmf_valloc), sizeof(pa->mmf_valloc));
-	ch->mmf_valloc.lock.lock = 0;
+	mutex_create(&ch->mmf_valloc.lock, 0);
 	//mutex_release(&pa->map_lock);
 }
 

@@ -10,23 +10,25 @@
 #include <sea/mm/pmm.h>
 #include <sea/lib/timer.h>
 #include <sea/fs/kerfs.h>
-static struct timer *timer;
-
+static struct timer timer;
+static bool timer_init = false;
 int kerfs_pfault_report(int direction, void *param, size_t size, size_t offset, size_t length, char *buf)
 {
 	size_t current = 0;
 	KERFS_PRINTF(offset, length, buf, current,
 			"    MIN      MAX    MEAN   RMEAN COUNT\n"
 			"%7d %8d %7d %7d %5d\n",
-			timer->min, timer->max, (uint64_t)timer->mean,
-			(uint64_t)timer->recent_mean, timer->runs);
+			timer.min, timer.max, (uint64_t)timer.mean,
+			(uint64_t)timer.recent_mean, timer.runs);
 	return current;
 }
 
 void mm_page_fault_handler(registers_t *regs, addr_t address, int pf_cause)
 {
-	if(!timer)
-		timer = timer_create(0, 0);
+	if(!timer_init) {
+		timer_init = true;
+		timer_create(&timer, 0);
+	}
 	/* here the story of the horrible Page Fault. If this function gets
 	 * called, some part of code has accessed some dark corners of memory
 	 * that don't exist. Or it has accessed something that the kernel's
@@ -41,11 +43,11 @@ void mm_page_fault_handler(registers_t *regs, addr_t address, int pf_cause)
 	 * bug in the kernel.
 	 */
 	assert(regs);
-	timer_start(timer);
+	timer_start(&timer);
 	if(pf_cause & PF_CAUSE_USER) {
 		/* check if we need to map a page for mmap, etc */
 		if(mm_page_fault_test_mappings(address, pf_cause) == 0) {
-			timer_stop(timer);
+			timer_stop(&timer);
 			return;
 		}
 		kprintf("[mm]: %d: segmentation fault at eip=%x\n", current_thread->tid, regs->eip);
@@ -55,7 +57,7 @@ void mm_page_fault_handler(registers_t *regs, addr_t address, int pf_cause)
 				current_process->heap_end, current_thread->flags);
 
 		tm_signal_send_thread(current_thread, SIGSEGV);
-		timer_stop(timer);
+		timer_stop(&timer);
 		return;
 	} else if(current_process && !IS_KERN_MEM(address)) {
 		/* okay, maybe we have a section of memory that a process
@@ -65,11 +67,11 @@ void mm_page_fault_handler(registers_t *regs, addr_t address, int pf_cause)
 		 * something to it, causing a fault. So, even though we're
 		 * in the kernel, check that case. */
 		if(mm_page_fault_test_mappings(address, pf_cause) == 0) {
-			timer_stop(timer);
+			timer_stop(&timer);
 			return;
 		}
 		tm_signal_send_thread(current_thread, SIGSEGV);
-		timer_stop(timer);
+		timer_stop(&timer);
 		return;
 	}
 	if(!current_thread) {

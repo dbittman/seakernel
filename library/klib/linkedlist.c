@@ -14,11 +14,13 @@ struct linkedlist *linkedlist_create(struct linkedlist *list, int flags)
 
 void linkedlist_destroy(struct linkedlist *list)
 {
+	assert(list->head == &list->sentry);
 	KOBJ_DESTROY(list, LINKEDLIST_ALLOC);
 }
 
 void linkedlist_insert(struct linkedlist *list, struct linkedentry *entry, void *obj)
 {
+	assert(list->head == &list->sentry);
 	spinlock_acquire(&list->lock);
 	entry->next = list->head->next;
 	entry->prev = list->head;
@@ -32,13 +34,28 @@ void linkedlist_insert(struct linkedlist *list, struct linkedentry *entry, void 
 static inline void __do_remove(struct linkedlist *list, struct linkedentry *entry)
 {
 	list->count--;
-	entry->obj = NULL;
 	entry->prev->next = entry->next;
 	entry->next->prev = entry->prev;
 }
 
+struct linkedentry *linkedlist_pop(struct linkedlist *list)
+{
+	assert(list->head == &list->sentry);
+	spinlock_acquire(&list->lock);
+	if(list->count == 0) {
+		spinlock_release(&list->lock);
+		return NULL;
+	}
+	struct linkedentry *ret = list->head->prev;
+	assert(ret != &list->sentry);
+	__do_remove(list, ret);
+	spinlock_release(&list->lock);
+	return ret;
+}
+
 void linkedlist_remove(struct linkedlist *list, struct linkedentry *entry)
 {
+	assert(list->head == &list->sentry);
 	spinlock_acquire(&list->lock);
 	__do_remove(list, entry);
 	spinlock_release(&list->lock);
@@ -48,6 +65,7 @@ void linkedlist_remove(struct linkedlist *list, struct linkedentry *entry)
  * to disable preempt while we're looping though every element? */
 void linkedlist_apply(struct linkedlist *list, bool (*fn)(struct linkedentry *))
 {
+	assert(list->head == &list->sentry);
 	assert(fn);
 	spinlock_acquire(&list->lock);
 	struct linkedentry *ent = list->head->next;

@@ -34,8 +34,8 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 
 	if(kernel_state_flags & KSF_DEBUGGING)
 		return;
-	if(current_thread && current_thread->interrupt_level && !(m->flags & MT_NOSCHED))
-		panic(PANIC_NOSYNC, "cannot lock a normal mutex within interrupt context (%s:%d)", file, line);
+	if(current_thread && current_thread->interrupt_level)
+		panic(PANIC_NOSYNC, "cannot lock a mutex within interrupt context (%s:%d)", file, line);
 	if(kernel_state_flags & KSF_SHUTDOWN) return;
 	/* are we re-locking ourselves? */
 	if(current_thread && m->lock && ((m->pid == (pid_t)current_thread->tid)))
@@ -44,13 +44,11 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 #if MUTEX_DEBUG
 	int timeout = 8000;
 #endif
-	cpu_disable_preemption();
-	if(current_thread && __current_cpu->preempt_disable > 1 && !(m->flags & MT_NOSCHED))
+	if(current_thread && __current_cpu->preempt_disable > 0)
 		panic(0, "tried to lock schedulable mutex with preempt off");
 
 	int unlocked = 0;
 	int locked = 1;
-	int backoff = 1;
 
 	if(current_thread)
 		current_thread->held_locks++;
@@ -62,27 +60,22 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 	 * bubble up anywhere. */
 	while(!atomic_compare_exchange_weak_explicit(&m->lock, &unlocked, locked, memory_order_acq_rel, memory_order_acquire)) {
 		unlocked = 0;
-		if(!(m->flags & MT_NOSCHED)) {
-			cpu_enable_preemption();
-			assert(__current_cpu->preempt_disable == 0);
+		/* we can use __current_cpu here, because we're testing if we're the idle
+		 * thread, and the idle thread never migrates. */
+		if(current_thread && current_thread != __current_cpu->idle_thread) {
+			printk_safe(0, "thread %d blocking from %s:%d\n", current_thread->tid,
+					file, line);
+			tm_thread_block(&m->blocklist, THREADSTATE_UNINTERRUPTIBLE);
+		} else if(current_thread) {
 			tm_schedule();
-			cpu_disable_preemption();
-		} else {
-			for(int i=0;i<backoff;i++) {
-				cpu_pause();
-			}
-			if(backoff < 2000) /* TODO: backoff strats */
-				backoff *= 2;
 		}
 #if MUTEX_DEBUG
 		if(--timeout == 0) {
-			panic(0, "%s timeout from %s:%d (owned by %d: %s:%d)\n", m->flags & MT_NOSCHED ? "spinlock" : "mutex", file, line, m->pid, m->owner_file, m->owner_line);
+			panic(0, "mutex timeout from %s:%d (owned by %d: %s:%d)\n", file, line, m->pid, m->owner_file, m->owner_line);
 		}
 #endif
 	}
 	assert(m->lock);
-	if(!(m->flags & MT_NOSCHED))
-		cpu_enable_preemption();
 	if(current_thread) m->pid = current_thread->tid;
 	m->owner_file = file;
 	m->owner_line = line;
@@ -102,11 +95,12 @@ void __mutex_release(mutex_t *m, char *file, int line)
 	m->owner_line = 0;
 	/* must be memory_order_release because we don't want m->pid to bubble-down below
 	 * this line */
-	atomic_store_explicit(&m->lock, 0, memory_order_release);
+	atomic_store(&m->lock, 0);
+	if(current_thread) {
+		tm_blocklist_wakeone(&m->blocklist);
+	}
 	if(current_thread)
 		current_thread->held_locks--;
-	if(m->flags & MT_NOSCHED)
-		cpu_enable_preemption();
 }
 
 mutex_t *mutex_create(mutex_t *m, unsigned flags)
@@ -121,6 +115,7 @@ mutex_t *mutex_create(mutex_t *m, unsigned flags)
 	m->lock=ATOMIC_VAR_INIT(0);
 	m->magic = MUTEX_MAGIC;
 	m->pid = -1;
+	linkedlist_create(&m->blocklist, 0);
 	return m;
 }
 
@@ -131,6 +126,7 @@ void mutex_destroy(mutex_t *m)
 	if(m->lock && current_thread && m->pid == current_thread->tid)
 		current_thread->held_locks--;
 	m->lock = m->magic = 0;
+	linkedlist_destroy(&m->blocklist);
 	if(m->flags & MT_ALLOC)
 		kfree(m);
 }

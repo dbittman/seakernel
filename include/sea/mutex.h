@@ -4,9 +4,9 @@
 #include <sea/types.h>
 #include <stdatomic.h>
 #include <stdalign.h>
+#include <sea/lib/linkedlist.h>
 #define MUTEX_MAGIC 0xDEADBEEF
 #define MT_ALLOC 1
-#define MT_NOSCHED 2
 
 /* this bit in lock is set when a task that currently owns the mutex
  * handles an interrupt, and inside that interrupt it locks the same
@@ -20,6 +20,7 @@ typedef struct {
 	long pid;
 	char *owner_file;
 	int owner_line;
+	struct linkedlist blocklist;
 } mutex_t;
 
 void __mutex_acquire(mutex_t *m,char*,int);

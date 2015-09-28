@@ -9,6 +9,7 @@ struct psm_device *table;
 int table_length;
 int table_index;
 mutex_t *table_lock;
+mutex_t ___t;
 void psm_initialize_table(void)
 {
 	table_length=8;

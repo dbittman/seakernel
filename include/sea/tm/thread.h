@@ -106,6 +106,7 @@ int sys_vfork(void);
 void tm_thread_kill(struct thread *);
 void tm_blocklist_wakeall(struct linkedlist *blocklist);
 void tm_thread_unblock(struct thread *t);
+void tm_blocklist_wakeone(struct linkedlist *blocklist);
 int tm_thread_block_timeout(struct linkedlist *blocklist, time_t microseconds);
 void tm_thread_set_state(struct thread *t, int state);
 void tm_thread_add_to_blocklist(struct linkedlist *blocklist);

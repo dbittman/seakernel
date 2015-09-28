@@ -102,6 +102,7 @@ void tm_thread_unblock(struct thread *t)
 static bool __do_wakeup(struct linkedentry *entry)
 {
 	struct thread *t = entry->obj;
+	assert(t);
 	struct llist *bl = atomic_exchange(&t->blocklist, NULL);
 	if(bl) {
 		tqueue_insert(t->cpu->active_queue, (void *)t, &t->activenode);
@@ -114,9 +115,14 @@ static bool __do_wakeup(struct linkedentry *entry)
 
 void tm_blocklist_wakeall(struct linkedlist *blocklist)
 {
-	struct llistnode *node, *next;
-	struct thread *t;
 	linkedlist_apply(blocklist, __do_wakeup);
+}
+
+void tm_blocklist_wakeone(struct linkedlist *blocklist)
+{
+	struct linkedentry *ent = linkedlist_pop(blocklist);
+	if(ent)
+		__do_wakeup(ent);
 }
 
 static void __timeout_expired(unsigned long data)

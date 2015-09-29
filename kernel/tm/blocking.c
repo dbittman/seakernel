@@ -71,6 +71,33 @@ int tm_thread_block(struct linkedlist *blocklist, int state)
 	return 0;
 }
 
+int tm_thread_block_confirm(struct linkedlist *blocklist, int state, bool (*cfn)(void *), void *data)
+{
+	cpu_disable_preemption();
+	assert(__current_cpu->preempt_disable == 1);
+	assert(!current_thread->blocklist);
+	assert(state != THREADSTATE_RUNNING);
+	int ret;
+	if(state == THREADSTATE_INTERRUPTIBLE && (ret=tm_thread_got_signal(current_thread))) {
+		cpu_enable_preemption();
+		return ret == SA_RESTART ? -ERESTART : -EINTR;
+	}
+	tm_thread_set_state(current_thread, state);
+	tm_thread_add_to_blocklist(blocklist);
+	if(!cfn(data)) {
+		tm_thread_remove_from_blocklist(current_thread);
+		tm_thread_set_state(current_thread, THREADSTATE_RUNNING);
+		cpu_enable_preemption();
+		return 0;
+	}
+	cpu_enable_preemption();
+	tm_schedule();
+	if((ret=tm_thread_got_signal(current_thread)) && state != THREADSTATE_UNINTERRUPTIBLE) {
+		return ret == SA_RESTART ? -ERESTART : -EINTR;
+	}
+	return 0;
+}
+
 int tm_thread_block_schedule_work(struct linkedlist *blocklist, int state, struct async_call *work)
 {
 	cpu_disable_preemption();
@@ -120,9 +147,7 @@ void tm_blocklist_wakeall(struct linkedlist *blocklist)
 
 void tm_blocklist_wakeone(struct linkedlist *blocklist)
 {
-	struct linkedentry *ent = linkedlist_pop(blocklist);
-	if(ent)
-		__do_wakeup(ent);
+	linkedlist_apply_head(blocklist, __do_wakeup);
 }
 
 static void __timeout_expired(unsigned long data)

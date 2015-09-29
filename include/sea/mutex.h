@@ -14,13 +14,13 @@
 #define MT_LCK_INT 2
 
 typedef struct {
+	struct linkedlist blocklist;
 	unsigned magic;
-	_Atomic unsigned alignas(8) lock;
+	_Atomic bool lock;
 	unsigned flags;
 	long pid;
 	char *owner_file;
 	int owner_line;
-	struct linkedlist blocklist;
 } mutex_t;
 
 void __mutex_acquire(mutex_t *m,char*,int);
@@ -30,8 +30,6 @@ void mutex_destroy(mutex_t *m);
 
 #define mutex_acquire(m) __mutex_acquire(m, __FILE__, __LINE__)
 #define mutex_release(m) __mutex_release(m, __FILE__, __LINE__)
-
-int mutex_is_locked(mutex_t *m);
 
 #endif
 

@@ -1,27 +1,36 @@
-Todo:
-	* event system (register events, blocking for IO...)
-	  such that a high priority process will get automatically resched'd if it unblocks
+0.3 RC1
+	* Finish most TODOs
+	* Clean up arch stuff (remove x86_common)
+	* Blocking on waiting for mutexes and rwlocks
 
+0.3
+	* Fix real HW bugs
+	* Optimizations
+
+0.4 A1
+	* BIG optimizations
+	* COW
+	* Module arguments
+	* New config system
+
+0.4 A2
+	* Make sure timing, time, and benchmarking code works correctly
+	* strace, and other userspace debugging
+	* Working ipv4 networking stack
+	* Reworked thread queues and scheduling policy
+
+0.4 B1
+	* Fix term implementation (want scrollback!)
+	* More Massive Cleanup
+	* More Optimizations
+	* More Bugfixes
+
+0.4 RC1
+	* Fix userspace usability bugs
+
+Todo:
 	* Networking
 	* VT-x
 	* perf counters
 	* shared libraries
 
-Notes:
-	* Maybe tasks that are waiting by looping can do some kernel work while they're around
-
-Roadmap:
-
-0.3 B2
-	* make sure all features listed in termcap are properly implemented
-	* refactor driver code
-	* refactor arch-dep code
-	* fix driver arch-dep/arch-indep stuff
-	* preempt kernel threads
-
-0.4 
-	* Proper Threading
-	* termcap features for vim
-	* CPU scheduling
-	* SA_RESTART
-	* user-space io port access

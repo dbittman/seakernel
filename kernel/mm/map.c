@@ -170,7 +170,6 @@ int mm_sync_mapping(struct memmap *map, addr_t start, size_t length, int flags)
  * most programs aren't going to have a large number of mapped regions...probably */
 static struct memmap *find_mapping(addr_t address)
 {
-	assert(mutex_is_locked(&current_process->map_lock));
 	struct llistnode *n;
 	struct memmap *map;
 	/* don't worry about the list's lock, we already have a lock */

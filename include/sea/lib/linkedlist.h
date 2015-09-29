@@ -25,7 +25,7 @@ void linkedlist_remove(struct linkedlist *list, struct linkedentry *entry);
 /* fn gets called with each list element. If fn returns true, apply will remove the
  * item from the list. */
 void linkedlist_apply(struct linkedlist *list, bool (*fn)(struct linkedentry *));
-struct linkedentry *linkedlist_pop(struct linkedlist *list);
+void linkedlist_apply_head(struct linkedlist *list, bool (*fn)(struct linkedentry *));
 
 #endif
 

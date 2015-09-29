@@ -17,17 +17,16 @@
  * a mutex to be locked in the handler whilst having locked the mutex
  * previously */
 
-int mutex_is_locked(mutex_t *m)
+static bool __confirm(void *data)
 {
-	/* this is ONLY TO BE USED AS A HINT. The mutex state MAY change
-	 * before this information is used, or even DURING THE RETURN of
-	 * this function */
-	if(kernel_state_flags & KSF_SHUTDOWN)
-		return 1;
-	return atomic_load(&m->lock);
+	mutex_t *m = data;
+	int lock = atomic_load(&m->lock);
+	if(lock == false)
+		return false;
+	return true;
 }
+
 #define MUTEX_DEBUG 0
-/* TODO: split MT_NOSCHED into struct spinlock */
 void __mutex_acquire(mutex_t *m, char *file, int line)
 {
 	assert(m->magic == MUTEX_MAGIC);
@@ -37,9 +36,6 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 	if(current_thread && current_thread->interrupt_level)
 		panic(PANIC_NOSYNC, "cannot lock a mutex within interrupt context (%s:%d)", file, line);
 	if(kernel_state_flags & KSF_SHUTDOWN) return;
-	/* are we re-locking ourselves? */
-	if(current_thread && m->lock && ((m->pid == (pid_t)current_thread->tid)))
-		panic(0, "task %d tried to relock mutex %x (%s:%d)", m->pid, m->lock, file, line);
 	/* wait until we can set bit 0. once this is done, we have the lock */
 #if MUTEX_DEBUG
 	int timeout = 8000;
@@ -47,27 +43,23 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 	if(current_thread && __current_cpu->preempt_disable > 0)
 		panic(0, "tried to lock schedulable mutex with preempt off");
 
-	int unlocked = 0;
-	int locked = 1;
-
 	if(current_thread)
 		current_thread->held_locks++;
-
-	/* success is given memory_order_acq_rel because the loop body will not run, but
-	 * we mustn't let any memory accesses bubble up above the exchange, and we want
-	 * held_locks to not bubble down. fail is given
-	 * memory_order_acquire because we musn't let the resetting of unlocked
-	 * bubble up anywhere. */
-	while(!atomic_compare_exchange_weak_explicit(&m->lock, &unlocked, locked, memory_order_acq_rel, memory_order_acquire)) {
-		unlocked = 0;
-		/* we can use __current_cpu here, because we're testing if we're the idle
-		 * thread, and the idle thread never migrates. */
-		if(current_thread && current_thread != __current_cpu->idle_thread) {
-			printk_safe(0, "thread %d blocking from %s:%d\n", current_thread->tid,
-					file, line);
-			tm_thread_block(&m->blocklist, THREADSTATE_UNINTERRUPTIBLE);
-		} else if(current_thread) {
-			tm_schedule();
+	
+	while(atomic_exchange(&m->lock, true)) {
+		if(current_thread) {
+			/* are we re-locking ourselves? */
+			if(current_thread && ((m->pid == (pid_t)current_thread->tid)))
+				panic(0, "task %d tried to relock mutex %x (%s:%d)",
+						m->pid, m->lock, file, line);
+			/* we can use __current_cpu here, because we're testing if we're the idle
+		 	 * thread, and the idle thread never migrates. */
+			if(current_thread != __current_cpu->idle_thread) {
+				tm_thread_block_confirm(&m->blocklist, THREADSTATE_UNINTERRUPTIBLE,
+						__confirm, m);
+			} else {
+				tm_schedule();
+			}
 		}
 #if MUTEX_DEBUG
 		if(--timeout == 0) {
@@ -75,7 +67,6 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 		}
 #endif
 	}
-	assert(m->lock);
 	if(current_thread) m->pid = current_thread->tid;
 	m->owner_file = file;
 	m->owner_line = line;
@@ -87,7 +78,6 @@ void __mutex_release(mutex_t *m, char *file, int line)
 	if(kernel_state_flags & KSF_DEBUGGING)
 		return;
 	if(kernel_state_flags & KSF_SHUTDOWN) return;
-	assert(m->lock);
 	if(current_thread && m->pid != (int)current_thread->tid)
 		panic(0, "task %d tried to release mutex it didn't own (%s:%d)", m->pid, file, line);
 	m->pid = -1;
@@ -95,7 +85,7 @@ void __mutex_release(mutex_t *m, char *file, int line)
 	m->owner_line = 0;
 	/* must be memory_order_release because we don't want m->pid to bubble-down below
 	 * this line */
-	atomic_store(&m->lock, 0);
+	atomic_store(&m->lock, false);
 	if(current_thread) {
 		tm_blocklist_wakeone(&m->blocklist);
 	}
@@ -125,7 +115,8 @@ void mutex_destroy(mutex_t *m)
 	if(kernel_state_flags & KSF_SHUTDOWN) return;
 	if(m->lock && current_thread && m->pid == current_thread->tid)
 		current_thread->held_locks--;
-	m->lock = m->magic = 0;
+	m->magic = 0;
+	atomic_store(&m->lock, false);
 	linkedlist_destroy(&m->blocklist);
 	if(m->flags & MT_ALLOC)
 		kfree(m);

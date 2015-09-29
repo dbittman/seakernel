@@ -112,6 +112,7 @@ void tm_thread_set_state(struct thread *t, int state);
 void tm_thread_add_to_blocklist(struct linkedlist *blocklist);
 void tm_thread_remove_from_blocklist(struct thread *t);
 int tm_thread_block_schedule_work(struct linkedlist *blocklist, int state, struct async_call *work);
+int tm_thread_block_confirm(struct linkedlist *blocklist, int state, bool (*cfn)(void *), void *data);
 int tm_thread_block(struct linkedlist *blocklist, int state);
 void tm_thread_poke(struct thread *t);
 int sys_thread_setpriority(pid_t tid, int val, int flags);

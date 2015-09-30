@@ -48,7 +48,6 @@ int workqueue_delete(struct workqueue *wq, struct async_call *call)
 	return r;
 }
 
-/* TODO: easy way to enforce this? Disable preempt during locks? */
 /* not allowed to do work if it could cause a deadlock.
  * See, the async_calls called from this function are supposed
  * to run in normal kernel context (not interrupt, etc). So,

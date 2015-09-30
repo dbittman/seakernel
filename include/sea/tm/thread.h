@@ -32,6 +32,7 @@
 									   if this flag is set, but it will then reset the flag */
 #define THREAD_DEAD            0x40 /* thread is dead, AND has scheduled away */
 #define THREAD_PTRACED         0x80 /* this thread is being traced */
+#define THREAD_TICKER_DOWORK   0x100 /* when returning from this interrupt, do work in ticker */
 
 #define THREADSTATE_RUNNING 0
 #define THREADSTATE_INTERRUPTIBLE 1
@@ -84,7 +85,7 @@ struct thread {
 	struct async_call cleanup_call;
 	struct async_call waitcheck_call;
 	struct async_call blockreq_call;
-	struct ticker *alarm_ticker;
+	_Atomic struct ticker *alarm_ticker;
 	struct process *process;
 	struct workqueue resume_work;
 	struct kthread *kernel_thread;

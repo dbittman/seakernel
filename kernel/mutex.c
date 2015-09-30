@@ -16,7 +16,6 @@
  * handler. this allows for a task to handle an event that requires
  * a mutex to be locked in the handler whilst having locked the mutex
  * previously */
-
 static bool __confirm(void *data)
 {
 	mutex_t *m = data;
@@ -121,3 +120,4 @@ void mutex_destroy(mutex_t *m)
 	if(m->flags & MT_ALLOC)
 		kfree(m);
 }
+

@@ -26,33 +26,51 @@ struct ticker *ticker_create(struct ticker *ticker, int flags)
 void ticker_tick(struct ticker *ticker, uint64_t microseconds)
 {
 	ticker->tick += microseconds;
-	cpu_disable_preemption();
-	if(__current_cpu->preempt_disable > 1) {
-		cpu_enable_preemption();
-		return;
-	}
 	uint64_t key;
 	void *data;
 	if(heap_peek(&ticker->heap, &key, &data) == 0) {
+		if(key < ticker->tick) {
+			tm_thread_raise_flag(current_thread, THREAD_TICKER_DOWORK);
+		}
+	}
+}
+
+void ticker_dowork(struct ticker *ticker)
+{
+	uint64_t key;
+	void *data;
+	int old = cpu_interrupt_set(0);
+	assert(!current_thread->blocklist);
+	if(__current_cpu->preempt_disable > 0) {
+		cpu_interrupt_set(old);
+		return;
+	}
+	if(current_thread->held_locks) {
+		cpu_interrupt_set(old);
+		return;
+	}
+	while(heap_peek(&ticker->heap, &key, &data) == 0) {
 		if(key < ticker->tick) {
 			/* get the data again, since it's cheap and
 			 * we need to in case something bubbled up
 			 * through the heap between the call to
 			 * peak and now */
-			int old = cpu_interrupt_set(0);
 			spinlock_acquire(&ticker->lock);
 			int res = heap_pop(&ticker->heap, &key, &data);
+			if(!res)
+				tm_thread_lower_flag(current_thread, THREAD_TICKER_DOWORK);
 			spinlock_release(&ticker->lock);
-			cpu_interrupt_set(old);
 			if(res == 0) {
 				/* handle the time-event */
 				struct async_call *call = (struct async_call *)data;
 				call->queue = 0;
 				async_call_execute(call);
 			}
+		} else {
+			break;
 		}
 	}
-	cpu_enable_preemption();
+	cpu_interrupt_set(old);
 }
 
 void ticker_insert(struct ticker *ticker, time_t microseconds, struct async_call *call)

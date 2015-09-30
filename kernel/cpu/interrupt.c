@@ -123,6 +123,11 @@ static const char *special_names(int i)
 static void kernel_fault(int fuckoff, addr_t ip, long err_code, registers_t *regs)
 {
 	kprintf("Kernel Exception #%d: %s\n", fuckoff, exception_messages[fuckoff]);
+	unsigned char *code = (void *)regs->eip;
+	printk(0, "code: ");
+	for(int i=0;i<16;i++) printk(0, "%x ", code[i]);
+	printk(0, "\n");
+		
 	arch_cpu_print_reg_state(regs);
 	panic(PANIC_INSTANT | PANIC_NOSYNC | (fuckoff == 3 ? PANIC_VERBOSE : 0), exception_messages[fuckoff]);
 }
@@ -198,7 +203,6 @@ void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_addres
 	atomic_fetch_add_explicit(&interrupt_counts[int_no], 1, memory_order_relaxed);
 	if(current_thread && !current_thread->regs) {
 		current_thread->regs = regs;
-		/* TODO: do we need this? */
 		current_thread->system = 255;
 	}
 	else
@@ -258,6 +262,9 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 void cpu_interrupt_post_handling(void)
 {
 	if(!current_thread->interrupt_level && !current_thread->system) {
+		if(current_thread->flags & THREAD_TICKER_DOWORK) {
+			ticker_dowork(&__current_cpu->ticker);
+		}
 		if(current_thread->flags & THREAD_SCHEDULE)
 			tm_schedule();
 		if(current_thread->flags & THREAD_EXIT) {

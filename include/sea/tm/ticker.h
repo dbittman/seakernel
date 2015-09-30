@@ -20,5 +20,6 @@ void ticker_tick(struct ticker *ticker, uint64_t microseconds);
 void ticker_insert(struct ticker *ticker, time_t microseconds, struct async_call *call);
 void ticker_destroy(struct ticker *ticker);
 int ticker_delete(struct ticker *ticker, struct async_call *call);
+void ticker_dowork(struct ticker *ticker);
 #endif
 

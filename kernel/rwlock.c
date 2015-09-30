@@ -19,9 +19,8 @@ void __rwlock_acquire(rwlock_t *lock, enum rwlock_locktype type, char *file, int
 	if(current_thread && current_thread->interrupt_level)
 		panic(PANIC_NOSYNC, "cannot lock an rwlock within interrupt context");
 	assert(lock->magic == RWLOCK_MAGIC);
-	/* TODO: enforce this */
-	//assertmsg(!current_thread || (__current_cpu->preempt_disable == 0),
-	//		"tried to rwlock with preempt disabled");
+	assertmsg(!current_thread || (__current_cpu->preempt_disable == 0),
+			"tried to rwlock with preempt disabled");
 	if(kernel_state_flags & KSF_SHUTDOWN) return;
 #if RWLOCK_DEBUG
 	int timeout = 500;

@@ -22,8 +22,9 @@ void arch_tm_userspace_signal_initializer(registers_t *regs, struct sigaction *s
 		*/
 	
 	int signal = current_thread->signal;
+	uint64_t oldsp = regs->useresp;
 	memcpy((void *)((addr_t)regs->useresp - sizeof(registers_t)), (void *)regs, sizeof(*regs));
-	regs->useresp -= sizeof(registers_t);
+	regs->useresp -= (sizeof(registers_t) + 8);
 
 	regs->rdi = signal;
 	regs->rsi = signal;
@@ -47,6 +48,6 @@ void arch_tm_userspace_signal_cleanup(registers_t *regs)
 	struct sigaction *sa = &current_process->signal_act[signal];
 	if(!(sa->sa_flags & SA_NODEFER))
 		current_thread->sig_mask &= ~(1 << signal);
-	memcpy((void *)regs, (void *)(regs->useresp + STACK_ELEMENT_SIZE), sizeof(*regs));
+	memcpy((void *)regs, (void *)(regs->useresp + STACK_ELEMENT_SIZE + 8), sizeof(*regs));
 }
 

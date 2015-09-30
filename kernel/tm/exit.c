@@ -9,6 +9,7 @@
 #include <sea/tm/thread.h>
 #include <sea/vsprintf.h>
 #include <stdatomic.h>
+#include <sea/errno.h>
 
 #define __remove_kerfs_thread_entry(thr,name) \
 	do {\
@@ -159,12 +160,10 @@ void tm_thread_do_exit(void)
 	struct async_call *thread_cleanup_call = async_call_create(&current_thread->cleanup_call, 0, 
 							tm_thread_destroy, (unsigned long)current_thread, 0);
 
-	struct ticker *ticker = current_thread->alarm_ticker;
+	struct ticker *ticker = (void *)atomic_exchange(&current_thread->alarm_ticker, NULL);
 	if(ticker) {
-		int old = cpu_interrupt_set(0);
-		ticker_delete(ticker, &current_thread->alarm_timeout);
-		current_thread->alarm_ticker = 0;
-		cpu_interrupt_set(old);
+		if(ticker_delete(ticker, &current_thread->alarm_timeout) != -ENOENT)
+			tm_thread_put(current_thread);
 	}
 
 	tm_thread_remove_kerfs_entries(current_thread);

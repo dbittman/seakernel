@@ -71,6 +71,7 @@ int tm_thread_block(struct linkedlist *blocklist, int state)
 	return 0;
 }
 
+/* confirm if we need to block after setting up the blocking. */
 int tm_thread_block_confirm(struct linkedlist *blocklist, int state, bool (*cfn)(void *), void *data)
 {
 	cpu_disable_preemption();
@@ -153,7 +154,8 @@ void tm_blocklist_wakeone(struct linkedlist *blocklist)
 static void __timeout_expired(unsigned long data)
 {
 	struct thread *t = (struct thread *)data;
-	if(t->blocklist) {
+	struct llist *bl = atomic_exchange(&t->blocklist, NULL);
+	if(bl) {
 		tm_thread_remove_from_blocklist(t);
 		tm_thread_raise_flag(t, THREAD_TIMEOUT_EXPIRED);
 	}

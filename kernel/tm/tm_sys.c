@@ -22,10 +22,10 @@ int sys_sbrk(long inc)
 static void __alarm_timeout(unsigned long data)
 {
 	struct thread *thr = (struct thread *)data;
-	if(thr->alarm_ticker) {
+	if(atomic_exchange(&thr->alarm_ticker, NULL)) {
 		tm_signal_send_thread(thr, SIGALRM);
 	}
-	thr->alarm_ticker = 0;
+	tm_thread_put(thr);
 }
 
 /* TODO: make this all thread safe with atomics */
@@ -38,15 +38,15 @@ int sys_alarm(int dur)
 	cpu_put_current(cpu);
 
 	if(dur == 0) {
-		int old = cpu_interrupt_set(0);
-		ticker = current_thread->alarm_ticker;
-		if(ticker)
-			ticker_delete(ticker, call);
-		current_thread->alarm_ticker = 0;
-		cpu_interrupt_set(old);
+		 ticker = (void *)atomic_exchange(&current_thread->alarm_ticker, NULL);
+		 if(ticker) {
+		 	 if(ticker_delete(ticker, call) != -ENOENT)
+				 tm_thread_put(current_thread);
+		 }
 	} else {
-		if(!current_thread->alarm_ticker) {
-			current_thread->alarm_ticker = ticker;
+		void *expect = NULL;
+		if(atomic_compare_exchange_strong(&current_thread->alarm_ticker, &expect, ticker)) {
+			tm_thread_inc_reference(current_thread);
 			ticker_insert(ticker, dur * ONE_SECOND, call);
 		}
 	}

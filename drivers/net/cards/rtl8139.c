@@ -419,10 +419,14 @@ int module_install(void)
 	int i=0;
 	memset(devs, 0, sizeof(rtl8139dev_t *) * 16);
 	printk(1, "[rtl8139]: Scanning PCI bus...\n");
-	while(i < 16) {
+	while(i < 1) {
 		struct pci_device *dev = pci_locate_devices(0x10ec, 0x8139, i);
 		if(dev) {
 			rtl8139dev_t *rdev = rtl8139_load_device_pci(dev);
+			if(!rdev) {
+				i++;
+				continue;
+			}
 			struct net_dev *rtl8139_net_dev = net_add_device(&rtl8139_net_callbacks, rdev);
 			rtl8139_net_dev->data_header_len = 14;
 			rtl8139_net_dev->hw_address_len = 6;

@@ -78,7 +78,7 @@ struct thread {
 
 	struct llistnode activenode, pnode;
 	struct linkedentry blocknode;
-	_Atomic struct linkedlist *blocklist;
+	_Atomic struct blocklist *blocklist;
 	struct spinlock status_lock;
 	struct async_call block_timeout;
 	struct async_call alarm_timeout;
@@ -105,16 +105,8 @@ void tm_thread_enter_system(int sys);
 void tm_thread_exit_system(long, long);
 int sys_vfork(void);
 void tm_thread_kill(struct thread *);
-void tm_blocklist_wakeall(struct linkedlist *blocklist);
 void tm_thread_unblock(struct thread *t);
-void tm_blocklist_wakeone(struct linkedlist *blocklist);
-int tm_thread_block_timeout(struct linkedlist *blocklist, time_t microseconds);
 void tm_thread_set_state(struct thread *t, int state);
-void tm_thread_add_to_blocklist(struct linkedlist *blocklist);
-void tm_thread_remove_from_blocklist(struct thread *t);
-int tm_thread_block_schedule_work(struct linkedlist *blocklist, int state, struct async_call *work);
-int tm_thread_block_confirm(struct linkedlist *blocklist, int state, bool (*cfn)(void *), void *data);
-int tm_thread_block(struct linkedlist *blocklist, int state);
 void tm_thread_poke(struct thread *t);
 int sys_thread_setpriority(pid_t tid, int val, int flags);
 struct thread *tm_thread_get(pid_t tid);

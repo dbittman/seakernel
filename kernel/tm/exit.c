@@ -10,6 +10,7 @@
 #include <sea/vsprintf.h>
 #include <stdatomic.h>
 #include <sea/errno.h>
+#include <sea/tm/blocking.h>
 
 #define __remove_kerfs_thread_entry(thr,name) \
 	do {\

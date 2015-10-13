@@ -87,7 +87,7 @@ struct process {
 	struct llist threadlist;
 	unsigned char stack_bitmap[NUM_USERMODE_STACKS / 8];
 	mutex_t stacks_lock;
-	struct linkedlist waitlist;
+	struct blocklist waitlist;
 };
 
 #define WNOHANG 1

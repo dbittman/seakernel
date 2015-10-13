@@ -15,6 +15,7 @@
 #include <sea/vsprintf.h>
 #include <stdatomic.h>
 #include <sea/mm/map.h>
+#include <sea/tm/blocking.h>
 
 extern mutex_t process_refs_lock;
 extern mutex_t thread_refs_lock;
@@ -53,7 +54,7 @@ void tm_init_multitasking(void)
 	mutex_create(&proc->map_lock, 0);
 	mutex_create(&proc->stacks_lock, 0);
 	proc->magic = PROCESS_MAGIC;
-	linkedlist_create(&proc->waitlist, 0);
+	blocklist_create(&proc->waitlist, 0);
 	mutex_create(&proc->files_lock, 0);
 	memcpy(&proc->vmm_context, &kernel_context, sizeof(kernel_context));
 	thread->process = proc; /* we have to do this early, so that the vmm system can use the lock... */
@@ -83,8 +84,6 @@ void tm_init_multitasking(void)
 	loader_add_kernel_symbol(tm_thread_set_state);
 	loader_add_kernel_symbol(tm_thread_exit);
 	loader_add_kernel_symbol(tm_thread_poke);
-	loader_add_kernel_symbol(tm_thread_add_to_blocklist);
-	loader_add_kernel_symbol(tm_thread_remove_from_blocklist);
 	loader_add_kernel_symbol(tm_thread_block);
 	loader_add_kernel_symbol(tm_thread_got_signal);
 	loader_add_kernel_symbol(tm_thread_unblock);

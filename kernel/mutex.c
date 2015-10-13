@@ -9,18 +9,14 @@
 #include <sea/kernel.h>
 #include <sea/tm/process.h>
 #include <sea/cpu/processor.h>
+#include <sea/tm/blocking.h>
 #include <sea/asm/system.h>
 #include <sea/mm/kmalloc.h>
-/* a task may relock a mutex if it is inside an interrupt handler,
- * and has previously locked the same mutex outside of the interrupt
- * handler. this allows for a task to handle an event that requires
- * a mutex to be locked in the handler whilst having locked the mutex
- * previously */
+
 static bool __confirm(void *data)
 {
 	mutex_t *m = data;
-	int lock = atomic_load(&m->lock);
-	if(lock == false)
+	if(!atomic_load(&m->lock))
 		return false;
 	return true;
 }
@@ -104,7 +100,7 @@ mutex_t *mutex_create(mutex_t *m, unsigned flags)
 	m->lock=ATOMIC_VAR_INIT(0);
 	m->magic = MUTEX_MAGIC;
 	m->pid = -1;
-	linkedlist_create(&m->blocklist, 0);
+	blocklist_create(&m->blocklist, 0);
 	return m;
 }
 
@@ -116,7 +112,7 @@ void mutex_destroy(mutex_t *m)
 		current_thread->held_locks--;
 	m->magic = 0;
 	atomic_store(&m->lock, false);
-	linkedlist_destroy(&m->blocklist);
+	blocklist_destroy(&m->blocklist);
 	if(m->flags & MT_ALLOC)
 		kfree(m);
 }

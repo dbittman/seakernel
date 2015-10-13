@@ -1,4 +1,5 @@
 #include <sea/dm/block.h>
+#include <sea/tm/blocking.h>
 #include <sea/errno.h>
 #include <sea/tm/thread.h>
 #include <sea/tm/kthread.h>

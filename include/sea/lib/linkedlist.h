@@ -2,6 +2,7 @@
 #define __SEA_LIB_LINKEDLIST_H
 
 #define LINKEDLIST_ALLOC 1
+#define LINKEDLIST_LOCKLESS 1
 
 struct linkedentry {
 	void *obj;
@@ -22,10 +23,8 @@ struct linkedlist *linkedlist_create(struct linkedlist *list, int flags);
 void linkedlist_destroy(struct linkedlist *list);
 void linkedlist_insert(struct linkedlist *list, struct linkedentry *entry, void *obj);
 void linkedlist_remove(struct linkedlist *list, struct linkedentry *entry);
-/* fn gets called with each list element. If fn returns true, apply will remove the
- * item from the list. */
-void linkedlist_apply(struct linkedlist *list, bool (*fn)(struct linkedentry *));
-void linkedlist_apply_head(struct linkedlist *list, bool (*fn)(struct linkedentry *));
+void linkedlist_apply(struct linkedlist *list, void (*fn)(struct linkedentry *));
+void linkedlist_apply_head(struct linkedlist *list, void (*fn)(struct linkedentry *));
 
 #endif
 

@@ -5,7 +5,8 @@
 struct linkedlist *linkedlist_create(struct linkedlist *list, int flags)
 {
 	KOBJ_CREATE(list, flags, LINKEDLIST_ALLOC);
-	spinlock_create(&list->lock);
+	if(!(flags & LINKEDLIST_LOCKLESS))
+		spinlock_create(&list->lock);
 	list->head = &list->sentry;
 	list->head->next = list->head;
 	list->head->prev = list->head;
@@ -16,6 +17,8 @@ struct linkedlist *linkedlist_create(struct linkedlist *list, int flags)
 void linkedlist_destroy(struct linkedlist *list)
 {
 	assert(list->head == &list->sentry);
+	if(!(list->flags & LINKEDLIST_LOCKLESS))
+		spinlock_destroy(&list->lock);
 	KOBJ_DESTROY(list, LINKEDLIST_ALLOC);
 }
 
@@ -23,7 +26,8 @@ void linkedlist_insert(struct linkedlist *list, struct linkedentry *entry, void 
 {
 	assert(list->head == &list->sentry);
 	assert(list->head->next && list->head->prev);
-	spinlock_acquire(&list->lock);
+	if(!(list->flags & LINKEDLIST_LOCKLESS))
+		spinlock_acquire(&list->lock);
 	entry->next = list->head->next;
 	entry->prev = list->head;
 	entry->prev->next = entry;
@@ -31,7 +35,8 @@ void linkedlist_insert(struct linkedlist *list, struct linkedentry *entry, void 
 	entry->obj = obj;
 	list->count++;
 	assert(list->count > 0);
-	spinlock_release(&list->lock);
+	if(!(list->flags & LINKEDLIST_LOCKLESS))
+		spinlock_release(&list->lock);
 }
 
 static inline void __do_remove(struct linkedlist *list, struct linkedentry *entry)
@@ -46,38 +51,44 @@ static inline void __do_remove(struct linkedlist *list, struct linkedentry *entr
 void linkedlist_remove(struct linkedlist *list, struct linkedentry *entry)
 {
 	assert(list->head == &list->sentry);
-	spinlock_acquire(&list->lock);
+	if(!(list->flags & LINKEDLIST_LOCKLESS))
+		spinlock_acquire(&list->lock);
 	__do_remove(list, entry);
-	spinlock_release(&list->lock);
+	if(!(list->flags & LINKEDLIST_LOCKLESS))
+		spinlock_release(&list->lock);
 }
 
-void linkedlist_apply(struct linkedlist *list, bool (*fn)(struct linkedentry *))
+void linkedlist_apply(struct linkedlist *list, void (*fn)(struct linkedentry *))
 {
 	assert(list->head == &list->sentry);
 	assert(fn);
-	spinlock_acquire(&list->lock);
+	if(!(list->flags & LINKEDLIST_LOCKLESS))
+		spinlock_acquire(&list->lock);
 	struct linkedentry *ent = list->head->next;
 	while(ent != &list->sentry) {
+		/* fn could called linkedlist_remove, so we have to be ready for
+		 * that possibility. */
 		struct linkedentry *next = ent->next;
-		if(fn(ent)) {
-			__do_remove(list, ent);
-		}
+		fn(ent);
 		ent = next;
 	}
-	spinlock_release(&list->lock);
+	if(!(list->flags & LINKEDLIST_LOCKLESS))
+		spinlock_release(&list->lock);
 }
 
-void linkedlist_apply_head(struct linkedlist *list, bool (*fn)(struct linkedentry *))
+void linkedlist_apply_head(struct linkedlist *list, void (*fn)(struct linkedentry *))
 {
 	assert(list->head == &list->sentry);
 	assert(fn);
-	spinlock_acquire(&list->lock);
+	if(!(list->flags & LINKEDLIST_LOCKLESS))
+		spinlock_acquire(&list->lock);
 	struct linkedentry *ent = list->head->prev;
 	if(ent != &list->sentry) {
-		if(fn(ent)) {
-			__do_remove(list, ent);
-		}
+		assertmsg(list->count > 0,
+				"count = %d, ent = %x (s=%x)\n", list->count, ent, &list->sentry);
+		fn(ent);
 	}
-	spinlock_release(&list->lock);
+	if(!(list->flags & LINKEDLIST_LOCKLESS))
+		spinlock_release(&list->lock);
 }
 

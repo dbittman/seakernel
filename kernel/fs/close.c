@@ -1,4 +1,5 @@
 /* Closes an open file descriptor. If its a pipe, we shutdown the pipe too */
+#include <sea/tm/blocking.h>
 #include <sea/kernel.h>
 #include <sea/mm/vmm.h>
 #include <sea/tm/process.h>
@@ -39,8 +40,6 @@ int sys_close(int fp)
 				&& f->inode->pipe->type != PIPE_NAMED)
 			atomic_fetch_sub(&f->inode->pipe->wrcount, 1);
 		if(!f->inode->pipe->count && f->inode->pipe->type != PIPE_NAMED) {
-			assert(!f->inode->pipe->read_blocked->count);
-			assert(!f->inode->pipe->write_blocked->count);
 			fs_pipe_free(f->inode);
 			f->inode->pipe = 0;
 		} else {

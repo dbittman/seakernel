@@ -4,17 +4,12 @@
 #include <sea/types.h>
 #include <stdatomic.h>
 #include <stdalign.h>
-#include <sea/lib/linkedlist.h>
+#include <sea/tm/blocking.h>
 #define MUTEX_MAGIC 0xDEADBEEF
 #define MT_ALLOC 1
 
-/* this bit in lock is set when a task that currently owns the mutex
- * handles an interrupt, and inside that interrupt it locks the same
- * mutex again. This is legal, but it's handled in a special way */
-#define MT_LCK_INT 2
-
 typedef struct {
-	struct linkedlist blocklist;
+	struct blocklist blocklist;
 	unsigned magic;
 	_Atomic bool lock;
 	unsigned flags;

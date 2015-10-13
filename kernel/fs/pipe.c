@@ -1,4 +1,5 @@
 #include <sea/dm/dev.h>
+#include <sea/tm/blocking.h>
 #include <sea/fs/inode.h>
 #include <sea/fs/pipe.h>
 #include <sea/tm/process.h>
@@ -8,7 +9,7 @@
 #include <sea/errno.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/string.h>
-
+#include <sea/tm/blocking.h>
 pipe_t *fs_pipe_create (void)
 {
 	pipe_t *pipe = (pipe_t *)kmalloc(sizeof(pipe_t));
@@ -16,8 +17,8 @@ pipe_t *fs_pipe_create (void)
 	pipe->buffer = (char *)kmalloc(PIPE_SIZE+1);
 	pipe->lock = mutex_create(0, 0);
 	/* TODO: fix all instances of unneeded allocations like this */
-	pipe->read_blocked = linkedlist_create(0, 0);
-	pipe->write_blocked = linkedlist_create(0, 0);
+	pipe->read_blocked = blocklist_create(0, 0);
+	pipe->write_blocked = blocklist_create(0, 0);
 	return pipe;
 }
 
@@ -70,8 +71,8 @@ void fs_pipe_free(struct inode *i)
 	if(!i || !i->pipe) return;
 	kfree((void *)i->pipe->buffer);
 	mutex_destroy(i->pipe->lock);
-	linkedlist_destroy(i->pipe->read_blocked);
-	linkedlist_destroy(i->pipe->write_blocked);
+	blocklist_destroy(i->pipe->read_blocked);
+	blocklist_destroy(i->pipe->write_blocked);
 	kfree(i->pipe);
 	i->pipe=0;
 }
@@ -97,11 +98,7 @@ int fs_pipe_read(struct inode *ino, int flags, char *buffer, size_t length)
 			&& pipe->wrcount>0)) {
 		/* we need to block, but also release the lock. Disable interrupts
 		 * so we don't schedule before we want to */
-		cpu_disable_preemption();
-		tm_thread_add_to_blocklist(pipe->read_blocked);
 		mutex_release(pipe->lock);
-		tm_thread_set_state(current_thread, THREADSTATE_INTERRUPTIBLE);
-		cpu_enable_preemption();
 		tm_schedule();
 		if(tm_thread_got_signal(current_thread))
 			return -EINTR;
@@ -161,12 +158,9 @@ int fs_pipe_write(struct inode *ino, int flags, char *initialbuffer, size_t tota
 		}
 		/* IO block until we can write to it */
 		while((pipe->write_pos+length)>=PIPE_SIZE) {
-			tm_blocklist_wakeall(pipe->read_blocked);
-			cpu_disable_preemption();
-			tm_thread_add_to_blocklist(pipe->write_blocked);
 			mutex_release(pipe->lock);
-			tm_thread_set_state(current_thread, THREADSTATE_INTERRUPTIBLE);
-			cpu_enable_preemption();
+			/* TODO: we should actually sleep... */
+			tm_blocklist_wakeall(pipe->read_blocked);
 			tm_schedule();
 			if(tm_thread_got_signal(current_thread))
 				return -EINTR;

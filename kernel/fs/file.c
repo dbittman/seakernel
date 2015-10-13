@@ -1,4 +1,5 @@
 /* Code to keep track of file handles */
+#include <sea/tm/blocking.h>
 #include <sea/kernel.h>
 #include <sea/tm/process.h>
 #include <sea/fs/inode.h>

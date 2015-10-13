@@ -8,6 +8,7 @@
 #include <sea/kernel.h>
 #include <sea/tm/process.h>
 #include <sea/vsprintf.h>
+#include <sea/tm/blocking.h>
 
 void tm_thread_handle_signal(int signal)
 {

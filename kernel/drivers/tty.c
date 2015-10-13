@@ -4,6 +4,7 @@
 
 #include <sea/kernel.h>
 #include <sea/mm/vmm.h>
+#include <sea/tm/blocking.h>
 #include <sea/tm/process.h>
 #include <sea/dm/char.h>
 #include <sea/tty/terminal.h>

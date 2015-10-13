@@ -4,11 +4,24 @@
 #include <sea/tm/ticker.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/processor.h>
-
+#include <sea/tm/blocking.h>
 #include <sea/errno.h>
 #include <sea/tm/timing.h>
+#include <sea/kobj.h>
+struct blocklist *blocklist_create(struct blocklist *list, int flags)
+{
+	KOBJ_CREATE(list, flags, BLOCKLIST_ALLOC);
+	linkedlist_create(&list->list, LINKEDLIST_LOCKLESS);
+	spinlock_create(&list->lock);
+	return list;
+}
 
-/* a thread may not block another thread. Only a thread may block itself.
+void blocklist_destroy(struct blocklist *list)
+{
+	KOBJ_DESTROY(list, BLOCKLIST_ALLOC);
+}
+
+/* a thread may not block another thread.
  * However, ANY thread may unblock another thread. */
 void tm_thread_set_state(struct thread *t, int state)
 {
@@ -27,7 +40,7 @@ void tm_thread_poke(struct thread *t)
 	tm_thread_unblock(t);
 }
 
-void tm_thread_add_to_blocklist(struct linkedlist *blocklist)
+static void tm_thread_add_to_blocklist(struct blocklist *blocklist)
 {
 	/* we are the only ones that may add ourselves to a blocklist.
 	 * Thus we know that if we get here, current_thread->blocklist
@@ -38,31 +51,38 @@ void tm_thread_add_to_blocklist(struct linkedlist *blocklist)
 	assert(__current_cpu->preempt_disable > 0);
 	tqueue_remove(__current_cpu->active_queue, &current_thread->activenode);
 	atomic_store(&current_thread->blocklist, blocklist);
-	linkedlist_insert(blocklist, &current_thread->blocknode, (void *)current_thread);
+	linkedlist_insert(&blocklist->list, &current_thread->blocknode, (void *)current_thread);
 }
 
-void tm_thread_remove_from_blocklist(struct thread *t)
+static void tm_thread_remove_from_blocklist(struct thread *t, bool shouldlock)
 {
-	struct linkedlist *bl = atomic_exchange(&t->blocklist, NULL);
+	struct blocklist *bl = atomic_exchange(&t->blocklist, NULL);
 	if(bl) {
-		linkedlist_remove(bl, &t->blocknode);
+		if(shouldlock)
+			spinlock_acquire(&bl->lock);
+		linkedlist_remove(&bl->list, &t->blocknode);
 		tqueue_insert(t->cpu->active_queue, (void *)t, &t->activenode);
+		if(shouldlock)
+			spinlock_release(&bl->lock);
 	}
 }
 
-int tm_thread_block(struct linkedlist *blocklist, int state)
+int tm_thread_block(struct blocklist *blocklist, int state)
 {
 	cpu_disable_preemption();
 	assert(__current_cpu->preempt_disable == 1);
+	spinlock_acquire(&blocklist->lock);
 	assert(!current_thread->blocklist);
 	assert(state != THREADSTATE_RUNNING);
 	int ret;
 	if(state == THREADSTATE_INTERRUPTIBLE && (ret=tm_thread_got_signal(current_thread))) {
+		spinlock_release(&blocklist->lock);
 		cpu_enable_preemption();
 		return ret == SA_RESTART ? -ERESTART : -EINTR;
 	}
 	tm_thread_set_state(current_thread, state);
 	tm_thread_add_to_blocklist(blocklist);
+	spinlock_release(&blocklist->lock);
 	cpu_enable_preemption();
 	tm_schedule();
 	if((ret=tm_thread_got_signal(current_thread)) && state != THREADSTATE_UNINTERRUPTIBLE) {
@@ -72,25 +92,29 @@ int tm_thread_block(struct linkedlist *blocklist, int state)
 }
 
 /* confirm if we need to block after setting up the blocking. */
-int tm_thread_block_confirm(struct linkedlist *blocklist, int state, bool (*cfn)(void *), void *data)
+int tm_thread_block_confirm(struct blocklist *blocklist, int state, bool (*cfn)(void *), void *data)
 {
 	cpu_disable_preemption();
 	assert(__current_cpu->preempt_disable == 1);
+	spinlock_acquire(&blocklist->lock);
 	assert(!current_thread->blocklist);
 	assert(state != THREADSTATE_RUNNING);
 	int ret;
 	if(state == THREADSTATE_INTERRUPTIBLE && (ret=tm_thread_got_signal(current_thread))) {
+		spinlock_release(&blocklist->lock);
 		cpu_enable_preemption();
 		return ret == SA_RESTART ? -ERESTART : -EINTR;
 	}
 	tm_thread_set_state(current_thread, state);
 	tm_thread_add_to_blocklist(blocklist);
 	if(!cfn(data)) {
-		tm_thread_remove_from_blocklist(current_thread);
+		tm_thread_remove_from_blocklist(current_thread, false);
 		tm_thread_set_state(current_thread, THREADSTATE_RUNNING);
+		spinlock_release(&blocklist->lock);
 		cpu_enable_preemption();
 		return 0;
 	}
+	spinlock_release(&blocklist->lock);
 	cpu_enable_preemption();
 	tm_schedule();
 	if((ret=tm_thread_got_signal(current_thread)) && state != THREADSTATE_UNINTERRUPTIBLE) {
@@ -99,20 +123,23 @@ int tm_thread_block_confirm(struct linkedlist *blocklist, int state, bool (*cfn)
 	return 0;
 }
 
-int tm_thread_block_schedule_work(struct linkedlist *blocklist, int state, struct async_call *work)
+int tm_thread_block_schedule_work(struct blocklist *blocklist, int state, struct async_call *work)
 {
 	cpu_disable_preemption();
 	assert(__current_cpu->preempt_disable == 1);
+	spinlock_acquire(&blocklist->lock);
 	assert(!current_thread->blocklist);
 	assert(state != THREADSTATE_RUNNING);
 	int ret;
 	if(state == THREADSTATE_INTERRUPTIBLE && (ret=tm_thread_got_signal(current_thread))) {
+		spinlock_release(&blocklist->lock);
 		cpu_enable_preemption();
 		return ret == SA_RESTART ? -ERESTART : -EINTR;
 	}
 	current_thread->state = state;
 	tm_thread_add_to_blocklist(blocklist);
 	workqueue_insert(&__current_cpu->work, work);
+	spinlock_release(&blocklist->lock);
 	cpu_enable_preemption();
 	tm_schedule();
 	if((ret=tm_thread_got_signal(current_thread)) && state != THREADSTATE_UNINTERRUPTIBLE) {
@@ -123,40 +150,42 @@ int tm_thread_block_schedule_work(struct linkedlist *blocklist, int state, struc
 
 void tm_thread_unblock(struct thread *t)
 {
+	tm_thread_remove_from_blocklist(t, true);
+	tm_thread_raise_flag(t, THREAD_WAKEUP);
 	tm_thread_set_state(t, THREADSTATE_RUNNING);
-	tm_thread_remove_from_blocklist(t);
 }
 
-static bool __do_wakeup(struct linkedentry *entry)
+static void __do_wakeup(struct linkedentry *entry)
 {
 	struct thread *t = entry->obj;
 	assert(t);
-	struct llist *bl = atomic_exchange(&t->blocklist, NULL);
-	if(bl) {
-		tqueue_insert(t->cpu->active_queue, (void *)t, &t->activenode);
-		t->state = THREADSTATE_RUNNING;
-		return true;
-	}
-	t->state = THREADSTATE_RUNNING;
-	return false;
+	/* we're already locked here, since we only get called from
+	 * wakeall or wakeone */
+	tm_thread_remove_from_blocklist(t, false);
+	tm_thread_raise_flag(t, THREAD_WAKEUP);
+	tm_thread_set_state(t, THREADSTATE_RUNNING);
 }
 
-void tm_blocklist_wakeall(struct linkedlist *blocklist)
+void tm_blocklist_wakeall(struct blocklist *blocklist)
 {
-	linkedlist_apply(blocklist, __do_wakeup);
+	spinlock_acquire(&blocklist->lock);
+	linkedlist_apply(&blocklist->list, __do_wakeup);
+	spinlock_release(&blocklist->lock);
 }
 
-void tm_blocklist_wakeone(struct linkedlist *blocklist)
+void tm_blocklist_wakeone(struct blocklist *blocklist)
 {
-	linkedlist_apply_head(blocklist, __do_wakeup);
+	spinlock_acquire(&blocklist->lock);
+	linkedlist_apply_head(&blocklist->list, __do_wakeup);
+	spinlock_release(&blocklist->lock);
 }
 
 static void __timeout_expired(unsigned long data)
 {
 	struct thread *t = (struct thread *)data;
-	struct llist *bl = atomic_exchange(&t->blocklist, NULL);
+	struct blocklist *bl = atomic_load(&t->blocklist);
 	if(bl) {
-		tm_thread_remove_from_blocklist(t);
+		tm_thread_remove_from_blocklist(t, true);
 		tm_thread_raise_flag(t, THREAD_TIMEOUT_EXPIRED);
 	}
 	tm_thread_set_state(t, THREADSTATE_RUNNING);
@@ -210,7 +239,7 @@ void tm_thread_delay_sleep(time_t microseconds)
 	}
 }
 
-int tm_thread_block_timeout(struct linkedlist *blocklist, time_t microseconds)
+int tm_thread_block_timeout(struct blocklist *blocklist, time_t microseconds)
 {
 	struct async_call *call = &current_thread->block_timeout;
 	call->func = __timeout_expired;
@@ -218,11 +247,13 @@ int tm_thread_block_timeout(struct linkedlist *blocklist, time_t microseconds)
 	call->data = (unsigned long)current_thread;
 	cpu_disable_preemption();
 	assert(__current_cpu->preempt_disable == 1);
+	spinlock_acquire(&blocklist->lock);
 	if(!tm_thread_got_signal(current_thread)) {
 		struct ticker *ticker = &__current_cpu->ticker;
 		ticker_insert(ticker, microseconds, call);
 		tm_thread_set_state(current_thread, THREADSTATE_INTERRUPTIBLE);
 		tm_thread_add_to_blocklist(blocklist);
+		spinlock_release(&blocklist->lock);
 		cpu_enable_preemption();
 		tm_schedule();
 		int old = cpu_interrupt_set(0);

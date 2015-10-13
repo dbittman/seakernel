@@ -1,6 +1,7 @@
 #include <sea/kernel.h>
 #include <sea/tm/process.h>
 #include <sea/tm/tqueue.h>
+#include <sea/tm/blocking.h>
 
 #include <sea/cpu/interrupt.h>
 #include <sea/errno.h>

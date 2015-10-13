@@ -77,6 +77,12 @@ void fs_pipe_free(struct inode *i)
 	i->pipe=0;
 }
 
+static bool __release_lock(void *m)
+{
+	mutex_release((mutex_t *)m);
+	return true;
+}
+
 int fs_pipe_read(struct inode *ino, int flags, char *buffer, size_t length)
 {
 	if(!ino || !buffer)
@@ -98,8 +104,8 @@ int fs_pipe_read(struct inode *ino, int flags, char *buffer, size_t length)
 			&& pipe->wrcount>0)) {
 		/* we need to block, but also release the lock. Disable interrupts
 		 * so we don't schedule before we want to */
-		mutex_release(pipe->lock);
-		tm_schedule();
+		tm_thread_block_confirm(pipe->read_blocked, THREADSTATE_INTERRUPTIBLE, __release_lock, pipe->lock);
+		//tm_schedule();
 		if(tm_thread_got_signal(current_thread))
 			return -EINTR;
 		mutex_acquire(pipe->lock);
@@ -158,10 +164,8 @@ int fs_pipe_write(struct inode *ino, int flags, char *initialbuffer, size_t tota
 		}
 		/* IO block until we can write to it */
 		while((pipe->write_pos+length)>=PIPE_SIZE) {
-			mutex_release(pipe->lock);
-			/* TODO: we should actually sleep... */
 			tm_blocklist_wakeall(pipe->read_blocked);
-			tm_schedule();
+			tm_thread_block_confirm(pipe->write_blocked, THREADSTATE_INTERRUPTIBLE, __release_lock, pipe->lock);
 			if(tm_thread_got_signal(current_thread))
 				return -EINTR;
 			mutex_acquire(pipe->lock);

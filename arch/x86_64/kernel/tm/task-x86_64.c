@@ -51,3 +51,13 @@ __attribute__((noinline)) void arch_tm_thread_switch(struct thread *old, struct 
 	 * stack related now until this function returns! */
 }
 
+void arch_tm_fork_init(struct thread *thr)
+{
+	current_thread->regs->rax = 0;
+	bool r = mm_context_write(&thr->process->vmm_context, 
+			thr->kernel_stack + KERN_STACK_SIZE - sizeof(*current_thread->regs),
+			(void *)current_thread->regs, sizeof(*current_thread->regs));
+	thr->stack_pointer = thr->kernel_stack + KERN_STACK_SIZE - sizeof(*current_thread->regs);
+	assertmsg(r, "need to be able to write new thread's registers");
+}
+

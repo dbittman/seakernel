@@ -77,8 +77,6 @@ static void tm_thread_destroy(unsigned long data)
 
 	/* if the thread still hasn't been rescheduled, don't destroy it yet */
 	assert(thr->state == THREADSTATE_DEAD);
-
-	/* TODO: if this truly works, we don't need this flag... */
 	assertmsg(thr->flags & THREAD_DEAD,
 			"tried to destroy a thread before it has scheduled away");
 	tm_thread_release_stacks(thr);

@@ -261,6 +261,7 @@ __attribute__((optimize("-O0"))) __attribute__((noinline)) static struct thread 
 	return current_thread;
 }
 
+void arch_tm_fork_init(struct thread *thread);
 void arch_tm_userspace_fork_syscall_return(void);
 int tm_clone(int flags, void *entry, struct kthread *kt)
 {
@@ -293,13 +294,7 @@ int tm_clone(int flags, void *entry, struct kthread *kt)
 			mm_physical_deallocate(phys);
 	}
 	if(current_thread->regs) {
-		/* TODO: this is kinda arch-dependent... */
-		current_thread->regs->rax = 0;
-		bool r = mm_context_write(&proc->vmm_context, 
-				thr->kernel_stack + KERN_STACK_SIZE - sizeof(*current_thread->regs),
-				(void *)current_thread->regs, sizeof(*current_thread->regs));
-		thr->stack_pointer = thr->kernel_stack + KERN_STACK_SIZE - sizeof(*current_thread->regs);
-		assertmsg(r, "need to be able to write new thread's registers");
+		arch_tm_fork_init(thr);
 	} else {
 		thr->stack_pointer = thr->kernel_stack + KERN_STACK_SIZE;
 	}

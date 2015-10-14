@@ -28,7 +28,6 @@ static void __alarm_timeout(unsigned long data)
 	tm_thread_put(thr);
 }
 
-/* TODO: make this all thread safe with atomics */
 int sys_alarm(int dur)
 {
 	struct async_call *call = async_call_create(&current_thread->alarm_timeout,

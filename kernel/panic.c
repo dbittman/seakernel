@@ -62,7 +62,7 @@ void panic(int flags, char *fmt, ...)
 	if(t && t->process->pid && !(flags & PANIC_NOSYNC) && !(flags & PANIC_INSTANT))
 	{
 		printk_safe(9,"[panic]: syncing...");
-		//sys_sync(); TODO
+		sys_sync();
 		printk_safe(9,"\n[panic]: Done\n");
 	} else
 		printk_safe(9,"[panic]: not syncing\n");

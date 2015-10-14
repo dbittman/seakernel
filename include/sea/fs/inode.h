@@ -26,6 +26,7 @@ typedef struct pipe_struct pipe_t;
 #define INODE_DIRTY    2
 #define INODE_INUSE    4
 #define INODE_NOLRU    8 /* On calling vfs_icache_put, don't move to LRU, immediately destroy */
+#define INODE_PCACHE   0x10
 
 #define RESOLVE_NOLINK  1
 #define RESOLVE_NOMOUNT 2
@@ -34,7 +35,7 @@ struct inode {
 	rwlock_t lock, metalock;
 	struct queue_item lru_item;
 	struct llistnode inuse_item, dirty_item;
-	struct hash_table *dirents;
+	struct hash_table dirents;
 	struct filesystem *filesystem;
 	
 	_Atomic int count;
@@ -56,7 +57,7 @@ struct inode {
 	uint32_t id;
 
 	/* mmap stuff */
-	struct hash_table *physicals;
+	struct hash_table physicals;
 	mutex_t mappings_lock;
 	size_t mapped_pages_count, mapped_entries_count;
 };

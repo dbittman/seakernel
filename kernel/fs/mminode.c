@@ -28,10 +28,10 @@ struct physical_page {
 /* if physicals hasn't been initialized, initialize it. */
 static void __init_physicals(struct inode *node)
 {
-	if(!node->physicals) {
-		node->physicals = hash_table_create(0, 0, HASH_TYPE_CHAIN);
-		hash_table_resize(node->physicals, HASH_RESIZE_MODE_IGNORE, 1000);
-		hash_table_specify_function(node->physicals, HASH_FUNCTION_DEFAULT);
+	if(!(atomic_fetch_or(&node->flags, INODE_PCACHE) & INODE_PCACHE)) {
+		hash_table_create(&node->physicals, 0, HASH_TYPE_CHAIN);
+		hash_table_resize(&node->physicals, HASH_RESIZE_MODE_IGNORE, 1000);
+		hash_table_specify_function(&node->physicals, HASH_FUNCTION_DEFAULT);
 	}
 }
 
@@ -76,13 +76,13 @@ addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt,
 	assert(!(virt & ~PAGE_MASK));
 	assert(!(offset & ~PAGE_MASK));
 	/* test if we have any shared mappings... */
-	if(!node->physicals) {
+	if(!(node->flags & INODE_PCACHE)) {
 		return 0;
 	}
 	mutex_acquire(&node->mappings_lock);
 	int page_number = offset / PAGE_SIZE;
 	void *value;
-	if(hash_table_get_entry(node->physicals, &page_number, sizeof(page_number), 1, &value)
+	if(hash_table_get_entry(&node->physicals, &page_number, sizeof(page_number), 1, &value)
 			== -ENOENT) {
 		mutex_release(&node->mappings_lock);
 		return 0;
@@ -143,11 +143,11 @@ void fs_inode_map_region(struct inode *node, size_t offset, size_t length)
 	{
 		void *value;
 		struct physical_page *entry;
-		if(hash_table_get_entry(node->physicals, &i, sizeof(i), 1, &value) == -ENOENT)
+		if(hash_table_get_entry(&node->physicals, &i, sizeof(i), 1, &value) == -ENOENT)
 		{
 			/* create the entry, and add it */
 			entry = __create_entry();
-			hash_table_set_entry(node->physicals, &i, sizeof(i), 1, entry);
+			hash_table_set_entry(&node->physicals, &i, sizeof(i), 1, entry);
 			atomic_fetch_add_explicit(&node->mapped_entries_count, 1, memory_order_relaxed);
 		}
 		else
@@ -183,7 +183,7 @@ void fs_inode_sync_physical_page(struct inode *node, addr_t virt, size_t offset,
 void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_t length)
 {
 	mutex_acquire(&node->mappings_lock);
-	assert(node->physicals);
+	assert(node->flags & INODE_PCACHE);
 	assert(!(offset & ~PAGE_MASK));
 	assert(!(virt & ~PAGE_MASK));
 	int page_number = offset / PAGE_SIZE;
@@ -192,7 +192,7 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 	{
 		void *value;
 		struct physical_page *entry;
-		if(hash_table_get_entry(node->physicals, &i, sizeof(i), 1, &value) == 0)
+		if(hash_table_get_entry(&node->physicals, &i, sizeof(i), 1, &value) == 0)
 		{
 			/* decrease the count. Because it's unlikely that a single file
 			 * is going to be mmapped my a lot of processes, we can just free
@@ -218,7 +218,7 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 				if(entry->page)
 					mm_physical_deallocate(entry->page);
 				entry->page = 0;
-				hash_table_delete_entry(node->physicals, &i, sizeof(i), 1);
+				hash_table_delete_entry(&node->physicals, &i, sizeof(i), 1);
 				mutex_destroy(&entry->lock);
 				kfree(entry);
 				atomic_fetch_sub(&node->mapped_entries_count, 1);
@@ -241,10 +241,9 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 void fs_inode_destroy_physicals(struct inode *node)
 {
 	/* this can only be called from free_inode, so we don't need to worry about locks */
-	if(!node->physicals)
+	if(!(node->flags & INODE_PCACHE))
 		return;
-	//assert(!node->physicals->count);
-	hash_table_destroy(node->physicals);
+	hash_table_destroy(&node->physicals);
 	mutex_destroy(&node->mappings_lock);
 }
 

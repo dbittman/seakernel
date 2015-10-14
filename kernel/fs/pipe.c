@@ -16,7 +16,6 @@ pipe_t *fs_pipe_create (void)
 	pipe->length = PIPE_SIZE;
 	pipe->buffer = (char *)kmalloc(PIPE_SIZE+1);
 	mutex_create(&pipe->lock, 0);
-	/* TODO: fix all instances of unneeded allocations like this */
 	blocklist_create(&pipe->read_blocked, 0);
 	blocklist_create(&pipe->write_blocked, 0);
 	return pipe;

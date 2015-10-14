@@ -59,7 +59,7 @@ MCFLAGS:=        -std=gnu11 \
 		-mno-mmx -mno-sse -mno-sse2 -mno-sse3 -mno-3dnow \
 		-fno-omit-frame-pointer \
 		-fno-tree-loop-distribute-patterns \
-		-fno-common
+		-fno-common -fno-pic
 
 ifeq ($(ARCH), x86_64)
 MCFLAGS += -mcmodel=large

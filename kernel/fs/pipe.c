@@ -15,10 +15,10 @@ pipe_t *fs_pipe_create (void)
 	pipe_t *pipe = (pipe_t *)kmalloc(sizeof(pipe_t));
 	pipe->length = PIPE_SIZE;
 	pipe->buffer = (char *)kmalloc(PIPE_SIZE+1);
-	pipe->lock = mutex_create(0, 0);
+	mutex_create(&pipe->lock, 0);
 	/* TODO: fix all instances of unneeded allocations like this */
-	pipe->read_blocked = blocklist_create(0, 0);
-	pipe->write_blocked = blocklist_create(0, 0);
+	blocklist_create(&pipe->read_blocked, 0);
+	blocklist_create(&pipe->write_blocked, 0);
 	return pipe;
 }
 
@@ -70,9 +70,9 @@ void fs_pipe_free(struct inode *i)
 {
 	if(!i || !i->pipe) return;
 	kfree((void *)i->pipe->buffer);
-	mutex_destroy(i->pipe->lock);
-	blocklist_destroy(i->pipe->read_blocked);
-	blocklist_destroy(i->pipe->write_blocked);
+	mutex_destroy(&i->pipe->lock);
+	blocklist_destroy(&i->pipe->read_blocked);
+	blocklist_destroy(&i->pipe->write_blocked);
 	kfree(i->pipe);
 	i->pipe=0;
 }
@@ -92,48 +92,42 @@ int fs_pipe_read(struct inode *ino, int flags, char *buffer, size_t length)
 		return -EINVAL;
 	size_t len = length;
 	int ret=0;
-	size_t count=0;
 	if((flags & _FNONBLOCK) && !pipe->pending)
 		return -EAGAIN;
 	/* should we even try reading? (empty pipe with no writing processes=no) */
 	if(!pipe->pending && pipe->count <= 1 && pipe->type != PIPE_NAMED)
-		return count;
+		return 0;
 	/* block until we have stuff to read */
-	mutex_acquire(pipe->lock);
+	mutex_acquire(&pipe->lock);
 	while(!pipe->pending && (pipe->count > 1 && pipe->type != PIPE_NAMED 
 			&& pipe->wrcount>0)) {
 		/* we need to block, but also release the lock. Disable interrupts
 		 * so we don't schedule before we want to */
-		tm_thread_block_confirm(pipe->read_blocked, THREADSTATE_INTERRUPTIBLE, __release_lock, pipe->lock);
-		//tm_schedule();
-		if(tm_thread_got_signal(current_thread))
-			return -EINTR;
-		mutex_acquire(pipe->lock);
+		int r = tm_thread_block_confirm(&pipe->read_blocked,
+				THREADSTATE_INTERRUPTIBLE, __release_lock, &pipe->lock);
+		switch(r) {
+			case -ERESTART:
+				return -ERESTART;
+			case -EINTR:
+				return -EINTR;
+		}
+		mutex_acquire(&pipe->lock);
 	}
+
 	ret = pipe->pending > len ? len : pipe->pending;
-	/* note: this is a quick implementation of line-buffering that should
-	 * work for most cases. There is currently no way to disable line
-	 * buffering in pipes, but I don't care, because there shouldn't be a
-	 * reason to. */
-	char *nl = strchr((char *)pipe->buffer+pipe->read_pos, '\n');
-	if(nl && (nl-(pipe->buffer+pipe->read_pos)) < ret)
-		ret = (nl-(pipe->buffer+pipe->read_pos))+1;
-	memcpy((void *)(buffer + count), (void *)(pipe->buffer + pipe->read_pos), ret);
-	memcpy((void *)pipe->buffer, (void *)(pipe->buffer + pipe->read_pos + ret), 
-		PIPE_SIZE - (pipe->read_pos + ret));
-	if(ret > 0) {
-		pipe->pending -= ret;
-		pipe->write_pos -= ret;
-		len -= ret;
-		count+=ret;
+	for(int i=0;i<ret;i++) {
+		buffer[i] = pipe->buffer[pipe->read_pos % PIPE_SIZE];
+		pipe->read_pos++;
 	}
-	tm_blocklist_wakeall(pipe->write_blocked);
-	tm_blocklist_wakeall(pipe->read_blocked);
-	mutex_release(pipe->lock);
-	return count;
+	pipe->pending -= ret;
+
+	tm_blocklist_wakeall(&pipe->write_blocked);
+	tm_blocklist_wakeall(&pipe->read_blocked);
+	
+	mutex_release(&pipe->lock);
+	return ret;
 }
 
-/* TODO: make these ring buffers */
 int fs_pipe_write(struct inode *ino, int flags, char *initialbuffer, size_t totallength)
 {
 	if(!ino || !initialbuffer)
@@ -147,9 +141,9 @@ int fs_pipe_write(struct inode *ino, int flags, char *initialbuffer, size_t tota
 	char *buffer = initialbuffer;
 	size_t length;
 	size_t remain = totallength;
-	mutex_acquire(pipe->lock);
-	if((flags & _FNONBLOCK) && pipe->write_pos + totallength > PIPE_SIZE) {
-		mutex_release(pipe->lock);
+	mutex_acquire(&pipe->lock);
+	if((flags & _FNONBLOCK) && pipe->pending + totallength > PIPE_SIZE) {
+		mutex_release(&pipe->lock);
 		return -EAGAIN;
 	}
 	while(remain) {
@@ -158,31 +152,37 @@ int fs_pipe_write(struct inode *ino, int flags, char *initialbuffer, size_t tota
 			length = remain;
 		/* we're writing to a pipe with no reading process! */
 		if((pipe->count - pipe->wrcount) == 0 && pipe->type != PIPE_NAMED) {
-			mutex_release(pipe->lock);
+			mutex_release(&pipe->lock);
 			tm_signal_send_thread(current_thread, SIGPIPE);
 			return -EPIPE;
 		}
 		/* IO block until we can write to it */
-		while((pipe->write_pos+length)>=PIPE_SIZE) {
-			tm_blocklist_wakeall(pipe->read_blocked);
-			tm_thread_block_confirm(pipe->write_blocked, THREADSTATE_INTERRUPTIBLE, __release_lock, pipe->lock);
-			if(tm_thread_got_signal(current_thread))
-				return -EINTR;
-			mutex_acquire(pipe->lock);
+		while((pipe->pending+length)>=PIPE_SIZE) {
+			tm_blocklist_wakeall(&pipe->read_blocked);
+			int r = tm_thread_block_confirm(&pipe->write_blocked,
+					THREADSTATE_INTERRUPTIBLE, __release_lock, &pipe->lock);
+			switch(r) {
+				case -ERESTART:
+					return -ERESTART;
+				case -EINTR:
+					return -EINTR;
+			}
+			mutex_acquire(&pipe->lock);
 		}
-		
-		memcpy((void *)(pipe->buffer + pipe->write_pos), buffer, length);
+		for(unsigned i=0;i<length;i++) {
+			pipe->buffer[pipe->write_pos % PIPE_SIZE] = buffer[i];
+			pipe->write_pos++;
+		}
 		pipe->length = ino->length;
-		pipe->write_pos += length;
 		pipe->pending += length;
 		/* now, unblock the tasks */
-		tm_blocklist_wakeall(pipe->read_blocked);
-		tm_blocklist_wakeall(pipe->write_blocked);
+		tm_blocklist_wakeall(&pipe->read_blocked);
+		tm_blocklist_wakeall(&pipe->write_blocked);
 
 		remain -= length;
 		buffer += length;
 	}
-	mutex_release(pipe->lock);
+	mutex_release(&pipe->lock);
 	return totallength;
 }
 

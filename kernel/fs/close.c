@@ -33,7 +33,7 @@ int sys_close(int fp)
 		/* okay, its a pipe. We need to do some special things
 		 * to close a pipe, like decrement the various counts.
 		 * If the counts reach zero, we free it */
-		mutex_acquire(f->inode->pipe->lock);
+		mutex_acquire(&f->inode->pipe->lock);
 		if(f->inode->pipe->count)
 			atomic_fetch_sub(&f->inode->pipe->count, 1);
 		if(f->flags & _FWRITE && f->inode->pipe->wrcount 
@@ -43,9 +43,9 @@ int sys_close(int fp)
 			fs_pipe_free(f->inode);
 			f->inode->pipe = 0;
 		} else {
-			tm_blocklist_wakeall(f->inode->pipe->read_blocked);
-			tm_blocklist_wakeall(f->inode->pipe->write_blocked);
-			mutex_release(f->inode->pipe->lock);
+			tm_blocklist_wakeall(&f->inode->pipe->read_blocked);
+			tm_blocklist_wakeall(&f->inode->pipe->write_blocked);
+			mutex_release(&f->inode->pipe->lock);
 		}
 	}
 	/* close devices */

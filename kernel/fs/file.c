@@ -132,8 +132,8 @@ void fs_copy_file_handles(struct process *p, struct process *n)
 				atomic_fetch_add_explicit(&i->pipe->count, 1, memory_order_relaxed);
 				if(fp->fi->flags & _FWRITE)
 					atomic_fetch_add_explicit(&i->pipe->wrcount, 1, memory_order_relaxed);
-				tm_blocklist_wakeall(i->pipe->read_blocked);
-				tm_blocklist_wakeall(i->pipe->write_blocked);
+				tm_blocklist_wakeall(&i->pipe->read_blocked);
+				tm_blocklist_wakeall(&i->pipe->write_blocked);
 			}
 			n->filp[c] = fp;
 		}

@@ -8,14 +8,14 @@
 
 #define PIPE_NAMED 1
 typedef struct pipe_struct {
-	unsigned pending;
-	unsigned write_pos, read_pos;
+	size_t pending;
+	size_t write_pos, read_pos;
 	char *buffer;
 	off_t length;
-	mutex_t *lock;
+	mutex_t lock;
 	char type;
-	int count, wrcount;
-	struct blocklist *read_blocked, *write_blocked;
+	_Atomic int count, wrcount;
+	struct blocklist read_blocked, write_blocked;
 } pipe_t;
 
 int sys_mkfifo(char *path, mode_t mode);

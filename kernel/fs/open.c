@@ -167,8 +167,8 @@ static int duplicate(struct process *t, int fp, int n)
 		atomic_fetch_add(&f->inode->pipe->count, 1);
 		if(f->flags & _FWRITE)
 			atomic_fetch_add(&f->inode->pipe->wrcount, 1);
-		tm_blocklist_wakeall(f->inode->pipe->read_blocked);
-		tm_blocklist_wakeall(f->inode->pipe->write_blocked);
+		tm_blocklist_wakeall(&f->inode->pipe->read_blocked);
+		tm_blocklist_wakeall(&f->inode->pipe->write_blocked);
 	}
 	fs_fput(t, fp, 0);
 	fs_fput(t, ret, 0);

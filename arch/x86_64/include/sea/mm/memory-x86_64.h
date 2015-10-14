@@ -84,7 +84,7 @@ static inline size_t mm_page_size_closest(size_t length)
 void arch_mm_page_fault_handle(registers_t *regs, int, int);
 typedef addr_t page_dir_t, page_table_t, pml4_t, pdpt_t;
 
-#define PAGE_MASK          0xFFFFFFFFFFFFF000 /* TODO: fix this / PAGE_MASK_PHYSICAL */
+#define PAGE_MASK          0xFFFFFFFFFFFFF000
 #define PAGE_MASK_PHYSICAL 0x000FFFFFFFFFF000
 
 #define PML4_INDEX(v) ((v >> 39) & 0x1FF)

@@ -1,1 +1,1 @@
-MCFLAGS += -I ../../arch/x86_common/include
+MCFLAGS += -I ../../arch/x86_64/include

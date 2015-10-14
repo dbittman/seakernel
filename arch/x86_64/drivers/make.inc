@@ -1,4 +1,6 @@
-CFLAGS_ARCH += -I `realpath ../arch/x86_common/include` -fno-pic
+MODULES-$(CONFIG_MODULE_KEYBOARD)   += ../arch/x86_64/drivers/char/keyboard.m
+MODULES-$(CONFIG_MODULE_PCI)        += ../arch/x86_64/drivers/bus/pci.m
 
-include ../arch/x86_common/drivers/make.inc
+SUBDIRS-$(CONFIG_MODULE_ATA)	    += ../arch/x86_64/drivers/ata
+CFLAGS_ARCH += -I `realpath ../arch/x86_64/include`
 

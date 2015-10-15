@@ -1,6 +1,7 @@
 # seakernel makefile
 .DEFAULT_GOAL = all
 .DEFAULT = all
+SHELL=/bin/bash
 BUILDCFG ?= default
 BUILDCONTAINER = build
 export BUILDDIR = $(BUILDCONTAINER)/$(BUILDCFG)

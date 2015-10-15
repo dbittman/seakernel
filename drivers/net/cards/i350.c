@@ -14,6 +14,7 @@
 #include <sea/tm/timing.h>
 #include <sea/vsprintf.h>
 #include <stdatomic.h>
+#include <sea/mm/kmalloc.h>
 int i350_int;
 struct pmap i350_pmap;
 struct i350_device *i350_dev;

@@ -69,11 +69,7 @@ int boot_cpu(struct cpu *cpu)
 	addr_t bootaddr_phys, bootaddr_virt, accept_status;
 	addr_t bios_reset_vector = BIOS_RESET_VECTOR;
 
-	printk(1, "[smp]: poking cpu %d\n", apicid);
-
-	/* TODO: this should be its own function? We do it in fork too... */
 	struct thread *thread = kmalloc(sizeof(struct thread));
-	
 
 	cpu->active_queue = tqueue_create(0, 0);
 	cpu->numtasks=1;
@@ -93,7 +89,7 @@ int boot_cpu(struct cpu *cpu)
 	tm_thread_reserve_stacks(thread);
 	cpu->stack = thread->kernel_stack;
 	size_t kms_page_size = mm_page_size_closest(KERN_STACK_SIZE);
-	for(int i = 0;i<((KERN_STACK_SIZE-1) / kms_page_size)+1;i++) {
+	for(unsigned int i = 0;i<((KERN_STACK_SIZE-1) / kms_page_size)+1;i++) {
 		addr_t phys = mm_physical_allocate(kms_page_size, false);
 		bool r = mm_virtual_map(thread->kernel_stack + i * kms_page_size,
 				phys,

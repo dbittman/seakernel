@@ -44,6 +44,7 @@ void arch_cpu_processor_init_1(void)
 	printk(KERN_EVERY, "done\n");
 }
 
+void x86_hpet_init(void);
 void arch_cpu_processor_init_2(void)
 {
 	acpi_init();

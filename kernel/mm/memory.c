@@ -112,7 +112,6 @@ static void process_memorymap(struct multiboot *mboot)
 	int gbs=0;
 	int mbs = ((num_pages * PAGE_SIZE)/1024)/1024;
 	if(mbs < 4){
-		console_kernel_puts("\n");
 		panic(PANIC_MEM | PANIC_NOSYNC, 
 				"Not enough memory, system wont work (%d MB, %d pages)", 
 				mbs, num_pages);

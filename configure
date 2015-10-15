@@ -6,20 +6,7 @@ rm make.deps 2>/dev/null
 
 printf "done\nprocessing configuration...\n"
 
-SYSNAME=""
-
-if [ -e /proc/seaos ]; then
-	SYSNAME="seaos"
-else
-	SYSNAME="linux"
-fi
-
-echo -ne "It would appear that you're running $SYSNAME, but let's make sure.\nWhat OS are you running (seaos/linux)? [$SYSNAME] "
-read inp
-
-if [ "$inp" != "" ]; then
-	SYSNAME=$inp
-fi
+SYSNAME="$1"
 
 if [ "$SYSNAME" == "seaos" ]; then
 	echo "SYSNAME=seaos" >> make.inc

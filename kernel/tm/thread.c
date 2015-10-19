@@ -7,7 +7,7 @@
 #include <sea/tm/ptrace.h>
 #include <stdatomic.h>
 size_t running_threads = 0;
-struct hash_table *thread_table;
+struct hash *thread_table;
 mutex_t thread_refs_lock;
 struct valloc km_stacks;
 void tm_thread_enter_system(int sys)
@@ -58,7 +58,7 @@ struct thread *tm_thread_get(pid_t tid)
 {
 	struct thread *thr;
 	mutex_acquire(&thread_refs_lock);
-	if(hash_table_get_entry(thread_table, &tid, sizeof(tid), 1, (void **)&thr) == -ENOENT) {
+	if((thr = hash_lookup(thread_table, &tid, sizeof(tid))) == NULL) {
 		mutex_release(&thread_refs_lock);
 		return 0;
 	}
@@ -78,7 +78,7 @@ void tm_thread_put(struct thread *thr)
 	assert(thr->refs >= 1);
 	mutex_acquire(&thread_refs_lock);
 	if(atomic_fetch_sub(&thr->refs, 1) == 1) {
-		hash_table_delete_entry(thread_table, &thr->tid, sizeof(thr->tid), 1);
+		hash_delete(thread_table, &thr->tid, sizeof(thr->tid));
 		mutex_release(&thread_refs_lock);
 		kfree(thr);
 	} else {

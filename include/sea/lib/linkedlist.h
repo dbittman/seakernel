@@ -24,6 +24,9 @@ void linkedlist_destroy(struct linkedlist *list);
 void linkedlist_insert(struct linkedlist *list, struct linkedentry *entry, void *obj);
 void linkedlist_remove(struct linkedlist *list, struct linkedentry *entry);
 void linkedlist_apply(struct linkedlist *list, void (*fn)(struct linkedentry *));
+void linkedlist_apply_data(struct linkedlist *list, void (*fn)(struct linkedentry *, void *data), void *);
+struct linkedentry *linkedlist_find(struct linkedlist *list, bool (*fn)(struct linkedentry *, void *data), void *data);
+unsigned long linkedlist_reduce(struct linkedlist *list, unsigned long (*fn)(struct linkedentry *, unsigned long), unsigned long init);
 void linkedlist_apply_head(struct linkedlist *list, void (*fn)(struct linkedentry *));
 
 #endif

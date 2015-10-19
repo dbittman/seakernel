@@ -81,4 +81,84 @@ struct hash_table_chain_node {
 extern struct hash_collision_resolver __hash_chain_resolver;
 extern struct hash_collision_resolver __hash_linear_resolver;
 
+
+
+
+#undef HASH_ALLOC
+
+
+
+
+
+
+
+
+
+
+
+
+
+#include <stdint.h>
+#include <sea/types.h>
+#include <sea/mutex.h>
+#include <sea/lib/linkedlist.h>
+
+#define HASH_ALLOC 1
+#define HASH_LOCKLESS 2
+
+struct hashelem {
+	void *ptr;
+	void *key;
+	size_t keylen;
+	struct linkedentry entry;
+};
+
+struct hash {
+	struct linkedlist **table;
+	size_t length, count;
+	int flags;
+	mutex_t lock;
+};
+
+static inline size_t hash_count(struct hash *h) { return h->count; }
+static inline size_t hash_length(struct hash *h) { return h->length; }
+
+struct hash *hash_create(struct hash *h, int flags, size_t length);
+void hash_destroy(struct hash *h);
+int hash_insert(struct hash *h, void *key, size_t keylen, struct hashelem *elem, void *data);
+int hash_delete(struct hash *h, void *key, size_t keylen);
+void *hash_lookup(struct hash *h, void *key, size_t keylen);
+void hash_map(struct hash *h, void (*fn)(struct hashelem *obj));
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #endif

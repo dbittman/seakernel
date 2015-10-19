@@ -62,7 +62,7 @@ int block_elevator_main(struct kthread *kt, void *arg)
 			tm_blocklist_wakeall(&req->blocklist);
 			ioreq_put(req);
 		} else {
-			if(dev->cache.size && (dev->cache.count * 100) / dev->cache.size > 300) {
+			if(hash_length(&dev->cache) && (hash_count(&dev->cache) * 100) / hash_length(&dev->cache) > 300) {
 				dm_block_cache_reclaim();
 				tm_schedule();
 			} else {

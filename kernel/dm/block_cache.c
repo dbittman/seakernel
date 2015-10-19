@@ -30,7 +30,7 @@ size_t dm_block_cache_reclaim(void)
 		return 0;
 	}
 
-	hash_table_delete_entry(&br->bd->cache, &br->block, sizeof(br->block), 1);
+	hash_delete(&br->bd->cache, &br->block, sizeof(br->block));
 	mutex_release(&br->bd->cachelock);
 	buffer_put(br);
 	mutex_release(&reclaim_lock);
@@ -42,7 +42,7 @@ int dm_block_cache_insert(blockdevice_t *bd, uint64_t block, struct buffer *buf,
 	mutex_acquire(&bd->cachelock);
 
 	struct buffer *prev = 0;
-	int exist = hash_table_get_entry(&bd->cache, &block, sizeof(block), 1, (void **)&prev) == 0;
+	bool exist = hash_lookup(&bd->cache, &block, sizeof(block)) != NULL;
 
 	if(exist && !(flags & BLOCK_CACHE_OVERWRITE)) {
 		mutex_release(&bd->cachelock);
@@ -51,9 +51,10 @@ int dm_block_cache_insert(blockdevice_t *bd, uint64_t block, struct buffer *buf,
 
 	buffer_inc_refcount(buf);
 	if(exist) {
-		hash_table_delete_entry(&bd->cache, &block, sizeof(block), 1);
+		hash_delete(&bd->cache, &block, sizeof(block));
 	}
-	hash_table_set_entry(&bd->cache, &block, sizeof(block), 1, buf);
+	buf->block = block;
+	hash_insert(&bd->cache, &buf->block, sizeof(buf->block), &buf->hash_elem, buf);
 
 	mutex_release(&bd->cachelock);
 	queue_enqueue_item(&lru, &buf->qi, buf);
@@ -70,7 +71,7 @@ struct buffer *dm_block_cache_get(blockdevice_t *bd, uint64_t block)
 	mutex_acquire(&bd->cachelock);
 
 	struct buffer *e;
-	if(hash_table_get_entry(&bd->cache, &block, sizeof(block), 1, (void **)&e) == -ENOENT) {
+	if((e = hash_lookup(&bd->cache, &block, sizeof(block))) == NULL) {
 		mutex_release(&bd->cachelock);
 		return 0;
 	}

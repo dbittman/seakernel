@@ -89,6 +89,7 @@ struct thread {
 	struct process *process;
 	struct workqueue resume_work;
 	struct kthread *kernel_thread;
+	struct hashelem hash_elem;
 	/* ptrace */
 	struct thread *tracer;
 	int tracee_flags;
@@ -97,7 +98,7 @@ struct thread {
 };
 
 extern size_t running_threads;
-extern struct hash_table *thread_table;
+extern struct hash *thread_table;
 
 int tm_thread_got_signal(struct thread *);
 int tm_clone(int, void *entry, struct kthread *);

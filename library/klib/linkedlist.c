@@ -76,6 +76,64 @@ void linkedlist_apply(struct linkedlist *list, void (*fn)(struct linkedentry *))
 		spinlock_release(&list->lock);
 }
 
+void linkedlist_apply_data(struct linkedlist *list, void (*fn)(struct linkedentry *, void *), void *data)
+{
+	assert(list->head == &list->sentry);
+	assert(fn);
+	if(!(list->flags & LINKEDLIST_LOCKLESS))
+		spinlock_acquire(&list->lock);
+	struct linkedentry *ent = list->head->next;
+	while(ent != &list->sentry) {
+		/* fn could called linkedlist_remove, so we have to be ready for
+		 * that possibility. */
+		struct linkedentry *next = ent->next;
+		fn(ent, data);
+		ent = next;
+	}
+	if(!(list->flags & LINKEDLIST_LOCKLESS))
+		spinlock_release(&list->lock);
+}
+
+
+struct linkedentry *linkedlist_find(struct linkedlist *list, bool (*fn)(struct linkedentry *, void *data), void *data)
+{
+	assert(list->head == &list->sentry);
+	assert(fn);
+	if(!(list->flags & LINKEDLIST_LOCKLESS))
+		spinlock_acquire(&list->lock);
+	struct linkedentry *ent = list->head->next;
+	while(ent != &list->sentry) {
+		if(fn(ent, data))
+			break;
+		ent = ent->next;
+	}
+	if(!(list->flags & LINKEDLIST_LOCKLESS))
+		spinlock_release(&list->lock);
+	if(ent == &list->sentry)
+		return NULL;
+	return ent;
+}
+
+unsigned long linkedlist_reduce(struct linkedlist *list, unsigned long (*fn)(struct linkedentry *, unsigned long), unsigned long init)
+{
+	assert(list->head == &list->sentry);
+	assert(fn);
+	if(!(list->flags & LINKEDLIST_LOCKLESS))
+		spinlock_acquire(&list->lock);
+	struct linkedentry *ent = list->head->next;
+	unsigned long current = init;
+	while(ent != &list->sentry) {
+		/* fn could called linkedlist_remove, so we have to be ready for
+		 * that possibility. */
+		struct linkedentry *next = ent->next;
+		current = fn(ent, current);
+		ent = next;
+	}
+	if(!(list->flags & LINKEDLIST_LOCKLESS))
+		spinlock_release(&list->lock);
+	return current;
+}
+
 void linkedlist_apply_head(struct linkedlist *list, void (*fn)(struct linkedentry *))
 {
 	assert(list->head == &list->sentry);

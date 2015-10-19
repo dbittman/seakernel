@@ -33,9 +33,7 @@ void tm_init_multitasking(void)
 	mutex_create(&process_refs_lock, 0);
 	mutex_create(&thread_refs_lock, 0);
 	
-	thread_table = hash_table_create(0, 0, HASH_TYPE_CHAIN);
-	hash_table_resize(thread_table, HASH_RESIZE_MODE_IGNORE, 1000);
-	hash_table_specify_function(thread_table, HASH_FUNCTION_DEFAULT);
+	thread_table = hash_create(0, 0, 1000 /* TODO: initial size */);
 
 	struct thread *thread = kmalloc(sizeof(struct thread));
 	struct process *proc = kernel_process = kmalloc(sizeof(struct process));
@@ -43,7 +41,7 @@ void tm_init_multitasking(void)
 	proc->refs = 2;
 	thread->refs = 1;
 	hash_table_set_entry(process_table, &proc->pid, sizeof(proc->pid), 1, proc);
-	hash_table_set_entry(thread_table, &thread->tid, sizeof(thread->tid), 1, thread);
+	hash_insert(thread_table, &thread->tid, sizeof(thread->tid), &thread->hash_elem, thread);
 	ll_do_insert(process_list, &proc->listnode, proc);
 
 	/* TODO: this stuff is pretty hacky... */

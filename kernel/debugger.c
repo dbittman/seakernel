@@ -130,6 +130,13 @@ static void debugger_procs(char tokens[16][64])
 	}
 }
 
+static void __fn_hash_thread(struct hashelem *ent)
+{
+	struct thread *thread = ent->ptr;
+	printk_safe(5, "thread %d\n", thread->tid);
+	__print_thread(thread, 0);
+}
+
 static void debugger_threads(char tokens[16][64])
 {
 	int i=0;
@@ -145,10 +152,7 @@ static void debugger_threads(char tokens[16][64])
 		__print_thread(thread, 1);
 		tm_thread_put(thread);
 	} else {
-		while(hash_table_enumerate_entries(thread_table, (uint64_t)i++, 0, 0, 0, (void **)&thread) != -ENOENT) {
-			printk_safe(5, "thread %d\n", thread->tid);
-			__print_thread(thread, 0);
-		}
+		hash_map(thread_table, __fn_hash_thread);
 	}
 }
 

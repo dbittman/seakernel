@@ -276,7 +276,7 @@ int tm_clone(int flags, void *entry, struct kthread *kt)
 	} else if(flags & CLONE_KTHREAD) {
 		proc = kernel_process;
 	}
-	hash_table_set_entry(thread_table, &thr->tid, sizeof(thr->tid), 1, thr);
+	hash_insert(thread_table, &thr->tid, sizeof(thr->tid), &thr->hash_elem, thr);
 	atomic_fetch_add_explicit(&running_threads, 1, memory_order_relaxed);
 	tm_thread_add_to_process(thr, proc);
 	if(!tm_thread_reserve_stacks(thr))

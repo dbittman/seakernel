@@ -34,9 +34,7 @@ blockdevice_t *dm_set_block_device(int maj, int (*f)(int, int, u64, char*), int 
 	dm_add_device(DT_BLOCK, maj, dev);
 	queue_create(&dev->wq, 0);
 	kthread_create(&dev->elevator, "[kelevator]", 0, block_elevator_main, dev);
-	hash_table_create(&dev->cache, HASH_NOLOCK, HASH_TYPE_CHAIN);
-	hash_table_resize(&dev->cache, HASH_RESIZE_MODE_IGNORE,0x4000); /* TODO: initial value? */
-	hash_table_specify_function(&dev->cache, HASH_FUNCTION_DEFAULT);
+	hash_create(&dev->cache, HASH_LOCKLESS, 0x4000); /* TODO: initial value */
 	mutex_create(&dev->cachelock, 0);
 	return dev;
 }

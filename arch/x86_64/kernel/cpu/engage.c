@@ -83,7 +83,7 @@ int boot_cpu(struct cpu *cpu)
 	thread->magic = THREAD_MAGIC;
 	workqueue_create(&thread->resume_work, 0);
 	spinlock_create(&thread->status_lock);
-	hash_table_set_entry(thread_table, &thread->tid, sizeof(thread->tid), 1, thread);
+	hash_insert(thread_table, &thread->tid, sizeof(thread->tid), &thread->hash_elem, thread);
 	
 	tm_thread_add_to_process(thread, kernel_process);
 	tm_thread_reserve_stacks(thread);

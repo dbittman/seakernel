@@ -22,7 +22,7 @@ typedef struct blockdevice_s {
 	mutex_t acl;
 	struct queue wq;
 	struct kthread elevator;
-	struct hash_table cache;
+	struct hash cache;
 	mutex_t cachelock;
 } blockdevice_t;
 
@@ -49,6 +49,7 @@ struct buffer {
 	dev_t dev; //TODO: please, please, fix this crap
 	struct llistnode lnode, dlistnode;
 	struct queue_item qi;
+	struct hashelem hash_elem;
 	char data[];
 };
 

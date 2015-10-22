@@ -271,7 +271,7 @@ int tm_clone(int flags, void *entry, struct kthread *kt)
 		proc = tm_process_copy(flags, thr);
 		atomic_fetch_add_explicit(&running_processes, 1, memory_order_relaxed);
 		tm_process_inc_reference(proc);
-		hash_table_set_entry(process_table, &proc->pid, sizeof(proc->pid), 1, proc);
+		hash_insert(process_table, &proc->pid, sizeof(proc->pid), &proc->hash_elem, proc);
 		ll_do_insert(process_list, &proc->listnode, proc);
 	} else if(flags & CLONE_KTHREAD) {
 		proc = kernel_process;

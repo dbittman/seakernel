@@ -14,7 +14,8 @@ struct hash *hash_create(struct hash *h, int flags, size_t length)
 {
 	KOBJ_CREATE(h, flags, HASH_ALLOC);
 	mutex_create(&h->lock, 0);
-	h->table = kmalloc(length * sizeof(struct linkedlist *));
+	if(length > 0)
+		h->table = kmalloc(length * sizeof(struct linkedlist *));
 	h->length = length;
 	return h;
 }

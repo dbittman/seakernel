@@ -24,13 +24,14 @@ struct cache {
 	size_t slabcount;
 	size_t object_size;
 	mutex_t lock;
+	struct hashelem hash_elem;
 };
 
 #define SLAB_SIZE mm_page_size(1)
 #define SLAB_MAGIC 0xADA5A54B
 struct cache cache_cache;
 mutex_t cache_lock;
-struct hash_table cache_hash;
+struct hash cache_hash;
 struct valloc slabs_reg;
 
 int full_slabs_count=0, partial_slabs_count=0, empty_slabs_count=0;
@@ -48,14 +49,7 @@ int kerfs_kmalloc_report(int direction, void *param, size_t size, size_t offset,
 			"Region Usage: %d / %d, Slab Usage: %d %d %d, cache hash load: %d%%\nTotal bytes allocated: %d\n",
 			valloc_count_used(&slabs_reg), slabs_reg.npages,
 			full_slabs_count, partial_slabs_count, empty_slabs_count,
-			(cache_hash.count * 100) / cache_hash.size, total_allocated);
-	void *ent;
-	uint64_t n=0;
-	while(hash_table_enumerate_entries(&cache_hash, n++, 0, 0, 0, &ent) != -ENOENT) {
-		struct cache *cache = ent;
-		KERFS_PRINTF(offset, length, buf, current,
-				"cache %d: size=%d, slabcount=%d\n", (int)n, cache->object_size, cache->slabcount);
-	}
+			(hash_count(&cache_hash) * 100) / hash_length(&cache_hash), total_allocated);
 	return current;
 }
 
@@ -168,33 +162,37 @@ static struct cache *select_cache(size_t size)
 {
 	mutex_acquire(&cache_lock);
 	struct cache *cache;
-	if(hash_table_get_entry(&cache_hash, &size, sizeof(size), 1, (void **)&cache) == -ENOENT) {
+	if((cache = hash_lookup(&cache_hash, &size, sizeof(size))) == NULL) {
 		size_t cachesize = ((sizeof(struct cache) - 1) & ~63) + 64;
-		int v = hash_table_get_entry(&cache_hash, &cachesize, sizeof(cachesize), 1, (void **)&cache);
-		assert(!v);
+		cache = hash_lookup(&cache_hash, &cachesize, sizeof(cachesize));
+		assert(cache);
 		cache = allocate_object_from_cache(cache);
 		construct_cache(cache, size);
-		hash_table_set_entry(&cache_hash, &cache->object_size, sizeof(cache->object_size), 1, cache);
+		hash_insert(&cache_hash, &cache->object_size, sizeof(cache->object_size), &cache->hash_elem, cache);
 	}
 	mutex_release(&cache_lock);
 	return cache;
 }
 
 #define NUM_ENTRIES 256
-static struct hash_linear_entry __entries[NUM_ENTRIES];
+static struct linkedlist *__entries[NUM_ENTRIES];
+static struct linkedlist __entries_list[NUM_ENTRIES];
 void slab_init(addr_t start, addr_t end)
 {
 	/* init the hash table */
-	hash_table_create(&cache_hash, HASH_NOLOCK, HASH_TYPE_LINEAR);
-	hash_table_specify_function(&cache_hash, HASH_FUNCTION_DEFAULT);
-	memset(__entries, 0, sizeof(__entries));
-	cache_hash.entries = (void **)__entries;
-	cache_hash.size = NUM_ENTRIES;
+	hash_create(&cache_hash, 0, 0);
+	for(int i=0;i<NUM_ENTRIES;i++) {
+		__entries[i] = &__entries_list[i];
+		linkedlist_create(__entries[i], 0);
+	}
+	cache_hash.table = (struct linkedlist **)__entries;
+	cache_hash.length = NUM_ENTRIES;
 
 	/* init the cache_cache */
 	size_t cachesize = ((sizeof(struct cache) - 1) & ~63) + 64;
 	construct_cache(&cache_cache, cachesize);
-	hash_table_set_entry(&cache_hash, &cache_cache.object_size, sizeof(cache_cache.object_size), 1, &cache_cache);
+	hash_insert(&cache_hash, &cache_cache.object_size, sizeof(cache_cache.object_size),
+			&cache_cache.hash_elem, &cache_cache);
 	mutex_create(&cache_lock, 0);
 
 	/* init the region */

@@ -10,41 +10,53 @@
 #include <stdbool.h>
 #include <sea/fs/kerfs.h>
 
-static struct hash_table h_table;
+static struct hash h_table;
+
+struct trace {
+	char *name;
+	struct hashelem hash_elem;
+};
 
 /*initialize trace in main.c*/
-int trace_init(){
-	hash_table_create_default(&h_table, 100);
-	return 1;
+void trace_init()
+{
+	hash_create(&h_table, 0, 100);
 }
 
 /*print out optional arguments formatted by msg if subsys is subscribed*/
-int trace(char *subsys, char *msg, ...){
-	long value;
-	void *val=&value;
-	if(!hash_table_get_entry(&h_table, subsys, 1, strlen(subsys)+1,(void **)&val)){
-			char printbuf[2065];
-			int len = snprintf(printbuf, 64, "[%s]: ", subsys);
-			va_list args;
-			va_start(args, msg);
-			vsnprintf(2000, printbuf+len-1, msg, args);
-			printk(0, printbuf);
-			va_end(args);
+void trace(char *subsys, char *msg, ...)
+{
+	struct trace *trace;
+	if((trace = hash_lookup(&h_table, subsys, strlen(subsys))) != NULL) {
+		char printbuf[2065];
+		int len = snprintf(printbuf, 64, "[%s]: ", subsys);
+		va_list args;
+		va_start(args, msg);
+		vsnprintf(2000, printbuf+len-1, msg, args);
+		printk(0, printbuf);
+		va_end(args);
 	}
-	return value;
 }
 
 /*subscribe subsys to tracing service*/
 int trace_on(char *subsys)
 {
-	long val;
 	printk(0, "[trace]: enable %s\n", subsys);
-	return hash_table_set_entry(&h_table, subsys, 1, strlen(subsys)+1, &val);
+	struct trace *trace = kmalloc(sizeof(struct trace));
+	trace->name = kmalloc((strlen(subsys) + 1) * sizeof(char));
+	strncpy(trace->name, subsys, strlen(subsys));
+	return hash_insert(&h_table, trace->name, strlen(subsys), &trace->hash_elem, trace);
 }
 
 int trace_off(char *subsys)
 {
 	printk(0, "[trace]: disable %s\n", subsys);
-	return hash_table_delete_entry(&h_table, subsys, 1, strlen(subsys)+1);
+	struct trace *trace;
+	if((trace = hash_lookup(&h_table, subsys, strlen(subsys))) != NULL) {
+		hash_delete(&h_table, subsys, strlen(subsys));
+		kfree(trace->name);
+		kfree(trace);
+	}
+	return 0;
 }
 

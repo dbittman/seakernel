@@ -5,7 +5,7 @@
 #include <sea/errno.h>
 #include <sea/ll.h>
 
-struct hash_table *process_table;
+struct hash *process_table;
 struct llist *process_list;
 size_t running_processes = 0;
 
@@ -15,7 +15,7 @@ struct process *tm_process_get(pid_t pid)
 {
 	struct process *proc;
 	mutex_acquire(&process_refs_lock);
-	if(hash_table_get_entry(process_table, &pid, sizeof(pid), 1, (void **)&proc) == -ENOENT) {
+	if((proc = hash_lookup(process_table, &pid, sizeof(pid))) == NULL) {
 		mutex_release(&process_refs_lock);
 		return 0;
 	}
@@ -39,7 +39,7 @@ void tm_process_put(struct process *proc)
 	if(!(proc->refs >= 1))
 		panic(PANIC_NOSYNC, "process refcount error (put): %d (%s) refs = %d\n", proc->pid, proc->command, proc->refs);
 	if(atomic_fetch_sub(&proc->refs, 1) == 1) {
-		hash_table_delete_entry(process_table, &proc->pid, sizeof(proc->pid), 1);
+		hash_delete(process_table, &proc->pid, sizeof(proc->pid));
 		mutex_release(&process_refs_lock);
 		/* do this here...since we must wait for every thread to give up
 		 * their refs. This happens in schedule, after it gets scheduled away */

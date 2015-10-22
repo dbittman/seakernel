@@ -25,9 +25,7 @@ void tm_init_multitasking(void)
 {
 	printk(KERN_DEBUG, "[sched]: Starting multitasking system...\n");
 	
-	process_table = hash_table_create(0, 0, HASH_TYPE_CHAIN);
-	hash_table_resize(process_table, HASH_RESIZE_MODE_IGNORE, 1000);
-	hash_table_specify_function(process_table, HASH_FUNCTION_DEFAULT);
+	process_table = hash_create(0, 0, 1000);
 
 	process_list = ll_create(0);
 	mutex_create(&process_refs_lock, 0);
@@ -40,7 +38,7 @@ void tm_init_multitasking(void)
 
 	proc->refs = 2;
 	thread->refs = 1;
-	hash_table_set_entry(process_table, &proc->pid, sizeof(proc->pid), 1, proc);
+	hash_insert(process_table, &proc->pid, sizeof(proc->pid), &proc->hash_elem, proc);
 	hash_insert(thread_table, &thread->tid, sizeof(thread->tid), &thread->hash_elem, thread);
 	ll_do_insert(process_list, &proc->listnode, proc);
 

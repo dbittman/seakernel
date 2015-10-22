@@ -9,7 +9,7 @@
 #include <sea/vsprintf.h>
 static uint32_t fsids = 0;
 
-static struct hash_table fsdrivershash;
+static struct hash fsdrivershash;
 static struct llist fsdriverslist;
 
 static struct llist fslist;
@@ -19,9 +19,7 @@ void fs_fsm_init(void)
 {
 	ll_create(&fsdriverslist);
 	ll_create(&fslist);
-	hash_table_create(&fsdrivershash, 0, HASH_TYPE_CHAIN);
-	hash_table_resize(&fsdrivershash, HASH_RESIZE_MODE_IGNORE,10);
-	hash_table_specify_function(&fsdrivershash, HASH_FUNCTION_DEFAULT);
+	hash_create(&fsdrivershash, 0, 10);
 }
 
 static void __kfs_mnt_rp_write(struct filesystem *fs, size_t *offset, size_t length, char *buf, size_t *current)
@@ -85,7 +83,7 @@ int fs_filesystem_init_mount(struct filesystem *fs, char *point, char *node, cha
 	struct fsdriver *fd = 0;
 
 	if(type) {
-		if(hash_table_get_entry(&fsdrivershash, type, 1, strlen(type), (void **)&fd) == -ENOENT)
+		if((fd = hash_lookup(&fsdrivershash, type, strlen(type))) == NULL)
 			return -EINVAL;
 		fs->driver = fd;
 		return fd->mount(fs);
@@ -156,7 +154,7 @@ void fs_filesystem_destroy(struct filesystem *fs)
 int fs_filesystem_register(struct fsdriver *fd)
 {
 	fd->ln = ll_insert(&fsdriverslist, fd);
-	return hash_table_set_entry(&fsdrivershash, (void *)fd->name, 1, strlen(fd->name), fd);
+	return hash_insert(&fsdrivershash, fd->name, strlen(fd->name), &fd->hash_elem, fd);
 }
 
 int fs_filesystem_unregister(struct fsdriver *fd)
@@ -164,6 +162,6 @@ int fs_filesystem_unregister(struct fsdriver *fd)
 	assert(fd->ln);
 	ll_remove(&fsdriverslist, fd->ln);
 	fd->ln=0;
-	return hash_table_delete_entry(&fsdrivershash, (void *)fd->name, 1, strlen(fd->name));
+	return hash_delete(&fsdrivershash, fd->name, strlen(fd->name));
 }
 

@@ -4,6 +4,7 @@
 #include <sea/dm/dev.h>
 #include <sea/sys/stat.h>
 #include <sea/ll.h>
+#include <sea/lib/hash.h>
 
 struct dirent_posix;
 struct inode;
@@ -62,6 +63,7 @@ struct fsdriver {
 	int (*mount)(struct filesystem *);
 	int (*umount)(struct filesystem *);
 	struct llistnode *ln;
+	struct hashelem hash_elem;
 };
 
 int fs_fssync(struct filesystem *fs);

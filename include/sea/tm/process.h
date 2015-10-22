@@ -88,6 +88,7 @@ struct process {
 	unsigned char stack_bitmap[NUM_USERMODE_STACKS / 8];
 	mutex_t stacks_lock;
 	struct blocklist waitlist;
+	struct hashelem hash_elem;
 };
 
 #define WNOHANG 1
@@ -124,7 +125,7 @@ int sys_isstate(pid_t pid, int state);
 /* provided by arch-dep code */
 extern struct llist *process_list;
 
-extern struct hash_table *process_table;
+extern struct hash *process_table;
 
 #include <sea/mm/vmm.h>
 

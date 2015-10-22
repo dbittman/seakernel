@@ -108,7 +108,7 @@ extern struct hash_collision_resolver __hash_linear_resolver;
 
 struct hashelem {
 	void *ptr;
-	void *key;
+	const void *key;
 	size_t keylen;
 	struct linkedentry entry;
 };
@@ -125,9 +125,9 @@ static inline size_t hash_length(struct hash *h) { return h->length; }
 
 struct hash *hash_create(struct hash *h, int flags, size_t length);
 void hash_destroy(struct hash *h);
-int hash_insert(struct hash *h, void *key, size_t keylen, struct hashelem *elem, void *data);
-int hash_delete(struct hash *h, void *key, size_t keylen);
-void *hash_lookup(struct hash *h, void *key, size_t keylen);
+int hash_insert(struct hash *h, const void *key, size_t keylen, struct hashelem *elem, void *data);
+int hash_delete(struct hash *h, const void *key, size_t keylen);
+void *hash_lookup(struct hash *h, const void *key, size_t keylen);
 void hash_map(struct hash *h, void (*fn)(struct hashelem *obj));
 
 

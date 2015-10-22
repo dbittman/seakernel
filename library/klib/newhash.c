@@ -30,10 +30,10 @@ void hash_destroy(struct hash *h)
 	KOBJ_DESTROY(h, HASH_ALLOC);
 }
 
-static size_t __hashfn(void *key, size_t keylen, size_t table_len)
+static size_t __hashfn(const void *key, size_t keylen, size_t table_len)
 {
 	size_t hash = 5381;
-	unsigned char *buf = key;
+	const unsigned char *buf = key;
 	for(unsigned int i = 0;i < keylen;i++) {
 		unsigned char e = buf[i];
 		hash = ((hash << 5) + hash) + e;
@@ -41,7 +41,7 @@ static size_t __hashfn(void *key, size_t keylen, size_t table_len)
 	return hash % table_len;
 }
 
-static bool __same_keys(void *key1, size_t key1len, void *key2, size_t key2len)
+static bool __same_keys(const void *key1, size_t key1len, const void *key2, size_t key2len)
 {
 	if(key1len != key2len)
 		return false;
@@ -55,7 +55,7 @@ static bool __ll_check_exist(struct linkedentry *ent, void *data)
 	return __same_keys(he->key, he->keylen, this->key, this->keylen);
 }
 
-int hash_insert(struct hash *h, void *key, size_t keylen, struct hashelem *elem, void *data)
+int hash_insert(struct hash *h, const void *key, size_t keylen, struct hashelem *elem, void *data)
 {
 	__lock(h);
 	size_t index = __hashfn(key, keylen, h->length);
@@ -78,7 +78,7 @@ int hash_insert(struct hash *h, void *key, size_t keylen, struct hashelem *elem,
 	return 0;
 }
 
-int hash_delete(struct hash *h, void *key, size_t keylen)
+int hash_delete(struct hash *h, const void *key, size_t keylen)
 {
 	__lock(h);
 	size_t index = __hashfn(key, keylen, h->length);
@@ -98,7 +98,7 @@ int hash_delete(struct hash *h, void *key, size_t keylen)
 	return ent ? 0 : -ENOENT;
 }
 
-void *hash_lookup(struct hash *h, void *key, size_t keylen)
+void *hash_lookup(struct hash *h, const void *key, size_t keylen)
 {
 	__lock(h);
 	size_t index = __hashfn(key, keylen, h->length);

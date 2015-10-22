@@ -15,6 +15,7 @@ struct dirent {
 	char name[DNAME_LEN];
 	size_t namelen;
 	struct queue_item lru_item;
+	struct hashelem hash_elem;
 };
 enum
 {

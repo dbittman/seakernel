@@ -35,7 +35,7 @@ struct inode {
 	rwlock_t lock, metalock;
 	struct queue_item lru_item;
 	struct llistnode inuse_item, dirty_item;
-	struct hash_table dirents;
+	struct hash dirents;
 	struct filesystem *filesystem;
 	
 	_Atomic int count;
@@ -59,7 +59,7 @@ struct inode {
 	struct hashelem hash_elem;
 
 	/* mmap stuff */
-	struct hash_table physicals;
+	struct hash physicals;
 	mutex_t mappings_lock;
 	size_t mapped_pages_count, mapped_entries_count;
 };

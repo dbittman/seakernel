@@ -21,17 +21,17 @@
 
 struct physical_page {
 	addr_t page;
+	int pn;
 	int count;
 	mutex_t lock;
+	struct hashelem hash_elem;
 };
 
 /* if physicals hasn't been initialized, initialize it. */
 static void __init_physicals(struct inode *node)
 {
 	if(!(atomic_fetch_or(&node->flags, INODE_PCACHE) & INODE_PCACHE)) {
-		hash_table_create(&node->physicals, 0, HASH_TYPE_CHAIN);
-		hash_table_resize(&node->physicals, HASH_RESIZE_MODE_IGNORE, 1000);
-		hash_table_specify_function(&node->physicals, HASH_FUNCTION_DEFAULT);
+		hash_create(&node->physicals, 0, 1000);
 	}
 }
 
@@ -81,13 +81,11 @@ addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt,
 	}
 	mutex_acquire(&node->mappings_lock);
 	int page_number = offset / PAGE_SIZE;
-	void *value;
-	if(hash_table_get_entry(&node->physicals, &page_number, sizeof(page_number), 1, &value)
-			== -ENOENT) {
+	struct physical_page *entry;
+	if((entry = hash_lookup(&node->physicals, &page_number, sizeof(page_number))) == NULL) {
 		mutex_release(&node->mappings_lock);
 		return 0;
 	}
-	struct physical_page *entry = value;
 	assert(entry->count);
 	/* so, we don't have to worry about someone decreasing to count to zero while we're working, 
 	   since a process never calls this function without being responsible for one of the counts. */
@@ -141,17 +139,14 @@ void fs_inode_map_region(struct inode *node, size_t offset, size_t length)
 	int npages = ((length-1) / PAGE_SIZE) + 1;
 	for(int i=page_number;i<(page_number+npages);i++)
 	{
-		void *value;
 		struct physical_page *entry;
-		if(hash_table_get_entry(&node->physicals, &i, sizeof(i), 1, &value) == -ENOENT)
-		{
+		if((entry = hash_lookup(&node->physicals, &i, sizeof(i))) == NULL) {
 			/* create the entry, and add it */
 			entry = __create_entry();
-			hash_table_set_entry(&node->physicals, &i, sizeof(i), 1, entry);
+			entry->pn = i;
+			hash_insert(&node->physicals, &entry->pn, sizeof(entry->pn), &entry->hash_elem, entry);
 			atomic_fetch_add_explicit(&node->mapped_entries_count, 1, memory_order_relaxed);
 		}
-		else
-			entry = value;
 
 		/* bump the count... */
 		atomic_fetch_add_explicit(&entry->count, 1, memory_order_relaxed);
@@ -190,16 +185,13 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 	int npages = ((length-1) / PAGE_SIZE) + 1;
 	for(int i=page_number;i<(page_number+npages);i++)
 	{
-		void *value;
 		struct physical_page *entry;
-		if(hash_table_get_entry(&node->physicals, &i, sizeof(i), 1, &value) == 0)
-		{
+		if((entry = hash_lookup(&node->physicals, &i, sizeof(i))) != NULL) {
 			/* decrease the count. Because it's unlikely that a single file
 			 * is going to be mmapped my a lot of processes, we can just free
 			 * everything in good faith that it'll be a while before we need
 			 * to a page again
 			 */
-			entry = value;
 			mutex_acquire(&entry->lock);
 			if(atomic_fetch_sub(&entry->count, 1) == 1)
 			{
@@ -218,7 +210,7 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 				if(entry->page)
 					mm_physical_deallocate(entry->page);
 				entry->page = 0;
-				hash_table_delete_entry(&node->physicals, &i, sizeof(i), 1);
+				hash_delete(&node->physicals, &i, sizeof(i));
 				mutex_destroy(&entry->lock);
 				kfree(entry);
 				atomic_fetch_sub(&node->mapped_entries_count, 1);
@@ -243,7 +235,7 @@ void fs_inode_destroy_physicals(struct inode *node)
 	/* this can only be called from free_inode, so we don't need to worry about locks */
 	if(!(node->flags & INODE_PCACHE))
 		return;
-	hash_table_destroy(&node->physicals);
+	hash_destroy(&node->physicals);
 	mutex_destroy(&node->mappings_lock);
 }
 

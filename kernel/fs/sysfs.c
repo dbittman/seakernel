@@ -9,7 +9,7 @@
 #include <sea/vsprintf.h>
 static dev_t dev_num = 0;
 
-static struct hash_table *table = 0;
+static struct hash *table = 0;
 
 struct kerfs_node {
 	dev_t num;
@@ -17,6 +17,7 @@ struct kerfs_node {
 	size_t size;
 	int flags;
 	int (*fn)(int direction, void *, size_t, size_t, size_t, char *);
+	struct hashelem hash_elem;
 };
 
 int kerfs_register_parameter(char *path, void *param, size_t size, int flags, int (*call)(int, void *, size_t, size_t, size_t, char *))
@@ -34,8 +35,7 @@ int kerfs_register_parameter(char *path, void *param, size_t size, int flags, in
 	kn->size = size;
 	kn->flags = flags;
 	kn->fn = call;
-	int v = hash_table_set_entry(table, &num, sizeof(num), 1, kn);
-	assertmsg(!v, "failed to register kerfs parameter");
+	hash_insert(table, &kn->num, sizeof(kn->num), &kn->hash_elem, kn);
 	return 0;
 }
 
@@ -52,7 +52,7 @@ int kerfs_unregister_entry(char *path)
 	dev_t num = node->phys_dev;
 	vfs_icache_put(node);
 
-	hash_table_delete_entry(table, &num, sizeof(num), 1);
+	hash_delete(table, &num, sizeof(num));
 	sys_unlink(path);
 	
 	current_process->effective_uid = old;
@@ -114,7 +114,7 @@ int kerfs_rw_integer(int direction, void *param, size_t sz, size_t offset, size_
 int kerfs_read(struct inode *node, size_t offset, size_t length, char *buffer)
 {
 	struct kerfs_node *kn;
-	if(hash_table_get_entry(table, &node->phys_dev, sizeof(node->phys_dev), 1, (void **)&kn) < 0)
+	if((kn = hash_lookup(table, &node->phys_dev, sizeof(node->phys_dev))) == NULL)
 		return -ENOENT;
 
 	return kn->fn(READ, kn->param, kn->size, offset, length, buffer);
@@ -123,7 +123,7 @@ int kerfs_read(struct inode *node, size_t offset, size_t length, char *buffer)
 int kerfs_write(struct inode *node, size_t offset, size_t length, char *buffer)
 {
 	struct kerfs_node *kn;
-	if(hash_table_get_entry(table, &node->phys_dev, sizeof(node->phys_dev), 1, (void **)&kn) < 0)
+	if((kn = hash_lookup(table, &node->phys_dev, sizeof(node->phys_dev))) == NULL)
 		return -ENOENT;
 
 	if(!(kn->flags & KERFS_PARAM_WRITE))
@@ -134,8 +134,6 @@ int kerfs_write(struct inode *node, size_t offset, size_t length, char *buffer)
 
 void kerfs_init(void)
 {
-	table = hash_table_create(0, 0, HASH_TYPE_CHAIN);
-	hash_table_resize(table, HASH_RESIZE_MODE_IGNORE,1000);
-	hash_table_specify_function(table, HASH_FUNCTION_DEFAULT);
+	table = hash_create(0, 0, 1000);
 }
 

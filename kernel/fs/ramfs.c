@@ -31,18 +31,17 @@ struct rfsnode {
 	gid_t gid;
 	uint16_t nlinks;
 	struct llist *ents;
+	struct hashelem hash_elem;
 };
 
 struct rfsinfo {
-	struct hash_table *nodes;
+	struct hash *nodes;
 	uint32_t next_id;
 };
 
 int ramfs_mount(struct filesystem *fs)
 {
-	struct hash_table *h = hash_table_create(0, 0, HASH_TYPE_CHAIN);
-	hash_table_resize(h, HASH_RESIZE_MODE_IGNORE,1000);
-	hash_table_specify_function(h, HASH_FUNCTION_DEFAULT);
+	struct hash *h = hash_create(0, 0, 1000);
 	struct rfsnode *root = kmalloc(sizeof(struct rfsnode));
 	root->mode = S_IFDIR | 0755;
 	root->ents = ll_create(0);
@@ -56,7 +55,7 @@ int ramfs_mount(struct filesystem *fs)
 	fs->root_inode_id = 0;
 	fs->fs_ops = &ramfs_fsops;
 	fs->fs_inode_ops = &ramfs_iops;
-	int r = hash_table_set_entry(h, &fs->root_inode_id, sizeof(fs->root_inode_id), 1, root);
+	hash_insert(h, &root->num, sizeof(root->num), &root->hash_elem, root);
 
 	struct rfsdirent *dot = kmalloc(sizeof(struct rfsdirent));
 	strncpy(dot->name, ".", 1);
@@ -79,7 +78,7 @@ int ramfs_alloc_inode(struct filesystem *fs, uint32_t *id)
 	node->num = *id;
 	node->ents = ll_create(0);
 
-	hash_table_set_entry(info->nodes, id, sizeof(*id), 1, node);
+	hash_insert(info->nodes, &node->num, sizeof(node->num), &node->hash_elem, node);
 	return 0;
 }
 
@@ -88,7 +87,7 @@ int ramfs_inode_push(struct filesystem *fs, struct inode *node)
 	struct rfsinfo *info = fs->data;
 	struct rfsnode *rfsnode;
 
-	if(hash_table_get_entry(info->nodes, &node->id, sizeof(node->id), 1, (void **)&rfsnode))
+	if((rfsnode = hash_lookup(info->nodes, &node->id, sizeof(node->id))) == NULL)
 		return -EIO;
 
 	rfsnode->uid = node->uid;
@@ -104,7 +103,7 @@ int ramfs_inode_pull(struct filesystem *fs, struct inode *node)
 	struct rfsinfo *info = fs->data;
 	struct rfsnode *rfsnode;
 
-	if(hash_table_get_entry(info->nodes, &node->id, sizeof(node->id), 1, (void **)&rfsnode))
+	if((rfsnode = hash_lookup(info->nodes, &node->id, sizeof(node->id))) == NULL)
 		return -EIO;
 
 	node->uid = rfsnode->uid;
@@ -125,9 +124,8 @@ int ramfs_inode_get_dirent(struct filesystem *fs, struct inode *node,
 	struct rfsinfo *info = fs->data;
 	struct rfsnode *rfsnode;
 
-	if(hash_table_get_entry(info->nodes, &node->id, sizeof(node->id), 1, (void **)&rfsnode)) {
+	if((rfsnode = hash_lookup(info->nodes, &node->id, sizeof(node->id))) == NULL)
 		return -EIO;
-	}
 
 	struct llistnode *ln;
 	struct rfsdirent *rd, *found=0;
@@ -179,7 +177,7 @@ int ramfs_inode_getdents(struct filesystem *fs, struct inode *node, unsigned off
 	struct rfsinfo *info = fs->data;
 	struct rfsnode *rfsnode;
 
-	if(hash_table_get_entry(info->nodes, &node->id, sizeof(node->id), 1, (void **)&rfsnode))
+	if((rfsnode = hash_lookup(info->nodes, &node->id, sizeof(node->id))) == NULL)
 		return -EIO;
 
 	struct llistnode *ln;
@@ -216,10 +214,10 @@ int ramfs_inode_link(struct filesystem *fs, struct inode *parent, struct inode *
 {
 	struct rfsinfo *info = fs->data;
 	struct rfsnode *rfsparent, *rfstarget;
-	if(hash_table_get_entry(info->nodes, &parent->id, sizeof(parent->id), 1, (void **)&rfsparent))
+	if((rfsparent = hash_lookup(info->nodes, &parent->id, sizeof(parent->id))) == NULL)
 		return -EIO;
 
-	if(hash_table_get_entry(info->nodes, &target->id, sizeof(target->id), 1, (void **)&rfstarget))
+	if((rfstarget = hash_lookup(info->nodes, &target->id, sizeof(target->id))) == NULL)
 		return -EIO;
 
 	atomic_fetch_add_explicit(&rfstarget->nlinks, 1, memory_order_relaxed);
@@ -238,7 +236,7 @@ int ramfs_inode_unlink(struct filesystem *fs, struct inode *parent, const char *
 {
 	struct rfsinfo *info = fs->data;
 	struct rfsnode *rfsparent, *rfstarget;
-	if(hash_table_get_entry(info->nodes, &parent->id, sizeof(parent->id), 1, (void **)&rfsparent))
+	if((rfsparent = hash_lookup(info->nodes, &parent->id, sizeof(parent->id))) == NULL)
 		return -EIO;
 
 	struct llistnode *ln;
@@ -254,13 +252,13 @@ int ramfs_inode_unlink(struct filesystem *fs, struct inode *parent, const char *
 	if(!found)
 		return -ENOENT;
 
-	if(hash_table_get_entry(info->nodes, &found->ino, sizeof(found->ino), 1, (void **)&rfstarget))
+	if((rfstarget = hash_lookup(info->nodes, &found->ino, sizeof(found->ino))) == NULL)
 		return -EIO;
 
 	found->ino = 0;
 	int r = atomic_fetch_sub_explicit(&rfstarget->nlinks, 1, memory_order_relaxed);
 	if(r == 1) {
-		hash_table_delete_entry(info->nodes, &target->id, sizeof(found->ino), 1);
+		hash_delete(info->nodes, &target->id, sizeof(target->id));
 		//if(rfstarget->ents->num == 0) {
 			ll_destroy(rfstarget->ents);
 			kfree(rfstarget);
@@ -295,7 +293,7 @@ int ramfs_inode_read(struct filesystem *fs, struct inode *node,
 	if(!amount || offset > node->length)
 		return 0;
 
-	if(hash_table_get_entry(info->nodes, &node->id, sizeof(node->id), 1, (void **)&rfsnode))
+	if((rfsnode = hash_lookup(info->nodes, &node->id, sizeof(node->id))) == NULL)
 		return -EIO;
 
 	memcpy(buffer, (unsigned char *)rfsnode->data + offset, amount);
@@ -307,7 +305,7 @@ void ramfs_point_to_data(struct inode *node, void *data, size_t len)
 	struct rfsinfo *info = node->filesystem->data;
 	struct rfsnode *rfsnode;
 	
-	if(hash_table_get_entry(info->nodes, &node->id, sizeof(node->id), 1, (void **)&rfsnode))
+	if((rfsnode = hash_lookup(info->nodes, &node->id, sizeof(node->id))) == NULL)
 		return;
 
 	if((addr_t)rfsnode->data >= MEMMAP_KMALLOC_START && (addr_t)rfsnode->data < MEMMAP_KMALLOC_END)
@@ -325,7 +323,7 @@ int ramfs_inode_write(struct filesystem *fs, struct inode *node,
 	if(node->phys_dev && S_ISREG(node->mode))
 		return kerfs_write(node, offset, length, (char *)buffer);
 
-	if(hash_table_get_entry(info->nodes, &node->id, sizeof(node->id), 1, (void **)&rfsnode))
+	if((rfsnode = hash_lookup(info->nodes, &node->id, sizeof(node->id))) == NULL)
 		return -EIO;
 	size_t end = length + offset;
 	if(end > node->length && end > 0x1000)

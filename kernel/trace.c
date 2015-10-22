@@ -4,7 +4,7 @@
 #include <sea/string.h>
 #include <sea/trace.h>
 #include <stdarg.h>
-#include <sea/lib/hash-simple.h>
+#include <sea/lib/hash.h>
 #include <sea/string.h>
 #include <sea/tty/terminal.h>
 #include <stdbool.h>

@@ -10,16 +10,14 @@
 #include <sea/fs/pipe.h>
 #include <sea/fs/kerfs.h>
 
-struct hash_table *icache;
+struct hash *icache;
 struct llist *ic_inuse, *ic_dirty;
 struct queue *ic_lru;
 mutex_t *ic_lock;
 
 void vfs_icache_init(void)
 {
-	icache = hash_table_create(0, 0, HASH_TYPE_CHAIN);
-	hash_table_resize(icache, HASH_RESIZE_MODE_IGNORE,1000); /* TODO: initial value? */
-	hash_table_specify_function(icache, HASH_FUNCTION_DEFAULT);
+	icache = hash_create(0, 0, 0x4000);
 
 	ic_inuse = ll_create(0);
 	ic_dirty = ll_create(0);
@@ -118,13 +116,15 @@ struct inode *vfs_icache_get(struct filesystem *fs, uint32_t num)
 	int newly_created = 0;
 	uint32_t key[2] = {fs->id, num};
 	mutex_acquire(ic_lock);
-	if(hash_table_get_entry(icache, key, sizeof(uint32_t), 2, (void**)&node) == -ENOENT) {
+	if((node = hash_lookup(icache, key, sizeof(key))) == NULL) {
 		/* didn't find it. Okay, create one */
 		node = vfs_inode_create();
 		node->filesystem = fs;
 		node->flags = INODE_NEEDREAD;
 		node->id = num;
-		hash_table_set_entry(icache, key, sizeof(uint32_t), 2, node);
+		node->key[0] = fs->id;
+		node->key[1] = num;
+		hash_insert(icache, node->key, sizeof(node->key), &node->hash_elem, node);
 		newly_created = 1;
 	}
 	assert(node->filesystem == fs);
@@ -190,7 +190,7 @@ void vfs_icache_put(struct inode *node)
 			assert(!node->dirents.count);
 			if(node->filesystem) {
 				uint32_t key[2] = {node->filesystem->id, node->id};
-				hash_table_delete_entry(icache, key, sizeof(uint32_t), 2);
+				hash_delete(icache, key, sizeof(key));
 			}
 			fs_inode_push(node);
 			vfs_inode_destroy(node);
@@ -223,7 +223,7 @@ size_t fs_inode_reclaim_lru(void)
 		assert(!(remove->flags & INODE_INUSE));
 		assert(!remove->dirents.count);
 		uint32_t key[2] = {remove->filesystem->id, remove->id};
-		hash_table_delete_entry(icache, key, sizeof(uint32_t), 2);
+		hash_delete(icache, key, sizeof(key));
 		fs_inode_push(remove);
 		vfs_inode_destroy(remove);
 		released = 1;
@@ -348,6 +348,8 @@ int fs_icache_sync(void)
 int kerfs_icache_report(int direction, void *param, size_t size, size_t offset, size_t length, char *buf)
 {
 	size_t current = 0;
+	KERFS_PRINTF(offset, length, buf, current,
+			"icache load: %d%%\n", (100 * hash_count(icache)) / hash_length(icache));
 	KERFS_PRINTF(offset, length, buf, current,
 			"    ID FSID FS-TYPE FLAGS REFCOUNT DIRENTS\n");
 	rwlock_acquire(&ic_dirty->rwl, RWL_READER);

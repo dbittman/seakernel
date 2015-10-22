@@ -55,6 +55,8 @@ struct inode {
 	size_t blocksize;
 	size_t nblocks;
 	uint32_t id;
+	uint32_t key[2];
+	struct hashelem hash_elem;
 
 	/* mmap stuff */
 	struct hash_table physicals;

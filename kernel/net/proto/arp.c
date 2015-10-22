@@ -16,7 +16,7 @@
 
 static struct arp_database {
 	uint16_t ethertype;
-	struct hash_table *table;
+	struct hash *table;
 	mutex_t hashlock;
 } databases[MAX_PROTS];
 
@@ -130,20 +130,18 @@ static void arp_add_entry_to_database(struct arp_database *db, uint16_t prot_add
 	void *tmp;
 	/* we have to first lookup the address, as we may be changing an entry */
 	mutex_acquire(&db->hashlock);
-	if(hash_table_get_entry(db->table, prot_addr, sizeof(uint16_t), 2, &tmp) != -ENOENT) {
-		hash_table_delete_entry(db->table, prot_addr, sizeof(uint16_t), 2);
+	if((tmp = hash_lookup(db->table, prot_addr, sizeof(uint64_t) * 2)) != NULL) {
+		hash_delete(db->table, prot_addr, sizeof(uint16_t) * 2);
 		kfree(tmp);
 	}
 	TRACE_MSG("arp", "adding entry %x:%x -- %x\n", prot_addr[0], prot_addr[1], entry->hw_addr[0]);
-	hash_table_set_entry(db->table, prot_addr, sizeof(uint16_t), 2, entry);
+	hash_insert(db->table, entry->prot_addr, sizeof(uint16_t) * 2, &entry->hash_elem, entry);
 	mutex_release(&db->hashlock);
 }
 
 static struct arp_database *arp_create_database(uint16_t et)
 {
-	struct hash_table *hash = hash_table_create(0, 0, HASH_TYPE_CHAIN);
-	hash_table_resize(hash, HASH_RESIZE_MODE_IGNORE, 100);
-	hash_table_specify_function(hash, HASH_FUNCTION_DEFAULT);
+	struct hash *hash = hash_create(0, 0, 100);
 	mutex_acquire(&databaselock);
 	int i;
 	for(i=0;i<MAX_PROTS;i++) {
@@ -221,7 +219,7 @@ static struct arp_entry *arp_do_lookup(int ethertype, uint16_t prot_addr[2])
 		return 0;
 	void *entry;
 	mutex_acquire(&db->hashlock);
-	if(hash_table_get_entry(db->table, prot_addr, sizeof(uint16_t), 2, &entry) == -ENOENT) {
+	if((entry = hash_lookup(db->table, prot_addr, sizeof(uint16_t) * 2)) == NULL) {
 		mutex_release(&db->hashlock);
 		return 0;
 	}
@@ -240,8 +238,8 @@ void arp_remove_entry(int ptype, uint8_t paddr[4])
 	if(!db)
 		return;
 	mutex_acquire(&db->hashlock);
-	if(hash_table_get_entry(db->table, pr, sizeof(uint16_t), 2, &ent) != -ENOENT) {
-		hash_table_delete_entry(db->table, pr, sizeof(uint16_t), 2);
+	if((ent = hash_lookup(db->table, pr, sizeof(uint16_t) * 2)) != NULL) {
+		hash_delete(db->table, pr, sizeof(uint16_t) * 2);
 		kfree(ent);
 	}
 	mutex_release(&db->hashlock);

@@ -31,6 +31,7 @@ struct arp_entry {
 	int type;
 	time_t timestamp;
 	struct llistnode *node; /* for outstanding requests list */
+	struct hashelem hash_elem;
 };
 
 int arp_receive_packet(struct net_dev *nd, struct net_packet *, struct arp_packet *packet);

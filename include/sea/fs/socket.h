@@ -153,6 +153,8 @@ struct socket {
 
 	struct llistnode *node;
 	struct queue rec_data_queue;
+	struct sockaddr bindaddr;
+	struct hashelem hash_elem;
 };
 
 struct socket_fromto_info {

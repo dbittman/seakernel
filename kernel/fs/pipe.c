@@ -14,7 +14,7 @@ pipe_t *fs_pipe_create (void)
 {
 	pipe_t *pipe = (pipe_t *)kmalloc(sizeof(pipe_t));
 	pipe->length = PIPE_SIZE;
-	pipe->buffer = (char *)kmalloc(PIPE_SIZE+1);
+	pipe->buffer = (char *)kmalloc(PIPE_SIZE);
 	mutex_create(&pipe->lock, 0);
 	blocklist_create(&pipe->read_blocked, 0);
 	blocklist_create(&pipe->write_blocked, 0);
@@ -94,12 +94,11 @@ int fs_pipe_read(struct inode *ino, int flags, char *buffer, size_t length)
 	if((flags & _FNONBLOCK) && !pipe->pending)
 		return -EAGAIN;
 	/* should we even try reading? (empty pipe with no writing processes=no) */
-	if(!pipe->pending && pipe->count <= 1 && pipe->type != PIPE_NAMED)
+	if(!pipe->pending && pipe->count <= 1)
 		return 0;
 	/* block until we have stuff to read */
 	mutex_acquire(&pipe->lock);
-	while(!pipe->pending && (pipe->count > 1 && pipe->type != PIPE_NAMED 
-			&& pipe->wrcount>0)) {
+	while(!pipe->pending && (pipe->count > 1 && pipe->wrcount>0)) {
 		/* we need to block, but also release the lock. Disable interrupts
 		 * so we don't schedule before we want to */
 		int r = tm_thread_block_confirm(&pipe->read_blocked,
@@ -150,7 +149,7 @@ int fs_pipe_write(struct inode *ino, int flags, char *initialbuffer, size_t tota
 		if(length > remain)
 			length = remain;
 		/* we're writing to a pipe with no reading process! */
-		if((pipe->count - pipe->wrcount) == 0 && pipe->type != PIPE_NAMED) {
+		if((pipe->count - pipe->wrcount) == 0) {
 			mutex_release(&pipe->lock);
 			tm_signal_send_thread(current_thread, SIGPIPE);
 			return -EPIPE;
@@ -191,8 +190,7 @@ int fs_pipe_select(struct inode *in, int rw)
 		return 1;
 	pipe_t *pipe = in->pipe;
 	if(!pipe) return 1;
-	if(!pipe->pending && (pipe->count > 1 && pipe->type != PIPE_NAMED 
-			&& pipe->wrcount>0))
+	if(!pipe->pending && (pipe->count > 1 && pipe->wrcount>0))
 		return 0;
 	return 1;
 }

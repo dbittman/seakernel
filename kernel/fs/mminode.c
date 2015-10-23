@@ -11,6 +11,7 @@
 #include <sea/errno.h>
 #include <sea/vsprintf.h>
 #include <sea/mm/kmalloc.h>
+#include <sea/util.h>
 /* Each page of the inode has a count associated with it. When the count reaches
  * zero, the page is written to disk, and the page is freed. When region is mapped,
  * the pages aren't necessarily allocated right away. A call to map_region
@@ -42,8 +43,9 @@ addr_t fs_inode_map_private_physical_page(struct inode *node, addr_t virt,
 	assert(!(virt & ~PAGE_MASK));
 	assert(!(offset & ~PAGE_MASK));
 	/* specify MAP_ZERO, since read_inode may not fill up the whole page */
-	ph = mm_physical_allocate(0x1000, false); //TODO: make sizes be req_len?
-	bool result = mm_virtual_map(virt, ph, MAP_ZERO | attrib | PAGE_WRITE, 0x1000);
+	size_t memsz = PAGE_SIZE;
+	ph = mm_physical_allocate(memsz, false);
+	bool result = mm_virtual_map(virt, ph, MAP_ZERO | attrib | PAGE_WRITE, memsz);
 	if(!result)
 		panic(0, "trying to remap mminode private section %x", virt);
 	int err=-1;
@@ -72,7 +74,6 @@ addr_t fs_inode_map_private_physical_page(struct inode *node, addr_t virt,
 addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt, 
 		size_t offset, int flags, int attrib)
 {
-	/* TODO: Handle non page-aligned lengths */
 	assert(!(virt & ~PAGE_MASK));
 	assert(!(offset & ~PAGE_MASK));
 	/* test if we have any shared mappings... */

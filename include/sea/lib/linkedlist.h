@@ -15,9 +15,21 @@ struct linkedlist {
 	struct linkedentry *head;
 	struct linkedentry sentry;
 	struct spinlock lock;
-	size_t count;
+	_Atomic size_t count;
 	int flags;
 };
+
+static inline void *linkedlist_head(struct linkedlist *list)
+{
+	void *ret = NULL;
+	if(!(list->flags & LINKEDLIST_LOCKLESS))
+		spinlock_acquire(&list->lock);
+	if(list->head->next != &list->sentry)
+		ret = list->head->next->obj;
+	if(!(list->flags & LINKEDLIST_LOCKLESS))
+		spinlock_release(&list->lock);
+	return ret;
+}
 
 struct linkedlist *linkedlist_create(struct linkedlist *list, int flags);
 void linkedlist_destroy(struct linkedlist *list);

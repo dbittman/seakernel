@@ -78,15 +78,6 @@ struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int
 		*error = -EACCES;
 		return 0;
 	}
-	if((flags & _FNONBLOCK) && (flags & _FWRITE) && S_ISFIFO(inode->mode) && inode->pipe) {
-		/* check if we have readers on this fifo. If not, we return an error */
-		if((inode->pipe->count - inode->pipe->wrcount) == 0) {
-			vfs_icache_put(inode);
-			vfs_dirent_release(dirent);
-			*error = -ENXIO;
-			return 0;
-		}
-	}
 	int ret;
 	f = (struct file *)kmalloc(sizeof(struct file));
 	f->inode = inode;
@@ -111,11 +102,6 @@ struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int
 		inode->length=0;
 		inode->ctime = inode->mtime = time_get_epoch();
 		vfs_inode_set_dirty(inode);
-	}
-	if(S_ISFIFO(inode->mode) && inode->pipe) {
-		atomic_fetch_add(&inode->pipe->count, 1);
-		if(f->flags & _FWRITE)
-			atomic_fetch_add(&f->inode->pipe->wrcount, 1);
 	}
 	fs_fput(current_process, ret, 0);
 	return f;
@@ -162,8 +148,7 @@ static int duplicate(struct process *t, int fp, int n)
 	new->fd_flags = f->fd_flags;
 	new->fd_flags &= ~FD_CLOEXEC;
 	new->pos = f->pos;
-	/* TODO: pipe stuff isn't thread safe ... */
-	if(f->inode->pipe && !f->inode->pipe->type) {
+	if(f->inode->pipe) {
 		atomic_fetch_add(&f->inode->pipe->count, 1);
 		if(f->flags & _FWRITE)
 			atomic_fetch_add(&f->inode->pipe->wrcount, 1);

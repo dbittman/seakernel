@@ -525,10 +525,6 @@ int sys_mknod(char *path, mode_t mode, dev_t dev)
 	i->phys_dev = dev;
 	i->mode = (mode & ~0xFFF) | ((mode&0xFFF) & (~current_process->cmask&0xFFF));
 	vfs_inode_set_dirty(i);
-	if(S_ISFIFO(i->mode)) {
-		i->pipe = fs_pipe_create();
-		i->pipe->type = PIPE_NAMED;
-	}
 	vfs_icache_put(i);
 	return 0;
 }

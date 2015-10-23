@@ -11,7 +11,7 @@
 #include <sea/fs/kerfs.h>
 struct slab {
 	struct cache *cache;
-	struct llistnode node;
+	struct linkedentry node;
 	struct valloc allocator;
 	_Atomic int count;
 	int max;
@@ -20,7 +20,7 @@ struct slab {
 };
 
 struct cache {
-	struct llist empty, partial, full;
+	struct linkedlist empty, partial, full;
 	size_t slabcount;
 	size_t object_size;
 	mutex_t lock;
@@ -98,13 +98,13 @@ static void free_object(void *object)
 	if(count == slab->max) {
 		atomic_fetch_sub_explicit(&full_slabs_count, 1, memory_order_relaxed);
 		atomic_fetch_add_explicit(&partial_slabs_count, 1, memory_order_relaxed);
-		ll_do_remove(&cache->full, &slab->node, 0);
-		ll_do_insert(&cache->partial, &slab->node, slab);
+		linkedlist_remove(&cache->full, &slab->node);
+		linkedlist_insert(&cache->partial, &slab->node, slab);
 	} else if(count == 1) {
 		atomic_fetch_sub_explicit(&partial_slabs_count, 1, memory_order_relaxed);
 		atomic_fetch_add_explicit(&empty_slabs_count, 1, memory_order_relaxed);
-		ll_do_remove(&cache->partial, &slab->node, 0);
-		ll_do_insert(&cache->empty, &slab->node, slab);
+		linkedlist_remove(&cache->partial, &slab->node);
+		linkedlist_insert(&cache->empty, &slab->node, slab);
 	}
 	mutex_release(&cache->lock);
 }
@@ -122,24 +122,26 @@ static void *allocate_object_from_cache(struct cache *cache)
 {
 	mutex_acquire(&cache->lock);
 	struct slab *slab;
-	if(cache->partial.num > 0) {
-		slab = ll_entry(struct slab *, cache->partial.head);
+	if(cache->partial.count > 0) {
+		slab = linkedlist_head(&cache->partial);
+		assert(slab);
 		if(slab->count == slab->max-1) {
 			atomic_fetch_sub_explicit(&partial_slabs_count, 1, memory_order_relaxed);
 			atomic_fetch_add_explicit(&full_slabs_count, 1, memory_order_relaxed);
-			ll_do_remove(&cache->partial, &slab->node, 0);
-			ll_do_insert(&cache->full, &slab->node, slab);
+			linkedlist_remove(&cache->partial, &slab->node);
+			linkedlist_insert(&cache->full, &slab->node, slab);
 		}
-	} else if(cache->empty.num > 0) {
+	} else if(cache->empty.count > 0) {
 		atomic_fetch_sub_explicit(&empty_slabs_count, 1, memory_order_relaxed);
 		atomic_fetch_add_explicit(&partial_slabs_count, 1, memory_order_relaxed);
-		slab = ll_entry(struct slab *, cache->empty.head);
-		ll_do_remove(&cache->empty, &slab->node, 0);
-		ll_do_insert(&cache->partial, &slab->node, slab);
+		slab = linkedlist_head(&cache->empty);
+		assert(slab);
+		linkedlist_remove(&cache->empty, &slab->node);
+		linkedlist_insert(&cache->partial, &slab->node, slab);
 	} else {
 		slab = allocate_new_slab(cache);
 		atomic_fetch_add_explicit(&partial_slabs_count, 1, memory_order_relaxed);
-		ll_do_insert(&cache->partial, &slab->node, slab);
+		linkedlist_insert(&cache->partial, &slab->node, slab);
 	}
 	assert(slab->magic = SLAB_MAGIC);
 	atomic_fetch_add(&slab->count, 1);
@@ -150,9 +152,9 @@ static void *allocate_object_from_cache(struct cache *cache)
 
 static void construct_cache(struct cache *cache, size_t sz)
 {
-	ll_create_lockless(&cache->empty);
-	ll_create_lockless(&cache->partial);
-	ll_create_lockless(&cache->full);
+	linkedlist_create(&cache->empty, LINKEDLIST_LOCKLESS);
+	linkedlist_create(&cache->partial, LINKEDLIST_LOCKLESS);
+	linkedlist_create(&cache->full, LINKEDLIST_LOCKLESS);
 	mutex_create(&cache->lock, 0);
 	cache->object_size = sz;
 	cache->slabcount=0;

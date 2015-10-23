@@ -6,14 +6,12 @@
 #include <sea/types.h>
 #include <sea/fs/inode.h>
 
-#define PIPE_NAMED 1
 typedef struct pipe_struct {
 	size_t pending;
 	size_t write_pos, read_pos;
 	char *buffer;
 	off_t length;
 	mutex_t lock;
-	char type;
 	_Atomic int count, wrcount;
 	struct blocklist read_blocked, write_blocked;
 } pipe_t;

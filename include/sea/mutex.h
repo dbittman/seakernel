@@ -8,12 +8,13 @@
 #define MUTEX_MAGIC 0xDEADBEEF
 #define MT_ALLOC 1
 
+struct thread;
 typedef struct {
 	struct blocklist blocklist;
 	unsigned magic;
 	_Atomic bool lock;
 	unsigned flags;
-	long pid;
+	struct thread *owner;
 	char *owner_file;
 	int owner_line;
 } mutex_t;

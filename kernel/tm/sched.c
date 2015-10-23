@@ -12,12 +12,14 @@ static void check_signals(struct thread *thread)
 		int index = 0;
 		/* find the next signal in signals_pending and set signal to it */
 		for(; index < 32; ++index) {
-			if(thread->signals_pending & (1 << index) && !(thread->process->global_sig_mask & (1 << (index + 1))))
+			if(thread->signals_pending & (1 << index)
+					&& !(thread->process->global_sig_mask & (1 << (index + 1))))
 				break;
 		}
 		if(index < 32) {
 			thread->signal = index + 1;
-			atomic_fetch_and_explicit(&thread->signals_pending, ~(1 << (index)), memory_order_relaxed);
+			atomic_fetch_and_explicit(&thread->signals_pending,
+					~(1 << (index)), memory_order_relaxed);
 		}
 	}
 	if(thread->signal || thread->signals_pending) {
@@ -49,7 +51,7 @@ static void prepare_schedule(void)
 	/* threads that are in the kernel ignore signals until they're out of a syscall, in case
 	 * there's an interrupt. A syscall that waits or blocks is responsible for checking signals
 	 * manually. Kernel threads must do this as well if they want to handle signals. */
-	if(current_thread->signal) {
+	if(unlikely(current_thread->signal)) {
 		if(current_thread->state == THREADSTATE_INTERRUPTIBLE)
 			tm_thread_unblock(current_thread);
 		/* NOTE: before we checked thread state, there was a bug where a thread that
@@ -59,7 +61,7 @@ static void prepare_schedule(void)
 		if(!current_thread->system && current_thread->state == THREADSTATE_RUNNING && !(current_thread->flags & THREAD_SIGNALED))
 			tm_thread_handle_signal(current_thread->signal);
 	}
-	if(current_thread->flags & THREAD_WAKEUP) {
+	if(unlikely(current_thread->flags & THREAD_WAKEUP)) {
 		if(current_thread->state == THREADSTATE_INTERRUPTIBLE)
 			tm_thread_unblock(current_thread);
 		tm_thread_lower_flag(current_thread, THREAD_WAKEUP);
@@ -82,7 +84,7 @@ static void post_schedule(void)
 			//atomic_thread_fence(memory_order_seq_cst);
 		//} while(wq->count >= 30);
 	}
-	if(current_thread->resume_work.count) {
+	if(unlikely(current_thread->resume_work.count)) {
 		while(workqueue_dowork(&current_thread->resume_work) != -1) {
 			tm_schedule();
 		}
@@ -110,11 +112,9 @@ void tm_schedule(void)
 		 * after a context switch */
 		addr_t jump = next->jump_point;
 		next->jump_point = 0;
-		/* printk(0, "switch %d %d: %x %x %x\n", next->tid, __current_cpu->knum, jump, next->kernel_stack, next->stack_pointer); */
-		if(!(next->stack_pointer > (addr_t)next->kernel_stack + sizeof(addr_t))) {
-			panic(0, "kernel stack overrun! thread=%x:%d %x (min = %x)",
+		assertmsg(next->stack_pointer > (addr_t)next->kernel_stack + sizeof(addr_t),
+					"kernel stack overrun! thread=%x:%d %x (min = %x)",
 					next, next->tid, next->stack_pointer, next->kernel_stack);
-		}
 		/* if the thread state is dead, and we're scheduling away from it, then
 		 * it's finished exiting and is waiting for cleanup. This is okay! Since
 		 * we require that the only places where we do work for this CPU's workqueue
@@ -123,7 +123,7 @@ void tm_schedule(void)
 		 * so the thread can't be released after this statement, until it has totally
 		 * scheduled away.
 		 */
-		if(current_thread->state == THREADSTATE_DEAD) {
+		if(unlikely(current_thread->state == THREADSTATE_DEAD)) {
 			tm_thread_raise_flag(current_thread, THREAD_DEAD);
 		}
 		cpu_set_kernel_stack(next->cpu, (addr_t)next->kernel_stack,

@@ -128,7 +128,7 @@ void fs_copy_file_handles(struct process *p, struct process *n)
 			vfs_inode_get(i);
 			if(fp->fi->dirent)
 				vfs_dirent_acquire(fp->fi->dirent);
-			if(i->pipe && !i->pipe->type) {
+			if(i->pipe) {
 				atomic_fetch_add_explicit(&i->pipe->count, 1, memory_order_relaxed);
 				if(fp->fi->flags & _FWRITE)
 					atomic_fetch_add_explicit(&i->pipe->wrcount, 1, memory_order_relaxed);

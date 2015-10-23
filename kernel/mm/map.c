@@ -70,6 +70,9 @@ static void remove_mapping(struct memmap *map)
 static void disengage_mapping_region(struct memmap *map, addr_t start, size_t offset, size_t length)
 {
 	if((map->flags & MAP_SHARED)) {
+		if(map->prot & PROT_WRITE) {
+			fs_inode_sync_region(map->node, start, offset, length);
+		}
 		fs_inode_unmap_region(map->node, start, offset, length);
 	} else {
 		size_t o=0;

@@ -122,5 +122,6 @@ void fs_inode_map_region(struct inode *node, size_t offset, size_t length);
 void fs_inode_sync_physical_page(struct inode *node, addr_t virt, size_t offset, size_t);
 void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_t length);
 void fs_inode_destroy_physicals(struct inode *node);
+void fs_inode_sync_region(struct inode *node, addr_t virt, size_t offset, size_t length);
 
 #endif

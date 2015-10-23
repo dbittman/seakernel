@@ -174,6 +174,21 @@ void fs_inode_sync_physical_page(struct inode *node, addr_t virt, size_t offset,
 		printk(0, "[mminode]: warning: failed to write back data\n");
 }
 
+void fs_inode_sync_region(struct inode *node, addr_t virt, size_t offset, size_t length)
+{
+	mutex_acquire(&node->mappings_lock);
+	assert(node->flags & INODE_PCACHE);
+	assert(!(offset & ~PAGE_MASK));
+	assert(!(virt & ~PAGE_MASK));
+	int page_number = offset / PAGE_SIZE;
+	int npages = ((length-1) / PAGE_SIZE) + 1;
+	for(int i=page_number;i<(page_number+npages);i++)
+	{
+		fs_inode_sync_physical_page(node, virt + i * PAGE_SIZE, offset + i * PAGE_SIZE,
+				PAGE_SIZE);
+	}
+}
+
 /* decrease the count of each requested page by 1, and unmap it from the virtual address.
  * if the count reaches zero, sync the page, free it, and delete the entry to the hash table */
 void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_t length)
@@ -196,13 +211,6 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 			mutex_acquire(&entry->lock);
 			if(atomic_fetch_sub(&entry->count, 1) == 1)
 			{
-				/* count is now zero. write back data, 
-				 * free the page, delete the entry, free the entry */
-				size_t page_len = PAGE_SIZE;
-				if(length - (i-page_number)*PAGE_SIZE < PAGE_SIZE)
-					page_len = length - (i-page_number)*PAGE_SIZE;
-				fs_inode_sync_physical_page(node, virt + (i - page_number)*PAGE_SIZE,
-						i * PAGE_SIZE, page_len);
 				addr_t p;
 #warning "Don't delete the entry on each time. Make this whole thing a real page cache"
 #if 1

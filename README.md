@@ -5,5 +5,5 @@ A *simple* UNIX compatible operating system written from scratch to be easy to m
 
 Current Stats
 -------------
-![Current Codebase Statistics](googoo-16.ssrc.ucsc.edu/stats.png)
+![Current Codebase Statistics](http://googoo-16.ssrc.ucsc.edu/stats.png)
 

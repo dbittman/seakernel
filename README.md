@@ -5,7 +5,7 @@ A self-hosting *simple* UNIX compatible operating system written from scratch an
 
 Current Stats
 -------------
-![Current Codebase Statistics](http://googoo-16.ssrc.ucsc.edu/stats.png)
+![Current Codebase Statistics](https://googoo-16.ssrc.ucsc.edu/stats.png)
 
 Features
 --------
@@ -27,6 +27,6 @@ which can be found at ![Sea repo](http://github.com/dbittman/sea).
 
 Special Thanks
 --------------
-SSRC at UC Santa Cruz (http://www.ssrc.ucsc.edu/)
-\#osdev on Freenode
-forums.osdev.org, and wiki.osdev.org
+* SSRC at UC Santa Cruz (http://www.ssrc.ucsc.edu/)
+* \#osdev on Freenode
+* forums.osdev.org, and wiki.osdev.org

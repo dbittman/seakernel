@@ -5,7 +5,7 @@ A self-hosting *simple* UNIX compatible operating system written from scratch an
 
 Current Stats
 -------------
-![Current Codebase Statistics](https://googoo-16.ssrc.ucsc.edu/stats.png)
+![Current Codebase Statistics](http://googoo-16.ssrc.ucsc.edu/stats.png)
 
 Features
 --------

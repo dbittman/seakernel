@@ -112,8 +112,6 @@ static void __valloc_populate_index(struct valloc *va, int flags)
 	int mm_pages = ((va->nindex * va->psize - 1) / map_size) + 1;
 	for(int i=0;i<mm_pages;i++) {
 		int attr = PAGE_PRESENT | PAGE_WRITE;
-		if(flags & VALLOC_USERMAP)
-			attr |= PAGE_USER;
 		if(!mm_virtual_getmap(va->start + i * map_size, NULL, NULL)) {
 			addr_t phys = mm_physical_allocate(map_size, true);
 			if(!mm_virtual_map(va->start + i * map_size, phys, attr, map_size)) {

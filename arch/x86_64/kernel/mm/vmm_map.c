@@ -48,13 +48,13 @@ bool arch_mm_context_virtual_map(struct vmm_context *ctx, addr_t virtual,
 	addr_t value = physical | flags;
 
 	addr_t *pml4v = (addr_t *)ctx->root_virtual;
-	__maybe_add_entry(pml4v, pml4idx, flags | PAGE_WRITE);
+	__maybe_add_entry(pml4v, pml4idx, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
 	addr_t *pdptv = (addr_t *)((pml4v[pml4idx] & PAGE_MASK_PHYSICAL) + PHYS_PAGE_MAP);
-	__maybe_add_entry(pdptv, pdptidx, flags | PAGE_WRITE);
+	__maybe_add_entry(pdptv, pdptidx, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
 	addr_t *pdv = (addr_t *)((pdptv[pdptidx] & PAGE_MASK_PHYSICAL) + PHYS_PAGE_MAP);
 	if(length == 0x1000) {
 		int ptidx = PT_INDEX(virtual);
-		__maybe_add_entry(pdv, pdidx, flags | PAGE_WRITE);
+		__maybe_add_entry(pdv, pdidx, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
 		if(pdv[pdidx] & PAGE_LARGE)
 			result = false;
 		if(result) {

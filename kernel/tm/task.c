@@ -42,10 +42,7 @@ void tm_init_multitasking(void)
 	hash_insert(thread_table, &thread->tid, sizeof(thread->tid), &thread->hash_elem, thread);
 	ll_do_insert(process_list, &proc->listnode, proc);
 
-	/* TODO: this stuff is pretty hacky... */
-	valloc_create(&proc->mmf_valloc, MEMMAP_MMAP_BEGIN, MEMMAP_MMAP_END, PAGE_SIZE, VALLOC_USERMAP);
-	for(addr_t a = MEMMAP_MMAP_BEGIN;a < (MEMMAP_MMAP_BEGIN + (size_t)proc->mmf_valloc.nindex);a+=PAGE_SIZE)
-		mm_virtual_changeattr(a, PAGE_PRESENT | PAGE_WRITE, 0x1000);
+	valloc_create(&proc->mmf_valloc, MEMMAP_MMAP_BEGIN, MEMMAP_MMAP_END, PAGE_SIZE, 0);
 	ll_create(&proc->threadlist);
 	mutex_create(&proc->map_lock, 0);
 	mutex_create(&proc->stacks_lock, 0);

@@ -36,10 +36,7 @@ static void preexec(int desc)
 	mm_free_userspace();
 	mm_virtual_map(MEMMAP_SYSGATE_ADDRESS, sysgate_page, PAGE_PRESENT | PAGE_USER, PAGE_SIZE);
 	/* we need to re-create the vmem for memory mappings */
-	valloc_create(&(t->process->mmf_valloc), MEMMAP_MMAP_BEGIN, MEMMAP_MMAP_END, PAGE_SIZE, VALLOC_USERMAP);
-	for(addr_t a = MEMMAP_MMAP_BEGIN;a < (MEMMAP_MMAP_BEGIN + (size_t)t->process->mmf_valloc.nindex);a+=PAGE_SIZE) {
-		mm_virtual_changeattr(a, PAGE_PRESENT | PAGE_WRITE, 0x1000); //TODO again, fix this page size thing
-	}
+	valloc_create(&(t->process->mmf_valloc), MEMMAP_MMAP_BEGIN, MEMMAP_MMAP_END, PAGE_SIZE, 0);
 	addr_t ret = mm_mmap(t->usermode_stack_start, CONFIG_STACK_PAGES * PAGE_SIZE,
 			PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0, 0);
 	mm_page_fault_test_mappings(t->usermode_stack_end - PAGE_SIZE, PF_CAUSE_USER | PF_CAUSE_WRITE);

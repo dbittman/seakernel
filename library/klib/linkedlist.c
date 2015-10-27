@@ -39,7 +39,7 @@ void linkedlist_insert(struct linkedlist *list, struct linkedentry *entry, void 
 		spinlock_release(&list->lock);
 }
 
-static inline void __do_remove(struct linkedlist *list, struct linkedentry *entry)
+void linkedlist_do_remove(struct linkedlist *list, struct linkedentry *entry)
 {
 	assert(entry != &list->sentry);
 	assert(list->count > 0);
@@ -53,7 +53,7 @@ void linkedlist_remove(struct linkedlist *list, struct linkedentry *entry)
 	assert(list->head == &list->sentry);
 	if(!(list->flags & LINKEDLIST_LOCKLESS))
 		spinlock_acquire(&list->lock);
-	__do_remove(list, entry);
+	linkedlist_do_remove(list, entry);
 	if(!(list->flags & LINKEDLIST_LOCKLESS))
 		spinlock_release(&list->lock);
 }

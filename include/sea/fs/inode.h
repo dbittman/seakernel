@@ -34,7 +34,8 @@ typedef struct pipe_struct pipe_t;
 struct inode {
 	rwlock_t lock, metalock;
 	struct queue_item lru_item;
-	struct llistnode inuse_item, dirty_item;
+	struct linkedentry dirty_item;
+	struct linkedentry inuse_item;
 	struct hash dirents;
 	struct filesystem *filesystem;
 	

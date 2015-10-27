@@ -11,7 +11,7 @@
 #include <sea/fs/kerfs.h>
 
 struct hash *icache;
-struct llist *ic_inuse, *ic_dirty;
+struct linkedlist *ic_dirty, *ic_inuse;
 struct queue *ic_lru;
 mutex_t *ic_lock;
 
@@ -19,8 +19,8 @@ void vfs_icache_init(void)
 {
 	icache = hash_create(0, 0, 0x4000);
 
-	ic_inuse = ll_create(0);
-	ic_dirty = ll_create(0);
+	ic_dirty = linkedlist_create(0, 0);
+	ic_inuse = linkedlist_create(0, 0);
 	ic_lru = queue_create(0, 0);
 	ic_lock = mutex_create(0, 0);
 
@@ -72,7 +72,7 @@ struct inode *vfs_inode_create (void)
 	hash_create(&node->dirents, 0, 1000);
 
 	node->flags = INODE_INUSE;
-	ll_do_insert(ic_inuse, &node->inuse_item, node);
+	linkedlist_insert(ic_inuse, &node->inuse_item, node);
 
 	return node;
 }
@@ -132,7 +132,7 @@ struct inode *vfs_icache_get(struct filesystem *fs, uint32_t num)
 		if(!newly_created) {
 			if(!(node->flags & INODE_NOLRU))
 				queue_remove(ic_lru, &node->lru_item);
-			ll_do_insert(ic_inuse, &node->inuse_item, node);
+			linkedlist_insert(ic_inuse, &node->inuse_item, node);
 		}
 	}
 	fs_inode_pull(node);
@@ -153,9 +153,7 @@ void vfs_inode_set_dirty(struct inode *node)
 {
 	assert(!(node->flags & INODE_NEEDREAD));
 	if(!(atomic_fetch_or(&node->flags, INODE_DIRTY) & INODE_DIRTY)) {
-		assert(node->dirty_item.memberof == 0);
-		ll_do_insert(ic_dirty, &node->dirty_item, node);
-		assert(node->dirty_item.memberof == ic_dirty);
+		linkedlist_insert(ic_dirty, &node->dirty_item, node);
 	}
 }
 
@@ -163,8 +161,7 @@ void vfs_inode_set_dirty(struct inode *node)
 void vfs_inode_unset_dirty(struct inode *node)
 {
 	assert(node->flags & INODE_DIRTY);
-	assert(node->dirty_item.memberof == ic_dirty);
-	ll_do_remove(ic_dirty, &node->dirty_item, 0);
+	linkedlist_remove(ic_dirty, &node->dirty_item);
 	atomic_fetch_and(&node->flags, ~INODE_DIRTY);
 }
 
@@ -180,7 +177,7 @@ void vfs_icache_put(struct inode *node)
 			atomic_fetch_sub(&node->filesystem->usecount, 1);
 		}
 
-		ll_do_remove(ic_inuse, &node->inuse_item, 0);
+		linkedlist_remove(ic_inuse, &node->inuse_item);
 		if(node->flags & INODE_NOLRU) {
 			assert(!(node->flags & INODE_INUSE));
 			assert(!node->dirents.count);
@@ -320,23 +317,20 @@ int vfs_inode_chroot(struct inode *node)
 	return 0;
 }
 
+static void __icache_sync_action(struct linkedentry *entry)
+{
+	struct inode *node = entry->obj;
+	if(node->flags & INODE_DIRTY)
+		fs_callback_inode_push(node);
+	linkedlist_do_remove(ic_dirty, &node->dirty_item);
+	atomic_fetch_and(&node->flags, ~INODE_DIRTY);
+}
+
 /* it's important to sync the inode cache back to the disk... */
 int fs_icache_sync(void)
 {
-	printk(0, "[fs]: syncing inode cache (%d)\n", ic_dirty->num);
-	rwlock_acquire(&ic_dirty->rwl, RWL_WRITER);
-	struct llistnode *ln, *prev=0, *next;
-	struct inode *node;
-	ll_for_each_entry_safe(ic_dirty, ln, next, struct inode *, node) {
-		assert(prev != ln);
-		printk(0, "%d\r", node->id);
-		if(node->flags & INODE_DIRTY)
-			fs_callback_inode_push(node);
-		ll_do_remove(ic_dirty, &node->dirty_item, 1);
-		atomic_fetch_and(&node->flags, ~INODE_DIRTY);
-		prev = ln;
-	}
-	rwlock_release(&ic_dirty->rwl, RWL_WRITER);
+	printk(0, "[fs]: syncing inode cache (%d)\n", ic_dirty->count);
+	linkedlist_apply(ic_dirty, __icache_sync_action);
 	printk(0, "\ndone\n");
 	return 0;
 }
@@ -347,25 +341,8 @@ int kerfs_icache_report(int direction, void *param, size_t size, size_t offset, 
 	KERFS_PRINTF(offset, length, buf, current,
 			"icache load: %d%%\n", (100 * hash_count(icache)) / hash_length(icache));
 	KERFS_PRINTF(offset, length, buf, current,
-			"    ID FSID FS-TYPE FLAGS REFCOUNT DIRENTS\n");
-	rwlock_acquire(&ic_dirty->rwl, RWL_READER);
-	struct llistnode *ln;
-	struct inode *node;
-	ll_for_each_entry(ic_inuse, ln, struct inode *, node) {
-		KERFS_PRINTF(offset, length, buf, current,
-				"%6d %4d %7s %5x %8d %7d\n",
-				node->id, node->filesystem ? node->filesystem->id : -1,
-				node->filesystem ? node->filesystem->type : "???",
-				node->flags, node->count, node->dirents.count);
-		struct dirent *dirent;
-		int n = 0, used = 0;
-	}
-	rwlock_release(&ic_dirty->rwl, RWL_READER);
-	KERFS_PRINTF(offset, length, buf, current,
-			"    ID FSID FS-TYPE FLAGS REFCOUNT DIRENTS\n");
-	KERFS_PRINTF(offset, length, buf, current,
 			"IN USE %d, DIRTY %d, LRU LEN %d, TOTAL CACHED %d\n",
-			ic_inuse->num, ic_dirty->num, ic_lru->count, icache->count);
+			ic_inuse->count, ic_dirty->count, ic_lru->count, icache->count);
 	return current;
 }
 

@@ -10,15 +10,15 @@
 static uint32_t fsids = 0;
 
 static struct hash fsdrivershash;
-static struct llist fsdriverslist;
+static struct linkedlist fsdriverslist;
 
 static struct linkedlist fslist;
 struct filesystem *devfs;
 
 void fs_fsm_init(void)
 {
-	ll_create(&fsdriverslist);
-	linkedlist_create(&fslist, 0);
+	linkedlist_create(&fsdriverslist, LINKEDLIST_MUTEX);
+	linkedlist_create(&fslist, LINKEDLIST_MUTEX);
 	hash_create(&fsdrivershash, 0, 10);
 	devfs = fs_filesystem_create();
 	linkedlist_insert(&fslist, &devfs->listnode, devfs);
@@ -62,6 +62,18 @@ struct inode *fs_read_root_inode(struct filesystem *fs)
 	return node;
 }
 
+bool __fs_init_mount_find_driver(struct linkedentry *entry, void *data)
+{
+	struct filesystem *fs = data;
+	struct fsdriver *driver = entry->obj;
+	if(!driver->mount(fs)) {
+		fs->driver = driver;
+		strncpy(fs->type, driver->name, 128);
+		return true;
+	}
+	return false;
+}
+
 int fs_filesystem_init_mount(struct filesystem *fs, char *point, char *node, char *type, int opts)
 {
 	if(type)
@@ -94,17 +106,8 @@ int fs_filesystem_init_mount(struct filesystem *fs, char *point, char *node, cha
 		fs->driver = fd;
 		return fd->mount(fs);
 	} else {
-		rwlock_acquire(&fsdriverslist.rwl, RWL_READER);
-		struct llistnode *ln;
-		ll_for_each_entry(&fsdriverslist, ln, struct fsdriver *, fd) {
-			if(!fd->mount(fs)) {
-				fs->driver = fd;
-				strncpy(fs->type, fd->name, 128);
-				rwlock_release(&fsdriverslist.rwl, RWL_READER);
-				return 0;
-			}
-		}
-		rwlock_release(&fsdriverslist.rwl, RWL_READER);
+		if(linkedlist_find(&fsdriverslist, __fs_init_mount_find_driver, fs))
+			return 0;
 	}
 	return -EINVAL;
 }
@@ -159,15 +162,13 @@ void fs_filesystem_destroy(struct filesystem *fs)
 
 int fs_filesystem_register(struct fsdriver *fd)
 {
-	fd->ln = ll_insert(&fsdriverslist, fd);
+	linkedlist_insert(&fsdriverslist, &fd->listnode, fd);
 	return hash_insert(&fsdrivershash, fd->name, strlen(fd->name), &fd->hash_elem, fd);
 }
 
 int fs_filesystem_unregister(struct fsdriver *fd)
 {
-	assert(fd->ln);
-	ll_remove(&fsdriverslist, fd->ln);
-	fd->ln=0;
+	linkedlist_remove(&fsdriverslist, &fd->listnode);
 	return hash_delete(&fsdrivershash, fd->name, strlen(fd->name));
 }
 

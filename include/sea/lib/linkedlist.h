@@ -3,34 +3,27 @@
 
 #define LINKEDLIST_ALLOC 1
 #define LINKEDLIST_LOCKLESS 1
-
+#define LINKEDLIST_MUTEX 2
 struct linkedentry {
 	void *obj;
 	struct linkedentry *next, *prev;
 };
 
 #include <sea/spinlock.h>
+#include <sea/asm/system.h>
 #include <stdbool.h>
+
+struct __mutex_s;
 struct linkedlist {
 	struct linkedentry *head;
 	struct linkedentry sentry;
 	struct spinlock lock;
 	_Atomic size_t count;
 	int flags;
+	struct __mutex_s *m_lock;
 };
 
-static inline void *linkedlist_head(struct linkedlist *list)
-{
-	void *ret = NULL;
-	if(!(list->flags & LINKEDLIST_LOCKLESS))
-		spinlock_acquire(&list->lock);
-	if(list->head->next != &list->sentry)
-		ret = list->head->next->obj;
-	if(!(list->flags & LINKEDLIST_LOCKLESS))
-		spinlock_release(&list->lock);
-	return ret;
-}
-
+void *linkedlist_head(struct linkedlist *list);
 struct linkedlist *linkedlist_create(struct linkedlist *list, int flags);
 void linkedlist_destroy(struct linkedlist *list);
 void linkedlist_insert(struct linkedlist *list, struct linkedentry *entry, void *obj);

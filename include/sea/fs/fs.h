@@ -62,7 +62,7 @@ struct fsdriver {
 	int flags;
 	int (*mount)(struct filesystem *);
 	int (*umount)(struct filesystem *);
-	struct llistnode *ln;
+	struct linkedentry listnode;
 	struct hashelem hash_elem;
 };
 

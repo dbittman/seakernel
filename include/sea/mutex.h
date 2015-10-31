@@ -9,7 +9,7 @@
 #define MT_ALLOC 1
 
 struct thread;
-typedef struct {
+typedef struct __mutex_s{
 	struct blocklist blocklist;
 	unsigned magic;
 	_Atomic bool lock;

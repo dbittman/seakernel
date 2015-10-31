@@ -50,7 +50,7 @@ struct filesystem {
 
 	void *data;
 	struct fsdriver *driver;
-	struct llistnode *listnode;
+	struct linkedentry listnode;
 
 	char *pointname;
 	char *nodename;

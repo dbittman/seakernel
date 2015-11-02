@@ -167,7 +167,7 @@ void init_lapic(int extint)
 
 void init_ioapic(void)
 {
-	if(!num_ioapic)
+	//if(!num_ioapic)
 		return;
 	unsigned i, num=0;
 	int old = cpu_interrupt_set(0);

@@ -13,7 +13,7 @@ uint32_t ahci_flush_commands(struct hba_port *port)
 	/* the commands may not take effect until the command
 	 * register is read again by software, because reasons.
 	 */
-	uint32_t c = port->command;
+	volatile uint32_t c = port->command;
 	c=c;
 	return c;
 }
@@ -75,19 +75,25 @@ int ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev)
 	ahci_stop_port_command_engine(port);
 	port->sata_error = ~0;
 	/* power on, spin up */
-	port->command |= 2;
-	port->command |= 4;
+	port->command |= (2 | 4);
 	ahci_flush_commands(port);
 	tm_thread_delay_sleep(1 * ONE_MILLISECOND);
 	/* initialize state */
 	port->interrupt_status = ~0; /* clear pending interrupts */
 	port->interrupt_enable = AHCI_DEFAULT_INT; /* we want some interrupts */
-	port->command |= (1 << 28); /* set interface to active */
-	port->command &= ~((1 << 27) | (1 << 26)); /* clear some bits */
+	
+	port->command &= ~1;
+	while(port->command & (1 << 15)) cpu_pause();
+	port->command &= ~((1 << 27) | (1 << 26) | 1); /* clear some bits */
+	ahci_flush_commands(port);
 	port->sata_control |= 1;
 	tm_thread_delay_sleep(10 * ONE_MILLISECOND);
 	port->sata_control |= (~1);
 	tm_thread_delay_sleep(10 * ONE_MILLISECOND);
+	while(!(port->sata_status & 1)) cpu_pause();
+	port->sata_error = ~0;
+	port->command |= (1 << 28); /* set interface to active */
+	while((port->sata_status >> 8) != 1) cpu_pause();
 	port->interrupt_status = ~0; /* clear pending interrupts */
 	port->interrupt_enable = AHCI_DEFAULT_INT; /* we want some interrupts */
 	/* map memory */
@@ -131,7 +137,17 @@ int ahci_initialize_device(struct hba_memory *abar, struct ahci_device *dev)
 
 uint32_t ahci_check_type(volatile struct hba_port *port)
 {
+	port->command &= ~1;
+	while(port->command & (1 << 15)) cpu_pause();
+	port->command &= ~(1 << 4);
+	while(port->command & (1 << 14)) cpu_pause();
+	atomic_thread_fence(memory_order_seq_cst);
+	port->command |= 2;
+	atomic_thread_fence(memory_order_seq_cst);
+	tm_thread_delay_sleep(10 * ONE_MILLISECOND);
+
 	uint32_t s = port->sata_status;
+
 	printk(2, "[ahci]: port data: sig=%x, stat=%x, ctl=%x, sac=%x\n", port->signature, s, port->command, port->sata_active);
 	uint8_t ipm, det;
 	ipm = (s >> 8) & 0x0F;
@@ -188,5 +204,5 @@ void ahci_init_hba(struct hba_memory *abar)
 	abar->global_host_control |= HBA_GHC_AHCI_ENABLE;
 	abar->global_host_control |= HBA_GHC_INTERRUPT_ENABLE;
 	tm_thread_delay_sleep(20 * ONE_MILLISECOND);
-	printk(KERN_DEBUG, "[ahci]: caps and ver: %x %x v %x\n", abar->capability, abar->ext_capabilities, abar->version);
+	printk(KERN_DEBUG, "[ahci]: caps and ver: %x %x v %x, ctl: %x\n", abar->capability, abar->ext_capabilities, abar->version, abar->global_host_control);
 }

@@ -11,7 +11,6 @@
 #include <sea/errno.h>
 #include <sea/vsprintf.h>
 #include <sea/mm/kmalloc.h>
-#include <sea/util.h>
 /* Each page of the inode has a count associated with it. When the count reaches
  * zero, the page is written to disk, and the page is freed. When region is mapped,
  * the pages aren't necessarily allocated right away. A call to map_region

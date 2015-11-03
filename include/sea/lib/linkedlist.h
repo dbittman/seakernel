@@ -9,12 +9,13 @@ struct linkedentry {
 	struct linkedentry *next, *prev;
 };
 
-#define linkedentry_obj(entry) entry->obj
+#define linkedentry_obj(entry) ((entry) ? (entry)->obj : NULL)
 
 #include <sea/spinlock.h>
 #include <sea/asm/system.h>
 #include <stdbool.h>
 
+/* TODO: we should change mutex_t to struct mutex anyway */
 struct __mutex_s;
 struct linkedlist {
 	struct linkedentry *head;
@@ -29,6 +30,8 @@ struct linkedlist {
 #define linkedlist_iter_start(list) (list)->head->next
 #define linkedlist_iter_next(entry) (entry)->next
 
+void __linkedlist_lock(struct linkedlist *list);
+void __linkedlist_unlock(struct linkedlist *list);
 void *linkedlist_head(struct linkedlist *list);
 struct linkedlist *linkedlist_create(struct linkedlist *list, int flags);
 void linkedlist_destroy(struct linkedlist *list);

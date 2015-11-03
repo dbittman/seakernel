@@ -17,7 +17,7 @@
 #include <sea/ll.h>
 #include <sea/trace.h>
 
-struct llist module_list;
+struct linkedlist module_list;
 static mutex_t sym_mutex;
 static kernel_symbol_t export_syms[MAX_SYMS];
 
@@ -26,7 +26,7 @@ void loader_init_kernel_symbols(void)
 	uint32_t i;
 	for(i = 0; i < MAX_SYMS; i++)
 		export_syms[i].ptr = 0;
-	ll_create(&module_list);
+	linkedlist_create(&module_list, 0);
 	mutex_create(&sym_mutex, 0);
 	/* symbol functions */
 	loader_add_kernel_symbol(loader_find_kernel_function);
@@ -77,19 +77,18 @@ void loader_init_kernel_symbols(void)
 	loader_add_kernel_symbol(time_get_epoch);
 }
 
+static bool __find_mod_from_sym(struct linkedentry *entry, void *addr)
+{
+	module_t *mq = linkedentry_obj(entry);
+	if((addr_t)addr >= (addr_t)mq->base && (addr_t)addr < ((addr_t)mq->base + mq->length))
+		return true;
+	return false;
+}
+
 const char *loader_lookup_module_symbol(addr_t addr, char **modname)
 {
-	rwlock_acquire(&module_list.rwl, RWL_READER);
-	struct llistnode *node;
-	module_t *mq, *found = 0;
-	ll_for_each_entry(&module_list, node, module_t *, mq) {
-		if((addr_t)addr >= (addr_t)mq->base && (addr_t)addr < ((addr_t)mq->base + mq->length)) {
-			found = mq;
-			break;
-		}
-	}
-	/* Determine if are being depended upon or if we can unload */
-	rwlock_release(&module_list.rwl, RWL_READER);
+	module_t *found = linkedentry_obj(linkedlist_find(
+				&module_list, __find_mod_from_sym, (void *)addr));
 	if(!found || found->sd.strtab == -1 || found->sd.symtab == -1)
 		return 0;
 	return arch_loader_lookup_module_symbol(found, addr, modname);
@@ -151,20 +150,17 @@ int loader_remove_kernel_symbol(char * unres)
 	return 0;
 }
 
-int loader_module_is_loaded(char *name)
+static bool __mod_finder_name(struct linkedentry *entry, void *data)
 {
-	struct llistnode *node;
-	module_t *m;
-	rwlock_acquire(&module_list.rwl, RWL_READER);
-	ll_for_each_entry(&module_list, node, module_t *, m) {
-		if(!strcmp(m->name, name))
-		{
-			rwlock_release(&module_list.rwl, RWL_READER);
-			return 1;
-		}
-	}
-	rwlock_release(&module_list.rwl, RWL_READER);
-	return 0;
+	module_t *m = linkedentry_obj(entry);
+	if(!strcmp(m->name, data))
+		return true;
+	return false;
+}
+
+bool loader_module_is_loaded(char *name)
+{
+	return linkedlist_find(&module_list, __mod_finder_name, name) != NULL;
 }
 
 static int load_module(char *path, char *args, int flags)
@@ -211,7 +207,7 @@ static int load_module(char *path, char *args, int flags)
 		kfree(tmp);
 		return -ENOEXEC;
 	}
-	ll_do_insert(&module_list, &tmp->listnode, tmp);
+	linkedlist_insert(&module_list, &tmp->listnode, tmp);
 	printk(0, "[mod]: loaded module '%s' @[%x - %x]\n", path, tmp->base, tmp->base + len);
 	return ((int (*)(char *))tmp->entry)(args);
 }
@@ -219,16 +215,7 @@ static int load_module(char *path, char *args, int flags)
 static int do_unload_module(char *name, int flags)
 {
 	/* Is it going to work? */
-	struct llistnode *node;
-	module_t *m, *module = 0;
-	rwlock_acquire(&module_list.rwl, RWL_READER);
-	ll_for_each_entry(&module_list, node, module_t *, m) {
-		if(!strcmp(m->name, name)) {
-			module = m;
-			break;
-		}
-	}
-	rwlock_release(&module_list.rwl, RWL_READER);
+	module_t *module = linkedentry_obj(linkedlist_find(&module_list, __mod_finder_name, name));
 
 	if(!module) {
 		return -ENOENT;
@@ -242,7 +229,7 @@ static int do_unload_module(char *name, int flags)
 	/* Clear out the resources */
 	kfree(module->base);
 
-	ll_do_remove(&module_list, &module->listnode, 0);
+	linkedlist_remove(&module_list, &module->listnode);
 
 	kfree(module);
 	return ret;
@@ -302,15 +289,17 @@ int kerfs_module_report(int direction, void *param, size_t size, size_t offset, 
 	size_t current = 0;
 	KERFS_PRINTF(offset, length, buf, current,
 			"    MODULE SIZE(KB) ADDRESS\n");
-	struct llistnode *node;
-	module_t *m;
-	rwlock_acquire(&module_list.rwl, RWL_READER);
-	ll_for_each_entry(&module_list, node, module_t *, m) {
+	struct linkedentry *node;
+	
+	__linkedlist_lock(&module_list);
+	for(node = linkedlist_iter_start(&module_list); node != linkedlist_iter_end(&module_list);
+			node = linkedlist_iter_next(node)) {
+		module_t *m = linkedentry_obj(node);
 		KERFS_PRINTF(offset, length, buf, current,
 				"%10s %8d %x\n",
 				m->name, m->length / 1024, (addr_t)m->base);
 	}
-	rwlock_release(&module_list.rwl, RWL_READER);
+	__linkedlist_unlock(&module_list);
 
 	return current;
 }

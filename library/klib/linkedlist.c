@@ -4,7 +4,7 @@
 #include <sea/mutex.h>
 #include <sea/kernel.h>
 
-static inline void __linkedlist_lock(struct linkedlist *list)
+inline void __linkedlist_lock(struct linkedlist *list)
 {
 	if(likely(!(list->flags & LINKEDLIST_LOCKLESS))) {
 		if(unlikely(list->flags & LINKEDLIST_MUTEX))
@@ -14,7 +14,7 @@ static inline void __linkedlist_lock(struct linkedlist *list)
 	}
 }
 
-static inline void __linkedlist_unlock(struct linkedlist *list)
+inline void __linkedlist_unlock(struct linkedlist *list)
 {
 	if(likely(!(list->flags & LINKEDLIST_LOCKLESS))) {
 		if(unlikely(list->flags & LINKEDLIST_MUTEX))

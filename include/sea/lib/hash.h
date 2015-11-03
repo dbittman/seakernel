@@ -33,35 +33,4 @@ int hash_delete(struct hash *h, const void *key, size_t keylen);
 void *hash_lookup(struct hash *h, const void *key, size_t keylen);
 void hash_map(struct hash *h, void (*fn)(struct hashelem *obj));
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #endif

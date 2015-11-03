@@ -76,7 +76,8 @@ struct thread {
 
 	struct arch_thread_data arch_thread;
 
-	struct llistnode activenode, pnode;
+	struct llistnode activenode;
+	struct linkedentry pnode;
 	struct linkedentry blocknode;
 	_Atomic struct blocklist *blocklist;
 	struct spinlock status_lock;

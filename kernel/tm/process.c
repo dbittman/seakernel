@@ -52,12 +52,6 @@ void tm_process_put(struct process *proc)
 
 struct thread *tm_process_get_head_thread(struct process *proc)
 {
-	rwlock_acquire(&proc->threadlist.rwl, RWL_READER);
-	struct thread *thread = 0;
-	if(proc->threadlist.num > 0) {
-		thread = ll_entry(struct thread *, proc->threadlist.head);
-	}
-	rwlock_release(&proc->threadlist.rwl, RWL_READER);
-	return thread;
+	return linkedlist_head(&proc->threadlist);
 }
 

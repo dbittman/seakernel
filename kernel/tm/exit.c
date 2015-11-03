@@ -174,7 +174,7 @@ void tm_thread_do_exit(void)
 		tm_process_remove_kerfs_entries(current_process);
 	}
 
-	ll_do_remove(&current_process->threadlist, &current_thread->pnode, 0);
+	linkedlist_remove(&current_process->threadlist, &current_thread->pnode);
 
 	atomic_fetch_sub_explicit(&running_threads, 1, memory_order_relaxed);
 	if(atomic_fetch_sub(&current_process->thread_count, 1) == 1) {

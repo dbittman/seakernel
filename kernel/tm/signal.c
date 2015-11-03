@@ -107,18 +107,21 @@ void tm_signal_send_thread(struct thread *thr, int signal)
 int tm_signal_send_process(struct process *proc, int signal)
 {
 	assert(signal < NUM_SIGNALS);
-	rwlock_acquire(&proc->threadlist.rwl, RWL_READER);
-	struct llistnode *node;
+	struct linkedentry *node;
 	struct thread *thr;
+	__linkedlist_lock(&proc->threadlist);
 	/* find the first thread that is willing to handle the signal */
-	ll_for_each_entry(&proc->threadlist, node, struct thread *, thr) {
+	for(node = linkedlist_iter_start(&proc->threadlist);
+			node != linkedlist_iter_end(&proc->threadlist);
+			node = linkedlist_iter_next(node)) {
+		thr = linkedentry_obj(node);
 		if(!(thr->sig_mask & (1 << signal)) && signal != SIGKILL && signal != SIGSTOP) {
-			rwlock_release(&proc->threadlist.rwl, RWL_READER);
+			__linkedlist_unlock(&proc->threadlist);
 			tm_signal_send_thread(thr, signal);
 			return 0;
 		}
 	}
-	rwlock_release(&proc->threadlist.rwl, RWL_READER);
+	__linkedlist_unlock(&proc->threadlist);
 	return -EACCES;
 }
 

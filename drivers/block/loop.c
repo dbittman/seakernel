@@ -14,25 +14,28 @@ struct loop_device {
 	unsigned limit;
 	unsigned offset;
 	unsigned ro;
+	struct linkedentry ln;
 };
 
-struct llist *loops;
+struct linkedlist *loops;
 int loop_maj = -1;
 
 struct loop_device *get_loop(int num) 
 {
-	rwlock_acquire(&loops->rwl, RWL_READER);
-	struct llistnode *cur;
+	struct linkedentry *cur;
 	struct loop_device *ld;
-	ll_for_each_entry(loops, cur, struct loop_device *, ld)
-	{
+	__linkedlist_lock(loops);
+	for(cur = linkedlist_iter_start(loops);
+			cur != linkedlist_iter_end(loops);
+			cur = linkedlist_iter_next(cur)) {
+		ld = linkedentry_obj(cur);
 		if(ld->min == num)
 		{
-			rwlock_release(&loops->rwl, RWL_READER);
+			__linkedlist_unlock(loops);
 			return ld;
 		}
 	}
-	rwlock_release(&loops->rwl, RWL_READER);
+	__linkedlist_unlock(loops);
 	return 0;
 }
 
@@ -40,13 +43,13 @@ void add_loop_device(int num)
 {
 	struct loop_device *new = (void *)kmalloc(sizeof(struct loop_device));
 	new->min = num;
-	ll_insert(loops, new);
+	linkedlist_insert(loops, &new->ln, new);
 }
 
 void remove_loop_device(struct loop_device *loop)
 {
 	if(!loop) return;
-	ll_remove_entry(loops, loop);
+	linkedlist_remove(loops, &loop->ln);
 	kfree(loop);
 }
 
@@ -165,7 +168,7 @@ int module_install(void)
 		dm_unregister_block_device(loop_maj);
 		return EINVAL;
 	}
-	loops = ll_create(0);
+	loops = linkedlist_create(0, 0);
 	sys_mknod("/dev/loop0", S_IFBLK | 0644, GETDEV(loop_maj, 0));
 	add_loop_device(0);
 	return 0;
@@ -176,15 +179,18 @@ int module_exit(void)
 	dm_unregister_block_device(loop_maj);
 	if(ll_is_active(loops))
 	{
-		struct llistnode *cur, *next;
+		struct linkedentry *cur, *next;
 		struct loop_device *ld;
-		ll_for_each_entry_safe(loops, cur, next, struct loop_device *, ld)
-		{
-			ll_remove(loops, cur);
+		for(cur = linkedlist_iter_start(loops);
+				cur != linkedlist_iter_end(loops);
+				cur = next) {
+			ld = linkedentry_obj(cur);
+			next = linkedlist_iter_next(cur);
+			linkedlist_remove(loops, cur);
 			kfree(ld);
 		}
 	}
-	ll_destroy(loops);
+	linkedlist_destroy(loops);
 	return 0;
 }
 

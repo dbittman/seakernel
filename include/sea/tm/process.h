@@ -84,7 +84,7 @@ struct process {
 	struct sigaction signal_act[NUM_SIGNALS];
 	struct process *parent;
 	int thread_count;
-	struct llist threadlist;
+	struct linkedlist threadlist;
 	unsigned char stack_bitmap[NUM_USERMODE_STACKS / 8];
 	mutex_t stacks_lock;
 	struct blocklist waitlist;

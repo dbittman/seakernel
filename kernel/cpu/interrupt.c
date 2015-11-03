@@ -194,6 +194,7 @@ void cpu_interrupt_syscall_entry(registers_t *regs, int syscall_num)
 	cpu_interrupt_set(0);
 	__setup_signal_handler(regs);
 	current_thread->regs = 0;
+	assert((current_process == kernel_process) || current_thread->held_locks == 0);
 }
 
 void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_address)
@@ -226,6 +227,7 @@ void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_addres
 		current_thread->system = 0;
 		__setup_signal_handler(regs);
 		current_thread->regs = 0;
+		assert((current_process == kernel_process) || current_thread->held_locks == 0);
 	}
 }
 
@@ -253,6 +255,7 @@ void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
 	if(!already_in_kernel) {
 		__setup_signal_handler(regs);
 		current_thread->regs = 0;
+		assert((current_process == kernel_process) || current_thread->held_locks == 0);
 	}
 }
 

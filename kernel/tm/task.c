@@ -43,7 +43,7 @@ void tm_init_multitasking(void)
 	linkedlist_insert(process_list, &proc->listnode, proc);
 
 	valloc_create(&proc->mmf_valloc, MEMMAP_MMAP_BEGIN, MEMMAP_MMAP_END, PAGE_SIZE, 0);
-	ll_create(&proc->threadlist);
+	linkedlist_create(&proc->threadlist, 0);
 	mutex_create(&proc->map_lock, 0);
 	mutex_create(&proc->stacks_lock, 0);
 	proc->magic = PROCESS_MAGIC;

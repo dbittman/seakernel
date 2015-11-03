@@ -198,7 +198,7 @@ static struct process *tm_process_copy(int flags, struct thread *newthread)
 	memcpy((void *)newp->signal_act, current_process->signal_act, sizeof(struct sigaction) * NUM_SIGNALS);
 	tm_process_inc_reference(current_process);
 	newp->parent = current_process;
-	ll_create(&newp->threadlist);
+	linkedlist_create(&newp->threadlist, 0);
 	blocklist_create(&newp->waitlist, 0);
 	ll_create_lockless(&newp->mappings);
 	mutex_create(&newp->map_lock, 0); /* we need to lock this during page faults */
@@ -221,7 +221,7 @@ static struct process *tm_process_copy(int flags, struct thread *newthread)
 
 void tm_thread_add_to_process(struct thread *thr, struct process *proc)
 {
-	ll_do_insert(&proc->threadlist, &thr->pnode, thr);
+	linkedlist_insert(&proc->threadlist, &thr->pnode, thr);
 	thr->process = proc;
 	tm_process_inc_reference(proc);
 	atomic_fetch_add(&proc->thread_count, 1);

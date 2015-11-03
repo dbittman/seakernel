@@ -89,16 +89,19 @@ int sys_nice(int which, pid_t who, int val, int flags)
 		return -EPERM;
 
 	struct process *proc = tm_process_get(who);
-	rwlock_acquire(&proc->threadlist.rwl, RWL_READER);
 	struct thread *thr;
-	struct llistnode *node;
+	struct linkedentry *node;
 	int ret = 0;
-	ll_for_each_entry(&proc->threadlist, node, struct thread *, thr) {
+	__linkedlist_lock(&proc->threadlist);
+	for(node = linkedlist_iter_start(&proc->threadlist);
+			node != linkedlist_iter_end(&proc->threadlist);
+			node = linkedlist_iter_next(node)) {
+		thr = linkedentry_obj(node);
 		ret = sys_thread_setpriority(thr->tid, val, flags);
 		if(ret < 0)
 			break;
 	}
-	rwlock_release(&proc->threadlist.rwl, RWL_READER);
+	__linkedlist_unlock(&proc->threadlist);
 	tm_process_put(proc);
 	return ret;
 }

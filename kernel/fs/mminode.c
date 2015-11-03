@@ -61,7 +61,7 @@ addr_t fs_inode_map_private_physical_page(struct inode *node, addr_t virt,
 				printk(0, "[mminode]: read inode failed with %d\n", err);
 		}
 	}
-	mm_virtual_changeattr(virt, attrib, 0x1000);
+	mm_virtual_changeattr(virt, attrib, memsz);
 	return ph;
 }
 

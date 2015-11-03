@@ -50,7 +50,7 @@ struct filesystem {
 
 	void *data;
 	struct fsdriver *driver;
-	struct llistnode *listnode;
+	struct linkedentry listnode;
 
 	char *pointname;
 	char *nodename;
@@ -62,7 +62,7 @@ struct fsdriver {
 	int flags;
 	int (*mount)(struct filesystem *);
 	int (*umount)(struct filesystem *);
-	struct llistnode *ln;
+	struct linkedentry listnode;
 	struct hashelem hash_elem;
 };
 

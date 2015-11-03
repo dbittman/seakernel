@@ -38,11 +38,10 @@ static int system_setup=0;
  */
 extern void fs_initrd_parse();
 
-struct filesystem *devfs = 0;
+extern struct filesystem *devfs;
 
 void devfs_init(void)
 {
-	devfs = fs_filesystem_create();
 	fs_filesystem_init_mount(devfs, "/dev", "devfs", "devfs", 0);
 	ramfs_mount(devfs);
 	int r;

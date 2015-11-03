@@ -12,7 +12,7 @@ void spinlock_acquire(struct spinlock *s)
 {
 	cpu_disable_preemption();
 	while(atomic_flag_test_and_set_explicit(&s->flag, memory_order_relaxed)) {
-		asm("pause"); //TODO
+		arch_cpu_pause();
 	}
 }
 

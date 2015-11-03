@@ -10,25 +10,33 @@
 static uint32_t fsids = 0;
 
 static struct hash fsdrivershash;
-static struct llist fsdriverslist;
+static struct linkedlist fsdriverslist;
 
-static struct llist fslist;
-extern struct filesystem *devfs;
+static struct linkedlist fslist;
+struct filesystem *devfs;
 
 void fs_fsm_init(void)
 {
-	ll_create(&fsdriverslist);
-	ll_create(&fslist);
+	linkedlist_create(&fsdriverslist, LINKEDLIST_MUTEX);
+	linkedlist_create(&fslist, LINKEDLIST_MUTEX);
 	hash_create(&fsdrivershash, 0, 10);
+	devfs = fs_filesystem_create();
+	linkedlist_insert(&fslist, &devfs->listnode, devfs);
 }
 
-static void __kfs_mnt_rp_write(struct filesystem *fs, size_t *offset, size_t length, char *buf, size_t *current)
+struct __kfs_data {
+	size_t *offset, length, *current;
+	char *buffer;
+};
+
+static void __kfs_mnt_rp_write(struct linkedentry *entry, void *__data)
 {
-	struct inode *root = fs_read_root_inode(fs);
+	struct filesystem *fs = entry->obj;
+	struct __kfs_data *data = __data;
 	char *point = fs->pointname;
-	if(root == current_process->root)
+	if(current_process->root->filesystem == fs)
 		point = "/";
-	KERFS_PRINTF((*offset), length, buf, (*current),
+	KERFS_PRINTF((*data->offset), data->length, data->buffer, (*data->current),
 			"%s %s %s active,0x%x 0 0\n",
 			fs->nodename, point, fs->type, fs->opts);
 }
@@ -36,15 +44,13 @@ static void __kfs_mnt_rp_write(struct filesystem *fs, size_t *offset, size_t len
 int kerfs_mount_report(int direction, void *param, size_t size, size_t offset, size_t length, char *buf)
 {
 	size_t current = 0;
-
-	rwlock_acquire(&fslist.rwl, RWL_READER);
-	struct llistnode *ln;
-	struct filesystem *fs;
-	ll_for_each_entry(&fslist, ln, struct filesystem *, fs) {
-		__kfs_mnt_rp_write(fs, &offset, length, buf, &current);
-	}
-	rwlock_release(&fslist.rwl, RWL_READER);
-	__kfs_mnt_rp_write(devfs, &offset, length, buf, &current);
+	struct __kfs_data data = { .offset = &offset,
+							   .length = length, 
+							   .current = &current, 
+							   .buffer = buf };
+	KERFS_PRINTF(offset, length, buf, current,
+			"DEVICE MTPOINT TYPE OPTIONS\n");
+	linkedlist_apply_data(&fslist, __kfs_mnt_rp_write, &data);
 	return current;
 }
 
@@ -54,6 +60,18 @@ struct inode *fs_read_root_inode(struct filesystem *fs)
 	assert(node);
 	assert(node->filesystem);
 	return node;
+}
+
+bool __fs_init_mount_find_driver(struct linkedentry *entry, void *data)
+{
+	struct filesystem *fs = data;
+	struct fsdriver *driver = entry->obj;
+	if(!driver->mount(fs)) {
+		fs->driver = driver;
+		strncpy(fs->type, driver->name, 128);
+		return true;
+	}
+	return false;
 }
 
 int fs_filesystem_init_mount(struct filesystem *fs, char *point, char *node, char *type, int opts)
@@ -88,31 +106,31 @@ int fs_filesystem_init_mount(struct filesystem *fs, char *point, char *node, cha
 		fs->driver = fd;
 		return fd->mount(fs);
 	} else {
-		rwlock_acquire(&fsdriverslist.rwl, RWL_READER);
-		struct llistnode *ln;
-		ll_for_each_entry(&fsdriverslist, ln, struct fsdriver *, fd) {
-			if(!fd->mount(fs)) {
-				fs->driver = fd;
-				strncpy(fs->type, fd->name, 128);
-				rwlock_release(&fsdriverslist.rwl, RWL_READER);
-				return 0;
-			}
-		}
-		rwlock_release(&fsdriverslist.rwl, RWL_READER);
+		if(linkedlist_find(&fsdriverslist, __fs_init_mount_find_driver, fs))
+			return 0;
 	}
 	return -EINVAL;
 }
 
+int fs_umount(struct filesystem *fs)
+{
+	/* TODO: when to remove from list */
+	assert(fs);
+	if(fs->driver && fs->driver->umount)
+		fs->driver->umount(fs);
+	vfs_inode_umount(fs->point);
+	return 0;
+}
+
+static void __fs_unmount_all_applic(struct linkedentry *entry)
+{
+	if(entry->obj != devfs)
+		fs_umount(entry->obj);
+}
+
 void fs_unmount_all(void)
 {
-	struct llistnode *ln, *next;
-	struct filesystem *fs;
-	rwlock_acquire(&fslist.rwl, RWL_WRITER);
-	ll_for_each_entry_safe(&fslist, ln, next, struct filesystem *, fs) {
-		if(fs != devfs)
-			fs_umount(fs);
-	}
-	rwlock_release(&fslist.rwl, RWL_WRITER);
+	linkedlist_apply(&fslist, __fs_unmount_all_applic);
 }
 
 int fs_mount(struct inode *pt, struct filesystem *fs)
@@ -120,18 +138,9 @@ int fs_mount(struct inode *pt, struct filesystem *fs)
 	if(!strcmp(fs->type, "devfs")) {
 		fs = devfs;
 	} else {
-		fs->listnode = ll_insert(&fslist, fs);
+		linkedlist_insert(&fslist, &fs->listnode, fs);
 	}
 	vfs_inode_mount(pt, fs);
-	return 0;
-}
-
-int fs_umount(struct filesystem *fs)
-{
-	assert(fs);
-	if(fs->driver && fs->driver->umount)
-		fs->driver->umount(fs);
-	vfs_inode_umount(fs->point);
 	return 0;
 }
 
@@ -153,15 +162,13 @@ void fs_filesystem_destroy(struct filesystem *fs)
 
 int fs_filesystem_register(struct fsdriver *fd)
 {
-	fd->ln = ll_insert(&fsdriverslist, fd);
+	linkedlist_insert(&fsdriverslist, &fd->listnode, fd);
 	return hash_insert(&fsdrivershash, fd->name, strlen(fd->name), &fd->hash_elem, fd);
 }
 
 int fs_filesystem_unregister(struct fsdriver *fd)
 {
-	assert(fd->ln);
-	ll_remove(&fsdriverslist, fd->ln);
-	fd->ln=0;
+	linkedlist_remove(&fsdriverslist, &fd->listnode);
 	return hash_delete(&fsdrivershash, fd->name, strlen(fd->name));
 }
 

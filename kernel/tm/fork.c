@@ -203,10 +203,7 @@ static struct process *tm_process_copy(int flags, struct thread *newthread)
 	ll_create_lockless(&newp->mappings);
 	mutex_create(&newp->map_lock, 0); /* we need to lock this during page faults */
 	mutex_create(&newp->stacks_lock, 0);
-	/* TODO: what the fuck is this? */
-	valloc_create(&newp->mmf_valloc, MEMMAP_MMAP_BEGIN, MEMMAP_MMAP_END, PAGE_SIZE, VALLOC_USERMAP);
-	for(addr_t a = MEMMAP_MMAP_BEGIN;a < (MEMMAP_MMAP_BEGIN + (size_t)newp->mmf_valloc.nindex);a+=PAGE_SIZE)
-		mm_virtual_changeattr(a, PAGE_PRESENT | PAGE_WRITE, 0x1000); //TODO: hmmm, do we really need this function?
+	valloc_create(&newp->mmf_valloc, MEMMAP_MMAP_BEGIN, MEMMAP_MMAP_END, PAGE_SIZE, 0);
 	__copy_mappings(newp, current_process);
 	if(current_process->root) {
 		newp->root = current_process->root;

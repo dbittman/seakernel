@@ -90,7 +90,7 @@ void tm_process_wait_cleanup(struct process *proc)
 	/* prevent this process from being "cleaned up" multiple times */
 	if(!(atomic_fetch_or(&proc->flags, PROCESS_CLEANED) & PROCESS_CLEANED)) {
 		assert(proc->thread_count == 0);
-		ll_do_remove(process_list, &proc->listnode, 0);
+		linkedlist_remove(process_list, &proc->listnode);
 		if(proc->parent)
 			tm_process_put(proc->parent);
 		tm_process_put(proc); /* process_list releases its pointer */
@@ -133,17 +133,21 @@ __attribute__((noinline)) static void tm_process_exit(int code)
 	if(current_process->parent) {
 		struct process *init = tm_process_get(0);
 		assert(init);
-		rwlock_acquire(&process_list->rwl, RWL_READER);
+		
+		__linkedlist_lock(process_list);
 		struct process *child;
-		struct llistnode *node;
-		ll_for_each_entry(process_list, node, struct process *, child) {
+		struct linkedentry *node;
+		for(node = linkedlist_iter_start(process_list);
+				node != linkedlist_iter_end(process_list);
+				node = linkedlist_iter_next(node)) {
+			child = linkedentry_obj(node);
 			if(child->parent == current_process) {
 				tm_process_inc_reference(init);
 				child->parent = init;
 				tm_process_put(current_process);
 			}
 		}
-		rwlock_release(&process_list->rwl, RWL_READER);
+		__linkedlist_unlock(process_list);
 		tm_signal_send_process(current_process->parent, SIGCHILD);
 		tm_blocklist_wakeall(&current_process->waitlist);
 		tm_process_put(init);

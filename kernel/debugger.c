@@ -114,8 +114,11 @@ static void debugger_procs(char tokens[16][64])
 		}
 		tm_process_put(proc);
 	} else {
-		struct llistnode *node;
-		ll_for_each_entry(process_list, node, struct process *, proc) {
+		struct linkedentry *node;
+		for(node = linkedlist_iter_start(process_list);
+				node != linkedlist_iter_end(process_list);
+				node = linkedlist_iter_next(node)) {
+			proc = linkedentry_obj(node);
 			printk_safe(5, "process %d\n", proc->pid);
 			__print_process(proc);
 			if(!strcmp(tokens[1], "t")) {

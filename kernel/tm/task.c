@@ -27,7 +27,7 @@ void tm_init_multitasking(void)
 	
 	process_table = hash_create(0, 0, 1000);
 
-	process_list = ll_create(0);
+	process_list = linkedlist_create(0, 0);
 	mutex_create(&process_refs_lock, 0);
 	mutex_create(&thread_refs_lock, 0);
 	
@@ -40,7 +40,7 @@ void tm_init_multitasking(void)
 	thread->refs = 1;
 	hash_insert(process_table, &proc->pid, sizeof(proc->pid), &proc->hash_elem, proc);
 	hash_insert(thread_table, &thread->tid, sizeof(thread->tid), &thread->hash_elem, thread);
-	ll_do_insert(process_list, &proc->listnode, proc);
+	linkedlist_insert(process_list, &proc->listnode, proc);
 
 	valloc_create(&proc->mmf_valloc, MEMMAP_MMAP_BEGIN, MEMMAP_MMAP_END, PAGE_SIZE, 0);
 	ll_create(&proc->threadlist);

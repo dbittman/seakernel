@@ -3,10 +3,10 @@
 #include <sea/tm/process.h>
 #include <sea/lib/hash.h>
 #include <sea/errno.h>
-#include <sea/ll.h>
+#include <sea/lib/linkedlist.h>
 
 struct hash *process_table;
-struct llist *process_list;
+struct linkedlist *process_list;
 size_t running_processes = 0;
 
 mutex_t process_refs_lock;

@@ -65,15 +65,17 @@ int tty_raise_action(int min, int sig)
 		return 0;
 	if((kernel_state_flags & KSF_SHUTDOWN))
 		return 0;
-	rwlock_acquire(&process_list->rwl, RWL_READER);
+	__linkedlist_lock(process_list);
 	struct process *proc;
-	struct llistnode *node;
-	ll_for_each_entry(process_list, node, struct process *, proc) {
+	struct linkedentry *node;
+	for(node = linkedlist_iter_start(process_list); node != linkedlist_iter_end(process_list);
+			node = linkedlist_iter_next(node)) {
+		proc = linkedentry_obj(node);
 		if(proc->tty == min) {
 			tm_signal_send_process(proc, sig);
 		}
 	}
-	rwlock_release(&process_list->rwl, RWL_READER);
+	__linkedlist_unlock(process_list);
 	return 0;
 }
 

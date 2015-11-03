@@ -38,17 +38,19 @@ static void get_status_int(struct process *t, int *st, int *__pid)
 
 static struct process *__find_first_child(struct process *parent)
 {
-	struct llistnode *node;
+	__linkedlist_lock(process_list);
 	struct process *proc;
-	rwlock_acquire(&process_list->rwl, RWL_READER);
-	ll_for_each_entry(process_list, node, struct process *, proc) {
+	struct linkedentry *node;
+	for(node = linkedlist_iter_start(process_list); node != linkedlist_iter_end(process_list);
+			node = linkedlist_iter_next(node)) {
+		proc = linkedentry_obj(node);
 		if(proc->parent == parent) {
 			tm_process_inc_reference(proc);
-			rwlock_release(&process_list->rwl, RWL_READER);
+			__linkedlist_unlock(process_list);
 			return proc;
 		}
 	}
-	rwlock_release(&process_list->rwl, RWL_READER);
+	__linkedlist_unlock(process_list);
 	return 0;
 }
 

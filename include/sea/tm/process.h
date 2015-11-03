@@ -60,7 +60,7 @@ struct process {
 	int flags;
 	_Atomic int refs;
 
-	struct llistnode listnode;
+	struct linkedentry listnode;
 
 	addr_t heap_start, heap_end;
 	char command[128];
@@ -123,7 +123,7 @@ int sys_sbrk(long inc);
 int sys_isstate(pid_t pid, int state);
 
 /* provided by arch-dep code */
-extern struct llist *process_list;
+extern struct linkedlist *process_list;
 
 extern struct hash *process_table;
 

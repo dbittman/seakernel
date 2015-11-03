@@ -49,7 +49,7 @@ struct ipv4_fragment {
 	uint8_t prot;
 	uint16_t id;
 	time_t start_time;
-	struct llistnode *node;
+	struct linkedentry node;
 	int16_t first_hole;
 };
 
@@ -75,7 +75,7 @@ uint16_t ipv4_calc_checksum(void *__data, int length);
 extern struct queue *ipv4_tx_queue;
 extern struct kthread *ipv4_send_thread;
 extern time_t ipv4_thread_lastwork;
-extern struct llist *frag_list;
+extern struct linkedlist *frag_list;
 
 #endif
 

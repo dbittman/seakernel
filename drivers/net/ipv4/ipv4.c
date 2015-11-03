@@ -49,7 +49,7 @@ struct nlayer_protocol ipv4 = {
 int module_install(void)
 {
 	ipv4_tx_queue = queue_create(0, 0);
-	frag_list = ll_create(0);
+	frag_list = linkedlist_create(0, 0);
 	ipv4_send_thread = kthread_create(0, "[kipv4-send]", 0, ipv4_sending_thread, 0);
 	ipv4_send_thread->thread->priority = 100;
 	net_nlayer_register_protocol(PF_INET, &ipv4);
@@ -69,7 +69,7 @@ int module_exit(void)
 	queue_destroy(ipv4_tx_queue);
 	/* clean up the fragmentation resources */
 	while(__ipv4_cleanup_fragments(1));
-	ll_destroy(frag_list);
+	linkedlist_destroy(frag_list);
 	return 0;
 }
 

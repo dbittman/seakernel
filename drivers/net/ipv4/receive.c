@@ -30,24 +30,27 @@
 #include <modules/ipv4/ipv4.h>
 #include <modules/ipv4/icmp.h>
 
-struct llist *frag_list;
+struct linkedlist *frag_list;
 
 static struct ipv4_fragment *__ipv4_find_fragment(struct ipv4_header *header)
 {
-	rwlock_acquire(&frag_list->rwl, RWL_READER);
-	struct llistnode *node;
+	struct linkedentry *node;
 	struct ipv4_fragment *f;
-	ll_for_each_entry(frag_list, node, struct ipv4_fragment *, f) {
+	__linkedlist_lock(frag_list);
+	for(node = linkedlist_iter_start(frag_list);
+			node != linkedlist_iter_end(frag_list);
+			node = linkedlist_iter_next(node)) {
+		f = linkedentry_obj(node);
 		if(f->src == header->src_ip
 				&& f->dest == header->dest_ip
 				&& f->id == header->id
 				&& f->prot == header->ptype
 				&& tm_timing_get_microseconds() < f->start_time + ONE_SECOND * FRAG_TIMEOUT) {
-			rwlock_release(&frag_list->rwl, RWL_READER);
+			__linkedlist_unlock(frag_list);
 			return f;
 		}
 	}
-	rwlock_release(&frag_list->rwl, RWL_READER);
+	__linkedlist_unlock(frag_list);
 	return 0;
 }
 
@@ -161,24 +164,27 @@ static void __ipv4_new_fragment(struct net_packet *np, struct ipv4_header *heade
 	hole->last = 0xFFFF;
 	hole->next = -1;
 	__ipv4_add_fragment(frag, header, offset, flags);
-	frag->node = ll_insert(frag_list, frag);
+	linkedlist_insert(frag_list, &frag->node, frag);
 }
 
 int __ipv4_cleanup_fragments(int do_remove)
 {
-	rwlock_acquire(&frag_list->rwl, RWL_READER);
-	struct llistnode *node;
+	__linkedlist_lock(frag_list);
+	struct linkedentry *node;
 	struct ipv4_fragment *f, *rem = 0;
-	ll_for_each_entry(frag_list, node, struct ipv4_fragment *, f) {
+	for(node = linkedlist_iter_start(frag_list);
+			node != linkedlist_iter_end(frag_list);
+			node = linkedlist_iter_next(node)) {
+		f = linkedentry_obj(node);
 		if(do_remove || (!f->complete && (tm_timing_get_microseconds() > f->start_time + ONE_SECOND * (FRAG_TIMEOUT)))) {
 			printk(1, "[ipv4]: removing old incomplete fragment\n");
 			rem = f;
 			break;
 		}
 	}
-	rwlock_release(&frag_list->rwl, RWL_READER);
+	__linkedlist_unlock(frag_list);
 	if(rem) {
-		ll_remove(frag_list, rem->node);
+		linkedlist_remove(frag_list, &rem->node);
 		net_packet_put(rem->netpacket, 0);
 		kfree(rem);
 		return 1;
@@ -208,7 +214,7 @@ static int ipv4_handle_fragmentation(struct net_packet **np, struct ipv4_header 
 		__ipv4_add_fragment(parent, header, offset, flags);
 	}
 	if(parent->complete) {
-		ll_remove(frag_list, parent->node);
+		linkedlist_remove(frag_list, &parent->node);
 		*np = parent->netpacket;
 		*head = parent->header;
 		*size = parent->total_length - parent->header->header_len * 4;

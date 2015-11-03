@@ -151,7 +151,7 @@ struct socket {
 	struct inode *inode;
 	struct file *file;
 
-	struct llistnode *node;
+	struct linkedentry node;
 	struct queue rec_data_queue;
 	struct sockaddr bindaddr;
 	struct hashelem hash_elem;

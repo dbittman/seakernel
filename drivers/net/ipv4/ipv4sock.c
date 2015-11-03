@@ -2,7 +2,7 @@
 #include <modules/ipv4/ipv4sock.h>
 #include <modules/ipv4/ipv4.h>
 #include <sea/net/packet.h>
-#include <sea/ll.h>
+#include <sea/lib/linkedlist.h>
 #include <sea/errno.h>
 #include <sea/lib/queue.h>
 #include <sea/net/data_queue.h>
@@ -28,7 +28,7 @@ struct socket_calls socket_calls_rawipv4 = {
 	.select = 0
 };
 
-static struct llist *sock_list =0;
+static struct linkedlist *sock_list =0;
 
 static int recvfrom(struct socket *sock, void *buffer, size_t length,
 		int flags, struct sockaddr *addr, socklen_t *addr_len)
@@ -68,8 +68,8 @@ static int sendto(struct socket *sock, const void *buffer, size_t length,
 static int init(struct socket *sock)
 {
 	if(!sock_list)
-		sock_list = ll_create(0);
-	sock->node = ll_insert(sock_list, sock);
+		sock_list = linkedlist_create(0, 0);
+	linkedlist_insert(sock_list, &sock->node, sock);
 	return 0;
 }
 
@@ -79,8 +79,7 @@ static int shutdown(struct socket *sock, int how)
 		return 0;
 	if(!socket_unbind(sock))
 		return 0;
-	ll_remove(sock_list, sock->node);
-	sock->node = 0;
+	linkedlist_remove(sock_list, &sock->node);
 	return 0;
 }
 
@@ -88,8 +87,7 @@ void ipv4_copy_to_sockets(struct net_packet *packet, struct ipv4_header *header)
 {
 	if(!sock_list)
 		return;
-	rwlock_acquire(&sock_list->rwl, RWL_READER);
-	struct llistnode *node;
+	struct linkedentry *node;
 	struct socket *sock;
 	struct sockaddr addr;
 	memset(&addr, 0, sizeof(addr));
@@ -98,13 +96,17 @@ void ipv4_copy_to_sockets(struct net_packet *packet, struct ipv4_header *header)
 	addr.sa_data[4] = (header->src_ip >> 16) & 0xFF;
 	addr.sa_data[5] = (header->src_ip >> 24) & 0xFF;
 	addr.sa_family = AF_INET;
-	ll_for_each_entry(sock_list, node, struct socket *, sock) {
+	__linkedlist_lock(sock_list);
+	for(node = linkedlist_iter_start(sock_list);
+			node != linkedlist_iter_end(sock_list);
+			node = linkedlist_iter_next(node)) {
+		sock = linkedentry_obj(node);
 		if(header->ptype == sock->prot || sock->prot == IPPROTO_RAW) {
 			packet->flags |= NP_FLAG_NOWR;
 			net_data_queue_enqueue(&sock->rec_data_queue, packet, header,
 					BIG_TO_HOST16(header->length), &addr, 0);
 		}
 	}
-	rwlock_release(&sock_list->rwl, RWL_READER);
+	__linkedlist_unlock(sock_list);
 }
 

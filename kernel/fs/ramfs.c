@@ -6,7 +6,7 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/fs/dir.h>
 #include <stdatomic.h>
-#include <sea/ll.h>
+#include <sea/lib/linkedlist.h>
 #include <sea/errno.h>
 #include <sea/dm/dev.h>
 #include <sea/fs/kerfs.h>
@@ -18,7 +18,7 @@ struct rfsdirent {
 	char name[DNAME_LEN];
 	size_t namelen;
 	uint32_t ino;
-	struct llistnode *lnode;
+	struct linkedentry lnode;
 };
 
 struct rfsnode {
@@ -30,7 +30,7 @@ struct rfsnode {
 	uid_t uid;
 	gid_t gid;
 	uint16_t nlinks;
-	struct llist *ents;
+	struct linkedlist ents;
 	struct hashelem hash_elem;
 };
 
@@ -44,7 +44,7 @@ int ramfs_mount(struct filesystem *fs)
 	struct hash *h = hash_create(0, 0, 1000);
 	struct rfsnode *root = kmalloc(sizeof(struct rfsnode));
 	root->mode = S_IFDIR | 0755;
-	root->ents = ll_create(0);
+	linkedlist_create(&root->ents, LINKEDLIST_MUTEX);
 	root->nlinks = 2;
 
 	struct rfsinfo *info = kmalloc(sizeof(struct rfsinfo));
@@ -61,12 +61,12 @@ int ramfs_mount(struct filesystem *fs)
 	strncpy(dot->name, ".", 1);
 	dot->namelen = 1;
 	dot->ino = 0;
-	dot->lnode = ll_insert(root->ents, dot);
+	linkedlist_insert(&root->ents, &dot->lnode, dot);
 	dot = kmalloc(sizeof(struct rfsdirent));
 	strncpy(dot->name, "..", 2);
 	dot->namelen = 2;
 	dot->ino = 0;
-	dot->lnode = ll_insert(root->ents, dot);
+	linkedlist_insert(&root->ents, &dot->lnode, dot);
 	return 0;
 }
 
@@ -76,7 +76,7 @@ int ramfs_alloc_inode(struct filesystem *fs, uint32_t *id)
 	*id = atomic_fetch_add(&info->next_id, 1) + 1;
 	struct rfsnode *node = kmalloc(sizeof(struct rfsnode));
 	node->num = *id;
-	node->ents = ll_create(0);
+	linkedlist_create(&node->ents, LINKEDLIST_MUTEX);
 
 	hash_insert(info->nodes, &node->num, sizeof(node->num), &node->hash_elem, node);
 	return 0;
@@ -127,16 +127,18 @@ int ramfs_inode_get_dirent(struct filesystem *fs, struct inode *node,
 	if((rfsnode = hash_lookup(info->nodes, &node->id, sizeof(node->id))) == NULL)
 		return -EIO;
 
-	struct llistnode *ln;
+	struct linkedentry *ln;
 	struct rfsdirent *rd, *found=0;
-	rwlock_acquire(&rfsnode->ents->rwl, RWL_READER);
-	ll_for_each_entry(rfsnode->ents, ln, struct rfsdirent *, rd) {
+	__linkedlist_lock(&rfsnode->ents);
+	for(ln = linkedlist_iter_start(&rfsnode->ents); ln != linkedlist_iter_end(&rfsnode->ents);
+			ln = linkedlist_iter_next(ln)) {
+		rd = linkedentry_obj(ln);
 		if(!strncmp(rd->name, name, namelen) && namelen == rd->namelen) {
 			found = rd;
 			break;
 		}
 	}
-	rwlock_release(&rfsnode->ents->rwl, RWL_READER);
+	__linkedlist_unlock(&rfsnode->ents);
 	if(!found)
 		return -ENOENT;
 
@@ -180,11 +182,14 @@ int ramfs_inode_getdents(struct filesystem *fs, struct inode *node, unsigned off
 	if((rfsnode = hash_lookup(info->nodes, &node->id, sizeof(node->id))) == NULL)
 		return -EIO;
 
-	struct llistnode *ln;
+	struct linkedentry *ln;
 	unsigned char *rec = (void *)dirs;
 	struct rfsdirent *rd, *found=0;
-	rwlock_acquire(&rfsnode->ents->rwl, RWL_READER);
-	ll_for_each_entry(rfsnode->ents, ln, struct rfsdirent *, rd) {
+	__linkedlist_lock(&rfsnode->ents);
+	for(ln = linkedlist_iter_start(&rfsnode->ents); ln != linkedlist_iter_end(&rfsnode->ents);
+			ln = linkedlist_iter_next(ln)) {
+		rd = linkedentry_obj(ln);
+
 		int reclen = rd->namelen + sizeof(struct dirent_posix) + 1;
 		reclen &= ~15;
 		reclen += 16;
@@ -204,7 +209,7 @@ int ramfs_inode_getdents(struct filesystem *fs, struct inode *node, unsigned off
 		}
 		read += reclen;
 	}
-	rwlock_release(&rfsnode->ents->rwl, RWL_READER);
+	__linkedlist_unlock(&rfsnode->ents);
 
 	return (addr_t)rec - (addr_t)dirs;
 }
@@ -227,7 +232,7 @@ int ramfs_inode_link(struct filesystem *fs, struct inode *parent, struct inode *
 	dir->namelen = namelen;
 	parent->length += 512;
 
-	dir->lnode = ll_insert(rfsparent->ents, dir);
+	linkedlist_insert(&rfsparent->ents, &dir->lnode, dir);
 	return 0;
 }
 
@@ -239,16 +244,20 @@ int ramfs_inode_unlink(struct filesystem *fs, struct inode *parent, const char *
 	if((rfsparent = hash_lookup(info->nodes, &parent->id, sizeof(parent->id))) == NULL)
 		return -EIO;
 
-	struct llistnode *ln;
+	struct linkedentry *ln;
 	struct rfsdirent *rd, *found=0;
-	rwlock_acquire(&rfsparent->ents->rwl, RWL_READER);
-	ll_for_each_entry(rfsparent->ents, ln, struct rfsdirent *, rd) {
+	__linkedlist_lock(&rfsparent->ents);
+	for(ln = linkedlist_iter_start(&rfsparent->ents);
+			ln != linkedlist_iter_end(&rfsparent->ents);
+			ln = linkedlist_iter_next(ln)) {
+		rd = linkedentry_obj(ln);
 		if(!strncmp(rd->name, name, namelen) && namelen == rd->namelen) {
 			found = rd;
 			break;
 		}
 	}
-	rwlock_release(&rfsparent->ents->rwl, RWL_READER);
+	__linkedlist_unlock(&rfsparent->ents);
+
 	if(!found)
 		return -ENOENT;
 
@@ -259,21 +268,11 @@ int ramfs_inode_unlink(struct filesystem *fs, struct inode *parent, const char *
 	int r = atomic_fetch_sub_explicit(&rfstarget->nlinks, 1, memory_order_relaxed);
 	if(r == 1) {
 		hash_delete(info->nodes, &target->id, sizeof(target->id));
-		//if(rfstarget->ents->num == 0) {
-			ll_destroy(rfstarget->ents);
-			kfree(rfstarget);
-		//}
+		linkedlist_destroy(&rfstarget->ents);
+		kfree(rfstarget);
 	}
 
-	rwlock_acquire(&rfsparent->ents->rwl, RWL_WRITER);
-	ll_do_remove(rfsparent->ents, found->lnode, 1);
-	if(0 && rfsparent->ents->num == 0 && rfsparent->nlinks == 0) {
-		rwlock_release(&rfsparent->ents->rwl, RWL_WRITER);
-		ll_destroy(rfstarget->ents);
-		kfree(rfstarget);
-	} else {
-		rwlock_release(&rfsparent->ents->rwl, RWL_WRITER);
-	}
+	linkedlist_remove(&rfsparent->ents, &found->lnode);
 	kfree(found);
 	return 0;
 }

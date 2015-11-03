@@ -9,6 +9,8 @@ struct linkedentry {
 	struct linkedentry *next, *prev;
 };
 
+#define linkedentry_obj(entry) entry->obj
+
 #include <sea/spinlock.h>
 #include <sea/asm/system.h>
 #include <stdbool.h>
@@ -22,6 +24,10 @@ struct linkedlist {
 	int flags;
 	struct __mutex_s *m_lock;
 };
+
+#define linkedlist_iter_end(list) &(list)->sentry
+#define linkedlist_iter_start(list) (list)->head->next
+#define linkedlist_iter_next(entry) (entry)->next
 
 void *linkedlist_head(struct linkedlist *list);
 struct linkedlist *linkedlist_create(struct linkedlist *list, int flags);

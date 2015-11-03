@@ -1,12 +1,13 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/mm/reclaim.h>
 #include <sea/ll.h>
+#include <sea/lib/linkedlist.h>
 
-struct llist reclaimers;
+struct linkedlist reclaimers;
 
 void mm_reclaim_init(void)
 {
-	ll_create(&reclaimers);
+	linkedlist_create(&reclaimers, LINKEDLIST_MUTEX);
 }
 
 void mm_reclaim_register(size_t (*fn)(void), size_t size)
@@ -14,39 +15,27 @@ void mm_reclaim_register(size_t (*fn)(void), size_t size)
 	struct reclaimer *rec = kmalloc(sizeof(struct reclaimer));
 	rec->size = size;
 	rec->fn = fn;
-	ll_insert(&reclaimers, rec);
+	linkedlist_insert(&reclaimers, &rec->node, rec);
+}
+
+static unsigned long __reclaim_reducer(struct linkedentry *entry, unsigned long value)
+{
+	struct reclaimer *rec = entry->obj;
+	return rec->fn() + value;
 }
 
 size_t mm_reclaim_size(size_t size)
 {
 	size_t amount = 0, thisround = 1;
 	while(amount < size && thisround != 0) {
-		struct llistnode *node;
-		struct reclaimer *rec;
-		thisround = 0;
-		rwlock_acquire(&reclaimers.rwl, RWL_READER);
-		ll_for_each_entry(&reclaimers, node, struct reclaimer *, rec) {
-			size_t freed = rec->fn();
-			amount += freed;
-			thisround += freed;
-			//if(amount > size)
-			//	break;
-		}
-		rwlock_release(&reclaimers.rwl, RWL_READER);
+		thisround = linkedlist_reduce(&reclaimers, __reclaim_reducer, 0);
+		amount += thisround;
 	}
 	return amount;
 }
 
 void mm_reclaim(void)
 {
-	struct llistnode *node;
-	struct reclaimer *rec;
-	rwlock_acquire(&reclaimers.rwl, RWL_READER);
-	ll_for_each_entry(&reclaimers, node, struct reclaimer *, rec) {
-		size_t amount = rec->fn();
-		//if(amount > 0)
-		//	break;
-	}
-	rwlock_release(&reclaimers.rwl, RWL_READER);
+	linkedlist_reduce(&reclaimers, __reclaim_reducer, 0);
 }
 

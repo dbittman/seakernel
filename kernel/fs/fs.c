@@ -7,7 +7,7 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/errno.h>
 #include <sea/vsprintf.h>
-static uint32_t fsids = 0;
+static _Atomic uint32_t fsids = 0;
 
 static struct hash fsdrivershash;
 static struct linkedlist fsdriverslist;

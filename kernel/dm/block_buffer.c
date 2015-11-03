@@ -5,7 +5,7 @@
 #include <sea/tm/kthread.h>
 #include <sea/tm/timing.h>
 #include <stdatomic.h>
-struct llist dirty_list;
+struct linkedlist dirty_list;
 mutex_t dlock;
 struct kthread syncer;
 
@@ -35,7 +35,7 @@ int block_buffer_syncer(struct kthread *kt, void *arg)
 void block_buffer_init(void)
 {
 	mutex_create(&dlock, 0);
-	ll_create_lockless(&dirty_list);
+	linkedlist_create(&dirty_list, LINKEDLIST_LOCKLESS);
 	//kthread_create(&syncer, "[ksync]", 0, block_buffer_syncer, 0);
 }
 
@@ -55,8 +55,8 @@ int buffer_sync_all_dirty(void)
 {
 	mutex_acquire(&dlock);
 	struct llistnode *ln, *next;
-	while(dirty_list.num > 0) {
-		struct buffer *buf = ll_entry(struct buffer *, dirty_list.head);
+	while(dirty_list.count > 0) {
+		struct buffer *buf = linkedlist_head(&dirty_list);
 		buffer_inc_refcount(buf);
 		if(buf->flags & BUFFER_DIRTY)
 			buffer_sync(buf);
@@ -100,12 +100,12 @@ void buffer_put(struct buffer *buf)
 		if(buf->flags & BUFFER_DIRTY) {
 			if(!(buf->flags & BUFFER_DLIST)) {
 				/* changed to dirty, so add to list */
-				ll_do_insert(&dirty_list, &buf->dlistnode, buf);
+				linkedlist_insert(&dirty_list, &buf->dlistnode, buf);
 				atomic_fetch_or(&buf->flags, BUFFER_DLIST);
 			}
 		} else {
 			if(buf->flags & BUFFER_DLIST) {
-				ll_do_remove(&dirty_list, &buf->dlistnode, 0);
+				linkedlist_remove(&dirty_list, &buf->dlistnode);
 				atomic_fetch_and(&buf->flags, ~BUFFER_DLIST);
 			}
 		}
@@ -125,7 +125,7 @@ void block_elevator_add_request(struct ioreq *req)
 	tm_thread_poke(req->bd->elevator.thread);
 }
 
-int block_cache_get_bufferlist(struct llist *blist, struct ioreq *req)
+int block_cache_get_bufferlist(struct linkedlist *blist, struct ioreq *req)
 {
 	int ret = 0;
 	size_t count = req->count;
@@ -150,7 +150,7 @@ int block_cache_get_bufferlist(struct llist *blist, struct ioreq *req)
 			assert(br);
 			atomic_fetch_and(&br->flags, ~BUFFER_LOCKED);
 		}
-		ll_do_insert(blist, &br->lnode, br);
+		linkedlist_insert(blist, &br->lnode, br);
 		ret++;
 		count--;
 		block++;

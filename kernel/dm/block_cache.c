@@ -85,17 +85,20 @@ struct buffer *dm_block_cache_get(blockdevice_t *bd, uint64_t block)
 
 int block_cache_request(struct ioreq *req, off_t initial_offset, size_t total_bytecount, char *buffer)
 {
-	struct llist list;
-	ll_create_lockless(&list);
+	struct linkedlist list;
+	linkedlist_create(&list, LINKEDLIST_LOCKLESS);
 	size_t block = req->block;
 	size_t bytecount = total_bytecount;
 	unsigned int numread = block_cache_get_bufferlist(&list, req);
 	if(numread != req->count)
 		return 0;
 
-	struct llistnode *ln;
+	struct linkedentry *ln;
 	struct buffer *br;
-	ll_for_each_entry(&list, ln, struct buffer *, br) {
+	for(ln = linkedlist_iter_start(&list);
+			ln != linkedlist_iter_end(&list);
+			ln = linkedlist_iter_next(ln)) {
+		br = linkedentry_obj(ln);
 		off_t offset = 0;
 		if(br->block == block) {
 			offset = initial_offset;

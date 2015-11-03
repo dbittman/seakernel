@@ -47,7 +47,8 @@ struct buffer {
 	int flags;
 	uint64_t block;
 	dev_t dev; //TODO: please, please, fix this crap
-	struct llistnode lnode, dlistnode;
+	struct linkedentry lnode;
+	struct linkedentry dlistnode;
 	struct queue_item qi;
 	struct hashelem hash_elem;
 	char data[];
@@ -90,7 +91,7 @@ int block_cache_request(struct ioreq *req, off_t initial_offset, size_t total_by
 struct buffer *buffer_create(blockdevice_t *bd, dev_t dev, uint64_t block, int flags, char *data);
 void buffer_put(struct buffer *buf);
 void buffer_inc_refcount(struct buffer *buf);
-int block_cache_get_bufferlist(struct llist *blist, struct ioreq *req);
+int block_cache_get_bufferlist(struct linkedlist *blist, struct ioreq *req);
 struct ioreq *ioreq_create(blockdevice_t *bd, dev_t dev, int, uint64_t start, size_t count);
 void ioreq_put(struct ioreq *req);
 #endif

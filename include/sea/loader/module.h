@@ -10,7 +10,7 @@
 #define _MOD_GO    1
 #define _MOD_AGAIN 2
 
-typedef struct module_s {
+struct module {
 	char *base;
 	long length;
 	addr_t entry;
@@ -19,15 +19,15 @@ typedef struct module_s {
 	char path[128];
 	struct section_data sd;
 	struct linkedentry listnode;
-} module_t;
+};
 
 void loader_unload_all_modules();
 void loader_init_modules();
-module_t *loader_module_free_to_unload(module_t *i);
+struct module *loader_module_free_to_unload(struct module *i);
 int sys_load_module(char *path, char *args, int flags);
 int sys_unload_module(char *path, int flags);
 bool loader_module_is_loaded(char *name);
 const char *loader_lookup_module_symbol(addr_t addr, char **);
-const char *arch_loader_lookup_module_symbol(module_t *, addr_t addr, char **);
+const char *arch_loader_lookup_module_symbol(struct module *, addr_t addr, char **);
 
 #endif

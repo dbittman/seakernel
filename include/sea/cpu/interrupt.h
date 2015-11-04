@@ -18,15 +18,15 @@ int cpu_interrupt_get_flag();
 int arch_cpu_interrupt_set(unsigned _new);
 int arch_cpu_interrupt_get_flag();
 
-void cpu_interrupt_syscall_entry(registers_t *regs, int syscall_number);
-void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_address);
-void cpu_interrupt_irq_entry(registers_t *regs, int int_no);
+void cpu_interrupt_syscall_entry(struct registers *regs, int syscall_number);
+void cpu_interrupt_isr_entry(struct registers *regs, int int_no, addr_t return_address);
+void cpu_interrupt_irq_entry(struct registers *regs, int int_no);
 void cpu_interrupt_post_handling(void);
 
 void arch_cpu_timer_install(int hz);
 void cpu_timer_install(int hz);
 
-int cpu_interrupt_register_handler(int num, void (*fn)(registers_t *, int, int));
+int cpu_interrupt_register_handler(int num, void (*fn)(struct registers *, int, int));
 void cpu_interrupt_unregister_handler(u8int n, int id);
 void cpu_interrupt_schedule_stage2(struct async_call *call);
 
@@ -35,10 +35,10 @@ void interrupt_init();
 extern unsigned long interrupt_counts[256];
 
 #if CONFIG_SMP
-void cpu_handle_ipi_tlb(registers_t *);
-void cpu_handle_ipi_tlb_ack(registers_t *);
-void cpu_handle_ipi_reschedule(registers_t *);
-void cpu_handle_ipi_halt(registers_t *);
+void cpu_handle_ipi_tlb(struct registers *);
+void cpu_handle_ipi_tlb_ack(struct registers *);
+void cpu_handle_ipi_reschedule(struct registers *);
+void cpu_handle_ipi_halt(struct registers *);
 #endif
 
 #endif

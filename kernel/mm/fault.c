@@ -23,7 +23,7 @@ int kerfs_pfault_report(int direction, void *param, size_t size, size_t offset, 
 	return current;
 }
 
-void mm_page_fault_handler(registers_t *regs, addr_t address, int pf_cause)
+void mm_page_fault_handler(struct registers *regs, addr_t address, int pf_cause)
 {
 	if(!timer_init) {
 		timer_init = true;

@@ -81,7 +81,7 @@ static inline size_t mm_page_size_closest(size_t length)
 #define PAGE_LARGE     (1 << 7)
 #define PAGE_SIZE 	   0x1000
 
-void arch_mm_page_fault_handle(registers_t *regs, int, int);
+void arch_mm_page_fault_handle(struct registers *regs, int, int);
 typedef addr_t page_dir_t, page_table_t, pml4_t, pdpt_t;
 
 #define PAGE_MASK          0xFFFFFFFFFFFFF000

@@ -4,7 +4,7 @@
 
 #include <sea/string.h>
 
-void arch_tm_userspace_signal_initializer(registers_t *regs, struct sigaction *sa)
+void arch_tm_userspace_signal_initializer(struct registers *regs, struct sigaction *sa)
 {
 	/* user-space signal handing design:
 		* 
@@ -23,8 +23,8 @@ void arch_tm_userspace_signal_initializer(registers_t *regs, struct sigaction *s
 	
 	int signal = current_thread->signal;
 	uint64_t oldsp = regs->useresp;
-	memcpy((void *)((addr_t)regs->useresp - sizeof(registers_t)), (void *)regs, sizeof(*regs));
-	regs->useresp -= (sizeof(registers_t) + 8);
+	memcpy((void *)((addr_t)regs->useresp - sizeof(struct registers)), (void *)regs, sizeof(*regs));
+	regs->useresp -= (sizeof(struct registers) + 8);
 
 	regs->rdi = signal;
 	regs->rsi = signal;
@@ -42,7 +42,7 @@ void arch_tm_userspace_signal_initializer(registers_t *regs, struct sigaction *s
 	regs->eip = (addr_t)sa->_sa_func._sa_handler;
 }
 
-void arch_tm_userspace_signal_cleanup(registers_t *regs)
+void arch_tm_userspace_signal_cleanup(struct registers *regs)
 {
 	int signal = (int)*(long *)(regs->useresp);
 	struct sigaction *sa = &current_process->signal_act[signal];

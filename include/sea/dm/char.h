@@ -3,13 +3,13 @@
 
 #include <sea/dm/dev.h>
 #include <sea/fs/inode.h>
-typedef struct chardevice_s {
+struct chardevice {
 	int (*func)(int mode, int minor, char *buf, size_t count);
 	int (*ioctl)(int min, int cmd, long arg);
 	int (*select)(int min, int rw);
-} chardevice_t;
+};
 
-chardevice_t *dm_set_char_device(int maj, int (*f)(int, int, char*, size_t), 
+struct chardevice *dm_set_char_device(int maj, int (*f)(int, int, char*, size_t), 
 	int (*c)(int, int, long), int (*s)(int, int));
 
 int dm_set_available_char_device(int (*f)(int, int, char*, size_t), 

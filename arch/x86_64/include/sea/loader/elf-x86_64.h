@@ -141,7 +141,7 @@ static inline int is_valid_elf32_otherarch(char *buf, short type)
 	return 1;
 }
 
-//int parse_elf_module(module_t *mod, uint8_t * buf, char *name, int);
+//int parse_elf_module(struct module *mod, uint8_t * buf, char *name, int);
 const char *elf64_lookup_symbol (uint64_t addr, elf64_t *elf);
 const char *elf64_lookup_symbol (uint64_t addr, elf64_t *elf);
 elf64_symtab_entry_t * fill_symbol_struct(uint8_t * buf, uint64_t symbol);

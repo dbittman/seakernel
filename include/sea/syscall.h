@@ -2,7 +2,7 @@
 #define SYSCALL_H
 #include <sea/cpu/interrupt.h>
 #include <sea/arch-include/syscall.h>
-int syscall_handler(registers_t *regs);
+int syscall_handler(struct registers *regs);
 
 int sys_setup();
 

@@ -10,7 +10,7 @@
   #include <sea/cpu/tables-x86_64.h>
 #endif
 
-typedef struct {
+struct cpuid {
 	char manufacturer_string[13];
 	int max_basic_input_val;
 	int max_ext_input_val;
@@ -19,10 +19,10 @@ typedef struct {
 	char stepping, model, family, type; 
 	char cache_line_size, logical_processors, lapic_id;
 	char cpu_brand[49];
-} cpuid_t;
+};
 
 struct arch_cpu {
-	cpuid_t cpuid;
+	struct cpuid cpuid;
 	gdt_entry_t gdt[NUM_GDT_ENTRIES];
 	gdt_ptr_t gdt_ptr;
 	idt_ptr_t idt_ptr;

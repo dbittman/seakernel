@@ -28,24 +28,24 @@
 #define GETDEV(maj, min) (((uint16_t)maj)*NUM_MINOR+((uint16_t)min))
 
 #define DH_SZ 64
-typedef struct device_ss {
+struct device {
 	void *ptr;
 	int beta;
-	struct device_ss *next;
-} device_t;
+	struct device *next;
+};
 
 struct devhash_s {
-	device_t *devs[DH_SZ];
+	struct device *devs[DH_SZ];
 	struct mutex lock;
 };
 	
 void dm_init();
 void dm_sync();
 int dm_ioctl(int type, dev_t dev, int cmd, long arg);
-device_t *dm_get_device(int type, int major);
-device_t *dm_get_enumerated_device(int type, int n);
+struct device *dm_get_device(int type, int major);
+struct device *dm_get_enumerated_device(int type, int n);
 int dm_add_device(int type, int major, void *str);
-device_t *dm_get_enumerated_device(int type, int n);
+struct device *dm_get_enumerated_device(int type, int n);
 int dm_remove_device(int type, int major);
 
 #endif

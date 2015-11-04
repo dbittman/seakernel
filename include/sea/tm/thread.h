@@ -72,7 +72,7 @@ struct thread {
 
 	sigset_t sig_mask;
 	unsigned signal, signals_pending;
-	registers_t *regs;
+	struct registers *regs;
 
 	struct arch_thread_data arch_thread;
 
@@ -130,8 +130,8 @@ void tm_thread_add_to_cpu(struct thread *thr, struct cpu *cpu);
 int sys_clone(int flags);
 void tm_schedule(void);
 void tm_thread_user_mode_jump(void (*fn)(void));
-void arch_tm_userspace_signal_initializer(registers_t *regs, struct sigaction *sa);
-void arch_tm_userspace_signal_cleanup(registers_t *regs);
+void arch_tm_userspace_signal_initializer(struct registers *regs, struct sigaction *sa);
+void arch_tm_userspace_signal_cleanup(struct registers *regs);
 addr_t arch_tm_read_ip(void);
 void arch_tm_jump_to_user_mode(addr_t jmp);
 __attribute__((noinline)) void arch_tm_thread_switch(struct thread *old, struct thread *, addr_t);

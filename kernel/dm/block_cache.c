@@ -37,7 +37,7 @@ size_t dm_block_cache_reclaim(void)
 	return amount;
 }
 
-int dm_block_cache_insert(blockdevice_t *bd, uint64_t block, struct buffer *buf, int flags)
+int dm_block_cache_insert(struct blockdevice *bd, uint64_t block, struct buffer *buf, int flags)
 {
 	mutex_acquire(&bd->cachelock);
 
@@ -66,7 +66,7 @@ int dm_block_cache_insert(blockdevice_t *bd, uint64_t block, struct buffer *buf,
 	return 0;
 }
 
-struct buffer *dm_block_cache_get(blockdevice_t *bd, uint64_t block)
+struct buffer *dm_block_cache_get(struct blockdevice *bd, uint64_t block)
 {
 	mutex_acquire(&bd->cachelock);
 

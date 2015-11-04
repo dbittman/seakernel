@@ -13,7 +13,7 @@
 #include <sea/tm/blocking.h>
 #define BLOCK_CACHE_OVERWRITE 1
 
-typedef struct blockdevice_s {
+struct blockdevice {
 	int blksz;
 	int (*rw)(int mode, int minor, u64 blk, char *buf);
 	int (*rw_multiple)(int mode, int minor, u64, char *buf, int);
@@ -24,7 +24,7 @@ typedef struct blockdevice_s {
 	struct kthread elevator;
 	struct hash cache;
 	struct mutex cachelock;
-} blockdevice_t;
+};
 
 struct ioreq {
 	uint64_t block;
@@ -32,7 +32,7 @@ struct ioreq {
 	int refs;
 	int direction;
 	int flags;
-	blockdevice_t *bd;
+	struct blockdevice *bd;
 	dev_t dev;
 	struct queue_item qi;
 	struct blocklist blocklist;
@@ -42,7 +42,7 @@ struct ioreq {
 #define IOREQ_FAILED   2
 
 struct buffer {
-	blockdevice_t *bd;
+	struct blockdevice *bd;
 	int refs;
 	int flags;
 	uint64_t block;
@@ -59,7 +59,7 @@ struct buffer {
 #define BUFFER_WRITEPENDING 4
 #define BUFFER_LOCKED       8
 
-blockdevice_t *dm_set_block_device(int maj, int (*f)(int, int, u64, char*), int bs, 
+struct blockdevice *dm_set_block_device(int maj, int (*f)(int, int, u64, char*), int bs, 
 	int (*c)(int, int, long), int (*m)(int, int, u64, char *, int), int (*s)(int, int));
 
 int dm_set_available_block_device(int (*f)(int, int, u64, char*), int bs, 
@@ -67,9 +67,9 @@ int dm_set_available_block_device(int (*f)(int, int, u64, char*), int bs,
 
 void dm_unregister_block_device(int n);
 void dm_init_block_devices();
-int dm_block_rw(int rw, dev_t dev, u64 blk, char *buf, blockdevice_t *bd);
-int dm_do_block_rw_multiple(int rw, dev_t dev, u64 blk, char *buf, int count, blockdevice_t *bd);
-int dm_do_block_rw(int rw, dev_t dev, u64 blk, char *buf, blockdevice_t *bd);
+int dm_block_rw(int rw, dev_t dev, u64 blk, char *buf, struct blockdevice *bd);
+int dm_do_block_rw_multiple(int rw, dev_t dev, u64 blk, char *buf, int count, struct blockdevice *bd);
+int dm_do_block_rw(int rw, dev_t dev, u64 blk, char *buf, struct blockdevice *bd);
 int dm_block_read(dev_t dev, off_t posit, char *buf, size_t c);
 int dm_block_write(dev_t dev, off_t posit, char *buf, size_t count);
 int dm_block_device_rw(int mode, dev_t dev, off_t off, char *buf, size_t len);
@@ -83,16 +83,16 @@ int buffer_sync_all_dirty(void);
 int block_elevator_main(struct kthread *kt, void *arg);
 void block_elevator_add_request(struct ioreq *req);
 
-struct buffer *dm_block_cache_get(blockdevice_t *bd, uint64_t block);
-int dm_block_cache_insert(blockdevice_t *bd, uint64_t block, struct buffer *, int flags);
+struct buffer *dm_block_cache_get(struct blockdevice *bd, uint64_t block);
+int dm_block_cache_insert(struct blockdevice *bd, uint64_t block, struct buffer *, int flags);
 
 int block_cache_request(struct ioreq *req, off_t initial_offset, size_t total_bytecount, char *buffer);
 
-struct buffer *buffer_create(blockdevice_t *bd, dev_t dev, uint64_t block, int flags, char *data);
+struct buffer *buffer_create(struct blockdevice *bd, dev_t dev, uint64_t block, int flags, char *data);
 void buffer_put(struct buffer *buf);
 void buffer_inc_refcount(struct buffer *buf);
 struct buffer *block_cache_get_first_buffer(struct ioreq *req);
 int block_cache_get_bufferlist(struct linkedlist *blist, struct ioreq *req);
-struct ioreq *ioreq_create(blockdevice_t *bd, dev_t dev, int, uint64_t start, size_t count);
+struct ioreq *ioreq_create(struct blockdevice *bd, dev_t dev, int, uint64_t start, size_t count);
 void ioreq_put(struct ioreq *req);
 #endif

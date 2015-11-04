@@ -8,7 +8,7 @@ struct inode;
 struct dirent {
 	_Atomic int count;
 	_Atomic int flags;
-	rwlock_t lock;
+	struct rwlock lock;
 	struct inode *parent;
 	struct filesystem *filesystem;
 	uint32_t ino;

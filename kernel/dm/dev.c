@@ -39,14 +39,14 @@ void dm_init(void)
 #endif
 }
 
-device_t *dm_get_device(int type, int major)
+struct device *dm_get_device(int type, int major)
 {
 	if(type >= NUM_DT)
 		return 0;
 	int alpha = major % DH_SZ;
 	int beta = major / DH_SZ;
 	mutex_acquire(&devhash[type].lock);
-	device_t *dt = devhash[type].devs[alpha];
+	struct device *dt = devhash[type].devs[alpha];
 	while(dt && dt->beta != beta) 
 		dt=dt->next;
 	mutex_release(&devhash[type].lock);
@@ -54,12 +54,12 @@ device_t *dm_get_device(int type, int major)
 	return dt;
 }
 
-device_t *dm_get_enumerated_device(int type, int n)
+struct device *dm_get_enumerated_device(int type, int n)
 {
 	if(type >= NUM_DT)
 		return 0;
 	int a=0;
-	device_t *dt=0;
+	struct device *dt=0;
 	mutex_acquire(&devhash[type].lock);
 	while(!dt && a < DH_SZ)
 	{
@@ -82,10 +82,10 @@ int dm_add_device(int type, int major, void *str)
 	int alpha = major % DH_SZ;
 	int beta = major / DH_SZ;
 	mutex_acquire(&devhash[type].lock);
-	device_t *new = (device_t *)kmalloc(sizeof(device_t));
+	struct device *new = (struct device *)kmalloc(sizeof(struct device));
 	new->beta = beta;
 	new->ptr = str;
-	device_t *old = devhash[type].devs[alpha];
+	struct device *old = devhash[type].devs[alpha];
 	devhash[type].devs[alpha] = new;
 	new->next = old;
 	mutex_release(&devhash[type].lock);
@@ -99,8 +99,8 @@ int dm_remove_device(int type, int major)
 	int alpha = major % DH_SZ;
 	int beta = major / DH_SZ;
 	mutex_acquire(&devhash[type].lock);
-	device_t *d = devhash[type].devs[alpha];
-	device_t *p = 0;
+	struct device *d = devhash[type].devs[alpha];
+	struct device *p = 0;
 	while(d && d->beta != beta) {
 		p=d;
 		d=d->next;

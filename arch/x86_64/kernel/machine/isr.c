@@ -26,7 +26,7 @@ static void ack_pic(int n)
 	}
 }
 
-void arch_interrupt_ipi_handler(registers_t regs)
+void arch_interrupt_ipi_handler(struct registers regs)
 {
 #if CONFIG_ARCH == TYPE_ARCH_X86_64
 	assert(((regs.ds&(~0x7)) == 0x10 || (regs.ds&(~0x7)) == 0x20) && ((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));
@@ -63,7 +63,7 @@ void arch_interrupt_ipi_handler(registers_t regs)
 /* this should NEVER enter from an interrupt handler, 
  * and only from kernel code in the one case of calling
  * sys_setup() */
-void arch_interrupt_syscall_handler(registers_t regs)
+void arch_interrupt_syscall_handler(struct registers regs)
 {
 	/* don't need to save the flag here, since it will always be true */
 #if CONFIG_ARCH == TYPE_ARCH_X86_64
@@ -83,7 +83,7 @@ void arch_interrupt_syscall_handler(registers_t regs)
 }
 
 /* This gets called from our ASM interrupt handler stub. */
-void arch_interrupt_isr_handler(registers_t regs)
+void arch_interrupt_isr_handler(struct registers regs)
 {
 #if CONFIG_ARCH == TYPE_ARCH_X86_64
 	assert(((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));
@@ -97,7 +97,7 @@ void arch_interrupt_isr_handler(registers_t regs)
 	cpu_interrupt_post_handling();
 }
 
-void arch_interrupt_irq_handler(registers_t regs)
+void arch_interrupt_irq_handler(struct registers regs)
 {
 #if CONFIG_ARCH == TYPE_ARCH_X86_64
 	assert(((regs.ds&(~0x7)) == 0x10 || (regs.ds&(~0x7)) == 0x20) && ((regs.cs&(~0x7)) == 0x8 || (regs.cs&(~0x7)) == 0x18));

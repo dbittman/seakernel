@@ -7,7 +7,7 @@
 
 #if (CONFIG_MODULES)
 
-void *arch_loader_parse_elf_module(module_t *mod, uint8_t * buf)
+void *arch_loader_parse_elf_module(struct module *mod, uint8_t * buf)
 {
 	int error=0;
 	addr_t module_entry=0, module_exiter=0;

@@ -37,11 +37,11 @@ static int null_rw(int rw, int m, char *buf, size_t c)
 	6 - 9 -> reserved
 */
 
-chardevice_t *dm_set_char_device(int maj, int (*f)(int, int, char*, size_t), 
+struct chardevice *dm_set_char_device(int maj, int (*f)(int, int, char*, size_t), 
 	int (*c)(int, int, long), int (*s)(int, int))
 {
 	printk(1, "[dev]: Setting char device %d (%x, %x)\n", maj, f, c);
-	chardevice_t *dev = (chardevice_t *)kmalloc(sizeof(chardevice_t));
+	struct chardevice *dev = (struct chardevice *)kmalloc(sizeof(struct chardevice));
 	dev->func = f;
 	dev->ioctl=c;
 	dev->select=s;
@@ -82,10 +82,10 @@ void dm_init_char_devices(void)
 
 int dm_char_rw(int rw, dev_t dev, char *buf, size_t len)
 {
-	device_t *dt = dm_get_device(DT_CHAR, MAJOR(dev));
+	struct device *dt = dm_get_device(DT_CHAR, MAJOR(dev));
 	if(!dt)
 		return -ENXIO;
-	chardevice_t *cd = (chardevice_t *)dt->ptr;
+	struct chardevice *cd = (struct chardevice *)dt->ptr;
 	if(cd->func)
 	{
 		int ret = (cd->func)(rw, MINOR(dev), buf, len);
@@ -98,7 +98,7 @@ void dm_unregister_char_device(int n)
 {
 	printk(1, "[dev]: Unregistering char device %d\n", n);
 	mutex_acquire(&cd_search_lock);
-	device_t *dev = dm_get_device(DT_CHAR, n);
+	struct device *dev = dm_get_device(DT_CHAR, n);
 	if(!dev) {
 		mutex_release(&cd_search_lock);
 		return;
@@ -112,10 +112,10 @@ void dm_unregister_char_device(int n)
 
 int dm_char_ioctl(dev_t dev, int cmd, long arg)
 {
-	device_t *dt = dm_get_device(DT_CHAR, MAJOR(dev));
+	struct device *dt = dm_get_device(DT_CHAR, MAJOR(dev));
 	if(!dt)
 		return -ENXIO;
-	chardevice_t *cd = (chardevice_t *)dt->ptr;
+	struct chardevice *cd = (struct chardevice *)dt->ptr;
 	if(cd->ioctl)
 	{
 		int ret = (cd->ioctl)(MINOR(dev), cmd, arg);
@@ -127,10 +127,10 @@ int dm_char_ioctl(dev_t dev, int cmd, long arg)
 int dm_chardev_select(struct inode *in, int rw)
 {
 	int dev = in->phys_dev;
-	device_t *dt = dm_get_device(DT_CHAR, MAJOR(dev));
+	struct device *dt = dm_get_device(DT_CHAR, MAJOR(dev));
 	if(!dt)
 		return 1;
-	chardevice_t *cd = (chardevice_t *)dt->ptr;
+	struct chardevice *cd = (struct chardevice *)dt->ptr;
 	if(cd->select)
 		return cd->select(MINOR(dev), rw);
 	return 1;
@@ -140,10 +140,10 @@ void dm_send_sync_char(void)
 {
 	int i=0;
 	while(i>=0) {
-		device_t *d = dm_get_enumerated_device(DT_CHAR, i);
+		struct device *d = dm_get_enumerated_device(DT_CHAR, i);
 		if(!d) break;
 		assert(d->ptr);
-		chardevice_t *cd = (chardevice_t *)d->ptr;
+		struct chardevice *cd = (struct chardevice *)d->ptr;
 		if(cd->ioctl)
 			cd->ioctl(0, -1, 0);
 		i++;

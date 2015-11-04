@@ -240,7 +240,7 @@ int mm_is_valid_user_pointer(int num, void *p, char flags)
  * to syscalls that have pointers are arguments, so that we make sure
  * we only ever modify user-space data when we think we're modifying
  * user-space data. */
-int check_pointers(registers_t *regs)
+int check_pointers(struct registers *regs)
 {
 	switch(SYSCALL_NUM_AND_RET) {
 		case SYS_READ: case SYS_FSTAT: case SYS_STAT: /*case SYS_GETPATH:*/
@@ -305,7 +305,7 @@ int check_pointers(registers_t *regs)
 	return 1;
 }
 
-int syscall_handler(registers_t *regs)
+int syscall_handler(struct registers *regs)
 {
 	/* SYSCALL_NUM_AND_RET is defined to be the correct register in the syscall regs struct. */
 	if(unlikely(SYSCALL_NUM_AND_RET >= num_syscalls))

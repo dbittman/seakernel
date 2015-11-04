@@ -245,7 +245,7 @@ extern struct mutex *dma_mutex;
 extern int api;
 void remove_devices();
 int ata_wait_irq(struct ata_controller *cont);
-void ata_irq_handler(registers_t *regs, int, int);
+void ata_irq_handler(struct registers *regs, int, int);
 int ata_disk_sync(struct ata_controller *cont);
 int init_ata_controller(struct ata_controller *cont);
 int init_ata_device();

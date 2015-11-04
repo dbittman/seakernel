@@ -270,7 +270,7 @@ unsigned char last_sc=0;
 unsigned char key_stack[64];
 int ks_idx=0;
 struct async_call keyboard_s2_call;
-void keyboard_int_stage1(registers_t *regs, int int_no, int flags)
+void keyboard_int_stage1(struct registers *regs, int int_no, int flags)
 {
 	unsigned char scancode = inb(0x60);
 	int x = atomic_fetch_add(&ks_idx, 1);

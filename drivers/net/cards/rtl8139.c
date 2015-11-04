@@ -328,7 +328,7 @@ void do_recieve(rtl8139dev_t *dev, unsigned short data)
 	net_notify_packet_ready(dev->net_dev);
 }
 
-void rtl8139_int_1(registers_t *regs, int int_no, int flags)
+void rtl8139_int_1(struct registers *regs, int int_no, int flags)
 {
 	for(int i = 0;i<16;i++) {
 		rtl8139dev_t *t=devs[i];

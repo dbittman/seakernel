@@ -87,7 +87,7 @@ void loader_init_kernel_symbols(void)
 
 static bool __find_mod_from_sym(struct linkedentry *entry, void *addr)
 {
-	module_t *mq = linkedentry_obj(entry);
+	struct module *mq = linkedentry_obj(entry);
 	if((addr_t)addr >= (addr_t)mq->base && (addr_t)addr < ((addr_t)mq->base + mq->length))
 		return true;
 	return false;
@@ -95,7 +95,7 @@ static bool __find_mod_from_sym(struct linkedentry *entry, void *addr)
 
 const char *loader_lookup_module_symbol(addr_t addr, char **modname)
 {
-	module_t *found = linkedentry_obj(linkedlist_find(
+	struct module *found = linkedentry_obj(linkedlist_find(
 				&module_list, __find_mod_from_sym, (void *)addr));
 	if(!found || found->sd.strtab == -1 || found->sd.symtab == -1)
 		return 0;
@@ -160,7 +160,7 @@ int loader_remove_kernel_symbol(char * unres)
 
 static bool __mod_finder_name(struct linkedentry *entry, void *data)
 {
-	module_t *m = linkedentry_obj(entry);
+	struct module *m = linkedentry_obj(entry);
 	if(!strcmp(m->name, data))
 		return true;
 	return false;
@@ -177,7 +177,7 @@ static int load_module(char *path, char *args, int flags)
 		return -EINVAL;
 	if(!(flags & 2)) printk(KERN_DEBUG, "[mod]: Loading Module '%s'\n", path);
 	int i, pos=-1;
-	module_t *tmp = (module_t *)kmalloc(sizeof(module_t));
+	struct module *tmp = (struct module *)kmalloc(sizeof(struct module));
 	char *r = strrchr(path, '/');
 	if(r) r++; else r = path;
 	strncpy(tmp->name, r, 128);
@@ -223,7 +223,7 @@ static int load_module(char *path, char *args, int flags)
 static int do_unload_module(char *name, int flags)
 {
 	/* Is it going to work? */
-	module_t *module = linkedentry_obj(linkedlist_find(&module_list, __mod_finder_name, name));
+	struct module *module = linkedentry_obj(linkedlist_find(&module_list, __mod_finder_name, name));
 
 	if(!module) {
 		return -ENOENT;
@@ -268,7 +268,7 @@ void loader_unload_all_modules(void)
 		for(node = linkedlist_iter_start(&module_list);
 				node != linkedlist_iter_end(&module_list);
 				node = next) {
-			module_t *m = linkedentry_obj(node);
+			struct module *m = linkedentry_obj(node);
 			next = linkedlist_iter_next(node);
 			int r = do_unload_module(m->name, 0);
 			if(r < 0 && r != -ENOENT)
@@ -305,7 +305,7 @@ int kerfs_module_report(int direction, void *param, size_t size, size_t offset, 
 	__linkedlist_lock(&module_list);
 	for(node = linkedlist_iter_start(&module_list); node != linkedlist_iter_end(&module_list);
 			node = linkedlist_iter_next(node)) {
-		module_t *m = linkedentry_obj(node);
+		struct module *m = linkedentry_obj(node);
 		KERFS_PRINTF(offset, length, buf, current,
 				"%10s %8d %x\n",
 				m->name, m->length / 1024, (addr_t)m->base);

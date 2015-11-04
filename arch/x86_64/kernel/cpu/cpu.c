@@ -74,7 +74,7 @@ int arch_cpu_boot_ap(struct cpu *cpu)
 #define CPUID(cmd, a, b, c, d) __asm__ __volatile__ ("cpuid;"\
 		:"=a"(a), "=b"(b), "=c"(c), "=d"(d) : "a"(cmd));
 
-static void cpuid_get_features(cpuid_t *cpuid)
+static void cpuid_get_features(struct cpuid *cpuid)
 {
 	long int eax, ebx, ecx, edx;
 	eax = 0x01;
@@ -95,7 +95,7 @@ static void cpuid_get_features(cpuid_t *cpuid)
 	cpuid->ext_features_ecx = ecx;
 } 
 
-static void cpuid_cpu_get_brand(cpuid_t *cpuid)
+static void cpuid_cpu_get_brand(struct cpuid *cpuid)
 {
 	long int eax, ebx, ecx, edx;
 	eax = 0x80000002;
@@ -122,7 +122,7 @@ static void cpuid_cpu_get_brand(cpuid_t *cpuid)
 
 void parse_cpuid(struct cpu *me)
 {
-	cpuid_t cpuid;
+	struct cpuid cpuid;
 	long int eax, ebx, ecx, edx;
 	eax = 0x00;
 	CPUID(eax, eax, ebx, ecx, edx);

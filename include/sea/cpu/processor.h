@@ -25,7 +25,7 @@ void cpu_enable_preemption();
 struct cpu {
 	unsigned knum, snum; /* knum: cpu number to the kernel, snum: cpu number to the hardware */
 	unsigned flags;
-	cpuid_t cpuid;
+	struct cpuid cpuid;
 	struct tqueue *active_queue;
 	struct workqueue work;
 	struct thread *idle_thread;

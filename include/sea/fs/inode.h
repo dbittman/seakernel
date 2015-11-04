@@ -20,7 +20,7 @@ typedef struct {
 	struct inode *parent;
 } mount_pt_t;
 
-typedef struct pipe_struct pipe_t;
+struct pipe;
 
 #define INODE_NEEDREAD 1
 #define INODE_DIRTY    2
@@ -32,7 +32,7 @@ typedef struct pipe_struct pipe_t;
 #define RESOLVE_NOMOUNT 2
 
 struct inode {
-	rwlock_t lock, metalock;
+	struct rwlock lock, metalock;
 	struct queue_item lru_item;
 	struct linkedentry dirty_item;
 	struct linkedentry inuse_item;
@@ -44,7 +44,7 @@ struct inode {
 	
 	dev_t phys_dev;
 	struct filesystem *mount;
-	pipe_t *pipe;
+	struct pipe *pipe;
 
 	/* filesystem data */
 	mode_t mode;

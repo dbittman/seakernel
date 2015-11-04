@@ -18,11 +18,11 @@ int ioctl_stub(int a, int b, long c)
 	return -1;
 }
 
-blockdevice_t *dm_set_block_device(int maj, int (*f)(int, int, u64, char*), int bs, 
+struct blockdevice *dm_set_block_device(int maj, int (*f)(int, int, u64, char*), int bs, 
 	int (*c)(int, int, long), int (*m)(int, int, u64, char *, int), int (*s)(int, int))
 {
 	printk(1, "[dev]: Setting block device %d, bs=%d (%x, %x)\n", maj, bs, f, c);
-	blockdevice_t *dev = (blockdevice_t *)kmalloc(sizeof(blockdevice_t));
+	struct blockdevice *dev = (struct blockdevice *)kmalloc(sizeof(struct blockdevice));
 	dev->rw = f;
 	dev->blksz=bs;
 	dev->ioctl=c;
@@ -61,7 +61,7 @@ void dm_unregister_block_device(int n)
 {
 	printk(1, "[dev]: Unregistering block device %d\n", n);
 	mutex_acquire(&bd_search_lock);
-	device_t *dev = dm_get_device(DT_BLOCK, n);
+	struct device *dev = dm_get_device(DT_BLOCK, n);
 	if(!dev) {
 		mutex_release(&bd_search_lock);
 		return;
@@ -69,7 +69,7 @@ void dm_unregister_block_device(int n)
 	void *fr = dev->ptr;
 	dm_remove_device(DT_BLOCK, n);
 	mutex_release(&bd_search_lock);
-	kthread_join(&((blockdevice_t *)(dev->ptr))->elevator, 0);
+	kthread_join(&((struct blockdevice *)(dev->ptr))->elevator, 0);
 	kfree(fr);
 }
 
@@ -80,16 +80,16 @@ void dm_init_block_devices(void)
 	block_buffer_init();
 }
 
-int dm_do_block_rw(int rw, dev_t dev, u64 blk, char *buf, blockdevice_t *bd)
+int dm_do_block_rw(int rw, dev_t dev, u64 blk, char *buf, struct blockdevice *bd)
 {
 	if(dev < 0)
 		dev=-dev;
 	if(!bd) 
 	{
-		device_t *dt = dm_get_device(DT_BLOCK, MAJOR(dev));
+		struct device *dt = dm_get_device(DT_BLOCK, MAJOR(dev));
 		if(!dt)
 			return -ENXIO;
-		bd = (blockdevice_t *)dt->ptr;
+		bd = (struct blockdevice *)dt->ptr;
 	}
 	if(bd->rw)
 	{
@@ -101,16 +101,16 @@ int dm_do_block_rw(int rw, dev_t dev, u64 blk, char *buf, blockdevice_t *bd)
 	return -EIO;
 }
 
-int dm_do_block_rw_multiple(int rw, dev_t dev, u64 blk, char *buf, int count, blockdevice_t *bd)
+int dm_do_block_rw_multiple(int rw, dev_t dev, u64 blk, char *buf, int count, struct blockdevice *bd)
 {
 	if(dev < 0)
 		dev=-dev;
 	if(!bd) 
 	{
-		device_t *dt = dm_get_device(DT_BLOCK, MAJOR(dev));
+		struct device *dt = dm_get_device(DT_BLOCK, MAJOR(dev));
 		if(!dt)
 			return -ENXIO;
-		bd = (blockdevice_t *)dt->ptr;
+		bd = (struct blockdevice *)dt->ptr;
 	}
 	if(bd->rw_multiple)
 	{
@@ -124,10 +124,10 @@ int dm_do_block_rw_multiple(int rw, dev_t dev, u64 blk, char *buf, int count, bl
 
 int dm_block_read(dev_t dev, off_t pos, char *buf, size_t count)
 {
-	device_t *dt = dm_get_device(DT_BLOCK, MAJOR(dev));
+	struct device *dt = dm_get_device(DT_BLOCK, MAJOR(dev));
 	if(!dt)
 		return -ENXIO;
-	blockdevice_t *bd = (blockdevice_t *)dt->ptr;
+	struct blockdevice *bd = (struct blockdevice *)dt->ptr;
 	uint64_t start_block = pos / bd->blksz;
 	uint64_t end_block = ((pos + count - 1) / bd->blksz);
 	size_t num_blocks = (end_block - start_block) + 1;
@@ -141,10 +141,10 @@ int dm_block_read(dev_t dev, off_t pos, char *buf, size_t count)
 
 int dm_block_write(dev_t dev, off_t posit, char *buf, size_t count)
 {
-	device_t *dt = dm_get_device(DT_BLOCK, MAJOR(dev));
+	struct device *dt = dm_get_device(DT_BLOCK, MAJOR(dev));
 	if(!dt)
 		return -ENXIO;
-	blockdevice_t *bd = (blockdevice_t *)dt->ptr;
+	struct blockdevice *bd = (struct blockdevice *)dt->ptr;
 	int blk_size = bd->blksz;
 	unsigned pos = posit;
 
@@ -216,10 +216,10 @@ int dm_block_device_rw(int mode, dev_t dev, off_t off, char *buf, size_t len)
  */
 int dm_block_ioctl(dev_t dev, int cmd, long arg)
 {
-	device_t *dt = dm_get_device(DT_BLOCK, MAJOR(dev));
+	struct device *dt = dm_get_device(DT_BLOCK, MAJOR(dev));
 	if(!dt)
 		return -ENXIO;
-	blockdevice_t *bd = (blockdevice_t *)dt->ptr;
+	struct blockdevice *bd = (struct blockdevice *)dt->ptr;
 	if(bd->ioctl)
 	{
 		int ret = (bd->ioctl)(MINOR(dev), cmd, arg);
@@ -230,10 +230,10 @@ int dm_block_ioctl(dev_t dev, int cmd, long arg)
 
 int dm_block_device_select(dev_t dev, int rw)
 {
-	device_t *dt = dm_get_device(DT_BLOCK, MAJOR(dev));
+	struct device *dt = dm_get_device(DT_BLOCK, MAJOR(dev));
 	if(!dt)
 		return 1;
-	blockdevice_t *bd = (blockdevice_t *)dt->ptr;
+	struct blockdevice *bd = (struct blockdevice *)dt->ptr;
 	if(bd->select)
 		return bd->select(MINOR(dev), rw);
 	return 1;
@@ -248,10 +248,10 @@ void dm_send_sync_block(void)
 {
 	int i=0;
 	while(i>=0) {
-		device_t *d = dm_get_enumerated_device(DT_BLOCK, i);
+		struct device *d = dm_get_enumerated_device(DT_BLOCK, i);
 		if(!d) break;
 		assert(d->ptr);
-		blockdevice_t *cd = (blockdevice_t *)d->ptr;
+		struct blockdevice *cd = (struct blockdevice *)d->ptr;
 		if(cd->ioctl)
 			cd->ioctl(0, -1, 0);
 		i++;

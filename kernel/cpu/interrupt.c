@@ -13,7 +13,7 @@
 #include <sea/tm/async_call.h>
 #include <sea/debugger.h>
 struct interrupt_handler {
-	void (*fn)(registers_t *, int nr, int flags);
+	void (*fn)(struct registers *, int nr, int flags);
 };
 
 #define INTR_USER   1
@@ -66,7 +66,7 @@ static struct timer interrupt_timers[256];
 static struct mutex isr_lock, s2_lock;
 char interrupt_controller=0;
 
-int cpu_interrupt_register_handler(int num, void (*fn)(registers_t *, int, int))
+int cpu_interrupt_register_handler(int num, void (*fn)(struct registers *, int, int))
 {
 	mutex_acquire(&isr_lock);
 	int i;
@@ -120,7 +120,7 @@ static const char *special_names(int i)
 	return "\t";
 }
 
-static void kernel_fault(int fuckoff, addr_t ip, long err_code, registers_t *regs)
+static void kernel_fault(int fuckoff, addr_t ip, long err_code, struct registers *regs)
 {
 	kprintf("Kernel Exception #%d: %s\n", fuckoff, exception_messages[fuckoff]);
 	unsigned char *code = (void *)regs->eip;
@@ -132,7 +132,7 @@ static void kernel_fault(int fuckoff, addr_t ip, long err_code, registers_t *reg
 	panic(PANIC_INSTANT | PANIC_NOSYNC | (fuckoff == 3 ? PANIC_VERBOSE : 0), exception_messages[fuckoff]);
 }
 
-static void faulted(int fuckoff, int userspace, addr_t ip, long err_code, registers_t *regs)
+static void faulted(int fuckoff, int userspace, addr_t ip, long err_code, struct registers *regs)
 {
 	if(!current_thread || current_thread->system || !userspace)
 	{
@@ -164,7 +164,7 @@ static void faulted(int fuckoff, int userspace, addr_t ip, long err_code, regist
 	}
 }
 
-static inline void __setup_signal_handler(registers_t *regs)
+static inline void __setup_signal_handler(struct registers *regs)
 {
 	if((current_thread->flags & THREAD_SIGNALED) && !current_thread->signal)
 		panic(0, "thread is signaled with null signal");
@@ -178,8 +178,8 @@ static inline void __setup_signal_handler(registers_t *regs)
 	current_thread->signal = 0;
 }
 
-extern void syscall_handler(registers_t *regs);
-void cpu_interrupt_syscall_entry(registers_t *regs, int syscall_num)
+extern void syscall_handler(struct registers *regs);
+void cpu_interrupt_syscall_entry(struct registers *regs, int syscall_num)
 {
 	cpu_interrupt_set(0);
 	assert(!current_thread->regs);
@@ -197,7 +197,7 @@ void cpu_interrupt_syscall_entry(registers_t *regs, int syscall_num)
 	assert((current_process == kernel_process) || current_thread->held_locks == 0);
 }
 
-void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_address)
+void cpu_interrupt_isr_entry(struct registers *regs, int int_no, addr_t return_address)
 {
 	int already_in_kernel = 0;
 	cpu_interrupt_set(0);
@@ -231,7 +231,7 @@ void cpu_interrupt_isr_entry(registers_t *regs, int int_no, addr_t return_addres
 	}
 }
 
-void cpu_interrupt_irq_entry(registers_t *regs, int int_no)
+void cpu_interrupt_irq_entry(struct registers *regs, int int_no)
 {
 	cpu_interrupt_set(0);
 	atomic_fetch_add_explicit(&interrupt_counts[int_no], 1, memory_order_relaxed);

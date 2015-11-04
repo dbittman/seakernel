@@ -85,7 +85,7 @@ int i825xx_init(i825xxdev_t *dev)
 	return 0;
 }
 
-int i825xx_int(registers_t *regs)
+int i825xx_int(struct registers *regs)
 {
 	return 0;
 }

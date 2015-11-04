@@ -265,7 +265,7 @@ int arch_loader_relocate_elf_module(void * buf, addr_t *entry, addr_t *tm_exiter
 	return 1;
 }
 
-const char *arch_loader_lookup_module_symbol(module_t *mq, addr_t addr, char **modname)
+const char *arch_loader_lookup_module_symbol(struct module *mq, addr_t addr, char **modname)
 {
 	/* okay, look up the symbol */
 	for (unsigned int i = 0; i < (mq->sd.symlen/sizeof (elf64_symtab_entry_t)); i++)

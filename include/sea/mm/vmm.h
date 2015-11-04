@@ -27,7 +27,7 @@ extern addr_t initial_boot_stack; /* TODO: don't we have another one of these? *
 
 int mm_is_valid_user_pointer(int num, void *p, char flags);
 
-void mm_page_fault_handler(registers_t *, addr_t, int);
+void mm_page_fault_handler(struct registers *, addr_t, int);
 void mm_page_fault_init(void);
 void mm_flush_page_tables();
 

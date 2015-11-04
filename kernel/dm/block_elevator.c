@@ -6,7 +6,7 @@
 void dm_block_cache_reclaim(void);
 int block_elevator_main(struct kthread *kt, void *arg)
 {
-	blockdevice_t *dev = arg;
+	struct blockdevice *dev = arg;
 	const int max = 8;
 	char *buf = kmalloc(dev->blksz * max);
 	while(!kthread_is_joining(kt)) {

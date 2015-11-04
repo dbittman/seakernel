@@ -10,9 +10,9 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/string.h>
 #include <sea/tm/blocking.h>
-pipe_t *fs_pipe_create (void)
+struct pipe *fs_pipe_create (void)
 {
-	pipe_t *pipe = (pipe_t *)kmalloc(sizeof(pipe_t));
+	struct pipe *pipe = (struct pipe *)kmalloc(sizeof(struct pipe));
 	pipe->length = PIPE_SIZE;
 	pipe->buffer = (char *)kmalloc(PIPE_SIZE);
 	mutex_create(&pipe->lock, 0);
@@ -32,7 +32,7 @@ static struct inode *create_anon_pipe (void)
 	node->mode = S_IFIFO | 0x1FF;
 	node->count=2;
 	
-	pipe_t *pipe = fs_pipe_create();
+	struct pipe *pipe = fs_pipe_create();
 	pipe->count=2;
 	pipe->wrcount=1;
 	node->pipe = pipe;
@@ -86,7 +86,7 @@ int fs_pipe_read(struct inode *ino, int flags, char *buffer, size_t length)
 {
 	if(!ino || !buffer)
 		return -EINVAL;
-	pipe_t *pipe = ino->pipe;
+	struct pipe *pipe = ino->pipe;
 	if(!pipe)
 		return -EINVAL;
 	size_t len = length;
@@ -130,7 +130,7 @@ int fs_pipe_write(struct inode *ino, int flags, char *initialbuffer, size_t tota
 {
 	if(!ino || !initialbuffer)
 		return -EINVAL;
-	pipe_t *pipe = ino->pipe;
+	struct pipe *pipe = ino->pipe;
 	if(!pipe)
 		return -EINVAL;
 	/* allow for partial writes of the system page size. Thus, we wont
@@ -188,7 +188,7 @@ int fs_pipe_select(struct inode *in, int rw)
 {
 	if(rw != READ)
 		return 1;
-	pipe_t *pipe = in->pipe;
+	struct pipe *pipe = in->pipe;
 	if(!pipe) return 1;
 	if(!pipe->pending && (pipe->count > 1 && pipe->wrcount>0))
 		return 0;

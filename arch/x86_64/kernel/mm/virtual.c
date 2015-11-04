@@ -43,7 +43,7 @@ void arch_mm_flush_page_tables(void)
 
 /* handle a page fault. Convert arch-dep things into generic
  * kernel stuff (the error codes), and get the address. */
-void arch_mm_page_fault_handle(registers_t *regs, int int_no, int flags)
+void arch_mm_page_fault_handle(struct registers *regs, int int_no, int flags)
 {
 	assert(regs);
 	addr_t cr2, err_code = regs->err_code;

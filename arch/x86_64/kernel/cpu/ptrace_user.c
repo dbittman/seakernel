@@ -8,7 +8,7 @@ int arch_cpu_ptrace_read_user(struct thread *thread, struct ptrace_user *user)
 	if(!thread->regs) {
 		return -ENOTSUP;
 	}
-	registers_t regs;
+	struct registers regs;
 	mm_context_read(&thread->process->vmm_context, (void *)&regs, (addr_t)thread->regs, sizeof(regs));
 	user->regs.rbx = regs.rbx;
 	user->regs.rdx = regs.rdx;

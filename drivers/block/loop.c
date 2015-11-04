@@ -160,9 +160,9 @@ int module_install(void)
 {
 	loop_maj = dm_set_available_block_device(loop_rw, 512, ioctl_main, 0, 0);
 	if(loop_maj < 0) return EINVAL;
-	device_t *dev = dm_get_device(DT_BLOCK, loop_maj);
+	struct device *dev = dm_get_device(DT_BLOCK, loop_maj);
 	if(dev && dev->ptr) {
-		blockdevice_t *bd = dev->ptr;
+		struct blockdevice *bd = dev->ptr;
 	} else {
 		dm_unregister_block_device(loop_maj);
 		return EINVAL;

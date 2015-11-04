@@ -5,7 +5,7 @@
 #include <sea/string.h>
 
 //print out flags set in eflags register
-static void print_eflags(registers_t *regs){
+static void print_eflags(struct registers *regs){
 	uint64_t flags=regs->eflags;
 	/*reserved bits correspond to "r"*/
 	char *flag_array[]={"CF","r","PF","r","AF","r","ZF","SF",\
@@ -27,7 +27,7 @@ static void print_eflags(registers_t *regs){
 	kprintf("]\n");
 }
 
-void arch_cpu_print_reg_state(registers_t *regs){
+void arch_cpu_print_reg_state(struct registers *regs){
 	kprintf("ds:0x%x\ncs:0x%x\nss:0x%x\n",regs->ds, regs->cs, regs->ss);
 	kprintf("r15:0x%x\nr14:0x%x\nr13:0x%x\nr12:0x%x\nr11:0x%x\nr10:0x%x\nr9:0x%x\nr8:0x%x\n", regs->r15, regs->r14, regs->r13, regs->r12, regs->r11, regs->r10, regs->r9, regs->r8);
 	kprintf("eip:0x%x\nrbp:0x%x\nrsi:0x%x\nrdi:0x%x\n", regs->eip, regs->rbp, regs->rsi, regs->rdi);

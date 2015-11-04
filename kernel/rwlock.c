@@ -12,7 +12,7 @@
 #include <sea/tm/process.h>
 #include <sea/mm/kmalloc.h>
 #define RWLOCK_DEBUG 0
-void __rwlock_acquire(rwlock_t *lock, enum rwlock_locktype type, char *file, int line)
+void __rwlock_acquire(struct rwlock *lock, enum rwlock_locktype type, char *file, int line)
 {
 	if(kernel_state_flags & KSF_DEBUGGING)
 		return;
@@ -56,7 +56,7 @@ void __rwlock_acquire(rwlock_t *lock, enum rwlock_locktype type, char *file, int
 	lock->holderfile = file;
 }
 
-void __rwlock_deescalate(rwlock_t *lock, char *file, int line)
+void __rwlock_deescalate(struct rwlock *lock, char *file, int line)
 {
 	assert(lock->magic == RWLOCK_MAGIC);
 	if(kernel_state_flags & KSF_DEBUGGING)
@@ -67,7 +67,7 @@ void __rwlock_deescalate(rwlock_t *lock, char *file, int line)
 	atomic_flag_clear_explicit(&lock->writer, memory_order_release);
 }
 
-void rwlock_release(rwlock_t *lock, enum rwlock_locktype type)
+void rwlock_release(struct rwlock *lock, enum rwlock_locktype type)
 {
 	assert(lock->magic == RWLOCK_MAGIC);
 	if(kernel_state_flags & KSF_DEBUGGING)
@@ -86,19 +86,19 @@ void rwlock_release(rwlock_t *lock, enum rwlock_locktype type)
 		current_thread->held_locks--;
 }
 
-rwlock_t *rwlock_create(rwlock_t *lock)
+struct rwlock *rwlock_create(struct rwlock *lock)
 {
 	if(!lock) {
-		lock = (void *)kmalloc(sizeof(rwlock_t));
+		lock = (void *)kmalloc(sizeof(struct rwlock));
 		lock->flags = RWL_ALLOC;
 	} else {
-		memset((void *)lock, 0, sizeof(rwlock_t));
+		memset((void *)lock, 0, sizeof(struct rwlock));
 	}
 	lock->magic = RWLOCK_MAGIC;
 	return lock;
 }
 
-void rwlock_destroy(rwlock_t *lock)
+void rwlock_destroy(struct rwlock *lock)
 {
 	assert(lock->magic == RWLOCK_MAGIC);
 	if(kernel_state_flags & KSF_SHUTDOWN) return;

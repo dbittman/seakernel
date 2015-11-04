@@ -20,7 +20,7 @@ struct heap {
 	int mode;
 	size_t capacity;
 	size_t count;
-	rwlock_t rwl;
+	struct rwlock rwl;
 	struct heapnode *array;
 };
 

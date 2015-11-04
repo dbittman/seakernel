@@ -63,7 +63,7 @@ static char *exception_messages[] =
 static struct interrupt_handler interrupt_handlers[MAX_INTERRUPTS][MAX_HANDLERS];
 unsigned long interrupt_counts[256];
 static struct timer interrupt_timers[256];
-static mutex_t isr_lock, s2_lock;
+static struct mutex isr_lock, s2_lock;
 char interrupt_controller=0;
 
 int cpu_interrupt_register_handler(int num, void (*fn)(registers_t *, int, int))

@@ -23,7 +23,7 @@ struct physical_page {
 	addr_t page;
 	int pn;
 	int count;
-	mutex_t lock;
+	struct mutex lock;
 	struct hashelem hash_elem;
 };
 

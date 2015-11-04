@@ -19,11 +19,11 @@ typedef struct blockdevice_s {
 	int (*rw_multiple)(int mode, int minor, u64, char *buf, int);
 	int (*ioctl)(int min, int cmd, long arg);
 	int (*select)(int min, int rw);
-	mutex_t acl;
+	struct mutex acl;
 	struct queue wq;
 	struct kthread elevator;
 	struct hash cache;
-	mutex_t cachelock;
+	struct mutex cachelock;
 } blockdevice_t;
 
 struct ioreq {

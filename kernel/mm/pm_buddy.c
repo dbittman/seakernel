@@ -16,7 +16,7 @@
 #define MAX_SIZE ((addr_t)MIN_SIZE << MAX_ORDER)
 
 #define NOT_FREE (-1)
-mutex_t pm_buddy_mutex;
+struct mutex pm_buddy_mutex;
 uint8_t *bitmaps[MAX_ORDER + 1];
 
 struct stack freelists[MAX_ORDER+1];

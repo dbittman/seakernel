@@ -15,15 +15,14 @@ struct linkedentry {
 #include <sea/asm/system.h>
 #include <stdbool.h>
 
-/* TODO: we should change mutex_t to struct mutex anyway */
-struct __mutex_s;
+struct mutex;
 struct linkedlist {
 	struct linkedentry *head;
 	struct linkedentry sentry;
 	struct spinlock lock;
 	_Atomic size_t count;
 	int flags;
-	struct __mutex_s *m_lock;
+	struct mutex *m_lock;
 };
 
 #define linkedlist_iter_end(list) &(list)->sentry

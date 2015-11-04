@@ -9,7 +9,7 @@ struct hash *process_table;
 struct linkedlist *process_list;
 size_t running_processes = 0;
 
-mutex_t process_refs_lock;
+struct mutex process_refs_lock;
 
 struct process *tm_process_get(pid_t pid)
 {

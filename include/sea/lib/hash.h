@@ -20,7 +20,7 @@ struct hash {
 	struct linkedlist **table;
 	size_t length, count;
 	int flags;
-	mutex_t lock;
+	struct mutex lock;
 };
 
 static inline size_t hash_count(struct hash *h) { return h->count; }

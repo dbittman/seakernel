@@ -316,7 +316,7 @@ struct ata_identify {
 struct ahci_device {
 	uint32_t type;
 	int idx;
-	mutex_t lock;
+	struct mutex lock;
 	void *fis_virt, *clb_virt;
 	struct dma_region dma_clb, dma_fis;
 	void *ch[HBA_COMMAND_HEADER_NUM];

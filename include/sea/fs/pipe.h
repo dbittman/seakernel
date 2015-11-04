@@ -11,7 +11,7 @@ typedef struct pipe_struct {
 	size_t write_pos, read_pos;
 	char *buffer;
 	off_t length;
-	mutex_t lock;
+	struct mutex lock;
 	_Atomic int count, wrcount;
 	struct blocklist read_blocked, write_blocked;
 } pipe_t;

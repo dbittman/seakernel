@@ -6,7 +6,7 @@
 #include <sea/tm/thread.h>
 #include <sea/loader/symbol.h>
 
-static mutex_t serial_m;
+static struct mutex serial_m;
 static char serial_initialized=0;
 
 #if ! CONFIG_SERIAL_DEBUG

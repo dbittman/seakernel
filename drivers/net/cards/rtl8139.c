@@ -27,7 +27,7 @@ typedef struct rtl8139_dev_s
 	int inter_id, inter;
 	struct pci_device *device;
 	struct dma_region rx_reg, tx_buffer[4];
-	mutex_t tx_lock;
+	struct mutex tx_lock;
 	int tx_num;
 	unsigned short hwaddr[3];
 	struct net_dev *net_dev;

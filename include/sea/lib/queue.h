@@ -11,7 +11,7 @@ struct queue_item {
 struct queue {
 	int flags;
 	_Atomic int count;
-	mutex_t lock;
+	struct mutex lock;
 	struct queue_item *head, *tail;
 };
 

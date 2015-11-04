@@ -6,7 +6,7 @@
 #include <sea/tm/timing.h>
 #include <stdatomic.h>
 struct linkedlist dirty_list;
-mutex_t dlock;
+struct mutex dlock;
 struct kthread syncer;
 
 void block_buffer_init(void)

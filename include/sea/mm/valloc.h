@@ -17,7 +17,7 @@ struct valloc {
 	addr_t start, end;
 	long nindex; /* number of index pages */
 	size_t psize; /* minimum allocation size, minimum PAGE_SIZE */
-	mutex_t lock;
+	struct mutex lock;
 	int flags;
 	/*at*/ long last;
 	uint32_t magic;

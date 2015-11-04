@@ -6,7 +6,7 @@
 #include <sea/fs/dir.h>
 
 struct queue *dirent_lru;
-mutex_t *dirent_cache_lock;
+struct mutex *dirent_cache_lock;
 
 /* Refcounting correctness rules note:
  * The dirent->parent pointer may be invalid after

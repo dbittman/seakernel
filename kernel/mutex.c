@@ -15,14 +15,14 @@
 
 static bool __confirm(void *data)
 {
-	mutex_t *m = data;
+	struct mutex *m = data;
 	if(!atomic_load(&m->lock))
 		return false;
 	return true;
 }
 
 #define MUTEX_DEBUG 0
-void __mutex_acquire(mutex_t *m, char *file, int line)
+void __mutex_acquire(struct mutex *m, char *file, int line)
 {
 	assert(m->magic == MUTEX_MAGIC);
 
@@ -67,7 +67,7 @@ void __mutex_acquire(mutex_t *m, char *file, int line)
 	m->owner_line = line;
 }
 
-void __mutex_release(mutex_t *m, char *file, int line)
+void __mutex_release(struct mutex *m, char *file, int line)
 {
 	assert(m->magic == MUTEX_MAGIC);
 	if(kernel_state_flags & KSF_DEBUGGING)
@@ -88,13 +88,13 @@ void __mutex_release(mutex_t *m, char *file, int line)
 		current_thread->held_locks--;
 }
 
-mutex_t *mutex_create(mutex_t *m, unsigned flags)
+struct mutex *mutex_create(struct mutex *m, unsigned flags)
 {
 	if(!m) {
-		m = (void *)kmalloc(sizeof(mutex_t));
+		m = (void *)kmalloc(sizeof(struct mutex));
 		m->flags |= (MT_ALLOC | flags);
 	} else {
-		memset(m, 0, sizeof(mutex_t));
+		memset(m, 0, sizeof(struct mutex));
 		m->flags=flags;
 	}
 	m->lock=ATOMIC_VAR_INIT(0);
@@ -103,7 +103,7 @@ mutex_t *mutex_create(mutex_t *m, unsigned flags)
 	return m;
 }
 
-void mutex_destroy(mutex_t *m)
+void mutex_destroy(struct mutex *m)
 {
 	assert(m->magic == MUTEX_MAGIC);
 	if(kernel_state_flags & KSF_SHUTDOWN) return;

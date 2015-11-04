@@ -11,7 +11,7 @@
 #include <sea/tm/timing.h>
 #undef DT_CHAR
 
-static mutex_t bd_search_lock;
+static struct mutex bd_search_lock;
 
 int ioctl_stub(int a, int b, long c)
 {

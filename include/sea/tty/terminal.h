@@ -16,7 +16,7 @@ struct vterm {
 	unsigned char *font;
 	int tty;
 	char no_wrap, disable_scroll;
-	mutex_t wlock;
+	struct mutex wlock;
 	struct blocklist input_block;
 	struct termios term;
 	struct renderer *rend;

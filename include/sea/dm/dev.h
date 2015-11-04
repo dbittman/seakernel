@@ -36,7 +36,7 @@ typedef struct device_ss {
 
 struct devhash_s {
 	device_t *devs[DH_SZ];
-	mutex_t lock;
+	struct mutex lock;
 };
 	
 void dm_init();

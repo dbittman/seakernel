@@ -17,11 +17,11 @@
 static struct arp_database {
 	uint16_t ethertype;
 	struct hash *table;
-	mutex_t hashlock;
+	struct mutex hashlock;
 } databases[MAX_PROTS];
 
 static struct linkedlist *outstanding = 0;
-mutex_t *outlock, databaselock;
+struct mutex *outlock, databaselock;
 static void arp_get_mac(uint8_t *mac, uint16_t m1, uint16_t m2, uint16_t m3)
 {
 	mac[0] = (m1 & 0xFF);

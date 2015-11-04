@@ -9,7 +9,7 @@
 #define MT_ALLOC 1
 
 struct thread;
-typedef struct __mutex_s{
+struct mutex {
 	struct blocklist blocklist;
 	unsigned magic;
 	_Atomic bool lock;
@@ -17,12 +17,12 @@ typedef struct __mutex_s{
 	struct thread *owner;
 	char *owner_file;
 	int owner_line;
-} mutex_t;
+};
 
-void __mutex_acquire(mutex_t *m,char*,int);
-void __mutex_release(mutex_t *m,char*,int);
-mutex_t *mutex_create(mutex_t *m, unsigned);
-void mutex_destroy(mutex_t *m);
+void __mutex_acquire(struct mutex *m,char*,int);
+void __mutex_release(struct mutex *m,char*,int);
+struct mutex *mutex_create(struct mutex *m, unsigned);
+void mutex_destroy(struct mutex *m);
 
 #define mutex_acquire(m) __mutex_acquire(m, __FILE__, __LINE__)
 #define mutex_release(m) __mutex_release(m, __FILE__, __LINE__)

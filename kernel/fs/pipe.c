@@ -78,7 +78,7 @@ void fs_pipe_free(struct inode *i)
 
 static bool __release_lock(void *m)
 {
-	mutex_release((mutex_t *)m);
+	mutex_release((struct mutex *)m);
 	return true;
 }
 

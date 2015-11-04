@@ -7,7 +7,7 @@
 int ata_pio_rw(struct ata_controller *cont, struct ata_device *dev, 
 	int rw, unsigned long long blk, unsigned char *buffer, unsigned count)
 {
-	mutex_t *lock = cont->wait;
+	struct mutex *lock = cont->wait;
 	mutex_acquire(lock);
 	unsigned long long addr = blk;
 	char cmd=0;

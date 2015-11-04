@@ -17,8 +17,8 @@
 #include <sea/mm/map.h>
 #include <sea/tm/blocking.h>
 
-extern mutex_t process_refs_lock;
-extern mutex_t thread_refs_lock;
+extern struct mutex process_refs_lock;
+extern struct mutex thread_refs_lock;
 extern int initial_kernel_stack;
 struct process *kernel_process = 0;
 void tm_init_multitasking(void)

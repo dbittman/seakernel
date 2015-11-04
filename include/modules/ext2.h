@@ -15,7 +15,7 @@ struct ext2_info {
 	dev_t dev;
 	int flags;
 	ext2_superblock_t *sb;
-	mutex_t *fs_lock;
+	struct mutex *fs_lock;
 	struct filesystem *filesys;
 	unsigned long block_prev_alloc;
 };

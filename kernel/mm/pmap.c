@@ -12,7 +12,7 @@
  * access things like PCI memory IO through virtual memory */
 
 static addr_t mmdev_addr = 0;
-static mutex_t mmd_lock;
+static struct mutex mmd_lock;
 static addr_t get_next_mm_device_page(void)
 {
 	if(!mmdev_addr) {

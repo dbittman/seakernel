@@ -13,7 +13,7 @@
 struct hash *icache;
 struct linkedlist *ic_dirty, *ic_inuse;
 struct queue *ic_lru;
-mutex_t *ic_lock;
+struct mutex *ic_lock;
 
 void vfs_icache_init(void)
 {

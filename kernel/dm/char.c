@@ -8,7 +8,7 @@
 #include <sea/errno.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
-static mutex_t cd_search_lock;
+static struct mutex cd_search_lock;
 
 static int zero_rw(int rw, int m, char *buf, size_t c)
 {

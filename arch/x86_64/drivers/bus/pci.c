@@ -34,7 +34,7 @@
 #define PCI_LOGLEVEL 2
 
 struct pci_device *pci_list=0;
-mutex_t *pci_mutex;
+struct mutex *pci_mutex;
 int loader_remove_kernel_symbol(char * unres);
 int proc_set_callback(int major, int( *callback)(char rw, struct inode *inode, 
 	int m, char *buf, int, int));

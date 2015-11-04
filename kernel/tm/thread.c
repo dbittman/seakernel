@@ -8,7 +8,7 @@
 #include <stdatomic.h>
 size_t running_threads = 0;
 struct hash *thread_table;
-mutex_t thread_refs_lock;
+struct mutex thread_refs_lock;
 struct valloc km_stacks;
 void tm_thread_enter_system(int sys)
 {

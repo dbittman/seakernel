@@ -18,7 +18,7 @@
 #include <sea/trace.h>
 
 struct linkedlist module_list;
-static mutex_t sym_mutex;
+static struct mutex sym_mutex;
 static kernel_symbol_t export_syms[MAX_SYMS];
 
 void loader_init_kernel_symbols(void)

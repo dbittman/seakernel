@@ -71,10 +71,10 @@ struct process {
 	uid_t effective_uid, real_uid, saved_uid;
 	gid_t effective_gid, real_gid, saved_gid;
 	struct inode *root, *cwd;
-	mutex_t files_lock;
+	struct mutex files_lock;
 	struct file_ptr *filp[FILP_HASH_LEN];
 	struct linkedlist mappings;
-	mutex_t map_lock;
+	struct mutex map_lock;
 	struct valloc mmf_valloc;
 
 	/* time accounting */
@@ -86,7 +86,7 @@ struct process {
 	int thread_count;
 	struct linkedlist threadlist;
 	unsigned char stack_bitmap[NUM_USERMODE_STACKS / 8];
-	mutex_t stacks_lock;
+	struct mutex stacks_lock;
 	struct blocklist waitlist;
 	struct hashelem hash_elem;
 };

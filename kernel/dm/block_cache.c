@@ -6,7 +6,7 @@
 static struct queue lru;
 
 size_t dm_block_cache_reclaim(void);
-mutex_t reclaim_lock;
+struct mutex reclaim_lock;
 void block_cache_init(void)
 {
 	queue_create(&lru, 0);

@@ -9,7 +9,7 @@ struct pmap {
 	unsigned flags;
 	int idx_max, idx;
 	addr_t *phys, *virt;
-	mutex_t lock;
+	struct mutex lock;
 };
 
 #define PMAP_INITIAL_MAX 64

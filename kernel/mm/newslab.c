@@ -16,21 +16,21 @@ struct slab {
 	_Atomic int count;
 	int max;
 	uint32_t magic;
-	mutex_t lock;
+	struct mutex lock;
 };
 
 struct cache {
 	struct linkedlist empty, partial, full;
 	size_t slabcount;
 	size_t object_size;
-	mutex_t lock;
+	struct mutex lock;
 	struct hashelem hash_elem;
 };
 
 #define SLAB_SIZE mm_page_size(1)
 #define SLAB_MAGIC 0xADA5A54B
 struct cache cache_cache;
-mutex_t cache_lock;
+struct mutex cache_lock;
 struct hash cache_hash;
 struct valloc slabs_reg;
 

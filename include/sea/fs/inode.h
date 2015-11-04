@@ -61,7 +61,7 @@ struct inode {
 
 	/* mmap stuff */
 	struct hash physicals;
-	mutex_t mappings_lock;
+	struct mutex mappings_lock;
 	size_t mapped_pages_count, mapped_entries_count;
 };
 

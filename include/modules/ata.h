@@ -123,7 +123,7 @@ struct ata_controller {
     uint64_t*                   prdt_virt;
 	struct dma_region           dma_buffers[512];
     struct ata_device           devices[2];
-    mutex_t*                    wait;
+    struct mutex*                    wait;
     struct ata_device *         selected;
 };
 
@@ -241,7 +241,7 @@ struct pci_device *pci_locate_class(unsigned short class,
 	unsigned short subclass);
 extern struct ata_controller *primary, *secondary;
 extern struct pci_device *ata_pci;
-extern mutex_t *dma_mutex;
+extern struct mutex *dma_mutex;
 extern int api;
 void remove_devices();
 int ata_wait_irq(struct ata_controller *cont);

@@ -3,7 +3,7 @@
 
 #include <sea/types.h>
 #include <sea/fs/inode.h>
-#include <sea/ll.h>
+#include <sea/lib/linkedlist.h>
 #include <sea/mm/valloc.h>
 
 struct memmap {

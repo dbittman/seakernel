@@ -4,7 +4,7 @@
 #include <sea/net/packet.h>
 #include <sea/types.h>
 #include <sea/net/interface.h>
-#include <sea/ll.h>
+#include <sea/lib/linkedlist.h>
 
 struct __attribute__((__packed__)) arp_packet {
 	uint16_t hw_type;

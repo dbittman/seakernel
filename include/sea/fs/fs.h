@@ -3,7 +3,7 @@
 
 #include <sea/dm/dev.h>
 #include <sea/sys/stat.h>
-#include <sea/ll.h>
+#include <sea/lib/linkedlist.h>
 #include <sea/lib/hash.h>
 
 struct dirent_posix;

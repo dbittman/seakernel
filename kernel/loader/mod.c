@@ -14,7 +14,7 @@
 #include <sea/vsprintf.h>
 #include <sea/fs/kerfs.h>
 #include <sea/mm/kmalloc.h>
-#include <sea/ll.h>
+#include <sea/lib/linkedlist.h>
 #include <sea/trace.h>
 
 struct linkedlist module_list;
@@ -47,11 +47,6 @@ void loader_init_kernel_symbols(void)
 	loader_add_kernel_symbol(strncpy);
 	loader_add_kernel_symbol(strncmp);
 	loader_add_kernel_symbol(_strcpy);
-	loader_add_kernel_symbol(ll_insert);
-	loader_add_kernel_symbol(ll_remove_entry);
-	loader_add_kernel_symbol(ll_do_create);
-	loader_add_kernel_symbol(ll_remove);
-	loader_add_kernel_symbol(ll_destroy);
 	loader_add_kernel_symbol(linkedlist_head);
 	loader_add_kernel_symbol(linkedlist_create);
 	loader_add_kernel_symbol(linkedlist_insert);

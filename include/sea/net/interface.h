@@ -2,7 +2,7 @@
 #define __SEA_NET_INTERFACE_H
 
 #include <sea/types.h>
-#include <sea/ll.h>
+#include <sea/lib/linkedlist.h>
 #include <sea/tm/kthread.h>
 #include <sea/fs/inode.h>
 #include <sea/fs/socket.h>

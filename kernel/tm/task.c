@@ -2,7 +2,7 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/processor.h>
 #include <sea/kernel.h>
-#include <sea/ll.h>
+#include <sea/lib/linkedlist.h>
 #include <sea/loader/symbol.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/mm/vmm.h>

@@ -2,7 +2,7 @@
 #define __SEA_NET_ROUTE_H
 
 #include <sea/net/interface.h>
-#include <sea/ll.h>
+#include <sea/lib/linkedlist.h>
 
 #define ROUTE_FLAG_HOST    1
 #define ROUTE_FLAG_DEFAULT 2

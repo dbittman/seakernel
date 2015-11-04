@@ -2,7 +2,7 @@
 #define _TQUEUE_H
 
 #include <sea/spinlock.h>
-#include <sea/ll.h>
+#include <sea/lib/linkedlist.h>
 #define TQ_ALLOC 1
 
 /* TODO: Redesign task queue system */
@@ -14,17 +14,13 @@ struct tqueue {
 	unsigned flags;
 	struct spinlock lock;
 	unsigned num;
-	struct llistnode *current;
-	struct llist tql;
+	struct linkedentry *current;
+	struct linkedlist tql;
 };
 
 struct tqueue *tqueue_create(struct tqueue *tq, unsigned flags);
 void tqueue_destroy(struct tqueue *tq);
-struct llistnode *tqueue_insert(struct tqueue *tq, void *item, struct llistnode *node);
-void tqueue_remove_entry(struct tqueue *tq, void *item);
-void tqueue_remove_nolock(struct tqueue *tq, struct llistnode *i);
-void tqueue_remove(struct tqueue *tq, struct llistnode *i);
+struct linkedentry *tqueue_insert(struct tqueue *tq, void *item, struct linkedentry *node);
+void tqueue_remove(struct tqueue *tq, struct linkedentry *i);
 void *tqueue_next(struct tqueue *tq);
-extern struct tqueue *primary_queue;
-extern struct llist *kill_queue;
 #endif

@@ -17,7 +17,7 @@ struct tqueue *tqueue_create(struct tqueue *tq, unsigned flags)
 	} else
 		tq->flags=flags;
 	spinlock_create(&tq->lock);
-	ll_create_lockless(&tq->tql);
+	linkedlist_create(&tq->tql, LINKEDLIST_LOCKLESS);
 	tq->num=0;
 	tq->magic = TQ_MAGIC;
 	return tq;
@@ -26,41 +26,31 @@ struct tqueue *tqueue_create(struct tqueue *tq, unsigned flags)
 void tqueue_destroy(struct tqueue *tq)
 {
 	spinlock_destroy(&tq->lock);
-	ll_destroy(&tq->tql);
+	linkedlist_destroy(&tq->tql);
 	if(tq->flags & TQ_ALLOC)
 		kfree(tq);
 }
 
-struct llistnode *tqueue_insert(struct tqueue *tq, void *item, struct llistnode *node)
+struct linkedentry *tqueue_insert(struct tqueue *tq, void *item, struct linkedentry *node)
 {
 	spinlock_acquire(&tq->lock);
 	assert(tq->magic == TQ_MAGIC);
-	ll_do_insert(&tq->tql, node, item);
+	linkedlist_insert(&tq->tql, node, item);
 	if(!tq->current)
-		tq->current = tq->tql.head;
+		tq->current = linkedlist_iter_start(&tq->tql);
 	atomic_fetch_add_explicit(&tq->num, 1, memory_order_release);
 	spinlock_release(&tq->lock);
 	return node;
 }
 
-void tqueue_remove(struct tqueue *tq, struct llistnode *node)
+void tqueue_remove(struct tqueue *tq, struct linkedentry *node)
 {
 	spinlock_acquire(&tq->lock);
 	assert(tq->magic == TQ_MAGIC);
 	if(tq->current == node) tq->current=0;
-	ll_do_remove(&tq->tql, node, 0);
+	linkedlist_remove(&tq->tql, node);
 	atomic_fetch_sub_explicit(&tq->num, 1, memory_order_release);
 	spinlock_release(&tq->lock);
-}
-
-/* tsearch may occasionally need to remove tasks from the queue
- * while the queue is locked, so we provide this for it */
-void tqueue_remove_nolock(struct tqueue *tq, struct llistnode *i)
-{
-	assert(tq->magic == TQ_MAGIC);
-	if(tq->current == i) tq->current=0;
-	ll_do_remove(&tq->tql, i, 0);
-	tq->num--;
 }
 
 /* this function may return null if there are no tasks in the queue */
@@ -69,12 +59,14 @@ void *tqueue_next(struct tqueue *tq)
 	assert(tq->magic == TQ_MAGIC);
 	spinlock_acquire(&tq->lock);
 	assert(tq->num > 0);
-	if(tq->current) tq->current = tq->current->next;
+	if(tq->current)
+		tq->current = linkedlist_iter_next(tq->current);
 	/* can't use else here. Need to catch the case when current->next is
 	 * null above */
-	if(!tq->current) tq->current = tq->tql.head;
+	if(!tq->current || tq->current == linkedlist_iter_end(&tq->tql))
+		tq->current = linkedlist_iter_start(&tq->tql);
 	assert(tq->current);
-	void *ret = tq->current->entry;
+	void *ret = linkedentry_obj(tq->current);
 	assert(ret);
 	spinlock_release(&tq->lock);
 	return ret;

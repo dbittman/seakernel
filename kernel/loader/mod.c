@@ -269,9 +269,12 @@ void loader_unload_all_modules(void)
 		int i;
 		/* okay, so this only ever gets called during the shutdown of the system, so
 		 * don't both locking the module list */
-		struct llistnode *node, *next;
-		module_t *m;
-		ll_for_each_entry_safe(&module_list, node, next, module_t *, m) {
+		struct linkedentry *node, *next;
+		for(node = linkedlist_iter_start(&module_list);
+				node != linkedlist_iter_end(&module_list);
+				node = next) {
+			module_t *m = linkedentry_obj(node);
+			next = linkedlist_iter_next(node);
 			int r = do_unload_module(m->name, 0);
 			if(r < 0 && r != -ENOENT)
 				todo++;

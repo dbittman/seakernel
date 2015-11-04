@@ -50,9 +50,12 @@ int kerfs_mappings_report(int direction, void *param, size_t size, size_t offset
 				"           START              END   LENGTH FLAGS    INODE   OFFSET\n");
 	mutex_acquire(&proc->map_lock);
 	
-	struct llistnode *node;
+	struct linkedentry *node;
 	struct memmap *map;
-	ll_for_each_entry(&proc->mappings, node, struct memmap *, map) {
+	for(node = linkedlist_iter_start(&proc->mappings);
+			node != linkedlist_iter_end(&proc->mappings);
+			node = linkedlist_iter_next(node)) {
+		map = linkedentry_obj(node);
 		char flags[6];
 		memset(flags, ' ', sizeof(flags));
 		if(map->flags & MAP_SHARED)
@@ -158,20 +161,25 @@ static void __copy_mappings(struct process *ch, struct process *pa)
 	 * that everything is just pointers to sections of memory that are
 	 * copied during mm_vm_clone anyway... */
 	//mutex_acquire(&pa->map_lock);
-	struct llistnode *node;
+	struct linkedentry *node;
 	struct memmap *map;
-	ll_for_each_entry(&pa->mappings, node, struct memmap *, map) {
-		/* new mapping object, copy the data */
-		struct memmap *n = kmalloc(sizeof(*map));
-		memcpy(n, map, sizeof(*n));
-		/* of course, we have another reference to the backing inode */
-		vfs_inode_get(n->node);
-		if(map->flags & MAP_SHARED) {
-			/* and if it's shared, tell the inode that another processor
-			 * cares about some section of memory */
-			fs_inode_map_region(n->node, n->offset, n->length);
+	if(pa != kernel_process) {
+		for(node = linkedlist_iter_start(&pa->mappings);
+				node != linkedlist_iter_end(&pa->mappings);
+				node = linkedlist_iter_next(node)) {
+			map = linkedentry_obj(node);
+			/* new mapping object, copy the data */
+			struct memmap *n = kmalloc(sizeof(*map));
+			memcpy(n, map, sizeof(*n));
+			/* of course, we have another reference to the backing inode */
+			vfs_inode_get(n->node);
+			if(map->flags & MAP_SHARED) {
+				/* and if it's shared, tell the inode that another processor
+			 	 * cares about some section of memory */
+				fs_inode_map_region(n->node, n->offset, n->length);
+			}
+			linkedlist_insert(&ch->mappings, &n->entry, n);
 		}
-		n->entry = ll_insert(&ch->mappings, n);
 	}
 	/* for this simple copying of data to work, we rely on the address space being cloned BEFORE
 	 * this is called, so the pointers are actually valid */
@@ -200,7 +208,7 @@ static struct process *tm_process_copy(int flags, struct thread *newthread)
 	newp->parent = current_process;
 	linkedlist_create(&newp->threadlist, 0);
 	blocklist_create(&newp->waitlist, 0);
-	ll_create_lockless(&newp->mappings);
+	linkedlist_create(&newp->mappings, LINKEDLIST_LOCKLESS);
 	mutex_create(&newp->map_lock, 0); /* we need to lock this during page faults */
 	mutex_create(&newp->stacks_lock, 0);
 	valloc_create(&newp->mmf_valloc, MEMMAP_MMAP_BEGIN, MEMMAP_MMAP_END, PAGE_SIZE, 0);

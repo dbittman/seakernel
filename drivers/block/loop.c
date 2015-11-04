@@ -1,7 +1,6 @@
 #include <sea/fs/inode.h>
 #include <sea/sys/stat.h>
 #include <sea/dm/dev.h>
-#include <sea/lib/cache.h>
 #include <sea/dm/block.h>
 #include <sea/ll.h>
 #include <sea/fs/devfs.h>
@@ -168,7 +167,7 @@ int module_install(void)
 		dm_unregister_block_device(loop_maj);
 		return EINVAL;
 	}
-	loops = linkedlist_create(0, 0);
+	loops = linkedlist_create(0, LINKEDLIST_MUTEX);
 	sys_mknod("/dev/loop0", S_IFBLK | 0644, GETDEV(loop_maj, 0));
 	add_loop_device(0);
 	return 0;
@@ -177,18 +176,15 @@ int module_install(void)
 int module_exit(void)
 {
 	dm_unregister_block_device(loop_maj);
-	if(ll_is_active(loops))
-	{
-		struct linkedentry *cur, *next;
-		struct loop_device *ld;
-		for(cur = linkedlist_iter_start(loops);
-				cur != linkedlist_iter_end(loops);
-				cur = next) {
-			ld = linkedentry_obj(cur);
-			next = linkedlist_iter_next(cur);
-			linkedlist_remove(loops, cur);
-			kfree(ld);
-		}
+	struct linkedentry *cur, *next;
+	struct loop_device *ld;
+	for(cur = linkedlist_iter_start(loops);
+			cur != linkedlist_iter_end(loops);
+			cur = next) {
+		ld = linkedentry_obj(cur);
+		next = linkedlist_iter_next(cur);
+		linkedlist_remove(loops, cur);
+		kfree(ld);
 	}
 	linkedlist_destroy(loops);
 	return 0;

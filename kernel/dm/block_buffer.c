@@ -9,29 +9,6 @@ struct linkedlist dirty_list;
 mutex_t dlock;
 struct kthread syncer;
 
-#if 0
-void buffer_sync(struct buffer *buf);
-int block_buffer_syncer(struct kthread *kt, void *arg)
-{
-	while(!kthread_is_joining(kt)) {
-		mutex_acquire(&dlock);
-		if(dirty_list.num > 0) {
-			struct buffer *buf = ll_entry(struct buffer *, dirty_list.head);
-			buffer_inc_refcount(buf);
-			int count = buf->bd->wq.count;
-			if(buf->flags & BUFFER_DIRTY)
-				buffer_sync(buf);
-			mutex_release(&dlock);
-			buffer_put(buf);
-			if(count > 0)
-				tm_thread_delay(ONE_MILLISECOND * 10);
-		} else {
-			mutex_release(&dlock);
-			tm_thread_delay(ONE_SECOND);
-		}
-	}
-}
-#endif
 void block_buffer_init(void)
 {
 	mutex_create(&dlock, 0);
@@ -54,7 +31,6 @@ void buffer_sync(struct buffer *buf)
 int buffer_sync_all_dirty(void)
 {
 	mutex_acquire(&dlock);
-	struct llistnode *ln, *next;
 	while(dirty_list.count > 0) {
 		struct buffer *buf = linkedlist_head(&dirty_list);
 		buffer_inc_refcount(buf);
@@ -125,36 +101,27 @@ void block_elevator_add_request(struct ioreq *req)
 	tm_thread_poke(req->bd->elevator.thread);
 }
 
-int block_cache_get_bufferlist(struct linkedlist *blist, struct ioreq *req)
+struct buffer *block_cache_get_first_buffer(struct ioreq *req)
 {
-	int ret = 0;
-	size_t count = req->count;
-	size_t block = req->block;
-	while(count) {
-		struct buffer *br = dm_block_cache_get(req->bd, block);
-		if(!br) {
-			atomic_fetch_add(&req->refs, 1);
-			async_call_create(&current_thread->blockreq_call, 0, (void (*)(unsigned long))block_elevator_add_request,
-					(unsigned long)req, ASYNC_CALL_PRIORITY_MEDIUM);
-			tm_thread_block_schedule_work(&req->blocklist, THREADSTATE_UNINTERRUPTIBLE, &current_thread->blockreq_call);
-			/* TODO: do this automatically? */
-			struct workqueue *wq = current_thread->blockreq_call.queue;
-			if(wq)
-				workqueue_delete(wq, &current_thread->blockreq_call);
+	struct buffer *br = dm_block_cache_get(req->bd, req->block);
+	if(!br) {
+		atomic_fetch_add(&req->refs, 1);
+		async_call_create(&current_thread->blockreq_call, 0, (void (*)(unsigned long))block_elevator_add_request,
+				(unsigned long)req, ASYNC_CALL_PRIORITY_MEDIUM);
+		tm_thread_block_schedule_work(&req->blocklist, THREADSTATE_UNINTERRUPTIBLE, &current_thread->blockreq_call);
+		/* TODO: do this automatically? */
+		struct workqueue *wq = current_thread->blockreq_call.queue;
+		if(wq)
+			workqueue_delete(wq, &current_thread->blockreq_call);
 
-			assert(req->flags & IOREQ_COMPLETE);
-			if(req->flags & IOREQ_FAILED) {
-				return ret;
-			}
-			br = dm_block_cache_get(req->bd, block); // TODO: get this from elevator
-			assert(br);
-			atomic_fetch_and(&br->flags, ~BUFFER_LOCKED);
+		assert(req->flags & IOREQ_COMPLETE);
+		if(req->flags & IOREQ_FAILED) {
+			return NULL;
 		}
-		linkedlist_insert(blist, &br->lnode, br);
-		ret++;
-		count--;
-		block++;
+		br = dm_block_cache_get(req->bd, req->block); // TODO: get this from elevator
+		assert(br);
+		atomic_fetch_and(&br->flags, ~BUFFER_LOCKED);
 	}
-	return ret;
+	return br;
 }
 

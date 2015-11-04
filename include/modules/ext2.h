@@ -5,7 +5,6 @@
 
 #include <sea/types.h>
 #include <sea/fs/inode.h>
-#include <sea/lib/cache.h>
 #include <sea/cpu/time.h>
 #include <modules/ext2_sb.h>
 #include <sea/ll.h>

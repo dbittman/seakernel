@@ -105,9 +105,13 @@ static void debugger_procs(char tokens[16][64])
 		printk_safe(5, "process %d\n", proc->pid);
 		__print_process(proc);
 		if(!strcmp(tokens[2], "t")) {
-			struct llistnode *tn;
+			struct linkedentry *tn;
 			struct thread *thread;
-			ll_for_each_entry(&proc->threadlist, tn, struct thread *, thread) {
+			for(tn = linkedlist_iter_start(&proc->threadlist);
+					tn != linkedlist_iter_end(&proc->threadlist);
+					tn = linkedlist_iter_next(tn)) {
+				thread = linkedentry_obj(tn);
+
 				printk_safe(5, " * thread %d\n", thread->tid);
 				__print_thread(thread, 0);
 			}

@@ -11,7 +11,7 @@ struct memmap {
 	size_t length, offset;
 	struct inode *node;
 	int flags, prot;
-	struct llistnode *entry;
+	struct linkedentry entry;
 	struct valloc_region vr;
 };
 

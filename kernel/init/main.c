@@ -9,7 +9,6 @@
 #include <sea/fs/initrd.h>
 #include <sea/fs/inode.h>
 #include <sea/kernel.h>
-#include <sea/lib/cache.h>
 #include <sea/lib/timer.h>
 #include <sea/loader/elf.h>
 #include <sea/loader/symbol.h>

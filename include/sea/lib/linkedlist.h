@@ -2,8 +2,8 @@
 #define __SEA_LIB_LINKEDLIST_H
 
 #define LINKEDLIST_ALLOC 1
-#define LINKEDLIST_LOCKLESS 1
-#define LINKEDLIST_MUTEX 2
+#define LINKEDLIST_LOCKLESS 2
+#define LINKEDLIST_MUTEX 4
 struct linkedentry {
 	void *obj;
 	struct linkedentry *next, *prev;

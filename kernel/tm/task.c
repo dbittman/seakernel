@@ -27,7 +27,7 @@ void tm_init_multitasking(void)
 	
 	process_table = hash_create(0, 0, 1000);
 
-	process_list = linkedlist_create(0, 0);
+	process_list = linkedlist_create(0, LINKEDLIST_MUTEX);
 	mutex_create(&process_refs_lock, 0);
 	mutex_create(&thread_refs_lock, 0);
 	

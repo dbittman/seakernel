@@ -11,7 +11,7 @@
 #include <sea/trace.h>
 #include <sea/fs/kerfs.h>
 /* TODO: make thread-safe */
-static struct llist *table = 0;
+static struct linkedlist *table = 0;
 
 /* TODO: generics */
 #define NETWORK_PREFIX(addr,mask) (addr & mask)
@@ -54,11 +54,14 @@ struct route *net_route_select_entry(uint32_t addr)
 	if(!table)
 		return 0;
 	struct route *r, *best = 0;
-	struct llistnode *node;
+	struct linkedentry *node;
 	int i = 0, max_score = -1;
 	
-	rwlock_acquire(&table->rwl, RWL_READER);
-	ll_for_each_entry(table, node, struct route *, r) {
+	__linkedlist_lock(table);
+	for(node = linkedlist_iter_start(table);
+			node != linkedlist_iter_end(table);
+			node = linkedlist_iter_next(node)) {
+		r = linkedentry_obj(node);
 		int confidence = __net_route_calc_confidence(r, addr);
 		if(confidence >= 0) {
 			/* possible route! */
@@ -68,38 +71,39 @@ struct route *net_route_select_entry(uint32_t addr)
 			}
 		}
 	}
-	rwlock_release(&table->rwl, RWL_READER);
+	__linkedlist_unlock(table);
 	return best;
 }
 
 void net_route_add_entry(struct route *r)
 {
 	if(!table)
-		table = ll_create(0);
-	r->node = ll_insert(table, r);
+		table = linkedlist_create(0, LINKEDLIST_MUTEX);
+	linkedlist_insert(table, &r->node, r);
 }
 
 void net_route_del_entry(struct route *r)
 {
 	assert(table);
-	ll_remove(table, r->node);
-	r->node = 0;
+	linkedlist_remove(table, &r->node);
 }
 
 int net_route_find_del_entry(uint32_t dest, struct net_dev *nd)
 {
-	rwlock_acquire(&table->rwl, RWL_WRITER);
 	struct route *r, *del=0;
-	struct llistnode *node;
-	ll_for_each_entry(table, node, struct route *, r) {
+	struct linkedentry *node;
+	__linkedlist_lock(table);
+	for(node = linkedlist_iter_start(table);
+			node != linkedlist_iter_end(table);
+			node = linkedlist_iter_next(node)) {
+		r = linkedentry_obj(node);
 		if(r->destination == dest && r->interface == nd) {
 			del = r;
 		}
 	}
-	rwlock_release(&table->rwl, RWL_WRITER);
+	__linkedlist_unlock(table);
 	if(del) {
-		ll_remove(table, del->node);
-		del->node = 0;
+		linkedlist_remove(table, &del->node);
 		kfree(del);
 	}
 	return del ? 0 : -ENOENT;
@@ -117,10 +121,13 @@ int kerfs_route_report(int direction, void *param, size_t size, size_t offset, s
 			"DEST            GATEWAY         MASK            FLAGS IFACE\n");
 	if(!table)
 		return current;
-	rwlock_acquire(&table->rwl, RWL_READER);
-	struct llistnode *node;
-	struct route *r;
-	ll_for_each_entry(table, node, struct route *, r) {
+	struct route *r, *del=0;
+	struct linkedentry *node;
+	__linkedlist_lock(table);
+	for(node = linkedlist_iter_start(table);
+			node != linkedlist_iter_end(table);
+			node = linkedlist_iter_next(node)) {
+		r = linkedentry_obj(node);
 		char dest[32];
 		char gate[32];
 		char mask[32];
@@ -139,7 +146,7 @@ int kerfs_route_report(int direction, void *param, size_t size, size_t offset, s
 				r->interface->name);
 
 	}
-	rwlock_release(&table->rwl, RWL_READER);
+	__linkedlist_unlock(table);
 
 	return current;
 }

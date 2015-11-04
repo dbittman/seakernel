@@ -73,7 +73,7 @@ struct process {
 	struct inode *root, *cwd;
 	mutex_t files_lock;
 	struct file_ptr *filp[FILP_HASH_LEN];
-	struct llist mappings;
+	struct linkedlist mappings;
 	mutex_t map_lock;
 	struct valloc mmf_valloc;
 

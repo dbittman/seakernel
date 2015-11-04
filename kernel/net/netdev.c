@@ -21,7 +21,7 @@ uint16_t af_to_ethertype_map[PF_MAX] = {
 	[AF_INET] = 0x800,
 };
 
-struct llist *net_list;
+struct linkedlist *net_list;
 
 int nd_num = 0;
 static struct net_dev *devices[256];
@@ -30,7 +30,7 @@ extern void net_lo_init();
 
 void net_init(void)
 {
-	net_list = ll_create(0);
+	net_list = linkedlist_create(0, 0);
 #if CONFIG_MODULES
 	loader_add_kernel_symbol(net_add_device);
 	loader_add_kernel_symbol(net_notify_packet_ready);
@@ -101,7 +101,7 @@ static int kt_packet_rec_thread(struct kthread *kt, void *arg)
 struct net_dev *net_add_device(struct net_dev_calls *fn, void *data)
 {
 	struct net_dev *nd = kmalloc(sizeof(struct net_dev));
-	nd->node = ll_insert(net_list, nd);
+	linkedlist_insert(net_list, &nd->node, nd);
 	nd->callbacks = fn;
 	nd->data = data;
 	uint8_t mac[6];
@@ -128,7 +128,7 @@ struct net_dev *net_add_device(struct net_dev_calls *fn, void *data)
 void net_remove_device(struct net_dev *nd)
 {
 	devices[nd->num] = 0;
-	ll_remove(net_list, nd->node);
+	linkedlist_remove(net_list, &nd->node);
 	if(nd->callbacks->poll)
 		kthread_join(&nd->rec_thread, 0);
 	kfree(nd);
@@ -229,7 +229,7 @@ int net_char_ioctl(dev_t min, int cmd, long arg)
 	switch(cmd) {
 		case SIOCGIFCOUNT:
 			/* TODO: uhg */
-			req->ifr_index = net_list->num;
+			req->ifr_index = net_list->count;
 			break;
 		case SIOCGIFNAME:
 			flags = req->ifr_index;

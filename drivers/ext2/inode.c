@@ -36,7 +36,6 @@
 
 #include <sea/types.h>
 #include <sea/string.h>
-#include <sea/lib/cache.h>
 #include <sea/dm/block.h>
 #include <modules/ext2.h>
 static uint32_t block_free(struct ext2_info* fs, uint32_t num);

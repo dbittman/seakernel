@@ -19,8 +19,8 @@ void vfs_icache_init(void)
 {
 	icache = hash_create(0, 0, 0x4000);
 
-	ic_dirty = linkedlist_create(0, 0);
-	ic_inuse = linkedlist_create(0, 0);
+	ic_dirty = linkedlist_create(0, LINKEDLIST_MUTEX);
+	ic_inuse = linkedlist_create(0, LINKEDLIST_MUTEX);
 	ic_lru = queue_create(0, 0);
 	ic_lock = mutex_create(0, 0);
 

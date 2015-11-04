@@ -122,7 +122,7 @@ __attribute__((noinline)) static void tm_process_exit(int code)
 		vfs_icache_put(current_process->cwd);
 	mutex_destroy(&current_process->files_lock);
 	mm_destroy_all_mappings(current_process);
-	ll_destroy(&(current_process->mappings));
+	linkedlist_destroy(&(current_process->mappings));
 	mutex_destroy(&current_process->map_lock);
 	valloc_destroy(&current_process->mmf_valloc);
 	mm_free_userspace();

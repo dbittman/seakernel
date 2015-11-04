@@ -88,7 +88,7 @@ struct net_dev {
 	int data_header_len;
 	int mtu;
 
-	struct llistnode *node;
+	struct linkedentry node;
 	struct kthread rec_thread;
 };
 

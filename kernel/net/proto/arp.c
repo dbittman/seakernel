@@ -20,7 +20,7 @@ static struct arp_database {
 	mutex_t hashlock;
 } databases[MAX_PROTS];
 
-static struct llist *outstanding = 0;
+static struct linkedlist *outstanding = 0;
 mutex_t *outlock, databaselock;
 static void arp_get_mac(uint8_t *mac, uint16_t m1, uint16_t m2, uint16_t m3)
 {
@@ -66,18 +66,21 @@ static int __arp_convert_af(int etype)
 static struct arp_entry *__arp_get_outstanding_requests_entry(int prot_type, uint16_t addr[2], int check_time, int remove)
 {
 	mutex_acquire(outlock);
-	struct llistnode *node;
+	struct linkedentry *node;
 	struct arp_entry *entry;
-	ll_for_each_entry(outstanding, node, struct arp_entry *, entry) {
+	for(node = linkedlist_iter_start(outstanding);
+			node != linkedlist_iter_end(outstanding);
+			node = linkedlist_iter_next(node)) {
+		entry = linkedentry_obj(node);
 		if(check_time && (tm_timing_get_microseconds() > (entry->timestamp + ONE_SECOND))) {
-			ll_remove(outstanding, entry->node);
+			linkedlist_remove(outstanding, &entry->node);
 			kfree(entry);
 			continue;
 		}
 		if(entry->type == prot_type && !memcmp(entry->prot_addr, addr, 2 * sizeof(uint16_t))) {
 			/* found valid */
 			if(remove) {
-				ll_remove(outstanding, entry->node);
+				linkedlist_remove(outstanding, &entry->node);
 				kfree(entry);
 				continue;
 			}
@@ -108,7 +111,7 @@ static void arp_add_outstanding_requests(int prot_type, uint16_t addr[2])
 	memcpy(entry->prot_addr, addr, 2 * sizeof(uint16_t));
 	mutex_acquire(outlock);
 	entry->timestamp = tm_timing_get_microseconds();
-	entry->node = ll_insert(outstanding, entry);
+	linkedlist_insert(outstanding, &entry->node, entry);
 	mutex_release(outlock);
 }
 
@@ -318,7 +321,7 @@ int arp_receive_packet(struct net_dev *nd, struct net_packet *netpacket, struct 
 
 void arp_init(void)
 {
-	outstanding = ll_create_lockless(0);
+	outstanding = linkedlist_create(0, LINKEDLIST_MUTEX);
 	outlock = mutex_create(0, 0);
 	for(int i = 0;i<MAX_PROTS;i++) {
 		databases[i].ethertype = 0;

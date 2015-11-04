@@ -4,7 +4,6 @@
 #include <sea/tm/process.h>
 #include <sea/dm/dev.h>
 #include <sea/dm/block.h>
-#include <sea/lib/cache.h>
 #include <sea/errno.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
@@ -152,15 +151,11 @@ int dm_block_write(dev_t dev, off_t posit, char *buf, size_t count)
 	/* If we are offset in a block, we dont wanna overwrite stuff */
 	if(pos % blk_size)
 	{
-		struct linkedlist blist;
-		linkedlist_create(&blist, LINKEDLIST_LOCKLESS);
 		struct ioreq *req = ioreq_create(bd, dev, READ, pos / blk_size, 1);
-		if(block_cache_get_bufferlist(&blist, req) != 1) {
-			ioreq_put(req);
-			return 0;
-		}
+		struct buffer *br = block_cache_get_first_buffer(req);
 		ioreq_put(req);
-		struct buffer *br = linkedlist_head(&blist);
+		if(!br)
+			return 0;
 		/* If count is less than whats remaining, just use count */
 		int write = (blk_size-(pos % blk_size));
 		if(count < (unsigned)write)
@@ -193,15 +188,11 @@ int dm_block_write(dev_t dev, off_t posit, char *buf, size_t count)
 	/* Anything left over? */
 	if(count > 0)
 	{
-		struct linkedlist blist;
-		linkedlist_create(&blist, LINKEDLIST_LOCKLESS);
 		struct ioreq *req = ioreq_create(bd, dev, READ, pos/blk_size, 1);
-		if(block_cache_get_bufferlist(&blist, req) != 1) {
-			ioreq_put(req);
-			return 0;
-		}
+		struct buffer *br = block_cache_get_first_buffer(req);
 		ioreq_put(req);
-		struct buffer *br = linkedlist_head(&blist);
+		if(!br)
+			return 0;
 		memcpy(br->data, buf, count);
 		atomic_fetch_or(&br->flags, BUFFER_DIRTY);
 		buffer_put(br);

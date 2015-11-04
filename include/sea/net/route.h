@@ -15,7 +15,7 @@ struct route {
 	int flags;
 	struct net_dev *interface;
 
-	struct llistnode *node;
+	struct linkedentry node;
 };
 
 struct route *net_route_select_entry(uint32_t addr);

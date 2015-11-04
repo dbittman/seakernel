@@ -30,7 +30,7 @@ struct arp_entry {
 	int hw_len, prot_len;
 	int type;
 	time_t timestamp;
-	struct llistnode *node; /* for outstanding requests list */
+	struct linkedentry node; /* for outstanding requests list */
 	struct hashelem hash_elem;
 };
 

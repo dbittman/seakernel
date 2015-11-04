@@ -59,12 +59,12 @@ static void release_virtual_location(struct valloc_region *vr)
 
 static void record_mapping(struct memmap *map)
 {
-	map->entry = ll_insert(&current_process->mappings, map);
+	linkedlist_insert(&current_process->mappings, &map->entry, map);
 }
 
 static void remove_mapping(struct memmap *map)
 {
-	ll_remove(&current_process->mappings, map->entry);
+	linkedlist_remove(&current_process->mappings, &map->entry);
 }
 
 static void disengage_mapping_region(struct memmap *map, addr_t start, size_t offset, size_t length)
@@ -173,10 +173,13 @@ int mm_sync_mapping(struct memmap *map, addr_t start, size_t length, int flags)
  * most programs aren't going to have a large number of mapped regions...probably */
 static struct memmap *find_mapping(addr_t address)
 {
-	struct llistnode *n;
+	struct linkedentry *n;
 	struct memmap *map;
 	/* don't worry about the list's lock, we already have a lock */
-	ll_for_each_entry(&current_process->mappings, n, struct memmap *, map) {
+	for(n = linkedlist_iter_start(&current_process->mappings);
+			n != linkedlist_iter_end(&current_process->mappings);
+			n = linkedlist_iter_next(n)) {
+		map = linkedentry_obj(n);
 		/* check if address is in range. A special case to note: 'length' may not
 		 * be page aligned, but here we act as if it were rounded up. 'length' refers
 		 * to file length, but in a partial page, memory mapping is still valid for
@@ -315,12 +318,16 @@ int mm_mapping_munmap(addr_t start, size_t length)
 void mm_destroy_all_mappings(struct process *t)
 {
 	/* we don't need to lock, because we assume only one thread */
-	struct llistnode *cur, *next;
+	struct linkedentry *cur, *next;
 	struct memmap *map;
-	ll_for_each_entry_safe(&(t->mappings), cur, next, struct memmap *, map) {
+	for(cur = linkedlist_iter_start(&t->mappings);
+			cur != linkedlist_iter_end(&t->mappings);
+			cur = next) {
+		map = linkedentry_obj(cur);
+		next = linkedlist_iter_next(cur);
 		disengage_mapping(map);
 		__do_mm_disestablish_mapping(map);
 	}
-	assert(t->mappings.num == 0);
+	assert(t->mappings.count == 0);
 }
 

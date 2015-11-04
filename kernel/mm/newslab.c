@@ -201,7 +201,7 @@ void slab_init(addr_t start, addr_t end)
 	valloc_create(&slabs_reg, start, end, SLAB_SIZE, 0);
 }
 
-#define CANARY 0
+#define CANARY 1
 
 void *slab_kmalloc(size_t __size)
 {

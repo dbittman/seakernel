@@ -12,7 +12,6 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/dm/dev.h>
 #include <sea/fs/inode.h>
-#include <sea/lib/cache.h>
 #include <sea/loader/symbol.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/mm/vmm.h>

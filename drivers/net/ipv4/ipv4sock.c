@@ -68,7 +68,7 @@ static int sendto(struct socket *sock, const void *buffer, size_t length,
 static int init(struct socket *sock)
 {
 	if(!sock_list)
-		sock_list = linkedlist_create(0, 0);
+		sock_list = linkedlist_create(0, LINKEDLIST_MUTEX);
 	linkedlist_insert(sock_list, &sock->node, sock);
 	return 0;
 }

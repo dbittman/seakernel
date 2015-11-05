@@ -104,12 +104,12 @@ void ahci_port_release_slot(struct ahci_device *dev, int slot)
  * in a multiple of PAGE_SIZE, so that the PRDT will write to contiguous physical ram
  * (the key here is that the buffer need not be contiguous across multiple PRDT entries).
  */
-int ahci_rw_multiple_do(int rw, int min, u64 blk, char *out_buffer, int count)
+int ahci_rw_multiple_do(int rw, int min, uint64_t blk, char *out_buffer, int count)
 {
 	uint32_t length = count * ATA_SECTOR_SIZE;
 	int d = min;
 	struct ahci_device *dev = ports[d];
-	u64 end_blk = dev->identify.lba48_addressable_sectors;
+	uint64_t end_blk = dev->identify.lba48_addressable_sectors;
 	if(blk >= end_blk)
 		return 0;
 	if((blk+count) > end_blk)
@@ -143,7 +143,7 @@ int ahci_rw_multiple_do(int rw, int min, u64 blk, char *out_buffer, int count)
 /* and then since there is a maximum transfer amount because of the page size
  * limit, wrap the transfer function to allow for bigger transfers than that even.
  */
-int ahci_rw_multiple(int rw, int min, u64 blk, char *out_buffer, int count)
+int ahci_rw_multiple(int rw, int min, uint64_t blk, char *out_buffer, int count)
 {
 	int i=0;
 	int ret=0;
@@ -159,7 +159,7 @@ int ahci_rw_multiple(int rw, int min, u64 blk, char *out_buffer, int count)
 	return ret;
 }
 
-int ahci_rw_single(int rw, int dev, u64 blk, char *buf)
+int ahci_rw_single(int rw, int dev, uint64_t blk, char *buf)
 {
 	return ahci_rw_multiple_do(rw, dev, blk, buf, 1);
 }

@@ -12,7 +12,7 @@ struct pci_device *ata_pci;
 int api=0;
 struct dev_rec *nodes;
 int irq_primary, irq_secondary;
-int ata_rw_multiple(int rw, int dev, u64 blk, char *buf, int count)
+int ata_rw_multiple(int rw, int dev, uint64_t blk, char *buf, int count)
 {
 	if(!count) return 0;
 	struct ata_device *device = get_ata_device(dev);
@@ -31,7 +31,7 @@ int ata_rw_multiple(int rw, int dev, u64 blk, char *buf, int count)
 	return ret;
 }
 
-int ata_rw_main(int rw, int dev, u64 blk, char *buf)
+int ata_rw_main(int rw, int dev, uint64_t blk, char *buf)
 {
 	return ata_rw_multiple(rw, dev, blk, buf, 1);
 }

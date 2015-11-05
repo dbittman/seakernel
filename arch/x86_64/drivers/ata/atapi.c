@@ -65,7 +65,7 @@ int atapi_pio_rw(struct ata_controller *cont, struct ata_device *dev, int rw,
 	return size;
 }
 
-int atapi_rw_main(int rw, int dev, u64 blk_, char *buf)
+int atapi_rw_main(int rw, int dev, uint64_t blk_, char *buf)
 {
 	unsigned long long blk = blk_;
 	struct ata_device *device = get_ata_device(dev);
@@ -81,7 +81,7 @@ int atapi_rw_main(int rw, int dev, u64 blk_, char *buf)
 	return ret;
 }
 
-int atapi_rw_main_multiple(int rw, int dev, u64 blk, char *buf, int num)
+int atapi_rw_main_multiple(int rw, int dev, uint64_t blk, char *buf, int num)
 {
 	int count=0;
 	for(int i=0;i<num;i++)

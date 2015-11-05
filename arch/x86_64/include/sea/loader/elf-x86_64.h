@@ -50,7 +50,7 @@ typedef struct __attribute__((packed)) {
 typedef struct __attribute__((packed)) {
 	uint64_t offset;
 	uint64_t info;
-	sint64_t addend;
+	int64_t addend;
 } elf64_rela_t;
 
 typedef struct __attribute__((packed))

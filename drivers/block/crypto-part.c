@@ -49,7 +49,7 @@ struct crypt_part *crypto_create_dev(dev_t dev, struct cp_ioctl_arg *ia)
 	return &list[i];
 }
 
-int cp_rw_multiple(int rw, int min, u64 blk, char *buf, int count)
+int cp_rw_multiple(int rw, int min, uint64_t blk, char *buf, int count)
 {
 	int i, total=0;
 	unsigned char tmp[512];
@@ -77,7 +77,7 @@ int cp_rw_multiple(int rw, int min, u64 blk, char *buf, int count)
 	return total;
 }
 
-int cp_rw_single(int rw, int min, u64 blk, char *buf)
+int cp_rw_single(int rw, int min, uint64_t blk, char *buf)
 {
 	return cp_rw_multiple(rw, min, blk, buf, 1);
 }

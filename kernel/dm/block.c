@@ -18,8 +18,8 @@ int ioctl_stub(int a, int b, long c)
 	return -1;
 }
 
-struct blockdevice *dm_set_block_device(int maj, int (*f)(int, int, u64, char*), int bs, 
-	int (*c)(int, int, long), int (*m)(int, int, u64, char *, int), int (*s)(int, int))
+struct blockdevice *dm_set_block_device(int maj, int (*f)(int, int, uint64_t, char*), int bs, 
+	int (*c)(int, int, long), int (*m)(int, int, uint64_t, char *, int), int (*s)(int, int))
 {
 	printk(1, "[dev]: Setting block device %d, bs=%d (%x, %x)\n", maj, bs, f, c);
 	struct blockdevice *dev = (struct blockdevice *)kmalloc(sizeof(struct blockdevice));
@@ -38,8 +38,8 @@ struct blockdevice *dm_set_block_device(int maj, int (*f)(int, int, u64, char*),
 	return dev;
 }
 
-int dm_set_available_block_device(int (*f)(int, int, u64, char*), int bs, 
-	int (*c)(int, int, long), int (*m)(int, int, u64, char *, int), int (*s)(int, int))
+int dm_set_available_block_device(int (*f)(int, int, uint64_t, char*), int bs, 
+	int (*c)(int, int, long), int (*m)(int, int, uint64_t, char *, int), int (*s)(int, int))
 {
 	int i=10; /* first 10 devices are reserved by the system */
 	mutex_acquire(&bd_search_lock);
@@ -80,7 +80,7 @@ void dm_init_block_devices(void)
 	block_buffer_init();
 }
 
-int dm_do_block_rw(int rw, dev_t dev, u64 blk, char *buf, struct blockdevice *bd)
+int dm_do_block_rw(int rw, dev_t dev, uint64_t blk, char *buf, struct blockdevice *bd)
 {
 	if(dev < 0)
 		dev=-dev;
@@ -101,7 +101,7 @@ int dm_do_block_rw(int rw, dev_t dev, u64 blk, char *buf, struct blockdevice *bd
 	return -EIO;
 }
 
-int dm_do_block_rw_multiple(int rw, dev_t dev, u64 blk, char *buf, int count, struct blockdevice *bd)
+int dm_do_block_rw_multiple(int rw, dev_t dev, uint64_t blk, char *buf, int count, struct blockdevice *bd)
 {
 	if(dev < 0)
 		dev=-dev;

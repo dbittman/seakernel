@@ -227,12 +227,12 @@ static inline void insw(unsigned long addr, void *buffer, int count)
 		} while (--count);
 	}
 }
-int atapi_rw_main(int rw, int dev, u64 blk_, char *buf);
-int atapi_rw_main_multiple(int rw, int dev, u64 blk, char *buf, int num);
+int atapi_rw_main(int rw, int dev, uint64_t blk_, char *buf);
+int atapi_rw_main_multiple(int rw, int dev, uint64_t blk, char *buf, int num);
 int ioctl_atapi(int min, int cmd, long arg);
 struct ata_device *get_ata_device(int min);
 int ata_dma_rw(struct ata_controller *cont, struct ata_device *dev, int rw, 
-	u64 blk, unsigned char *buf, int count);
+	uint64_t blk, unsigned char *buf, int count);
 void remove_devices();
 extern volatile char dma_busy;
 int ata_pio_rw(struct ata_controller *cont, struct ata_device *dev, int rw, 

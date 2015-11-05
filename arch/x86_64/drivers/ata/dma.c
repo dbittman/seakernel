@@ -41,9 +41,9 @@ int ata_dma_init(struct ata_controller *cont, struct ata_device *dev,
 }
 
 int ata_start_command(struct ata_controller *cont, struct ata_device *dev, 
-	u64 block, char rw, unsigned short count)
+	uint64_t block, char rw, unsigned short count)
 {
-	u64 addr = block;
+	uint64_t addr = block;
 	unsigned char cmd=0;
 	if(rw == READ)
 		cmd = (dev->flags & F_LBA48 ? 0x25 : 0xC8);
@@ -80,7 +80,7 @@ int ata_start_command(struct ata_controller *cont, struct ata_device *dev,
 }
 
 int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw, 
-	u64 blk, unsigned char *buf, unsigned count)
+	uint64_t blk, unsigned char *buf, unsigned count)
 {
 	unsigned size=512;
 	mutex_acquire(cont->wait);
@@ -175,7 +175,7 @@ int ata_dma_rw_do(struct ata_controller *cont, struct ata_device *dev, int rw,
 }
 
 int ata_dma_rw(struct ata_controller *cont, struct ata_device *dev, int rw, 
-	u64 blk, unsigned char *buf, int count)
+	uint64_t blk, unsigned char *buf, int count)
 {
 	if(count >= 128) {
 		int i=0;

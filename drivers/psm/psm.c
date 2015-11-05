@@ -94,7 +94,7 @@ int psm_unregister_disk_device(int identifier, int psm_minor)
 	return 0;
 }
 
-int psm_do_rw_multiple(int multiple, int rw, int min, u64 blk, char *out_buffer, int count)
+int psm_do_rw_multiple(int multiple, int rw, int min, uint64_t blk, char *out_buffer, int count)
 {
 	struct psm_device d;
 	psm_table_get(min, &d);
@@ -102,7 +102,7 @@ int psm_do_rw_multiple(int multiple, int rw, int min, u64 blk, char *out_buffer,
 		return 0;
 	/* adjust for partitions */
 	uint32_t part_off=0, part_len=0;
-	u64 end_blk = d.info.num_sectors;
+	uint64_t end_blk = d.info.num_sectors;
 	if(d.part.num > 0) {
 		part_off = d.part.start_lba;
 		part_len = d.part.num_sectors;
@@ -120,12 +120,12 @@ int psm_do_rw_multiple(int multiple, int rw, int min, u64 blk, char *out_buffer,
 	return multiple ? dm_do_block_rw_multiple(rw, d.dev, blk, out_buffer, count, 0) : dm_do_block_rw(rw, d.dev, blk, out_buffer, 0);
 }
 
-int psm_rw_multiple(int rw, int min, u64 blk, char *out_buffer, int count)
+int psm_rw_multiple(int rw, int min, uint64_t blk, char *out_buffer, int count)
 {
 	return psm_do_rw_multiple(1, rw, min, blk, out_buffer, count);
 }
 
-int psm_rw_single(int rw, int min, u64 blk, char *buf)
+int psm_rw_single(int rw, int min, uint64_t blk, char *buf)
 {
 	return psm_do_rw_multiple(0, rw, min, blk, buf, 1);
 }

@@ -15,8 +15,8 @@
 
 struct blockdevice {
 	int blksz;
-	int (*rw)(int mode, int minor, u64 blk, char *buf);
-	int (*rw_multiple)(int mode, int minor, u64, char *buf, int);
+	int (*rw)(int mode, int minor, uint64_t blk, char *buf);
+	int (*rw_multiple)(int mode, int minor, uint64_t, char *buf, int);
 	int (*ioctl)(int min, int cmd, long arg);
 	int (*select)(int min, int rw);
 	struct mutex acl;
@@ -59,17 +59,17 @@ struct buffer {
 #define BUFFER_WRITEPENDING 4
 #define BUFFER_LOCKED       8
 
-struct blockdevice *dm_set_block_device(int maj, int (*f)(int, int, u64, char*), int bs, 
-	int (*c)(int, int, long), int (*m)(int, int, u64, char *, int), int (*s)(int, int));
+struct blockdevice *dm_set_block_device(int maj, int (*f)(int, int, uint64_t, char*), int bs, 
+	int (*c)(int, int, long), int (*m)(int, int, uint64_t, char *, int), int (*s)(int, int));
 
-int dm_set_available_block_device(int (*f)(int, int, u64, char*), int bs, 
-	int (*c)(int, int, long), int (*m)(int, int, u64, char *, int), int (*s)(int, int));
+int dm_set_available_block_device(int (*f)(int, int, uint64_t, char*), int bs, 
+	int (*c)(int, int, long), int (*m)(int, int, uint64_t, char *, int), int (*s)(int, int));
 
 void dm_unregister_block_device(int n);
 void dm_init_block_devices();
-int dm_block_rw(int rw, dev_t dev, u64 blk, char *buf, struct blockdevice *bd);
-int dm_do_block_rw_multiple(int rw, dev_t dev, u64 blk, char *buf, int count, struct blockdevice *bd);
-int dm_do_block_rw(int rw, dev_t dev, u64 blk, char *buf, struct blockdevice *bd);
+int dm_block_rw(int rw, dev_t dev, uint64_t blk, char *buf, struct blockdevice *bd);
+int dm_do_block_rw_multiple(int rw, dev_t dev, uint64_t blk, char *buf, int count, struct blockdevice *bd);
+int dm_do_block_rw(int rw, dev_t dev, uint64_t blk, char *buf, struct blockdevice *bd);
 int dm_block_read(dev_t dev, off_t posit, char *buf, size_t c);
 int dm_block_write(dev_t dev, off_t posit, char *buf, size_t count);
 int dm_block_device_rw(int mode, dev_t dev, off_t off, char *buf, size_t len);

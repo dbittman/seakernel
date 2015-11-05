@@ -422,16 +422,16 @@ static inline void write_cr4(unsigned long val)
 { 
 	asm ("movq %0,%%cr4" :: "r" (val));
 } 
-static inline u16 read_fs(void)
+static inline uint16_t read_fs(void)
 {
-	u16 seg;
+	uint16_t seg;
 	asm ("mov %%fs, %0" : "=g"(seg));
 	return seg;
 }
 
-static inline u16 read_gs(void)
+static inline uint16_t read_gs(void)
 {
-	u16 seg;
+	uint16_t seg;
 	asm ("mov %%gs, %0" : "=g"(seg));
 	return seg;
 }

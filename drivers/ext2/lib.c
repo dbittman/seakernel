@@ -3,7 +3,7 @@
 #include <sea/dm/dev.h>
 #include <sea/dm/block.h>
 #include <modules/ext2.h>
-int ext2_read_block(struct ext2_info *fs, u64 block, unsigned char *buf)
+int ext2_read_block(struct ext2_info *fs, uint64_t block, unsigned char *buf)
 {
 	off_t off = block * ext2_sb_blocksize(fs->sb);// + fs->block*512;
 	//mutex_on(&fs->ac_lock);
@@ -12,7 +12,7 @@ int ext2_read_block(struct ext2_info *fs, u64 block, unsigned char *buf)
 	return ret;
 }
 
-int ext2_write_block(struct ext2_info *fs, u64 block, unsigned char *buf)
+int ext2_write_block(struct ext2_info *fs, uint64_t block, unsigned char *buf)
 {
 	off_t off = block * ext2_sb_blocksize(fs->sb);// + fs->block*512;
 	//mutex_on(&fs->ac_lock);

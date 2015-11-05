@@ -3,38 +3,16 @@
 
 #include <stdint.h>
 
-typedef unsigned int   u32;
-typedef          int   s32;
-typedef unsigned long long   u64;
-typedef          long long   s64;
-typedef unsigned short u16;
-typedef          short s16;
-typedef unsigned char  u8;
-typedef          char  s8;
+typedef uint64_t addr_t;
 
-typedef u64 addr_t;
-
-typedef unsigned int   uint32;
-typedef          int   sint32;
-typedef unsigned long long   uint64;
-typedef          long long   sint64;
-typedef unsigned short uint16;
-typedef          short sint16;
-typedef unsigned char  uint8;
-typedef          char  sint8;
-
-/* TODO: use standard types (this isn't one of them)*/
-typedef          int   sint32_t;
-typedef          int   sint64_t;
-
-typedef s64 off_t;
-typedef u64 size_t;
-typedef s64 ssize_t;
-typedef s32 uid_t;
-typedef s32 gid_t;
-typedef s32 dev_t;
+typedef int64_t off_t;
+typedef uint64_t size_t;
+typedef int64_t ssize_t;
+typedef int32_t uid_t;
+typedef int32_t gid_t;
+typedef int32_t dev_t;
 /* internally we handle this as a 32-bit integer to allow for it to not fuck up system call registers */
-typedef u32 mode_t;
+typedef uint32_t mode_t;
 typedef signed long time_t;
 typedef long pid_t;
 #define NULL 0

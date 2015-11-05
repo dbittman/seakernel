@@ -103,8 +103,8 @@ typedef struct ext2_blockgroup {
 	uint32_t reserved[3];
 } __attribute__((packed)) ext2_blockgroup_t;
 
-int ext2_write_block(struct ext2_info *fs, u64 block, unsigned char *buf);
-int ext2_read_block(struct ext2_info *fs, u64 block, unsigned char *buf);
+int ext2_write_block(struct ext2_info *fs, uint64_t block, unsigned char *buf);
+int ext2_read_block(struct ext2_info *fs, uint64_t block, unsigned char *buf);
 
 int ext2_inode_readblk(ext2_inode_t* inode, uint32_t block, void* buf, size_t count);
 

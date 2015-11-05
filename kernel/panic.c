@@ -78,7 +78,7 @@ void panic(int flags, char *fmt, ...)
 		cpu_halt();
 }
 
-void panic_assert(const char *file, u32int line, const char *desc)
+void panic_assert(const char *file, uint32_t line, const char *desc)
 {
 	panic(PANIC_NOSYNC, "Internal inconsistancy (%s @ %d): %s\n", file, line, desc);
 }

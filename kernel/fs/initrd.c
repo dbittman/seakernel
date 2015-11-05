@@ -16,8 +16,8 @@ void fs_initrd_load(struct multiboot *mb)
 {
 	if(mb->mods_count > 0)
 	{
-		initrd_location = *(u32int*)(mb->mods_addr + MEMMAP_KERNEL_START);
-		initrd_end = *(u32int*)(mb->mods_addr+4 + MEMMAP_KERNEL_START);
+		initrd_location = *(uint32_t*)(mb->mods_addr + MEMMAP_KERNEL_START);
+		initrd_end = *(uint32_t*)(mb->mods_addr+4 + MEMMAP_KERNEL_START);
 		initrd_start_page = initrd_location & ~(PAGE_SIZE-1);
 		initrd_end_page = (initrd_end & ~(PAGE_SIZE-1)) + PAGE_SIZE;
 		/* Place the start of temporary usable memory to the end of the initrd */

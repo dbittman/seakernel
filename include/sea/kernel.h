@@ -46,7 +46,7 @@ extern _Atomic unsigned kernel_state_flags;
 
 void panic(int flags, char *fmt, ...);
 void kernel_reset();
-void panic_assert(const char *file, u32int line, const char *desc);
+void panic_assert(const char *file, uint32_t line, const char *desc);
 void kernel_poweroff();
 extern int april_fools;
 void do_reset();

@@ -12,15 +12,15 @@ idt_ptr_t   idt_ptr;
 void int_sys_init();
 tss_entry_t tss_entry;
 
-inline void set_kernel_stack(tss_entry_t *tss, u64int stack)
+inline void set_kernel_stack(tss_entry_t *tss, addr_t stack)
 {
 	tss->esp0 = stack & ~0xF; /* align 16 bytes */
 }
 
-void write_tss(gdt_entry_t *gdt, tss_entry_t *tss, s32int num, u16int ss0, u64int esp0)
+void write_tss(gdt_entry_t *gdt, tss_entry_t *tss, int32_t num, uint16_t ss0, addr_t esp0)
 {
-	u64int base = (u64int)tss;
-	u32int limit = sizeof(tss_entry_t);
+	uint64_t base = (uint64_t)tss;
+	uint32_t limit = sizeof(tss_entry_t);
 	gdt_set_gate(gdt, num, base, limit, 0xE9, 0);
 	/* TSS in x86_64 takes up two descriptors, with the lower 4 bytes of the next
 	 * one being the remaining 32 bits of the base address */
@@ -36,16 +36,16 @@ void init_gdt(gdt_entry_t *gdt, gdt_ptr_t *ptr)
 {
 	memset(gdt, 0, (sizeof(gdt_entry_t) * NUM_GDT_ENTRIES));
 	ptr->limit = (sizeof(gdt_entry_t) * NUM_GDT_ENTRIES) - 1;
-	ptr->base  = (u64int)gdt;
+	ptr->base  = (uint64_t)gdt;
 	gdt_set_gate(gdt, 0, 0, 0, 0, 0);            // Null segment
 	gdt_set_gate(gdt, 1, 0, 0xFFFFF, 0x9A, 0xA); // Code segment
 	gdt_set_gate(gdt, 2, 0, 0xFFFFF, 0x92, 0xA); // Data segment
 	gdt_set_gate(gdt, 3, 0, 0xFFFFF, 0xFA, 0xA); // User mode code segment
 	gdt_set_gate(gdt, 4, 0, 0xFFFFF, 0xF2, 0xA); // User mode data segment
-	gdt_flush((u64int)ptr);
+	gdt_flush((uint64_t)ptr);
 }
 
-void gdt_set_gate(gdt_entry_t *gdt, s32int num, u32int base, u32int limit, u8int access, u8int gran)
+void gdt_set_gate(gdt_entry_t *gdt, int32_t num, uint32_t base, uint32_t limit, uint8_t access, uint8_t gran)
 {
 	gdt[num].base_low    = (base & 0xFFFF);
 	gdt[num].base_middle = (base >> 16) & 0xFF;
@@ -119,75 +119,75 @@ void init_pic(void)
 static void init_idt(void)
 {
 	idt_ptr.limit = sizeof(idt_entry_t) * 256 -1;
-	idt_ptr.base  = (u64int)&idt_entries;
+	idt_ptr.base  = (uint64_t)&idt_entries;
 	memset(&idt_entries, 0, sizeof(idt_entry_t)*256);
-	idt_set_gate( 0, (u64int)isr0 , 0x08, 0x8E);
-	idt_set_gate( 1, (u64int)isr1 , 0x08, 0x8E);
-	idt_set_gate( 2, (u64int)isr2 , 0x08, 0x8E);
-	idt_set_gate( 3, (u64int)isr3 , 0x08, 0x8E);
-	idt_set_gate( 4, (u64int)isr4 , 0x08, 0x8E);
-	idt_set_gate( 5, (u64int)isr5 , 0x08, 0x8E);
-	idt_set_gate( 6, (u64int)isr6 , 0x08, 0x8E);
-	idt_set_gate( 7, (u64int)isr7 , 0x08, 0x8E);
-	idt_set_gate( 8, (u64int)isr8 , 0x08, 0x8E);
-	idt_set_gate( 9, (u64int)isr9 , 0x08, 0x8E);
-	idt_set_gate(10, (u64int)isr10, 0x08, 0x8E);
-	idt_set_gate(11, (u64int)isr11, 0x08, 0x8E);
-	idt_set_gate(12, (u64int)isr12, 0x08, 0x8E);
-	idt_set_gate(13, (u64int)isr13, 0x08, 0x8E);
-	idt_set_gate(14, (u64int)isr14, 0x08, 0x8E);
-	idt_set_gate(15, (u64int)isr15, 0x08, 0x8E);
-	idt_set_gate(16, (u64int)isr16, 0x08, 0x8E);
-	idt_set_gate(17, (u64int)isr17, 0x08, 0x8E);
-	idt_set_gate(18, (u64int)isr18, 0x08, 0x8E);
-	idt_set_gate(19, (u64int)isr19, 0x08, 0x8E);
-	idt_set_gate(20, (u64int)isr20, 0x08, 0x8E);
-	idt_set_gate(21, (u64int)isr21, 0x08, 0x8E);
-	idt_set_gate(22, (u64int)isr22, 0x08, 0x8E);
-	idt_set_gate(23, (u64int)isr23, 0x08, 0x8E);
-	idt_set_gate(24, (u64int)isr24, 0x08, 0x8E);
-	idt_set_gate(25, (u64int)isr25, 0x08, 0x8E);
-	idt_set_gate(26, (u64int)isr26, 0x08, 0x8E);
-	idt_set_gate(27, (u64int)isr27, 0x08, 0x8E);
-	idt_set_gate(28, (u64int)isr28, 0x08, 0x8E);
-	idt_set_gate(29, (u64int)isr29, 0x08, 0x8E);
-	idt_set_gate(30, (u64int)isr30, 0x08, 0x8E);
-	idt_set_gate(31, (u64int)isr31, 0x08, 0x8E);
+	idt_set_gate( 0, (uint64_t)isr0 , 0x08, 0x8E);
+	idt_set_gate( 1, (uint64_t)isr1 , 0x08, 0x8E);
+	idt_set_gate( 2, (uint64_t)isr2 , 0x08, 0x8E);
+	idt_set_gate( 3, (uint64_t)isr3 , 0x08, 0x8E);
+	idt_set_gate( 4, (uint64_t)isr4 , 0x08, 0x8E);
+	idt_set_gate( 5, (uint64_t)isr5 , 0x08, 0x8E);
+	idt_set_gate( 6, (uint64_t)isr6 , 0x08, 0x8E);
+	idt_set_gate( 7, (uint64_t)isr7 , 0x08, 0x8E);
+	idt_set_gate( 8, (uint64_t)isr8 , 0x08, 0x8E);
+	idt_set_gate( 9, (uint64_t)isr9 , 0x08, 0x8E);
+	idt_set_gate(10, (uint64_t)isr10, 0x08, 0x8E);
+	idt_set_gate(11, (uint64_t)isr11, 0x08, 0x8E);
+	idt_set_gate(12, (uint64_t)isr12, 0x08, 0x8E);
+	idt_set_gate(13, (uint64_t)isr13, 0x08, 0x8E);
+	idt_set_gate(14, (uint64_t)isr14, 0x08, 0x8E);
+	idt_set_gate(15, (uint64_t)isr15, 0x08, 0x8E);
+	idt_set_gate(16, (uint64_t)isr16, 0x08, 0x8E);
+	idt_set_gate(17, (uint64_t)isr17, 0x08, 0x8E);
+	idt_set_gate(18, (uint64_t)isr18, 0x08, 0x8E);
+	idt_set_gate(19, (uint64_t)isr19, 0x08, 0x8E);
+	idt_set_gate(20, (uint64_t)isr20, 0x08, 0x8E);
+	idt_set_gate(21, (uint64_t)isr21, 0x08, 0x8E);
+	idt_set_gate(22, (uint64_t)isr22, 0x08, 0x8E);
+	idt_set_gate(23, (uint64_t)isr23, 0x08, 0x8E);
+	idt_set_gate(24, (uint64_t)isr24, 0x08, 0x8E);
+	idt_set_gate(25, (uint64_t)isr25, 0x08, 0x8E);
+	idt_set_gate(26, (uint64_t)isr26, 0x08, 0x8E);
+	idt_set_gate(27, (uint64_t)isr27, 0x08, 0x8E);
+	idt_set_gate(28, (uint64_t)isr28, 0x08, 0x8E);
+	idt_set_gate(29, (uint64_t)isr29, 0x08, 0x8E);
+	idt_set_gate(30, (uint64_t)isr30, 0x08, 0x8E);
+	idt_set_gate(31, (uint64_t)isr31, 0x08, 0x8E);
 	
-	idt_set_gate(32, (u64int)irq0, 0x08, 0x8E);
-	idt_set_gate(33, (u64int)irq1, 0x08, 0x8E);
-	idt_set_gate(34, (u64int)irq2, 0x08, 0x8E);
-	idt_set_gate(35, (u64int)irq3, 0x08, 0x8E);
-	idt_set_gate(36, (u64int)irq4, 0x08, 0x8E);
-	idt_set_gate(37, (u64int)irq5, 0x08, 0x8E);
-	idt_set_gate(38, (u64int)irq6, 0x08, 0x8E);
-	idt_set_gate(39, (u64int)irq7, 0x08, 0x8E);
-	idt_set_gate(40, (u64int)irq8, 0x08, 0x8E);
-	idt_set_gate(41, (u64int)irq9, 0x08, 0x8E);
-	idt_set_gate(42, (u64int)irq10, 0x08, 0x8E);
-	idt_set_gate(43, (u64int)irq11, 0x08, 0x8E);
-	idt_set_gate(44, (u64int)irq12, 0x08, 0x8E);
-	idt_set_gate(45, (u64int)irq13, 0x08, 0x8E);
-	idt_set_gate(46, (u64int)irq14, 0x08, 0x8E);
-	idt_set_gate(47, (u64int)irq15, 0x08, 0x8E);
+	idt_set_gate(32, (uint64_t)irq0, 0x08, 0x8E);
+	idt_set_gate(33, (uint64_t)irq1, 0x08, 0x8E);
+	idt_set_gate(34, (uint64_t)irq2, 0x08, 0x8E);
+	idt_set_gate(35, (uint64_t)irq3, 0x08, 0x8E);
+	idt_set_gate(36, (uint64_t)irq4, 0x08, 0x8E);
+	idt_set_gate(37, (uint64_t)irq5, 0x08, 0x8E);
+	idt_set_gate(38, (uint64_t)irq6, 0x08, 0x8E);
+	idt_set_gate(39, (uint64_t)irq7, 0x08, 0x8E);
+	idt_set_gate(40, (uint64_t)irq8, 0x08, 0x8E);
+	idt_set_gate(41, (uint64_t)irq9, 0x08, 0x8E);
+	idt_set_gate(42, (uint64_t)irq10, 0x08, 0x8E);
+	idt_set_gate(43, (uint64_t)irq11, 0x08, 0x8E);
+	idt_set_gate(44, (uint64_t)irq12, 0x08, 0x8E);
+	idt_set_gate(45, (uint64_t)irq13, 0x08, 0x8E);
+	idt_set_gate(46, (uint64_t)irq14, 0x08, 0x8E);
+	idt_set_gate(47, (uint64_t)irq15, 0x08, 0x8E);
 	/* let the 0xFF vector be the 'spurious' vector. We iret immediately,
 	 * thus ignoring this interrupt. APIC, for example, needs this */
-	idt_set_gate(0xFF, (u64int)isr_ignore, 0x08, 0x8E);
+	idt_set_gate(0xFF, (uint64_t)isr_ignore, 0x08, 0x8E);
 	/* 0x80 is syscall */
-	idt_set_gate(0x80, (u64int)isr80, 0x08, 0x8E);
+	idt_set_gate(0x80, (uint64_t)isr80, 0x08, 0x8E);
 #if CONFIG_SMP
-	idt_set_gate(IPI_PANIC, (u64int)ipi_panic, 0x08, 0x8E);
-	idt_set_gate(IPI_TLB, (u64int)ipi_tlb, 0x08, 0x8E);
-	idt_set_gate(IPI_TLB_ACK, (u64int)ipi_tlb_ack, 0x08, 0x8E);
-	idt_set_gate(IPI_SHUTDOWN, (u64int)ipi_shutdown, 0x08, 0x8E);
-	idt_set_gate(IPI_DEBUG, (u64int)ipi_debug, 0x08, 0x8E);
-	idt_set_gate(IPI_SCHED, (u64int)ipi_sched, 0x08, 0x8E);
+	idt_set_gate(IPI_PANIC, (uint64_t)ipi_panic, 0x08, 0x8E);
+	idt_set_gate(IPI_TLB, (uint64_t)ipi_tlb, 0x08, 0x8E);
+	idt_set_gate(IPI_TLB_ACK, (uint64_t)ipi_tlb_ack, 0x08, 0x8E);
+	idt_set_gate(IPI_SHUTDOWN, (uint64_t)ipi_shutdown, 0x08, 0x8E);
+	idt_set_gate(IPI_DEBUG, (uint64_t)ipi_debug, 0x08, 0x8E);
+	idt_set_gate(IPI_SCHED, (uint64_t)ipi_sched, 0x08, 0x8E);
 #endif
 
-	idt_flush((u64int)&idt_ptr);
+	idt_flush((uint64_t)&idt_ptr);
 }
 
-void idt_set_gate(u8int num, u64int base, u16int sel, u8int flags)
+void idt_set_gate(uint8_t num, addr_t base, uint16_t sel, uint8_t flags)
 {
 	idt_entries[num].base_lo = base & 0xFFFF;
 	idt_entries[num].base_mid = (base >> 16) & 0xFFFF;
@@ -204,7 +204,7 @@ void load_tables_ap(struct cpu *cpu)
 	init_gdt(cpu->arch_cpu_data.gdt, &cpu->arch_cpu_data.gdt_ptr);
 	/* don't init the IDT again, just flush it into the current processor.
 	 * if init_idt is called, this can cause random GPF */
-	idt_flush((u64int)&idt_ptr);
+	idt_flush((uint64_t)&idt_ptr);
 	memcpy(&(cpu->arch_cpu_data.idt_ptr), &idt_ptr, sizeof(idt_ptr));
 	write_tss(cpu->arch_cpu_data.gdt, &cpu->arch_cpu_data.tss, 5, 0x10, 0x0);
 	tss_flush();

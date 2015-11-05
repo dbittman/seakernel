@@ -27,7 +27,7 @@ void arch_cpu_timer_install(int hz);
 void cpu_timer_install(int hz);
 
 int cpu_interrupt_register_handler(int num, void (*fn)(struct registers *, int, int));
-void cpu_interrupt_unregister_handler(u8int n, int id);
+void cpu_interrupt_unregister_handler(uint8_t n, int id);
 void cpu_interrupt_schedule_stage2(struct async_call *call);
 
 void interrupt_init();

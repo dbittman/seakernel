@@ -83,7 +83,7 @@ int cpu_interrupt_register_handler(int num, void (*fn)(struct registers *, int, 
 	return i;
 }
 
-void cpu_interrupt_unregister_handler(u8int n, int id)
+void cpu_interrupt_unregister_handler(uint8_t n, int id)
 {
 	mutex_acquire(&isr_lock);
 	if(!interrupt_handlers[n][id].fn)

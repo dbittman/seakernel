@@ -11,10 +11,10 @@
 void arch_cpu_timer_install(int hz)
 {
 	cpu_interrupt_register_handler(IRQ0, &tm_timer_handler);
-	u32int divisor = 1193180 / hz;
+	uint32_t divisor = 1193180 / hz;
 	outb(0x43, 0x36);
-	u8int l = (u8int)(divisor & 0xFF);
-	u8int h = (u8int)( (divisor>>8) & 0xFF );
+	uint8_t l = (uint8_t)(divisor & 0xFF);
+	uint8_t h = (uint8_t)( (divisor>>8) & 0xFF );
 	outb(0x40, l);
 	outb(0x40, h);
 }

@@ -42,7 +42,7 @@ void console_create(struct vterm *con)
 	con->term.c_oflag=OPOST | ONLCR;
 	con->term.c_iflag=ICRNL;
 	mutex_create(&con->wlock, 0);
-	blocklist_create(&con->input_block, 0);
+	blocklist_create(&con->input_block, 0, "console");
 	con->flag=1;
 }
 

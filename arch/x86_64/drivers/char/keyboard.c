@@ -287,63 +287,70 @@ void keyboard_int_stage1(struct registers *regs, int int_no, int flags)
 	return;
 }
 
+static int __conditionally_subtract(int *ptr)
+{
+	int old = *ptr;
+	int new = old - 1;
+	if(new < 0)
+		return -1;
+	if(atomic_compare_exchange_strong(ptr, &old, new))
+		return new;
+	return -1;
+}
+
 void keyboard_int_stage2(unsigned long __int_no)
 {
-	/* TODO: read all the keys in the stack */
-	int x = atomic_fetch_sub(&ks_idx, 1)-1;
-	if(x < 0) {
-		ks_idx=0;
-		return;
+	int x;
+	while((x = __conditionally_subtract(&ks_idx)) != -1) {
+		unsigned char scancode = key_stack[x];
+		last_sc = scancode;
+		int release = (scancode > 127) ? 1 : 0;
+		if(release) scancode -= 128;
+		unsigned short *map = get_keymap(is_shift, is_alt, is_ctrl, is_altgr);
+		if(!release)
+			if(try_console_switch(scancode))
+				continue;
+		if(!map)
+			continue;
+		unsigned code = map[scancode];
+		int type = code >> 8;
+		if(type > 0xF0 && (type-0xF0) == 0xb)
+		{
+			map = get_keymap(is_shift ^ capslock, is_alt, is_ctrl, is_altgr);
+			code = map[scancode];
+			type = code >> 8;
+		}
+		int value = code & 0xFF;
+		if(type < 0xF0) {
+			if (!release)
+				to_utf8(code);
+			continue;
+		}
+		type -= 0xF0;
+		switch(type)
+		{
+			case 0: /* Keys like numbers, don't respond to capslock key */
+				norm_keys(value, release);
+				break;
+			case 1: /* F1 - F12 */
+				function_keys(value, release);
+				break;
+			case 2: /* Enter, etc */
+				control_keys(value, release);
+				break;
+			case 3: /* Arrow, ins, del, etc */
+				special_keys(value, release);
+				break;
+			case 7: /* ctrl, alt, etc */
+				modifier_keys(value, release);
+				break;
+			case 0xb: /* A, B, C */
+				letter_keys(value, release);
+				break;
+			default:
+				if(!release) printk(0, "[keyboard]: unknown scancode: %d-> %x\n", scancode, (unsigned)code);
+		}
 	}
-	unsigned char scancode = key_stack[x];
-	last_sc = scancode;
-	int release = (scancode > 127) ? 1 : 0;
-	if(release) scancode -= 128;
-	unsigned short *map = get_keymap(is_shift, is_alt, is_ctrl, is_altgr);
-	if(!release)
-		if(try_console_switch(scancode))
-			return;
-	if(!map)
-		return;
-	unsigned code = map[scancode];
-	int type = code >> 8;
-	if(type > 0xF0 && (type-0xF0) == 0xb)
-	{
-		map = get_keymap(is_shift ^ capslock, is_alt, is_ctrl, is_altgr);
-		code = map[scancode];
-		type = code >> 8;
-	}
-	int value = code & 0xFF;
-	if(type < 0xF0) {
-		if (!release)
-			to_utf8(code);
-		return;
-	}
-	type -= 0xF0;
-	switch(type)
-	{
-		case 0: /* Keys like numbers, don't respond to capslock key */
-			norm_keys(value, release);
-			break;
-		case 1: /* F1 - F12 */
-			function_keys(value, release);
-			break;
-		case 2: /* Enter, etc */
-			control_keys(value, release);
-			break;
-		case 3: /* Arrow, ins, del, etc */
-			special_keys(value, release);
-			break;
-		case 7: /* ctrl, alt, etc */
-			modifier_keys(value, release);
-			break;
-		case 0xb: /* A, B, C */
-			letter_keys(value, release);
-			break;
-		default:
-			if(!release) printk(0, "[keyboard]: unknown scancode: %d-> %x\n", scancode, (unsigned)code);
-	}
-	return;
 }
 
 void set_keymap_callback(addr_t ptr)

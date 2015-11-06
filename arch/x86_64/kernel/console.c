@@ -3,7 +3,7 @@
 #include <sea/tty/terminal.h>
 #include <sea/mm/vmm.h>
 extern struct console_driver crtc_drv;
-#define VIDEO_MEMORY (0xb8000 + MEMMAP_KERNEL_START) //TODO: audit all references to this...
+#define VIDEO_MEMORY (0xb8000 + MEMMAP_KERNEL_START)
 
 void arch_console_init_stage1(void)
 {

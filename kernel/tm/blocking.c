@@ -8,11 +8,12 @@
 #include <sea/errno.h>
 #include <sea/tm/timing.h>
 #include <sea/kobj.h>
-struct blocklist *blocklist_create(struct blocklist *list, int flags)
+struct blocklist *blocklist_create(struct blocklist *list, int flags, const char *name)
 {
 	KOBJ_CREATE(list, flags, BLOCKLIST_ALLOC);
 	linkedlist_create(&list->list, LINKEDLIST_LOCKLESS);
 	spinlock_create(&list->lock);
+	list->name = name;
 	return list;
 }
 

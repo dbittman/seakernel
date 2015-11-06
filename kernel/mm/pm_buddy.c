@@ -7,13 +7,12 @@
 #include <sea/lib/stack.h>
 #define IS_POWER2(x) ((x != 0) && ((x & (~x + 1)) == x))
 
-#define MAX_PHYS_MEM 0x1000000000
 #define MIN_PHYS_MEM 0
 
-#define MEMORY_SIZE (MAX_PHYS_MEM - MIN_PHYS_MEM)
-#define MAX_ORDER 21
-#define MIN_SIZE 0x1000
+#define MAX_ORDER 20
+#define MIN_SIZE PAGE_SIZE
 #define MAX_SIZE ((addr_t)MIN_SIZE << MAX_ORDER)
+#define MEMORY_SIZE (MAX_SIZE - MIN_PHYS_MEM)
 
 #define NOT_FREE (-1)
 struct mutex pm_buddy_mutex;

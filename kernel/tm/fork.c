@@ -207,7 +207,7 @@ static struct process *tm_process_copy(int flags, struct thread *newthread)
 	tm_process_inc_reference(current_process);
 	newp->parent = current_process;
 	linkedlist_create(&newp->threadlist, 0);
-	blocklist_create(&newp->waitlist, 0);
+	blocklist_create(&newp->waitlist, 0, "process-waitlist");
 	linkedlist_create(&newp->mappings, LINKEDLIST_LOCKLESS);
 	mutex_create(&newp->map_lock, 0); /* we need to lock this during page faults */
 	mutex_create(&newp->stacks_lock, 0);

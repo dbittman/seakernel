@@ -12,7 +12,7 @@ struct ioreq *ioreq_create(struct blockdevice *bd, dev_t dev, int direction, uin
 	req->flags = 0;
 	req->refs = 1;
 	req->dev = dev; // TODO: get rid of dev;
-	blocklist_create(&req->blocklist, 0);
+	blocklist_create(&req->blocklist, 0, "ioreq");
 	return req;
 }
 

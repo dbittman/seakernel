@@ -71,7 +71,7 @@ static void __print_thread(struct thread *thr, int trace)
 	printk_safe(5, "    sig_mask:           %x\n", thr->sig_mask);
 	printk_safe(5, "    signals_pending:    %x\n", thr->signals_pending);
 	printk_safe(5, "    signal:             %d\n", thr->signal);
-	printk_safe(5, "    blocklist:          %x\n", thr->blocklist);
+	printk_safe(5, "    blocklist:          %x (%s)\n", thr->blocklist, thr->blocklist ? thr->blocklist->name : "none");
 	if(thr->regs) {
 		printk_safe(5, "    regs->int_no        %d\n", thr->regs->int_no);
 		printk_safe(5, "    regs->eip           %x\n", thr->regs->eip);

@@ -16,8 +16,8 @@ struct pipe *fs_pipe_create (void)
 	pipe->length = PIPE_SIZE;
 	pipe->buffer = (char *)kmalloc(PIPE_SIZE);
 	mutex_create(&pipe->lock, 0);
-	blocklist_create(&pipe->read_blocked, 0);
-	blocklist_create(&pipe->write_blocked, 0);
+	blocklist_create(&pipe->read_blocked, 0, "pipe-read");
+	blocklist_create(&pipe->write_blocked, 0, "pipe-write");
 	return pipe;
 }
 

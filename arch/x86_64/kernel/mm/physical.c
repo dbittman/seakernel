@@ -18,4 +18,3 @@ void arch_mm_physical_memcpy(void *dest, void *src, size_t length, int mode)
 	memcpy((void *)startd, (void *)starts, length);
 }
 
-

@@ -97,9 +97,9 @@ struct mutex *mutex_create(struct mutex *m, unsigned flags)
 		memset(m, 0, sizeof(struct mutex));
 		m->flags=flags;
 	}
-	m->lock=ATOMIC_VAR_INIT(0);
+	m->lock = ATOMIC_VAR_INIT(0);
 	m->magic = MUTEX_MAGIC;
-	blocklist_create(&m->blocklist, 0);
+	blocklist_create(&m->blocklist, 0, "mutex");
 	return m;
 }
 

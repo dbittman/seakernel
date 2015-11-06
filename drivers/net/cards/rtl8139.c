@@ -180,7 +180,7 @@ int rtl8139_init(rtl8139dev_t *dev)
 	for(int i=0;i<4;i++) {
 		dev->tx_buffer[i].p.size = 0x1000;
 		dev->tx_buffer[i].p.alignment = 0x1000;
-		if(mm_allocate_dma_buffer(&dev->tx_buffer[0]) == -1)
+		if(mm_allocate_dma_buffer(&dev->tx_buffer[i]) == -1)
 			return -1;
 	}
 	dev->tx_num = 0;
@@ -258,6 +258,7 @@ int rtl8139_transmit_packet(struct net_dev *nd, struct net_packet *packets, int 
 			break;
 		cpu_pause();
 	}
+	printk(0, "memcpy %d: %x <- %x, for %d\n", dev->tx_num, dev->tx_buffer[dev->tx_num].v, packets[0].data, packets[0].length);
 	memcpy((void *)dev->tx_buffer[dev->tx_num].v, packets[0].data, packets[0].length);
 	if(packets[0].length < 0x1000)
 		memset((void *)(dev->tx_buffer[dev->tx_num].v + packets[0].length), 0, 0x1000 - packets[0].length);

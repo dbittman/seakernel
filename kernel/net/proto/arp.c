@@ -66,12 +66,13 @@ static int __arp_convert_af(int etype)
 static struct arp_entry *__arp_get_outstanding_requests_entry(int prot_type, uint16_t addr[2], int check_time, int remove)
 {
 	mutex_acquire(outlock);
-	struct linkedentry *node;
+	struct linkedentry *node, *next;
 	struct arp_entry *entry;
 	for(node = linkedlist_iter_start(outstanding);
 			node != linkedlist_iter_end(outstanding);
-			node = linkedlist_iter_next(node)) {
+			node = next) {
 		entry = linkedentry_obj(node);
+		next = linkedlist_iter_next(node);
 		if(check_time && (tm_timing_get_microseconds() > (entry->timestamp + ONE_SECOND))) {
 			linkedlist_remove(outstanding, &entry->node);
 			kfree(entry);

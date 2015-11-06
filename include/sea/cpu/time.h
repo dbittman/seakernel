@@ -16,10 +16,10 @@ struct tm
 	int	tm_yday;
 	int	tm_isdst;
 };
-
+typedef long suseconds_t;
 struct timeval {
-	int tv_sec;
-	int tv_usec;
+	time_t tv_sec;
+	suseconds_t tv_usec;
 };
 
 struct tms {

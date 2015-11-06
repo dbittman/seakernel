@@ -52,9 +52,6 @@ struct socket *socket_create(int *errcode)
 static struct socket *get_socket(int fd, int *err)
 {
 	*err = 0;
-	printk(0, "get socket %d\n", fd);
-	if(fd > 100)
-		panic(0, "");
 	struct file *f = fs_get_file_pointer(current_process, fd);
 	if(!f) {
 		*err = -EBADF;
@@ -371,7 +368,6 @@ int sys_getsockname(int socket, struct sockaddr *restrict address,
 int sys_recvfrom(int socketfd, struct socket_fromto_info *m)
 {
 	int err;
-	printk(0, ": %x %d %d %d\n", m, (int)m->sock, sizeof(*m), socketfd);
 	struct socket *sock = get_socket(m->sock, &err);
 	if(!sock)
 		return err;

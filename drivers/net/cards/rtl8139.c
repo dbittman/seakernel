@@ -258,7 +258,6 @@ int rtl8139_transmit_packet(struct net_dev *nd, struct net_packet *packets, int 
 			break;
 		cpu_pause();
 	}
-	printk(0, "memcpy %d: %x <- %x, for %d\n", dev->tx_num, dev->tx_buffer[dev->tx_num].v, packets[0].data, packets[0].length);
 	memcpy((void *)dev->tx_buffer[dev->tx_num].v, packets[0].data, packets[0].length);
 	if(packets[0].length < 0x1000)
 		memset((void *)(dev->tx_buffer[dev->tx_num].v + packets[0].length), 0, 0x1000 - packets[0].length);

@@ -77,7 +77,7 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 	struct net_dev *nd;
 	union ipv4_address packet_destination;
 	union ipv4_address dest = (union ipv4_address)packet->header->dest_ip;
-	
+	TRACE_MSG("ipv4", "send packet %x\n", packet->netpacket);
 	if(packet->tries > 0 && (tm_timing_get_microseconds() <= packet->last_attempt_time)) {
 		ipv4_do_enqueue_packet(packet);
 		return 0;
@@ -96,6 +96,7 @@ static int ipv4_send_packet(struct ipv4_packet *packet)
 	} else {
 		packet_destination = dest;
 	}
+
 	union ipv4_address ifaddr;
 	struct sockaddr s;
 	net_iface_get_netaddr(nd, AF_INET, &s);
@@ -236,7 +237,7 @@ int ipv4_enqueue_sockaddr(void *payload, size_t len, struct sockaddr *addr, stru
 	packet->enqueue_time = tm_timing_get_microseconds();
 	packet->header = header;
 	packet->netpacket = np;
-	TRACE_MSG("ipv4", "[ipv4]: enqueue packet to %x\n", header->dest_ip);
+	TRACE_MSG("ipv4", "[ipv4]: enqueue packet %x to %x\n", np, header->dest_ip);
 	ipv4_do_enqueue_packet(packet);
 	return 0;
 }

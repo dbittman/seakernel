@@ -117,6 +117,8 @@ int sys_setup(int a)
 	ramfs_mount(fs);
 	/* TODO: general read only FS stuff */
 	current_process->root = fs_read_root_inode(fs);
+	if(!current_process->root)
+		panic(0, "failed to read root filesystem");
 	vfs_inode_get(current_process->root);
 	current_process->cwd = current_process->root;
 	fs_initrd_parse();

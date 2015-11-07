@@ -136,6 +136,10 @@ struct dirent *fs_do_path_resolve(struct inode *start, const char *path, int sym
 						return 0;
 					}
 					nextnode = fs_resolve_mount(nextnode);
+					if(!nextnode) {
+						vfs_icache_put(node);
+						return 0;
+					}
 				}
 			}
 			vfs_icache_put(node);
@@ -225,6 +229,8 @@ struct inode *fs_path_resolve_create_get(const char *path,
 		if(dirent)
 			*dirent = test;
 		struct inode *ret = fs_dirent_readinode(test, true);
+		if(ret)	
+			ret = fs_resolve_mount(ret);
 		if(!ret) {
 			if(dirent)
 				*dirent = 0;
@@ -232,7 +238,6 @@ struct inode *fs_path_resolve_create_get(const char *path,
 				*result = -EIO;
 			vfs_dirent_release(test);
 		} else {
-			ret = fs_resolve_mount(ret);
 			if(!dirent)
 				vfs_dirent_release(test);
 			if(result)
@@ -265,6 +270,11 @@ struct inode *fs_path_resolve_create_get(const char *path,
 
 	/* step 4b: read in that inode, and set some initial values (like creation time) */
 	struct inode *node = vfs_icache_get(dir->filesystem, id);
+	if(!node) {
+		vfs_icache_put(dir);
+		if(result) *result = -EIO;
+		return 0;
+	}
 	node->mode = mode;
 	node->length = 0;
 	node->ctime = node->mtime = time_get_epoch();

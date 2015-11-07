@@ -57,8 +57,9 @@ int kerfs_mount_report(int direction, void *param, size_t size, size_t offset, s
 struct inode *fs_read_root_inode(struct filesystem *fs)
 {
 	struct inode *node = vfs_icache_get(fs, fs->root_inode_id);
-	assert(node);
-	assert(node->filesystem);
+	if(!node) {
+		printk(KERN_ERROR, "failed to read root inode of filesystem %d\n", fs->id);
+	}
 	return node;
 }
 

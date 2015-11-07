@@ -50,6 +50,19 @@ long sys_ptrace_thread(enum __ptrace_request request, pid_t tid, void *addr, voi
 		return -ESRCH;
 	}
 	switch(request) {
+		case PTRACE_ATTACH:
+			if(tracee->process->real_uid != current_process->real_uid
+					&& current_process->real_uid > 0) {
+				ret = -EPERM;
+				break;
+			}
+			tm_thread_inc_reference(current_thread);
+			tracee->tracer = current_thread;
+			tm_thread_raise_flag(tracee, THREAD_PTRACED);
+			TRACE_MSG("ptrace", "thread %d set to be traced by %d (ATTACH)\n",
+					tracee->tid, current_thread->tid);
+			tm_signal_send_thread(tracee, SIGSTOP);
+			break;
 		case PTRACE_SYSCALL:
 			TRACE_MSG("ptrace", "thread %d set to STOPON_SYSCALL mode by %d\n", tracee->tid, current_thread->tid);
 			spinlock_acquire(&tracee->status_lock);

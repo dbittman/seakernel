@@ -182,7 +182,7 @@ ssize_t sys_recv(int socket, void *buffer, size_t length, int flags);
 ssize_t sys_send(int socket, const void *buffer, size_t length, int flags);
 int sys_getsockname(int socket, struct sockaddr *restrict address,
 		socklen_t *restrict address_len);
-int sys_recvfrom(struct socket_fromto_info *m);
+int sys_recvfrom(int, struct socket_fromto_info *m);
 int sys_sendto(struct socket_fromto_info *m);
 int socket_select(struct file *file, int rw);
 void socket_bind(struct socket *sock, const struct sockaddr *address, socklen_t len);

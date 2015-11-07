@@ -365,7 +365,7 @@ int sys_getsockname(int socket, struct sockaddr *restrict address,
 	return 0;
 }
 
-int sys_recvfrom(struct socket_fromto_info *m)
+int sys_recvfrom(int socketfd, struct socket_fromto_info *m)
 {
 	int err;
 	struct socket *sock = get_socket(m->sock, &err);

@@ -332,9 +332,9 @@ int syscall_handler(struct registers *regs)
 #ifdef SC_DEBUG
 		if(current_process->tty == current_console->tty && SYSCALL_NUM_AND_RET != 0
 				&& (current_process->pid == 29 || 1))
-			printk(SC_DEBUG, "tty %d: syscall %d(%d) (from: %x): enter %d\n",
+			printk(SC_DEBUG, "tty %d: syscall %d(%d) (from: %x): enter %d %x\n",
 					current_process->tty, current_thread->tid, current_process->pid,
-					current_thread->regs->eip, SYSCALL_NUM_AND_RET);
+					current_thread->regs->eip, SYSCALL_NUM_AND_RET, _A_);
 #endif
 #ifdef SC_TIMING
 		int timer_did_start = timer_start(&systimers[SYSCALL_NUM_AND_RET]);

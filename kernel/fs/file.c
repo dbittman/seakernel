@@ -13,7 +13,8 @@
 #include <sea/fs/dir.h>
 static struct file_ptr *get_file_handle(struct process *t, int n)
 {
-	if(n >= FILP_HASH_LEN) return 0;
+	/* TODO: audit the entire kernel for overflow... */
+	if((unsigned)n >= FILP_HASH_LEN) return 0;
 	struct file_ptr *f = t->filp[n];
 	return f;
 }

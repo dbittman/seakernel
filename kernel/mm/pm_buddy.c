@@ -75,7 +75,6 @@ static addr_t __do_pmm_buddy_allocate(size_t length)
 	bitmap_set(bitmaps[order], bit);
 	num_allocated[order]++;
 
-
 	return address;
 }
 

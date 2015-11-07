@@ -104,6 +104,7 @@ void vfs_inode_get(struct inode *node)
 }
 
 /* read in an inode from the inode cache, OR pull it in from the FS */
+/* TODO: can this fail? */
 struct inode *vfs_icache_get(struct filesystem *fs, uint32_t num)
 {
 	/* create if it doesn't exist */

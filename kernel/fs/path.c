@@ -61,7 +61,7 @@ int fs_resolve_iter_symlink(struct dirent **dir, struct inode **node, int start_
 			vfs_dirent_release(olddir);
 			if(!newdir)
 				return err;
-			newnode = fs_dirent_readinode(newdir, 0);
+			newnode = fs_dirent_readinode(newdir, true);
 			if(!newnode) {
 				vfs_dirent_release(newdir);
 				return -EIO;
@@ -122,7 +122,7 @@ struct dirent *fs_do_path_resolve(struct inode *start, const char *path, int sym
 				return 0;
 			}
 			if(delim) {
-				nextnode = fs_dirent_readinode(dir, 0);
+				nextnode = fs_dirent_readinode(dir, true);
 				if(namelen == 2 && !strncmp("..", name, 2)
 						&& node->id == node->filesystem->root_inode_id) {
 					/* traverse back up through a mount */
@@ -173,7 +173,7 @@ struct inode *fs_path_resolve_inode(const char *path, int flags, int *error)
 	struct dirent *dir = fs_path_resolve(path, 0, error);
 	if(!dir)
 		return 0;
-	struct inode *node = fs_dirent_readinode(dir, (flags & RESOLVE_NOLINK));
+	struct inode *node = fs_dirent_readinode(dir, true);
 	if(!node) {
 		*error = -EIO;
 		vfs_dirent_release(dir);
@@ -224,7 +224,7 @@ struct inode *fs_path_resolve_create_get(const char *path,
 		/* if it was found, return it and its inode. */
 		if(dirent)
 			*dirent = test;
-		struct inode *ret = fs_dirent_readinode(test, flags & RESOLVE_NOLINK);
+		struct inode *ret = fs_dirent_readinode(test, true);
 		if(!ret) {
 			if(dirent)
 				*dirent = 0;

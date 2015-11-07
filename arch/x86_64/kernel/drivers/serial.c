@@ -8,7 +8,7 @@
 #include <sea/tm/process.h>
 #include <sea/tm/process.h>
 #include <sea/cpu/cpu-io.h>
-
+#include <sea/machine/bda-x86.h>
 #if DISABLE_SERIAL
 #define DS_RET return
 #else
@@ -19,10 +19,7 @@
 #define serial_transmit_empty(x) (inb(x+5)&0x20)
 
 static unsigned short ports[4] = {
-	0x3F8,
-	0x2F8,
-	0x3E8,
-	0x2E8
+	0,0,0,0
 };
 
 char arch_serial_received(int minor)
@@ -46,6 +43,8 @@ void arch_serial_write(int minor, char a)
 {
 	if(minor >= 4) return;
 	int p = ports[minor];
+	if(!p)
+		return;
 	while (serial_transmit_empty(p) == 0);
 	outb(p,a);
 }
@@ -54,15 +53,16 @@ char arch_serial_read(int minor)
 {
 	if(minor >= 4) return 0;
 	int p = ports[minor];
+	if(!p)
+		return 0;
 	while (serial_received(p) == 0);
 	return inb(p);
 }
 
 void arch_serial_init(int *serial_debug_port_minor, int *serial_enable)
 {
-	/* BIOS data area */
-	/* TODO */
-	int serial_debug_port = *(unsigned short *)(0x400 + MEMMAP_KERNEL_START);
+	int serial_debug_port = x86_bda->com0;
+	ports[0] = serial_debug_port;
 	if(serial_debug_port) {
 		init_serial_port(serial_debug_port);
 		int i;
@@ -76,3 +76,4 @@ void arch_serial_init(int *serial_debug_port_minor, int *serial_enable)
 		*serial_debug_port_minor = *serial_enable = 0;
 	}
 }
+

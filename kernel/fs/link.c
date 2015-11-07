@@ -16,9 +16,10 @@ static int do_fs_unlink(struct inode *node, const char *name, size_t namelen, in
 	struct dirent *dir = fs_dirent_lookup(node, name, namelen);
 	if(!dir)
 		return -ENOENT;
-	struct inode *target = fs_dirent_readinode(dir, 1);
-	if(rec && S_ISDIR(target->mode) && !fs_inode_dirempty(target)) {
-		vfs_icache_put(target);
+	struct inode *target = fs_dirent_readinode(dir, true);
+	if(!target || (rec && S_ISDIR(target->mode) && !fs_inode_dirempty(target))) {
+		if(target)
+			vfs_icache_put(target);
 		vfs_dirent_release(dir);
 		return -ENOTEMPTY;
 	}

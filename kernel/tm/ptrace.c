@@ -123,7 +123,6 @@ long sys_ptrace(enum __ptrace_request request, pid_t pid, void *addr, void *data
 	if(!proc) {
 		return -ESRCH;
 	}
-	/* TODO: permissions */
 
 	struct thread *t = tm_process_get_head_thread(proc);
 	pid_t tid = 0;

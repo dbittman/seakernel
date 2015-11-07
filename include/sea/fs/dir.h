@@ -43,7 +43,7 @@ int sys_getdents(int, struct dirent_posix *, unsigned int);
 int sys_mkdir(const char *path, mode_t mode);
 struct dirent *fs_dirent_lookup(struct inode *node, const char *name, size_t namelen);
 struct dirent *vfs_inode_get_dirent(struct inode *node, const char *name, int namelen);
-struct inode *fs_dirent_readinode(struct dirent *dir, int);
+struct inode *fs_dirent_readinode(struct dirent *dir, bool);
 struct dirent *vfs_dirent_create(struct inode *node);
 int vfs_dirent_release(struct dirent *dir);
 void vfs_dirent_destroy(struct dirent *dir);

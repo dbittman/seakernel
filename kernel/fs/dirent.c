@@ -4,6 +4,7 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/mm/reclaim.h>
 #include <sea/fs/dir.h>
+#include <sea/vsprintf.h>
 
 struct queue *dirent_lru;
 struct mutex *dirent_cache_lock;
@@ -45,17 +46,24 @@ int vfs_dirent_release(struct dirent *dir)
 	rwlock_acquire(&parent->lock, RWL_WRITER);
 	if(atomic_fetch_sub(&dir->count, 1) == 1) {
 		if(dir->flags & DIRENT_UNLINK) {
-			struct inode *target = fs_dirent_readinode(dir, 1);
-/* TODO: FIX HANDLING OF NULL RETURN FROM READINODE */
+			struct inode *target = fs_dirent_readinode(dir, false);
+			/* Well, sadly, target being null is a pretty bad thing,
+			 * but we can't panic, because the filesystem could be
+			 * set up to actually act like this... :( */
 			vfs_inode_del_dirent(parent, dir);
-			r = fs_callback_inode_unlink(parent, dir->name, dir->namelen, target);
-			if(!r) {
-				assert(target->nlink > 0);
-				atomic_fetch_sub(&target->nlink, 1);
-				if(!target->nlink && (target->flags & INODE_DIRTY))
-					vfs_inode_unset_dirty(target);
+			if(!target) {
+				printk(KERN_ERROR, "belated unlink failed to read target inode: %s - %d\n",
+						dir->name, dir->ino);
+			} else {
+				r = fs_callback_inode_unlink(parent, dir->name, dir->namelen, target);
+				if(!r) {
+					assert(target->nlink > 0);
+					atomic_fetch_sub(&target->nlink, 1);
+					if(!target->nlink && (target->flags & INODE_DIRTY))
+						vfs_inode_unset_dirty(target);
+				}
+				vfs_icache_put(target);
 			}
-			vfs_icache_put(target);
 			vfs_dirent_destroy(dir);
 		} else {
 			/* add to LRU */
@@ -147,14 +155,14 @@ struct dirent *fs_dirent_lookup(struct inode *node, const char *name, size_t nam
 
 /* this entry returns the inode pointed to by the given directory entry. It also
  * handles redirecting for symbolic links */
-struct inode *fs_dirent_readinode(struct dirent *dir, int nofollow)
+struct inode *fs_dirent_readinode(struct dirent *dir, bool perms)
 {
 	assert(dir);
-	if(!vfs_inode_check_permissions(dir->parent, MAY_EXEC, 0))
-		return 0;
-	struct inode *node = vfs_icache_get(dir->filesystem, dir->ino);
-	assert(node);
-	return node;
+	if(perms) {
+		if(!vfs_inode_check_permissions(dir->parent, MAY_EXEC, 0))
+			return 0;
+	}
+	return vfs_icache_get(dir->filesystem, dir->ino);
 }
 
 struct dirent *vfs_dirent_create(struct inode *node)

@@ -21,7 +21,7 @@ static struct inode *__fs_do_open_resolve__(char *path, int *err, struct dirent 
 	struct dirent *de = fs_path_resolve(path, 0, err);
 	if(!de)
 		return 0;
-	struct inode *node = fs_dirent_readinode(de, 0);
+	struct inode *node = fs_dirent_readinode(de, true);
 	if(!node) {
 		vfs_dirent_release(de);
 		*err = -EIO;

@@ -25,13 +25,13 @@ void tm_init_multitasking(void)
 {
 	printk(KERN_DEBUG, "[sched]: Starting multitasking system...\n");
 	
-	process_table = hash_create(0, 0, 1000);
+	process_table = hash_create(0, 0, 128);
 
 	process_list = linkedlist_create(0, LINKEDLIST_MUTEX);
 	mutex_create(&process_refs_lock, 0);
 	mutex_create(&thread_refs_lock, 0);
 	
-	thread_table = hash_create(0, 0, 1000 /* TODO: initial size */);
+	thread_table = hash_create(0, 0, 128);
 
 	struct thread *thread = kmalloc(sizeof(struct thread));
 	struct process *proc = kernel_process = kmalloc(sizeof(struct process));

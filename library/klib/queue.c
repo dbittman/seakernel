@@ -3,15 +3,11 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/kernel.h>
 #include <stdatomic.h>
+#include <sea/kobj.h>
 
 struct queue *queue_create(struct queue *q, int flags)
 {
-	if(!q) {
-		q = kmalloc(sizeof(struct queue));
-		q->flags = QUEUE_ALLOC | flags;
-	} else {
-		q->flags = flags;
-	}
+	KOBJ_CREATE(q, flags, QUEUE_ALLOC);
 	q->head = q->tail = 0;
 	q->count = ATOMIC_VAR_INIT(0);
 	mutex_create(&q->lock, 0);
@@ -112,7 +108,6 @@ void *queue_peek(struct queue *q)
 void queue_destroy(struct queue *q)
 {
 	mutex_destroy(&q->lock);
-	if(q->flags & QUEUE_ALLOC)
-		kfree(q);
+	KOBJ_DESTROY(q, QUEUE_ALLOC);
 }
 

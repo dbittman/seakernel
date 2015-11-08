@@ -7,15 +7,12 @@
 #include <sea/cpu/processor.h>
 #include <stdbool.h>
 #include <sea/vsprintf.h>
+#include <sea/kobj.h>
 static _Atomic uint32_t mean_difference = 0;
 static bool timers_calibrated = false;
 struct timer *timer_create(struct timer *t, int flags)
 {
-	if(!t) {
-		t = kmalloc(sizeof(struct timer));
-		t->flags = flags | TIMER_ALLOC;
-	} else
-		t->flags = flags;
+	KOBJ_CREATE(t, flags, TIMER_ALLOC);
 	t->magic = TIMER_MAGIC;
 	t->min = ~0;
 	return t;
@@ -24,8 +21,7 @@ struct timer *timer_create(struct timer *t, int flags)
 void timer_destroy(struct timer *t)
 {
 	assert(t && t->magic == TIMER_MAGIC);
-	if(t->flags & TIMER_ALLOC)
-		kfree(t);
+	KOBJ_DESTROY(t, TIMER_ALLOC);
 }
 
 int timer_start(struct timer *t)

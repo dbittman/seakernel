@@ -4,7 +4,7 @@
 #include <sea/mm/vmm.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
-
+#include <sea/kobj.h>
 /* this does, like, the opposite of mm_vm_map. Sometimes we want
  * to access a physical memory location (it's probably device memory)
  * from a virtual location. So, we request a virtual address to access
@@ -64,13 +64,7 @@ addr_t pmap_get_mapping(struct pmap *m, addr_t p)
 
 struct pmap *pmap_create(struct pmap *m, unsigned flags)
 {
-	if(!m) {
-		m = kmalloc(sizeof(struct pmap));
-		m->flags = PMAP_ALLOC | flags;
-	} else {
-		memset(m, 0, sizeof(struct pmap));
-		m->flags = flags;
-	}
+	KOBJ_CREATE(m, flags, PMAP_ALLOC);
 	m->magic = PMAP_MAGIC;
 	mutex_create(&m->lock, 0);
 	m->idx_max = PMAP_INITIAL_MAX;
@@ -86,7 +80,6 @@ void pmap_destroy(struct pmap *m)
 	kfree(m->virt);
 	kfree(m->phys);
 	m->magic = 0;
-	if(m->flags & PMAP_ALLOC)
-		kfree(m);
+	KOBJ_DESTROY(m, PMAP_ALLOC);
 }
 

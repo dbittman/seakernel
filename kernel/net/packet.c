@@ -12,14 +12,11 @@
 #include <sea/vsprintf.h>
 #include <stdatomic.h>
 #include <sea/trace.h>
+#include <sea/kobj.h>
+
 struct net_packet *net_packet_create(struct net_packet *packet, int flags)
 {
-	if(!packet) {
-		packet = kmalloc(sizeof(struct net_packet));
-		packet->flags = (flags | NP_FLAG_ALLOC);
-	} else {
-		packet->flags = flags;
-	}
+	KOBJ_CREATE(packet, flags, NP_FLAG_ALLOC);
 	TRACE_MSG("net.packet", "creating new packet %x\n", packet);
 	packet->count = 1;
 	packet->data_header = packet->data;
@@ -30,8 +27,7 @@ void net_packet_destroy(struct net_packet *packet)
 {
 	assert(packet->count == 0);
 	TRACE_MSG("net.packet", "destroying packet %x\n", packet);
-	if(packet->flags & NP_FLAG_ALLOC)
-		kfree(packet);
+	KOBJ_DESTROY(packet, NP_FLAG_ALLOC);
 }
 
 void net_packet_get(struct net_packet *packet)

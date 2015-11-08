@@ -8,14 +8,11 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/spinlock.h>
+#include <sea/kobj.h>
 
 struct tqueue *tqueue_create(struct tqueue *tq, unsigned flags)
 {
-	if(!tq) {
-		tq = (void *)kmalloc(sizeof(struct tqueue));
-		tq->flags = (TQ_ALLOC | flags);
-	} else
-		tq->flags=flags;
+	KOBJ_CREATE(tq, flags, TQ_ALLOC);
 	spinlock_create(&tq->lock);
 	linkedlist_create(&tq->tql, LINKEDLIST_LOCKLESS);
 	tq->num=0;
@@ -27,8 +24,7 @@ void tqueue_destroy(struct tqueue *tq)
 {
 	spinlock_destroy(&tq->lock);
 	linkedlist_destroy(&tq->tql);
-	if(tq->flags & TQ_ALLOC)
-		kfree(tq);
+	KOBJ_DESTROY(tq, TQ_ALLOC);
 }
 
 struct linkedentry *tqueue_insert(struct tqueue *tq, void *item, struct linkedentry *node)

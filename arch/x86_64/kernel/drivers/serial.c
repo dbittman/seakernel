@@ -65,12 +65,7 @@ void arch_serial_init(int *serial_debug_port_minor, int *serial_enable)
 	ports[0] = serial_debug_port;
 	if(serial_debug_port) {
 		init_serial_port(serial_debug_port);
-		int i;
-		for(i=0;i<4;i++) {
-			if(serial_debug_port == ports[i])
-				break;
-		}
-		*serial_debug_port_minor = i;
+		*serial_debug_port_minor = 0;
 		*serial_enable = 1;
 	} else {
 		*serial_debug_port_minor = *serial_enable = 0;

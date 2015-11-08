@@ -7,6 +7,7 @@
 #include <stdatomic.h>
 #include <sea/string.h>
 #include <sea/boot/init.h>
+#include <sea/kobj.h>
 
 static void __do_kthread_entry(void)
 {
@@ -19,13 +20,7 @@ static void __do_kthread_entry(void)
 struct kthread *kthread_create(struct kthread *kt, const char *name, int flags,
 		int (*entry)(struct kthread *, void *), void *arg)
 {
-	if(!kt) {
-		kt = kmalloc(sizeof(struct kthread));
-		kt->flags = KT_ALLOC;
-	} else {
-		kt->flags = 0;
-	}
-	kt->flags |= flags;
+	KOBJ_CREATE(kt, flags, KT_ALLOC);
 	kt->entry = entry;
 	kt->arg = arg;
 	tm_clone(CLONE_SHARE_PROCESS | CLONE_KTHREAD, __do_kthread_entry, kt);
@@ -37,8 +32,7 @@ void kthread_destroy(struct kthread *kt)
 	if(!(kt->flags & KT_EXITED))
 		panic(0, "tried to destroy a running kernel thread");
 	tm_thread_put(kt->thread);
-	if(kt->flags & KT_ALLOC)
-		kfree(kt);
+	KOBJ_DESTROY(kt, KT_ALLOC);
 }
 
 int kthread_wait(struct kthread *kt, int flags)

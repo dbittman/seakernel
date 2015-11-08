@@ -12,7 +12,7 @@
 #include <sea/tm/blocking.h>
 #include <sea/asm/system.h>
 #include <sea/mm/kmalloc.h>
-
+#include <sea/kobj.h>
 static bool __confirm(void *data)
 {
 	struct mutex *m = data;
@@ -90,13 +90,7 @@ void __mutex_release(struct mutex *m, char *file, int line)
 
 struct mutex *mutex_create(struct mutex *m, unsigned flags)
 {
-	if(!m) {
-		m = (void *)kmalloc(sizeof(struct mutex));
-		m->flags |= (MT_ALLOC | flags);
-	} else {
-		memset(m, 0, sizeof(struct mutex));
-		m->flags=flags;
-	}
+	KOBJ_CREATE(m, flags, MT_ALLOC);
 	m->lock = ATOMIC_VAR_INIT(0);
 	m->magic = MUTEX_MAGIC;
 	blocklist_create(&m->blocklist, 0, "mutex");
@@ -112,7 +106,6 @@ void mutex_destroy(struct mutex *m)
 	m->magic = 0;
 	atomic_store(&m->lock, false);
 	blocklist_destroy(&m->blocklist);
-	if(m->flags & MT_ALLOC)
-		kfree(m);
+	KOBJ_DESTROY(m, MT_ALLOC);
 }
 

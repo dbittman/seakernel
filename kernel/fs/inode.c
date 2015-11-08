@@ -222,7 +222,6 @@ size_t fs_inode_reclaim_lru(void)
 		vfs_inode_destroy(remove);
 		released = 1;
 	} else {
-		/* TODO: In theory, we should just free all of these, but I'm lazy */
 		queue_enqueue_item(ic_lru, qi, remove);
 		rwlock_release(&remove->lock, RWL_WRITER);
 	}

@@ -14,9 +14,9 @@ void x86_maybe_tlb_shootdown(addr_t virtual)
 	if(IS_KERN_MEM(virtual))
 		x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS,
 				0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
-	else if((IS_THREAD_SHARED_MEM(virtual)))
-		x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS,
-				0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
+	//else if((IS_THREAD_SHARED_MEM(virtual)))
+	//	x86_cpu_send_ipi(LAPIC_ICR_SHORT_OTHERS,
+	//			0, LAPIC_ICR_LEVELASSERT | LAPIC_ICR_TM_LEVEL | IPI_TLB);
 }
 #endif
 

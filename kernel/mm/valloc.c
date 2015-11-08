@@ -13,7 +13,7 @@
 #include <sea/mm/valloc.h>
 #include <sea/mm/vmm.h>
 #include <sea/mm/kmalloc.h>
-
+#include <sea/kobj.h>
 #define SET_BIT(start,index) \
 	(*((uint8_t *)start + (index / 8)) |= (1 << (index % 8)))
 
@@ -144,15 +144,8 @@ struct valloc *valloc_create(struct valloc *va, addr_t start, addr_t end, size_t
 	int leftover = (end - start) % page_size;
 	end -= leftover;
 	assert(!((end - start) % page_size));
-	if(!va) {
-		/* careful! kmalloc uses valloc... */
-		va = (void *)kmalloc(sizeof(struct valloc));
-		va->flags |= VALLOC_ALLOC;
-	} else {
-		memset(va, 0, sizeof(*va));
-	}
+	KOBJ_CREATE(va, flags, VALLOC_ALLOC);
 	va->magic = VALLOC_MAGIC;
-	va->flags |= flags;
 	va->start = start;
 	va->end = end;
 	va->psize = page_size;
@@ -169,8 +162,7 @@ void valloc_destroy(struct valloc *va)
 	assert(va->magic == VALLOC_MAGIC);
 	mutex_destroy(&va->lock);
 	__valloc_depopulate_index(va);
-	if(va->flags & VALLOC_ALLOC)
-		kfree(va);
+	KOBJ_DESTROY(va, VALLOC_ALLOC);
 }
 
 struct valloc_region *valloc_allocate(struct valloc *va, struct valloc_region *reg,
@@ -185,12 +177,7 @@ struct valloc_region *valloc_allocate(struct valloc *va, struct valloc_region *r
 	mutex_release(&va->lock);
 	if(index == -1)
 		return 0;
-	if(!reg) {
-		reg = (void *)kmalloc(sizeof(struct valloc_region));
-		reg->flags = VALLOC_ALLOC;
-	} else {
-		reg->flags = 0;
-	}
+	KOBJ_CREATE(reg, 0, VALLOC_ALLOC);
 	reg->start = va->start + index * va->psize;
 	reg->npages = np;
 	return reg;
@@ -224,20 +211,14 @@ void valloc_deallocate(struct valloc *va, struct valloc_region *reg)
 	__valloc_clear_bits(va, start_index, reg->npages);
 	va->last = start_index;
 	mutex_release(&va->lock);
-	if(reg->flags & VALLOC_ALLOC)
-		kfree(reg);
+	KOBJ_DESTROY(reg, VALLOC_ALLOC);
 }
 
 struct valloc_region *valloc_split_region(struct valloc *va, struct valloc_region *reg,
 		struct valloc_region *nr, size_t np)
 {
 	assert(va->magic == VALLOC_MAGIC);
-	if(!nr) {
-		nr = (void *)kmalloc(sizeof(struct valloc_region));
-		nr->flags = VALLOC_ALLOC;
-	} else {
-		nr->flags = 0;
-	}
+	KOBJ_CREATE(nr, 0, VALLOC_ALLOC);
 	mutex_acquire(&va->lock);
 	/* with the newly created valloc_region, we can fix up the
 	 * data (resize and set the pointer for the new one).

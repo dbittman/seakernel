@@ -8,15 +8,11 @@
 #include <sea/tm/ticker.h>
 #include <sea/types.h>
 #include <sea/tm/thread.h>
+#include <sea/kobj.h>
 
 struct ticker *ticker_create(struct ticker *ticker, int flags)
 {
-	if(!ticker) {
-		ticker = kmalloc(sizeof(struct ticker));
-		ticker->flags = flags | TICKER_KMALLOC;
-	} else {
-		ticker->flags = flags;
-	}
+	KOBJ_CREATE(ticker, flags, TICKER_KMALLOC);
 	ticker->tick = 0;
 	heap_create(&ticker->heap, HEAP_LOCKLESS, HEAPMODE_MIN);
 	spinlock_create(&ticker->lock);
@@ -99,8 +95,6 @@ void ticker_destroy(struct ticker *ticker)
 {
 	heap_destroy(&ticker->heap);
 	spinlock_destroy(&ticker->lock);
-	if(ticker->flags & TICKER_KMALLOC) {
-		kfree(ticker);
-	}
+	KOBJ_DESTROY(ticker, TICKER_KMALLOC);
 }
 

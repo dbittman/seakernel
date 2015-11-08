@@ -11,6 +11,7 @@
 #include <sea/rwlock.h>
 #include <sea/tm/process.h>
 #include <sea/mm/kmalloc.h>
+#include <sea/kobj.h>
 #define RWLOCK_DEBUG 0
 void __rwlock_acquire(struct rwlock *lock, enum rwlock_locktype type, char *file, int line)
 {
@@ -88,12 +89,7 @@ void rwlock_release(struct rwlock *lock, enum rwlock_locktype type)
 
 struct rwlock *rwlock_create(struct rwlock *lock)
 {
-	if(!lock) {
-		lock = (void *)kmalloc(sizeof(struct rwlock));
-		lock->flags = RWL_ALLOC;
-	} else {
-		memset((void *)lock, 0, sizeof(struct rwlock));
-	}
+	KOBJ_CREATE(lock, 0, RWL_ALLOC);
 	lock->magic = RWLOCK_MAGIC;
 	return lock;
 }
@@ -105,7 +101,6 @@ void rwlock_destroy(struct rwlock *lock)
 	assert(lock->readers == 0);
 	assert(!atomic_flag_test_and_set(&lock->writer));
 	lock->magic=0;
-	if(lock->flags & RWL_ALLOC) 
-		kfree((void *)lock);
+	KOBJ_DESTROY(lock, RWL_ALLOC);
 }
 

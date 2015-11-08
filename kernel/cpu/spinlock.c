@@ -27,4 +27,3 @@ void spinlock_destroy(struct spinlock *s)
 	/* well, this function is basically useless. */
 }
 
-

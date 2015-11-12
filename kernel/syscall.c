@@ -25,6 +25,7 @@
 #include <sea/uname.h>
 #include <sea/vsprintf.h>
 #include <sea/string.h>
+#include <sea/dm/pty.h>
 /* #define SC_DEBUG 1 */
 #define SC_TIMING 1
 static unsigned int num_syscalls=0;
@@ -57,7 +58,23 @@ int sys_syslog(int level, char *buf, int len, int ctl)
 {
 	if(ctl)
 		return 0;
-	printk(level, "%s", buf);
+	printk(0, "%s", buf);
+	return 0;
+}
+#include <sea/cpu/cpu-io.h>
+int sys_setcurs(int x, int y)
+{
+	volatile unsigned short position = (y * 80 + x);
+	outb(0x3D4, 0x0F);
+	outb(0x3D5, (unsigned char)(position&0xFF));
+	outb(0x3D4, 0x0E);
+	outb(0x3D5, (unsigned char )((position>>8)&0xFF));
+	return 0;
+}
+
+int sys_mapscreen(void)
+{
+	mm_virtual_map(0xb8000, 0xb8000, PAGE_PRESENT | PAGE_WRITE | PAGE_USER, 0x1000);
 	return 0;
 }
 
@@ -106,13 +123,13 @@ static void *syscall_table[129] = {
 	[SYS_UNLINK]          = SC sys_unlink,
 	[SYS_THREAD_SETPRI]   = SC sys_thread_setpriority,
 	[SYS_THREAD_KILL]     = SC sys_kill_thread,
-	//[SYS_GETPATH]         = SC sys_getpath,
+	[SYS_OPENPTY]         = SC sys_openpty,
 	[SYS_GETSOCKNAME]     = SC sys_getsockname,
 	[SYS_CHROOT]          = SC sys_chroot,
 	[SYS_CHDIR]           = SC sys_chdir,
 	[SYS_MOUNT]           = SC sys_mount,
 	[SYS_UMOUNT]          = SC sys_umount,
-	//[SYS_READDIR]         = SC vfs_read_dir,
+	[SYS_ATTACHPTY]       = SC sys_attach_pty,
 	[SYS_MKDIR]           = SC sys_mkdir,
 
 	[SYS_CREATE_CONSOLE]  = SC console_create,
@@ -128,6 +145,7 @@ static void *syscall_table[129] = {
 	[SYS_ALARM]           = SC sys_alarm,
 	[SYS_SELECT]          = SC sys_select,
 	[SYS_GETDENTS]        = SC sys_getdents,
+	[SYS_MAPSCREEN]       = SC sys_mapscreen,
 
 	[SYS_SYSCONF]         = SC sys_sysconf,
 	[SYS_SETSID]          = SC sys_setsid,
@@ -166,6 +184,7 @@ static void *syscall_table[129] = {
 	//[SYS_ISSTATE]         = SC sys_isstate,
 	[SYS_WAIT3]           = SC sys_wait3,
 
+	[SYS_SETCURS]         = SC sys_setcurs,
 
 	//[SYS_GETCWDLEN]       = SC sys_getcwdlen,
 	#if CONFIG_SWAP

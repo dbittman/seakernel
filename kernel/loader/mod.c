@@ -46,6 +46,10 @@ void loader_init_kernel_symbols(void)
 	loader_add_kernel_symbol(strlen);
 	loader_add_kernel_symbol(strncpy);
 	loader_add_kernel_symbol(strncmp);
+	loader_add_kernel_symbol(spinlock_acquire);
+	loader_add_kernel_symbol(spinlock_release);
+	loader_add_kernel_symbol(spinlock_create);
+	loader_add_kernel_symbol(spinlock_destroy);
 	loader_add_kernel_symbol(_strcpy);
 	loader_add_kernel_symbol(linkedlist_head);
 	loader_add_kernel_symbol(linkedlist_create);

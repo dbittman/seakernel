@@ -1,6 +1,17 @@
 #ifndef __SEA_TTY_TERMIOS_H
 #define __SEA_TTY_TERMIOS_H
- 
+
+/* TODO: we seem to have multiple termios.h files... */
+
+#define TCGETS          0x5401
+#define TCSETS          0x5402
+#define TCSETSW         0x5403
+#define TIOCGPGRP       0x540F
+#define TIOCSPGRP       0x5410
+#define TIOCGWINSZ      0x5413
+#define TIOCSWINSZ      0x5414
+
+
 #define TIOCGETP	0x5481
 #define TIOCSETP	0x5482
 #define TIOCGETC	0x5483

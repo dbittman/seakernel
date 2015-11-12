@@ -102,6 +102,9 @@ int tm_thread_block_confirm(struct blocklist *blocklist, int state, bool (*cfn)(
 	assert(state != THREADSTATE_RUNNING);
 	int ret;
 	if(state == THREADSTATE_INTERRUPTIBLE && (ret=tm_thread_got_signal(current_thread))) {
+		/* we promise to run the confirm function, so run it here even if we ignore
+		 * the result. */
+		cfn(data);
 		spinlock_release(&blocklist->lock);
 		cpu_enable_preemption();
 		return ret == SA_RESTART ? -ERESTART : -EINTR;

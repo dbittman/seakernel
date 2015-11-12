@@ -339,9 +339,23 @@ int ttyx_ioctl(int min, int cmd, long arg)
 	}
 	return 0;
 }
-
+extern int ptys;
+#include <sea/dm/pty.h>
 int tty_ioctl(int min, int cmd, long arg)
 {
+	if(ptys) {
+		if(!current_process->tty)
+			return -EINVAL;
+		char buf[64];
+		snprintf(buf, 64, "/dev/ptys%d", current_process->tty);
+		int err;
+		struct inode *node = fs_path_resolve_inode(buf, 0, &err);
+		if(!node)
+			return -EINVAL;
+		int r = pty_ioctl(node, cmd, arg);
+		vfs_icache_put(node);
+		return r;
+	}
 	return ttyx_ioctl(current_process->tty, cmd, arg);
 }
 
@@ -364,9 +378,27 @@ int ttyx_rw(int rw, int min, char *buf, size_t count)
 	return -EINVAL;
 }
 
-int tty_rw(int rw, int m, char *buf, size_t c)
+int tty_rw(int rw, int m, char *buffer, size_t c)
 {
-	return ttyx_rw(rw, m=current_process->tty, buf, c);
+	if(ptys) {
+		if(!current_process->tty)
+			return -EINVAL;
+		char buf[64];
+		snprintf(buf, 64, "/dev/ptys%d", current_process->tty);
+		int err;
+		struct inode *node = fs_path_resolve_inode(buf, 0, &err);
+		if(!node)
+			return -EINVAL;
+		int r = -EINVAL;
+		if(rw == READ)
+			r = pty_read(node, (unsigned char *)buffer, c);
+		else if(rw == WRITE)
+			r = pty_write(node, (unsigned char *)buffer, c);
+		vfs_icache_put(node);
+		return r;
+	}
+
+	return ttyx_rw(rw, m=current_process->tty, buffer, c);
 }
 
 int ttyx_select(int min, int rw)
@@ -379,6 +411,20 @@ int ttyx_select(int min, int rw)
 
 int tty_select(int min, int rw)
 {
+	if(ptys) {
+		if(!current_process->tty)
+			return -EINVAL;
+		char buf[64];
+		snprintf(buf, 64, "/dev/ptys%d", current_process->tty);
+		int err;
+		struct inode *node = fs_path_resolve_inode(buf, 0, &err);
+		if(!node)
+			return -EINVAL;
+		int r = pty_select(node, rw);
+		vfs_icache_put(node);
+		return r;
+	}
+
 	return ttyx_select(min=current_process->tty, rw);
 }
 

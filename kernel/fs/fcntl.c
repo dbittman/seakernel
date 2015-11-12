@@ -16,7 +16,11 @@ int sys_ioctl(int fp, int cmd, long arg)
 	struct file *f = fs_get_file_pointer(current_process, fp);
 	if(!f) return -EBADF;
 	assert(f->inode);
-	int ret = dm_ioctl(f->inode->mode, f->inode->phys_dev, cmd, arg);
+	int ret = 0;
+	if(f->inode->pty)
+		ret = pty_ioctl(f->inode, cmd, arg);
+	else
+		ret = dm_ioctl(f->inode->mode, f->inode->phys_dev, cmd, arg);
 	fs_fput(current_process, fp, 0);
 	return ret;
 }

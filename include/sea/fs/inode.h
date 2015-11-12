@@ -31,6 +31,7 @@ struct pipe;
 #define RESOLVE_NOLINK  1
 #define RESOLVE_NOMOUNT 2
 
+struct pty;
 struct inode {
 	struct rwlock lock, metalock;
 	struct queue_item lru_item;
@@ -44,7 +45,9 @@ struct inode {
 	
 	dev_t phys_dev;
 	struct filesystem *mount;
+
 	struct pipe *pipe;
+	struct pty *pty; /* TODO: consoledate these into a union */
 
 	/* filesystem data */
 	mode_t mode;

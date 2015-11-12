@@ -12,6 +12,8 @@
 #include <sea/fs/pipe.h>
 #include <sea/errno.h>
 #include <sea/vsprintf.h>
+#include <sea/dm/pty.h>
+
 int fs_do_sys_read_flags(struct file *f, off_t off, char *buf, size_t count)
 {
 	if(!f || !buf)
@@ -20,6 +22,8 @@ int fs_do_sys_read_flags(struct file *f, off_t off, char *buf, size_t count)
 	int mode = inode->mode;
 	if(S_ISFIFO(mode))
 		return fs_pipe_read(inode, f->flags, buf, count);
+	else if(inode->pty)
+		return pty_read(inode, buf, count);
 	else if(S_ISCHR(mode))
 		return dm_char_rw(READ, inode->phys_dev, buf, count);
 	else if(S_ISBLK(mode))
@@ -71,6 +75,8 @@ int fs_do_sys_write_flags(struct file *f, off_t off, char *buf, size_t count)
 	struct inode *inode = f->inode;
 	if(S_ISFIFO(inode->mode))
 		return fs_pipe_write(inode, f->flags, buf, count);
+	else if(inode->pty)
+		return pty_write(inode, buf, count);
 	else if(S_ISCHR(inode->mode))
 		return dm_char_rw(WRITE, inode->phys_dev, buf, count);
 	else if(S_ISBLK(inode->mode))

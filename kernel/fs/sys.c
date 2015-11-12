@@ -614,7 +614,9 @@ static int select_filedes(int i, int rw)
 	if(!file)
 		return -EBADF;
 	struct inode *in = file->inode;
-	if(S_ISREG(in->mode) || S_ISDIR(in->mode) || S_ISLNK(in->mode))
+	if(in->pty)
+		ready = pty_select(in, rw);
+	else if(S_ISREG(in->mode) || S_ISDIR(in->mode) || S_ISLNK(in->mode))
 		ready = fs_callback_inode_select(in, rw);
 	else if(S_ISCHR(in->mode))
 		ready = dm_chardev_select(in, rw);
@@ -640,6 +642,12 @@ int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 	time_t end = wait+tm_timing_get_microseconds();
 	int total_set=0, is_ok=0;
 	int ret=0;
+	fd_set ret_read;
+	fd_set ret_write;
+	fd_set ret_err;
+	FD_ZERO(&ret_read);
+	FD_ZERO(&ret_write);
+	FD_ZERO(&ret_err);
 	while((tm_timing_get_microseconds() <= end || !wait || !timeout) && !ret)
 	{
 		total_set=0;
@@ -647,27 +655,30 @@ int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 		{
 			if(readfds && FD_ISSET(i, readfds))
 			{
+				FD_SET(i, &ret_read);
 				if(select_filedes(i, READ)) {
 					++is_ok;
 					++total_set;
 				} else
-					FD_CLR(i, readfds);
+					FD_CLR(i, &ret_read);
 			}
 			if(writefds && FD_ISSET(i, writefds))
 			{
+				FD_SET(i, &ret_write);
 				if(select_filedes(i, WRITE)) {
 					++is_ok;
 					++total_set;
 				} else
-					FD_CLR(i, writefds);
+					FD_CLR(i, &ret_write);
 			}
 			if(errorfds && FD_ISSET(i, errorfds))
 			{
+				FD_SET(i, &ret_err);
 				if(select_filedes(i, OTHER)) {
 					++is_ok;
 					++total_set;
 				} else
-					FD_CLR(i, errorfds);
+					FD_CLR(i, &ret_err);
 			}
 		}
 		if(!ret)
@@ -678,6 +689,12 @@ int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 		if(tm_thread_got_signal(current_thread))
 			return -EINTR;
 	}
+	if(readfds)
+		memcpy(readfds, &ret_read, sizeof(ret_read));
+	if(writefds)
+		memcpy(writefds, &ret_write, sizeof(ret_write));
+	if(errorfds)
+		memcpy(errorfds, &ret_err, sizeof(ret_err));
 	if(timeout)
 	{
 		timeout->tv_sec = (end-tm_timing_get_microseconds())/ONE_SECOND;

@@ -37,7 +37,6 @@ int sys_setup();
 #define SYS_ULMOD        28
 /* 29 reserved for module system */
 #define SYS_UNUSED_1     29
-
 #define SYS_ULALLMODS    30
 #define SYS_GETPID       31
 #define SYS_GETPPID      32
@@ -45,14 +44,14 @@ int sys_setup();
 #define SYS_UNLINK       34
 #define SYS_THREAD_SETPRI 35
 #define SYS_THREAD_KILL  36
-
+#define SYS_OPENPTY      37
 
 #define SYS_GETSOCKNAME  38
 #define SYS_CHROOT       39
 #define SYS_CHDIR        40
 #define SYS_MOUNT        41
 #define SYS_UMOUNT       42
-
+#define SYS_ATTACHPTY    43
 #define SYS_MKDIR        44
 #define SYS_CREATE_CONSOLE  45
 #define SYS_SWITCH_CONSOLE  46
@@ -67,7 +66,7 @@ int sys_setup();
 #define SYS_ALARM        55
 #define SYS_SELECT       56
 #define SYS_GETDENTS     57
-
+#define SYS_MAPSCREEN    58 /* TODO: this is here as a temporary hack. remove it. */
 #define SYS_SYSCONF      59
 #define SYS_SETSID       60
 #define SYS_SETPGID      61
@@ -103,7 +102,7 @@ int sys_setup();
 #define SYS_ISSTATE      91
 #define SYS_WAIT3        92
 
-
+#define SYS_SETCURS      93 /* TODO: this is a temporary hack. */
 
 #define SYS_SWAPTASK     96
 

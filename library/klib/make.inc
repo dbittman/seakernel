@@ -1,4 +1,5 @@
-KOBJS += library/klib/heap.o \
+KOBJS += library/klib/charbuffer.o \
+	 	 library/klib/heap.o \
 		 library/klib/linkedlist.o \
 		 library/klib/newhash.o \
 		 library/klib/queue.o \

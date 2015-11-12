@@ -12,7 +12,7 @@
 #define PTY_IN_BUF_SIZE 1024
 #define PTY_OUT_BUF_SIZE 1024
 
-#define PTY_CBUF_SIZE 128
+#define PTY_CBUF_SIZE 256
 
 struct pty {
 	int num;

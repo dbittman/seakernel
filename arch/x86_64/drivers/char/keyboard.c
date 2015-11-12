@@ -378,11 +378,13 @@ size_t count = 0;
 
 int irqk=0;
 int stupid = 1;
+unsigned char last = 0;
 void __int_handle(struct registers *regs, int int_no, int flags)
 {
 	unsigned char scancode = inb(0x60);
-	if(scancode == 0x1d)
+	if(scancode == 0x1d && last == 0xe1)
 		asm("int $0x3");
+	last = scancode;
 	if(stupid)
 		keyboard_int_stage1(scancode);
 	spinlock_acquire(&lock);

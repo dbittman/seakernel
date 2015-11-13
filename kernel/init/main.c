@@ -167,15 +167,12 @@ static void user_mode_init(void)
 		NULL
 	};
 	int ret;
-	char *init_argv[4] = {
-		"sh",
-		"/preinit.sh",
+	char *init_argv[3] = {
+		"init",
 		root_device,
 		NULL
 	};
-	ret = u_execve(init_path, (char **)init_argv, (char **)init_env);
-	ret = u_execve("/sh", (char **)init_argv, (char **)init_env);
-	ret = u_execve("/bin/sh", (char **)init_argv, (char **)init_env);
+	ret = u_execve("/init", (char **)init_argv, (char **)init_env);
 	printf("Failed to start the init process (err=%d). Halting.\n", -ret);
 	u_exit(0);
 }

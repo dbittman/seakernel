@@ -16,7 +16,7 @@ int sys_isatty(int f)
 	struct file *file = fs_get_file_pointer(current_process, f);
 	if(!file) return -EBADF;
 	struct inode *inode = file->inode;
-	if(S_ISCHR(inode->mode) && (MAJOR(inode->phys_dev) == 3 || MAJOR(inode->phys_dev) == 4)) {
+	if(S_ISCHR(inode->mode) && (MAJOR(inode->phys_dev) == 3 || MAJOR(inode->phys_dev) == 4) || inode->pty) {
 		fs_fput(current_process, f, 0);
 		return 1;
 	}

@@ -27,6 +27,7 @@
 #include <sea/tty/terminal.h>
 #include <sea/vsprintf.h>
 #include <sea/trace.h>
+#include <sea/syslog.h>
 static int system_setup=0;
 /* This function is called once at the start of the init process initialization.
  * It sets the task fs values to possible and useful things, allowing VFS access.
@@ -139,7 +140,8 @@ int sys_setup(int a)
 	kerfs_register_report("/dev/pfault", kerfs_pfault_report);
 	kerfs_register_parameter("/dev/trace_on", NULL, 0, KERFS_PARAM_WRITE, kerfs_trace_on);
 	kerfs_register_parameter("/dev/trace_off", NULL, 0, KERFS_PARAM_WRITE, kerfs_trace_off);
-	current_process->tty=1;
+	syslog_init();
+	current_process->tty=1; /* TODO */
 	tm_process_create_kerfs_entries(current_process);
 	tm_thread_create_kerfs_entries(current_thread);
 	system_setup=1;

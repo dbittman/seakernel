@@ -6,6 +6,7 @@ KOBJS+= kernel/config.o \
 		kernel/panic.o \
 		kernel/rwlock.o \
 		kernel/syscall.o \
+		kernel/syslog.o \
 		kernel/tqueue.o \
 		kernel/trace.o \
 		kernel/vsprintf.o

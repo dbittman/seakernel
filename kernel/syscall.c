@@ -26,6 +26,7 @@
 #include <sea/vsprintf.h>
 #include <sea/string.h>
 #include <sea/dm/pty.h>
+#include <sea/syslog.h>
 /* #define SC_DEBUG 1 */
 #define SC_TIMING 1
 static unsigned int num_syscalls=0;
@@ -54,13 +55,7 @@ int sys_setserv(int a, int b, int c, int d, int e)
 	return -ENOSYS;
 }
 
-int sys_syslog(int level, char *buf, int len, int ctl)
-{
-	if(ctl)
-		return 0;
-	printk(0, "%s", buf);
-	return 0;
-}
+
 #include <sea/cpu/cpu-io.h>
 int sys_setcurs(int x, int y)
 {

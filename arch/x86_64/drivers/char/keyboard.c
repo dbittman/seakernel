@@ -398,12 +398,14 @@ void __int_handle(struct registers *regs, int int_no, int flags)
 static unsigned char __read_data(void)
 {
 	unsigned char ret = 0;
+	int old = cpu_interrupt_set(0);
 	spinlock_acquire(&lock);
 	if(count > 0) {
 		ret = buffer[tail++ % BUFFER_SIZE];
 		count--;
 	}
 	spinlock_release(&lock);
+	cpu_interrupt_set(old);
 	return ret;
 }
 
@@ -411,10 +413,12 @@ int kb_select(int min, int rw)
 {
 	int ret = 1;
 	if(rw == READ) {
+		int old = cpu_interrupt_set(0);
 		spinlock_acquire(&lock);
 		if(count == 0)
 			ret = 0;
 		spinlock_release(&lock);
+		cpu_interrupt_set(old);
 	}
 	return ret;
 }

@@ -83,6 +83,29 @@ size_t charbuffer_write(struct charbuffer *cb, unsigned char *in, size_t length)
 				return i;
 			if(!(cb->flags & CHARBUFFER_LOCKLESS))
 				mutex_acquire(&cb->lock);
+		} else {
+			break;
+		}
+	}
+	tm_blocklist_wakeall(&cb->readers);
+	if(!(cb->flags & CHARBUFFER_LOCKLESS))
+		mutex_release(&cb->lock);
+	return i;
+}
+
+size_t charbuffer_trywrite(struct charbuffer *cb, unsigned char *in, size_t length)
+{
+	size_t i = 0;
+	if(!(cb->flags & CHARBUFFER_LOCKLESS))
+		mutex_acquire(&cb->lock);
+
+	while(i < length) {
+		if(cb->count < cb->cap) {
+			cb->buffer[cb->head++ % cb->cap] = *in++;
+			cb->count++;
+			i++;
+		} else {
+			break;
 		}
 	}
 	tm_blocklist_wakeall(&cb->readers);

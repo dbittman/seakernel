@@ -23,6 +23,7 @@ struct charbuffer *charbuffer_create(struct charbuffer *cb, int flags, size_t ca
 void charbuffer_destroy(struct charbuffer *cb);
 size_t charbuffer_read(struct charbuffer *cb, unsigned char *out, size_t length);
 size_t charbuffer_write(struct charbuffer *cb, unsigned char *in, size_t length);
+size_t charbuffer_trywrite(struct charbuffer *cb, unsigned char *in, size_t length);
 
 static inline size_t charbuffer_count(struct charbuffer *cb)
 {

@@ -12,7 +12,7 @@ static _Atomic int __pty_next_num = 1;
 struct pty *pty_create(struct pty *p, int flags)
 {
 	KOBJ_CREATE(p, flags, PTY_ALLOC);
-	charbuffer_create(&p->input, 0, PTY_IN_BUF_SIZE);
+	charbuffer_create(&p->input, CHARBUFFER_DROP, PTY_IN_BUF_SIZE);
 	charbuffer_create(&p->output, 0, PTY_OUT_BUF_SIZE);
 	mutex_create(&p->cbuf_lock, 0);
 	p->num = atomic_fetch_add(&__pty_next_num, 1);
@@ -37,9 +37,9 @@ static void write_char(struct pty *pty, uint8_t c)
 {
 	if(c == '\n' && (pty->term.c_oflag & ONLCR)) {
 		char d = '\r';
-		charbuffer_write(&pty->output, &d, 1);
+		charbuffer_trywrite(&pty->output, &d, 1);
 	}
-	charbuffer_write(&pty->output, &c, 1);
+	charbuffer_trywrite(&pty->output, &c, 1);
 }
 
 static void __raise_action(struct pty *pty, int sig)

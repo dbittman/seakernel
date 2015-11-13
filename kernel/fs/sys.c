@@ -86,6 +86,8 @@ int kerfs_trace_on(int direction, void *_, size_t __, size_t offset, size_t leng
 }
 
 int kerfs_pfault_report(int direction, void *param, size_t size, size_t offset, size_t length, char *buf);
+
+int kerfs_syslog(int direction, void *param, size_t size, size_t offset, size_t length, char *buf);
 int kerfs_trace_off(int direction, void *_, size_t __, size_t offset, size_t length, char *buf)
 {
 	if(direction != WRITE)
@@ -138,9 +140,9 @@ int sys_setup(int a)
 	kerfs_register_report("/dev/fs_icache", kerfs_icache_report);
 	kerfs_register_report("/dev/modules", kerfs_module_report);
 	kerfs_register_report("/dev/pfault", kerfs_pfault_report);
+	kerfs_register_report("/dev/syslog", kerfs_syslog);
 	kerfs_register_parameter("/dev/trace_on", NULL, 0, KERFS_PARAM_WRITE, kerfs_trace_on);
 	kerfs_register_parameter("/dev/trace_off", NULL, 0, KERFS_PARAM_WRITE, kerfs_trace_off);
-	syslog_init();
 	current_process->tty=1; /* TODO */
 	tm_process_create_kerfs_entries(current_process);
 	tm_thread_create_kerfs_entries(current_thread);

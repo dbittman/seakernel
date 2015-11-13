@@ -9,24 +9,39 @@
 static struct hash loggers;
 static struct charbuffer logbuffer;
 struct spinlock loglock;
-
-static int kerfs_syslog(int direction, void *param,
-		size_t size, size_t offset, size_t length, char *buf);
-
+static bool init = false;
 void syslog_init(void)
 {
 	hash_create(&loggers, 0, 64);
 	spinlock_create(&loglock);
 	charbuffer_create(&logbuffer, CHARBUFFER_LOCKLESS | CHARBUFFER_DROP, 4096);
-	kerfs_register_report("/dev/syslog", kerfs_syslog);
+	init = true;
 }
 
-static int kerfs_syslog(int direction, void *param,
+int kerfs_syslog(int direction, void *param,
 		size_t size, size_t offset, size_t length, char *buf)
 {
 	if(direction != READ)
 		return -EIO;
 	return charbuffer_read(&logbuffer, buf, length);
+}
+
+void syslog_kernel_msg(int level, char *buffer)
+{
+	if(!init)
+		return;
+	size_t length = strlen(buffer);
+	char header[128];
+	snprintf(header, 128, "<%d:%s>", LOG_MAKEPRI(LOG_KERN, level), "kernel");
+	bool need_newline = false;
+	if(buffer[length-1] != '\n')
+		need_newline = true;
+	spinlock_acquire(&loglock);
+	charbuffer_write(&logbuffer, (unsigned char *)header, strlen(header));
+	charbuffer_write(&logbuffer, (unsigned char *)buffer, length);
+	if(need_newline)
+		charbuffer_write(&logbuffer, &"\n", 1);
+	spinlock_release(&loglock);
 }
 
 static void __syslog(int level, char *buffer, size_t length)
@@ -41,7 +56,7 @@ static void __syslog(int level, char *buffer, size_t length)
 	char header[128];
 	snprintf(header, 128, "<%d:%s>", LOG_MAKEPRI(facility, level), ident);
 	bool need_newline = false;
-	if(buffer[strlen(buffer)-1] != '\n')
+	if(buffer[length-1] != '\n')
 		need_newline = true;
 	spinlock_acquire(&loglock);
 	charbuffer_write(&logbuffer, (unsigned char *)header, strlen(header));

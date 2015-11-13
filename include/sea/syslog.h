@@ -55,6 +55,7 @@
  #define LOG_FAC(p)  (((p) & LOG_FACMASK) >> 3)
 
 int sys_syslog(int level, char *buf, int len, int ctl);
+void syslog_kernel_msg(int level, char *buffer);
 
 #define SYSLOG_IDENT_MAX 32
 

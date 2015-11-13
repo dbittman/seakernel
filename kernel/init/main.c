@@ -103,6 +103,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	/* Now get the management stuff going */
 	printk(1, "[kernel]: Starting system management\n");
 	mm_init(mtboot);
+	syslog_init();
 	parse_kernel_command_line((char *)(addr_t)mtboot->cmdline);
 	console_init_stage2();
 	tm_init_multitasking();

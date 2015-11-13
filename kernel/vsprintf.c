@@ -333,6 +333,7 @@ int snprintf(char *buf, size_t size, const char *fmt, ...)
 }
 void serial_console_puts_nolock(int port, char *s);
 void serial_console_puts(int port, char *s);
+#include <sea/syslog.h>
 /* This WILL print to the screen */
 void kprintf(const char *fmt, ...)
 {
@@ -345,6 +346,7 @@ void kprintf(const char *fmt, ...)
 		serial_console_puts_nolock(0, printbuf);
 	else
 		serial_console_puts(0, printbuf);
+	syslog_kernel_msg(LOG_NOTICE, printbuf);
 	va_end(args);
 }
 
@@ -362,6 +364,8 @@ void printk(int l, const char *fmt, ...)
 		console_puts(log_console, printbuf);
 	if(l >= PRINT_LEVEL)
 		console_kernel_puts(printbuf);
+	if(l >= 1)
+		syslog_kernel_msg(l, printbuf);
 	va_end(args);
 }
 
@@ -379,6 +383,8 @@ void printk_safe(int l, const char *fmt, ...)
 		console_puts(log_console, printbuf);
 	if(l >= PRINT_LEVEL)
 		console_kernel_puts(printbuf);
+	if(l >= 1)
+		syslog_kernel_msg(l, printbuf);
 	va_end(args);
 }
 

@@ -59,25 +59,29 @@ int sys_gsetpriority(int set, int which, int id, int val)
 	return current_thread->priority;
 }
 
-int sys_thread_setpriority(pid_t tid, int val, int flags)
+static int __set_priority(struct thread *thr, int val, int flags)
 {
-	struct thread *thr = tm_thread_get(tid);
-	if(!thr)
-		return -ESRCH;
 	if(thr->flags & THREAD_KERNEL) {
-		tm_thread_put(thr);
 		return -EPERM;
 	}
 	if(thr->process != current_process && current_process->effective_uid) {
-		tm_thread_put(thr);
 		return -EPERM;
 	}
 	if(!flags)
 		thr->priority += -val;
 	else
 		thr->priority = (-val) + 1; /* POSIX has default 0, we use 1 */
-	tm_thread_put(thr);
 	return 0;
+}
+
+int sys_thread_setpriority(pid_t tid, int val, int flags)
+{
+	struct thread *thr = tm_thread_get(tid);
+	if(!thr)
+		return -ESRCH;
+	int r = __set_priority(thr, val, flags);
+	tm_thread_put(thr);
+	return r;
 }
 
 int sys_nice(int which, pid_t who, int val, int flags)
@@ -97,7 +101,7 @@ int sys_nice(int which, pid_t who, int val, int flags)
 			node != linkedlist_iter_end(&proc->threadlist);
 			node = linkedlist_iter_next(node)) {
 		thr = linkedentry_obj(node);
-		ret = sys_thread_setpriority(thr->tid, val, flags);
+		ret = __set_priority(thr, val, flags);
 		if(ret < 0)
 			break;
 	}

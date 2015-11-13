@@ -132,8 +132,10 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 void __init_entry(void)
 {
 	/* the kernel doesn't have this mapping, so we have to create it here. */
+	tm_thread_raise_flag(current_thread, THREAD_KERNEL);
 	addr_t ret = mm_mmap(current_thread->usermode_stack_start, CONFIG_STACK_PAGES * PAGE_SIZE,
 			PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0, 0);
+	tm_thread_lower_flag(current_thread, THREAD_KERNEL);
 	tm_thread_user_mode_jump(user_mode_init);
 }
 

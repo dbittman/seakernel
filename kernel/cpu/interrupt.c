@@ -227,7 +227,7 @@ void cpu_interrupt_isr_entry(struct registers *regs, int int_no, addr_t return_a
 		current_thread->system = 0;
 		__setup_signal_handler(regs);
 		current_thread->regs = 0;
-		assert((current_process == kernel_process) || current_thread->held_locks == 0);
+		assert(!current_thread || (current_process == kernel_process) || current_thread->held_locks == 0);
 	}
 }
 
@@ -255,7 +255,7 @@ void cpu_interrupt_irq_entry(struct registers *regs, int int_no)
 	if(!already_in_kernel) {
 		__setup_signal_handler(regs);
 		current_thread->regs = 0;
-		assert((current_process == kernel_process) || current_thread->held_locks == 0);
+		assert(!current_thread || !current_process || (current_process == kernel_process) || current_thread->held_locks == 0 || (current_thread->flags & THREAD_KERNEL));
 	}
 }
 

@@ -9,7 +9,7 @@
 
 #define MIN_PHYS_MEM 0
 
-#define MAX_ORDER 20
+#define MAX_ORDER 21
 #define MIN_SIZE PAGE_SIZE
 #define MAX_SIZE ((addr_t)MIN_SIZE << MAX_ORDER)
 #define MEMORY_SIZE (MAX_SIZE - MIN_PHYS_MEM)
@@ -81,6 +81,8 @@ static addr_t __do_pmm_buddy_allocate(size_t length)
 static int deallocate(addr_t address, int order)
 {
 	assert(inited);
+	if(order > MAX_ORDER)
+		return -1;
 	int bit = address / ((addr_t)MIN_SIZE << order);
 	if(!bitmap_test(bitmaps[order], bit)) {
 		return deallocate(address, order + 1);
@@ -113,9 +115,12 @@ static inline addr_t pmm_buddy_allocate(size_t length)
 
 static inline void pmm_buddy_deallocate(addr_t address)
 {
+	if(address >= MIN_PHYS_MEM + MEMORY_SIZE)
+		return;
 	mutex_acquire(&pm_buddy_mutex);
 	int order = deallocate(address, 0);
-	free_memory += MIN_SIZE << order;
+	if(order >= 0)
+		free_memory += MIN_SIZE << order;
 	mutex_release(&pm_buddy_mutex);
 }
 

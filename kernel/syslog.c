@@ -17,7 +17,7 @@ void syslog_init(void)
 {
 	hash_create(&loggers, 0, 64);
 	spinlock_create(&loglock);
-	charbuffer_create(&logbuffer, CHARBUFFER_LOCKLESS | CHARBUFFER_OVERWRITE, 4096);
+	charbuffer_create(&logbuffer, CHARBUFFER_LOCKLESS | CHARBUFFER_DROP, 4096);
 	kerfs_register_report("/dev/syslog", kerfs_syslog);
 }
 

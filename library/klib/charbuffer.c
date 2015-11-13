@@ -74,7 +74,7 @@ size_t charbuffer_write(struct charbuffer *cb, unsigned char *in, size_t length)
 			cb->buffer[cb->head++ % cb->cap] = *in++;
 			cb->count++;
 			i++;
-		} else if(!(cb->flags & CHARBUFFER_OVERWRITE)) {
+		} else if(!(cb->flags & CHARBUFFER_DROP)) {
 			/* full - block */
 			tm_blocklist_wakeall(&cb->readers);
 			int r = tm_thread_block_confirm(&cb->writers, THREADSTATE_INTERRUPTIBLE,

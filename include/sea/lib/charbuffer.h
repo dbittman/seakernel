@@ -6,7 +6,7 @@
 #include <sea/tm/blocking.h>
 #define CHARBUFFER_ALLOC 1
 #define CHARBUFFER_LOCKLESS 2
-#define CHARBUFFER_OVERWRITE 4
+#define CHARBUFFER_DROP 4 /* drop writes if full */
 
 struct charbuffer {
 	unsigned char *buffer;

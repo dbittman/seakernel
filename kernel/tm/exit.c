@@ -115,7 +115,7 @@ __attribute__((noinline)) static void tm_process_exit(int code)
 		atomic_fetch_add_explicit(&current_process->parent->cstime,
 				total_stime, memory_order_relaxed);
 	}
-	fs_close_all_files(current_process);
+	file_close_all();
 	if(current_process->root)
 		vfs_icache_put(current_process->root);
 	if(current_process->cwd)

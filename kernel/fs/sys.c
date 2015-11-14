@@ -301,27 +301,27 @@ int sys_chroot(char *path)
 
 int sys_seek(int fp, off_t pos, unsigned whence)
 {
-	struct file *f = fs_get_file_pointer(current_process, fp);
+	struct file *f = file_get(fp);
 	if(!f) return -EBADF;
 	if(S_ISCHR(f->inode->mode) || S_ISFIFO(f->inode->mode)) {
-		fs_fput(current_process, fp, 0);
+		file_put(f);
 		return 0;
 	}
 	if(whence)
 		f->pos = ((whence == SEEK_END) ? f->inode->length+pos : (size_t)f->pos+pos);
 	else
 		f->pos=pos;
-	fs_fput(current_process, fp, 0);
+	file_put(f);
 	return f->pos;
 }
 
 int sys_fsync(int f)
 {
-	struct file *file = fs_get_file_pointer(current_process, f);
+	struct file *file = file_get(f);
 	if(!file)
 		return -EBADF;
 	fs_inode_push(file->inode);
-	fs_fput(current_process, f, 0);
+	file_put(file);
 	return 0;
 }
 
@@ -331,15 +331,15 @@ int sys_chdir(char *n, int fd)
 	if(!n)
 	{
 		/* ok, we're comin' from a fchdir. This should be easy... */
-		struct file *file = fs_get_file_pointer(current_process, fd);
+		struct file *file = file_get(fd);
 		if(!file)
 			return -EBADF;
 		if(!vfs_inode_check_permissions(file->inode, MAY_EXEC, 0)) {
-			fs_fput(current_process, fd, 0);
+			file_put(file);
 			return -EACCES;
 		}
 		ret = vfs_inode_chdir(file->inode);
-		fs_fput(current_process, fd, 0);
+		file_put(file);
 	} else {
 		struct inode *node = fs_path_resolve_inode(n, 0, &ret);
 		if(node) {
@@ -406,10 +406,11 @@ int sys_chmod(char *path, int fd, mode_t mode)
 	if(!path && fd == -1) return -EINVAL;
 	struct inode *i;
 	int result;
+	struct file *file;
 	if(path)
 		i = fs_path_resolve_inode(path, 0, &result);
 	else {
-		struct file *file = fs_get_file_pointer(current_process, fd);
+		file = file_get(fd);
 		if(!file)
 			return -EBADF;
 		i = file->inode;
@@ -422,7 +423,7 @@ int sys_chmod(char *path, int fd, mode_t mode)
 		if(path)
 			vfs_icache_put(i);
 		else
-			fs_fput(current_process, fd, 0);
+			file_put(file);
 		return -EPERM;
 	}
 	//rwlock_acquire(&i->lock, RWL_WRITER);
@@ -433,7 +434,7 @@ int sys_chmod(char *path, int fd, mode_t mode)
 	if(path)
 		vfs_icache_put(i);
 	else
-		fs_fput(current_process, fd, 0);
+		file_put(file);
 	return 0;
 }
 
@@ -446,11 +447,12 @@ int sys_chown(char *path, int fd, uid_t uid, gid_t gid)
 	if(path)
 		i = fs_path_resolve_inode(path, 0, &result);
 	else {
-		struct file *file = fs_get_file_pointer(current_process, fd);
+		struct file *file = file_get(fd);
 		if(!file)
 			return -EBADF;
 		i = file->inode;
-		fs_fput(current_process, fd, 0);
+		/* TODO we can't do this yet! Wait until the end of the function! */
+		file_put(file);
 	}
 	if(!i)
 		return result;
@@ -495,17 +497,17 @@ int sys_utime(char *path, time_t a, time_t m)
 
 int sys_ftruncate(int f, off_t length)
 {
-	struct file *file = fs_get_file_pointer(current_process, f);
+	struct file *file = file_get(f);
 	if(!file)
 		return -EBADF;
 	if(!vfs_inode_check_permissions(file->inode, MAY_WRITE, 0)) {
-		fs_fput(current_process, f, 0);
+		file_put(file);
 		return -EACCES;
 	}
 	file->inode->length = length;
 	file->inode->mtime = time_get_epoch();
 	vfs_inode_set_dirty(file->inode);
-	fs_fput(current_process, f, 0);
+	file_put(file);
 	return 0;
 }
 
@@ -614,7 +616,7 @@ int sys_access(char *path, mode_t mode)
 static int select_filedes(int i, int rw)
 {
 	int ready = 1;
-	struct file *file = fs_get_file_pointer(current_process, i);
+	struct file *file = file_get(i);
 	if(!file)
 		return -EBADF;
 	struct inode *in = file->inode;
@@ -630,7 +632,7 @@ static int select_filedes(int i, int rw)
 		ready = fs_pipe_select(in, rw);
 	else if(S_ISSOCK(in->mode))
 		ready = socket_select(file, rw);
-	fs_fput(current_process, i, 0);
+	file_put(file);
 	return ready;
 }
 

@@ -46,9 +46,9 @@ int fs_do_sys_read(struct file *f, off_t off, char *buf, size_t count)
 
 int sys_read(int fp, off_t off, char *buf, size_t count)
 {
-	struct file *f = fs_get_file_pointer(current_process, fp);
+	struct file *f = file_get(fp);
 	int ret = fs_do_sys_read(f, off, buf, count);
-	if(f) fs_fput(current_process, fp, 0);
+	if(f) file_put(f);
 	return ret;
 }
 
@@ -56,15 +56,15 @@ int sys_readpos(int fp, char *buf, size_t count)
 {
 	if(!buf) 
 		return -EINVAL;
-	struct file *f = fs_get_file_pointer(current_process, fp);
+	struct file *f = file_get(fp);
 	if(!f)
 		return -EBADF;
 	if(!(f->flags & _FREAD)) {
-		fs_fput(current_process, fp, 0);
+		file_put(f);
 		return -EACCES;
 	}
 	int ret = fs_do_sys_read(f, f->pos, buf, count);
-	fs_fput(current_process, fp, 0);
+	file_put(f);
 	return ret;
 }
 
@@ -94,15 +94,15 @@ int fs_do_sys_write(struct file *f, off_t off, char *buf, size_t count)
 
 int sys_writepos(int fp, char *buf, size_t count)
 {
-	struct file *f = fs_get_file_pointer(current_process, fp);
+	struct file *f = file_get(fp);
 	if(!f)
 		return -EBADF;
 	if(!count || !buf) {
-		fs_fput(current_process, fp, 0);
+		file_put(f);
 		return -EINVAL;
 	}
 	if(!(f->flags & _FWRITE)) {
-		fs_fput(current_process, fp, 0);
+		file_put(f);
 		return -EACCES;
 	}
 	assert(f->inode);
@@ -111,26 +111,26 @@ int sys_writepos(int fp, char *buf, size_t count)
 	int ret=fs_do_sys_write(f, f->pos, buf, count);
 	if(ret > 0)
 		f->pos += ret;
-	fs_fput(current_process, fp, 0);
+	file_put(f);
 	return ret;
 }
 
 int sys_write(int fp, off_t off, char *buf, size_t count)
 {
-	struct file *f = fs_get_file_pointer(current_process, fp);
+	struct file *f = file_get(fp);
 	if(!f)
 		return -EBADF;
 	int ret = fs_do_sys_write(f, off, buf, count);
-	fs_fput(current_process, fp, 0);
+	file_put(f);
 	return ret;
 }
 
 int fs_read_file_data(int fp, char *buf, off_t off, size_t length)
 {
-	struct file *f = fs_get_file_pointer(current_process, fp);
+	struct file *f = file_get(fp);
 	if(!f) return -EBADF;
 	int ret = fs_do_sys_read_flags(f, off, buf, length);
-	fs_fput(current_process, fp, 0);
+	file_put(f);
 	return ret;
 }
 

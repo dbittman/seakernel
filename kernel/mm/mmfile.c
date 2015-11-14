@@ -58,30 +58,30 @@ addr_t mm_mmap(addr_t address, size_t length, int prot, int flags, int fd, size_
 		if(!(prot & PAGE_WRITE)) {
 		//	flags |= MAP_SHARED;
 		}
-		struct file *f = fs_get_file_pointer(current_process, fd);
+		struct file *f = file_get(fd);
 		if(!f) {
 			if(err) *err = -EBADF;
 			return -1;
 		}
 		/* check permissions */
 		if(!(f->flags & _FREAD)) {
-			fs_fput(current_process, fd, 0);
+			file_put(f);
 			if(err) *err = -EACCES;
 			return -1;
 		}
 		if(!(flags & MAP_PRIVATE) && (prot & PROT_WRITE) && !(f->flags & _FWRITE)) {
-			fs_fput(current_process, fd, 0);
+			file_put(f);
 			if(err) *err = -EACCES;
 			return -1;
 		}
 		if(!S_ISREG(f->inode->mode)) {
-			fs_fput(current_process, fd, 0);
+			file_put(f);
 			if(err) *err = -ENODEV;
 			return -1;
 		}
 		vfs_inode_get(f->inode);
 		node = f->inode;
-		fs_fput(current_process, fd, 0);
+		file_put(f);
 	}
 	/* a mapping replaces any other mapping that it overwrites, according to opengroup */
 	mm_mapping_munmap(address, length);

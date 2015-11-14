@@ -82,7 +82,7 @@ struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int
 	f = file_create(inode, dirent, flags);
 	f->pos=0;
 	f->fd_flags &= ~FD_CLOEXEC; //TODO ???
-	int fdnum = file_add_filedes(f);
+	int fdnum = file_add_filedes(f, 0);
 	if(ret == -1) {
 		file_put(f);
 		vfs_icache_put(inode);

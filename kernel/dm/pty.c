@@ -237,16 +237,16 @@ int sys_openpty(int *master, int *slave, char *slavename, const struct termios *
 		return -ENOENT;
 	}
 
-	struct file *mf = fs_get_file_pointer(current_process, mfd);
-	struct file *sf = fs_get_file_pointer(current_process, sfd);
+	struct file *mf = file_get(mfd);
+	struct file *sf = file_get(sfd);
 	mf->inode->pty = pty;
 	sf->inode->pty = pty;
 	vfs_inode_get(mf->inode);
 	vfs_inode_get(sf->inode);
 	pty->master = mf->inode;
 	pty->slave = sf->inode;
-	fs_fput(current_process, mfd, 0);
-	fs_fput(current_process, sfd, 0);
+	file_put(mf);
+	file_put(sf);
 
 	if(slavename)
 		strncpy(slavename, sname, 32);
@@ -259,16 +259,16 @@ int sys_openpty(int *master, int *slave, char *slavename, const struct termios *
 
 int sys_attach_pty(int fd)
 {
-	struct file *mf = fs_get_file_pointer(current_process, fd);
+	struct file *mf = file_get(fd);
 	if(!mf) {
 		return -EBADF;
 	}
 	if(!mf->inode->pty) {
-		fs_fput(current_process, fd, 0);
+		file_put(mf);
 		return -EINVAL;
 	}
 	current_process->tty = mf->inode->pty->num;
-	fs_fput(current_process, fd, 0);
+	file_put(mf);
 	return 0;
 }
 

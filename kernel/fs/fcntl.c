@@ -13,7 +13,7 @@
 
 int sys_ioctl(int fp, int cmd, long arg)
 {
-	struct file *f = fs_get_file_pointer(current_process, fp);
+	struct file *f = file_get(fp);
 	if(!f) return -EBADF;
 	assert(f->inode);
 	int ret = 0;
@@ -21,14 +21,14 @@ int sys_ioctl(int fp, int cmd, long arg)
 		ret = pty_ioctl(f->inode, cmd, arg);
 	else
 		ret = dm_ioctl(f->inode->mode, f->inode->phys_dev, cmd, arg);
-	fs_fput(current_process, fp, 0);
+	file_put(f);
 	return ret;
 }
 
 int sys_fcntl(int filedes, int cmd, long attr1, long attr2, long attr3)
 {
 	int ret = 0;
-	struct file *f = fs_get_file_pointer(current_process, filedes);
+	struct file *f = file_get(filedes);
 	if(!f)
 		return -EBADF;
 	switch(cmd)
@@ -57,6 +57,6 @@ int sys_fcntl(int filedes, int cmd, long attr1, long attr2, long attr3)
 			ret = -EINVAL;
 			break;
 	}
-	fs_fput(current_process, filedes, 0);
+	file_put(f);
 	return ret;
 }

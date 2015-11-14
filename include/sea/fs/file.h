@@ -23,6 +23,18 @@ struct filedes {
 	struct hashelem elem;
 };
 
+
+struct file *file_get_ref(struct file *file);
+struct file *file_create(struct inode *inode, struct dirent *dir,
+		int flags);
+void file_put(struct file *file);
+struct file *file_get(int fdnum);
+int file_add_filedes(struct file *f, int start);
+void file_remove_filedes(struct filedes *f);
+int file_close_fd(int fd);
+void fs_copy_file_handles(struct process *p, struct process *n);
+void file_close_all(void);
+
 int sys_sync();
 int sys_read(int fp, off_t off, char *buf, size_t count);
 int sys_readpos(int fp, char *buf, size_t count);

@@ -23,7 +23,7 @@ int sys_close(int fp)
 #if 0
 int sys_close(int fp)
 {
-	struct file *f = fs_get_file_pointer(current_process, fp);
+	struct file *f = file_get(fp);
 	if(!f)
 		return -EBADF;
 	assert(f->inode);

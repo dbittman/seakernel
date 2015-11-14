@@ -41,28 +41,29 @@ struct socket *socket_create(int *errcode)
 		*errcode = -ENFILE;
 	struct socket *sock = kmalloc(sizeof(struct socket));
 	sock->inode = inode;
-	sock->file = f;
+	sock->file = f; // TODO ???
 	sock->fd = fd;
 	queue_create(&sock->rec_data_queue, 0);
 	inode->socket = sock;
-	fs_fput(current_process, fd, 0);
+	file_put(f);
 	return sock;
 }
 
 static struct socket *get_socket(int fd, int *err)
 {
 	*err = 0;
-	struct file *f = fs_get_file_pointer(current_process, fd);
+	struct file *f = file_get(fd);
 	if(!f) {
 		*err = -EBADF;
 		return 0;
 	}
-	fs_fput(current_process, fd, 0);
-	if(!f->inode->socket) {
+	struct socket *socket = f->inode->socket;
+	file_put(f);
+	if(!socket) {
 		*err = -ENOTSOCK;
 		return 0;
 	}
-	return f->inode->socket;
+	return socket;
 }
 
 static void socket_destroy(struct socket *sock)

@@ -13,14 +13,14 @@
 #include <sea/errno.h>
 int sys_isatty(int f)
 {
-	struct file *file = fs_get_file_pointer(current_process, f);
+	struct file *file = file_get(f);
 	if(!file) return -EBADF;
 	struct inode *inode = file->inode;
 	if(S_ISCHR(inode->mode) && (MAJOR(inode->phys_dev) == 3 || MAJOR(inode->phys_dev) == 4) || inode->pty) {
-		fs_fput(current_process, f, 0);
+		file_put(file);
 		return 1;
 	}
-	fs_fput(current_process, f, 0);
+	file_put(file);
 	return 0;
 }
 
@@ -81,12 +81,12 @@ int fs_inode_dirempty(struct inode *dir)
 
 int sys_getdents(int fd, struct dirent_posix *dirs, unsigned int count)
 {
-	struct file *f = fs_get_file_pointer(current_process, fd);
+	struct file *f = file_get(fd);
 	if(!f) return -EBADF;
 
 	unsigned nex;
 	if(!vfs_inode_check_permissions(f->inode, MAY_READ, 0)) {
-		fs_fput(current_process, fd, 0);
+		file_put(f);
 		return -EACCES;
 	}
 	rwlock_acquire(&f->inode->lock, RWL_READER);
@@ -94,7 +94,7 @@ int sys_getdents(int fd, struct dirent_posix *dirs, unsigned int count)
 	rwlock_release(&f->inode->lock, RWL_READER);
 	f->pos = nex;
 
-	fs_fput(current_process, fd, 0);
+	file_put(f);
 	return r;
 }
 
@@ -102,20 +102,20 @@ int sys_fstat(int fp, struct stat *sb)
 {
 	if(!sb)
 		return -EINVAL;
-	struct file *f = fs_get_file_pointer(current_process, fp);
+	struct file *f = file_get(fp);
 	if(!f) return -EBADF;
 	do_stat(f->inode, sb);
-	fs_fput(current_process, fp, 0);
+	file_put(f);
 	return 0;
 }
 
 int sys_posix_fsstat(int fd, struct posix_statfs *sb)
 {
-	struct file *f = fs_get_file_pointer(current_process, fd);
+	struct file *f = file_get(fd);
 	if(!f) return -EBADF;
 	struct inode *i = f->inode;
 	int r = fs_callback_fs_stat(i->filesystem, sb);
-	fs_fput(current_process, fd, 0);
+	file_put(f);
 	return r;
 }
 

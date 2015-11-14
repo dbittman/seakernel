@@ -117,7 +117,7 @@ void fs_copy_file_handles(struct process *p, struct process *n)
 	for(int i=0;i<NUM_FD;i++) {
 		struct file *file = file_get(i);
 		if(file) {
-			bitset_set(&n->fdnum_bitmap, i);
+			bitmap_set(&n->fdnum_bitmap, i);
 			struct filedes *des = kmalloc(sizeof(struct filedes));
 			des->num = i;
 			des->file = file_get_ref(file);

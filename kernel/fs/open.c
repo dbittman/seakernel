@@ -79,16 +79,12 @@ struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int
 		return 0;
 	}
 	int ret;
-	f = (struct file *)kmalloc(sizeof(struct file));
-	f->inode = inode;
-	f->dirent = dirent;
-	f->flags = flags;
+	f = file_create(inode, dirent, flags);
 	f->pos=0;
-	f->count=1;
-	f->fd_flags &= ~FD_CLOEXEC;
-	ret = fs_add_file_pointer(current_process, f);
+	f->fd_flags &= ~FD_CLOEXEC; //TODO ???
+	int fdnum = file_add_filedes(f);
 	if(ret == -1) {
-		kfree(f);
+		file_put(f);
 		vfs_icache_put(inode);
 		vfs_dirent_release(dirent);
 		*error = -EMFILE;
@@ -103,7 +99,6 @@ struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int
 		inode->ctime = inode->mtime = time_get_epoch();
 		vfs_inode_set_dirty(inode);
 	}
-	fs_fput(current_process, ret, 0);
 	return f;
 }
 
@@ -114,6 +109,7 @@ int sys_open_posix(char *name, int flags, mode_t mode)
 	if(!f) {
 		return error;
 	}
+	file_put(f);
 	return num;
 }
 
@@ -124,40 +120,12 @@ int sys_open(char *name, int flags)
 
 static int duplicate(struct process *t, int fp, int n)
 {
-	struct file *f = fs_get_file_pointer(t, fp);
+	struct file *f = file_get(fp);
 	if(!f)
 		return -EBADF;
-	int ret = 0;
-	struct file *new=(struct file *)kmalloc(sizeof(struct file));
-	if(n)
-		ret = fs_add_file_pointer_after(t, new, n);
-	else
-		ret = fs_add_file_pointer(t, new);
-	if(ret == -1) {
-		kfree(new);
-		fs_fput(t, fp, 0);
-		return -EMFILE;
-	}
-	vfs_inode_get(f->inode);
-	if(f->dirent)
-		vfs_dirent_acquire(f->dirent);
-	new->inode = f->inode;
-	new->dirent = f->dirent;
-	new->count=1;
-	new->flags = f->flags;
-	new->fd_flags = f->fd_flags;
-	new->fd_flags &= ~FD_CLOEXEC;
-	new->pos = f->pos;
-	if(f->inode->pipe) {
-		atomic_fetch_add(&f->inode->pipe->count, 1);
-		if(f->flags & _FWRITE)
-			atomic_fetch_add(&f->inode->pipe->wrcount, 1);
-		tm_blocklist_wakeall(&f->inode->pipe->read_blocked);
-		tm_blocklist_wakeall(&f->inode->pipe->write_blocked);
-	}
-	fs_fput(t, fp, 0);
-	fs_fput(t, ret, 0);
-	return ret;
+	int r = file_add_filedes(f, n);
+	file_put(f);
+	return r;
 }
 
 int sys_dup(int f)

@@ -32,5 +32,6 @@ int hash_insert(struct hash *h, const void *key, size_t keylen, struct hashelem 
 int hash_delete(struct hash *h, const void *key, size_t keylen);
 void *hash_lookup(struct hash *h, const void *key, size_t keylen);
 void hash_map(struct hash *h, void (*fn)(struct hashelem *obj));
+void hash_map_data(struct hash *h, void (*fn)(struct hashelem *obj), void *data);
 
 #endif

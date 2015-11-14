@@ -14,7 +14,7 @@
 
 #define current_process (current_thread ? current_thread->process : 0)
 
-#define FILP_HASH_LEN 512
+#define NUM_FD 128
 
 /* exit reasons */
 #define __EXIT     0
@@ -71,8 +71,9 @@ struct process {
 	uid_t effective_uid, real_uid, saved_uid;
 	gid_t effective_gid, real_gid, saved_gid;
 	struct inode *root, *cwd;
-	struct mutex files_lock;
-	struct file_ptr *filp[FILP_HASH_LEN];
+	struct mutex fdlock;
+	struct hash files;
+	unsigned char fdnum_bitmap[NUM_FD / 8];
 	struct linkedlist mappings;
 	struct mutex map_lock;
 	struct valloc mmf_valloc;

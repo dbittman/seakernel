@@ -15,6 +15,12 @@
 #include <sea/errno.h>
 #include <sea/fs/socket.h>
 #include <sea/fs/dir.h>
+
+int sys_close(int fp)
+{
+	return file_close_fd(fp);
+}
+#if 0
 int sys_close(int fp)
 {
 	struct file *f = fs_get_file_pointer(current_process, fp);
@@ -23,11 +29,11 @@ int sys_close(int fp)
 	assert(f->inode);
 	/* handle sockets calling close. We just translate it to a call to shutdown.
 	 * be aware that shutdown does end up calling close! */
-	if(f->socket) {
-		fs_fput(current_process, fp, 0);
-		sys_sockshutdown(fp, SHUT_RDWR);
-		return 0;
-	}
+	//if(f->socket) {
+	//	fs_fput(current_process, fp, 0);
+	//	sys_sockshutdown(fp, SHUT_RDWR);
+	//	return 0;
+	//}
 	if(f->inode->pipe)
 	{
 		atomic_fetch_sub(&f->inode->pipe->count, 1);
@@ -48,4 +54,4 @@ int sys_close(int fp)
 	fs_fput(current_process, fp, FPUT_CLOSE);
 	return 0;
 }
-
+#endif

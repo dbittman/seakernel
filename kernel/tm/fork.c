@@ -222,7 +222,7 @@ static struct process *tm_process_copy(int flags, struct thread *newthread)
 		vfs_inode_get(newp->cwd);
 	}
 	fs_copy_file_handles(current_process, newp);
-	mutex_create(&newp->files_lock, 0);
+	mutex_create(&newp->fdlock, 0);
 	tm_process_create_kerfs_entries(newp);
 	return newp;
 }

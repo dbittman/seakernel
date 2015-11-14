@@ -11,146 +11,131 @@
 #include <sea/vsprintf.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/fs/dir.h>
-static struct file_ptr *get_file_handle(struct process *t, int n)
+#include <sea/lib/bitmap.h>
+#include <sea/errno.h>
+#include <sea/lib/hash.h>
+static int __allocate_fdnum(int start)
 {
-	/* TODO: audit the entire kernel for overflow... */
-	if((unsigned)n >= FILP_HASH_LEN) return 0;
-	struct file_ptr *f = t->filp[n];
-	return f;
+	int ent = bitmap_ffr_start(current_process->fdnum_bitmap, NUM_FD, start);
+	if(ent != -1)
+		bitmap_set(current_process->fdnum_bitmap, ent);
+	return ent;
 }
 
-struct file *fs_get_file_pointer(struct process *t, int n)
+static void __free_fdnum(int num)
 {
-	mutex_acquire(&t->files_lock);
-	struct file_ptr *fp = get_file_handle(t, n);
-	if(fp && !fp->fi)
-		panic(PANIC_NOSYNC, "found empty file handle in task %d pointer list", t->pid);
-	struct file *ret=0;
-	if(fp) {
-		atomic_fetch_add(&fp->count, 1);
-		ret = fp->fi;
-		assert(ret);
+	bitmap_reset(current_process->fdnum_bitmap, num);
+}
+
+struct file *file_get_ref(struct file *file)
+{
+	atomic_fetch_add(&file->count, 1);
+	return file;
+}
+
+struct file *file_create(struct inode *inode, struct dirent *dir,
+		int flags)
+{
+	struct file *file = kmalloc(sizeof(struct file));
+	vfs_inode_get(inode);
+	if(dir)
+		atomic_fetch_add(&dir->count, 1);
+	file->flags = flags;
+	file->inode = inode;
+	file->dirent = dir;
+	file->count = ATOMIC_VAR_INIT(1);
+	return file;
+}
+
+void file_put(struct file *file)
+{
+	if(atomic_fetch_sub(&file->count, 1) == 1) {
+		/* destroy */
+		if(file->dirent)
+			vfs_dirent_release(file->dirent);
+		vfs_icache_put(file->inode);
+		/* TODO: deal with closing the inode? */
+		kfree(file);
 	}
-	mutex_release(&t->files_lock);
-	return ret;
 }
 
-static void remove_file_pointer(struct process *t, int n)
+struct file *file_get(int fdnum)
 {
-	if(n > FILP_HASH_LEN) return;
-	if(!t || !t->filp)
-		return;
-	struct file_ptr *f = get_file_handle(t, n);
-	if(!f)
-		return;
-	t->filp[n] = 0;
-	atomic_fetch_sub(&f->fi->count, 1);
-	if(!f->fi->count) {
-		kfree(f->fi);
-	}
-	kfree(f);
+	mutex_acquire(&current_process->fdlock);
+	struct filedes *fd = hash_lookup(&current_process->files, &fdnum, sizeof(fdnum));
+	struct file *file = NULL;
+	if(fd)
+		file = file_get_ref(fd->file);
+	mutex_release(&current_process->fdlock);
+	return file;
 }
 
-void fs_fput(struct process *t, int fd, char flags)
+int file_add_filedes(struct file *f, int start)
 {
-	mutex_acquire(&t->files_lock);
-	struct file_ptr *fp = get_file_handle(t, fd);
-	assert(fp);
-	atomic_fetch_sub(&fp->count, (flags & FPUT_CLOSE) ? 2 : 1);
-	if(!fp->count)
-		remove_file_pointer(t, fd);
-	mutex_release(&t->files_lock);
-}
-
-/* Here we find an unused filedes, and add it to the list. We rely on the 
- * list being sorted, and since this is the only function that adds to it, 
- * we can assume it is. This allows for relatively efficient determining of 
- * a filedes without limit. */
-int fs_add_file_pointer_do(struct process *t, struct file_ptr *f, int after)
-{
-	assert(t && f);
-	while(after < FILP_HASH_LEN && t->filp[after])
-		after++;
-	if(after >= FILP_HASH_LEN) {
+	mutex_acquire(&current_process->fdlock);
+	int num = __allocate_fdnum(start);
+	if(num == -1) {
+		mutex_release(&current_process->fdlock);
 		return -1;
 	}
-	t->filp[after] = f;
-	f->num = after;
-	return after;
+	struct filedes *des = kmalloc(sizeof(struct filedes));
+	des->num = num;
+	des->file = file_get_ref(f);
+	hash_insert(&current_process->files, &des->num, sizeof(des->num), &des->elem, des);
+	mutex_release(&current_process->fdlock);
+	return num;
 }
 
-int fs_add_file_pointer(struct process *t, struct file *f)
+static void __file_remove_filedes(struct filedes *f)
 {
-	struct file_ptr *fp = (struct file_ptr *)kmalloc(sizeof(struct file_ptr));
-	mutex_acquire(&t->files_lock);
-	fp->fi = f;
-	int r = fs_add_file_pointer_do(t, fp, 0);
-	if(r >= 0) {
-		fp->num = r;
-		fp->count = 2; /* once for being open, once for being 
-						  used by the function that calls this */
-	} else {
-		kfree(fp);
-	}
-	mutex_release(&t->files_lock);
-	return r;
+	hash_delete(&current_process->files, &f->num, sizeof(f->num));
+	struct file *file = f->file;
+	kfree(f);
+	file_put(file);
 }
 
-int fs_add_file_pointer_after(struct process *t, struct file *f, int x)
+void file_remove_filedes(struct filedes *f)
 {
-	struct file_ptr *fp = (struct file_ptr *)kmalloc(sizeof(struct file_ptr));
-	mutex_acquire(&t->files_lock);
-	fp->fi = f;
-	int r = fs_add_file_pointer_do(t, fp, x);
-	if(r >= 0) {
-		fp->num = r;
-		fp->count = 2; /* once for being open, once for being
-						  used by the function that calls this */
-	} else {
-		kfree(fp);
-	}
-	mutex_release(&t->files_lock);
-	return r;
+	mutex_acquire(&current_process->fdlock);
+	__file_remove_filedes(f);
+	mutex_release(&current_process->fdlock);
+}
+
+int file_close_fd(int fd)
+{
+	mutex_acquire(&current_process->fdlock);
+	struct filedes *des = hash_lookup(&current_process->files, &fd, sizeof(fd));
+	if(des)
+		__file_remove_filedes(des);
+	mutex_release(&current_process->fdlock);
+	return des == NULL ? -EBADF : 0;
 }
 
 void fs_copy_file_handles(struct process *p, struct process *n)
 {
-	if(!p || !n)
-		return;
-	int c=0;
-	while(c < FILP_HASH_LEN) {
-		if(p->filp[c]) {
-			struct file_ptr *fp = (void *)kmalloc(sizeof(struct file_ptr));
-			fp->num = c;
-			fp->fi = p->filp[c]->fi;
-			fp->count = p->filp[c]->count;
-			atomic_fetch_add_explicit(&fp->fi->count, 1, memory_order_relaxed);
-			struct inode *i = fp->fi->inode;
-			vfs_inode_get(i);
-			if(fp->fi->dirent)
-				vfs_dirent_acquire(fp->fi->dirent);
-			if(i->pipe) {
-				atomic_fetch_add_explicit(&i->pipe->count, 1, memory_order_relaxed);
-				if(fp->fi->flags & _FWRITE)
-					atomic_fetch_add_explicit(&i->pipe->wrcount, 1, memory_order_relaxed);
-				tm_blocklist_wakeall(&i->pipe->read_blocked);
-				tm_blocklist_wakeall(&i->pipe->write_blocked);
-			}
-			n->filp[c] = fp;
+	assert(p && n);
+	for(int i=0;i<NUM_FD;i++) {
+		struct file *file = file_get(i);
+		if(file) {
+			bitset_set(&n->fdnum_bitmap, i);
+			struct filedes *des = kmalloc(sizeof(struct filedes));
+			des->num = i;
+			des->file = file_get_ref(file);
+			hash_insert(&n->files, &des->num, sizeof(des->num), &des->elem, des);
+			file_put(file);
 		}
-		c++;
 	}
 }
 
-void fs_close_all_files(struct process *t)
+static void __files_map_close(struct hashelem *elem)
 {
-	int q=0;
-	for(;q<FILP_HASH_LEN;q++)
-	{
-		if(t->filp[q]) {
-			sys_close(q);
-			assert(!t->filp[q]);
-		}
-	}
+	__file_remove_filedes(elem->ptr);
+}
+
+void file_close_all(void)
+{
+	mutex_acquire(&current_process->fdlock);
+	hash_map(&current_process->files, __files_map_close);
+	mutex_release(&current_process->fdlock);
 }
 

@@ -7,44 +7,27 @@
 
 #include <sea/types.h>
 #include <sea/tm/process.h>
-
-#define FPUT_CLOSE 1
-
-struct socket;
+#include <sea/lib/hash.h>
 
 struct file {
-	_Atomic unsigned int flags, count;
-	unsigned int fd_flags;
+	_Atomic int count;
+	int flags, fd_flags;
 	off_t pos;
 	struct inode * inode;
 	struct dirent *dirent;
-	struct socket *socket;
 };
 
-struct file_ptr {
-	unsigned int num, count;
-	struct file *fi;
+struct filedes {
+	struct file *file;
+	int num;
+	struct hashelem elem;
 };
-
-struct file *fs_get_file_pointer(struct process *t, int n);
-void fs_fput(struct process *, int fd, char flags);
-int fs_add_file_pointer(struct process *t, struct file *f);
-int fs_add_file_pointer_after(struct process *t, struct file *f, int x);
-void fs_copy_file_handles(struct process *p, struct process *n);
-void fs_close_all_files(struct process *t);
-
-struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int *num);
 
 int sys_sync();
-int fs_do_sys_read_flags(struct file *f, off_t off, char *buf, size_t count);
-int fs_do_sys_read(struct file *f, off_t off, char *buf, size_t count);
 int sys_read(int fp, off_t off, char *buf, size_t count);
 int sys_readpos(int fp, char *buf, size_t count);
-int fs_do_sys_write_flags(struct file *f, off_t off, char *buf, size_t count);
-int fs_do_sys_write(struct file *f, off_t off, char *buf, size_t count);
 int sys_writepos(int fp, char *buf, size_t count);
 int sys_write(int fp, off_t off, char *buf, size_t count);
-int fs_read_file_data(int fp, char *buf, off_t off, size_t length);
 int sys_isatty(int f);
 int sys_ioctl(int fp, int cmd, long arg);
 int sys_open(char *name, int flags);

@@ -120,7 +120,7 @@ __attribute__((noinline)) static void tm_process_exit(int code)
 		vfs_icache_put(current_process->root);
 	if(current_process->cwd)
 		vfs_icache_put(current_process->cwd);
-	mutex_destroy(&current_process->files_lock);
+	mutex_destroy(&current_process->fdlock);
 	mm_destroy_all_mappings(current_process);
 	linkedlist_destroy(&(current_process->mappings));
 	mutex_destroy(&current_process->map_lock);

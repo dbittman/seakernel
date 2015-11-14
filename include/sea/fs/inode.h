@@ -48,6 +48,7 @@ struct inode {
 
 	struct pipe *pipe;
 	struct pty *pty; /* TODO: consoledate these into a union */
+	struct socket *socket;
 
 	/* filesystem data */
 	mode_t mode;

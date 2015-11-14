@@ -44,7 +44,7 @@ struct socket *socket_create(int *errcode)
 	sock->file = f;
 	sock->fd = fd;
 	queue_create(&sock->rec_data_queue, 0);
-	f->socket = sock;
+	inode->socket = sock;
 	fs_fput(current_process, fd, 0);
 	return sock;
 }
@@ -58,11 +58,11 @@ static struct socket *get_socket(int fd, int *err)
 		return 0;
 	}
 	fs_fput(current_process, fd, 0);
-	if(!f->socket) {
+	if(!f->inode->socket) {
 		*err = -ENOTSOCK;
 		return 0;
 	}
-	return f->socket;
+	return f->inode->socket;
 }
 
 static void socket_destroy(struct socket *sock)
@@ -70,7 +70,7 @@ static void socket_destroy(struct socket *sock)
 	if(sock->calls->destroy)
 		sock->calls->destroy(sock);
 	struct file *file = sock->file;
-	file->socket = 0;
+	file->inode->socket = 0;
 	sys_close(sock->fd);
 	queue_destroy(&sock->rec_data_queue);
 	kfree(sock);
@@ -78,21 +78,21 @@ static void socket_destroy(struct socket *sock)
 
 int socket_select(struct file *f, int rw)
 {
-	if(!f->socket)
+	if(!f->inode->socket)
 		return -ENOTSOCK;
-	if(rw == READ && !(f->socket->flags & SOCK_FLAG_ALLOWRECV))
+	if(rw == READ && !(f->inode->socket->flags & SOCK_FLAG_ALLOWRECV))
 		return 0;
-	if(rw == WRITE && !(f->socket->flags & SOCK_FLAG_ALLOWSEND))
+	if(rw == WRITE && !(f->inode->socket->flags & SOCK_FLAG_ALLOWSEND))
 		return 0;
 	int r = 1;
-	if(f->socket->calls->select)
-		r = f->socket->calls->select(f->socket, rw);
+	if(f->inode->socket->calls->select)
+		r = f->inode->socket->calls->select(f->inode->socket, rw);
 	if(r == 0)
 		return 0;
 	/* if the protocol says that we're allowed to read or write, that might
 	 * not be true for the socket layer...check the data queue */
 	if(rw == READ)
-		return f->socket->rec_data_queue.count > 0;
+		return f->inode->socket->rec_data_queue.count > 0;
 	return 1;
 }
 

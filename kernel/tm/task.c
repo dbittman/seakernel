@@ -48,7 +48,7 @@ void tm_init_multitasking(void)
 	mutex_create(&proc->stacks_lock, 0);
 	proc->magic = PROCESS_MAGIC;
 	blocklist_create(&proc->waitlist, 0, "process-waitlist");
-	mutex_create(&proc->files_lock, 0);
+	mutex_create(&proc->fdlock, 0);
 	memcpy(&proc->vmm_context, &kernel_context, sizeof(kernel_context));
 	thread->process = proc; /* we have to do this early, so that the vmm system can use the lock... */
 	thread->state = THREADSTATE_RUNNING;

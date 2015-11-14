@@ -32,7 +32,7 @@ long sys_sysconf(int cmd)
 			ret = 0;
 			break;
 		case _SC_OPEN_MAX:
-			ret = FILP_HASH_LEN;
+			ret = NUM_FD;
 			break;
 		case _SC_ARG_MAX:
 			ret = 0x1000;

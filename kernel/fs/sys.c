@@ -406,7 +406,7 @@ int sys_chmod(char *path, int fd, mode_t mode)
 	if(!path && fd == -1) return -EINVAL;
 	struct inode *i;
 	int result;
-	struct file *file;
+	struct file *file = NULL;
 	if(path)
 		i = fs_path_resolve_inode(path, 0, &result);
 	else {
@@ -433,7 +433,7 @@ int sys_chmod(char *path, int fd, mode_t mode)
 	//rwlock_release(&i->lock, RWL_WRITER);
 	if(path)
 		vfs_icache_put(i);
-	else
+	else if(file)
 		file_put(file);
 	return 0;
 }

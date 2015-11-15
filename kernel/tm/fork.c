@@ -211,6 +211,8 @@ static struct process *tm_process_copy(int flags, struct thread *newthread)
 	linkedlist_create(&newp->mappings, LINKEDLIST_LOCKLESS);
 	mutex_create(&newp->map_lock, 0); /* we need to lock this during page faults */
 	mutex_create(&newp->stacks_lock, 0);
+	mutex_create(&newp->fdlock, 0);
+	hash_create(&newp->files, HASH_LOCKLESS, 64);
 	valloc_create(&newp->mmf_valloc, MEMMAP_MMAP_BEGIN, MEMMAP_MMAP_END, PAGE_SIZE, 0);
 	__copy_mappings(newp, current_process);
 	if(current_process->root) {

@@ -22,8 +22,6 @@
  * the executable. We keep it open through here so that we dont have to 
  * re-open it. */
 void arch_loader_exec_initializer(unsigned argc, addr_t eip);
-#undef EXEC_LOG
-#define EXEC_LOG 1
 
 static void preexec(int desc)
 {
@@ -61,7 +59,6 @@ static int __is_shebang(char *mem)
 {
 	return (mem[0] == '#' && mem[1] == '!');
 }
-
 int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 {
 	unsigned int i=0;

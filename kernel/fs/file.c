@@ -88,6 +88,18 @@ int file_add_filedes(struct file *f, int start)
 
 static void __file_remove_filedes(struct filedes *f)
 {
+		if(f->file->inode->pipe)
+		{
+			atomic_fetch_sub(&f->file->inode->pipe->count, 1);
+			if(f->file->flags & _FWRITE) {
+				atomic_fetch_sub(&f->file->inode->pipe->wrcount, 1);
+			}
+			tm_blocklist_wakeall(&f->file->inode->pipe->read_blocked);
+			tm_blocklist_wakeall(&f->file->inode->pipe->write_blocked);
+		}
+
+
+	__free_fdnum(f->num);
 	hash_delete(&current_process->files, &f->num, sizeof(f->num));
 	struct file *file = f->file;
 	kfree(f);
@@ -117,10 +129,19 @@ void fs_copy_file_handles(struct process *p, struct process *n)
 	for(int i=0;i<NUM_FD;i++) {
 		struct file *file = file_get(i);
 		if(file) {
+			printk(0, "%d->%d: clone %d\n", p->pid, n->pid, i);
 			bitmap_set(&n->fdnum_bitmap, i);
 			struct filedes *des = kmalloc(sizeof(struct filedes));
 			des->num = i;
 			des->file = file_get_ref(file);
+			struct file *f = des->file;
+			if(f->inode->pipe) {
+				atomic_fetch_add(&f->inode->pipe->count, 1);
+				if(f->flags & _FWRITE)
+					atomic_fetch_add(&f->inode->pipe->wrcount, 1);
+				tm_blocklist_wakeall(&f->inode->pipe->read_blocked);
+				tm_blocklist_wakeall(&f->inode->pipe->write_blocked);
+			}
 			hash_insert(&n->files, &des->num, sizeof(des->num), &des->elem, des);
 			file_put(file);
 		}

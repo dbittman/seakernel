@@ -31,12 +31,10 @@ struct socket *socket_create(int *errcode)
 	*errcode = 0;
 	struct inode *inode = vfs_inode_create();
 	inode->flags |= INODE_NOLRU;
-	struct file *f = kmalloc(sizeof(struct file));
-	f->inode = inode;
-	inode->count = 1;
 	inode->mode |= S_IFSOCK;
-	f->count = 1;
-	int fd = fs_add_file_pointer(current_process, f);
+	inode->count = 1;
+	struct file *f = file_create(inode, 0, 0);
+	int fd = file_add_filedes(f, 0);
 	if(fd < 0)
 		*errcode = -ENFILE;
 	struct socket *sock = kmalloc(sizeof(struct socket));

@@ -46,6 +46,8 @@ void tm_init_multitasking(void)
 	linkedlist_create(&proc->threadlist, 0);
 	mutex_create(&proc->map_lock, 0);
 	mutex_create(&proc->stacks_lock, 0);
+	mutex_create(&proc->fdlock, 0);
+	hash_create(&proc->files, HASH_LOCKLESS, 64);
 	proc->magic = PROCESS_MAGIC;
 	blocklist_create(&proc->waitlist, 0, "process-waitlist");
 	mutex_create(&proc->fdlock, 0);

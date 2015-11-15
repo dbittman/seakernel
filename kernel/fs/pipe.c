@@ -42,26 +42,18 @@ static struct inode *create_anon_pipe (void)
 int sys_pipe(int *files)
 {
 	if(!files) return -EINVAL;
-	struct file *f;
 	struct inode *inode = create_anon_pipe();
+	struct file *f = file_create(inode, 0, _FREAD);
 	/* this is the reading descriptor */
-	f = (struct file *)kmalloc(sizeof(struct file));
-	f->inode = inode;
-	f->flags = _FREAD;
-	f->pos=0;
-	f->count=1;
-	int read = fs_add_file_pointer(current_process, f);
+	int read = file_add_filedes(f, 0);
+	file_put(f);
+	/* TODO: this can fail... */
 	/* this is the writing descriptor */
-	f = (struct file *)kmalloc(sizeof(struct file));
-	f->inode = inode;
-	f->flags = _FREAD | _FWRITE;
-	f->count=1;
-	f->pos=0;
-	int write = fs_add_file_pointer(current_process, f);
+	f = file_create(inode, 0, _FREAD | _FWRITE);
+	int write = file_add_filedes(f, 0);
 	files[0]=read;
 	files[1]=write;
-	fs_fput(current_process, read, 0);
-	fs_fput(current_process, write, 0);
+	file_put(f);
 	return 0;
 }
 

@@ -23,6 +23,9 @@ struct filedes {
 	struct hashelem elem;
 };
 
+/* TODO: rename or remove these */
+struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int *num);
+int fs_read_file_data(int fp, char *buf, off_t off, size_t length);
 
 struct file *file_get_ref(struct file *file);
 struct file *file_create(struct inode *inode, struct dirent *dir,

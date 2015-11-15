@@ -20,9 +20,9 @@ int fs_do_sys_read_flags(struct file *f, off_t off, char *buf, size_t count)
 		return -EINVAL;
 	struct inode *inode = f->inode;
 	int mode = inode->mode;
-	if(S_ISFIFO(mode))
+	if(S_ISFIFO(mode)) {
 		return fs_pipe_read(inode, f->flags, buf, count);
-	else if(inode->pty)
+	} else if(inode->pty)
 		return pty_read(inode, buf, count);
 	else if(S_ISCHR(mode))
 		return dm_char_rw(READ, inode->phys_dev, buf, count);
@@ -31,8 +31,9 @@ int fs_do_sys_read_flags(struct file *f, off_t off, char *buf, size_t count)
 	/* We read the data for a link as well. If we have gotten to the point
 	 * where we have the inode for the link we probably want to read the link 
 	 * itself */
-	else if(S_ISDIR(mode) || S_ISREG(mode) || S_ISLNK(mode))
+	else if(S_ISDIR(mode) || S_ISREG(mode) || S_ISLNK(mode)) {
 		return fs_inode_read(inode, off, count, buf);
+	}
 	return -EINVAL;
 }
 

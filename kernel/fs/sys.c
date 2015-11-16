@@ -529,10 +529,19 @@ int sys_mknod(char *path, mode_t mode, dev_t dev)
 		vfs_icache_put(i);
 		return -EEXIST;
 	}
+	i->flags |= INODE_NOLRU;
 	i->phys_dev = dev;
 	i->mode = (mode & ~0xFFF) | ((mode&0xFFF) & (~current_process->cmask&0xFFF));
+	
+	struct device *dt;
+	if(S_ISCHR(mode)) {
+		dt = dm_get_device(DT_CHAR, MAJOR(dev));
+		int r = dm_char_getdev(MAJOR(dev), &i->kdev);
+	} else
+		dt = dm_get_device(DT_BLK, MAJOR(dev));
+
 	vfs_inode_set_dirty(i);
-	vfs_icache_put(i);
+	//vfs_icache_put(i); TODO
 	return 0;
 }
 
@@ -620,14 +629,14 @@ static int select_filedes(int i, int rw)
 	if(!file)
 		return -EBADF;
 	struct inode *in = file->inode;
-	if(in->kdev.select)
-		ready = in->kdev.select(file, rw);
 	if(in->pty)
 		ready = pty_select(in, rw);
+	else if(in->kdev.select)
+		ready = in->kdev.select(file, rw);
 	else if(S_ISREG(in->mode) || S_ISDIR(in->mode) || S_ISLNK(in->mode))
 		ready = fs_callback_inode_select(in, rw);
-	else if(S_ISCHR(in->mode))
-		ready = dm_chardev_select(file, rw);
+	//else if(S_ISCHR(in->mode))
+	//	ready = dm_chardev_select(file, rw);
 	else if(S_ISBLK(in->mode))
 		ready = dm_blockdev_select(in, rw);
 	else if(S_ISSOCK(in->mode))

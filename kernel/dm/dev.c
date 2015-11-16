@@ -8,6 +8,9 @@
 #include <sea/errno.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
+
+extern void dm_char_register(); //TODO
+
 static struct devhash_s devhash[NUM_DT];
 
 void dm_init(void)
@@ -36,6 +39,8 @@ void dm_init(void)
 	loader_add_kernel_symbol(dm_block_write);
 	loader_add_kernel_symbol(dm_set_block_device);
 	loader_add_kernel_symbol(dm_set_char_device);
+	
+	loader_add_kernel_symbol(dm_char_register);
 #endif
 }
 
@@ -135,3 +140,31 @@ void dm_sync(void)
 {
 	dm_send_sync_block();
 }
+
+
+
+int dm_file_ioctl(struct file *file, int cmd, long arg)
+{
+
+}
+
+ssize_t dm_file_rw(int rw, struct file *file, off_t off, uint8_t *buf, size_t len)
+{
+
+}
+
+void dm_file_open(struct file *file)
+{
+
+}
+
+void dm_file_close(struct file *file)
+{
+
+}
+
+int dm_file_select(struct file *file, int rw)
+{
+
+}
+

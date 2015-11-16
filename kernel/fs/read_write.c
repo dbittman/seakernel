@@ -20,15 +20,15 @@ int fs_do_sys_read_flags(struct file *f, off_t off, char *buf, size_t count)
 		return -EINVAL;
 	struct inode *inode = f->inode;
 	int mode = inode->mode;
-	if(f->inode->kdev.rw) {
-		return f->inode->kdev.rw(READ, f, off, buf, count);
-	}
 	if(inode->pty)
 		return pty_read(inode, buf, count);
-	else if(S_ISCHR(mode))
-		return dm_char_rw(READ, f, off, buf, count);
-	else if(S_ISBLK(mode))
-		return dm_block_device_rw(READ, inode->phys_dev, off, buf, count);
+	else if(f->inode->kdev.rw) {
+		return f->inode->kdev.rw(READ, f, off, buf, count);
+	}
+	//else if(S_ISCHR(mode))
+	//	return dm_char_rw(READ, f, off, buf, count);
+	//else if(S_ISBLK(mode))
+	//	return dm_block_device_rw(READ, inode->phys_dev, off, buf, count);
 	/* We read the data for a link as well. If we have gotten to the point
 	 * where we have the inode for the link we probably want to read the link 
 	 * itself */
@@ -76,15 +76,15 @@ int fs_do_sys_write_flags(struct file *f, off_t off, char *buf, size_t count)
 		return -EINVAL;
 	struct inode *inode = f->inode;
 
-	if(f->inode->kdev.rw) {
-		return f->inode->kdev.rw(WRITE, f, off, buf, count);
-	}
 	if(inode->pty)
 		return pty_write(inode, buf, count);
-	else if(S_ISCHR(inode->mode))
-		return dm_char_rw(WRITE, f, off, buf, count);
-	else if(S_ISBLK(inode->mode))
-		return (dm_block_device_rw(WRITE, inode->phys_dev, off, buf, count));
+	else if(f->inode->kdev.rw) {
+		return f->inode->kdev.rw(WRITE, f, off, buf, count);
+	}
+	//else if(S_ISCHR(inode->mode))
+	//	return dm_char_rw(WRITE, f, off, buf, count);
+	//else if(S_ISBLK(inode->mode))
+	//	return (dm_block_device_rw(WRITE, inode->phys_dev, off, buf, count));
 	/* Again, we want to write to the link because we have that node */
 	else if(S_ISDIR(inode->mode) || S_ISREG(inode->mode) || S_ISLNK(inode->mode))
 		return fs_inode_write(inode, off, count, buf);

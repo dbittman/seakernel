@@ -17,10 +17,10 @@ int sys_ioctl(int fp, int cmd, long arg)
 	if(!f) return -EBADF;
 	assert(f->inode);
 	int ret = 0;
-	if(f->inode->pty)
+	if(f->inode->pty) /* TODO */
 		ret = pty_ioctl(f->inode, cmd, arg);
-	//else
-	//	ret = dm_ioctl(f->inode->mode, f->inode->phys_dev, cmd, arg);
+	else if(f->inode->kdev.ioctl)
+		ret = f->inode->kdev.ioctl(f, cmd, arg);
 	file_put(f);
 	return ret;
 }

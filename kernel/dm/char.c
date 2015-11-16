@@ -37,6 +37,28 @@ static int null_rw(int rw, int m, char *buf, size_t c)
 	6 - 9 -> reserved
 */
 
+struct kdevice *devices[128];
+int dm_char_register(struct kdevice *kdev)
+{
+	mutex_acquire(&cd_search_lock);
+	for(int i=0;i<128;i++) {
+		if(!devices[i]) {
+			devices[i] = kdev;
+			mutex_release(&cd_search_lock);
+			return i;
+		}
+	}
+	mutex_release(&cd_search_lock);
+}
+
+int dm_char_getdev(int m, struct kdevice *dev)
+{
+	if(!devices[m])
+		return -ENOENT;
+	memcpy(dev, devices[m], sizeof(*dev));
+	return 0;
+}
+
 struct chardevice *dm_set_char_device(int maj,
 		ssize_t (*rw)(int, struct file *, off_t off, char*, size_t),
 		int (*c)(struct file *, int, long),

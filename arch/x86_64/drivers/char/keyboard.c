@@ -449,6 +449,16 @@ int kb_rw(int rw, struct file *file, off_t off, char *buf, size_t length)
 
 int keyboard_major;
 
+struct kdevice kbkd = {
+	.data = 0,
+	.rw = kb_rw,
+	.select = kb_select,
+	.ioctl = 0,
+	.open = 0,
+	.close = 0,
+	.destroy = 0,
+};
+
 int module_install(void)
 {
 	printk(1, "[keyboard]: Driver loading\n");
@@ -460,12 +470,11 @@ int module_install(void)
 	capslock=0;
 	_keymap_callback=0;
 	spinlock_create(&lock);
-	//loader_add_kernel_symbol(set_keymap_callback);
-	//loader_add_kernel_symbol(get_keymap_callback);
 	async_call_create(&keyboard_s2_call, 0, keyboard_int_stage2, __int_no, 100 /* TODO */);
 	irqk = cpu_interrupt_register_handler(IRQ1, __int_handle);
 	flush_port();
-	keyboard_major = dm_set_available_char_device(kb_rw, 0, kb_select);
+	keyboard_major = dm_char_register(&kbkd);
+	/* keyboard_major = dm_set_available_char_device(kb_rw, 0, kb_select); */
 	sys_mknod("/dev/keyboard", S_IFCHR | 0644, GETDEV(keyboard_major, 0));
 	printk(1, "[keyboard]: initialized keyboard\n");
 	return 0;

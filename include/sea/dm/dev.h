@@ -48,4 +48,23 @@ int dm_add_device(int type, int major, void *str);
 struct device *dm_get_enumerated_device(int type, int n);
 int dm_remove_device(int type, int major);
 
+
+
+
+
+
+
+
+
+
+
+
+struct file;
+int dm_file_ioctl(struct file *file, int cmd, long arg);
+ssize_t dm_file_rw(int rw, struct file *file, off_t off, uint8_t *buf, size_t len);
+void dm_file_open(struct file *file);
+void dm_file_close(struct file *file);
+int dm_file_select(struct file *file, int rw);
+
+
 #endif

@@ -42,6 +42,7 @@ struct kdevice {
 	void (*open)(struct file *file);
 	void (*close)(struct file *file);
 	void (*destroy)(struct inode *inode);
+	int (*ioctl)(struct file *file, int cmd, long arg);
 };
 
 struct inode {

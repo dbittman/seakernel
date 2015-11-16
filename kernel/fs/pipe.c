@@ -18,6 +18,8 @@ struct pipe *fs_pipe_create (void)
 	mutex_create(&pipe->lock, 0);
 	blocklist_create(&pipe->read_blocked, 0, "pipe-read");
 	blocklist_create(&pipe->write_blocked, 0, "pipe-write");
+	pipe->wrcount=1;
+	pipe->recount=1;
 	return pipe;
 }
 
@@ -33,27 +35,75 @@ static struct inode *create_anon_pipe (void)
 	node->count=2;
 	
 	struct pipe *pipe = fs_pipe_create();
-	pipe->count=2;
-	pipe->wrcount=1;
 	node->pipe = pipe;
 	return node;
 }
 
+static void __pipe_close(struct file *file)
+{
+	struct pipe *pipe = file->inode->kdev.data;
+	assert(pipe);
+	if(file->flags & _FWRITE) {
+		int r = atomic_fetch_sub(&pipe->wrcount, 1);
+		assert(r > 0);
+	} else {
+		int r = atomic_fetch_sub(&pipe->recount, 1);
+		assert(r > 0);
+	}
+	tm_blocklist_wakeall(&pipe->read_blocked);
+	tm_blocklist_wakeall(&pipe->write_blocked);
+}
+
+static void __pipe_open(struct file *file)
+{
+	/* struct pipe *pipe = file->inode->kdev.data; */
+	/* assert(pipe); */
+	/* atomic_fetch_add(&pipe->count, 1); */
+	/* if(file->flags & _FWRITE) */
+	/* 	atomic_fetch_add(&pipe->wrcount, 1); */
+	/* tm_blocklist_wakeall(&pipe->read_blocked); */
+	/* tm_blocklist_wakeall(&pipe->write_blocked); */
+}
+
+static int __pipe_select(struct file *file, int rw)
+{
+	return fs_pipe_select(file->inode, rw);
+}
+
+static ssize_t __pipe_rw(int rw, struct file *file, off_t off, uint8_t *buffer, size_t len)
+{
+	if(rw == READ)
+		return fs_pipe_read(file->inode, 0, buffer, len);
+	if(rw == WRITE)
+		return fs_pipe_write(file->inode, 0, buffer, len);
+}
+
 int sys_pipe(int *files)
 {
-	if(!files) return -EINVAL;
-	struct inode *inode = create_anon_pipe();
-	struct file *f = file_create(inode, 0, _FREAD);
-	/* this is the reading descriptor */
-	int read = file_add_filedes(f, 0);
-	file_put(f);
-	/* TODO: this can fail... */
-	/* this is the writing descriptor */
-	f = file_create(inode, 0, _FREAD | _FWRITE);
-	int write = file_add_filedes(f, 0);
-	files[0]=read;
-	files[1]=write;
-	file_put(f);
+	if(!files)
+		return -EINVAL;
+	struct inode *inode = vfs_inode_create();
+	inode->flags |= INODE_NOLRU;
+	inode->uid = current_process->effective_uid;
+	inode->gid = current_process->effective_gid;
+	inode->mode = S_IFIFO | 0x1FF;
+	inode->count = 1;
+
+	struct pipe *pipe = fs_pipe_create();
+	inode->kdev.data = pipe;
+	inode->kdev.select = __pipe_select;
+	inode->kdev.open = __pipe_open;
+	inode->kdev.close = __pipe_close;
+	inode->kdev.rw = __pipe_rw;
+
+	struct file *rf = file_create(inode, 0, _FREAD);
+	struct file *wf = file_create(inode, 0, _FREAD | _FWRITE);
+	int read = file_add_filedes(rf, 0);
+	int write = file_add_filedes(wf, 0);
+	files[0] = read;
+	files[1] = write;
+	file_put(wf);
+	file_put(rf);
 	return 0;
 }
 
@@ -78,7 +128,7 @@ int fs_pipe_read(struct inode *ino, int flags, char *buffer, size_t length)
 {
 	if(!ino || !buffer)
 		return -EINVAL;
-	struct pipe *pipe = ino->pipe;
+	struct pipe *pipe = ino->kdev.data;
 	if(!pipe)
 		return -EINVAL;
 	size_t len = length;
@@ -86,11 +136,11 @@ int fs_pipe_read(struct inode *ino, int flags, char *buffer, size_t length)
 	if((flags & _FNONBLOCK) && !pipe->pending)
 		return -EAGAIN;
 	/* should we even try reading? (empty pipe with no writing processes=no) */
-	if(!pipe->pending && pipe->count <= 1)
+	if(!pipe->pending && pipe->wrcount == 0)
 		return 0;
 	/* block until we have stuff to read */
 	mutex_acquire(&pipe->lock);
-	while(!pipe->pending && (pipe->count > 1 && pipe->wrcount>0)) {
+	while(!pipe->pending && (pipe->wrcount>0)) {
 		/* we need to block, but also release the lock. Disable interrupts
 		 * so we don't schedule before we want to */
 		int r = tm_thread_block_confirm(&pipe->read_blocked,
@@ -122,7 +172,7 @@ int fs_pipe_write(struct inode *ino, int flags, char *initialbuffer, size_t tota
 {
 	if(!ino || !initialbuffer)
 		return -EINVAL;
-	struct pipe *pipe = ino->pipe;
+	struct pipe *pipe = ino->kdev.data;
 	if(!pipe)
 		return -EINVAL;
 	/* allow for partial writes of the system page size. Thus, we wont
@@ -141,7 +191,7 @@ int fs_pipe_write(struct inode *ino, int flags, char *initialbuffer, size_t tota
 		if(length > remain)
 			length = remain;
 		/* we're writing to a pipe with no reading process! */
-		if((pipe->count - pipe->wrcount) == 0) {
+		if(pipe->recount == 0) {
 			mutex_release(&pipe->lock);
 			tm_signal_send_thread(current_thread, SIGPIPE);
 			return -EPIPE;
@@ -178,12 +228,15 @@ int fs_pipe_write(struct inode *ino, int flags, char *initialbuffer, size_t tota
 
 int fs_pipe_select(struct inode *in, int rw)
 {
-	if(rw != READ)
-		return 1;
-	struct pipe *pipe = in->pipe;
+	struct pipe *pipe = in->kdev.data;
 	if(!pipe) return 1;
-	if(!pipe->pending && (pipe->count > 1 && pipe->wrcount>0))
-		return 0;
+	if(rw == READ) {
+		if(!pipe->pending)
+			return 0;
+	} else if(rw == WRITE) {
+		if(pipe->pending == PIPE_SIZE)
+			return 0;
+	}
 	return 1;
 }
 

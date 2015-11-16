@@ -409,7 +409,7 @@ static unsigned char __read_data(void)
 	return ret;
 }
 
-int kb_select(int min, int rw)
+int kb_select(struct file *file, int rw)
 {
 	int ret = 1;
 	if(rw == READ) {
@@ -423,7 +423,7 @@ int kb_select(int min, int rw)
 	return ret;
 }
 
-int kb_rw(int rw, dev_t dev, char *buf, size_t length)
+int kb_rw(int rw, struct file *file, off_t off, char *buf, size_t length)
 {
 	if(stupid) {
 		head = tail = count = 0;

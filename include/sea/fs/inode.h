@@ -32,6 +32,16 @@ struct pipe;
 #define RESOLVE_NOMOUNT 2
 
 struct pty;
+
+struct kdevice {
+	void *data;
+	int type;
+	ssize_t (*rw)(int dir, struct file *file, off_t off, uint8_t *buffer, size_t length);
+	int (*select)(struct file *file, int rw);
+	void (*open)(struct file *file);
+	void (*close)(struct file *file);
+};
+
 struct inode {
 	struct rwlock lock, metalock;
 	struct queue_item lru_item;
@@ -49,6 +59,7 @@ struct inode {
 	struct pipe *pipe;
 	struct pty *pty; /* TODO: consoledate these into a union */
 	struct socket *socket;
+	struct kdevice kdev;
 
 	/* filesystem data */
 	mode_t mode;

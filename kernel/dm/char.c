@@ -37,27 +37,31 @@ static int null_rw(int rw, int m, char *buf, size_t c)
 	6 - 9 -> reserved
 */
 
-struct chardevice *dm_set_char_device(int maj, int (*f)(int, int, char*, size_t), 
-	int (*c)(int, int, long), int (*s)(int, int))
+struct chardevice *dm_set_char_device(int maj,
+		ssize_t (*rw)(int, struct file *, off_t off, char*, size_t),
+		int (*c)(struct file *, int, long),
+		int (*s)(struct file *, int))
 {
-	printk(1, "[dev]: Setting char device %d (%x, %x)\n", maj, f, c);
+	printk(1, "[dev]: Setting char device %d (%x, %x)\n", maj, rw, c);
 	struct chardevice *dev = (struct chardevice *)kmalloc(sizeof(struct chardevice));
-	dev->func = f;
+	dev->func = rw;
 	dev->ioctl=c;
 	dev->select=s;
 	dm_add_device(DT_CHAR, maj, dev);
 	return dev;
 }
 
-int dm_set_available_char_device(int (*f)(int, int, char*, size_t), 
-	int (*c)(int, int, long), int (*s)(int, int))
+int dm_set_available_char_device( 
+		ssize_t (*rw)(int, struct file *, off_t off, char*, size_t),
+		int (*c)(struct file *, int, long),
+		int (*s)(struct file *, int))
 {
 	int i=10; /* first 10 character devices are reserved */
 	mutex_acquire(&cd_search_lock);
 	while(i>0) {
 		if(!dm_get_device(DT_CHAR, i))
 		{
-			dm_set_char_device(i, f, c, s);
+			dm_set_char_device(i, rw, c, s);
 			break;
 		}
 		i++;
@@ -80,15 +84,15 @@ void dm_init_char_devices(void)
 	mutex_create(&cd_search_lock, 0);
 }
 
-int dm_char_rw(int rw, dev_t dev, char *buf, size_t len)
+int dm_char_rw(int rw, struct file *file, off_t off, char *buf, size_t len)
 {
-	struct device *dt = dm_get_device(DT_CHAR, MAJOR(dev));
+	struct device *dt = dm_get_device(DT_CHAR, MAJOR(file->inode->phys_dev));
 	if(!dt)
 		return -ENXIO;
 	struct chardevice *cd = (struct chardevice *)dt->ptr;
 	if(cd->func)
 	{
-		int ret = (cd->func)(rw, MINOR(dev), buf, len);
+		int ret = (cd->func)(rw, file, off, buf, len);
 		return ret;
 	}
 	return 0;
@@ -110,44 +114,32 @@ void dm_unregister_char_device(int n)
 	kfree(fr);
 }
 
-int dm_char_ioctl(dev_t dev, int cmd, long arg)
+int dm_char_ioctl(struct file *file, int cmd, long arg)
 {
-	struct device *dt = dm_get_device(DT_CHAR, MAJOR(dev));
+	struct device *dt = dm_get_device(DT_CHAR, MAJOR(file->inode->phys_dev));
 	if(!dt)
 		return -ENXIO;
 	struct chardevice *cd = (struct chardevice *)dt->ptr;
 	if(cd->ioctl)
 	{
-		int ret = (cd->ioctl)(MINOR(dev), cmd, arg);
+		int ret = (cd->ioctl)(file, cmd, arg);
 		return ret;
 	}
 	return 0;
 }
 
-int dm_chardev_select(struct inode *in, int rw)
+int dm_chardev_select(struct file *f, int rw)
 {
-	int dev = in->phys_dev;
+	int dev = f->inode->phys_dev;
 	struct device *dt = dm_get_device(DT_CHAR, MAJOR(dev));
 	if(!dt)
 		return 1;
 	struct chardevice *cd = (struct chardevice *)dt->ptr;
 	if(cd->select)
-		return cd->select(MINOR(dev), rw);
+		return cd->select(f, rw);
 	return 1;
 }
 
 void dm_send_sync_char(void)
 {
-	int i=0;
-	while(i>=0) {
-		struct device *d = dm_get_enumerated_device(DT_CHAR, i);
-		if(!d) break;
-		assert(d->ptr);
-		struct chardevice *cd = (struct chardevice *)d->ptr;
-		if(cd->ioctl)
-			cd->ioctl(0, -1, 0);
-		i++;
-		if(tm_thread_got_signal(current_thread))
-			return;
-	}
 }

@@ -27,7 +27,7 @@
 #include <sea/string.h>
 #include <sea/dm/pty.h>
 #include <sea/syslog.h>
-/* #define SC_DEBUG 1 */
+/* #define SC_DEBUG 0 */
 #define SC_TIMING 1
 static unsigned int num_syscalls=0;
 int sys_null(long a, long b, long c, long d, long e)

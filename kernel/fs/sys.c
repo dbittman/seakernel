@@ -127,7 +127,7 @@ int sys_setup(int a)
 	fs_initrd_parse();
 	devfs_init();
 
-	dm_char_rw(OPEN, GETDEV(3, 1), 0, 0);
+	//dm_char_rw(OPEN, GETDEV(3, 1), 0, 0);
 	sys_open("/dev/tty1", O_RDWR);   /* stdin  */
 	sys_open("/dev/tty1", O_WRONLY); /* stdout */
 	sys_open("/dev/tty1", O_WRONLY); /* stderr */
@@ -620,12 +620,14 @@ static int select_filedes(int i, int rw)
 	if(!file)
 		return -EBADF;
 	struct inode *in = file->inode;
+	if(in->kdev.select)
+		ready = in->kdev.select(file, rw);
 	if(in->pty)
 		ready = pty_select(in, rw);
 	else if(S_ISREG(in->mode) || S_ISDIR(in->mode) || S_ISLNK(in->mode))
 		ready = fs_callback_inode_select(in, rw);
 	else if(S_ISCHR(in->mode))
-		ready = dm_chardev_select(in, rw);
+		ready = dm_chardev_select(file, rw);
 	else if(S_ISBLK(in->mode))
 		ready = dm_blockdev_select(in, rw);
 	else if(S_ISFIFO(in->mode))

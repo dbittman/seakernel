@@ -4,22 +4,26 @@
 #include <sea/dm/dev.h>
 #include <sea/fs/inode.h>
 struct chardevice {
-	int (*func)(int mode, int minor, char *buf, size_t count);
-	int (*ioctl)(int min, int cmd, long arg);
-	int (*select)(int min, int rw);
+	ssize_t (*func)(int direction, struct file *f, off_t off, char *buf, size_t count);
+	int (*ioctl)(struct file *, int cmd, long arg);
+	int (*select)(struct file *, int rw);
 };
 
-struct chardevice *dm_set_char_device(int maj, int (*f)(int, int, char*, size_t), 
-	int (*c)(int, int, long), int (*s)(int, int));
+struct chardevice *dm_set_char_device(int maj,
+		ssize_t (*rw)(int, struct file *, off_t off, char*, size_t),
+		int (*c)(struct file *, int, long),
+		int (*s)(struct file *, int));
 
-int dm_set_available_char_device(int (*f)(int, int, char*, size_t), 
-	int (*c)(int, int, long), int (*s)(int, int));
+int dm_set_available_char_device( 
+		ssize_t (*rw)(int, struct file *, off_t off, char*, size_t),
+		int (*c)(struct file *, int, long),
+		int (*s)(struct file *, int));
+int dm_char_rw(int rw, struct file *file, off_t off, char *buf, size_t len);
+int dm_char_ioctl(struct file *file, int cmd, long arg);
+int dm_chardev_select(struct file *f, int rw);
 
 void dm_init_char_devices();
-int dm_char_rw(int rw, dev_t dev, char *buf, size_t len);
 void dm_unregister_char_device(int n);
-int dm_char_ioctl(dev_t dev, int cmd, long arg);
-int dm_chardev_select(struct inode *in, int rw);
 void dm_send_sync_char();
 int ttyx_rw(int rw, int min, char *buf, size_t count);
 int tty_rw(int rw, int min, char *buf, size_t count);

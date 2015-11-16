@@ -91,8 +91,8 @@ struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int
 		return 0;
 	}
 	if(num) *num = fdnum;
-	if(S_ISCHR(inode->mode) && !(flags & _FNOCTTY))
-		dm_char_rw(OPEN, inode->phys_dev, 0, 0);
+	//if(S_ISCHR(inode->mode) && !(flags & _FNOCTTY))
+	//	dm_char_rw(OPEN, inode->phys_dev, 0, 0);
 	if(flags & _FTRUNC && S_ISREG(inode->mode))
 	{
 		inode->length=0;
@@ -123,13 +123,6 @@ static int duplicate(struct process *t, int fp, int n)
 	struct file *f = file_get(fp);
 	if(!f)
 		return -EBADF;
-	if(f->inode->pipe) {
-		atomic_fetch_add(&f->inode->pipe->count, 1);
-		if(f->flags & _FWRITE)
-			atomic_fetch_add(&f->inode->pipe->wrcount, 1);
-		tm_blocklist_wakeall(&f->inode->pipe->read_blocked);
-		tm_blocklist_wakeall(&f->inode->pipe->write_blocked);
-	}
 	int r = file_add_filedes(f, n);
 	file_put(f);
 	return r;

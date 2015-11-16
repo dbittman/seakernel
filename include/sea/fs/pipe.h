@@ -12,7 +12,7 @@ struct pipe {
 	char *buffer;
 	off_t length;
 	struct mutex lock;
-	_Atomic int count, wrcount;
+	_Atomic int wrcount, recount;
 	struct blocklist read_blocked, write_blocked;
 };
 

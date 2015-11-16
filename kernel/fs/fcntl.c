@@ -19,8 +19,8 @@ int sys_ioctl(int fp, int cmd, long arg)
 	int ret = 0;
 	if(f->inode->pty)
 		ret = pty_ioctl(f->inode, cmd, arg);
-	else
-		ret = dm_ioctl(f->inode->mode, f->inode->phys_dev, cmd, arg);
+	//else
+	//	ret = dm_ioctl(f->inode->mode, f->inode->phys_dev, cmd, arg);
 	file_put(f);
 	return ret;
 }

@@ -630,8 +630,6 @@ static int select_filedes(int i, int rw)
 		ready = dm_chardev_select(file, rw);
 	else if(S_ISBLK(in->mode))
 		ready = dm_blockdev_select(in, rw);
-	else if(S_ISFIFO(in->mode))
-		ready = fs_pipe_select(in, rw);
 	else if(S_ISSOCK(in->mode))
 		ready = socket_select(file, rw);
 	file_put(file);

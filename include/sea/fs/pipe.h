@@ -13,16 +13,9 @@ struct pipe {
 	off_t length;
 	struct mutex lock;
 	_Atomic int wrcount, recount;
-	struct blocklist read_blocked, write_blocked;
 };
 
-int sys_mkfifo(char *path, mode_t mode);
-void fs_pipe_free(struct inode *i);
-int fs_pipe_read(struct inode *ino, int flags, char *buffer, size_t length);
-int fs_pipe_write(struct inode *ino, int flags, char *buffer, size_t length);
-int fs_pipe_select(struct inode *in, int rw);
 int sys_pipe(int *files);
-struct pipe *fs_pipe_create();
 
 #endif
 

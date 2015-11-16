@@ -411,6 +411,11 @@ static unsigned char __read_data(void)
 
 int kb_select(struct file *file, int rw)
 {
+	if(stupid) {
+		head = tail = count = 0;
+		stupid = 0;
+	}
+
 	int ret = 1;
 	if(rw == READ) {
 		int old = cpu_interrupt_set(0);

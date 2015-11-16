@@ -10,14 +10,12 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/string.h>
 #include <sea/tm/blocking.h>
-struct pipe *fs_pipe_create (void)
+static struct pipe *fs_pipe_create(void)
 {
 	struct pipe *pipe = (struct pipe *)kmalloc(sizeof(struct pipe));
 	pipe->length = PIPE_SIZE;
 	pipe->buffer = (char *)kmalloc(PIPE_SIZE);
 	mutex_create(&pipe->lock, 0);
-	blocklist_create(&pipe->read_blocked, 0, "pipe-read");
-	blocklist_create(&pipe->write_blocked, 0, "pipe-write");
 	pipe->wrcount=1;
 	pipe->recount=1;
 	return pipe;
@@ -25,9 +23,7 @@ struct pipe *fs_pipe_create (void)
 
 static struct inode *create_anon_pipe (void)
 {
-	struct inode *node;
-	/* create a 'fake' inode */
-	node = vfs_inode_create();
+	struct inode *node = vfs_inode_create();
 	node->flags |= INODE_NOLRU;
 	node->uid = current_process->effective_uid;
 	node->gid = current_process->effective_gid;
@@ -50,72 +46,22 @@ static void __pipe_close(struct file *file)
 		int r = atomic_fetch_sub(&pipe->recount, 1);
 		assert(r > 0);
 	}
-	tm_blocklist_wakeall(&pipe->read_blocked);
-	tm_blocklist_wakeall(&pipe->write_blocked);
-}
-
-static void __pipe_open(struct file *file)
-{
-	/* struct pipe *pipe = file->inode->kdev.data; */
-	/* assert(pipe); */
-	/* atomic_fetch_add(&pipe->count, 1); */
-	/* if(file->flags & _FWRITE) */
-	/* 	atomic_fetch_add(&pipe->wrcount, 1); */
-	/* tm_blocklist_wakeall(&pipe->read_blocked); */
-	/* tm_blocklist_wakeall(&pipe->write_blocked); */
+	tm_blocklist_wakeall(&file->inode->readblock);
+	tm_blocklist_wakeall(&file->inode->writeblock);
 }
 
 static int __pipe_select(struct file *file, int rw)
 {
-	return fs_pipe_select(file->inode, rw);
-}
-
-static ssize_t __pipe_rw(int rw, struct file *file, off_t off, uint8_t *buffer, size_t len)
-{
-	if(rw == READ)
-		return fs_pipe_read(file->inode, 0, buffer, len);
-	if(rw == WRITE)
-		return fs_pipe_write(file->inode, 0, buffer, len);
-}
-
-int sys_pipe(int *files)
-{
-	if(!files)
-		return -EINVAL;
-	struct inode *inode = vfs_inode_create();
-	inode->flags |= INODE_NOLRU;
-	inode->uid = current_process->effective_uid;
-	inode->gid = current_process->effective_gid;
-	inode->mode = S_IFIFO | 0x1FF;
-	inode->count = 1;
-
-	struct pipe *pipe = fs_pipe_create();
-	inode->kdev.data = pipe;
-	inode->kdev.select = __pipe_select;
-	inode->kdev.open = __pipe_open;
-	inode->kdev.close = __pipe_close;
-	inode->kdev.rw = __pipe_rw;
-
-	struct file *rf = file_create(inode, 0, _FREAD);
-	struct file *wf = file_create(inode, 0, _FREAD | _FWRITE);
-	int read = file_add_filedes(rf, 0);
-	int write = file_add_filedes(wf, 0);
-	files[0] = read;
-	files[1] = write;
-	file_put(wf);
-	file_put(rf);
-	return 0;
-}
-
-void fs_pipe_free(struct inode *i)
-{
-	if(!i || !i->pipe) return;
-	kfree((void *)i->pipe->buffer);
-	mutex_destroy(&i->pipe->lock);
-	blocklist_destroy(&i->pipe->read_blocked);
-	blocklist_destroy(&i->pipe->write_blocked);
-	kfree(i->pipe);
-	i->pipe=0;
+	struct pipe *pipe = file->inode->kdev.data;
+	if(!pipe) return 1;
+	if(rw == READ) {
+		if(!pipe->pending)
+			return 0;
+	} else if(rw == WRITE) {
+		if(pipe->pending == PIPE_SIZE)
+			return 0;
+	}
+	return 1;
 }
 
 static bool __release_lock(void *m)
@@ -124,16 +70,13 @@ static bool __release_lock(void *m)
 	return true;
 }
 
-int fs_pipe_read(struct inode *ino, int flags, char *buffer, size_t length)
+static int __pipe_read(struct file *file, char *buffer, size_t length)
 {
-	if(!ino || !buffer)
-		return -EINVAL;
-	struct pipe *pipe = ino->kdev.data;
-	if(!pipe)
-		return -EINVAL;
+	struct pipe *pipe = file->inode->kdev.data;
+	assert(pipe);
 	size_t len = length;
 	int ret=0;
-	if((flags & _FNONBLOCK) && !pipe->pending)
+	if((file->flags & _FNONBLOCK) && !pipe->pending)
 		return -EAGAIN;
 	/* should we even try reading? (empty pipe with no writing processes=no) */
 	if(!pipe->pending && pipe->wrcount == 0)
@@ -143,7 +86,7 @@ int fs_pipe_read(struct inode *ino, int flags, char *buffer, size_t length)
 	while(!pipe->pending && (pipe->wrcount>0)) {
 		/* we need to block, but also release the lock. Disable interrupts
 		 * so we don't schedule before we want to */
-		int r = tm_thread_block_confirm(&pipe->read_blocked,
+		int r = tm_thread_block_confirm(&file->inode->readblock,
 				THREADSTATE_INTERRUPTIBLE, __release_lock, &pipe->lock);
 		switch(r) {
 			case -ERESTART:
@@ -161,20 +104,17 @@ int fs_pipe_read(struct inode *ino, int flags, char *buffer, size_t length)
 	}
 	pipe->pending -= ret;
 
-	tm_blocklist_wakeall(&pipe->write_blocked);
-	tm_blocklist_wakeall(&pipe->read_blocked);
+	tm_blocklist_wakeall(&file->inode->writeblock);
+	tm_blocklist_wakeall(&file->inode->readblock);
 	
 	mutex_release(&pipe->lock);
 	return ret;
 }
 
-int fs_pipe_write(struct inode *ino, int flags, char *initialbuffer, size_t totallength)
+static int __pipe_write(struct file *file, char *initialbuffer, size_t totallength)
 {
-	if(!ino || !initialbuffer)
-		return -EINVAL;
-	struct pipe *pipe = ino->kdev.data;
-	if(!pipe)
-		return -EINVAL;
+	struct pipe *pipe = file->inode->kdev.data;
+	assert(pipe);
 	/* allow for partial writes of the system page size. Thus, we wont
 	 * have a process freeze because it tries to fill up the pipe in one
 	 * shot. */
@@ -182,7 +122,7 @@ int fs_pipe_write(struct inode *ino, int flags, char *initialbuffer, size_t tota
 	size_t length;
 	size_t remain = totallength;
 	mutex_acquire(&pipe->lock);
-	if((flags & _FNONBLOCK) && pipe->pending + totallength > PIPE_SIZE) {
+	if((file->flags & _FNONBLOCK) && pipe->pending + totallength > PIPE_SIZE) {
 		mutex_release(&pipe->lock);
 		return -EAGAIN;
 	}
@@ -198,8 +138,8 @@ int fs_pipe_write(struct inode *ino, int flags, char *initialbuffer, size_t tota
 		}
 		/* IO block until we can write to it */
 		while((pipe->pending+length)>=PIPE_SIZE) {
-			tm_blocklist_wakeall(&pipe->read_blocked);
-			int r = tm_thread_block_confirm(&pipe->write_blocked,
+			tm_blocklist_wakeall(&file->inode->readblock);
+			int r = tm_thread_block_confirm(&file->inode->writeblock,
 					THREADSTATE_INTERRUPTIBLE, __release_lock, &pipe->lock);
 			switch(r) {
 				case -ERESTART:
@@ -213,11 +153,10 @@ int fs_pipe_write(struct inode *ino, int flags, char *initialbuffer, size_t tota
 			pipe->buffer[pipe->write_pos % PIPE_SIZE] = buffer[i];
 			pipe->write_pos++;
 		}
-		pipe->length = ino->length;
 		pipe->pending += length;
 		/* now, unblock the tasks */
-		tm_blocklist_wakeall(&pipe->read_blocked);
-		tm_blocklist_wakeall(&pipe->write_blocked);
+		tm_blocklist_wakeall(&file->inode->readblock);
+		tm_blocklist_wakeall(&file->inode->writeblock);
 
 		remain -= length;
 		buffer += length;
@@ -226,17 +165,49 @@ int fs_pipe_write(struct inode *ino, int flags, char *initialbuffer, size_t tota
 	return totallength;
 }
 
-int fs_pipe_select(struct inode *in, int rw)
+static ssize_t __pipe_rw(int rw, struct file *file, off_t off, uint8_t *buffer, size_t len)
 {
-	struct pipe *pipe = in->kdev.data;
-	if(!pipe) return 1;
-	if(rw == READ) {
-		if(!pipe->pending)
-			return 0;
-	} else if(rw == WRITE) {
-		if(pipe->pending == PIPE_SIZE)
-			return 0;
-	}
-	return 1;
+	if(rw == READ)
+		return __pipe_read(file, buffer, len);
+	else if(rw == WRITE)
+		return __pipe_write(file, buffer, len);
+	return -EIO;
+}
+
+static void __pipe_destroy(struct inode *node)
+{
+	struct pipe *pipe = node->kdev.data;
+	kfree(pipe->buffer);
+	mutex_destroy(&pipe->lock);
+	kfree(pipe);
+}
+
+int sys_pipe(int *files)
+{
+	if(!files)
+		return -EINVAL;
+	struct inode *inode = vfs_inode_create();
+	inode->flags |= INODE_NOLRU;
+	inode->uid = current_process->effective_uid;
+	inode->gid = current_process->effective_gid;
+	inode->mode = S_IFIFO | 0x1FF;
+	inode->count = 1;
+
+	struct pipe *pipe = fs_pipe_create();
+	inode->kdev.data = pipe;
+	inode->kdev.select = __pipe_select;
+	inode->kdev.close = __pipe_close;
+	inode->kdev.rw = __pipe_rw;
+	inode->kdev.destroy = __pipe_destroy;
+
+	struct file *rf = file_create(inode, 0, _FREAD);
+	struct file *wf = file_create(inode, 0, _FREAD | _FWRITE);
+	int read = file_add_filedes(rf, 0);
+	int write = file_add_filedes(wf, 0);
+	files[0] = read;
+	files[1] = write;
+	file_put(wf);
+	file_put(rf);
+	return 0;
 }
 

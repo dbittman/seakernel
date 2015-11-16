@@ -33,6 +33,7 @@ struct pipe;
 
 struct pty;
 
+struct file;
 struct kdevice {
 	void *data;
 	int type;
@@ -40,6 +41,7 @@ struct kdevice {
 	int (*select)(struct file *file, int rw);
 	void (*open)(struct file *file);
 	void (*close)(struct file *file);
+	void (*destroy)(struct inode *inode);
 };
 
 struct inode {
@@ -60,6 +62,7 @@ struct inode {
 	struct pty *pty; /* TODO: consoledate these into a union */
 	struct socket *socket;
 	struct kdevice kdev;
+	struct blocklist readblock, writeblock;
 
 	/* filesystem data */
 	mode_t mode;

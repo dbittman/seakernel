@@ -74,15 +74,17 @@ struct inode *vfs_inode_create (void)
 	node->flags = INODE_INUSE;
 	linkedlist_insert(ic_inuse, &node->inuse_item, node);
 
+	blocklist_create(&node->readblock, 0, "inode-read");
+	blocklist_create(&node->writeblock, 0, "inode-write");
+
 	return node;
 }
 
 /* you probably do not want to call this function directly. Use vfs_icache_put instead. */
 void vfs_inode_destroy(struct inode *node)
 {
-	if(node->pipe) {
-		fs_pipe_free(node);
-	}
+	if(node->kdev.destroy)
+		node->kdev.destroy(node);
 	rwlock_destroy(&node->lock);
 	rwlock_destroy(&node->metalock);
 	assert(!node->count);

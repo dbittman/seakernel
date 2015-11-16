@@ -511,6 +511,8 @@ int sys_ftruncate(int f, off_t length)
 	return 0;
 }
 
+
+struct kdevice *dm_char_getdev(int m);
 int sys_mknod(char *path, mode_t mode, dev_t dev)
 {
 	if(!path) return -EINVAL;
@@ -535,6 +537,7 @@ int sys_mknod(char *path, mode_t mode, dev_t dev)
 	if(S_ISCHR(mode)) {
 		//dt = dm_get_device(DT_CHAR, MAJOR(dev));
 		i->kdev = dm_char_getdev(MAJOR(dev));
+				kprintf(":::::::::::::*** set %x\n", i->kdev);
 #warning "need to do this on each load of the inode..."
 		//int r = dm_char_getdev(MAJOR(dev), &i->kdev);
 	} else

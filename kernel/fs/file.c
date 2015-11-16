@@ -44,8 +44,10 @@ struct file *file_create(struct inode *inode, struct dirent *dir,
 	file->inode = inode;
 	file->dirent = dir;
 	file->count = ATOMIC_VAR_INIT(1);
-	if(inode->kdev && inode->kdev->open)
-		inode->kdev->open(file);
+	if(inode->kdev) {
+	printk(0, "ok: %x\n", &inode->kdev);
+		//inode->kdev->open(file);
+	}
 	return file;
 }
 

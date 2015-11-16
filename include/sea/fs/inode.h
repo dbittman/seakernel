@@ -60,7 +60,6 @@ struct inode {
 	dev_t phys_dev;
 	struct filesystem *mount;
 
-	struct pipe *pipe;
 	struct pty *pty; /* TODO: consoledate these into a union */
 	struct socket *socket;
 	void *devdata;

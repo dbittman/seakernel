@@ -43,6 +43,7 @@ int dm_char_register(struct kdevice *kdev)
 	mutex_acquire(&cd_search_lock);
 	for(int i=0;i<128;i++) {
 		if(!devices[i]) {
+	printk(0, "set %d %x\n", i, kdev);
 			devices[i] = kdev;
 			mutex_release(&cd_search_lock);
 			return i;
@@ -53,9 +54,10 @@ int dm_char_register(struct kdevice *kdev)
 
 struct kdevice *dm_char_getdev(int m)
 {
-	if(!devices[m])
+	if(m >= 128 || !devices[m])
 		return 0;
 	/* TODO: this is not threadsafe */
+	printk(0, "getting %d %x\n", m, devices[m]);
 	atomic_fetch_add(&devices[m]->count, 1);
 	return devices[m];
 }

@@ -246,6 +246,7 @@ int fs_inode_pull(struct inode *node)
 			atomic_fetch_and(&node->flags, ~INODE_NEEDREAD);
 			if(node->phys_dev) {
 				node->kdev = dm_char_getdev(MAJOR(node->phys_dev)); // TODO make non-char-specific
+				kprintf("::::::::::::: set %x\n", node->kdev);
 			}
 		}
 	}

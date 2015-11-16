@@ -40,11 +40,6 @@ static void do_stat(struct inode * inode, struct stat * tmp)
 	tmp->st_mtime = inode->mtime;
 	tmp->st_ctime = inode->ctime;
 	tmp->st_blksize = inode->blocksize;
-	if(inode->pipe) {
-		tmp->st_blksize = PAGE_SIZE;
-		tmp->st_blocks = PIPE_SIZE / PAGE_SIZE;
-		tmp->st_size = inode->pipe->pending;
-	}
 	/* HACK: some filesystems might not set this... */
 	if(!tmp->st_blksize)
 		tmp->st_blksize = 512;

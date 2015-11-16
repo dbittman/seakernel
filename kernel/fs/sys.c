@@ -529,13 +529,13 @@ int sys_mknod(char *path, mode_t mode, dev_t dev)
 		vfs_icache_put(i);
 		return -EEXIST;
 	}
-	i->flags |= INODE_NOLRU;
 	i->phys_dev = dev;
 	i->mode = (mode & ~0xFFF) | ((mode&0xFFF) & (~current_process->cmask&0xFFF));
 	
 	struct device *dt;
 	if(S_ISCHR(mode)) {
 		dt = dm_get_device(DT_CHAR, MAJOR(dev));
+#warning "need to do this on each load of the inode..."
 		int r = dm_char_getdev(MAJOR(dev), &i->kdev);
 	} else
 		dt = dm_get_device(DT_BLK, MAJOR(dev));

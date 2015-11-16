@@ -35,8 +35,9 @@ struct pty;
 
 struct file;
 struct kdevice {
-	void *data;
-	int type;
+	const char *name;
+	_Atomic int count;
+	
 	ssize_t (*rw)(int dir, struct file *file, off_t off, uint8_t *buffer, size_t length);
 	int (*select)(struct file *file, int rw);
 	void (*open)(struct file *file);
@@ -62,7 +63,8 @@ struct inode {
 	struct pipe *pipe;
 	struct pty *pty; /* TODO: consoledate these into a union */
 	struct socket *socket;
-	struct kdevice kdev;
+	void *devdata;
+	struct kdevice *kdev;
 	struct blocklist readblock, writeblock;
 
 	/* filesystem data */

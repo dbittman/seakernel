@@ -44,6 +44,8 @@ struct file *file_create(struct inode *inode, struct dirent *dir,
 	file->inode = inode;
 	file->dirent = dir;
 	file->count = ATOMIC_VAR_INIT(1);
+	if(inode->kdev && inode->kdev->open)
+		inode->kdev->open(file);
 	return file;
 }
 
@@ -51,8 +53,8 @@ void file_put(struct file *file)
 {
 	if(atomic_fetch_sub(&file->count, 1) == 1) {
 		/* destroy */
-		if(file->inode->kdev.close)
-			file->inode->kdev.close(file);
+		if(file->inode->kdev && file->inode->kdev->close)
+			file->inode->kdev->close(file);
 		if(file->dirent)
 			vfs_dirent_release(file->dirent);
 		vfs_icache_put(file->inode);

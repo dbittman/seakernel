@@ -531,12 +531,12 @@ int sys_mknod(char *path, mode_t mode, dev_t dev)
 	}
 	i->phys_dev = dev;
 	i->mode = (mode & ~0xFFF) | ((mode&0xFFF) & (~current_process->cmask&0xFFF));
-	
 	struct device *dt;
 	if(S_ISCHR(mode)) {
-		dt = dm_get_device(DT_CHAR, MAJOR(dev));
+		//dt = dm_get_device(DT_CHAR, MAJOR(dev));
+		i->kdev = dm_char_getdev(MAJOR(dev));
 #warning "need to do this on each load of the inode..."
-		int r = dm_char_getdev(MAJOR(dev), &i->kdev);
+		//int r = dm_char_getdev(MAJOR(dev), &i->kdev);
 	} else
 		dt = dm_get_device(DT_BLK, MAJOR(dev));
 
@@ -631,8 +631,8 @@ static int select_filedes(int i, int rw)
 	struct inode *in = file->inode;
 	if(in->pty)
 		ready = pty_select(in, rw);
-	else if(in->kdev.select)
-		ready = in->kdev.select(file, rw);
+	else if(in->kdev && in->kdev->select)
+		ready = in->kdev->select(file, rw);
 	else if(S_ISREG(in->mode) || S_ISDIR(in->mode) || S_ISLNK(in->mode))
 		ready = fs_callback_inode_select(in, rw);
 	//else if(S_ISCHR(in->mode))

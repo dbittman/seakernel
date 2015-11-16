@@ -51,12 +51,13 @@ int dm_char_register(struct kdevice *kdev)
 	mutex_release(&cd_search_lock);
 }
 
-int dm_char_getdev(int m, struct kdevice *dev)
+struct kdevice *dm_char_getdev(int m)
 {
 	if(!devices[m])
-		return -ENOENT;
-	memcpy(dev, devices[m], sizeof(*dev));
-	return 0;
+		return 0;
+	/* TODO: this is not threadsafe */
+	atomic_fetch_add(&devices[m]->count, 1);
+	return devices[m];
 }
 
 struct chardevice *dm_set_char_device(int maj,
@@ -96,6 +97,7 @@ int dm_set_available_char_device(
 
 void dm_init_char_devices(void)
 {
+	memset(devices, 0, sizeof(devices));
 	/* These devices are all built into the kernel. We must initialize them now */
 	dm_set_char_device(0, null_rw, 0, 0);
 	dm_set_char_device(1, zero_rw, 0, 0);

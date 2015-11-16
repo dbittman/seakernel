@@ -21,23 +21,9 @@ static struct pipe *fs_pipe_create(void)
 	return pipe;
 }
 
-static struct inode *create_anon_pipe (void)
-{
-	struct inode *node = vfs_inode_create();
-	node->flags |= INODE_NOLRU;
-	node->uid = current_process->effective_uid;
-	node->gid = current_process->effective_gid;
-	node->mode = S_IFIFO | 0x1FF;
-	node->count=2;
-	
-	struct pipe *pipe = fs_pipe_create();
-	node->pipe = pipe;
-	return node;
-}
-
 static void __pipe_close(struct file *file)
 {
-	struct pipe *pipe = file->inode->kdev.data;
+	struct pipe *pipe = file->inode->devdata;
 	assert(pipe);
 	if(file->flags & _FWRITE) {
 		int r = atomic_fetch_sub(&pipe->wrcount, 1);
@@ -52,7 +38,7 @@ static void __pipe_close(struct file *file)
 
 static int __pipe_select(struct file *file, int rw)
 {
-	struct pipe *pipe = file->inode->kdev.data;
+	struct pipe *pipe = file->inode->devdata;
 	if(!pipe) return 1;
 	if(rw == READ) {
 		if(!pipe->pending)
@@ -72,7 +58,7 @@ static bool __release_lock(void *m)
 
 static int __pipe_read(struct file *file, char *buffer, size_t length)
 {
-	struct pipe *pipe = file->inode->kdev.data;
+	struct pipe *pipe = file->inode->devdata;
 	assert(pipe);
 	size_t len = length;
 	int ret=0;
@@ -113,7 +99,7 @@ static int __pipe_read(struct file *file, char *buffer, size_t length)
 
 static int __pipe_write(struct file *file, char *initialbuffer, size_t totallength)
 {
-	struct pipe *pipe = file->inode->kdev.data;
+	struct pipe *pipe = file->inode->devdata;
 	assert(pipe);
 	/* allow for partial writes of the system page size. Thus, we wont
 	 * have a process freeze because it tries to fill up the pipe in one
@@ -176,29 +162,36 @@ static ssize_t __pipe_rw(int rw, struct file *file, off_t off, uint8_t *buffer, 
 
 static void __pipe_destroy(struct inode *node)
 {
-	struct pipe *pipe = node->kdev.data;
+	struct pipe *pipe = node->devdata;
 	kfree(pipe->buffer);
 	mutex_destroy(&pipe->lock);
 	kfree(pipe);
 }
+
+static struct kdevice __pipe_kdev = {
+	.select = __pipe_select,
+	.close = __pipe_close,
+	.rw = __pipe_rw,
+	.destroy = __pipe_destroy,
+	.open = 0,
+	.ioctl = 0,
+	.name = "pipe",
+	.count = 0,
+};
 
 int sys_pipe(int *files)
 {
 	if(!files)
 		return -EINVAL;
 	struct inode *inode = vfs_inode_create();
-	inode->flags |= INODE_NOLRU;
 	inode->uid = current_process->effective_uid;
 	inode->gid = current_process->effective_gid;
 	inode->mode = S_IFIFO | 0x1FF;
 	inode->count = 1;
 
 	struct pipe *pipe = fs_pipe_create();
-	inode->kdev.data = pipe;
-	inode->kdev.select = __pipe_select;
-	inode->kdev.close = __pipe_close;
-	inode->kdev.rw = __pipe_rw;
-	inode->kdev.destroy = __pipe_destroy;
+	inode->devdata = pipe;
+	inode->kdev = &__pipe_kdev;
 
 	struct file *rf = file_create(inode, 0, _FREAD);
 	struct file *wf = file_create(inode, 0, _FREAD | _FWRITE);

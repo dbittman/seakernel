@@ -19,8 +19,8 @@ int sys_ioctl(int fp, int cmd, long arg)
 	int ret = 0;
 	if(f->inode->pty) /* TODO */
 		ret = pty_ioctl(f->inode, cmd, arg);
-	else if(f->inode->kdev.ioctl)
-		ret = f->inode->kdev.ioctl(f, cmd, arg);
+	else if(f->inode->kdev && f->inode->kdev->ioctl)
+		ret = f->inode->kdev->ioctl(f, cmd, arg);
 	file_put(f);
 	return ret;
 }

@@ -450,13 +450,13 @@ int kb_rw(int rw, struct file *file, off_t off, char *buf, size_t length)
 int keyboard_major;
 
 struct kdevice kbkd = {
-	.data = 0,
 	.rw = kb_rw,
 	.select = kb_select,
 	.ioctl = 0,
 	.open = 0,
 	.close = 0,
 	.destroy = 0,
+	.name = "keyboard",
 };
 
 int module_install(void)

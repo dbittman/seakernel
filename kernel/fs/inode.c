@@ -83,8 +83,13 @@ struct inode *vfs_inode_create (void)
 /* you probably do not want to call this function directly. Use vfs_icache_put instead. */
 void vfs_inode_destroy(struct inode *node)
 {
-	if(node->kdev.destroy)
-		node->kdev.destroy(node);
+	if(node->kdev && node->kdev->destroy)
+		node->kdev->destroy(node);
+	if(node->kdev) {
+#warning "see below"
+		node->kdev->count--; /* TODO: this probably needs to happen when the inode is LRU'd? But what if the device is removed....lots of questions here */
+		node->kdev = 0;
+	}
 	rwlock_destroy(&node->lock);
 	rwlock_destroy(&node->metalock);
 	assert(!node->count);
@@ -237,8 +242,12 @@ int fs_inode_pull(struct inode *node)
 	int r = 0;
 	if(node->flags & INODE_NEEDREAD) {
 		r = fs_callback_inode_pull(node);
-		if(!r)
+		if(!r) {
 			atomic_fetch_and(&node->flags, ~INODE_NEEDREAD);
+			if(node->phys_dev) {
+				node->kdev = dm_char_getdev(MAJOR(node->phys_dev)); // TODO make non-char-specific
+			}
+		}
 	}
 	return r;
 }

@@ -22,8 +22,8 @@ int fs_do_sys_read_flags(struct file *f, off_t off, char *buf, size_t count)
 	int mode = inode->mode;
 	if(inode->pty)
 		return pty_read(inode, buf, count);
-	else if(f->inode->kdev.rw) {
-		return f->inode->kdev.rw(READ, f, off, buf, count);
+	else if(f->inode->kdev && f->inode->kdev->rw) {
+		return f->inode->kdev->rw(READ, f, off, buf, count);
 	}
 	//else if(S_ISCHR(mode))
 	//	return dm_char_rw(READ, f, off, buf, count);
@@ -78,8 +78,8 @@ int fs_do_sys_write_flags(struct file *f, off_t off, char *buf, size_t count)
 
 	if(inode->pty)
 		return pty_write(inode, buf, count);
-	else if(f->inode->kdev.rw) {
-		return f->inode->kdev.rw(WRITE, f, off, buf, count);
+	else if(f->inode->kdev && f->inode->kdev->rw) {
+		return f->inode->kdev->rw(WRITE, f, off, buf, count);
 	}
 	//else if(S_ISCHR(inode->mode))
 	//	return dm_char_rw(WRITE, f, off, buf, count);

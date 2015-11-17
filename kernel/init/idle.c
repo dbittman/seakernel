@@ -18,7 +18,6 @@
 #include <sea/string.h>
 #include <sea/tm/kthread.h>
 #include <sea/tm/process.h>
-#include <sea/tty/terminal.h>
 #include <sea/vsprintf.h>
 #include <sea/cpu/processor.h>
 

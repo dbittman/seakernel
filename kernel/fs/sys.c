@@ -24,19 +24,10 @@
 #include <sea/sys/stat.h>
 #include <sea/tm/process.h>
 #include <sea/tm/timing.h>
-#include <sea/tty/terminal.h>
 #include <sea/vsprintf.h>
 #include <sea/trace.h>
 #include <sea/syslog.h>
 static int system_setup=0;
-/* This function is called once at the start of the init process initialization.
- * It sets the task fs values to possible and useful things, allowing VFS access.
- * It then starts the device and proc filesystems, and opens up /dev/tty1 on
- * file desciptors 0, 1 and 2 (std[in,out,err]).
- * 
- * Beyond that, it can be called by any task at anytime after the first call as
- * a yield call.
- */
 extern void fs_initrd_parse();
 
 extern struct filesystem *devfs;

@@ -21,7 +21,6 @@
 #include <sea/tm/process.h>
 #include <sea/tm/ptrace.h>
 #include <sea/tm/thread.h>
-#include <sea/tty/terminal.h>
 #include <sea/uname.h>
 #include <sea/vsprintf.h>
 #include <sea/string.h>

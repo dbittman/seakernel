@@ -10,7 +10,6 @@
 #include <sea/vsprintf.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/string.h>
-#include <sea/tty/terminal.h>
 extern struct cpu *primary_cpu;
 #if CONFIG_SMP
 extern struct cpu cpu_array[CONFIG_MAX_CPUS];

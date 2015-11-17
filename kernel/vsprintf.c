@@ -10,7 +10,6 @@
 #include <stdarg.h>
 #include <sea/kernel.h>
 #include <sea/string.h>
-#include <sea/tty/terminal.h>
 #include <sea/vsprintf.h>
 #include <sea/dm/dev.h>
 #define LOGL_SERIAL 0

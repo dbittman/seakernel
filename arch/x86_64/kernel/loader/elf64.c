@@ -5,7 +5,6 @@
 #include <sea/mm/map.h>
 #include <sea/vsprintf.h>
 #include <sea/mm/kmalloc.h>
-#include <sea/tty/terminal.h>
 
 void arch_loader_parse_kernel_elf(struct multiboot *mb, void *__elf)
 {

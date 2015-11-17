@@ -18,7 +18,6 @@
 #include <sea/tm/process.h>
 #include <sea/tm/thread.h>
 #include <sea/trace.h>
-#include <sea/tty/terminal.h>
 #include <sea/vsprintf.h>
 #include <stdarg.h>
 

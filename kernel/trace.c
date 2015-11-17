@@ -6,7 +6,6 @@
 #include <stdarg.h>
 #include <sea/lib/hash.h>
 #include <sea/string.h>
-#include <sea/tty/terminal.h>
 #include <stdbool.h>
 #include <sea/fs/kerfs.h>
 

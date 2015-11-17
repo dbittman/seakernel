@@ -13,37 +13,6 @@ extern void dm_char_register(); //TODO
 
 static struct devhash_s devhash[NUM_DT];
 
-void dm_init(void)
-{
-	printk(KERN_DEBUG, "[dev]: Loading device management...\n");
-	memset(devhash, 0, sizeof(struct devhash_s)*NUM_DT);
-	int i;
-	for(i=0;i<NUM_DT;i++) 
-		mutex_create(&devhash[i].lock, 0);
-	dm_init_char_devices();
-	dm_init_block_devices();
-#if CONFIG_MODULES
-	//loader_add_kernel_symbol(dm_block_rw);
-	loader_add_kernel_symbol(dm_block_ioctl);
-	loader_add_kernel_symbol(dm_block_device_rw);
-	loader_add_kernel_symbol(dm_set_available_block_device);
-	loader_add_kernel_symbol(dm_set_available_char_device);
-	loader_add_kernel_symbol(dm_unregister_block_device);
-	loader_add_kernel_symbol(dm_unregister_char_device);
-	loader_add_kernel_symbol(dm_get_device);
-	loader_add_kernel_symbol(dm_block_read);
-	loader_add_kernel_symbol(dm_blockdev_select);
-	loader_add_kernel_symbol(dm_block_device_select);
-	loader_add_kernel_symbol(dm_do_block_rw);
-	loader_add_kernel_symbol(dm_do_block_rw_multiple);
-	loader_add_kernel_symbol(dm_block_write);
-	loader_add_kernel_symbol(dm_set_block_device);
-	loader_add_kernel_symbol(dm_set_char_device);
-	
-	loader_add_kernel_symbol(dm_char_register);
-#endif
-}
-
 struct device *dm_get_device(int type, int major)
 {
 	if(type >= NUM_DT)
@@ -127,9 +96,7 @@ int dm_remove_device(int type, int major)
 
 int dm_ioctl(int type, dev_t dev, int cmd, long arg)
 {
-	if(S_ISCHR(type))
-		return dm_char_ioctl(dev, cmd, arg);
-	else if(S_ISBLK(type))
+	if(S_ISBLK(type))
 		return dm_block_ioctl(dev, cmd, arg);
 	else
 		return -EINVAL;
@@ -141,30 +108,67 @@ void dm_sync(void)
 	dm_send_sync_block();
 }
 
-
-
-int dm_file_ioctl(struct file *file, int cmd, long arg)
+#define MAX_DEVICES 256
+static struct kdevice *devices[MAX_DEVICES];
+static struct mutex lock;
+int dm_device_register(struct kdevice *dev)
 {
-
+	mutex_acquire(&lock);
+	for(int i=0;i<MAX_DEVICES;i++) {
+		if(!devices[i]) {
+			devices[i] = dev;
+			dev->refs = 0;
+			mutex_release(&lock);
+			return i;
+		}
+	}
+	mutex_release(&lock);
+	return -1;
 }
 
-ssize_t dm_file_rw(int rw, struct file *file, off_t off, uint8_t *buf, size_t len)
+struct kdevice *dm_device_get(int major)
 {
-
+	mutex_acquire(&lock);
+	struct kdevice *dev = devices[major];
+	if(dev) {
+		atomic_fetch_add(&dev->refs, 1);
+	}
+	mutex_release(&lock);
+	return dev;
 }
 
-void dm_file_open(struct file *file)
+void dm_device_put(struct kdevice *kdev)
 {
-
+	atomic_fetch_sub(&kdev->refs, 1);
 }
 
-void dm_file_close(struct file *file)
+void dm_init(void)
 {
-
-}
-
-int dm_file_select(struct file *file, int rw)
-{
-
+	printk(KERN_DEBUG, "[dev]: Loading device management...\n");
+	mutex_create(&lock, 0);
+	memset(devices, 0, sizeof(devices));
+	memset(devhash, 0, sizeof(struct devhash_s)*NUM_DT);
+	int i;
+	for(i=0;i<NUM_DT;i++) 
+		mutex_create(&devhash[i].lock, 0);
+	dm_init_block_devices();
+#if CONFIG_MODULES
+	//loader_add_kernel_symbol(dm_block_rw);
+	loader_add_kernel_symbol(dm_block_ioctl);
+	loader_add_kernel_symbol(dm_block_device_rw);
+	loader_add_kernel_symbol(dm_set_available_block_device);
+	loader_add_kernel_symbol(dm_device_get);
+	loader_add_kernel_symbol(dm_device_put);
+	loader_add_kernel_symbol(dm_device_register);
+	loader_add_kernel_symbol(dm_unregister_block_device);
+	loader_add_kernel_symbol(dm_get_device);
+	loader_add_kernel_symbol(dm_block_read);
+	loader_add_kernel_symbol(dm_blockdev_select);
+	loader_add_kernel_symbol(dm_block_device_select);
+	loader_add_kernel_symbol(dm_do_block_rw);
+	loader_add_kernel_symbol(dm_do_block_rw_multiple);
+	loader_add_kernel_symbol(dm_block_write);
+	loader_add_kernel_symbol(dm_set_block_device);
+#endif
 }
 

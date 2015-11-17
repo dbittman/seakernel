@@ -7,24 +7,31 @@
 #include <sea/sys/fcntl.h>
 #include <sea/errno.h>
 
+/* TODO: persistance */
+
 static _Atomic int __pty_next_num = 1;
 
-struct pty *pty_create(struct pty *p, int flags)
+void pty_create(struct inode *inode)
 {
-	KOBJ_CREATE(p, flags, PTY_ALLOC);
-	charbuffer_create(&p->input, CHARBUFFER_DROP, PTY_IN_BUF_SIZE);
-	charbuffer_create(&p->output, 0, PTY_OUT_BUF_SIZE);
-	mutex_create(&p->cbuf_lock, 0);
-	p->num = atomic_fetch_add(&__pty_next_num, 1);
-	return p;
+	if(!inode->devdata) {
+		struct pty *p = kmalloc(sizeof(struct pty));
+		charbuffer_create(&p->input, CHARBUFFER_DROP, PTY_IN_BUF_SIZE);
+		charbuffer_create(&p->output, 0, PTY_OUT_BUF_SIZE);
+		mutex_create(&p->cbuf_lock, 0);
+		p->num = atomic_fetch_add(&__pty_next_num, 1);
+		inode->devdata = p;
+	}
 }
 
-void pty_destroy(struct pty *p)
+void pty_destroy(struct inode *inode)
 {
-	mutex_destroy(&p->cbuf_lock);
-	charbuffer_destroy(&p->output);
-	charbuffer_destroy(&p->input);
-	KOBJ_DESTROY(p, PTY_ALLOC);
+	struct pty *p = inode->devdata;
+	if(p) {
+		mutex_destroy(&p->cbuf_lock);
+		charbuffer_destroy(&p->output);
+		charbuffer_destroy(&p->input);
+		kfree(p);
+	}
 }
 
 size_t pty_read_master(struct pty *pty, uint8_t *buffer, size_t length)
@@ -137,70 +144,96 @@ size_t pty_write_slave(struct pty *pty, uint8_t *buffer, size_t length)
 	return length;
 }
 
-size_t pty_read(struct inode *inode, uint8_t *buffer, size_t length)
+/* TODO NONBLOCKING */
+size_t pty_read(struct file *file, uint8_t *buffer, size_t length)
 {
-	assert(inode->pty);
-	size_t r = inode->pty->master == inode
-		? pty_read_master(inode->pty, buffer, length)
-		: pty_read_slave(inode->pty, buffer, length);
+	struct pty *pty;
+	if(MINOR(file->inode->phys_dev))
+		pty = file->inode->devdata;
+	else
+		pty = current_process->pty;
+	if(!pty)
+		return -EIO;
+	size_t r = pty->master == file->inode
+		? pty_read_master(pty, buffer, length)
+		: pty_read_slave(pty, buffer, length);
 	
 	return r;
 }
 
-size_t pty_write(struct inode *inode, uint8_t *buffer, size_t length)
+size_t pty_write(struct file *file, uint8_t *buffer, size_t length)
 {
-	assert(inode->pty);
-	size_t r = inode->pty->master == inode
-		? pty_write_master(inode->pty, buffer, length)
-		: pty_write_slave(inode->pty, buffer, length);
+	struct pty *pty;
+	if(MINOR(file->inode->phys_dev))
+		pty = file->inode->devdata;
+	else
+		pty = current_process->pty;
+	if(!pty)
+		return -EIO;
+	size_t r = pty->master == file->inode
+		? pty_write_master(pty, buffer, length)
+		: pty_write_slave(pty, buffer, length);
 	return r;
 }
 
-int pty_select(struct inode *inode, int rw)
+int pty_select(struct file *file, int rw)
 {
-	assert(inode->pty);
-	if(inode->pty->master == inode) {
+	struct pty *pty;
+	if(MINOR(file->inode->phys_dev))
+		pty = file->inode->devdata;
+	else
+		pty = current_process->pty;
+	if(!pty)
+		return -EIO;
+	if(pty->master == file->inode) {
 		if(rw == READ) {
-			return charbuffer_count(&inode->pty->output) > 0;
+			return charbuffer_count(&pty->output) > 0;
 		} else if(rw == WRITE) {
-			if(inode->pty->term.c_lflag & ICANON) {
-				return inode->pty->cbuf_pos < (PTY_CBUF_SIZE - 1);
+			if(pty->term.c_lflag & ICANON) {
+				return pty->cbuf_pos < (PTY_CBUF_SIZE - 1);
 			} else {
-				return charbuffer_count(&inode->pty->input) < inode->pty->input.cap;
+				return charbuffer_count(&pty->input) < pty->input.cap;
 			}
 		}
 	} else {
 		if(rw == READ) {
-			return charbuffer_count(&inode->pty->input) > 0;
+			return charbuffer_count(&pty->input) > 0;
 		} else if(rw == WRITE) {
-			return charbuffer_count(&inode->pty->output) < inode->pty->output.cap;
+			return charbuffer_count(&pty->output) < pty->output.cap;
 		}
 	}
 	return 1;
 }
 
-int pty_ioctl(struct inode *inode, int cmd, long arg)
+int pty_ioctl(struct file *file, int cmd, long arg)
 {
+	struct pty *pty;
+	if(MINOR(file->inode->phys_dev))
+		pty = file->inode->devdata;
+	else
+		pty = current_process->pty;
+	if(!pty)
+		return -EIO;
 	struct termios *term = (void *)arg;
-	struct winsize *win  =(void *)arg;
+	struct winsize *win  = (void *)arg;
 	int ret = 0;
 	switch(cmd) {
 		case TCGETS:
 			if(term)
-				memcpy(term, &inode->pty->term, sizeof(*term));
+				memcpy(term, &pty->term, sizeof(*term));
 			break;
 		case TCSETS: case TCSETSW:
 			if(term)
-				memcpy(&inode->pty->term, term, sizeof(*term));
+				memcpy(&pty->term, term, sizeof(*term));
 			//printk(0, "Setting term %o %o %o\n", term->c_lflag, term->c_iflag, term->c_oflag);
 			break;
 		case TIOCGWINSZ:
 			if(win)
-				memcpy(win, &inode->pty->size, sizeof(*win));
+				memcpy(win, &pty->size, sizeof(*win));
 			break;
 		case TIOCSWINSZ:
 			if(win)
-				memcpy(&inode->pty->size, win, sizeof(*win));
+				memcpy(&pty->size, win, sizeof(*win));
 			break;
 		default:
 			printk(0, "[pty]: unknown ioctl: %x\n", cmd);
@@ -208,30 +241,56 @@ int pty_ioctl(struct inode *inode, int cmd, long arg)
 	}
 	return ret;
 }
+
+static ssize_t __pty_rw(int rw, struct file *file, off_t off, uint8_t *buf, size_t len)
+{
+	if(rw == READ)
+		return pty_read(file, buf, len);
+	else if(rw == WRITE)
+		return pty_write(file, buf, len);
+	return -EIO;
+}
+
+struct kdevice __pty_kdev = {
+	.rw = __pty_rw,
+	.select = pty_select,
+	.ioctl = pty_ioctl,
+	.create = pty_create,
+	.destroy = pty_destroy,
+	.open = 0, //TODO: should set controlling terminal
+	.close = 0,
+	.name = "pty",
+};
+
+static int pty_major;
+
 int ptys = 0; /* TODO: this is a hack to get the old tty system
 				 to be okay with ptys. Remove it. */
+void pty_init(void)
+{
+	pty_major = dm_device_register(&__pty_kdev);
+	sys_mknod("/dev/tty", S_IFCHR | 0666, GETDEV(pty_major, 0));
+	ptys = 1;
+}
+
+
 int sys_openpty(int *master, int *slave, char *slavename, const struct termios *term,
 		const struct winsize *win)
 {
 	ptys = 1;
-	struct pty *pty = pty_create(0, 0);
-	if(term)
-		memcpy(&pty->term, term, sizeof(*term));
-	if(win)
-		memcpy(&pty->size, win, sizeof(*win));
+	int num = atomic_fetch_add(&__pty_next_num, 1);
 	
 	char mname[32];
 	char sname[32];
-	snprintf(mname, 32, "/dev/ptym%d", pty->num);
-	snprintf(sname, 32, "/dev/ptys%d", pty->num);
+	snprintf(mname, 32, "/dev/ptym%d", num);
+	snprintf(sname, 32, "/dev/ptys%d", num);
 
-	sys_mknod(mname, S_IFCHR | 0666, 0);
-	sys_mknod(sname, S_IFCHR | 0666, 0);
+	sys_mknod(mname, S_IFCHR | 0666, GETDEV(pty_major, num));
+	sys_mknod(sname, S_IFCHR | 0666, GETDEV(pty_major, num));
 
 	int mfd = sys_open(mname, O_RDWR);
 	int sfd = sys_open(sname, O_RDWR);
 	if(mfd < 0 || sfd < 0) {
-		pty_destroy(pty);
 		sys_unlink(mname);
 		sys_unlink(sname);
 		return -ENOENT;
@@ -239,12 +298,21 @@ int sys_openpty(int *master, int *slave, char *slavename, const struct termios *
 
 	struct file *mf = file_get(mfd);
 	struct file *sf = file_get(sfd);
-	mf->inode->pty = pty;
-	sf->inode->pty = pty;
 	vfs_inode_get(mf->inode);
 	vfs_inode_get(sf->inode);
+	
+	/* TODO: better system */
+	pty_create(mf->inode);
+	sf->inode->devdata = mf->inode->devdata;
+	struct pty *pty = mf->inode->devdata;
+	assert(pty);
+	
 	pty->master = mf->inode;
 	pty->slave = sf->inode;
+	if(term)
+		memcpy(&pty->term, term, sizeof(*term));
+	if(win)
+		memcpy(&pty->size, win, sizeof(*win));
 	file_put(mf);
 	file_put(sf);
 
@@ -263,11 +331,13 @@ int sys_attach_pty(int fd)
 	if(!mf) {
 		return -EBADF;
 	}
-	if(!mf->inode->pty) {
+	if(MAJOR(mf->inode->phys_dev) != pty_major) {
 		file_put(mf);
 		return -EINVAL;
 	}
-	current_process->tty = mf->inode->pty->num;
+	struct pty *pty = mf->inode->devdata;
+	current_process->tty = pty->num;
+	current_process->pty = pty;
 	file_put(mf);
 	return 0;
 }

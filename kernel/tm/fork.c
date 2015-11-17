@@ -226,6 +226,7 @@ static struct process *tm_process_copy(int flags, struct thread *newthread)
 	fs_copy_file_handles(current_process, newp);
 	mutex_create(&newp->fdlock, 0);
 	tm_process_create_kerfs_entries(newp);
+	newp->pty = current_process->pty;
 	return newp;
 }
 

@@ -172,11 +172,11 @@ static struct kdevice __pipe_kdev = {
 	.select = __pipe_select,
 	.close = __pipe_close,
 	.rw = __pipe_rw,
+	.create = 0,
 	.destroy = __pipe_destroy,
 	.open = 0,
 	.ioctl = 0,
 	.name = "pipe",
-	.count = 0,
 };
 
 int sys_pipe(int *files)

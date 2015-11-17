@@ -58,12 +58,10 @@ void devfs_init(void)
 	char tty[16];
 	for(int i=1;i<10;i++) {
 		snprintf(tty, 10, "/dev/tty%d", i);
-		sys_mknod(tty, S_IFCHR | 0600, GETDEV(3, i));
+		//sys_mknod(tty, S_IFCHR | 0600, GETDEV(3, i));
 	}
-	sys_mknod("/dev/tty", S_IFCHR | 0600, GETDEV(4, 0));
-	sys_mknod("/dev/null", S_IFCHR | 0666, GETDEV(0, 0));
-	sys_mknod("/dev/zero", S_IFCHR | 0666, GETDEV(1, 0));
-	sys_mknod("/dev/com0", S_IFCHR | 0600, GETDEV(5, 0));
+	//sys_mknod("/dev/tty1", S_IFCHR | 0600, GETDEV(3, 2));
+	dm_init_char_devices();
 	sys_mkdir("/dev/process", 0755);
 }
 
@@ -126,6 +124,7 @@ int sys_setup(int a)
 	current_process->cwd = current_process->root;
 	fs_initrd_parse();
 	devfs_init();
+	pty_init();
 
 	//dm_char_rw(OPEN, GETDEV(3, 1), 0, 0);
 	sys_open("/dev/tty1", O_RDWR);   /* stdin  */
@@ -533,18 +532,15 @@ int sys_mknod(char *path, mode_t mode, dev_t dev)
 	}
 	i->phys_dev = dev;
 	i->mode = (mode & ~0xFFF) | ((mode&0xFFF) & (~current_process->cmask&0xFFF));
-	struct device *dt;
-	if(S_ISCHR(mode)) {
-		//dt = dm_get_device(DT_CHAR, MAJOR(dev));
-		i->kdev = dm_char_getdev(MAJOR(dev));
-				kprintf(":::::::::::::*** set %x\n", i->kdev);
-#warning "need to do this on each load of the inode..."
-		//int r = dm_char_getdev(MAJOR(dev), &i->kdev);
-	} else
-		dt = dm_get_device(DT_BLK, MAJOR(dev));
-
+	
+	/* TODO: this code is duplicated... */
+	if(i->phys_dev && !i->kdev) {
+		i->kdev = dm_device_get(MAJOR(i->phys_dev));
+		if(i->kdev && i->kdev->create)
+			i->kdev->create(i);
+	}
 	vfs_inode_set_dirty(i);
-	//vfs_icache_put(i); TODO
+	vfs_icache_put(i);
 	return 0;
 }
 
@@ -632,9 +628,7 @@ static int select_filedes(int i, int rw)
 	if(!file)
 		return -EBADF;
 	struct inode *in = file->inode;
-	if(in->pty)
-		ready = pty_select(in, rw);
-	else if(in->kdev && in->kdev->select)
+	if(in->kdev && in->kdev->select)
 		ready = in->kdev->select(file, rw);
 	else if(S_ISREG(in->mode) || S_ISDIR(in->mode) || S_ISLNK(in->mode))
 		ready = fs_callback_inode_select(in, rw);

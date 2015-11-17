@@ -120,7 +120,7 @@ struct socket;
 struct socket_calls {
 	int (*init)(struct socket *);
 	int (*connect)(struct socket *, const struct sockaddr *addr, socklen_t len);
-	struct socket * (*accept)(struct socket *, struct sockaddr *restrict addr, socklen_t *restrict len, int *err);
+	int (*accept)(struct socket *, struct sockaddr *restrict addr, socklen_t *restrict len, int *err);
 	int (*listen)(struct socket *, int backlog);
 	int (*bind)(struct socket *, const struct sockaddr *addr, socklen_t len);
 	int (*shutdown)(struct socket *, int how);
@@ -138,7 +138,6 @@ struct socket {
 	int type;
 	int prot;	
 	int sopt;
-	int fd;
 	int sopt_extra[16];
 	int sopt_extra_sizes[16];
 	int sopt_levels[18][64];
@@ -147,9 +146,6 @@ struct socket {
 	struct socket_calls *calls;
 	struct sockaddr peer, local;
 	socklen_t peer_len, local_len;
-
-	struct inode *inode;
-	struct file *file;
 
 	struct linkedentry node;
 	struct queue rec_data_queue;
@@ -166,7 +162,6 @@ struct socket_fromto_info {
     socklen_t *addr_len;
 };
 
-struct socket *socket_create(int *errcode);
 void socket_set_calls(int prot, struct socket_calls *calls);
 int sys_socket(int domain, int type, int prot);
 int sys_connect(int socket, const struct sockaddr *addr, socklen_t len);

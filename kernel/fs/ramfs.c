@@ -9,7 +9,6 @@
 #include <sea/lib/linkedlist.h>
 #include <sea/errno.h>
 #include <sea/dm/dev.h>
-#include <sea/fs/kerfs.h>
 
 struct filesystem_inode_callbacks ramfs_iops;
 struct filesystem_callbacks ramfs_fsops;
@@ -113,8 +112,6 @@ int ramfs_inode_pull(struct filesystem *fs, struct inode *node)
 	node->nlink = rfsnode->nlinks;
 	node->id = rfsnode->num;
 	node->phys_dev = rfsnode->dev;
-	/* TODO: benchmark this */
-	atomic_fetch_or_explicit(&node->flags, INODE_NOLRU, memory_order_relaxed);
 	return 0;
 }
 
@@ -283,9 +280,6 @@ int ramfs_inode_read(struct filesystem *fs, struct inode *node,
 	struct rfsinfo *info = fs->data;
 	struct rfsnode *rfsnode;
 
-	if(node->phys_dev && S_ISREG(node->mode))
-		return kerfs_read(node, offset, length, buffer);
-
 	size_t amount = length;
 	if(offset + length > node->length)
 		amount = node->length - offset;
@@ -318,9 +312,6 @@ int ramfs_inode_write(struct filesystem *fs, struct inode *node,
 {
 	struct rfsinfo *info = fs->data;
 	struct rfsnode *rfsnode;
-	
-	if(node->phys_dev && S_ISREG(node->mode))
-		return kerfs_write(node, offset, length, (char *)buffer);
 
 	if((rfsnode = hash_lookup(info->nodes, &node->id, sizeof(node->id))) == NULL)
 		return -EIO;

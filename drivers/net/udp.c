@@ -85,9 +85,8 @@ static int sendto(struct socket *sock, const void *buffer, size_t length,
 	zero.sa_family = AF_INET;
 	if(!(sock->flags & SOCK_FLAG_BOUND)) {
 		/* grab ourselves a port to send from */
-		int ret = sys_bind(sock->fd, &zero, addr_len);
-		if(ret < 0)
-			return ret;
+		bind(sock, &zero, addr_len);
+		socket_bind(sock, &zero, addr_len);
 	}
 	unsigned char tmp[length + sizeof(struct udp_header)];
 	memcpy(tmp + sizeof(struct udp_header), buffer, length);

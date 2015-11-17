@@ -53,6 +53,7 @@ _Static_assert(NUM_POSSIBLE_USERMODE_STACKS <= NUM_POSSIBLE_KERNELMODE_STACKS,
 
 #define WIFSTOPPED(w)   (((w) & 0xff) == 0x7f)
 
+struct pty;
 struct process {
 	unsigned magic;
 	struct vmm_context vmm_context;
@@ -90,6 +91,8 @@ struct process {
 	struct mutex stacks_lock;
 	struct blocklist waitlist;
 	struct hashelem hash_elem;
+
+	struct pty *pty;
 };
 
 #define WNOHANG 1

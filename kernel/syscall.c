@@ -344,7 +344,7 @@ int syscall_handler(struct registers *regs)
 		atomic_fetch_add_explicit(&syscounts[SYSCALL_NUM_AND_RET], 1, memory_order_relaxed);
 
 #ifdef SC_DEBUG
-		if(current_process->tty == current_console->tty && SYSCALL_NUM_AND_RET != 0
+		if(SYSCALL_NUM_AND_RET != 0
 				&& (current_process->pid == 29 || 1))
 			printk(SC_DEBUG, "tty %d: syscall %d(%d) (from: %x): enter %d %x\n",
 					current_process->tty, current_thread->tid, current_process->pid,
@@ -361,7 +361,7 @@ int syscall_handler(struct registers *regs)
 		}
 #endif
 #ifdef SC_DEBUG
-		if((current_process->tty == current_console->tty || 0)
+		if((current_process->tty == current_console->tty || 1)
 				&& (ret < 0 || 1) && (ret == -EINTR || 1))
 			printk(SC_DEBUG, "syscall pid %3d: #%3d ret %4d\n",
 			   		current_thread->tid, current_thread->system, ret < 0 ? -ret : ret);

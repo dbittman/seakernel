@@ -452,6 +452,7 @@ int keyboard_major;
 struct kdevice kbkd = {
 	.rw = kb_rw,
 	.select = kb_select,
+	.create = 0,
 	.ioctl = 0,
 	.open = 0,
 	.close = 0,
@@ -473,8 +474,7 @@ int module_install(void)
 	async_call_create(&keyboard_s2_call, 0, keyboard_int_stage2, __int_no, 100 /* TODO */);
 	irqk = cpu_interrupt_register_handler(IRQ1, __int_handle);
 	flush_port();
-	keyboard_major = dm_char_register(&kbkd);
-	/* keyboard_major = dm_set_available_char_device(kb_rw, 0, kb_select); */
+	keyboard_major = dm_device_register(&kbkd);
 	sys_mknod("/dev/keyboard", S_IFCHR | 0644, GETDEV(keyboard_major, 0));
 	printk(1, "[keyboard]: initialized keyboard\n");
 	return 0;

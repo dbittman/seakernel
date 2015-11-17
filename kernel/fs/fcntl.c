@@ -17,9 +17,7 @@ int sys_ioctl(int fp, int cmd, long arg)
 	if(!f) return -EBADF;
 	assert(f->inode);
 	int ret = 0;
-	if(f->inode->pty) /* TODO */
-		ret = pty_ioctl(f->inode, cmd, arg);
-	else if(f->inode->kdev && f->inode->kdev->ioctl)
+	if(f->inode->kdev && f->inode->kdev->ioctl)
 		ret = f->inode->kdev->ioctl(f, cmd, arg);
 	file_put(f);
 	return ret;

@@ -7,12 +7,12 @@
 #include <sea/fs/kerfs.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
-static dev_t dev_num = 0;
-
+static int minor = 0;
+static int major;
 static struct hash *table = 0;
 
 struct kerfs_node {
-	dev_t num;
+	int num;
 	void *param;
 	size_t size;
 	int flags;
@@ -24,8 +24,8 @@ int kerfs_register_parameter(char *path, void *param, size_t size, int flags, in
 {
 	uid_t old = current_process->effective_uid;
 	current_process->effective_uid = 0;
-	dev_t num = atomic_fetch_add(&dev_num, 1) + 1;
-	int r = sys_mknod(path, S_IFREG | 0600, num);
+	dev_t num = atomic_fetch_add(&minor, 1) + 1;
+	int r = sys_mknod(path, S_IFREG | 0600, GETDEV(major, num));
 	current_process->effective_uid = old;
 	if(r < 0)
 		return r;
@@ -111,19 +111,21 @@ int kerfs_rw_integer(int direction, void *param, size_t sz, size_t offset, size_
 	return current;
 }
 
-int kerfs_read(struct inode *node, size_t offset, size_t length, char *buffer)
+static int kerfs_read(struct inode *node, size_t offset, size_t length, char *buffer)
 {
 	struct kerfs_node *kn;
-	if((kn = hash_lookup(table, &node->phys_dev, sizeof(node->phys_dev))) == NULL)
+	int minor = MINOR(node->phys_dev);
+	if((kn = hash_lookup(table, &minor, sizeof(minor))) == NULL)
 		return -ENOENT;
 
 	return kn->fn(READ, kn->param, kn->size, offset, length, buffer);
 }
 
-int kerfs_write(struct inode *node, size_t offset, size_t length, char *buffer)
+static int kerfs_write(struct inode *node, size_t offset, size_t length, char *buffer)
 {
 	struct kerfs_node *kn;
-	if((kn = hash_lookup(table, &node->phys_dev, sizeof(node->phys_dev))) == NULL)
+	int minor = MINOR(node->phys_dev);
+	if((kn = hash_lookup(table, &minor, sizeof(minor))) == NULL)
 		return -ENOENT;
 
 	if(!(kn->flags & KERFS_PARAM_WRITE))
@@ -132,8 +134,24 @@ int kerfs_write(struct inode *node, size_t offset, size_t length, char *buffer)
 	return kn->fn(WRITE, kn->param, kn->size, offset, length, buffer);
 }
 
+static ssize_t kerfs_rw(int rw, struct file *file, off_t off, uint8_t *buffer, size_t len)
+{
+	if(rw == READ)
+		return kerfs_read(file->inode, off, len, buffer);
+	else if(rw == WRITE)
+		return kerfs_write(file->inode, off, len, buffer);
+	return -EIO;
+}
+
+static struct kdevice __kerfs_kdev = {
+	.select = 0, .open = 0, .close = 0, .create = 0, .destroy = 0, .ioctl = 0,
+	.name = "kerfs",
+	.rw = kerfs_rw,
+};
+
 void kerfs_init(void)
 {
 	table = hash_create(0, 0, 1000);
+	major = dm_device_register(&__kerfs_kdev);
 }
 

@@ -20,29 +20,36 @@
  * it is taken over by a sending thread).
  */
 
+void socket_close(struct file *file);
+static void socket_destroy(struct inode *);
+static struct kdevice __socket_kdev = {
+	.select = socket_select,
+	.close = socket_close,
+	.destroy = socket_destroy,
+	/* TODO: rw */
+	.name = "socket",
+};
+
 struct socket_calls socket_calls_null = {0,0,0,0,0,0,0,0,0,0};
 
 struct socket_calls *__socket_calls_list[PROT_MAXPROT + 1] = {
 	&socket_calls_null,
 };
 
-struct socket *socket_create(int *errcode)
+struct socket *socket_create(int *errcode, int *fd)
 {
 	*errcode = 0;
 	struct inode *inode = vfs_inode_create();
-	inode->flags |= INODE_NOLRU;
 	inode->mode |= S_IFSOCK;
 	inode->count = 1;
 	struct file *f = file_create(inode, 0, 0);
-	int fd = file_add_filedes(f, 0);
+	*fd = file_add_filedes(f, 0);
 	if(fd < 0)
 		*errcode = -ENFILE;
 	struct socket *sock = kmalloc(sizeof(struct socket));
-	sock->inode = inode;
-	sock->file = f; // TODO ???
-	sock->fd = fd;
 	queue_create(&sock->rec_data_queue, 0);
-	inode->socket = sock;
+	inode->devdata = sock;
+	inode->kdev = &__socket_kdev;
 	file_put(f);
 	return sock;
 }
@@ -55,7 +62,7 @@ static struct socket *get_socket(int fd, int *err)
 		*err = -EBADF;
 		return 0;
 	}
-	struct socket *socket = f->inode->socket;
+	struct socket *socket = f->inode->devdata;
 	file_put(f);
 	if(!socket) {
 		*err = -ENOTSOCK;
@@ -64,34 +71,35 @@ static struct socket *get_socket(int fd, int *err)
 	return socket;
 }
 
-static void socket_destroy(struct socket *sock)
+static void socket_destroy(struct inode *node)
 {
+	struct socket *sock = node->devdata;
+	assert(sock);
 	if(sock->calls->destroy)
 		sock->calls->destroy(sock);
-	struct file *file = sock->file;
-	file->inode->socket = 0;
-	sys_close(sock->fd);
 	queue_destroy(&sock->rec_data_queue);
 	kfree(sock);
 }
 
 int socket_select(struct file *f, int rw)
 {
-	if(!f->inode->socket)
+	struct socket *socket = f->inode->devdata;
+	assert(socket);
+	if(!socket)
 		return -ENOTSOCK;
-	if(rw == READ && !(f->inode->socket->flags & SOCK_FLAG_ALLOWRECV))
+	if(rw == READ && !(socket->flags & SOCK_FLAG_ALLOWRECV))
 		return 0;
-	if(rw == WRITE && !(f->inode->socket->flags & SOCK_FLAG_ALLOWSEND))
+	if(rw == WRITE && !(socket->flags & SOCK_FLAG_ALLOWSEND))
 		return 0;
 	int r = 1;
-	if(f->inode->socket->calls->select)
-		r = f->inode->socket->calls->select(f->inode->socket, rw);
+	if(socket->calls->select)
+		r = socket->calls->select(socket, rw);
 	if(r == 0)
 		return 0;
 	/* if the protocol says that we're allowed to read or write, that might
 	 * not be true for the socket layer...check the data queue */
 	if(rw == READ)
-		return f->inode->socket->rec_data_queue.count > 0;
+		return socket->rec_data_queue.count > 0;
 	return 1;
 }
 
@@ -117,10 +125,10 @@ int sys_socket(int domain, int type, int prot)
 	if(domain > PF_MAX || domain <= 0)
 		return -EAFNOSUPPORT;
 	int err;
-	struct socket *sock = socket_create(&err);
+	int fd;
+	struct socket *sock = socket_create(&err, &fd);
 	if(!sock)
 		return err;
-	TRACE(0, "[socket]: created socket %d, d=%d, t=%d, p=%d\n", sock->fd, domain, type, prot);
 	sock->domain = domain;
 	sock->type = type;
 	sock->prot = prot;
@@ -128,7 +136,7 @@ int sys_socket(int domain, int type, int prot)
 	sock->calls = calls;
 	if(sock->calls->init)
 		sock->calls->init(sock);
-	return sock->fd;
+	return fd;
 }
 
 int sys_connect(int socket, const struct sockaddr *addr, socklen_t len)
@@ -167,13 +175,11 @@ int sys_accept(int socket, struct sockaddr *restrict addr, socklen_t *restrict a
 	if(!(sock->flags & SOCK_FLAG_CONNECTED) || !(sock->sopt & SO_ACCEPTCONN))
 		return -EINVAL;
 	err = -EOPNOTSUPP;
-	struct socket *sret = 0;
 	TRACE(0, "[socket]: %d accepting\n", socket);
+	int sret = -EOPNOTSUPP;
 	if(sock->calls->accept)
 		sret = sock->calls->accept(sock, addr, addr_len, &err);
-	if(!sret)
-		return err;
-	return sret->fd;
+	return sret;
 }
 
 int sys_listen(int socket, int backlog)
@@ -289,12 +295,8 @@ int sys_setsockopt(int socket, int level, int option_name,
 	return 0;
 }
 
-int sys_sockshutdown(int socket, int how)
+static void __do_shutdown(struct socket *sock, int how)
 {
-	int err;
-	struct socket *sock = get_socket(socket, &err);
-	if(!sock)
-		return err;
 	int rd = (how == SHUT_RD || how == SHUT_RDWR);
 	int wr = (how == SHUT_WR || how == SHUT_RDWR);
 	if(rd)
@@ -303,8 +305,20 @@ int sys_sockshutdown(int socket, int how)
 		sock->flags &= ~SOCK_FLAG_ALLOWSEND;
 	if(sock->calls->shutdown)
 		sock->calls->shutdown(sock, how);
-	if(!(sock->flags & SOCK_FLAG_ALLOWSEND) && !(sock->flags & SOCK_FLAG_ALLOWRECV))
-		socket_destroy(sock);
+}
+
+void socket_close(struct file *file)
+{
+	__do_shutdown(file->inode->devdata, SHUT_RDWR);
+}
+
+int sys_sockshutdown(int socket, int how)
+{
+	int err;
+	struct socket *sock = get_socket(socket, &err);
+	if(!sock)
+		return err;
+	__do_shutdown(sock, how);
 	return 0;
 }
 
@@ -329,9 +343,10 @@ ssize_t sys_recv(int socket, void *buffer, size_t length, int flags)
 			return -EINTR;
 		nbytes += net_data_queue_copy_out(sock, &sock->rec_data_queue, buffer, length, (flags & MSG_PEEK), 0);
 		if(!nbytes) {
-			if(sock->file->flags & _FNONBLOCK)
-				return nbytes;
-			else
+			/* TODO */
+			//if(sock->file->flags & _FNONBLOCK)
+			//	return nbytes;
+		//	else
 				tm_schedule();
 		}
 	}
@@ -385,9 +400,10 @@ int sys_recvfrom(int socketfd, struct socket_fromto_info *m)
 		nbytes += net_data_queue_copy_out(sock, &sock->rec_data_queue,
 				m->buffer, m->len, (m->flags & MSG_PEEK), m->addr);
 		if(!nbytes) {
-			if(sock->file->flags & _FNONBLOCK)
-				return nbytes;
-			else
+			/* TODO */
+			//if(sock->file->flags & _FNONBLOCK)
+			//	return nbytes;
+			//else
 				tm_schedule();
 		}
 

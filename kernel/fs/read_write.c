@@ -13,16 +13,14 @@
 #include <sea/errno.h>
 #include <sea/vsprintf.h>
 #include <sea/dm/pty.h>
-
+#include <sea/fs/dir.h>
 int fs_do_sys_read_flags(struct file *f, off_t off, char *buf, size_t count)
 {
 	if(!f || !buf)
 		return -EINVAL;
 	struct inode *inode = f->inode;
 	int mode = inode->mode;
-	if(inode->pty)
-		return pty_read(inode, buf, count);
-	else if(f->inode->kdev && f->inode->kdev->rw) {
+	if(f->inode->kdev && f->inode->kdev->rw) {
 		return f->inode->kdev->rw(READ, f, off, buf, count);
 	}
 	//else if(S_ISCHR(mode))
@@ -76,9 +74,7 @@ int fs_do_sys_write_flags(struct file *f, off_t off, char *buf, size_t count)
 		return -EINVAL;
 	struct inode *inode = f->inode;
 
-	if(inode->pty)
-		return pty_write(inode, buf, count);
-	else if(f->inode->kdev && f->inode->kdev->rw) {
+	if(f->inode->kdev && f->inode->kdev->rw) {
 		return f->inode->kdev->rw(WRITE, f, off, buf, count);
 	}
 	//else if(S_ISCHR(inode->mode))

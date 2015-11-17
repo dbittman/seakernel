@@ -25,6 +25,8 @@ struct pipe;
 #define INODE_NEEDREAD 1
 #define INODE_DIRTY    2
 #define INODE_INUSE    4
+
+/* TODO: we should get rid of this */
 #define INODE_NOLRU    8 /* On calling vfs_icache_put, don't move to LRU, immediately destroy */
 #define INODE_PCACHE   0x10
 
@@ -36,13 +38,14 @@ struct pty;
 struct file;
 struct kdevice {
 	const char *name;
-	_Atomic int count;
+	_Atomic int refs;
 	
 	ssize_t (*rw)(int dir, struct file *file, off_t off, uint8_t *buffer, size_t length);
 	int (*select)(struct file *file, int rw);
 	void (*open)(struct file *file);
 	void (*close)(struct file *file);
 	void (*destroy)(struct inode *inode);
+	void (*create)(struct inode *inode);
 	int (*ioctl)(struct file *file, int cmd, long arg);
 };
 
@@ -60,8 +63,6 @@ struct inode {
 	dev_t phys_dev;
 	struct filesystem *mount;
 
-	struct pty *pty; /* TODO: consoledate these into a union */
-	struct socket *socket;
 	void *devdata;
 	struct kdevice *kdev;
 	struct blocklist readblock, writeblock;

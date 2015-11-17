@@ -9,8 +9,6 @@
 #define KERFS_PARAM_WRITE 4
 
 void kerfs_init();
-int kerfs_read(struct inode *node, size_t offset, size_t length, char *buffer);
-int kerfs_write(struct inode *node, size_t offset, size_t length, char *buffer);
 int kerfs_register_parameter(char *path, void *param, size_t size,
 		int flags, int (*)(int, void *, size_t, size_t, size_t, char *));
 int kerfs_unregister_entry(char *path);

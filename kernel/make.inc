@@ -1,5 +1,4 @@
 KOBJS+= kernel/config.o \
-		kernel/console.o \
 		kernel/debugger.o \
 		kernel/kernel.o \
 		kernel/mutex.o \

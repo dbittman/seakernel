@@ -115,7 +115,7 @@ int sys_setsid(int ex, int cmd)
 	if(cmd) {
 		return -ENOTSUP;
 	}
-	current_process->tty=0;
+	current_process->pty=0;
 	return 0;
 }
 

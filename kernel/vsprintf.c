@@ -341,7 +341,6 @@ void kprintf(const char *fmt, ...)
 	va_list args;
 	va_start(args, fmt);
 	vsnprintf(512, printbuf, fmt, args);
-	console_kernel_puts(printbuf);
 	if(kernel_state_flags & KSF_PANICING)
 		serial_console_puts_nolock(0, printbuf);
 	else
@@ -360,10 +359,6 @@ void printk(int l, const char *fmt, ...)
 	vsnprintf(512, printbuf, fmt, args);
 	if(l >= LOGL_SERIAL)
 		serial_console_puts(0, printbuf);
-	if(l >= LOGL_LOGTTY && log_console)
-		console_puts(log_console, printbuf);
-	if(l >= PRINT_LEVEL)
-		console_kernel_puts(printbuf);
 	if(l >= 1)
 		syslog_kernel_msg(l, printbuf);
 	va_end(args);
@@ -379,10 +374,6 @@ void printk_safe(int l, const char *fmt, ...)
 	vsnprintf(512, printbuf, fmt, args);
 	if(l >= LOGL_SERIAL)
 		serial_console_puts_nolock(0, printbuf);
-	if(l >= LOGL_LOGTTY && log_console)
-		console_puts(log_console, printbuf);
-	if(l >= PRINT_LEVEL)
-		console_kernel_puts(printbuf);
 	if(l >= 1)
 		syslog_kernel_msg(l, printbuf);
 	va_end(args);

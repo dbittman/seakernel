@@ -57,7 +57,7 @@ static void __raise_action(struct pty *pty, int sig)
 	for(node = linkedlist_iter_start(process_list); node != linkedlist_iter_end(process_list);
 			node = linkedlist_iter_next(node)) {
 		proc = linkedentry_obj(node);
-		if(proc->tty == pty->num) {
+		if(proc->pty == pty) {
 			tm_signal_send_process(proc, sig);
 		}
 	}
@@ -264,20 +264,15 @@ struct kdevice __pty_kdev = {
 
 static int pty_major;
 
-int ptys = 0; /* TODO: this is a hack to get the old tty system
-				 to be okay with ptys. Remove it. */
 void pty_init(void)
 {
 	pty_major = dm_device_register(&__pty_kdev);
 	sys_mknod("/dev/tty", S_IFCHR | 0666, GETDEV(pty_major, 0));
-	ptys = 1;
 }
-
 
 int sys_openpty(int *master, int *slave, char *slavename, const struct termios *term,
 		const struct winsize *win)
 {
-	ptys = 1;
 	int num = atomic_fetch_add(&__pty_next_num, 1);
 	
 	char mname[32];
@@ -336,7 +331,6 @@ int sys_attach_pty(int fd)
 		return -EINVAL;
 	}
 	struct pty *pty = mf->inode->devdata;
-	current_process->tty = pty->num;
 	current_process->pty = pty;
 	file_put(mf);
 	return 0;

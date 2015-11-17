@@ -6,5 +6,5 @@ include arch/x86_64/kernel/machine/make.inc
 include arch/x86_64/kernel/mm/make.inc
 include arch/x86_64/kernel/tm/make.inc
 
-KOBJS += arch/x86_64/kernel/console.o arch/x86_64/kernel/debugger.o
+KOBJS += arch/x86_64/kernel/debugger.o
 

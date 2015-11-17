@@ -67,7 +67,6 @@ struct process {
 	char command[128];
 	char **argv, **env;
 	int cmask;
-	int tty;
 	struct exit_status exit_reason;
 	uid_t effective_uid, real_uid, saved_uid;
 	gid_t effective_gid, real_gid, saved_gid;

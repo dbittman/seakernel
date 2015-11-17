@@ -87,11 +87,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	loader_init_kernel_symbols();
 #endif
 	serial_init();
-	console_init_stage1();
 	cpu_early_init();
-	console_kernel_puts("~ SeaOS Version ");	
-	console_kernel_puts(CONFIG_VERSION_STRING);
-	console_kernel_puts(" Booting Up ~\n\r");
 #if CONFIG_MODULES
 	loader_init_modules();
 #endif
@@ -105,7 +101,6 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	mm_init(mtboot);
 	syslog_init();
 	parse_kernel_command_line((char *)(addr_t)mtboot->cmdline);
-	console_init_stage2();
 	tm_init_multitasking();
 	dm_init();
 	fs_init();

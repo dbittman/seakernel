@@ -126,10 +126,12 @@ int sys_setup(int a)
 	devfs_init();
 	pty_init();
 
-	//dm_char_rw(OPEN, GETDEV(3, 1), 0, 0);
-	sys_open("/dev/tty1", O_RDWR);   /* stdin  */
-	sys_open("/dev/tty1", O_WRONLY); /* stdout */
-	sys_open("/dev/tty1", O_WRONLY); /* stderr */
+	/* this may look like bullshit. It kinda is. Unix processes
+	 * depend on having SOMETHING present in fds 0-2, so we just
+	 * fill them will nonsense for now. */
+	sys_open("/dev/null", O_RDWR);   /* stdin  */
+	sys_open("/dev/null", O_WRONLY); /* stdout */
+	sys_open("/dev/null", O_WRONLY); /* stderr */
 	kerfs_register_report("/dev/syscall", kerfs_syscall_report);
 	kerfs_register_report("/dev/int", kerfs_int_report);
 	kerfs_register_report("/dev/mounts", kerfs_mount_report);
@@ -142,7 +144,6 @@ int sys_setup(int a)
 	kerfs_register_report("/dev/syslog", kerfs_syslog);
 	kerfs_register_parameter("/dev/trace_on", NULL, 0, KERFS_PARAM_WRITE, kerfs_trace_on);
 	kerfs_register_parameter("/dev/trace_off", NULL, 0, KERFS_PARAM_WRITE, kerfs_trace_off);
-	current_process->tty=1; /* TODO */
 	tm_process_create_kerfs_entries(current_process);
 	tm_thread_create_kerfs_entries(current_thread);
 	system_setup=1;

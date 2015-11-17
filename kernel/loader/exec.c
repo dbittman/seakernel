@@ -18,6 +18,7 @@
 #include <sea/errno.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
+#include <sea/dm/pty.h>
 /* Prepares a process to recieve a new executable. Desc is the descriptor of 
  * the executable. We keep it open through here so that we dont have to 
  * re-open it. */
@@ -144,7 +145,7 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 	 * file descs, free up the page directory and clear up the resources 
 	 * of the task */
 	if(EXEC_LOG)
-		printk(0, "Executing (p%dt%d, cpu %d, tty %d): %s\n", current_process->pid, current_thread->tid, current_thread->cpu->knum, current_process->tty, path);
+		printk(0, "Executing (p%dt%d, cpu %d, tty %d): %s\n", current_process->pid, current_thread->tid, current_thread->cpu->knum, current_process->pty ? current_process->pty->num : 0, path);
 	preexec(desc);
 	
 	/* load in the new image */

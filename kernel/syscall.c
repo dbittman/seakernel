@@ -127,8 +127,6 @@ static void *syscall_table[129] = {
 	[SYS_ATTACHPTY]       = SC sys_attach_pty,
 	[SYS_MKDIR]           = SC sys_mkdir,
 
-	[SYS_CREATE_CONSOLE]  = SC console_create,
-	[SYS_SWITCH_CONSOLE]  = SC console_switch,
 	[SYS_SOCKSHUTDOWN]    = SC sys_sockshutdown,
 	[SYS_GETSOCKOPT]      = SC sys_getsockopt,
 	[SYS_SETSOCKOPT]      = SC sys_setsockopt,

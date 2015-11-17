@@ -11,7 +11,7 @@
 #include <sea/fs/dir.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/cpu/processor.h>
-
+#include <sea/dm/pty.h>
 static pid_t __next_pid = 0;
 static pid_t __next_tid = 0;
 
@@ -100,7 +100,8 @@ void tm_process_create_kerfs_entries(struct process *proc)
 	__expose_proc_field(proc, effective_gid, kerfs_rw_integer);
 	__expose_proc_field(proc, real_uid, kerfs_rw_integer);
 	__expose_proc_field(proc, real_gid, kerfs_rw_integer);
-	__expose_proc_field(proc, tty, kerfs_rw_integer);
+	if(proc->pty)
+		__expose_proc_field(proc, pty->num, kerfs_rw_integer);
 	__expose_proc_field(proc, utime, kerfs_rw_integer);
 	__expose_proc_field(proc, stime, kerfs_rw_integer);
 	__expose_proc_field(proc, thread_count, kerfs_rw_integer);
@@ -199,7 +200,6 @@ static struct process *tm_process_copy(int flags, struct thread *newthread)
 	newp->pid = tm_process_next_pid();
 	newp->cmask = current_process->cmask;
 	newp->refs = 1;
-	newp->tty = current_process->tty;
 	newp->heap_start = current_process->heap_start;
 	newp->heap_end = current_process->heap_end;
 	newp->global_sig_mask = current_process->global_sig_mask;

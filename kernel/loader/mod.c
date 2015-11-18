@@ -212,7 +212,7 @@ static int load_module(char *path, char *args, int flags)
 	int len = sf.st_size;
 	/* Allocate the space and read into it */
 	char *mem = (char *)kmalloc(len);
-	sys_read(desc, 0, mem, len);
+	sys_readpos(desc, mem, len);
 	sys_close(desc);
 	/* Fill out the slot info */
 	tmp->exiter=0;

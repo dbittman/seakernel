@@ -143,19 +143,19 @@ int sys_setup(int a)
 	return 12;
 }
 
-int fs_do_sys_read_flags(struct file *f, off_t off, char *buf, size_t count);
-int fs_do_sys_write_flags(struct file *f, off_t off, char *buf, size_t count);
 void fs_init(void)
 {
 	vfs_icache_init();
 	vfs_dirent_init();
 	fs_fsm_init();
 #if CONFIG_MODULES
-	loader_add_kernel_symbol(fs_do_sys_read_flags);
-	loader_add_kernel_symbol(fs_do_sys_write_flags);
 	loader_add_kernel_symbol(sys_open);
-	loader_add_kernel_symbol(sys_read);
-	loader_add_kernel_symbol(sys_write);
+	loader_add_kernel_symbol(fs_file_read);
+	loader_add_kernel_symbol(fs_file_pread);
+	loader_add_kernel_symbol(fs_file_write);
+	loader_add_kernel_symbol(fs_file_pwrite);
+	loader_add_kernel_symbol(sys_readpos);
+	loader_add_kernel_symbol(sys_writepos);
 	loader_add_kernel_symbol(sys_close);
 	loader_add_kernel_symbol(fs_inode_read);
 	loader_add_kernel_symbol(fs_inode_write);

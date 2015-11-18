@@ -15,45 +15,49 @@
 #include <sea/dm/pty.h>
 #include <sea/fs/dir.h>
 
-/* TODO clean this file up */
-
-int fs_do_sys_read_flags(struct file *f, off_t off, char *buf, size_t count)
+ssize_t fs_file_pread(struct file *file, off_t offset, uint8_t *buffer, size_t length)
 {
-	if(!f || !buf)
-		return -EINVAL;
-	struct inode *inode = f->inode;
-	int mode = inode->mode;
-	if(f->inode->kdev && f->inode->kdev->rw) {
-		return f->inode->kdev->rw(READ, f, off, buf, count);
+	ssize_t ret = -EIO;
+	if(file->inode->kdev) {
+		if(file->inode->kdev->rw)
+			ret = file->inode->kdev->rw(READ, file, offset, buffer, length);
+	} else {
+		ret = fs_inode_read(file->inode, offset, length, buffer);
 	}
-	/* We read the data for a link as well. If we have gotten to the point
-	 * where we have the inode for the link we probably want to read the link 
-	 * itself */
-	else if(S_ISDIR(mode) || S_ISREG(mode) || S_ISLNK(mode)) {
-		return fs_inode_read(inode, off, count, buf);
-	}
-	return -EINVAL;
-}
-
-int fs_do_sys_read(struct file *f, off_t off, char *buf, size_t count)
-{
-	int ret = fs_do_sys_read_flags(f, off, buf, count);
-	if(ret < 0) return ret;
-	f->pos = off+ret;
 	return ret;
 }
 
-int sys_read(int fp, off_t off, char *buf, size_t count)
+ssize_t fs_file_read(struct file *file, uint8_t *buffer, size_t length)
 {
-	struct file *f = file_get(fp);
-	int ret = fs_do_sys_read(f, off, buf, count);
-	if(f) file_put(f);
+	ssize_t ret = fs_file_pread(file, file->pos, buffer, length);
+	if(ret > 0)
+		file->pos += ret;
+	return ret;
+}
+
+ssize_t fs_file_pwrite(struct file *file, off_t offset, uint8_t *buffer, size_t length)
+{
+	ssize_t ret = -EIO;
+	if(file->inode->kdev) {
+		if(file->inode->kdev->rw)
+			ret = file->inode->kdev->rw(WRITE, file, offset, buffer, length);
+	} else {
+		ret = fs_inode_read(file->inode, offset, length, buffer);
+	}
+	return ret;
+}
+
+ssize_t fs_file_write(struct file *file, uint8_t *buffer, size_t length)
+{
+	ssize_t ret = fs_file_pwrite(file, file->pos, buffer, length);
+	if(ret > 0)
+		file->pos += ret;
 	return ret;
 }
 
 int sys_readpos(int fp, char *buf, size_t count)
 {
-	if(!buf) 
+	if(!buf)
 		return -EINVAL;
 	struct file *f = file_get(fp);
 	if(!f)
@@ -62,29 +66,9 @@ int sys_readpos(int fp, char *buf, size_t count)
 		file_put(f);
 		return -EACCES;
 	}
-	int ret = fs_do_sys_read(f, f->pos, buf, count);
+	int ret = fs_file_read(f, buf, count);
 	file_put(f);
 	return ret;
-}
-
-int fs_do_sys_write_flags(struct file *f, off_t off, char *buf, size_t count)
-{
-	if(!f || !buf)
-		return -EINVAL;
-	struct inode *inode = f->inode;
-
-	if(f->inode->kdev && f->inode->kdev->rw) {
-		return f->inode->kdev->rw(WRITE, f, off, buf, count);
-	}
-	/* Again, we want to write to the link because we have that node */
-	else if(S_ISDIR(inode->mode) || S_ISREG(inode->mode) || S_ISLNK(inode->mode))
-		return fs_inode_write(inode, off, count, buf);
-	return -EINVAL;
-}
-
-int fs_do_sys_write(struct file *f, off_t off, char *buf, size_t count)
-{
-	return fs_do_sys_write_flags(f, off, buf, count);
 }
 
 int sys_writepos(int fp, char *buf, size_t count)
@@ -100,31 +84,43 @@ int sys_writepos(int fp, char *buf, size_t count)
 		file_put(f);
 		return -EACCES;
 	}
-	assert(f->inode);
 	if(f->flags & _FAPPEND)
 		f->pos = f->inode->length;
-	int ret=fs_do_sys_write(f, f->pos, buf, count);
-	if(ret > 0)
-		f->pos += ret;
+	int ret = fs_file_write(f, buf, count);
 	file_put(f);
 	return ret;
 }
 
-int sys_write(int fp, off_t off, char *buf, size_t count)
+int sys_read(int fp, off_t pos, char *buf, size_t count)
+{
+	if(!buf)
+		return -EINVAL;
+	struct file *f = file_get(fp);
+	if(!f)
+		return -EBADF;
+	if(!(f->flags & _FREAD)) {
+		file_put(f);
+		return -EACCES;
+	}
+	int ret = fs_file_pread(f, pos, buf, count);
+	file_put(f);
+	return ret;
+}
+
+int sys_write(int fp, off_t pos, char *buf, size_t count)
 {
 	struct file *f = file_get(fp);
 	if(!f)
 		return -EBADF;
-	int ret = fs_do_sys_write(f, off, buf, count);
-	file_put(f);
-	return ret;
-}
-
-int fs_read_file_data(int fp, char *buf, off_t off, size_t length)
-{
-	struct file *f = file_get(fp);
-	if(!f) return -EBADF;
-	int ret = fs_do_sys_read_flags(f, off, buf, length);
+	if(!count || !buf) {
+		file_put(f);
+		return -EINVAL;
+	}
+	if(!(f->flags & _FWRITE)) {
+		file_put(f);
+		return -EACCES;
+	}
+	int ret = fs_file_pwrite(f, pos, buf, count);
 	file_put(f);
 	return ret;
 }

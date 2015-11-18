@@ -20,7 +20,7 @@ int enumerate_partitions(int num, struct node *node, struct partition *part)
 	unsigned char buf[512];
 	struct file f;
 	f.inode = node;
-	int r = fs_do_sys_read_flags(&f, 0, buf, 512);
+	int r = fs_file_pread(&f, 0, buf, 512);
 	struct partition ptable[4];
 	memcpy(ptable, buf+0x1BE, 64);
 	int i;
@@ -57,6 +57,7 @@ int module_install(void)
 	size_t len;
 	int i=0;
 	int err;
+	/* TODO: check for all block devices */
 	struct inode *master = fs_path_resolve_inode("/dev/ada", 0, &err);
 	while(part_get_partition(master, &start, &len, i)) {
 		char name[128];

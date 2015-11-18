@@ -38,6 +38,12 @@ int file_close_fd(int fd);
 void fs_copy_file_handles(struct process *p, struct process *n);
 void file_close_all(void);
 
+ssize_t fs_file_pread(struct file *file, off_t offset, uint8_t *buffer, size_t length);
+ssize_t fs_file_read(struct file *file, uint8_t *buffer, size_t length);
+ssize_t fs_file_pwrite(struct file *file, off_t offset, uint8_t *buffer, size_t length);
+ssize_t fs_file_write(struct file *file, uint8_t *buffer, size_t length);
+int sys_write(int fp, off_t pos, char *buf, size_t count);
+int sys_read(int fp, off_t pos, char *buf, size_t count);
 int sys_sync();
 int sys_read(int fp, off_t off, char *buf, size_t count);
 int sys_readpos(int fp, char *buf, size_t count);

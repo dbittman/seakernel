@@ -37,10 +37,10 @@ static int process_elf64_phdr(char *mem, int fp, addr_t *start, addr_t *end)
 	addr_t entry;
 	elf_header_t *eh = (elf_header_t *)mem;
 	char buffer[(eh->phnum+1)*eh->phsize];
-	fs_read_file_data(fp, buffer, eh->phoff, eh->phsize * eh->phnum);
+	struct file *file = file_get(fp);
+	fs_file_pread(file, eh->phoff, buffer, eh->phsize * eh->phnum);
 	uint64_t vaddr=0, length=0, offset=0, stop, tmp;
 	uint64_t max=0, min=~0;
-	struct file *file = file_get(fp);
 	for(i=0;i < eh->phnum;i++)
 	{
 		elf64_program_header_t *ph = (elf64_program_header_t *)(buffer + (i*eh->phsize));

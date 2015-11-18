@@ -98,7 +98,7 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 	/* read in the ELF header, and check if it's a shebang */
 	if(header_size < 2) header_size = 2;
 	char mem[header_size];
-	fs_read_file_data(desc, mem, 0, header_size);
+	fs_file_pread(efil, 0, mem, header_size);
 	
 	if(__is_shebang(mem))
 		return loader_do_shebang(desc, argv, env);

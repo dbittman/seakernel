@@ -2,11 +2,11 @@
 #include <sea/fs/inode.h>
 #include <sea/loader/exec.h>
 #include <sea/string.h>
-static void __load_first_line(int desc, char *buf, int len)
+static void __load_first_line(struct file *file, char *buf, int len)
 {
 	int i;
 	for(i=0;i<len;i++) {
-		if(sys_read(desc, i, &buf[i], 1) != 1 || buf[i] == '\n')
+		if(fs_file_pread(file, i, &buf[i], 1) != 1 || buf[i] == '\n')
 			break;
 	}
 	buf[i]=0;
@@ -59,11 +59,11 @@ static int parse_line_args(char *args, char **list)
 /* takes a valid file descriptor, and will close it before
  * the function returns (if it does)
  */
-int loader_do_shebang(int desc, char **argv, char **env)
+int loader_do_shebang(struct file *file, char **argv, char **env)
 {
 	char buf[1024];
-	__load_first_line(desc, buf, 1024);
-	sys_close(desc);
+	__load_first_line(file, buf, 1024);
+	file_put(file);
 	char *interp = buf+2; /* skip the #! */
 
 	interp = chomp(interp);

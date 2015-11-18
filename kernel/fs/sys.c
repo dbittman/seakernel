@@ -121,9 +121,9 @@ int sys_setup(int a)
 	/* this may look like bullshit. It kinda is. Unix processes
 	 * depend on having SOMETHING present in fds 0-2, so we just
 	 * fill them will nonsense for now. */
-	sys_open("/dev/null", O_RDWR);   /* stdin  */
-	sys_open("/dev/null", O_WRONLY); /* stdout */
-	sys_open("/dev/null", O_WRONLY); /* stderr */
+	sys_open("/dev/null", O_RDWR, 0);   /* stdin  */
+	sys_open("/dev/null", O_WRONLY, 0); /* stdout */
+	sys_open("/dev/null", O_WRONLY, 0); /* stderr */
 	kerfs_register_report("/dev/syscall", kerfs_syscall_report);
 	kerfs_register_report("/dev/int", kerfs_int_report);
 	kerfs_register_report("/dev/mounts", kerfs_mount_report);

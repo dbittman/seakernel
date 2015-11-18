@@ -16,14 +16,13 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/fs/dir.h>
 
-static struct inode *__fs_do_open_resolve__(char *path, int *err, struct dirent **dir)
+static struct inode *__fs_do_open_resolve__(const char *path, int *err, struct dirent **dir)
 {
 	struct dirent *de = fs_path_resolve(path, 0, err);
 	if(!de)
 		return 0;
 	struct inode *node = fs_dirent_readinode(de, true);
 	if(!node) {
-		vfs_dirent_release(de);
 		*err = -EIO;
 		return 0;
 	}
@@ -37,85 +36,65 @@ static struct inode *__fs_do_open_resolve__(char *path, int *err, struct dirent 
 	return node;
 }
 
-struct file *fs_do_sys_open(char *name, int flags, mode_t _mode, int *error, int *num)
+struct file *fs_file_open(const char *name, int flags, mode_t mode, int *error)
 {
-	if(!name) {
-		*error = -EINVAL;
-		return 0;
-	}
-	++flags;
-	struct inode *inode=0;
-	struct dirent *dirent=0;
-	struct file *f;
-	mode_t mode = (_mode & ~0xFFF) | ((_mode&0xFFF) & (~(current_process->cmask&0xFFF)));
-	
-	inode = (flags & _FCREAT) ?
-				fs_path_resolve_create_get(name, 0, 
-						S_IFREG | mode, error, &dirent)
-				: __fs_do_open_resolve__(name, error, &dirent);
+	struct inode *inode;
+	struct dirent *dirent = 0;
+	mode = (mode & ~0xFFF) | ((mode & 0xFFF) & (~(current_process->cmask & 0xFFF)));
 
-	if(!inode || !dirent) {
-		if(inode) vfs_icache_put(inode);
-		if(dirent) vfs_dirent_release(dirent);
-		return 0;
+	if(flags & _FCREAT)
+		inode =	fs_path_resolve_create_get(name, 0, S_IFREG | mode, error, &dirent);
+	else
+		inode = __fs_do_open_resolve__(name, error, &dirent);
+
+	if(!inode) {
+		if(dirent)
+			vfs_dirent_release(dirent);
+		return NULL;
 	}
-	/* If CREAT and EXCL are set, and the file exists, return */
+
 	if(flags & _FCREAT && flags & _FEXCL && !*error) {
 		vfs_icache_put(inode);
 		vfs_dirent_release(dirent);
-		*error = -EEXIST;
+		if(error)
+			*error = -EEXIST;
 		return 0;
 	}
-	if(flags & _FREAD && !vfs_inode_check_permissions(inode, MAY_READ, 0)) {
+
+	if((flags & _FREAD) && !vfs_inode_check_permissions(inode, MAY_READ, 0)) {
 		vfs_icache_put(inode);
 		vfs_dirent_release(dirent);
-		*error = -EACCES;
-		return 0;
+		if(error)
+			*error = -EACCES;
+		return NULL;
 	}
-	if(flags & _FWRITE && !vfs_inode_check_permissions(inode, MAY_WRITE, 0)) {
+	if((flags & _FWRITE) && !vfs_inode_check_permissions(inode, MAY_WRITE, 0)) {
 		vfs_icache_put(inode);
 		vfs_dirent_release(dirent);
-		*error = -EACCES;
-		return 0;
+		if(error)
+			*error = -EACCES;
+		return NULL;
 	}
-	int ret;
-	f = file_create(inode, dirent, flags);
-	f->pos=0;
-	f->fd_flags &= ~FD_CLOEXEC; //TODO ???
-	int fdnum = file_add_filedes(f, 0);
-	if(fdnum == -1) {
-		file_put(f);
-		vfs_icache_put(inode);
-		vfs_dirent_release(dirent);
-		*error = -EMFILE;
-		return 0;
-	}
-	if(num) *num = fdnum;
-	//if(S_ISCHR(inode->mode) && !(flags & _FNOCTTY))
-	//	dm_char_rw(OPEN, inode->phys_dev, 0, 0);
 	if(flags & _FTRUNC && S_ISREG(inode->mode))
 	{
 		inode->length=0;
 		inode->ctime = inode->mtime = time_get_epoch();
 		vfs_inode_set_dirty(inode);
 	}
-	return f;
+
+	return file_create(inode, dirent, flags);
 }
 
-int sys_open_posix(char *name, int flags, mode_t mode)
+int sys_open(char *name, int flags, mode_t mode)
 {
-	int error=0, num;
-	struct file *f = fs_do_sys_open(name, flags, mode, &error, &num);
+	int error = 0;
+	struct file *f = fs_file_open(name, flags+1, mode, &error);
 	if(!f) {
 		return error;
 	}
+	int fdnum = file_add_filedes(f, 0);
 	file_put(f);
-	return num;
-}
-
-int sys_open(char *name, int flags)
-{
-	return sys_open_posix(name, flags, 0);
+	return fdnum;
 }
 
 static int duplicate(struct process *t, int fp, int n)

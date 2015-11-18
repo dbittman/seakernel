@@ -46,7 +46,7 @@
 #include <sea/errno.h>
 #include <sea/mm/kmalloc.h>
 
-addr_t mm_mmap(addr_t address, size_t length, int prot, int flags, int fd, size_t offset, int *err)
+addr_t mm_mmap(addr_t address, size_t length, int prot, int flags, struct file *f, size_t offset, int *err)
 {
 	struct inode *node;
 	if(flags & MAP_ANONYMOUS) {
@@ -58,30 +58,25 @@ addr_t mm_mmap(addr_t address, size_t length, int prot, int flags, int fd, size_
 		if(!(prot & PAGE_WRITE)) {
 		//	flags |= MAP_SHARED;
 		}
-		struct file *f = file_get(fd);
 		if(!f) {
 			if(err) *err = -EBADF;
 			return -1;
 		}
 		/* check permissions */
 		if(!(f->flags & _FREAD)) {
-			file_put(f);
 			if(err) *err = -EACCES;
 			return -1;
 		}
 		if(!(flags & MAP_PRIVATE) && (prot & PROT_WRITE) && !(f->flags & _FWRITE)) {
-			file_put(f);
 			if(err) *err = -EACCES;
 			return -1;
 		}
 		if(!S_ISREG(f->inode->mode)) {
-			file_put(f);
 			if(err) *err = -ENODEV;
 			return -1;
 		}
 		vfs_inode_get(f->inode);
 		node = f->inode;
-		file_put(f);
 	}
 	/* a mapping replaces any other mapping that it overwrites, according to opengroup */
 	mm_mapping_munmap(address, length);
@@ -94,7 +89,13 @@ void *sys_mmap(void *address, struct __mmap_args *args, int *result)
 {
 	if(((addr_t)address & ~PAGE_MASK))
 		return (void *)-EINVAL;
-	return (void *)mm_mmap((addr_t)address, args->length, args->prot, args->flags, args->fd, (size_t)args->offset, result);
+	struct file *file = 0;
+	if(!(args->flags & MAP_ANONYMOUS))
+		file = file_get(args->fd);
+	void *ret = (void *)mm_mmap((addr_t)address, args->length, args->prot, args->flags, file, (size_t)args->offset, result);
+	if(file)
+		file_put(file);
+	return ret;
 }
 
 int sys_munmap(void *addr, size_t length)

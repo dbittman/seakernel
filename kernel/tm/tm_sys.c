@@ -14,7 +14,7 @@ int sys_sbrk(long inc)
 		current_process->heap_end += inc;
 #warning "TODO: this causes a lot of entries in the mappings list. Merging!"
 		addr_t ret = mm_mmap(end, inc,
-				PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0, 0);
+				PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, 0, 0, 0);
 	}
 	return end;
 }

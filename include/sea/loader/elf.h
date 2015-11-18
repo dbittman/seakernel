@@ -5,10 +5,11 @@
 #include <sea/loader/symbol.h>
 
 struct module;
+struct file;
 
 void *loader_parse_elf_module(struct module *mod, void * buf);
-int arch_loader_parse_elf_executable(void *mem, int fp, addr_t *start, addr_t *end);
-int loader_parse_elf_executable(void *mem, int fp, addr_t *start, addr_t *end);
+int arch_loader_parse_elf_executable(void *mem, struct file *file, addr_t *start, addr_t *end);
+int loader_parse_elf_executable(void *mem, struct file *, addr_t *start, addr_t *end);
 
 void *arch_loader_parse_elf_module(struct module *mod, uint8_t * buf);
 size_t arch_loader_calculate_allocation_size(void *buf);

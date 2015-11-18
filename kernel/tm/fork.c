@@ -291,7 +291,7 @@ int tm_clone(int flags, void *entry, struct kthread *kt)
 		panic(0, "NOT IMPLEMENTED: NO MORE STACKS");
 	if(proc == current_process && proc != kernel_process) {
 		addr_t ret = mm_mmap(thr->usermode_stack_start, CONFIG_STACK_PAGES * PAGE_SIZE,
-				PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0, 0);
+				PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, 0, 0, 0);
 	}
 	size_t kms_page_size = mm_page_size_closest(KERN_STACK_SIZE);
 	for(unsigned int i = 0;i<((KERN_STACK_SIZE-1) / kms_page_size)+1;i++) {

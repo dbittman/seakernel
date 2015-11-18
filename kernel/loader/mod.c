@@ -200,7 +200,7 @@ static int load_module(char *path, char *args, int flags)
 		return 0;
 	}
 	/* Open and test */
-	int desc=sys_open(path, O_RDWR);
+	int desc = sys_open(path, O_RDWR, 0);
 	if(desc < 0)
 	{
 		kfree(tmp);

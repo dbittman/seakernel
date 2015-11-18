@@ -71,6 +71,6 @@ void mm_destroy_all_mappings(struct process *t);
 int sys_msync(void *address, size_t length, int flags);
 int sys_munmap(void *addr, size_t length);
 void *sys_mmap(void *address, struct __mmap_args *args, int *);
-addr_t mm_mmap(addr_t address, size_t length, int prot, int flags, int fd, size_t offset, int *);
+addr_t mm_mmap(addr_t address, size_t length, int prot, int flags, struct file *, size_t offset, int *);
 #endif
 

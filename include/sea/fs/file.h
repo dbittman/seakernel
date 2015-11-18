@@ -42,6 +42,7 @@ ssize_t fs_file_pread(struct file *file, off_t offset, uint8_t *buffer, size_t l
 ssize_t fs_file_read(struct file *file, uint8_t *buffer, size_t length);
 ssize_t fs_file_pwrite(struct file *file, off_t offset, uint8_t *buffer, size_t length);
 ssize_t fs_file_write(struct file *file, uint8_t *buffer, size_t length);
+struct file *fs_file_open(const char *name, int flags, mode_t mode, int *error);
 int sys_write(int fp, off_t pos, char *buf, size_t count);
 int sys_read(int fp, off_t pos, char *buf, size_t count);
 int sys_sync();
@@ -51,8 +52,7 @@ int sys_writepos(int fp, char *buf, size_t count);
 int sys_write(int fp, off_t off, char *buf, size_t count);
 int sys_isatty(int f);
 int sys_ioctl(int fp, int cmd, long arg);
-int sys_open(char *name, int flags);
-int sys_open_posix(char *name, int flags, mode_t mode);
+int sys_open(char *name, int flags, mode_t);
 int sys_close(int fp);
 int sys_read(int fp, off_t off, char *buf, size_t count);
 int sys_write(int fp, off_t off, char *buf, size_t count);

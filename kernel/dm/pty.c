@@ -283,8 +283,8 @@ int sys_openpty(int *master, int *slave, char *slavename, const struct termios *
 	sys_mknod(mname, S_IFCHR | 0666, GETDEV(pty_major, num));
 	sys_mknod(sname, S_IFCHR | 0666, GETDEV(pty_major, num));
 
-	int mfd = sys_open(mname, O_RDWR);
-	int sfd = sys_open(sname, O_RDWR);
+	int mfd = sys_open(mname, O_RDWR, 0);
+	int sfd = sys_open(sname, O_RDWR, 0);
 	if(mfd < 0 || sfd < 0) {
 		sys_unlink(mname);
 		sys_unlink(sname);

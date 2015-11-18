@@ -31,13 +31,12 @@ void arch_loader_parse_kernel_elf(struct multiboot *mb, void *__elf)
 	}
 }
 
-static int process_elf64_phdr(char *mem, int fp, addr_t *start, addr_t *end)
+static int process_elf64_phdr(char *mem, struct file *file, addr_t *start, addr_t *end)
 {
 	uint32_t i, x;
 	addr_t entry;
 	elf_header_t *eh = (elf_header_t *)mem;
 	char buffer[(eh->phnum+1)*eh->phsize];
-	struct file *file = file_get(fp);
 	fs_file_pread(file, eh->phoff, buffer, eh->phsize * eh->phnum);
 	uint64_t vaddr=0, length=0, offset=0, stop, tmp;
 	uint64_t max=0, min=~0;
@@ -79,14 +78,13 @@ static int process_elf64_phdr(char *mem, int fp, addr_t *start, addr_t *end)
 			else
 				flags |= MAP_SHARED;
 			mm_mmap(ph->p_addr & PAGE_MASK, ph->p_filesz + inpage_offset, 
-					prot, flags, fp, ph->p_offset & PAGE_MASK, 0);
+					prot, flags, file, ph->p_offset & PAGE_MASK, 0);
 			if(additional > page_free) {
 				mm_mmap((newend & PAGE_MASK) + PAGE_SIZE, additional - page_free,
-						prot, flags | MAP_ANONYMOUS, -1, 0, 0);
+						prot, flags | MAP_ANONYMOUS, 0, 0, 0);
 			}
 		}
 	}
-	file_put(file);
 	if(!max)
 		return 0;
 	*start = eh->entry;
@@ -94,9 +92,9 @@ static int process_elf64_phdr(char *mem, int fp, addr_t *start, addr_t *end)
 	return 1;
 }
 
-int arch_loader_parse_elf_executable(void *mem, int fp, addr_t *start, addr_t *end)
+int arch_loader_parse_elf_executable(void *mem, struct file *file, addr_t *start, addr_t *end)
 {
-	return process_elf64_phdr(mem, fp, start, end);
+	return process_elf64_phdr(mem, file, start, end);
 }
 
 #if (CONFIG_MODULES)

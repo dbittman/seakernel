@@ -42,7 +42,7 @@ ssize_t fs_file_pwrite(struct file *file, off_t offset, uint8_t *buffer, size_t 
 		if(file->inode->kdev->rw)
 			ret = file->inode->kdev->rw(WRITE, file, offset, buffer, length);
 	} else {
-		ret = fs_inode_read(file->inode, offset, length, buffer);
+		ret = fs_inode_write(file->inode, offset, length, buffer);
 	}
 	return ret;
 }

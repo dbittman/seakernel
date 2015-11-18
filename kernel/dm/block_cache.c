@@ -1,4 +1,5 @@
 #include <sea/dm/block.h>
+#include <sea/dm/blockdev.h>
 #include <sea/lib/hash.h>
 #include <sea/errno.h>
 #include <sea/lib/queue.h>
@@ -21,42 +22,45 @@ size_t dm_block_cache_reclaim(void)
 	mutex_acquire(&reclaim_lock);
 	struct queue_item *item = queue_dequeue_item(&lru);
 	struct buffer *br = item->ent;
-	size_t amount = sizeof(struct buffer) + br->bd->blksz;
-	mutex_acquire(&br->bd->cachelock);
+	size_t amount = sizeof(struct buffer) + br->bd->ctl->blocksize;
+	mutex_acquire(&br->bd->ctl->cachelock);
 	if((br->flags & BUFFER_DIRTY) || (br->flags & BUFFER_LOCKED)) {
-		mutex_release(&br->bd->cachelock);
+		mutex_release(&br->bd->ctl->cachelock);
 		queue_enqueue_item(&lru, &br->qi, br);
 		mutex_release(&reclaim_lock);
 		return 0;
 	}
 
-	hash_delete(&br->bd->cache, &br->block, sizeof(br->block));
-	mutex_release(&br->bd->cachelock);
+	uint64_t block = buffer_block(br);
+	hash_delete(&br->bd->ctl->cache, &block, sizeof(block));
+	mutex_release(&br->bd->ctl->cachelock);
 	buffer_put(br);
 	mutex_release(&reclaim_lock);
 	return amount;
 }
 
-int dm_block_cache_insert(struct blockdevice *bd, uint64_t block, struct buffer *buf, int flags)
+int dm_block_cache_insert(struct blockdev *bd, uint64_t block, struct buffer *buf, int flags)
 {
-	mutex_acquire(&bd->cachelock);
+	mutex_acquire(&bd->ctl->cachelock);
 
 	struct buffer *prev = 0;
-	bool exist = hash_lookup(&bd->cache, &block, sizeof(block)) != NULL;
+	buf->__block = block;
+	block += buf->bd->partbegin;
+	bool exist = hash_lookup(&bd->ctl->cache, &block, sizeof(block)) != NULL;
 
 	if(exist && !(flags & BLOCK_CACHE_OVERWRITE)) {
-		mutex_release(&bd->cachelock);
+		mutex_release(&bd->ctl->cachelock);
 		return -EEXIST;
 	}
 
 	buffer_inc_refcount(buf);
 	if(exist) {
-		hash_delete(&bd->cache, &block, sizeof(block));
+		hash_delete(&bd->ctl->cache, &block, sizeof(block));
 	}
-	buf->block = block;
-	hash_insert(&bd->cache, &buf->block, sizeof(buf->block), &buf->hash_elem, buf);
+	buf->trueblock = block;
+	hash_insert(&bd->ctl->cache, &buf->trueblock, sizeof(buf->trueblock), &buf->hash_elem, buf);
 
-	mutex_release(&bd->cachelock);
+	mutex_release(&bd->ctl->cachelock);
 	queue_enqueue_item(&lru, &buf->qi, buf);
 	if(exist) {
 		/* overwritten, so will not writeback */
@@ -66,18 +70,19 @@ int dm_block_cache_insert(struct blockdevice *bd, uint64_t block, struct buffer 
 	return 0;
 }
 
-struct buffer *dm_block_cache_get(struct blockdevice *bd, uint64_t block)
+struct buffer *dm_block_cache_get(struct blockdev *bd, uint64_t block)
 {
-	mutex_acquire(&bd->cachelock);
+	mutex_acquire(&bd->ctl->cachelock);
+	block += bd->partbegin;
 
 	struct buffer *e;
-	if((e = hash_lookup(&bd->cache, &block, sizeof(block))) == NULL) {
-		mutex_release(&bd->cachelock);
+	if((e = hash_lookup(&bd->ctl->cache, &block, sizeof(block))) == NULL) {
+		mutex_release(&bd->ctl->cachelock);
 		return 0;
 	}
 
 	buffer_inc_refcount(e);
-	mutex_release(&bd->cachelock);
+	mutex_release(&bd->ctl->cachelock);
 	queue_remove(&lru, &e->qi);
 	queue_enqueue_item(&lru, &e->qi, e);
 	return e;
@@ -94,13 +99,13 @@ int block_cache_request(struct ioreq *req, off_t initial_offset, size_t total_by
 		req->count--;
 		req->block++;
 		off_t offset = 0;
-		if(br->block == block) {
+		if(br->__block == block) {
 			offset = initial_offset;
 		}
-		size_t copy_amount = req->bd->blksz - offset;
+		size_t copy_amount = req->bd->ctl->blocksize - offset;
 		if(copy_amount > bytecount)
 			copy_amount = bytecount;
-		size_t position = (br->block - block) * req->bd->blksz;
+		size_t position = (br->__block - block) * req->bd->ctl->blocksize;
 		memcpy(buffer + position, br->data + offset, copy_amount);
 		bytecount -= copy_amount;
 		position += copy_amount;

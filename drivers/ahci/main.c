@@ -22,7 +22,7 @@ int ahci_int = 0;
 struct hba_memory *hba_mem;
 struct pmap *ahci_pmap;
 struct ahci_device *ports[32];
-int ahci_major=0;
+
 struct pci_device *get_ahci_pci (void)
 {
 	struct pci_device *ahci = pci_locate_class(0x1, 0x6);
@@ -45,19 +45,6 @@ struct pci_device *get_ahci_pci (void)
 	printk(KERN_DEBUG, "[ahci]: using interrupt %d\n", ahci->pcs->interrupt_line+32);
 	ahci_int = ahci->pcs->interrupt_line+32;
 	return ahci;
-}
-
-void ahci_create_device(struct ahci_device *dev)
-{
-	dev->created=1;
-#if CONFIG_MODULE_PSM
-	struct disk_info di;
-	di.length=dev->identify.lba48_addressable_sectors*512;
-	di.num_sectors=dev->identify.lba48_addressable_sectors;
-	di.sector_size=512;
-	di.flags = 0;
-	dev->psm_minor = psm_register_disk_device(PSM_AHCI_ID, GETDEV(ahci_major, dev->idx), &di);
-#endif
 }
 
 void ahci_interrupt_handler(struct registers *regs, int int_no, int flags)
@@ -159,19 +146,33 @@ int ahci_rw_multiple(int rw, int min, uint64_t blk, char *out_buffer, int count)
 	return ret;
 }
 
-int ahci_rw_single(int rw, int dev, uint64_t blk, char *buf)
+struct hash portmap;
+static ssize_t __rw(int rw, struct inode *node, uint64_t block, uint8_t *buffer, size_t len)
 {
-	return ahci_rw_multiple_do(rw, dev, blk, buf, 1);
+	int min = MINOR(node->phys_dev);
+	int port = (int)hash_lookup(&portmap, &min, sizeof(min));
+	return ahci_rw_multiple(rw, port, block, buffer, len);
 }
 
-int ioctl_ahci(int min, int cmd, long arg)
+void ahci_create_device(struct ahci_device *dev)
 {
-	return -EINVAL;
+	dev->created=1;
+	char name[32];
+	snprintf(name, 32, "/dev/ad%c", dev->idx+'a'); /* TODO: better naming scheme */
+	sys_mknod(name, S_IFBLK | 0600, 0);
+	int err;
+	struct inode *node = fs_path_resolve_inode(name, 0, &err);
+	node->flags |= INODE_PERSIST;
+	int min = blockdev_register(node, 0, 0, 512, __rw);
+	vfs_icache_put(node);
+	dev->minor = min;
+	hash_insert(&portmap, &dev->minor, sizeof(dev->minor), &dev->mapelem, (void *)dev->idx);
 }
 
 int irq;
 int module_install(void)
 {
+	hash_create(&portmap, 0, 32);
 	printk(KERN_DEBUG, "[ahci]: initializing ahci driver...\n");
 	ahci_pmap = pmap_create(0, 0);
 	if(!(ahci_pci = get_ahci_pci()))
@@ -181,8 +182,6 @@ int module_install(void)
 		return -ENOENT;
 	}
 	irq = cpu_interrupt_register_handler(ahci_int, ahci_interrupt_handler);
-	ahci_major = dm_set_available_block_device(ahci_rw_single,
-			ATA_SECTOR_SIZE, ioctl_ahci, ahci_rw_multiple, 0);
 	ahci_init_hba(hba_mem);
 	ahci_probe_ports(hba_mem);
 	return 0;
@@ -191,7 +190,6 @@ int module_install(void)
 int module_exit(void)
 {
 	int i;
-	dm_unregister_block_device(ahci_major);
 	cpu_interrupt_unregister_handler(ahci_int, irq);
 	for(i=0;i<32;i++)
 	{
@@ -201,10 +199,6 @@ int module_exit(void)
 			mm_free_dma_buffer(&(ports[i]->dma_fis));
 			for(int j=0;j<HBA_COMMAND_HEADER_NUM;j++)
 				mm_free_dma_buffer(&(ports[i]->ch_dmas[j]));
-#if CONFIG_MODULE_PSM
-			if(ports[i]->created)
-				psm_unregister_disk_device(PSM_AHCI_ID, ports[i]->psm_minor);
-#endif
 			kfree(ports[i]);
 		}
 	}

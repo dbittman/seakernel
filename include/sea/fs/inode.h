@@ -29,6 +29,7 @@ struct pipe;
 /* TODO: we should get rid of this */
 #define INODE_NOLRU    8 /* On calling vfs_icache_put, don't move to LRU, immediately destroy */
 #define INODE_PCACHE   0x10
+#define INODE_PERSIST  0x20
 
 #define RESOLVE_NOLINK  1
 #define RESOLVE_NOMOUNT 2

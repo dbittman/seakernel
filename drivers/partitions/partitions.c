@@ -15,43 +15,12 @@ struct partition {
 	unsigned int length;
 }__attribute__((packed));
 
-/* Okay. What the actual fuck. */
-int parse_extended_partitions(int num, int dev, struct partition *ext, 
-	struct partition *part, int prev_lba)
+int enumerate_partitions(int num, struct node *node, struct partition *part)
 {
 	unsigned char buf[512];
-	printk(0, "[partition]: Reading extended partition at %d\n", 
-		(ext->start_lba + prev_lba));
-	dm_do_block_rw(READ, dev, (ext->start_lba + prev_lba)*512, (char *)buf, 0);
-	/* Only two entries */
-	struct partition ptable[2];
-	memcpy(ptable, buf+0x1BE, 32);
-	int i;
-	for(i=0;i<2;i++)
-	{
-		if(ptable[i].sysid == 0xF || ptable[i].sysid == 0x5)
-		{
-			/* Extended Partitions */
-			prev_lba += ext->start_lba;
-			num = parse_extended_partitions(num, dev, &ptable[i], part, prev_lba);
-			if(num == -1)
-				return -1;
-			continue;
-		}
-		if(!num--) {
-			ptable[i].start_lba += (ext->start_lba+prev_lba);
-			memcpy(part, &ptable[i], sizeof(*part));
-			part->ext=1;
-			return num;
-		}
-	}
-	return num;
-}
-
-int enumerate_partitions(int num, int dev, struct partition *part)
-{
-	unsigned char buf[512];
-	dm_do_block_rw(READ, dev, 0, (char *)buf, 0);
+	struct file f;
+	f.inode = node;
+	int r = fs_do_sys_read_flags(&f, 0, buf, 512);
 	struct partition ptable[4];
 	memcpy(ptable, buf+0x1BE, 64);
 	int i;
@@ -59,12 +28,7 @@ int enumerate_partitions(int num, int dev, struct partition *part)
 	{
 		if(ptable[i].sysid == 0xF || ptable[i].sysid == 0x5)
 		{
-			/* Extended Partitions */
-			kprintf("UNTESTED: parsing extended partition in device=%x\n", dev);
-			num = parse_extended_partitions(num, dev, &ptable[i], part, 0);
-			if(num == -1)
-				return 1;
-			continue;
+			return 0;
 		}
 		if(!num--) {
 			memcpy(part, &ptable[i], sizeof(*part));
@@ -75,38 +39,42 @@ int enumerate_partitions(int num, int dev, struct partition *part)
 	return 0;
 }
 
-#if CONFIG_MODULE_PSM
-int part_get_partition(dev_t dev, struct part_info *part, int n)
+int part_get_partition(struct inode *node, uint64_t *start, size_t *len, int n)
 {
 	struct partition p;
-	int ret = enumerate_partitions(n, dev, &p);
+	int ret = enumerate_partitions(n, node, &p);
 	if(!p.sysid) return 0;
 	if(ret) {
-		part->num_sectors=p.length;
-		part->start_lba=p.start_lba;
-		part->sysid = p.sysid;
+		*start = p.start_lba;
+		*len = p.length;
 	}
 	return ret;
 }
-#endif
-
+#include <sea/dm/blockdev.h>
 int module_install(void)
 {
-	loader_add_kernel_symbol(enumerate_partitions);
-#if CONFIG_MODULE_PSM
-	loader_add_kernel_symbol(part_get_partition);
-#endif
-	printk(1, "[partitions]: Telling any HD drivers to reload their partition information\n");
-	dm_block_ioctl(3, 1, 0);
+	uint64_t start;
+	size_t len;
+	int i=0;
+	int err;
+	struct inode *master = fs_path_resolve_inode("/dev/ada", 0, &err);
+	while(part_get_partition(master, &start, &len, i)) {
+		char name[128];
+		snprintf(name, 128, "/dev/ada%d", i+1);
+		sys_mknod(name, S_IFBLK | 0600, 0);
+		int err;
+		struct inode *node = fs_path_resolve_inode(name, 0, &err);
+		node->flags |= INODE_PERSIST;
+
+		blockdev_register_partition(master, node, start, len);
+		vfs_icache_put(node);
+		i++;
+	}
 	return 0;
 }
 
 int module_exit(void)
 {
-	loader_remove_kernel_symbol("enumerate_partitions");
-#if CONFIG_MODULE_PSM
-	loader_remove_kernel_symbol("part_get_partition");
-#endif
 	return 0;
 }
 

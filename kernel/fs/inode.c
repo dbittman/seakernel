@@ -178,7 +178,7 @@ void vfs_icache_put(struct inode *node)
 {
 	assert(node->count > 0);
 	mutex_acquire(ic_lock);
-	if(atomic_fetch_sub(&node->count, 1) == 1) {
+	if(atomic_fetch_sub(&node->count, 1) == 1 && !(node->flags & INODE_PERSIST)) {
 		assert(node->flags & INODE_INUSE);
 		atomic_fetch_and(&node->flags, ~INODE_INUSE);
 		if(node->filesystem) {

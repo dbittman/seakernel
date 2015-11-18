@@ -17,6 +17,7 @@ int ext2_mount(struct filesystem *seafs)
 	struct ext2_info *fs = kmalloc(sizeof(struct ext2_info));
 	fs->sb = kmalloc(1024);
 	fs->dev = seafs->dev;
+	fs->filesys = seafs;
 	fs->fs_lock = mutex_create(0, 0);
 	fs->sb->block_size=0;
 	int r = ext2_read_block(fs, 1, (unsigned char *)fs->sb);
@@ -65,7 +66,6 @@ int ext2_mount(struct filesystem *seafs)
 		printk(0, "[ext2]: Hmm...directories have a hash index. I'll look into that later...\n");
 	seafs->root_inode_id = 2;
 	seafs->data = fs;
-	fs->filesys = seafs;
 	seafs->fs_ops = &ext2_wrap_fsops;
 	seafs->fs_inode_ops = &ext2_wrap_iops;
 	return 0;

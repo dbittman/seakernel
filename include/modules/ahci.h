@@ -315,7 +315,7 @@ struct ata_identify {
 
 struct ahci_device {
 	uint32_t type;
-	int idx;
+	int idx, minor;
 	struct mutex lock;
 	void *fis_virt, *clb_virt;
 	struct dma_region dma_clb, dma_fis;
@@ -323,7 +323,9 @@ struct ahci_device {
 	struct dma_region ch_dmas[HBA_COMMAND_HEADER_NUM];
 	struct ata_identify identify;
 	uint32_t slots;
-	int created, psm_minor;
+	int created;
+	struct inode *node;
+	struct hashelem mapelem;
 };
 
 #define HBA_PxCMD_ST  (1 << 0)

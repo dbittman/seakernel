@@ -84,6 +84,11 @@ void loader_init_kernel_symbols(void)
 	loader_add_kernel_symbol(rwlock_create);
 	loader_add_kernel_symbol(rwlock_destroy);
 	loader_add_kernel_symbol(trace);
+	loader_add_kernel_symbol(hash_lookup);
+	loader_add_kernel_symbol(hash_insert);
+	loader_add_kernel_symbol(hash_delete);
+	loader_add_kernel_symbol(hash_create);
+	loader_add_kernel_symbol(hash_destroy);
 
 	/* these systems export these, but have no initialization function */
 	loader_add_kernel_symbol(time_get_epoch);

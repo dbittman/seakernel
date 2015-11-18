@@ -1,8 +1,9 @@
 #include <sea/dm/block.h>
+#include <sea/dm/blockdev.h>
 #include <sea/mm/kmalloc.h>
 #include <sea/tm/blocking.h>
 #include <stdatomic.h>
-struct ioreq *ioreq_create(struct blockdevice *bd, dev_t dev, int direction, uint64_t start, size_t count)
+struct ioreq *ioreq_create(struct blockdev *bd, dev_t dev, int direction, uint64_t start, size_t count)
 {
 	struct ioreq *req = kmalloc(sizeof(*req));
 	req->block = start;

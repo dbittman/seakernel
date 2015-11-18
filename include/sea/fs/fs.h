@@ -43,7 +43,7 @@ struct filesystem {
 	dev_t dev;
 	char type[128];
 	int opts;
-	struct inode *point;
+	struct inode *point, *node;
 
 	struct filesystem_callbacks       *fs_ops;
 	struct filesystem_inode_callbacks *fs_inode_ops;

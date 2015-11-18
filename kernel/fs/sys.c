@@ -53,6 +53,7 @@ void devfs_init(void)
 	}
 	//sys_mknod("/dev/tty1", S_IFCHR | 0600, GETDEV(3, 2));
 	dm_init_char_devices();
+	blockdev_init();
 	sys_mkdir("/dev/process", 0755);
 }
 
@@ -142,12 +143,16 @@ int sys_setup(int a)
 	return 12;
 }
 
+int fs_do_sys_read_flags(struct file *f, off_t off, char *buf, size_t count);
+int fs_do_sys_write_flags(struct file *f, off_t off, char *buf, size_t count);
 void fs_init(void)
 {
 	vfs_icache_init();
 	vfs_dirent_init();
 	fs_fsm_init();
 #if CONFIG_MODULES
+	loader_add_kernel_symbol(fs_do_sys_read_flags);
+	loader_add_kernel_symbol(fs_do_sys_write_flags);
 	loader_add_kernel_symbol(sys_open);
 	loader_add_kernel_symbol(sys_read);
 	loader_add_kernel_symbol(sys_write);
@@ -524,6 +529,7 @@ int sys_mknod(char *path, mode_t mode, dev_t dev)
 	}
 	i->phys_dev = dev;
 	i->mode = (mode & ~0xFFF) | ((mode&0xFFF) & (~current_process->cmask&0xFFF));
+	i->flags |= INODE_PERSIST;
 	
 	/* TODO: this code is duplicated... */
 	if(i->phys_dev && !i->kdev) {
@@ -624,12 +630,6 @@ static int select_filedes(int i, int rw)
 		ready = in->kdev->select(file, rw);
 	else if(S_ISREG(in->mode) || S_ISDIR(in->mode) || S_ISLNK(in->mode))
 		ready = fs_callback_inode_select(in, rw);
-	//else if(S_ISCHR(in->mode))
-	//	ready = dm_chardev_select(file, rw);
-	else if(S_ISBLK(in->mode))
-		ready = dm_blockdev_select(in, rw);
-	else if(S_ISSOCK(in->mode))
-		ready = socket_select(file, rw);
 	file_put(file);
 	return ready;
 }

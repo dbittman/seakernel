@@ -18,7 +18,6 @@ void pty_create(struct inode *inode)
 		charbuffer_create(&p->input, CHARBUFFER_DROP, PTY_IN_BUF_SIZE);
 		charbuffer_create(&p->output, 0, PTY_OUT_BUF_SIZE);
 		mutex_create(&p->cbuf_lock, 0);
-		p->num = atomic_fetch_add(&__pty_next_num, 1);
 		inode->devdata = p;
 	}
 }
@@ -304,6 +303,7 @@ int sys_openpty(int *master, int *slave, char *slavename, const struct termios *
 	
 	pty->master = mf->inode;
 	pty->slave = sf->inode;
+	pty->num = num;
 	if(term)
 		memcpy(&pty->term, term, sizeof(*term));
 	if(win)

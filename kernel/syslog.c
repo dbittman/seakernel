@@ -23,7 +23,7 @@ int kerfs_syslog(int direction, void *param,
 {
 	if(direction != READ)
 		return -EIO;
-	return charbuffer_read(&logbuffer, buf, length);
+	return charbuffer_read(&logbuffer, buf, length, true);
 }
 
 void syslog_kernel_msg(int level, char *buffer)
@@ -37,10 +37,10 @@ void syslog_kernel_msg(int level, char *buffer)
 	if(buffer[length-1] != '\n')
 		need_newline = true;
 	spinlock_acquire(&loglock);
-	charbuffer_write(&logbuffer, (unsigned char *)header, strlen(header));
-	charbuffer_write(&logbuffer, (unsigned char *)buffer, length);
+	charbuffer_write(&logbuffer, (unsigned char *)header, strlen(header), false);
+	charbuffer_write(&logbuffer, (unsigned char *)buffer, length, false);
 	if(need_newline)
-		charbuffer_write(&logbuffer, (unsigned char *)&"\n", 1);
+		charbuffer_write(&logbuffer, (unsigned char *)&"\n", 1, false);
 	spinlock_release(&loglock);
 }
 
@@ -59,10 +59,10 @@ static void __syslog(int level, char *buffer, size_t length)
 	if(buffer[length-1] != '\n')
 		need_newline = true;
 	spinlock_acquire(&loglock);
-	charbuffer_write(&logbuffer, (unsigned char *)header, strlen(header));
-	charbuffer_write(&logbuffer, (unsigned char *)buffer, length);
+	charbuffer_write(&logbuffer, (unsigned char *)header, strlen(header), false);
+	charbuffer_write(&logbuffer, (unsigned char *)buffer, length, false);
 	if(need_newline)
-		charbuffer_write(&logbuffer, (unsigned char *)&"\n", 1);
+		charbuffer_write(&logbuffer, (unsigned char *)&"\n", 1, false);
 	spinlock_release(&loglock);
 	if(need_newline)
 		printk(0, "%s: %s\n", header, buffer);

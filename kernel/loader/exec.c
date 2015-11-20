@@ -157,6 +157,7 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 	}
 	/* we don't need the file anymore, close it out */
 	file_put(efil);
+	file_close_cloexec();
 	if(!eip) {
 		printk(5, "[exec]: Tried to execute an invalid ELF file!\n");
 		free_dp(backup_argv, argc);

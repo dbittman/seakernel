@@ -130,8 +130,6 @@ struct net_dev *net_add_device(struct net_dev_calls *fn, void *data)
 	nd->num = num;
 	devices[num] = nd;
 
-	
-
 	char path[8 + strlen(nd->name)];
 	snprintf(path, 8+strlen(nd->name), "/dev/%s", nd->name);
 	sys_mknod(path, S_IFCHR | 0600, GETDEV(net_major, num));

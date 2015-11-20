@@ -63,6 +63,14 @@ void file_put(struct file *file)
 	}
 }
 
+struct filedes *file_get_filedes(int fdnum)
+{
+	mutex_acquire(&current_process->fdlock);
+	struct filedes *fd = hash_lookup(&current_process->files, &fdnum, sizeof(fdnum));
+	mutex_release(&current_process->fdlock);
+	return fd;
+}
+
 struct file *file_get(int fdnum)
 {
 	mutex_acquire(&current_process->fdlock);
@@ -137,10 +145,24 @@ static void __files_map_close(struct hashelem *elem)
 	__file_remove_filedes(elem->ptr);
 }
 
+static void __files_map_close_some(struct hashelem *elem)
+{
+	struct filedes *fd = elem->ptr;
+	if(fd->flags & FD_CLOEXEC)
+		__file_remove_filedes(elem->ptr);
+}
+
 void file_close_all(void)
 {
 	mutex_acquire(&current_process->fdlock);
 	hash_map(&current_process->files, __files_map_close);
+	mutex_release(&current_process->fdlock);
+}
+
+void file_close_cloexec(void)
+{
+	mutex_acquire(&current_process->fdlock);
+	hash_map(&current_process->files, __files_map_close_some);
 	mutex_release(&current_process->fdlock);
 }
 

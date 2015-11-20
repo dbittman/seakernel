@@ -7,11 +7,10 @@
 #include <sea/sys/fcntl.h>
 #include <sea/errno.h>
 #include <sea/fs/kerfs.h>
-/* TODO: persistance */
 
 static _Atomic int __pty_next_num = 1;
 
-void pty_create(struct inode *inode)
+static void pty_create(struct inode *inode)
 {
 	if(!inode->devdata) {
 		struct pty *p = kmalloc(sizeof(struct pty));
@@ -22,7 +21,7 @@ void pty_create(struct inode *inode)
 	}
 }
 
-void pty_destroy(struct inode *inode)
+static void pty_destroy(struct inode *inode)
 {
 	struct pty *p = inode->devdata;
 	if(p) {
@@ -33,19 +32,18 @@ void pty_destroy(struct inode *inode)
 	}
 }
 
-size_t pty_read_master(struct pty *pty, uint8_t *buffer, size_t length)
+static size_t pty_read_master(struct pty *pty, uint8_t *buffer, size_t length, bool block)
 {
-	size_t r = charbuffer_read(&pty->output, buffer, length);
-	return r;
+	return charbuffer_read(&pty->output, buffer, length, block);
 }
 
 static void write_char(struct pty *pty, uint8_t c)
 {
 	if(c == '\n' && (pty->term.c_oflag & ONLCR)) {
 		uint8_t d = '\r';
-		charbuffer_trywrite(&pty->output, &d, 1);
+		charbuffer_write(&pty->output, &d, 1, false);
 	}
-	charbuffer_trywrite(&pty->output, &c, 1);
+	charbuffer_write(&pty->output, &c, 1, false);
 }
 
 static void __raise_action(struct pty *pty, int sig)
@@ -91,7 +89,7 @@ static void process_input(struct pty *pty, uint8_t c)
 			}
 		} else if(c == pty->term.c_cc[VEOF]) {
 			if(pty->cbuf_pos > 0) {
-				charbuffer_write(&pty->input, pty->cbuf, pty->cbuf_pos);
+				charbuffer_write(&pty->input, pty->cbuf, pty->cbuf_pos, true);
 				pty->cbuf_pos = 0;
 			} else {
 				pty->input.eof = 1;
@@ -104,14 +102,14 @@ static void process_input(struct pty *pty, uint8_t c)
 			if(pty->term.c_lflag & ECHO)
 				write_char(pty, c);
 			if(c == '\n') {
-				charbuffer_write(&pty->input, pty->cbuf, pty->cbuf_pos);
+				charbuffer_write(&pty->input, pty->cbuf, pty->cbuf_pos, true);
 				pty->cbuf_pos = 0;
 			}
 		}
 	}
 }
 
-size_t pty_write_master(struct pty *pty, uint8_t *buffer, size_t length)
+static size_t pty_write_master(struct pty *pty, uint8_t *buffer, size_t length, bool block)
 {
 	if(pty->term.c_lflag & ICANON) {
 		mutex_acquire(&pty->cbuf_lock);
@@ -122,60 +120,61 @@ size_t pty_write_master(struct pty *pty, uint8_t *buffer, size_t length)
 		return length;
 	} else {
 		if(pty->term.c_lflag & ECHO)
-			charbuffer_write(&pty->output, buffer, length);
-		return charbuffer_write(&pty->input, buffer, length);
+			charbuffer_write(&pty->output, buffer, length, block);
+		return charbuffer_write(&pty->input, buffer, length, block);
 	}
 }
 
-size_t pty_read_slave(struct pty *pty, uint8_t *buffer, size_t length)
+static size_t pty_read_slave(struct pty *pty, uint8_t *buffer, size_t length, bool block)
 {
-	return charbuffer_read(&pty->input, buffer, length);
+	return charbuffer_read(&pty->input, buffer, length, block);
 }
 
-size_t pty_write_slave(struct pty *pty, uint8_t *buffer, size_t length)
+static size_t pty_write_slave(struct pty *pty, uint8_t *buffer, size_t length, bool block)
 {
 	for(size_t i=0;i<length;i++) {
 		if(*buffer == '\n' && (pty->term.c_oflag & ONLCR)) {
-			charbuffer_write(&pty->output, (uint8_t *)"\r", 1);
+			charbuffer_write(&pty->output, (uint8_t *)"\r", 1, block);
 		}
-		charbuffer_write(&pty->output, buffer++, 1);
+		charbuffer_write(&pty->output, buffer++, 1, block);
 	}
 	return length;
 }
 
-/* TODO NONBLOCKING */
-size_t pty_read(struct file *file, uint8_t *buffer, size_t length)
+static size_t pty_read(struct file *file, uint8_t *buffer, size_t length)
 {
 	struct pty *pty;
 	if(MINOR(file->inode->phys_dev))
 		pty = file->inode->devdata;
 	else
 		pty = current_process->pty;
+	bool block = !(file->flags & _FNONBLOCK);
 	if(!pty)
 		return -EIO;
 	size_t r = pty->master == file->inode
-		? pty_read_master(pty, buffer, length)
-		: pty_read_slave(pty, buffer, length);
+		? pty_read_master(pty, buffer, length, block)
+		: pty_read_slave(pty, buffer, length, block);
 	
 	return r;
 }
 
-size_t pty_write(struct file *file, uint8_t *buffer, size_t length)
+static size_t pty_write(struct file *file, uint8_t *buffer, size_t length)
 {
 	struct pty *pty;
 	if(MINOR(file->inode->phys_dev))
 		pty = file->inode->devdata;
 	else
 		pty = current_process->pty;
+	bool block = !(file->flags & _FNONBLOCK);
 	if(!pty)
 		return -EIO;
 	size_t r = pty->master == file->inode
-		? pty_write_master(pty, buffer, length)
-		: pty_write_slave(pty, buffer, length);
+		? pty_write_master(pty, buffer, length, block)
+		: pty_write_slave(pty, buffer, length, block);
 	return r;
 }
 
-int pty_select(struct file *file, int rw)
+static int pty_select(struct file *file, int rw)
 {
 	struct pty *pty;
 	if(MINOR(file->inode->phys_dev))
@@ -204,7 +203,7 @@ int pty_select(struct file *file, int rw)
 	return 1;
 }
 
-int pty_ioctl(struct file *file, int cmd, long arg)
+static int pty_ioctl(struct file *file, int cmd, long arg)
 {
 	struct pty *pty;
 	if(MINOR(file->inode->phys_dev))
@@ -224,7 +223,6 @@ int pty_ioctl(struct file *file, int cmd, long arg)
 		case TCSETS: case TCSETSW:
 			if(term)
 				memcpy(&pty->term, term, sizeof(*term));
-			//printk(0, "Setting term %o %o %o\n", term->c_lflag, term->c_iflag, term->c_oflag);
 			break;
 		case TIOCGWINSZ:
 			if(win)
@@ -250,7 +248,7 @@ static ssize_t __pty_rw(int rw, struct file *file, off_t off, uint8_t *buf, size
 	return -EIO;
 }
 
-struct kdevice __pty_kdev = {
+static struct kdevice __pty_kdev = {
 	.rw = __pty_rw,
 	.select = pty_select,
 	.ioctl = pty_ioctl,
@@ -335,8 +333,8 @@ int sys_attach_pty(int fd)
 
 	char file[128];
 	snprintf(file, 128, "/dev/process/%d/tty", current_process->pid);
-	kerfs_register_parameter(file, (void *)&current_process->pty->num, sizeof(current_process->pty->num), 0,
-			kerfs_rw_integer);
+	kerfs_register_parameter(file, (void *)&current_process->pty->num,
+			sizeof(current_process->pty->num), 0, kerfs_rw_integer);
 	file_put(mf);
 	return 0;
 }

@@ -28,7 +28,7 @@ static bool __release_lock(void *data)
 	return true;
 }
 
-size_t charbuffer_read(struct charbuffer *cb, unsigned char *out, size_t length)
+size_t charbuffer_read(struct charbuffer *cb, unsigned char *out, size_t length, bool block)
 {
 	size_t i = 0;
 	if(!(cb->flags & CHARBUFFER_LOCKLESS))
@@ -39,7 +39,7 @@ size_t charbuffer_read(struct charbuffer *cb, unsigned char *out, size_t length)
 			*out++ = cb->buffer[cb->tail++ % cb->cap];
 			cb->count--;
 			i++;
-		} else if(i == 0) {
+		} else if(i == 0 && block) {
 			if(atomic_exchange(&cb->eof, 0)) {
 				if(!(cb->flags & CHARBUFFER_LOCKLESS))
 					mutex_release(&cb->lock);
@@ -63,7 +63,7 @@ size_t charbuffer_read(struct charbuffer *cb, unsigned char *out, size_t length)
 	return i;
 }
 
-size_t charbuffer_write(struct charbuffer *cb, unsigned char *in, size_t length)
+size_t charbuffer_write(struct charbuffer *cb, unsigned char *in, size_t length, bool block)
 {
 	size_t i = 0;
 	if(!(cb->flags & CHARBUFFER_LOCKLESS))
@@ -74,7 +74,7 @@ size_t charbuffer_write(struct charbuffer *cb, unsigned char *in, size_t length)
 			cb->buffer[cb->head++ % cb->cap] = *in++;
 			cb->count++;
 			i++;
-		} else if(!(cb->flags & CHARBUFFER_DROP)) {
+		} else if(!(cb->flags & CHARBUFFER_DROP) && block) {
 			/* full - block */
 			tm_blocklist_wakeall(&cb->readers);
 			int r = tm_thread_block_confirm(&cb->writers, THREADSTATE_INTERRUPTIBLE,
@@ -83,27 +83,6 @@ size_t charbuffer_write(struct charbuffer *cb, unsigned char *in, size_t length)
 				return i;
 			if(!(cb->flags & CHARBUFFER_LOCKLESS))
 				mutex_acquire(&cb->lock);
-		} else {
-			break;
-		}
-	}
-	tm_blocklist_wakeall(&cb->readers);
-	if(!(cb->flags & CHARBUFFER_LOCKLESS))
-		mutex_release(&cb->lock);
-	return i;
-}
-
-size_t charbuffer_trywrite(struct charbuffer *cb, unsigned char *in, size_t length)
-{
-	size_t i = 0;
-	if(!(cb->flags & CHARBUFFER_LOCKLESS))
-		mutex_acquire(&cb->lock);
-
-	while(i < length) {
-		if(cb->count < cb->cap) {
-			cb->buffer[cb->head++ % cb->cap] = *in++;
-			cb->count++;
-			i++;
 		} else {
 			break;
 		}

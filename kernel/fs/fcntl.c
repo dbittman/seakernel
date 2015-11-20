@@ -26,19 +26,20 @@ int sys_ioctl(int fp, int cmd, long arg)
 int sys_fcntl(int filedes, int cmd, long attr1, long attr2, long attr3)
 {
 	int ret = 0;
-	struct file *f = file_get(filedes);
-	if(!f)
+	struct filedes *fd = file_get_filedes(filedes);
+	if(!fd)
 		return -EBADF;
+	struct file *f = file_get_ref(fd->file);
 	switch(cmd)
 	{
 		case F_DUPFD:
 			ret = sys_dup2(filedes, attr1);
 			break;
 		case F_GETFD:
-			ret = f->fd_flags;
+			ret = fd->flags;
 			break;
 		case F_SETFD:
-			f->fd_flags = attr1;
+			fd->flags = attr1;
 			break;
 		case F_GETFL:
 			ret = f->flags;

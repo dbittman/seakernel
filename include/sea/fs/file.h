@@ -11,7 +11,7 @@
 
 struct file {
 	_Atomic int count;
-	int flags, fd_flags;
+	int flags;
 	off_t pos;
 	struct inode * inode;
 	struct dirent *dirent;
@@ -20,6 +20,7 @@ struct file {
 struct filedes {
 	struct file *file;
 	int num;
+	int flags;
 	struct hashelem elem;
 };
 
@@ -30,8 +31,10 @@ struct file *file_get(int fdnum);
 int file_add_filedes(struct file *f, int start);
 void file_remove_filedes(struct filedes *f);
 int file_close_fd(int fd);
+struct filedes *file_get_filedes(int fdnum);
 void fs_copy_file_handles(struct process *p, struct process *n);
 void file_close_all(void);
+void file_close_cloexec(void);
 
 ssize_t fs_file_pread(struct file *file, off_t offset, uint8_t *buffer, size_t length);
 ssize_t fs_file_read(struct file *file, uint8_t *buffer, size_t length);

@@ -60,6 +60,7 @@ int sys_stat(char *f, struct stat *statbuf, bool lin)
 	return 0;
 }
 
+#include <sea/vsprintf.h>
 int fs_inode_dirempty(struct inode *dir)
 {
 	char tmp[512];

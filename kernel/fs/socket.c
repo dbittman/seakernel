@@ -51,6 +51,7 @@ struct socket *socket_create(int *errcode, int *fd)
 	inode->devdata = sock;
 	inode->kdev = &__socket_kdev;
 	file_put(f);
+	vfs_icache_put(inode);
 	return sock;
 }
 

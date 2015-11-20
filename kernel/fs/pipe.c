@@ -201,6 +201,7 @@ int sys_pipe(int *files)
 	files[1] = write;
 	file_put(wf);
 	file_put(rf);
+	vfs_icache_put(inode);
 	return 0;
 }
 

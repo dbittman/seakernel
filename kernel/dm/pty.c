@@ -6,7 +6,7 @@
 #include <sea/vsprintf.h>
 #include <sea/sys/fcntl.h>
 #include <sea/errno.h>
-
+#include <sea/fs/kerfs.h>
 /* TODO: persistance */
 
 static _Atomic int __pty_next_num = 1;
@@ -332,6 +332,11 @@ int sys_attach_pty(int fd)
 	}
 	struct pty *pty = mf->inode->devdata;
 	current_process->pty = pty;
+
+	char file[128];
+	snprintf(file, 128, "/dev/process/%d/tty", current_process->pid);
+	kerfs_register_parameter(file, (void *)&current_process->pty->num, sizeof(current_process->pty->num), 0,
+			kerfs_rw_integer);
 	file_put(mf);
 	return 0;
 }

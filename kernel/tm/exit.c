@@ -39,7 +39,8 @@ void tm_thread_remove_kerfs_entries(struct thread *thr)
 	__remove_kerfs_thread_entry(thr, "usermode_stack_end");
 	char dir[128];
 	snprintf(dir, 128, "/dev/process/%d/%d", thr->process->pid, thr->tid);
-	sys_rmdir(dir);
+	int r = sys_rmdir(dir);
+	assert(!r);
 }
 
 void tm_process_remove_kerfs_entries(struct process *proc)
@@ -67,7 +68,8 @@ void tm_process_remove_kerfs_entries(struct process *proc)
 	__remove_kerfs_proc_entry(proc, "maps");
 	char dir[128];
 	snprintf(dir, 128, "/dev/process/%d", proc->pid);
-	sys_rmdir(dir);
+	int r = sys_rmdir(dir);
+	assertmsg(!r, "%d", (long)r);
 }
 
 static void tm_thread_destroy(unsigned long data)
@@ -169,17 +171,14 @@ void tm_thread_do_exit(void)
 			tm_thread_put(current_thread);
 	}
 
-	tm_thread_remove_kerfs_entries(current_thread);
-	if(current_process->thread_count == 1) {
-		tm_process_remove_kerfs_entries(current_process);
-	}
-
 	linkedlist_remove(&current_process->threadlist, &current_thread->pnode);
 
+	tm_thread_remove_kerfs_entries(current_thread);
 	atomic_fetch_sub_explicit(&running_threads, 1, memory_order_relaxed);
 	if(atomic_fetch_sub(&current_process->thread_count, 1) == 1) {
 		atomic_fetch_sub_explicit(&running_processes, 1, memory_order_relaxed);
 		tm_process_exit(current_thread->exit_code);
+		tm_process_remove_kerfs_entries(current_process);
 	}
 
 	cpu_disable_preemption();

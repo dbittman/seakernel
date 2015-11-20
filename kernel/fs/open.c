@@ -82,7 +82,10 @@ struct file *fs_file_open(const char *name, int flags, mode_t mode, int *error)
 		vfs_inode_set_dirty(inode);
 	}
 
-	return file_create(inode, dirent, flags);
+	struct file *file = file_create(inode, dirent, flags);
+	vfs_icache_put(inode);
+	vfs_dirent_release(dirent);
+	return file;
 }
 
 int sys_open(char *name, int flags, mode_t mode)

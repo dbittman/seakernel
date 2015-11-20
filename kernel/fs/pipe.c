@@ -56,7 +56,7 @@ static bool __release_lock(void *m)
 	return true;
 }
 
-static int __pipe_read(struct file *file, char *buffer, size_t length)
+static int __pipe_read(struct file *file, unsigned char *buffer, size_t length)
 {
 	struct pipe *pipe = file->inode->devdata;
 	assert(pipe);
@@ -97,14 +97,14 @@ static int __pipe_read(struct file *file, char *buffer, size_t length)
 	return ret;
 }
 
-static int __pipe_write(struct file *file, char *initialbuffer, size_t totallength)
+static int __pipe_write(struct file *file, unsigned char *initialbuffer, size_t totallength)
 {
 	struct pipe *pipe = file->inode->devdata;
 	assert(pipe);
 	/* allow for partial writes of the system page size. Thus, we wont
 	 * have a process freeze because it tries to fill up the pipe in one
 	 * shot. */
-	char *buffer = initialbuffer;
+	unsigned char *buffer = initialbuffer;
 	size_t length;
 	size_t remain = totallength;
 	mutex_acquire(&pipe->lock);

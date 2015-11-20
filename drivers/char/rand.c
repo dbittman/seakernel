@@ -11,7 +11,7 @@ int rand_maj=-1;
 int seed=0;
 unsigned int use_rdrand=0;
 int get_rand(void);
-struct inode *df;
+struct inode *df = NULL;
 int rand1(unsigned int lim);
 int rand2(unsigned int lim);
 int rand3(unsigned int lim);
@@ -53,7 +53,7 @@ int get_rdrand_data(uint32_t *buf, int length)
 	return flag;
 }
 
-int rand_rw(int rw, int min, char *buf, size_t count)
+ssize_t rand_rw(int rw, struct file *file, off_t off, unsigned char *buf, size_t count)
 {
 	size_t i;
 	if(rw == READ)
@@ -117,16 +117,24 @@ int rand3(unsigned int lim)
 	return ((a % lim) + 1);
 }
 
+static int major;
+
+static struct kdevice __kd = {
+	.rw = rand_rw,
+	.select = 0,
+	.create = 0,
+	.ioctl = 0,
+	.open = 0,
+	.close = 0,
+	.destroy = 0,
+	.name = "keyboard",
+};
+
 int module_install(void)
 {
-	df=0;
-	rand_maj=0;
-	rand_maj = dm_set_available_char_device(rand_rw, rand_ioctl, 0);
-	if(rand_maj == -1)
-		return EINVAL;
-	sys_mknod("/dev/random", S_IFCHR | 0644, GETDEV(rand_maj, 0));
-	seed=time_get_epoch();
-	a1=seed;
+	major = dm_device_register(&__kd);
+	sys_mknod("/dev/random", S_IFCHR | 0644, GETDEV(major, 0));
+	a1 = seed = time_get_epoch();
 	/* check for rdrand */
 #if CONFIG_ARCH == TYPE_ARCH_X86 || CONFIG_ARCH == TYPE_ARCH_X86_64
 	use_rdrand = primary_cpu->cpuid.features_ecx & (1 << 30) ? 1 : 0;
@@ -139,7 +147,6 @@ int module_install(void)
 int module_exit(void)
 {
 	sys_unlink("/dev/random");
-	if(rand_maj > 0) dm_unregister_char_device(rand_maj);
 	return 0;
 }
 

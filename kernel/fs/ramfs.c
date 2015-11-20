@@ -275,7 +275,7 @@ int ramfs_inode_unlink(struct filesystem *fs, struct inode *parent, const char *
 }
 
 int ramfs_inode_read(struct filesystem *fs, struct inode *node,
-		size_t offset, size_t length, char *buffer)
+		size_t offset, size_t length, unsigned char *buffer)
 {
 	struct rfsinfo *info = fs->data;
 	struct rfsnode *rfsnode;
@@ -308,7 +308,7 @@ void ramfs_point_to_data(struct inode *node, void *data, size_t len)
 }
 
 int ramfs_inode_write(struct filesystem *fs, struct inode *node,
-		size_t offset, size_t length, const char *buffer)
+		size_t offset, size_t length, const unsigned char *buffer)
 {
 	struct rfsinfo *info = fs->data;
 	struct rfsnode *rfsnode;

@@ -86,8 +86,9 @@ void vfs_inode_destroy(struct inode *node)
 	if(node->kdev && node->kdev->destroy)
 		node->kdev->destroy(node);
 	if(node->kdev) {
-#warning "see below"
-		dm_device_put(node->kdev); /* TODO: this probably needs to happen when the inode is LRU'd? But what if the device is removed....lots of questions here */
+		dm_device_put(node->kdev); /* TODO: this probably needs to happen when
+									  the inode is LRU'd? But what if the device
+									  is removed....lots of questions here */
 		node->kdev = 0;
 	}
 	rwlock_destroy(&node->lock);
@@ -282,7 +283,7 @@ void vfs_inode_umount(struct inode *node)
 	vfs_icache_put(node);
 }
 
-ssize_t fs_inode_write(struct inode *node, size_t off, size_t count, const char *buf)
+ssize_t fs_inode_write(struct inode *node, size_t off, size_t count, const unsigned char *buf)
 {
 	if(S_ISDIR(node->mode))
 		return -EISDIR;
@@ -296,7 +297,7 @@ ssize_t fs_inode_write(struct inode *node, size_t off, size_t count, const char 
 	return ret;
 }
 
-ssize_t fs_inode_read(struct inode *node, size_t off, size_t count, char *buf)
+ssize_t fs_inode_read(struct inode *node, size_t off, size_t count, unsigned char *buf)
 {
 	if(!vfs_inode_check_permissions(node, MAY_READ, 0))
 		return -EACCES;
@@ -348,7 +349,7 @@ int fs_icache_sync(void)
 	return 0;
 }
 
-int kerfs_icache_report(int direction, void *param, size_t size, size_t offset, size_t length, char *buf)
+int kerfs_icache_report(int direction, void *param, size_t size, size_t offset, size_t length, unsigned char *buf)
 {
 	size_t current = 0;
 	KERFS_PRINTF(offset, length, buf, current,

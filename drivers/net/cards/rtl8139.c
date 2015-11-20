@@ -19,7 +19,6 @@
 
 #include <sea/types.h>
 #include <sea/tm/timing.h>
-int rtl8139_maj=-1;
 typedef struct rtl8139_dev_s
 {
 	unsigned addr, tx_o, rx_o;
@@ -377,7 +376,6 @@ rtl8139dev_t *rtl8139_load_device_pci(struct pci_device *device)
 		return 0;
 	}
 
-	sys_mknod("/dev/rtl8139", S_IFCHR | 0600, GETDEV(rtl8139_maj, 0));
 	device->flags |= PCI_ENGAGED;
 	device->flags |= PCI_DRIVEN;
 	dev->inter = device->pcs->interrupt_line;
@@ -397,8 +395,6 @@ int rtl8139_unload_device_pci(rtl8139dev_t *dev)
 	device->flags &= ~PCI_ENGAGED;
 	device->flags &= ~PCI_DRIVEN;
 	mutex_destroy(&dev->tx_lock);
-	/* TODO */
-	//devfs_remove(dev->node);
 	cpu_interrupt_unregister_handler(dev->inter, dev->inter_id);
 	return 0;
 }
@@ -415,7 +411,6 @@ int ioctl_rtl8139(int min, int cmd, long int arg)
 
 int module_install(void)
 {
-	rtl8139_maj = dm_set_available_char_device(rtl8139_rw_main, ioctl_rtl8139, 0);
 	int i=0;
 	memset(devs, 0, sizeof(rtl8139dev_t *) * 16);
 	printk(1, "[rtl8139]: Scanning PCI bus...\n");
@@ -446,8 +441,6 @@ int module_install(void)
 
 int module_exit(void)
 {
-	dm_unregister_char_device(rtl8139_maj);
-	//rtl8139_unload_device_pci(rtldev);
 	///* TODO */
 	return 0;
 }

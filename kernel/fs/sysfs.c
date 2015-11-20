@@ -16,11 +16,11 @@ struct kerfs_node {
 	void *param;
 	size_t size;
 	int flags;
-	int (*fn)(int direction, void *, size_t, size_t, size_t, char *);
+	int (*fn)(int direction, void *, size_t, size_t, size_t, unsigned char *);
 	struct hashelem hash_elem;
 };
 
-int kerfs_register_parameter(char *path, void *param, size_t size, int flags, int (*call)(int, void *, size_t, size_t, size_t, char *))
+int kerfs_register_parameter(char *path, void *param, size_t size, int flags, int (*call)(int, void *, size_t, size_t, size_t, unsigned char *))
 {
 	uid_t old = current_process->effective_uid;
 	current_process->effective_uid = 0;
@@ -60,7 +60,7 @@ int kerfs_unregister_entry(char *path)
 }
 
 int kerfs_rw_string(int direction, void *param, size_t sz,
-		size_t offset, size_t length, char *buf)
+		size_t offset, size_t length, unsigned char *buf)
 {
 	size_t current = 0;
 	if(direction == READ) {
@@ -71,7 +71,7 @@ int kerfs_rw_string(int direction, void *param, size_t sz,
 }
 
 int kerfs_rw_address(int direction, void *param, size_t sz,
-		size_t offset, size_t length, char *buf)
+		size_t offset, size_t length, unsigned char *buf)
 {
 	size_t current = 0;
 	if(direction == READ) {
@@ -82,7 +82,7 @@ int kerfs_rw_address(int direction, void *param, size_t sz,
 }
 
 int kerfs_rw_integer(int direction, void *param, size_t sz, size_t offset, size_t length,
-		char *buf)
+		unsigned char *buf)
 {
 	size_t current = 0;
 	uint64_t val = 0;
@@ -91,7 +91,7 @@ int kerfs_rw_integer(int direction, void *param, size_t sz, size_t offset, size_
 		KERFS_PRINTF(offset, length, buf, current,
 				"%d", val);
 	} else {
-		val = strtoint(buf);
+		val = strtoint((char *)buf);
 		switch(sz) {
 			case 1:
 				*(uint8_t *)param = sz;
@@ -111,21 +111,21 @@ int kerfs_rw_integer(int direction, void *param, size_t sz, size_t offset, size_
 	return current;
 }
 
-static int kerfs_read(struct inode *node, size_t offset, size_t length, char *buffer)
+static ssize_t kerfs_read(struct inode *node, size_t offset, size_t length, unsigned char *buffer)
 {
 	struct kerfs_node *kn;
-	int minor = MINOR(node->phys_dev);
-	if((kn = hash_lookup(table, &minor, sizeof(minor))) == NULL)
+	int min = MINOR(node->phys_dev);
+	if((kn = hash_lookup(table, &min, sizeof(min))) == NULL)
 		return -ENOENT;
 
 	return kn->fn(READ, kn->param, kn->size, offset, length, buffer);
 }
 
-static int kerfs_write(struct inode *node, size_t offset, size_t length, char *buffer)
+static ssize_t kerfs_write(struct inode *node, size_t offset, size_t length, unsigned char *buffer)
 {
 	struct kerfs_node *kn;
-	int minor = MINOR(node->phys_dev);
-	if((kn = hash_lookup(table, &minor, sizeof(minor))) == NULL)
+	int min = MINOR(node->phys_dev);
+	if((kn = hash_lookup(table, &min, sizeof(min))) == NULL)
 		return -ENOENT;
 
 	if(!(kn->flags & KERFS_PARAM_WRITE))

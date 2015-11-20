@@ -2,7 +2,7 @@
 #include <sea/fs/inode.h>
 #include <sea/loader/exec.h>
 #include <sea/string.h>
-static void __load_first_line(struct file *file, char *buf, int len)
+static void __load_first_line(struct file *file, unsigned char *buf, int len)
 {
 	int i;
 	for(i=0;i<len;i++) {
@@ -61,10 +61,10 @@ static int parse_line_args(char *args, char **list)
  */
 int loader_do_shebang(struct file *file, char **argv, char **env)
 {
-	char buf[1024];
+	unsigned char buf[1024];
 	__load_first_line(file, buf, 1024);
 	file_put(file);
-	char *interp = buf+2; /* skip the #! */
+	char *interp = (char *)buf+2; /* skip the #! */
 
 	interp = chomp(interp);
 	char *interp_args = strchr(interp, ' ');

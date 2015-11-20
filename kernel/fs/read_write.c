@@ -55,7 +55,7 @@ ssize_t fs_file_write(struct file *file, uint8_t *buffer, size_t length)
 	return ret;
 }
 
-int sys_readpos(int fp, char *buf, size_t count)
+int sys_readpos(int fp, unsigned char *buf, size_t count)
 {
 	if(!buf)
 		return -EINVAL;
@@ -71,7 +71,7 @@ int sys_readpos(int fp, char *buf, size_t count)
 	return ret;
 }
 
-int sys_writepos(int fp, char *buf, size_t count)
+int sys_writepos(int fp, unsigned char *buf, size_t count)
 {
 	struct file *f = file_get(fp);
 	if(!f)
@@ -91,7 +91,7 @@ int sys_writepos(int fp, char *buf, size_t count)
 	return ret;
 }
 
-int sys_read(int fp, off_t pos, char *buf, size_t count)
+int sys_read(int fp, off_t pos, unsigned char *buf, size_t count)
 {
 	if(!buf)
 		return -EINVAL;
@@ -107,7 +107,7 @@ int sys_read(int fp, off_t pos, char *buf, size_t count)
 	return ret;
 }
 
-int sys_write(int fp, off_t pos, char *buf, size_t count)
+int sys_write(int fp, off_t pos, unsigned char *buf, size_t count)
 {
 	struct file *f = file_get(fp);
 	if(!f)

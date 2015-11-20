@@ -211,7 +211,7 @@ static int load_module(char *path, char *args, int flags)
 	sys_fstat(desc, &sf);
 	int len = sf.st_size;
 	/* Allocate the space and read into it */
-	char *mem = (char *)kmalloc(len);
+	unsigned char *mem = kmalloc(len);
 	sys_readpos(desc, mem, len);
 	sys_close(desc);
 	/* Fill out the slot info */
@@ -304,7 +304,7 @@ int sys_unload_module(char *path, int flags)
 	return do_unload_module(path, flags);
 }
 
-int kerfs_module_report(int direction, void *param, size_t size, size_t offset, size_t length, char *buf)
+int kerfs_module_report(int direction, void *param, size_t size, size_t offset, size_t length, unsigned char *buf)
 {
 	size_t current = 0;
 	KERFS_PRINTF(offset, length, buf, current,

@@ -26,7 +26,7 @@ void fs_fsm_init(void)
 
 struct __kfs_data {
 	size_t *offset, length, *current;
-	char *buffer;
+	unsigned char *buffer;
 };
 
 static void __kfs_mnt_rp_write(struct linkedentry *entry, void *__data)
@@ -41,7 +41,7 @@ static void __kfs_mnt_rp_write(struct linkedentry *entry, void *__data)
 			fs->nodename, point, fs->type, fs->opts);
 }
 
-int kerfs_mount_report(int direction, void *param, size_t size, size_t offset, size_t length, char *buf)
+int kerfs_mount_report(int direction, void *param, size_t size, size_t offset, size_t length, unsigned char *buf)
 {
 	size_t current = 0;
 	struct __kfs_data data = { .offset = &offset,

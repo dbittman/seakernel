@@ -12,7 +12,7 @@
 #include <sea/fs/kerfs.h>
 static struct timer timer;
 static bool timer_init = false;
-int kerfs_pfault_report(int direction, void *param, size_t size, size_t offset, size_t length, char *buf)
+int kerfs_pfault_report(int direction, void *param, size_t size, size_t offset, size_t length, unsigned char *buf)
 {
 	size_t current = 0;
 	KERFS_PRINTF(offset, length, buf, current,

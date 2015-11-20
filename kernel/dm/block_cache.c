@@ -88,7 +88,7 @@ struct buffer *dm_block_cache_get(struct blockdev *bd, uint64_t block)
 	return e;
 }
 
-int block_cache_request(struct ioreq *req, off_t initial_offset, size_t total_bytecount, char *buffer)
+int block_cache_request(struct ioreq *req, off_t initial_offset, size_t total_bytecount, uint8_t *buffer)
 {
 	size_t block = req->block;
 	size_t bytecount = total_bytecount;

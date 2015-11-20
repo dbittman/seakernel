@@ -11,7 +11,7 @@ int block_elevator_main(struct kthread *kt, void *arg)
 	struct blockdev *__bd = node->devdata;
 	struct blockctl *ctl = __bd->ctl;
 	const int max = 8;
-	char *buf = kmalloc(ctl->blocksize * max);
+	unsigned char *buf = kmalloc(ctl->blocksize * max);
 	while(!kthread_is_joining(kt)) {
 		struct queue_item *qi;
 		if((qi = queue_dequeue_item(&ctl->wq))) {
@@ -24,7 +24,7 @@ int block_elevator_main(struct kthread *kt, void *arg)
 					int this = 8;
 					if(this > (int)count)
 						this = count;
-					ssize_t ret = ctl->rw(req->direction, node, block + req->bd->partbegin, buf,
+					size_t ret = ctl->rw(req->direction, node, block + req->bd->partbegin, buf,
 							this);
 					if(ret == ctl->blocksize * this) {
 						for(int i=0;i<this;i++) {
@@ -54,7 +54,7 @@ int block_elevator_main(struct kthread *kt, void *arg)
 						buffer_put(buffer);
 					}
 
-					ssize_t ret = ctl->rw(WRITE, node, block + req->bd->partbegin, buf, this);
+					size_t ret = ctl->rw(WRITE, node, block + req->bd->partbegin, buf, this);
 					if(ret != ctl->blocksize * this) {
 						req->flags |= IOREQ_FAILED;
 						break;

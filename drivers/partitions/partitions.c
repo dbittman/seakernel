@@ -5,6 +5,7 @@
 #include <modules/psm.h>
 #include <sea/vsprintf.h>
 #include <sea/string.h>
+
 struct partition {
 	char flag;
 	char ext;
@@ -15,7 +16,7 @@ struct partition {
 	unsigned int length;
 }__attribute__((packed));
 
-int enumerate_partitions(int num, struct node *node, struct partition *part)
+int enumerate_partitions(int num, struct inode *node, struct partition *part)
 {
 	unsigned char buf[512];
 	struct file f;
@@ -63,7 +64,6 @@ int module_install(void)
 		char name[128];
 		snprintf(name, 128, "/dev/ada%d", i+1);
 		sys_mknod(name, S_IFBLK | 0600, 0);
-		int err;
 		struct inode *node = fs_path_resolve_inode(name, 0, &err);
 		node->flags |= INODE_PERSIST;
 

@@ -19,7 +19,7 @@ void syslog_init(void)
 }
 
 int kerfs_syslog(int direction, void *param,
-		size_t size, size_t offset, size_t length, char *buf)
+		size_t size, size_t offset, size_t length, unsigned char *buf)
 {
 	if(direction != READ)
 		return -EIO;
@@ -40,7 +40,7 @@ void syslog_kernel_msg(int level, char *buffer)
 	charbuffer_write(&logbuffer, (unsigned char *)header, strlen(header));
 	charbuffer_write(&logbuffer, (unsigned char *)buffer, length);
 	if(need_newline)
-		charbuffer_write(&logbuffer, &"\n", 1);
+		charbuffer_write(&logbuffer, (unsigned char *)&"\n", 1);
 	spinlock_release(&loglock);
 }
 
@@ -62,7 +62,7 @@ static void __syslog(int level, char *buffer, size_t length)
 	charbuffer_write(&logbuffer, (unsigned char *)header, strlen(header));
 	charbuffer_write(&logbuffer, (unsigned char *)buffer, length);
 	if(need_newline)
-		charbuffer_write(&logbuffer, &"\n", 1);
+		charbuffer_write(&logbuffer, (unsigned char *)&"\n", 1);
 	spinlock_release(&loglock);
 	if(need_newline)
 		printk(0, "%s: %s\n", header, buffer);

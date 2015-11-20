@@ -20,6 +20,7 @@
 #include <sea/trace.h>
 #include <sea/vsprintf.h>
 #include <stdarg.h>
+#include <sea/syslog.h>
 
 static struct multiboot *mtboot;
 static time_t start_epoch;

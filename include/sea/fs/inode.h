@@ -133,8 +133,8 @@ int vfs_inode_chroot(struct inode *node);
 void vfs_inode_mount(struct inode *node, struct filesystem *fs);
 struct inode *fs_resolve_mount(struct inode *node);
 
-ssize_t fs_inode_write(struct inode *node, size_t off, size_t count, const char *buf);
-ssize_t fs_inode_read(struct inode *node, size_t off, size_t count, char *buf);
+ssize_t fs_inode_write(struct inode *node, size_t off, size_t count, const unsigned char *buf);
+ssize_t fs_inode_read(struct inode *node, size_t off, size_t count, unsigned char *buf);
 
 #define FS_INODE_POPULATE 1
 addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt, 

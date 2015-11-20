@@ -44,7 +44,7 @@ struct socket *socket_create(int *errcode, int *fd)
 	inode->count = 1;
 	struct file *f = file_create(inode, 0, 0);
 	*fd = file_add_filedes(f, 0);
-	if(fd < 0)
+	if(*fd < 0)
 		*errcode = -ENFILE;
 	struct socket *sock = kmalloc(sizeof(struct socket));
 	queue_create(&sock->rec_data_queue, 0);

@@ -141,7 +141,7 @@ void pmm_buddy_init()
 	inited = true;
 }
 
-int kerfs_pmm_report(int direction, void *param, size_t size, size_t offset, size_t length, char *buf)
+int kerfs_pmm_report(int direction, void *param, size_t size, size_t offset, size_t length, unsigned char *buf)
 {
 	size_t current = 0;
 	KERFS_PRINTF(offset, length, buf, current,

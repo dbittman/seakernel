@@ -56,6 +56,7 @@
 
 int sys_syslog(int level, char *buf, int len, int ctl);
 void syslog_kernel_msg(int level, char *buffer);
+void syslog_init(void);
 
 #define SYSLOG_IDENT_MAX 32
 

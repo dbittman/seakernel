@@ -57,9 +57,9 @@ void block_elevator_add_request(struct ioreq *req);
 struct buffer *dm_block_cache_get(struct blockdev *bd, uint64_t block);
 int dm_block_cache_insert(struct blockdev *bd, uint64_t block, struct buffer *, int flags);
 
-int block_cache_request(struct ioreq *req, off_t initial_offset, size_t total_bytecount, char *buffer);
+int block_cache_request(struct ioreq *req, off_t initial_offset, size_t total_bytecount, unsigned char *buffer);
 
-struct buffer *buffer_create(struct blockdev *bd, dev_t dev, uint64_t block, int flags, char *data);
+struct buffer *buffer_create(struct blockdev *bd, dev_t dev, uint64_t block, int flags, unsigned char *data);
 void buffer_put(struct buffer *buf);
 void buffer_inc_refcount(struct buffer *buf);
 struct buffer *block_cache_get_first_buffer(struct ioreq *req);

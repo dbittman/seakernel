@@ -78,7 +78,7 @@ int kb_select(struct file *file, int rw)
 	return ret;
 }
 
-int kb_rw(int rw, struct file *file, off_t off, char *buf, size_t length)
+ssize_t kb_rw(int rw, struct file *file, off_t off, unsigned char *buf, size_t length)
 {
 	if(rw == READ) {
 		/* TODO: block if we don't have enough data ... */

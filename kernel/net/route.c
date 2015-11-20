@@ -114,7 +114,7 @@ static void write_addr(char *str, uint32_t addr)
 	snprintf(str, 32, "%d.%d.%d.%d", (addr) & 0xFF, (addr >> 8) & 0xFF, (addr >> 16) & 0xFF, (addr >> 24) & 0xFF);
 }
 
-int kerfs_route_report(int direction, void *param, size_t size, size_t offset, size_t length, char *buf)
+int kerfs_route_report(int direction, void *param, size_t size, size_t offset, size_t length, unsigned char *buf)
 {
 	size_t current = 0;
 	KERFS_PRINTF(offset, length, buf, current,

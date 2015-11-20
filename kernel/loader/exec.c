@@ -56,10 +56,11 @@ static void free_dp(char **mem, int num)
 	kfree(mem);
 }
 
-static int __is_shebang(char *mem)
+static int __is_shebang(unsigned char *mem)
 {
 	return (mem[0] == '#' && mem[1] == '!');
 }
+
 int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 {
 	unsigned int i=0;
@@ -92,7 +93,7 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 #endif
 	/* read in the ELF header, and check if it's a shebang */
 	if(header_size < 2) header_size = 2;
-	char mem[header_size];
+	unsigned char mem[header_size];
 	fs_file_pread(efil, 0, mem, header_size);
 	
 	if(__is_shebang(mem))

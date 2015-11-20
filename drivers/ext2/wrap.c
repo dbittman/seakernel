@@ -139,7 +139,7 @@ int ext2_wrap_inode_unlink(struct filesystem *fs, struct inode *parent, const ch
 }
 
 int ext2_wrap_inode_read(struct filesystem *fs, struct inode *node,
-		size_t offset, size_t length, char *buffer)
+		size_t offset, size_t length, unsigned char *buffer)
 {
 	struct ext2_info *info = fs->data;
 	ext2_inode_t inode;
@@ -156,7 +156,7 @@ int ext2_wrap_inode_read(struct filesystem *fs, struct inode *node,
 }
 
 int ext2_wrap_inode_write(struct filesystem *fs, struct inode *node,
-		size_t offset, size_t length, const char *buffer)
+		size_t offset, size_t length, const unsigned char *buffer)
 {
 	struct ext2_info *info = fs->data;
 	if(info->flags & EXT2_FS_READONLY)

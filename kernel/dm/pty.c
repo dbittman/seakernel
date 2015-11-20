@@ -43,7 +43,7 @@ size_t pty_read_master(struct pty *pty, uint8_t *buffer, size_t length)
 static void write_char(struct pty *pty, uint8_t c)
 {
 	if(c == '\n' && (pty->term.c_oflag & ONLCR)) {
-		char d = '\r';
+		uint8_t d = '\r';
 		charbuffer_trywrite(&pty->output, &d, 1);
 	}
 	charbuffer_trywrite(&pty->output, &c, 1);
@@ -262,7 +262,7 @@ struct kdevice __pty_kdev = {
 	.name = "pty",
 };
 
-static int pty_major;
+static unsigned int pty_major;
 
 void pty_init(void)
 {

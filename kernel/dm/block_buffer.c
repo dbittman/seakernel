@@ -54,7 +54,7 @@ int buffer_sync_all_dirty(void)
 	return 0;
 }
 
-struct buffer *buffer_create(struct blockdev *bd, dev_t dev, uint64_t block, int flags, char *data)
+struct buffer *buffer_create(struct blockdev *bd, dev_t dev, uint64_t block, int flags, unsigned char *data)
 {
 	struct buffer *b = kmalloc(sizeof(struct buffer) + bd->ctl->blocksize);
 	b->bd = bd;

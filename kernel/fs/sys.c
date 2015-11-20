@@ -27,6 +27,8 @@
 #include <sea/vsprintf.h>
 #include <sea/trace.h>
 #include <sea/syslog.h>
+#include <sea/dm/pty.h>
+#include <sea/dm/blockdev.h>
 static int system_setup=0;
 extern void fs_initrd_parse();
 
@@ -57,7 +59,7 @@ void devfs_init(void)
 	sys_mkdir("/dev/process", 0755);
 }
 
-int kerfs_trace_on(int direction, void *_, size_t __, size_t offset, size_t length, char *buf)
+int kerfs_trace_on(int direction, void *_, size_t __, size_t offset, size_t length, unsigned char *buf)
 {
 	if(direction != WRITE)
 		return -EIO;
@@ -67,7 +69,7 @@ int kerfs_trace_on(int direction, void *_, size_t __, size_t offset, size_t leng
 		length = 128;
 	char tmp[length + 1];
 	memset(tmp, 0, length + 1);
-	strncpy(tmp, buf, length);
+	strncpy(tmp, (char *)buf, length);
 	char *n;
 	if((n = strrchr(tmp, '\n')))
 		*n = 0;
@@ -75,10 +77,7 @@ int kerfs_trace_on(int direction, void *_, size_t __, size_t offset, size_t leng
 	return length;
 }
 
-int kerfs_pfault_report(int direction, void *param, size_t size, size_t offset, size_t length, char *buf);
-
-int kerfs_syslog(int direction, void *param, size_t size, size_t offset, size_t length, char *buf);
-int kerfs_trace_off(int direction, void *_, size_t __, size_t offset, size_t length, char *buf)
+int kerfs_trace_off(int direction, void *_, size_t __, size_t offset, size_t length, unsigned char *buf)
 {
 	if(direction != WRITE)
 		return -EIO;
@@ -88,7 +87,7 @@ int kerfs_trace_off(int direction, void *_, size_t __, size_t offset, size_t len
 		length = 128;
 	char tmp[length + 1];
 	memset(tmp, 0, length + 1);
-	strncpy(tmp, buf, length);
+	strncpy(tmp, (char *)buf, length);
 	char *n;
 	if((n = strrchr(tmp, '\n')))
 		*n = 0;
@@ -542,7 +541,7 @@ int sys_mknod(char *path, mode_t mode, dev_t dev)
 	return 0;
 }
 
-int sys_readlink(char *_link, char *buf, int nr)
+int sys_readlink(char *_link, unsigned char *buf, int nr)
 {
 	if(!_link || !buf)
 		return -EINVAL;
@@ -583,7 +582,7 @@ int sys_symlink(char *p2, char *p1)
 	int ret=0;
 	vfs_inode_set_dirty(inode);
 	
-	if((ret=fs_inode_write(inode, 0, strlen(p2), p2)) < 0) {
+	if((ret=fs_inode_write(inode, 0, strlen(p2), (unsigned char *)p2)) < 0) {
 		vfs_icache_put(inode);
 		return ret;
 	}

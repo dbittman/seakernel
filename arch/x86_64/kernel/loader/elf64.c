@@ -36,7 +36,7 @@ static int process_elf64_phdr(char *mem, struct file *file, addr_t *start, addr_
 	uint32_t i, x;
 	addr_t entry;
 	elf_header_t *eh = (elf_header_t *)mem;
-	char buffer[(eh->phnum+1)*eh->phsize];
+	uint8_t buffer[(eh->phnum+1)*eh->phsize];
 	fs_file_pread(file, eh->phoff, buffer, eh->phsize * eh->phnum);
 	uint64_t vaddr=0, length=0, offset=0, stop, tmp;
 	uint64_t max=0, min=~0;

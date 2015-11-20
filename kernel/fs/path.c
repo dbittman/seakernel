@@ -28,7 +28,7 @@ struct dirent *fs_resolve_symlink(struct dirent *dir, struct inode *node, int st
 			maxlen = 1024;
 		char link[maxlen+1];
 		/* read in the link target */
-		if((size_t)fs_inode_read(node, 0, maxlen, link) != maxlen) {
+		if((size_t)fs_inode_read(node, 0, maxlen, (unsigned char *)link) != maxlen) {
 			*err = -EIO;
 			return 0;
 		}

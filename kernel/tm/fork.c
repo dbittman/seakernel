@@ -41,7 +41,7 @@ extern struct filesystem *devfs;
 				0, type); \
 	} while(0)
 
-int kerfs_mappings_report(int direction, void *param, size_t size, size_t offset, size_t length, char *buf)
+int kerfs_mappings_report(int direction, void *param, size_t size, size_t offset, size_t length, unsigned char *buf)
 {
 	size_t current = 0;
 	struct process *proc = param;
@@ -100,8 +100,6 @@ void tm_process_create_kerfs_entries(struct process *proc)
 	__expose_proc_field(proc, effective_gid, kerfs_rw_integer);
 	__expose_proc_field(proc, real_uid, kerfs_rw_integer);
 	__expose_proc_field(proc, real_gid, kerfs_rw_integer);
-	if(proc->pty)
-		__expose_proc_field(proc, pty->num, kerfs_rw_integer);
 	__expose_proc_field(proc, utime, kerfs_rw_integer);
 	__expose_proc_field(proc, stime, kerfs_rw_integer);
 	__expose_proc_field(proc, thread_count, kerfs_rw_integer);
@@ -115,6 +113,11 @@ void tm_process_create_kerfs_entries(struct process *proc)
 	char file[128];
 	snprintf(file, 128, "/dev/process/%d/maps", proc->pid);
 	kerfs_register_parameter(file, proc, sizeof(void *), 0, kerfs_mappings_report);
+
+	if(proc->pty) {
+		snprintf(file, 128, "/dev/process/%d/tty", proc->pid);
+		kerfs_register_parameter(file, (void *)&proc->pty->num, sizeof(proc->pty->num), 0, kerfs_rw_integer);
+	}
 }
 
 void tm_thread_create_kerfs_entries(struct thread *thr)
@@ -225,8 +228,9 @@ static struct process *tm_process_copy(int flags, struct thread *newthread)
 	}
 	fs_copy_file_handles(current_process, newp);
 	mutex_create(&newp->fdlock, 0);
-	tm_process_create_kerfs_entries(newp);
 	newp->pty = current_process->pty;
+
+	tm_process_create_kerfs_entries(newp);
 	return newp;
 }
 

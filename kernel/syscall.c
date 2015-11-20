@@ -383,7 +383,7 @@ int syscall_handler(struct registers *regs)
 	return ret;
 }
 
-int kerfs_syscall_report(int direction, void *param, size_t size, size_t offset, size_t length, char *buf)
+int kerfs_syscall_report(int direction, void *param, size_t size, size_t offset, size_t length, unsigned char *buf)
 {
 	size_t current = 0;
 	KERFS_PRINTF(offset, length, buf, current,

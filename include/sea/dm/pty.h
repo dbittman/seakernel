@@ -29,6 +29,7 @@ struct pty {
 int sys_openpty(int *master, int *slave, char *name, const struct termios *term,
 		const struct winsize *win);
 int sys_attach_pty(int fd);
+void pty_init(void);
 
 #endif
 

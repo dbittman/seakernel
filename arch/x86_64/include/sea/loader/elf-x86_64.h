@@ -75,7 +75,7 @@ typedef struct __attribute__((packed))
 	uint64_t p_align;
 } elf64_program_header_t;
 
-static inline int is_valid_elf(char *buf, short type)
+static inline int is_valid_elf(unsigned char *buf, short type)
 {
 	elf64_header_t * eh;
 	eh = (elf64_header_t*)buf;
@@ -128,7 +128,7 @@ typedef struct
 
 #include <sea/loader/elf-x86_common.h>
 
-static inline int is_valid_elf32_otherarch(char *buf, short type)
+static inline int is_valid_elf32_otherarch(unsigned char *buf, short type)
 {
 	elf32_header_t * eh;
 	eh = (elf32_header_t*)buf;

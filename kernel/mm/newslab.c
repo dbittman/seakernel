@@ -42,7 +42,7 @@ int slab_get_usage(void)
 	return (full_slabs_count * 100 + partial_slabs_count * 50) / slabs_reg.npages;
 }
 
-int kerfs_kmalloc_report(int direction, void *param, size_t size, size_t offset, size_t length, char *buf)
+int kerfs_kmalloc_report(int direction, void *param, size_t size, size_t offset, size_t length, unsigned char *buf)
 {
 	size_t current = 0;
 	KERFS_PRINTF(offset, length, buf, current,

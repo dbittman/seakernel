@@ -13,7 +13,7 @@ void *arch_loader_parse_elf_module(struct module *mod, uint8_t * buf)
 	addr_t module_entry=0, module_exiter=0;
 
 	/* now actually do some error checking... */
-	if(!is_valid_elf((char *)buf, 1))
+	if(!is_valid_elf(buf, 1))
 		return 0;
 	size_t load_size = arch_loader_calculate_allocation_size(buf);
 	void *load = kmalloc(load_size);

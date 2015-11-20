@@ -15,6 +15,7 @@
 #include <sea/cpu/interrupt.h>
 #include <sea/vsprintf.h>
 #include <sea/errno.h>
+#include <sea/dm/blockdev.h>
 #include <sea/mm/kmalloc.h>
 
 struct pci_device *ahci_pci;
@@ -91,7 +92,7 @@ void ahci_port_release_slot(struct ahci_device *dev, int slot)
  * in a multiple of PAGE_SIZE, so that the PRDT will write to contiguous physical ram
  * (the key here is that the buffer need not be contiguous across multiple PRDT entries).
  */
-int ahci_rw_multiple_do(int rw, int min, uint64_t blk, char *out_buffer, int count)
+int ahci_rw_multiple_do(int rw, int min, uint64_t blk, unsigned char *out_buffer, int count)
 {
 	uint32_t length = count * ATA_SECTOR_SIZE;
 	int d = min;
@@ -130,7 +131,7 @@ int ahci_rw_multiple_do(int rw, int min, uint64_t blk, char *out_buffer, int cou
 /* and then since there is a maximum transfer amount because of the page size
  * limit, wrap the transfer function to allow for bigger transfers than that even.
  */
-int ahci_rw_multiple(int rw, int min, uint64_t blk, char *out_buffer, int count)
+int ahci_rw_multiple(int rw, int min, uint64_t blk, unsigned char *out_buffer, int count)
 {
 	int i=0;
 	int ret=0;
@@ -150,7 +151,7 @@ struct hash portmap;
 static ssize_t __rw(int rw, struct inode *node, uint64_t block, uint8_t *buffer, size_t len)
 {
 	int min = MINOR(node->phys_dev);
-	int port = (int)hash_lookup(&portmap, &min, sizeof(min));
+	int port = (long)hash_lookup(&portmap, &min, sizeof(min));
 	return ahci_rw_multiple(rw, port, block, buffer, len);
 }
 
@@ -166,7 +167,7 @@ void ahci_create_device(struct ahci_device *dev)
 	int min = blockdev_register(node, 0, 0, 512, __rw);
 	vfs_icache_put(node);
 	dev->minor = min;
-	hash_insert(&portmap, &dev->minor, sizeof(dev->minor), &dev->mapelem, (void *)dev->idx);
+	hash_insert(&portmap, &dev->minor, sizeof(dev->minor), &dev->mapelem, (void *)(long)dev->idx);
 }
 
 int irq;

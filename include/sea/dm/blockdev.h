@@ -22,5 +22,8 @@ struct blockdev {
 };
 
 void blockdev_init(void);
+int blockdev_register(struct inode *node, uint64_t partbegin, size_t partlen, size_t blocksize,
+	ssize_t (*rw)(int dir, struct inode *node, uint64_t start, uint8_t *buffer, size_t count));
+void blockdev_register_partition(struct inode *master, struct inode *part, uint64_t partbegin, uint64_t partlen);
 #endif
 

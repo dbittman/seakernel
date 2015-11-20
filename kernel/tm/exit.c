@@ -39,8 +39,7 @@ void tm_thread_remove_kerfs_entries(struct thread *thr)
 	__remove_kerfs_thread_entry(thr, "usermode_stack_end");
 	char dir[128];
 	snprintf(dir, 128, "/dev/process/%d/%d", thr->process->pid, thr->tid);
-	int r = sys_rmdir(dir);
-	assert(!r);
+	sys_rmdir(dir);
 }
 
 void tm_process_remove_kerfs_entries(struct process *proc)
@@ -68,8 +67,7 @@ void tm_process_remove_kerfs_entries(struct process *proc)
 	__remove_kerfs_proc_entry(proc, "maps");
 	char dir[128];
 	snprintf(dir, 128, "/dev/process/%d", proc->pid);
-	int r = sys_rmdir(dir);
-	assertmsg(!r, "%d", (long)r);
+	sys_rmdir(dir);
 }
 
 static void tm_thread_destroy(unsigned long data)

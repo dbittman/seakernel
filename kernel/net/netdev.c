@@ -17,20 +17,31 @@
 #include <sea/string.h>
 #include <sea/tm/timing.h>
 #include <sea/vsprintf.h>
+
+static int net_major;
+
 uint16_t af_to_ethertype_map[PF_MAX] = {
 	[AF_INET] = 0x800,
 };
 
 struct linkedlist *net_list;
 
+int net_ioctl(struct file *file, int cmd, long arg);
 int nd_num = 0;
 static struct net_dev *devices[256];
 
 extern void net_lo_init();
 
+static struct kdevice __kd = {
+	.open = 0, .close = 0, .select = 0, .create = 0, .destroy = 0, .rw = 0,
+	.ioctl = net_ioctl,
+	.name = "netdev",
+};
+
 void net_init(void)
 {
 	net_list = linkedlist_create(0, 0);
+	net_major = dm_device_register(&__kd);
 #if CONFIG_MODULES
 	loader_add_kernel_symbol(net_add_device);
 	loader_add_kernel_symbol(net_notify_packet_ready);
@@ -118,9 +129,12 @@ struct net_dev *net_add_device(struct net_dev_calls *fn, void *data)
 	snprintf(nd->name, 16, "nd%d", num);
 	nd->num = num;
 	devices[num] = nd;
+
+	
+
 	char path[8 + strlen(nd->name)];
 	snprintf(path, 8+strlen(nd->name), "/dev/%s", nd->name);
-	sys_mknod(path, S_IFCHR | 0600, GETDEV(6, num));
+	sys_mknod(path, S_IFCHR | 0600, GETDEV(net_major, num));
 
 	return nd;
 }
@@ -214,8 +228,9 @@ struct ul_route {
 	int flags;
 };
 
-int net_char_ioctl(dev_t min, int cmd, long arg)
+int net_ioctl(struct file *file, int cmd, long arg)
 {
+	int min = MINOR(file->inode->phys_dev);
 	struct net_dev *nd = devices[min];
 	if(!nd)
 		return -EINVAL;

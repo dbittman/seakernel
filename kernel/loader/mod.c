@@ -16,6 +16,7 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/lib/linkedlist.h>
 #include <sea/trace.h>
+#include <sea/fs/socket.h>
 
 struct linkedlist module_list;
 static struct mutex sym_mutex;
@@ -68,6 +69,7 @@ void loader_init_kernel_symbols(void)
 	loader_add_kernel_symbol(queue_dequeue);
 	loader_add_kernel_symbol(queue_enqueue);
 	loader_add_kernel_symbol(queue_destroy);
+	loader_add_kernel_symbol(socket_bind);
 	loader_add_kernel_symbol(inb);
 	loader_add_kernel_symbol(outb);
 	loader_add_kernel_symbol(inw);

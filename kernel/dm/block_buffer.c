@@ -99,7 +99,8 @@ void buffer_inc_refcount(struct buffer *buf)
 bool block_elevator_add_request(void *data)
 {
 	struct ioreq *req = data;
-	mpscq_enqueue(&req->bd->ctl->queue, req);
+	while(!mpscq_enqueue(&req->bd->ctl->queue, req))
+		cpu_pause();
 	tm_thread_poke(req->bd->ctl->elevator.thread);
 	return true;
 }

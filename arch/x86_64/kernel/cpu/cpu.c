@@ -136,8 +136,6 @@ void parse_cpuid(struct cpu *me)
 	eax = 0x80000000;
 	CPUID(eax, eax, ebx, ecx, edx);
 	cpuid.max_ext_input_val = eax; 
-	if((unsigned int)cpuid.max_ext_input_val >= 0x80000004)
-		cpuid_cpu_get_brand(&cpuid);
 	memcpy(&(me->cpuid), &cpuid, sizeof(me->cpuid));
 }
 

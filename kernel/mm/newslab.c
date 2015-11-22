@@ -143,7 +143,7 @@ static void *allocate_object_from_cache(struct cache *cache)
 		atomic_fetch_add_explicit(&partial_slabs_count, 1, memory_order_relaxed);
 		linkedlist_insert(&cache->partial, &slab->node, slab);
 	}
-	assert(slab->magic = SLAB_MAGIC);
+	assert(slab->magic == SLAB_MAGIC);
 	atomic_fetch_add(&slab->count, 1);
 	mutex_release(&cache->lock);
 	void *ret = allocate_object(slab);

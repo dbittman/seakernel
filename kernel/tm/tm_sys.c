@@ -6,6 +6,7 @@
 #include <sea/tm/timing.h>
 #include <sea/cpu/interrupt.h>
 #include <sea/mm/map.h>
+#include <sea/vsprintf.h>
 int sys_sbrk(long inc)
 {
 	addr_t end = current_process->heap_end;

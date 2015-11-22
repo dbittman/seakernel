@@ -273,7 +273,7 @@ int sys_setsockopt(int socket, int level, int option_name,
 		case 2:
 			value = *(uint16_t *)option_value;
 			break;
-		defualt: case 4:
+		default: case 4:
 			value = *(uint32_t *)option_value;
 			break;
 		case 8:

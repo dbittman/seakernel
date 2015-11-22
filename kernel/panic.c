@@ -55,6 +55,7 @@ void panic(int flags, char *fmt, ...)
 	va_list args;
 	va_start(args, fmt);
 	vsnprintf(512, buf, fmt, args);
+	va_end(args);
 	_set_lowercase(buf);
 	printk_safe(9,buf);
 	printk_safe(9," ***\n");

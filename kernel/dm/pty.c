@@ -49,11 +49,10 @@ static void write_char(struct pty *pty, uint8_t c)
 static void __raise_action(struct pty *pty, int sig)
 {
 	__linkedlist_lock(process_list);
-	struct process *proc;
 	struct linkedentry *node;
 	for(node = linkedlist_iter_start(process_list); node != linkedlist_iter_end(process_list);
 			node = linkedlist_iter_next(node)) {
-		proc = linkedentry_obj(node);
+		struct process *proc = linkedentry_obj(node);
 		if(proc->pty == pty) {
 			tm_signal_send_process(proc, sig);
 		}

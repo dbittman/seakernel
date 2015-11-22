@@ -70,7 +70,6 @@ static void process_memorymap(struct multiboot *mboot)
 	unsigned long num_pages=0, unusable=0;
 	uint64_t j=0, address, length, highest_page = 0, lowest_page = ~0;
 	int found_contiguous=0;
-	lowest_page = ~0;
 	pm_location = ((((addr_t)&kernel_end - MEMMAP_KERNEL_START) & ~(PAGE_SIZE-1)) + PAGE_SIZE + 0x100000 /* HACK */);
 	while((pm_location >= initrd_start_page && pm_location <= initrd_end_page))
 		pm_location += PAGE_SIZE;

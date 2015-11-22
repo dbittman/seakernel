@@ -20,9 +20,9 @@ void x86_cpu_init_fpu(struct cpu *me)
 
 void x86_cpu_init_sse(struct cpu *me)
 {
-	unsigned long cr0, cr4;
 	if(me->cpuid.features_edx & 0x06000001) /* test for SSE2, SSE, and FPU */
 	{
+		unsigned long cr0, cr4;
 		__asm__ __volatile__ ("mov %%cr0, %0;":"=r"(cr0)); /* store CR0 */
 		__asm__ __volatile__ ("mov %%cr4, %0;":"=r"(cr4)); /* store CR4 */
 		cr0 &= ~CR0_EM; /* disable FPU emulation */

@@ -41,8 +41,12 @@ static addr_t get_virtual_address_page(struct pmap *m, addr_t p)
 		m->idx_max *= 2;
 		addr_t *tmp = kmalloc(m->idx_max * sizeof(addr_t));
 		memcpy(tmp, m->phys, sizeof(addr_t) * m->idx);
+		kfree(m->phys);
+		m->phys = tmp;
 		tmp = kmalloc(m->idx_max * sizeof(addr_t));
 		memcpy(tmp, m->virt, sizeof(addr_t) * m->idx);
+		kfree(m->virt);
+		m->virt = tmp;
 	}
 	m->phys[m->idx] = masked;
 	addr_t ret;

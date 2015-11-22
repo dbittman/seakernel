@@ -7,7 +7,7 @@ bool arch_mm_context_virtual_getmap(struct vmm_context *ctx, addr_t address, add
 	int pdptidx = PDPT_INDEX(address);
 	int pdidx = PD_INDEX(address);
 
-	addr_t destp, offset;
+	addr_t destp;
 	addr_t *pml4v = (addr_t *)ctx->root_virtual;
 	if(!pml4v[pml4idx]) {
 		return false;

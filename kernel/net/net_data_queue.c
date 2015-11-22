@@ -42,7 +42,7 @@ size_t net_data_queue_copy_out(struct socket *sock, struct queue *queue, void *b
 		if(!n)
 			return nbytes;
 		
-		if(memcmp(addr, &n->addr, sizeof(*addr)) && nbytes) {
+		if(addr && memcmp(addr, &n->addr, sizeof(*addr)) && nbytes) {
 			/* different source! */
 			return nbytes;
 		}

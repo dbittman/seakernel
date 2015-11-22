@@ -8,6 +8,7 @@
 #include <sea/lib/timer.h>
 static void check_signals(struct thread *thread)
 {
+	assert(thread);
 	if(thread->signals_pending && !thread->signal && !(thread->flags & THREAD_SIGNALED)) {
 		int index = 0;
 		/* find the next signal in signals_pending and set signal to it */
@@ -33,7 +34,7 @@ static struct thread *get_next_thread (void)
 	struct thread *n = 0;
 	while(1) {
 		n = tqueue_next(current_thread->cpu->active_queue);
-		assert(n->cpu == current_thread->cpu);
+		assert(n && n->cpu == current_thread->cpu);
 		check_signals(n);
 		if(n && tm_thread_runnable(n))
 			break;

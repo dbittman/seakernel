@@ -46,10 +46,6 @@ void acpi_madt_parse_ioapic(void *ent)
 
 int parse_acpi_madt(void)
 {
-	struct {
-		uint8_t type;
-		uint8_t length;
-	} *ent;
 	pmap_create(&apic_pmap, 0);
 	int length;
 	void *ptr = acpi_get_table_data("APIC", &length);
@@ -59,7 +55,6 @@ int parse_acpi_madt(void)
 	}
 	
 	uint64_t controller_address = *(uint32_t *)ptr;
-	uint32_t flags = *(uint32_t *)((uint32_t *)ptr + 1);
 	lapic_addr = pmap_get_mapping(&apic_pmap, controller_address);
 	void *tmp = (void *)((addr_t)ptr + 8);
 	/* the ACPI MADT specification says that we may assume
@@ -68,7 +63,10 @@ int parse_acpi_madt(void)
 	int boot_cpu = 1;
 	while((addr_t)tmp < (addr_t)ptr+length)
 	{
-		ent = tmp;
+		struct {
+			uint8_t type;
+			uint8_t length;
+		} *ent = tmp;
 		if(ent->type == 0) {
 			acpi_madt_parse_processor(ent, boot_cpu);
 			boot_cpu = 0;

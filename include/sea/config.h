@@ -42,7 +42,7 @@
 /* dev, fs */
 #define NUM_CACHES 128
 
-#define PIPE_SIZE 0x1000
+#define PIPE_SIZE 0x16000
 
 /* video */
 #define MAX_CONSOLES 10

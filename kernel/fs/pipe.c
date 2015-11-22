@@ -8,6 +8,7 @@
 #include <sea/sys/fcntl.h>
 #include <sea/errno.h>
 #include <sea/mm/kmalloc.h>
+#include <sea/vsprintf.h>
 #include <sea/string.h>
 #include <sea/tm/blocking.h>
 static struct pipe *fs_pipe_create(void)
@@ -24,6 +25,7 @@ static struct pipe *fs_pipe_create(void)
 static void __pipe_close(struct file *file)
 {
 	struct pipe *pipe = file->inode->devdata;
+	mutex_acquire(&pipe->lock);
 	assert(pipe);
 	if(file->flags & _FWRITE) {
 		int r = atomic_fetch_sub(&pipe->wrcount, 1);
@@ -34,6 +36,7 @@ static void __pipe_close(struct file *file)
 	}
 	tm_blocklist_wakeall(&file->inode->readblock);
 	tm_blocklist_wakeall(&file->inode->writeblock);
+	mutex_release(&pipe->lock);
 }
 
 static int __pipe_select(struct file *file, int rw)
@@ -41,10 +44,10 @@ static int __pipe_select(struct file *file, int rw)
 	struct pipe *pipe = file->inode->devdata;
 	if(!pipe) return 1;
 	if(rw == READ) {
-		if(!pipe->pending)
+		if(!pipe->pending && pipe->wrcount > 0)
 			return 0;
 	} else if(rw == WRITE) {
-		if(pipe->pending == PIPE_SIZE)
+		if(pipe->pending == PIPE_SIZE && pipe->recount > 0)
 			return 0;
 	}
 	return 1;
@@ -62,11 +65,11 @@ static int __pipe_read(struct file *file, unsigned char *buffer, size_t length)
 	assert(pipe);
 	size_t len = length;
 	int ret=0;
-	if((file->flags & _FNONBLOCK) && !pipe->pending)
-		return -EAGAIN;
 	/* should we even try reading? (empty pipe with no writing processes=no) */
 	if(!pipe->pending && pipe->wrcount == 0)
 		return 0;
+	if((file->flags & _FNONBLOCK) && !pipe->pending)
+		return -EAGAIN;
 	/* block until we have stuff to read */
 	mutex_acquire(&pipe->lock);
 	while(!pipe->pending && (pipe->wrcount>0)) {
@@ -76,8 +79,12 @@ static int __pipe_read(struct file *file, unsigned char *buffer, size_t length)
 				THREADSTATE_INTERRUPTIBLE, __release_lock, &pipe->lock);
 		switch(r) {
 			case -ERESTART:
+				tm_blocklist_wakeall(&file->inode->writeblock);
+				tm_blocklist_wakeall(&file->inode->readblock);
 				return -ERESTART;
 			case -EINTR:
+				tm_blocklist_wakeall(&file->inode->writeblock);
+				tm_blocklist_wakeall(&file->inode->readblock);
 				return -EINTR;
 		}
 		mutex_acquire(&pipe->lock);
@@ -107,30 +114,47 @@ static int __pipe_write(struct file *file, unsigned char *initialbuffer, size_t 
 	unsigned char *buffer = initialbuffer;
 	size_t length;
 	size_t remain = totallength;
+	size_t written = 0;
 	mutex_acquire(&pipe->lock);
-	if((file->flags & _FNONBLOCK) && pipe->pending + totallength > PIPE_SIZE) {
-		mutex_release(&pipe->lock);
-		return -EAGAIN;
-	}
 	while(remain) {
 		length = PAGE_SIZE;
 		if(length > remain)
 			length = remain;
 		/* we're writing to a pipe with no reading process! */
 		if(pipe->recount == 0) {
+			tm_blocklist_wakeall(&file->inode->readblock);
+			tm_blocklist_wakeall(&file->inode->writeblock);
 			mutex_release(&pipe->lock);
 			tm_signal_send_thread(current_thread, SIGPIPE);
 			return -EPIPE;
 		}
+		if((file->flags & _FNONBLOCK) && pipe->pending + totallength > PIPE_SIZE) {
+			tm_blocklist_wakeall(&file->inode->readblock);
+			tm_blocklist_wakeall(&file->inode->writeblock);
+			mutex_release(&pipe->lock);
+			if(written)
+				return written;
+			return -EAGAIN;
+		}
+
 		/* IO block until we can write to it */
 		while((pipe->pending+length)>=PIPE_SIZE) {
 			tm_blocklist_wakeall(&file->inode->readblock);
 			int r = tm_thread_block_confirm(&file->inode->writeblock,
 					THREADSTATE_INTERRUPTIBLE, __release_lock, &pipe->lock);
+			if(r)
 			switch(r) {
 				case -ERESTART:
+					tm_blocklist_wakeall(&file->inode->readblock);
+					tm_blocklist_wakeall(&file->inode->writeblock);
+					if(written)
+						return written;
 					return -ERESTART;
 				case -EINTR:
+					tm_blocklist_wakeall(&file->inode->readblock);
+					tm_blocklist_wakeall(&file->inode->writeblock);
+					if(written)
+						return written;
 					return -EINTR;
 			}
 			mutex_acquire(&pipe->lock);

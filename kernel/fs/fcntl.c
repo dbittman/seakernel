@@ -52,7 +52,8 @@ int sys_fcntl(int filedes, int cmd, long attr1, long attr2, long attr3)
 			tm_signal_send_thread(current_thread, SIGABRT);
 			break;
 		default:
-			printk(5, "Task tried calling fcntl with invalid commands!\n");
+			printk(5, "Task tried calling fcntl with invalid commands (%d)!\n", cmd);
+			return 0;
 			ret = -EINVAL;
 			break;
 	}

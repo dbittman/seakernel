@@ -11,20 +11,6 @@
 #include <sea/fs/callback.h>
 #include <sea/fs/pipe.h>
 #include <sea/errno.h>
-int sys_isatty(int f)
-{
-	struct file *file = file_get(f);
-	if(!file) return -EBADF;
-	struct inode *inode = file->inode;
-	/* TODO */
-	if(inode->devdata) {
-		file_put(file);
-		return 1;
-	}
-	file_put(file);
-	return 0;
-}
-
 static void do_stat(struct inode * inode, struct stat * tmp)
 {
 	assert(inode && tmp);

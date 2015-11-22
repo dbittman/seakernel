@@ -339,3 +339,13 @@ int sys_attach_pty(int fd)
 	return 0;
 }
 
+int sys_isatty(int f)
+{
+	struct file *file = file_get(f);
+	if(!file)
+		return -EBADF;
+	int ret = MAJOR(file->inode->phys_dev) == pty_major;
+	file_put(file);
+	return ret;
+}
+

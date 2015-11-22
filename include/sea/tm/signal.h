@@ -91,5 +91,7 @@ int sys_sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict os
 int sys_sigact(int sig, const struct sigaction *act, struct sigaction *oact);
 int sys_kill(pid_t pid, int signal);
 //int sys_alarm(int a);
+int sys_sigsuspend(const sigset_t *set);
+int sys_sigpending(sigset_t *set);
 
 #endif

@@ -212,6 +212,8 @@ static void *syscall_table[129] = {
 	[SYS_GETTIMEOFDAY]    = sys_gettimeofday,
 
 
+	[SYS_SIGPENDING]      = sys_sigpending,
+	[SYS_SIGSUSPEND]      = sys_sigsuspend,
 
 
 

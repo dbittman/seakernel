@@ -125,6 +125,19 @@ int tm_signal_send_process(struct process *proc, int signal)
 	return -EACCES;
 }
 
+int sys_sigsuspend(const sigset_t *set)
+{
+	current_process->global_sig_mask = *set;
+	tm_thread_set_state(current_thread, THREADSTATE_INTERRUPTIBLE);
+	return -EINTR;
+}
+
+int sys_sigpending(sigset_t *set)
+{
+	*set = current_thread->signals_pending << 1;
+	return 0;
+}
+
 int sys_kill(pid_t pid, int signal)
 {
 	if(pid == 0 || signal < 0 || signal >= NUM_SIGNALS)

@@ -23,6 +23,7 @@ struct kthread *kthread_create(struct kthread *kt, const char *name, int flags,
 	KOBJ_CREATE(kt, flags, KT_ALLOC);
 	kt->entry = entry;
 	kt->arg = arg;
+	kt->name = name;
 	tm_clone(CLONE_SHARE_PROCESS | CLONE_KTHREAD, __do_kthread_entry, kt);
 	return kt;
 }

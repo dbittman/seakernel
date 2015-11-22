@@ -5,6 +5,7 @@
 #include <sea/tm/kthread.h>
 #include <sea/mutex.h>
 #include <sea/lib/hash.h>
+#include <sea/lib/mpscq.h>
 
 struct blockctl {
 	size_t blocksize;
@@ -12,7 +13,7 @@ struct blockctl {
 	struct kthread elevator;
 	struct mutex cachelock;
 	struct hash cache;
-	struct queue wq;
+	struct mpscq queue;
 };
 
 struct blockdev {

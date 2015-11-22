@@ -10,6 +10,7 @@ struct kthread {
 	int (*entry)(struct kthread *, void *);
 	void *arg;
 	struct thread *thread;
+	const char *name;
 };
 
 #define KT_ALLOC   1

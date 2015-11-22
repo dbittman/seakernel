@@ -21,7 +21,7 @@ int blockdev_register(struct inode *node, uint64_t partbegin, size_t partlen, si
 	ctl->rw = rw;
 	mutex_create(&ctl->cachelock, 0);
 	hash_create(&ctl->cache, 0, 4096);
-	queue_create(&ctl->wq, 0);
+	mpscq_create(&ctl->queue, 1000);
 	bd->ctl = ctl;
 
 	int num = atomic_fetch_add(&next_minor, 1);

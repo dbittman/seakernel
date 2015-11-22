@@ -13,9 +13,8 @@ int block_elevator_main(struct kthread *kt, void *arg)
 	const int max = 8;
 	unsigned char *buf = kmalloc(ctl->blocksize * max);
 	while(!kthread_is_joining(kt)) {
-		struct queue_item *qi;
-		if((qi = queue_dequeue_item(&ctl->wq))) {
-			struct ioreq *req = qi->ent;
+		struct ioreq *req;
+		if((req = mpscq_dequeue(&ctl->queue))) {
 			size_t count = req->count;
 			size_t block = req->block;
 

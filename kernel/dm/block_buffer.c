@@ -96,10 +96,12 @@ void buffer_inc_refcount(struct buffer *buf)
 	atomic_fetch_add(&buf->refs, 1);
 }
 
-void block_elevator_add_request(struct ioreq *req)
+bool block_elevator_add_request(void *data)
 {
-	queue_enqueue_item(&req->bd->ctl->wq, &req->qi, req);
+	struct ioreq *req = data;
+	mpscq_enqueue(&req->bd->ctl->queue, req);
 	tm_thread_poke(req->bd->ctl->elevator.thread);
+	return true;
 }
 
 struct buffer *block_cache_get_first_buffer(struct ioreq *req)
@@ -107,13 +109,8 @@ struct buffer *block_cache_get_first_buffer(struct ioreq *req)
 	struct buffer *br = dm_block_cache_get(req->bd, req->block);
 	if(!br) {
 		atomic_fetch_add(&req->refs, 1);
-		async_call_create(&current_thread->blockreq_call, 0, (void (*)(unsigned long))block_elevator_add_request,
-				(unsigned long)req, ASYNC_CALL_PRIORITY_MEDIUM);
-		tm_thread_block_schedule_work(&req->blocklist, THREADSTATE_UNINTERRUPTIBLE, &current_thread->blockreq_call);
-		/* TODO: do this automatically? */
-		struct workqueue *wq = current_thread->blockreq_call.queue;
-		if(wq)
-			workqueue_delete(wq, &current_thread->blockreq_call);
+		tm_thread_block_confirm(&req->blocklist, THREADSTATE_UNINTERRUPTIBLE,
+				block_elevator_add_request, req);
 
 		assert(req->flags & IOREQ_COMPLETE);
 		if(req->flags & IOREQ_FAILED) {

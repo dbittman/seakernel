@@ -63,9 +63,12 @@ static void prepare_schedule(void)
 			tm_thread_handle_signal(current_thread->signal);
 	}
 	if(unlikely(current_thread->flags & THREAD_WAKEUP)) {
-		if(current_thread->state == THREADSTATE_INTERRUPTIBLE)
+		/* wake-up says "next time we get set to interruptible, ignore it and
+		 * restart". */
+		if(current_thread->state == THREADSTATE_INTERRUPTIBLE) {
 			tm_thread_unblock(current_thread);
-		tm_thread_lower_flag(current_thread, THREAD_WAKEUP);
+			tm_thread_lower_flag(current_thread, THREAD_WAKEUP);
+		}
 	}
 	tm_thread_lower_flag(current_thread, THREAD_SCHEDULE);
 }

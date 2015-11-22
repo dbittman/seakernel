@@ -7,7 +7,7 @@
 #include <sea/tm/thread.h>
 #include <sea/tm/process.h>
 #include <sea/errno.h>
-
+#include <sea/tm/kthread.h>
 static int debugger_get_tokens(int maxtoks, int maxlen, char tokens[16][64])
 {
 	for(int tok=0;tok<maxtoks;tok++) {
@@ -72,6 +72,11 @@ static void __print_thread(struct thread *thr, int trace)
 	printk_safe(5, "    signals_pending:    %x\n", thr->signals_pending);
 	printk_safe(5, "    signal:             %d\n", thr->signal);
 	printk_safe(5, "    blocklist:          %x (%s)\n", thr->blocklist, thr->blocklist ? thr->blocklist->name : "none");
+	if(thr->kernel_thread) {
+		printk_safe(5, "    kthr->name:         %s\n", thr->kernel_thread->name);
+		printk_safe(5, "    kthr->entry:        %x\n", thr->kernel_thread->entry);
+		printk_safe(5, "    kthr->flags:        %x\n", thr->kernel_thread->flags);
+	}
 	if(thr->regs) {
 		printk_safe(5, "    regs->int_no        %d\n", thr->regs->int_no);
 		printk_safe(5, "    regs->eip           %x\n", thr->regs->eip);

@@ -21,7 +21,6 @@ struct ioreq {
 	int flags;
 	struct blockdev *bd;
 	dev_t dev;
-	struct queue_item qi;
 	struct blocklist blocklist;
 };
 
@@ -52,7 +51,7 @@ void block_cache_init(void);
 void block_buffer_init(void);
 int buffer_sync_all_dirty(void);
 int block_elevator_main(struct kthread *kt, void *arg);
-void block_elevator_add_request(struct ioreq *req);
+bool block_elevator_add_request(void *req);
 
 struct buffer *dm_block_cache_get(struct blockdev *bd, uint64_t block);
 int dm_block_cache_insert(struct blockdev *bd, uint64_t block, struct buffer *, int flags);
@@ -67,3 +66,4 @@ int block_cache_get_bufferlist(struct linkedlist *blist, struct ioreq *req);
 struct ioreq *ioreq_create(struct blockdev *bd, dev_t dev, int, uint64_t start, size_t count);
 void ioreq_put(struct ioreq *req);
 #endif
+

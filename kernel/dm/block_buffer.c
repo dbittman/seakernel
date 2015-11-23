@@ -21,7 +21,7 @@ void buffer_sync(struct buffer *buf)
 {
 	if(!(atomic_fetch_or(&buf->flags, BUFFER_WRITEPENDING) & BUFFER_WRITEPENDING)) {
 		assert(buf->flags & BUFFER_DLIST);
-		struct ioreq *req = ioreq_create(buf->bd, buf->dev, WRITE, buf->__block, 1);
+		struct ioreq *req = ioreq_create(buf->bd, WRITE, buf->__block, 1);
 		atomic_fetch_add(&req->refs, 1);
 		block_elevator_add_request(req);
 		ioreq_put(req);
@@ -54,14 +54,13 @@ int buffer_sync_all_dirty(void)
 	return 0;
 }
 
-struct buffer *buffer_create(struct blockdev *bd, dev_t dev, uint64_t block, int flags, unsigned char *data)
+struct buffer *buffer_create(struct blockdev *bd, uint64_t block, int flags, unsigned char *data)
 {
 	struct buffer *b = kmalloc(sizeof(struct buffer) + bd->ctl->blocksize);
 	b->bd = bd;
 	b->__block = block;
 	b->flags = flags;
 	b->refs = 1;
-	b->dev = dev;
 	memcpy(b->data, data, bd->ctl->blocksize);
 	return b;
 }

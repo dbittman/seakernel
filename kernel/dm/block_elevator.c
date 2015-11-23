@@ -27,7 +27,7 @@ int block_elevator_main(struct kthread *kt, void *arg)
 							this);
 					if(ret == ctl->blocksize * this) {
 						for(int i=0;i<this;i++) {
-							struct buffer *buffer = buffer_create(req->bd, node->phys_dev,
+							struct buffer *buffer = buffer_create(req->bd,
 									block + i, 0, buf + i * ctl->blocksize);
 							atomic_fetch_or(&buffer->flags, BUFFER_LOCKED);
 							dm_block_cache_insert(req->bd, block + i, buffer, 0);

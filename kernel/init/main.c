@@ -134,11 +134,6 @@ void __init_entry(void)
 	tm_thread_user_mode_jump(user_mode_init);
 }
 
-/* this function must exist entirely within ring 3. Because the kernel
- * code is readable by userspace until after the init process starts,
- * we don't have to worry about it faulting there. Besides that, everything
- * this function does is either on the stack or just in code, so none
- * of it will cause problems */
 static void printf(const char *fmt, ...)
 {
 	char printbuf[1024];

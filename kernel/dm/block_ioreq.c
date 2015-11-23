@@ -3,7 +3,7 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/tm/blocking.h>
 #include <stdatomic.h>
-struct ioreq *ioreq_create(struct blockdev *bd, dev_t dev, int direction, uint64_t start, size_t count)
+struct ioreq *ioreq_create(struct blockdev *bd, int direction, uint64_t start, size_t count)
 {
 	struct ioreq *req = kmalloc(sizeof(*req));
 	req->block = start;
@@ -12,7 +12,6 @@ struct ioreq *ioreq_create(struct blockdev *bd, dev_t dev, int direction, uint64
 	req->bd = bd;
 	req->flags = 0;
 	req->refs = 1;
-	req->dev = dev; // TODO: get rid of dev;
 	blocklist_create(&req->blocklist, 0, "ioreq");
 	return req;
 }

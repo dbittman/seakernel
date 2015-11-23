@@ -47,13 +47,12 @@ void blockdev_register_partition(struct inode *master, struct inode *part, uint6
 
 static ssize_t __block_read(struct file *file, off_t pos, uint8_t *buf, size_t count)
 {
-	dev_t dev = file->inode->phys_dev;
 	struct blockdev *bd = file->inode->devdata;
 	uint64_t start_block = pos / bd->ctl->blocksize;
 	uint64_t end_block = ((pos + count - 1) / bd->ctl->blocksize);
 	size_t num_blocks = (end_block - start_block) + 1;
 
-	struct ioreq *req = ioreq_create(bd, dev, READ, start_block, num_blocks);
+	struct ioreq *req = ioreq_create(bd, READ, start_block, num_blocks);
 
 	int ret = block_cache_request(req, pos % bd->ctl->blocksize, count, buf);
 	ioreq_put(req);
@@ -63,14 +62,13 @@ static ssize_t __block_read(struct file *file, off_t pos, uint8_t *buf, size_t c
 static ssize_t __block_write(struct file *file, off_t posit, uint8_t *buf, size_t count)
 {
 	struct blockdev *bd = file->inode->devdata;
-	dev_t dev = file->inode->phys_dev;
 	int blk_size = bd->ctl->blocksize;
 	unsigned pos = posit;
 
 	/* If we are offset in a block, we dont wanna overwrite stuff */
 	if(pos % blk_size)
 	{
-		struct ioreq *req = ioreq_create(bd, dev, READ, pos / blk_size, 1);
+		struct ioreq *req = ioreq_create(bd, READ, pos / blk_size, 1);
 		struct buffer *br = block_cache_get_first_buffer(req);
 		ioreq_put(req);
 		if(!br)
@@ -92,7 +90,7 @@ static ssize_t __block_write(struct file *file, off_t posit, uint8_t *buf, size_
 
 		struct buffer *entry = dm_block_cache_get(bd, pos / blk_size);
 		if(!entry) {
-			entry = buffer_create(bd, dev, pos / blk_size, BUFFER_DIRTY, buf);
+			entry = buffer_create(bd, pos / blk_size, BUFFER_DIRTY, buf);
 			memcpy(entry->data, buf, blk_size);
 			dm_block_cache_insert(bd, pos/blk_size, entry, BLOCK_CACHE_OVERWRITE);
 		} else {
@@ -107,7 +105,7 @@ static ssize_t __block_write(struct file *file, off_t posit, uint8_t *buf, size_
 	/* Anything left over? */
 	if(count > 0)
 	{
-		struct ioreq *req = ioreq_create(bd, dev, READ, pos/blk_size, 1);
+		struct ioreq *req = ioreq_create(bd, READ, pos/blk_size, 1);
 		struct buffer *br = block_cache_get_first_buffer(req);
 		ioreq_put(req);
 		if(!br)

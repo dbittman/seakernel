@@ -20,7 +20,6 @@ struct ioreq {
 	int direction;
 	int flags;
 	struct blockdev *bd;
-	dev_t dev;
 	struct blocklist blocklist;
 };
 
@@ -32,7 +31,6 @@ struct buffer {
 	int refs;
 	int flags;
 	uint64_t __block, trueblock;
-	dev_t dev; //TODO: please, please, fix this crap
 	struct linkedentry lnode;
 	struct linkedentry dlistnode;
 	struct queue_item qi;
@@ -58,12 +56,12 @@ int dm_block_cache_insert(struct blockdev *bd, uint64_t block, struct buffer *, 
 
 int block_cache_request(struct ioreq *req, off_t initial_offset, size_t total_bytecount, unsigned char *buffer);
 
-struct buffer *buffer_create(struct blockdev *bd, dev_t dev, uint64_t block, int flags, unsigned char *data);
+struct buffer *buffer_create(struct blockdev *bd, uint64_t block, int flags, unsigned char *data);
 void buffer_put(struct buffer *buf);
 void buffer_inc_refcount(struct buffer *buf);
 struct buffer *block_cache_get_first_buffer(struct ioreq *req);
 int block_cache_get_bufferlist(struct linkedlist *blist, struct ioreq *req);
-struct ioreq *ioreq_create(struct blockdev *bd, dev_t dev, int, uint64_t start, size_t count);
+struct ioreq *ioreq_create(struct blockdev *bd, int, uint64_t start, size_t count);
 void ioreq_put(struct ioreq *req);
 #endif
 

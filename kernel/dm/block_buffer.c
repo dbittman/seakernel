@@ -6,6 +6,7 @@
 #include <sea/tm/kthread.h>
 #include <sea/tm/timing.h>
 #include <stdatomic.h>
+#include <sea/vsprintf.h>
 struct linkedlist dirty_list;
 struct mutex dlock;
 struct kthread syncer;
@@ -31,6 +32,7 @@ void buffer_sync(struct buffer *buf)
 /* TODO: one dlist per blockdevice? */
 int buffer_sync_all_dirty(void)
 {
+	printk(0, "[block]: syncing block buffers (%d buffers)\n", dirty_list.count);
 	mutex_acquire(&dlock);
 	while(dirty_list.count > 0) {
 		struct buffer *buf = linkedlist_head(&dirty_list);

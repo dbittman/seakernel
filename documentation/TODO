@@ -1,32 +1,39 @@
-0.3 RC1
-	* Finish most TODOs
-	* Clean up arch stuff (remove x86_common)
-	* Blocking on waiting for mutexes and rwlocks
-
-0.3
-	* Fix real HW bugs
-	* Optimizations
-
 0.4 A1
-	* BIG optimizations
+	* Threading + writing FS stability / safety
+	* Userspace threading safety
+	* Improve syscall ABI (64bit returns)
+	* Fix unlinking in FS
+0.4 A2
 	* COW
+	* Page cache
+	* Better eviction algorithms and performance
 	* Module arguments
 	* New config system
-
-0.4 A2
+0.4 B1
+	* Performance optimizations and tuning
+	* Fix most TODOs
 	* Make sure timing, time, and benchmarking code works correctly
 	* strace, and other userspace debugging
 	* Working ipv4 networking stack
 	* Reworked thread queues and scheduling policy
-
-0.4 B1
-	* Fix term implementation (want scrollback!)
+0.4 B2
 	* More Massive Cleanup
 	* More Optimizations
 	* More Bugfixes
 
 0.4 RC1
 	* Fix userspace usability bugs
+
+0.5: Networking!
+
+0.6: Security!
+
+0.7: Userspace!
+
+0.8: Stability!
+
+0.9: Speed!
+
 
 Todo:
 	* Networking

@@ -39,6 +39,9 @@ static void __pipe_close(struct file *file)
 	mutex_release(&pipe->lock);
 }
 
+/* TODO: so, select... we should really make it so
+ * select actually blocks. But we need to really think
+ * about how to do that generally. */
 static int __pipe_select(struct file *file, int rw)
 {
 	struct pipe *pipe = file->inode->devdata;

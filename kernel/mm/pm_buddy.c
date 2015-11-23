@@ -24,6 +24,7 @@ static bool inited = false;
 static size_t num_allocated[MAX_ORDER + 1];
 
 static _Atomic size_t free_memory = 0;
+static _Atomic size_t total_memory = 0;
 
 static inline int min_possible_order(addr_t address)
 {
@@ -119,8 +120,11 @@ static inline void pmm_buddy_deallocate(addr_t address)
 		return;
 	mutex_acquire(&pm_buddy_mutex);
 	int order = deallocate(address, 0);
-	if(order >= 0)
+	if(order >= 0) {
 		free_memory += MIN_SIZE << order;
+		if(total_memory < free_memory)
+			total_memory = free_memory;
+	}
 	mutex_release(&pm_buddy_mutex);
 }
 
@@ -145,8 +149,8 @@ int kerfs_pmm_report(int direction, void *param, size_t size, size_t offset, siz
 {
 	size_t current = 0;
 	KERFS_PRINTF(offset, length, buf, current,
-			"Free memory: %dKB (%dMB)\n",
-			free_memory / 1024, free_memory / (1024 * 1024));
+			"Avail. Memory: %dKB/%dKB (%dMB/%dMB)\n",
+			free_memory / 1024, total_memory / 1024, free_memory / (1024 * 1024), total_memory / (1024 * 1024));
 	/*for(int i=0;i<=MAX_ORDER;i++) {
 		KERFS_PRINTF(offset, length, buf, current,
 			"Order %d: %d / %d\n", i,
@@ -175,4 +179,13 @@ void mm_physical_deallocate(addr_t address)
 	pmm_buddy_deallocate(address);
 }
 
+int mm_physical_get_usage(void)
+{
+	int use = 100 - (100 * free_memory) / total_memory;
+	if(use < 0)
+		use = 0;
+	if(use > 100)
+		use = 100;
+	return use;
+}
 

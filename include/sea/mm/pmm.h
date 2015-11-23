@@ -16,6 +16,7 @@ void mm_physical_deallocate(addr_t address);
 void mm_physical_memcpy(void *dest, void *src, size_t length, int);
 void mm_physical_increment_count(addr_t page);
 int mm_physical_decrement_count(addr_t page);
+int mm_physical_get_usage(void);
 
 extern unsigned long pm_num_pages;
 

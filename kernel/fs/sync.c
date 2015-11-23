@@ -13,7 +13,6 @@ int sys_sync(int disp)
 		disp = PRINT_LEVEL;
 	fs_icache_sync();
 	buffer_sync_all_dirty();
-	dm_sync();
 	return 0;
 }
 

@@ -134,6 +134,7 @@ static void kernel_fault(int fuckoff, addr_t ip, long err_code, struct registers
 
 static void faulted(int fuckoff, int userspace, addr_t ip, long err_code, struct registers *regs)
 {
+	printk(0, "fault: %d %d\n", userspace, current_thread->system);
 	if(!current_thread || current_thread->system || !userspace)
 	{
 		if(fuckoff == 3)
@@ -147,7 +148,10 @@ static void faulted(int fuckoff, int userspace, addr_t ip, long err_code, struct
 		/* we die for different reasons on different interrupts */
 		switch(fuckoff)
 		{
-			case 0: case 5: case 6: case 13:
+			case 0:
+				tm_signal_send_thread(current_thread, SIGFPE);
+				break;
+			case 5: case 6: case 13:
 				tm_signal_send_thread(current_thread, SIGILL);
 				break;
 			case 1: case 3: case 4:
@@ -221,10 +225,12 @@ void cpu_interrupt_isr_entry(struct registers *regs, int int_no, addr_t return_a
 	if(started) timer_stop(&interrupt_timers[int_no]);
 	cpu_interrupt_set(0);
 	/* if it went unhandled, kill the process or panic */
+	if(!already_in_kernel) {
+		current_thread->system = 0;
+	}
 	if(!called)
 		faulted(int_no, !already_in_kernel, return_address, regs->err_code, regs);
 	if(!already_in_kernel) {
-		current_thread->system = 0;
 		__setup_signal_handler(regs);
 		current_thread->regs = 0;
 		assert(!current_thread || (current_process == kernel_process) || current_thread->held_locks == 0);

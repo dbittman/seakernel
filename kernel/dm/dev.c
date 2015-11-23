@@ -9,11 +9,6 @@
 #include <sea/mm/kmalloc.h>
 #include <sea/vsprintf.h>
 
-void dm_sync(void)
-{
-	/* TODO */
-}
-
 #define MAX_DEVICES 256
 static struct kdevice *devices[MAX_DEVICES];
 static struct mutex lock;

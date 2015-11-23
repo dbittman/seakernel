@@ -230,9 +230,13 @@ size_t fs_inode_reclaim_lru(void)
 		assert(!remove->count);
 		assert(!(remove->flags & INODE_INUSE));
 		assert(!remove->dirents.count);
-		uint32_t key[2] = {remove->filesystem->id, remove->id};
-		hash_delete(icache, key, sizeof(key));
+		//printk(0, "reclaim node %d\n", remove->id);
+		if(remove->filesystem) {
+			uint32_t key[2] = {remove->filesystem->id, remove->id};
+			hash_delete(icache, key, sizeof(key));
+		}
 		fs_inode_push(remove);
+		rwlock_release(&remove->lock, RWL_WRITER);
 		vfs_inode_destroy(remove);
 		released = 1;
 	} else {
@@ -349,9 +353,8 @@ static void __icache_sync_action(struct linkedentry *entry)
 /* it's important to sync the inode cache back to the disk... */
 int fs_icache_sync(void)
 {
-	printk(0, "[fs]: syncing inode cache (%d)\n", ic_dirty->count);
+	printk(0, "[fs]: syncing inode cache (%d nodes)\n", ic_dirty->count);
 	linkedlist_apply(ic_dirty, __icache_sync_action);
-	printk(0, "\ndone\n");
 	return 0;
 }
 

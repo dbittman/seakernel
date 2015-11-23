@@ -4,6 +4,8 @@
 #include <sea/errno.h>
 #include <sea/lib/queue.h>
 #include <sea/mm/reclaim.h>
+#include <sea/vsprintf.h>
+#include <sea/fs/kerfs.h>
 static struct queue lru;
 
 size_t dm_block_cache_reclaim(void);
@@ -15,10 +17,23 @@ void block_cache_init(void)
 	mutex_create(&reclaim_lock, 0);
 }
 
+int kerfs_block_cache_report(int direction, void *param, size_t size,
+		size_t offset, size_t length, unsigned char *buf)
+{
+	size_t current = 0;
+	struct blockctl *ctl = param;
+	KERFS_PRINTF(offset, length, buf, current,
+			"BUFFERS LOAD REQS\n"
+			"%7d %3d%% %d\n",
+			ctl->cache.count, (ctl->cache.count * 100) / ctl->cache.length,
+			mpscq_count(&ctl->queue));
+	return current;
+}
+
 size_t dm_block_cache_reclaim(void)
 {
 	/* TODO */
-	return 0;
+	//return 0;
 	mutex_acquire(&reclaim_lock);
 	struct queue_item *item = queue_dequeue_item(&lru);
 	struct buffer *br = item->ent;
@@ -32,6 +47,7 @@ size_t dm_block_cache_reclaim(void)
 	}
 
 	uint64_t block = buffer_block(br);
+	//printk(0, "reclaim block %d!\n", block);
 	hash_delete(&br->bd->ctl->cache, &block, sizeof(block));
 	mutex_release(&br->bd->ctl->cachelock);
 	buffer_put(br);
@@ -41,43 +57,45 @@ size_t dm_block_cache_reclaim(void)
 
 int dm_block_cache_insert(struct blockdev *bd, uint64_t block, struct buffer *buf, int flags)
 {
+	mutex_acquire(&reclaim_lock);
 	mutex_acquire(&bd->ctl->cachelock);
 
 	struct buffer *prev = 0;
 	buf->__block = block;
 	block += buf->bd->partbegin;
-	bool exist = hash_lookup(&bd->ctl->cache, &block, sizeof(block)) != NULL;
+	bool exist = (prev=hash_lookup(&bd->ctl->cache, &block, sizeof(block))) != NULL;
 
 	if(exist && !(flags & BLOCK_CACHE_OVERWRITE)) {
 		mutex_release(&bd->ctl->cachelock);
+		mutex_release(&reclaim_lock);
 		return -EEXIST;
 	}
 
 	buffer_inc_refcount(buf);
 	if(exist) {
 		hash_delete(&bd->ctl->cache, &block, sizeof(block));
+		queue_remove(&lru, &prev->qi);
+		buffer_put(prev);
 	}
 	buf->trueblock = block;
 	hash_insert(&bd->ctl->cache, &buf->trueblock, sizeof(buf->trueblock), &buf->hash_elem, buf);
 
-	mutex_release(&bd->ctl->cachelock);
 	queue_enqueue_item(&lru, &buf->qi, buf);
-	if(exist) {
-		/* overwritten, so will not writeback */
-		queue_remove(&lru, &prev->qi);
-		buffer_put(prev);
-	}
+	mutex_release(&bd->ctl->cachelock);
+	mutex_release(&reclaim_lock);
 	return 0;
 }
 
 struct buffer *dm_block_cache_get(struct blockdev *bd, uint64_t block)
 {
+	mutex_acquire(&reclaim_lock);
 	mutex_acquire(&bd->ctl->cachelock);
 	block += bd->partbegin;
 
 	struct buffer *e;
 	if((e = hash_lookup(&bd->ctl->cache, &block, sizeof(block))) == NULL) {
 		mutex_release(&bd->ctl->cachelock);
+	mutex_release(&reclaim_lock);
 		return 0;
 	}
 
@@ -85,6 +103,7 @@ struct buffer *dm_block_cache_get(struct blockdev *bd, uint64_t block)
 	mutex_release(&bd->ctl->cachelock);
 	queue_remove(&lru, &e->qi);
 	queue_enqueue_item(&lru, &e->qi, e);
+	mutex_release(&reclaim_lock);
 	return e;
 }
 

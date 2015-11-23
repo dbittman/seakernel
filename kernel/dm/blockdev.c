@@ -6,6 +6,7 @@
 #include <sea/dm/block.h>
 #include <sea/errno.h>
 #include <sea/loader/symbol.h>
+#include <sea/fs/kerfs.h>
 static int block_major;
 static int next_minor = 1;
 int blockdev_register(struct inode *node, uint64_t partbegin, size_t partlen, size_t blocksize,
@@ -20,7 +21,7 @@ int blockdev_register(struct inode *node, uint64_t partbegin, size_t partlen, si
 	ctl->blocksize = blocksize;
 	ctl->rw = rw;
 	mutex_create(&ctl->cachelock, 0);
-	hash_create(&ctl->cache, 0, 4096);
+	hash_create(&ctl->cache, 0, 0x4000);
 	mpscq_create(&ctl->queue, 1000);
 	bd->ctl = ctl;
 
@@ -30,6 +31,9 @@ int blockdev_register(struct inode *node, uint64_t partbegin, size_t partlen, si
 	node->kdev = dm_device_get(block_major);
 	
 	kthread_create(&ctl->elevator, "[kelevator]", 0, block_elevator_main, node);
+	char name[64];
+	snprintf(name, 64, "/dev/bcache-%d", num);
+	kerfs_register_parameter(name, ctl, 0, 0, kerfs_block_cache_report);
 	return num;
 }
 

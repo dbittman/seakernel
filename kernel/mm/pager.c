@@ -15,7 +15,8 @@ int __KT_pager(struct kthread *kt, void *arg)
 	while(!kthread_is_joining(kt)) {
 		/* reclaim memory if needed */
 		int km_use = slab_get_usage();
-		if(km_use > 50) {
+		int pm_use = mm_physical_get_usage();
+		if(km_use > 50 || pm_use > 50) {
 			if(!mm_reclaim_size(128)) {
 				tm_thread_delay(ONE_SECOND / 2);
 			} else {

@@ -16,7 +16,7 @@ extern struct cpu cpu_array[CONFIG_MAX_CPUS];
 extern unsigned cpu_array_num;
 #endif
 extern struct cpu primary_cpu_data;
-void init_lapic(int extint);
+void init_lapic(void);
 int probe_smp();
 void init_acpi();
 void arch_cpu_processor_init_1(void)
@@ -50,7 +50,7 @@ void arch_cpu_processor_init_2(void)
 	x86_hpet_init();
 #if CONFIG_SMP
 	probe_smp();
-	init_lapic(1);
+	init_lapic();
 	calibrate_lapic_timer(1000);
 	init_ioapic();
 	set_ksf(KSF_SMP_ENABLE);

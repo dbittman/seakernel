@@ -21,9 +21,6 @@ typedef struct __attribute__((packed))
 	uint16_t shsize;
 	uint16_t shnum;
 	uint16_t strndx;
-	/* these aren't....real. */
-	char *shbuf;
-	addr_t strtab_addr, symtab_addr, strtabsz, syment_len;
 } elf64_header_t;
 
 typedef elf64_header_t elf_header_t;
@@ -97,7 +94,7 @@ typedef struct  __attribute__((packed)) {
 	} d_un;
 } elf64_dyn_t;
 
-typedef struct
+typedef struct elf
 {
 	elf64_symtab_entry_t *symtab;
 	uint64_t      symtabsz;
@@ -106,45 +103,9 @@ typedef struct
 	unsigned lookable;
 } elf64_t;
 
-#define GET_RELOC_SYM(i)  ((i)>>32)
-#define GET_RELOC_TYPE(i) (i & 0xFFFFFFFF)
-
-#define GET_SYMTAB_BIND(i)   ((i)>>4)
-#define GET_SYMTAB_TYPE(i)   ((i)&0xf)
-
-#define SHN_UNDEF   0
-
-#define R_X86_64_NONE		0	/* No reloc */
-#define R_X86_64_64			1	/* Direct 64 bit  */
-#define R_X86_64_PC32		2	/* PC relative 32 bit signed */
-#define R_X86_64_GOT32		3	/* 32 bit GOT entry */
-#define R_X86_64_PLT32		4	/* 32 bit PLT address */
-#define R_X86_64_COPY		5	/* Copy symbol at runtime */
-#define R_X86_64_RELATIVE	8	/* Adjust by program base */
-#define R_X86_64_32			10	/* Direct 32 bit zero extended */
-#define R_X86_64_32S		11	/* Direct 32 bit sign extended */
-#define R_X86_64_16			12	/* Direct 16 bit zero extended */
-#define R_X86_64_PC16		13	/* 16 bit sign extended pc relative */
-
-#include <sea/loader/elf-x86_common.h>
-
-static inline int is_valid_elf32_otherarch(unsigned char *buf, short type)
-{
-	elf32_header_t * eh;
-	eh = (elf32_header_t*)buf;
-	if(memcmp(eh->id + 1, (uint8_t*)"ELF", 3)
-		|| eh->machine != 0x03
-		|| eh->type != type
-		|| eh->id[4] != 1 /* 32-bit */
-		|| ((eh->entry < MEMMAP_IMAGE_MINIMUM) && eh->entry))
-		return 0;
-	return 1;
-}
-
-//int parse_elf_module(struct module *mod, uint8_t * buf, char *name, int);
 const char *elf64_lookup_symbol (uint64_t addr, elf64_t *elf);
 const char *elf64_lookup_symbol (uint64_t addr, elf64_t *elf);
-elf64_symtab_entry_t * fill_symbol_struct(uint8_t * buf, uint64_t symbol);
+elf64_symtab_entry_t *fill_symbol_struct(uint8_t * buf, uint64_t symbol);
 intptr_t get_section_offset(uint8_t * buf, uint64_t info);
 char *get_symbol_string(uint8_t *buf, uint64_t index);
 

@@ -29,8 +29,9 @@ static char *init_path = "/bin/sh";
 #if CONFIG_SMP
 static bool boot_cpus = true;
 #endif
-elf64_t kernel_elf;
 addr_t initial_boot_stack=0;
+
+struct section_data kernel_sections;
 
 static void parse_kernel_command_line(char *buf)
 {
@@ -82,7 +83,7 @@ void kmain(struct multiboot *mboot_header, addr_t initial_stack)
 	kernel_state_flags=0;
 	mtboot = mboot_header;
 	initial_boot_stack = initial_stack;
-	loader_parse_kernel_elf(mboot_header, &kernel_elf);
+	loader_parse_kernel_elf(mboot_header, &kernel_sections);
 #if CONFIG_MODULES
 	loader_init_kernel_symbols();
 #endif

@@ -16,7 +16,7 @@ initialization */
 #include <sea/tm/timing.h>
 void load_tables_ap();
 void set_lapic_timer(unsigned tmp);
-void init_lapic(int);
+void init_lapic(void);
 addr_t lapic_addr = 0;
 
 static inline void set_boot_flag(unsigned x)
@@ -37,7 +37,7 @@ __attribute__ ((noinline)) void cpu_stage1_init(void)
 	struct cpu *cpu = cpu_get_snum(get_boot_flag());
 	cpu->flags |= CPU_UP;
 	set_boot_flag(0xFFFFFFFF);
-	init_lapic(0);
+	init_lapic();
 	set_lapic_timer(lapic_timer_start);
 	/* call the CPU features init code */
 	parse_cpuid(cpu);

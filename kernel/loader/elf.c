@@ -12,7 +12,7 @@ void *loader_parse_elf_module(struct module *mod, void * buf)
 	return arch_loader_parse_elf_module(mod, buf);
 }
 
-void loader_parse_kernel_elf(struct multiboot *mb, void *elf)
+void loader_parse_kernel_elf(struct multiboot *mb, struct section_data *sd)
 {
-	arch_loader_parse_kernel_elf(mb, elf);
+	arch_loader_parse_kernel_elf(mb, sd);
 }

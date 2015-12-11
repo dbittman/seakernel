@@ -24,10 +24,9 @@ unsigned lapic_timer_start=0;
 volatile unsigned num_ioapic=0;
 struct ioapic ioapic_list[MAX_IOAPIC];
 struct pmap ioapic_pmap;
-struct pmap lapic_pmap;
+static struct pmap lapic_pmap;
 
 int lapic_inited = 0;
-
 
 void lapic_write(int reg, uint32_t data)
 {
@@ -132,9 +131,11 @@ void calibrate_lapic_timer(unsigned freq)
 void init_lapic(int extint)
 {
 	int i;
+	/* this function is called per-cpu, but we only want this map
+	 * to be initialized once */
 	if(!lapic_inited)
 		pmap_create(&lapic_pmap, 0);
-	lapic_inited=1; //TODO OH MY GOD THIS IS UHGLY
+	lapic_inited=1;
 	/* we may be in a state where there are interrupts left
 	 * in the registers that haven't been EOI'd. I'm pretending like
 	 * I know why that may be. Linux does this, and that's their

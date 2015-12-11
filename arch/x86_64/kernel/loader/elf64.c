@@ -6,29 +6,30 @@
 #include <sea/vsprintf.h>
 #include <sea/mm/kmalloc.h>
 
-void arch_loader_parse_kernel_elf(struct multiboot *mb, void *__elf)
+void arch_loader_parse_kernel_elf(struct multiboot *mb, struct section_data *sd)
 {
-	unsigned int i;
-	elf64_t *elf = __elf;
+	/* the entire kernel file is loaded, so look for the sections we care about */
 	elf64_section_header_t *sh = (elf64_section_header_t*)(addr_t)(mb->addr + MEMMAP_KERNEL_START);
-	elf->lookable=0;
-	uint64_t shstrtab = (sh[mb->shndx].address + MEMMAP_KERNEL_START);
-	for (i = 0; i < (unsigned)mb->num; i++)
+	addr_t shstrtab = (sh[mb->shndx].address + MEMMAP_KERNEL_START);
+	sd->shstrtab = 0;
+	sd->symtab = 1;
+	sd->strtab = 2;
+	sd->vbase[sd->shstrtab] = shstrtab;
+
+	for(unsigned int i=0; i<mb->num; i++)
 	{
-		const char *name = (const char *) ((addr_t)shstrtab + sh[i].name);
-		if (!strcmp (name, ".strtab"))
+		const char *name = (const char *)((addr_t)shstrtab + sh[i].name);
+		if(!strcmp(name, ".strtab"))
 		{
-			elf->lookable |= 1;
-			elf->strtab = (const char *)((addr_t)sh[i].address + MEMMAP_KERNEL_START);
-			elf->strtabsz = sh[i].size;
+			sd->vbase[sd->strtab] = (addr_t)sh[i].address + MEMMAP_KERNEL_START;
 		}
-		if (!strcmp (name, ".symtab"))
+		if(!strcmp(name, ".symtab"))
 		{
-			elf->lookable |= 2;
-			elf->symtab = (elf64_symtab_entry_t *)((addr_t)sh[i].address + MEMMAP_KERNEL_START);
-			elf->symtabsz = sh[i].size;
+			sd->vbase[sd->symtab] = (addr_t)sh[i].address + MEMMAP_KERNEL_START;
+			sd->symlen = sh[i].size;
 		}
 	}
+
 }
 
 static int process_elf64_phdr(char *mem, struct file *file, addr_t *start, addr_t *end)

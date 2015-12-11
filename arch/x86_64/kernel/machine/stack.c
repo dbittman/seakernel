@@ -22,7 +22,7 @@ void arch_cpu_print_stack_trace(int MaxFrames)
 		if(eip == last_eip) {
 			kprintf(" .");
 		} else {
-			const char *name = elf64_lookup_symbol(eip, &kernel_elf);
+			const char *name = arch_loader_symbol_lookup(eip, &kernel_sections);
 			char *modname = 0;
 			if(!name)
 				name = loader_lookup_module_symbol(eip, &modname);
@@ -45,7 +45,7 @@ void arch_cpu_print_stack_trace_alternate(struct thread *thr, addr_t *ebp)
 			break;
 		if(!mm_context_read(&thr->process->vmm_context, &ebp, (addr_t)ebp, 8))
 			break;
-		const char *name = elf64_lookup_symbol(eip, &kernel_elf);
+		const char *name = arch_loader_symbol_lookup(eip, &kernel_sections);
 		char *modname = 0;
 		if(!name)
 			name = loader_lookup_module_symbol(eip, &modname);

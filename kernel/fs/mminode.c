@@ -253,11 +253,22 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 	mutex_release(&node->mappings_lock);
 }
 
+static void __destroy_entry(struct hashelem *elem)
+{
+	struct physical_page *entry = elem->ptr;
+	if(entry->page) {
+		mm_physical_decrement_count(entry->page);
+	}
+	mutex_destroy(&entry->lock);
+	kfree(entry);
+}
+
 void fs_inode_destroy_physicals(struct inode *node)
 {
 	/* this can only be called from free_inode, so we don't need to worry about locks */
 	if(!(node->flags & INODE_PCACHE))
 		return;
+	hash_map(&node->physicals, __destroy_entry);
 	hash_destroy(&node->physicals);
 	mutex_destroy(&node->mappings_lock);
 }

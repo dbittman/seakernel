@@ -64,7 +64,7 @@ void tm_process_remove_kerfs_entries(struct process *proc)
 	__remove_kerfs_proc_entry(proc, "thread_count");
 	__remove_kerfs_proc_entry(proc, "tty");
 	__remove_kerfs_proc_entry(proc, "utime");
-	__remove_kerfs_proc_entry(proc, "maps");
+	//__remove_kerfs_proc_entry(proc, "maps");
 	char dir[128];
 	snprintf(dir, 128, "/dev/process/%d", proc->pid);
 	sys_rmdir(dir);
@@ -91,6 +91,7 @@ void tm_process_wait_cleanup(struct process *proc)
 	if(!(atomic_fetch_or(&proc->flags, PROCESS_CLEANED) & PROCESS_CLEANED)) {
 		assert(proc->thread_count == 0);
 		linkedlist_remove(process_list, &proc->listnode);
+		mutex_destroy(&proc->map_lock);
 		if(proc->parent)
 			tm_process_put(proc->parent);
 		tm_process_put(proc); /* process_list releases its pointer */
@@ -123,7 +124,6 @@ __attribute__((noinline)) static void tm_process_exit(int code)
 	mutex_destroy(&current_process->fdlock);
 	mm_destroy_all_mappings(current_process);
 	linkedlist_destroy(&(current_process->mappings));
-	mutex_destroy(&current_process->map_lock);
 	valloc_destroy(&current_process->mmf_valloc);
 	/* TODO: free everything else? */
 
@@ -174,8 +174,8 @@ void tm_thread_do_exit(void)
 	atomic_fetch_sub_explicit(&running_threads, 1, memory_order_relaxed);
 	if(atomic_fetch_sub(&current_process->thread_count, 1) == 1) {
 		atomic_fetch_sub_explicit(&running_processes, 1, memory_order_relaxed);
-		tm_process_exit(current_thread->exit_code);
 		tm_process_remove_kerfs_entries(current_process);
+		tm_process_exit(current_thread->exit_code);
 	}
 
 	cpu_disable_preemption();

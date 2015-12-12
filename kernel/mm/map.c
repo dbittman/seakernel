@@ -75,10 +75,9 @@ static void disengage_mapping_region(struct memmap *map, addr_t start, size_t of
 		}
 		fs_inode_unmap_region(map->node, start, offset, length);
 	} else {
-		size_t o=0;
 		/* we don't need to tell mminode about it, since it maps the page and the forgets
 		 * about it */
-		for(addr_t v = start;v < (start + length);v += PAGE_SIZE, o += PAGE_SIZE) {
+		for(addr_t v = start;v < (start + length);v += PAGE_SIZE) {
 			addr_t phys = mm_virtual_unmap(v);
 			if(phys)
 				mm_physical_decrement_count(phys);

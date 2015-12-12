@@ -73,13 +73,6 @@ static inline size_t mm_page_size_closest(size_t length)
 #define PAGE_USER       0x4
 #define PAGE_WRITECACHE 0x8
 #define PAGE_NOCACHE    0x10
-/*
- * WARNING: Features that use PAGE_LINK must be VERY CAREFUL to mm_vm_unmap_only that
- * page BEFORE the address space is freed normally, since that function DOES NOT KNOW
- * that multiple mappings may use that physical page! This can lead to memory leaks
- * and/or duplicate pages in the page stack!!! 
- */
-#define PAGE_LINK      (1 << 10)
 #define PAGE_COW       (1 << 9)
 #define PAGE_LARGE     (1 << 7)
 #define PAGE_SIZE 	   0x1000

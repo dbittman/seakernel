@@ -45,7 +45,9 @@ int kerfs_mappings_report(int direction, void *param, size_t size, size_t offset
 {
 	size_t current = 0;
 	struct process *proc = param;
-	assert(proc->magic == PROCESS_MAGIC);
+	/* HACK: we shouldn't do this... */
+	if(proc->magic != PROCESS_MAGIC || proc->refs == 0)
+		return 0;
 	KERFS_PRINTF(offset, length, buf, current,
 				"           START              END   LENGTH FLAGS    INODE   OFFSET\n");
 	mutex_acquire(&proc->map_lock);
@@ -111,8 +113,8 @@ void tm_process_create_kerfs_entries(struct process *proc)
 	__expose_proc_field(proc, exit_reason.coredump, kerfs_rw_integer);
 	__expose_proc_field(proc, exit_reason.cause, kerfs_rw_integer);
 	char file[128];
-	snprintf(file, 128, "/dev/process/%d/maps", proc->pid);
-	kerfs_register_parameter(file, proc, sizeof(void *), 0, kerfs_mappings_report);
+	//snprintf(file, 128, "/dev/process/%d/maps", proc->pid);
+	//kerfs_register_parameter(file, proc, sizeof(void *), 0, kerfs_mappings_report);
 
 	if(proc->pty) {
 		snprintf(file, 128, "/dev/process/%d/tty", proc->pid);

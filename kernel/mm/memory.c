@@ -57,6 +57,7 @@ int mm_physical_decrement_count(addr_t page)
 		if((old=atomic_fetch_sub(&frames[page / PAGE_SIZE].count, 1)) == 1) {
 			mm_physical_deallocate(page);
 		}
+		assert(old);
 		return old;
 	}
 	return 0;

@@ -4,6 +4,7 @@
 #include <sea/mm/vmm.h>
 #include <sea/tm/process.h>
 #include <sea/mm/kmalloc.h>
+
 void free_pde(page_dir_t *pd, unsigned idx)
 {
 	if(!pd[idx]) 
@@ -22,7 +23,8 @@ void free_pde(page_dir_t *pd, unsigned idx)
 		{
 			addr_t tmp = table[i];
 			table[i]=0;
-			mm_physical_deallocate(tmp & PAGE_MASK_PHYSICAL);
+			if((tmp & PAGE_MASK_PHYSICAL) != sysgate_page)
+				mm_physical_deallocate(tmp & PAGE_MASK_PHYSICAL);
 		}
 	}
 	pd[idx]=0;
@@ -34,7 +36,6 @@ void free_pdpte(pdpt_t *pdpt, unsigned idx)
 	if(!pdpt[idx]) 
 		return;
 	addr_t physical = pdpt[idx]&PAGE_MASK;
-	assert(!(pdpt[idx] & (1 << 7)));
 	page_dir_t *pd = (addr_t *)(physical + PHYS_PAGE_MAP);
 	for(unsigned i=0;i<512;i++)
 		free_pde(pd, i);
@@ -54,16 +55,6 @@ void free_pml4e(pml4_t *pml4, unsigned idx)
 	mm_physical_deallocate(physical);
 }
 
-void arch_mm_free_userspace(void)
-{
-	unsigned int S = 0;
-	unsigned int E = PML4_INDEX(MEMMAP_USERSPACE_MAXIMUM);
-	pml4_t *pml4 = (pml4_t *)current_process->vmm_context.root_virtual;
-	for(unsigned i=S;i<E;i++)
-		free_pml4e(pml4, i);
-}
-
-/* free the pml4, not the entries */
 void arch_mm_context_destroy(struct vmm_context *vc)
 {
 	pml4_t *pml4 = (pml4_t *)vc->root_virtual;

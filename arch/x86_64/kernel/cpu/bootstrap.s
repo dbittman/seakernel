@@ -134,6 +134,11 @@ cpu_start64:
 	mov cr3, rax
 	mov rsp, cpu_tmp_stack + 0x1000
 	mov rcx, cpu_entry
+
+	; write-protect for COW
+	mov rax, cr0
+	;or eax, (1 << 16)
+	mov cr0, rax
     call rcx
 
 section .bss

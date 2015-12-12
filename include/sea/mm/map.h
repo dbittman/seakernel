@@ -67,6 +67,7 @@ int mm_page_fault_test_mappings(addr_t address, int);
 int mm_mapping_munmap(addr_t start, size_t length);
 int mm_mapping_msync(addr_t start, size_t length, int flags);
 void mm_destroy_all_mappings(struct process *t);
+void mm_mappings_clone(struct process *child);
 
 int sys_msync(void *address, size_t length, int flags);
 int sys_munmap(void *addr, size_t length);

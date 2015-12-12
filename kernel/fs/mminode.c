@@ -45,6 +45,7 @@ addr_t fs_inode_map_private_physical_page(struct inode *node, addr_t virt,
 	size_t memsz = PAGE_SIZE;
 	ph = mm_physical_allocate(memsz, false);
 	bool result = mm_virtual_map(virt, ph, MAP_ZERO | attrib | PAGE_WRITE, memsz);
+	mm_physical_increment_count(ph);
 	if(!result)
 		panic(0, "trying to remap mminode private section %x", virt);
 	int err=-1;
@@ -94,10 +95,11 @@ addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt,
 	{
 		/* map a new page into virt, and load data into it */
 		entry->page = mm_physical_allocate(0x1000, false);
-		/* specify ZERO, since read_inode may not fill up the whole page. Also,
-		 * specify PAGE_LINK so that mm_vm_clone doesn't copy shared pages */
-		if(!mm_virtual_map(virt, entry->page, MAP_ZERO | attrib | PAGE_LINK | PAGE_WRITE, 0x1000))
+		if(!mm_virtual_map(virt, entry->page, MAP_ZERO | attrib | PAGE_WRITE, 0x1000))
 			panic(0, "trying to remap mminode shared section");
+		/* YES. DO THIS TWICE. THIS IS NOT A TYPO. */
+		mm_physical_increment_count(entry->page); /* once for the map */
+		mm_physical_increment_count(entry->page); /* once for entry->page */
 
 		int err=-1;
 		/* try to read the data. If this fails, we don't really have a good way 
@@ -110,10 +112,11 @@ addr_t fs_inode_map_shared_physical_page(struct inode *node, addr_t virt,
 			if(node->filesystem && (err=fs_inode_read(node, offset, len, (void *)virt) < 0))
 				printk(0, "[mminode]: read inode failed with %d\n", err);
 		}
-		mm_virtual_changeattr(virt, attrib | PAGE_LINK, 0x1000);
+		mm_virtual_changeattr(virt, attrib, 0x1000);
 		atomic_fetch_add(&node->mapped_pages_count, 1);
 	} else if(entry->page) {
-		if(!mm_virtual_map(virt, entry->page, attrib | PAGE_LINK, 0x1000))
+		mm_physical_increment_count(entry->page);
+		if(!mm_virtual_map(virt, entry->page, attrib, 0x1000))
 			panic(0, "trying to remap mminode shared section");
 	}
 	addr_t ret = entry->page;
@@ -147,9 +150,11 @@ void fs_inode_map_region(struct inode *node, size_t offset, size_t length)
 			hash_insert(&node->physicals, &entry->pn, sizeof(entry->pn), &entry->hash_elem, entry);
 			atomic_fetch_add_explicit(&node->mapped_entries_count, 1, memory_order_relaxed);
 		}
+		mutex_acquire(&entry->lock);
 
 		/* bump the count... */
 		atomic_fetch_add_explicit(&entry->count, 1, memory_order_relaxed);
+		mutex_release(&entry->lock);
 		/* NOTE: we're not actually allocating or mapping anything here, really. All we're doing
 		 * is indicating our intent to map a certain section, so we don't free pages. */
 	}
@@ -186,6 +191,37 @@ void fs_inode_sync_region(struct inode *node, addr_t virt, size_t offset, size_t
 		fs_inode_sync_physical_page(node, virt + i * PAGE_SIZE, offset + i * PAGE_SIZE,
 				PAGE_SIZE);
 	}
+	mutex_release(&node->mappings_lock);
+}
+
+void fs_inode_pcache_invalidate(struct inode *node, size_t offset, size_t length)
+{
+	if(!(node->flags & INODE_PCACHE))
+		return;
+	mutex_acquire(&node->mappings_lock);
+	offset = offset & PAGE_MASK;
+	int page_number = offset / PAGE_SIZE;
+	int npages = ((length-1) / PAGE_SIZE) + 1;
+	for(int i=page_number;i<(page_number+npages);i++)
+	{
+		struct physical_page *entry;
+		if((entry = hash_lookup(&node->physicals, &i, sizeof(i))) != NULL) {
+			mutex_acquire(&entry->lock);
+			if(entry->count == 0) {
+				if(entry->page) {
+					mm_physical_decrement_count(entry->page);
+				}
+				entry->page = 0;
+				hash_delete(&node->physicals, &i, sizeof(i));
+				mutex_destroy(&entry->lock);
+				kfree(entry);
+				atomic_fetch_sub(&node->mapped_entries_count, 1);
+			} else {
+				mutex_release(&entry->lock);
+			}
+		}
+	}
+	mutex_release(&node->mappings_lock);
 }
 
 /* decrease the count of each requested page by 1, and unmap it from the virtual address.
@@ -202,37 +238,16 @@ void fs_inode_unmap_region(struct inode *node, addr_t virt, size_t offset, size_
 	{
 		struct physical_page *entry;
 		if((entry = hash_lookup(&node->physicals, &i, sizeof(i))) != NULL) {
-			/* decrease the count. Because it's unlikely that a single file
-			 * is going to be mmapped my a lot of processes, we can just free
-			 * everything in good faith that it'll be a while before we need
-			 * to a page again
-			 */
 			mutex_acquire(&entry->lock);
-			if(atomic_fetch_sub(&entry->count, 1) == 1)
-			{
-				addr_t p;
-// TODO "Don't delete the entry on each time. Make this whole thing a real page cache"
-#if 1
-				bool ismapped = mm_virtual_getmap(virt + (i - page_number)*PAGE_SIZE, &p, NULL);
-				assert(!ismapped || p == entry->page);
-				if(entry->page)
-					mm_physical_deallocate(entry->page);
-				entry->page = 0;
-				hash_delete(&node->physicals, &i, sizeof(i));
-				mutex_destroy(&entry->lock);
-				kfree(entry);
-				atomic_fetch_sub(&node->mapped_entries_count, 1);
-#else
-				mutex_release(&entry->lock);
-#endif
-			} else
-				mutex_release(&entry->lock);
+			atomic_fetch_sub(&entry->count, 1);
+			mutex_release(&entry->lock);
 		}
 		/* we'll actually do the unmapping too */
 		int attr;
-		if(mm_virtual_getmap(virt + (i - page_number)*PAGE_SIZE, NULL, &attr)) {
-			assertmsg(attr & PAGE_LINK, "need page_link here %x", attr);
+		addr_t page;
+		if(mm_virtual_getmap(virt + (i - page_number)*PAGE_SIZE, &page, &attr)) {
 			mm_virtual_unmap(virt + (i - page_number)*PAGE_SIZE);
+			mm_physical_decrement_count(entry->page);
 		}
 	}
 	mutex_release(&node->mappings_lock);

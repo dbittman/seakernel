@@ -21,10 +21,14 @@ extern struct mutex process_refs_lock;
 extern struct mutex thread_refs_lock;
 extern int initial_kernel_stack;
 struct process *kernel_process = 0;
+addr_t sysgate_page;
 void tm_init_multitasking(void)
 {
 	printk(KERN_DEBUG, "[sched]: Starting multitasking system...\n");
-	
+	sysgate_page = mm_physical_allocate(PAGE_SIZE, true);
+	mm_physical_memcpy((void *)sysgate_page,
+				(void *)signal_return_injector, MEMMAP_SYSGATE_ADDRESS_SIZE, PHYS_MEMCPY_MODE_DEST);
+
 	process_table = hash_create(0, 0, 128);
 
 	process_list = linkedlist_create(0, LINKEDLIST_MUTEX);

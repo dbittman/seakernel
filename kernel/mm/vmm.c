@@ -17,11 +17,6 @@ void mm_context_destroy(struct vmm_context *dir)
 	arch_mm_context_destroy(dir);
 }
 
-void mm_free_userspace(void)
-{
-	arch_mm_free_userspace();
-}
-
 void mm_flush_page_tables(void)
 {
 	arch_mm_flush_page_tables();

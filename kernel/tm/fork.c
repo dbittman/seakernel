@@ -157,41 +157,6 @@ struct thread *tm_thread_fork(int flags)
 	return thr;
 }
 
-static void __copy_mappings(struct process *ch, struct process *pa)
-{
-	/* copy the memory mappings. All mapping types are inherited, but
-	 * they only barely modified. Like, just enough for the new process
-	 * to not screw up the universe. This is accomplished by the fact
-	 * that everything is just pointers to sections of memory that are
-	 * copied during mm_vm_clone anyway... */
-	//mutex_acquire(&pa->map_lock);
-	struct linkedentry *node;
-	struct memmap *map;
-	if(pa != kernel_process) {
-		for(node = linkedlist_iter_start(&pa->mappings);
-				node != linkedlist_iter_end(&pa->mappings);
-				node = linkedlist_iter_next(node)) {
-			map = linkedentry_obj(node);
-			/* new mapping object, copy the data */
-			struct memmap *n = kmalloc(sizeof(*map));
-			memcpy(n, map, sizeof(*n));
-			/* of course, we have another reference to the backing inode */
-			vfs_inode_get(n->node);
-			if(map->flags & MAP_SHARED) {
-				/* and if it's shared, tell the inode that another processor
-			 	 * cares about some section of memory */
-				fs_inode_map_region(n->node, n->offset, n->length);
-			}
-			linkedlist_insert(&ch->mappings, &n->entry, n);
-		}
-	}
-	/* for this simple copying of data to work, we rely on the address space being cloned BEFORE
-	 * this is called, so the pointers are actually valid */
-	memcpy(&(ch->mmf_valloc), &(pa->mmf_valloc), sizeof(pa->mmf_valloc));
-	mutex_create(&ch->mmf_valloc.lock, 0);
-	//mutex_release(&pa->map_lock);
-}
-
 static struct process *tm_process_copy(int flags, struct thread *newthread)
 {
 	/* copies the current_process structure into
@@ -217,7 +182,7 @@ static struct process *tm_process_copy(int flags, struct thread *newthread)
 	mutex_create(&newp->fdlock, 0);
 	hash_create(&newp->files, HASH_LOCKLESS, 64);
 	valloc_create(&newp->mmf_valloc, MEMMAP_MMAP_BEGIN, MEMMAP_MMAP_END, PAGE_SIZE, 0);
-	__copy_mappings(newp, current_process);
+	mm_mappings_clone(newp);
 	if(current_process->root) {
 		newp->root = current_process->root;
 		vfs_inode_get(newp->root);

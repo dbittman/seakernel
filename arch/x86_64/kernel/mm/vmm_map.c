@@ -60,7 +60,6 @@ bool arch_mm_context_virtual_map(struct vmm_context *ctx, addr_t virtual,
 		if(result) {
 			addr_t *ptv = (addr_t *)((pdv[pdidx] & PAGE_MASK_PHYSICAL) + PHYS_PAGE_MAP);
 			if(atomic_compare_exchange_strong(&ptv[ptidx], &expect, value)) {
-				mm_physical_increment_count(physical);
 				asm volatile("invlpg (%0)" :: "r"(virtual));
 			} else {
 				result = false;
@@ -69,7 +68,6 @@ bool arch_mm_context_virtual_map(struct vmm_context *ctx, addr_t virtual,
 	} else {
 		value |= PAGE_LARGE;
 		if(atomic_compare_exchange_strong(&pdv[pdidx], &expect, value)) {
-			mm_physical_increment_count(physical);
 			asm volatile("invlpg (%0)" :: "r"(virtual));
 		} else {
 			result = false;

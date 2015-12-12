@@ -25,6 +25,7 @@ int kerfs_pfault_report(int direction, void *param, size_t size, size_t offset, 
 int kerfs_syslog(int direction, void *param, size_t size, size_t offset, size_t length, unsigned char *buf);
 int kerfs_block_cache_report(int direction, void *param, size_t size,
 		size_t offset, size_t length, unsigned char *buf);
+int kerfs_frames_report(int direction, void *param, size_t size, size_t offset, size_t length, unsigned char *buf);
 
 int kerfs_rw_string(int direction, void *param, size_t sz,
 		size_t offset, size_t length, unsigned char *buffer);

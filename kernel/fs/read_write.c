@@ -43,6 +43,7 @@ ssize_t fs_file_pwrite(struct file *file, off_t offset, uint8_t *buffer, size_t 
 			ret = file->inode->kdev->rw(WRITE, file, offset, buffer, length);
 	} else {
 		ret = fs_inode_write(file->inode, offset, length, buffer);
+		fs_inode_pcache_invalidate(file->inode, offset, length);
 	}
 	return ret;
 }

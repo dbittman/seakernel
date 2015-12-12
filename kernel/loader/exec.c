@@ -27,12 +27,8 @@ void arch_loader_exec_initializer(unsigned argc, addr_t eip);
 static void preexec(void)
 {
 	struct thread *t = current_thread;
-	addr_t sysgate_page = mm_physical_allocate(PAGE_SIZE, true);
-	mm_physical_memcpy((void *)sysgate_page,
-				(void *)signal_return_injector, MEMMAP_SYSGATE_ADDRESS_SIZE, PHYS_MEMCPY_MODE_DEST);
 	/* unmap all mappings, specified by POSIX */
 	mm_destroy_all_mappings(t->process);
-	mm_free_userspace();
 	mm_virtual_map(MEMMAP_SYSGATE_ADDRESS, sysgate_page, PAGE_PRESENT | PAGE_USER, PAGE_SIZE);
 	/* we need to re-create the vmem for memory mappings */
 	valloc_create(&(t->process->mmf_valloc), MEMMAP_MMAP_BEGIN, MEMMAP_MMAP_END, PAGE_SIZE, 0);

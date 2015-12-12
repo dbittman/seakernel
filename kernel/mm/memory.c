@@ -13,8 +13,13 @@
 #include <sea/vsprintf.h>
 #include <sea/cpu/interrupt.h>
 #include <stdbool.h>
+#include <sea/fs/inode.h>
+#include <sea/fs/kerfs.h>
+struct pagedata {
+	size_t count;
+};
 
-static int *frame_counts;
+static struct pagedata *frames;
 
 struct vmm_context kernel_context;
 
@@ -27,28 +32,47 @@ extern int kernel_end;
 
 int mm_physical_get_count(addr_t page)
 {
-	if(!frame_counts)
+	if(!frames)
 		return 0;
 	if((page / PAGE_SIZE) < maximum_page_number)
-		return atomic_load(&frame_counts[page / PAGE_SIZE]);
+		return atomic_load(&frames[page / PAGE_SIZE].count);
 	return 0;
 }
 
 void mm_physical_increment_count(addr_t page)
 {
-	if(!frame_counts)
+	if(!frames)
 		return;
 	if((page / PAGE_SIZE) < maximum_page_number)
-		return atomic_fetch_add(&frame_counts[page / PAGE_SIZE], 1);
+		return atomic_fetch_add(&frames[page / PAGE_SIZE].count, 1);
 }
 
 int mm_physical_decrement_count(addr_t page)
 {
-	if(!frame_counts)
+	if(!frames)
 		return 0;
-	if((page / PAGE_SIZE) < maximum_page_number)
-		return atomic_fetch_sub(&frame_counts[page / PAGE_SIZE], 1);
+	assert(page);
+	if((page / PAGE_SIZE) < maximum_page_number) {
+		size_t old;
+		if((old=atomic_fetch_sub(&frames[page / PAGE_SIZE].count, 1)) == 1) {
+			mm_physical_deallocate(page);
+		}
+		return old;
+	}
 	return 0;
+}
+
+int kerfs_frames_report(int direction, void *param, size_t size, size_t offset, size_t length, unsigned char *buf)
+{
+	size_t current = 0;
+	for(size_t i=0;i<maximum_page_number;i++) {
+		size_t count = atomic_load(&frames[i].count);
+		if(count) {
+			KERFS_PRINTF(offset, length, buf, current,
+					"page %8d: %d\n", i, count);
+		}
+	}
+	return current;
 }
 
 static inline bool __is_actually_free(addr_t x)
@@ -142,8 +166,13 @@ void mm_init(struct multiboot *m)
 	set_ksf(KSF_MMU);
 	/* hey, look at that, we have happy memory times! */
 	mm_reclaim_init();
-	//frame_counts = (void *)kmalloc(sizeof(int) * maximum_page_number);
-	//printk(0, "[mm]: allocated %d KB for page-frame counting.\n", sizeof(int) * maximum_page_number / 1024);
+	for(size_t i=0;i<=(sizeof(struct pagedata) * maximum_page_number) / mm_page_size(1);i++) {
+		mm_virtual_map(MEMMAP_FRAMECOUNT_START + i * mm_page_size(1),
+				mm_physical_allocate(mm_page_size(1), true),
+				PAGE_PRESENT | PAGE_WRITE, mm_page_size(1));
+	}
+	frames = (struct pagedata *)(MEMMAP_FRAMECOUNT_START);
+	printk(0, "[mm]: allocated %d KB for page-frame counting.\n", sizeof(struct pagedata) * maximum_page_number / 1024);
 #if CONFIG_MODULES
 	loader_add_kernel_symbol(slab_kmalloc);
 	loader_add_kernel_symbol(slab_kfree);

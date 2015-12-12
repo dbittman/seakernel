@@ -23,6 +23,40 @@ int kerfs_pfault_report(int direction, void *param, size_t size, size_t offset, 
 	return current;
 }
 
+static void print_mappings(void)
+{
+	struct process *proc = current_process;
+	assert(proc->magic == PROCESS_MAGIC);
+	printk(0, "           START              END   LENGTH FLAGS    INODE   OFFSET\n");
+	mutex_acquire(&proc->map_lock);
+	
+	struct linkedentry *node;
+	struct memmap *map;
+	for(node = linkedlist_iter_start(&proc->mappings);
+			node != linkedlist_iter_end(&proc->mappings);
+			node = linkedlist_iter_next(node)) {
+		map = linkedentry_obj(node);
+		char flags[6];
+		memset(flags, ' ', sizeof(flags));
+		if(map->flags & MAP_SHARED)
+			flags[0] = 'S';
+		if(map->flags & MAP_FIXED)
+			flags[1] = 'F';
+		if(map->flags & MAP_ANONYMOUS)
+			flags[2] = 'A';
+		if(map->prot & PROT_WRITE)
+			flags[3] = 'W';
+		if(map->prot & PROT_EXEC)
+			flags[4] = 'E';
+		flags[5] = 0;
+		printk(0, "%16x %16x %8x %s %8d %8x\n",
+				map->virtual, map->virtual + map->length, map->length,
+				flags, map->node->id, map->offset);
+	}
+
+	mutex_release(&proc->map_lock);
+}
+
 void mm_page_fault_handler(struct registers *regs, addr_t address, int pf_cause)
 {
 	if(!timer_init) {
@@ -52,9 +86,7 @@ void mm_page_fault_handler(struct registers *regs, addr_t address, int pf_cause)
 		}
 		kprintf("[mm]: %d: segmentation fault at eip=%x\n", current_thread->tid, regs->eip);
 		printk(0, "[mm]: %d: cause = %x, address = %x\n", current_thread->tid, pf_cause, address);
-		printk(0, "[mm]: %d: heap %x -> %x, flags = %x\n",
-				current_thread->tid, current_process->heap_start, 
-				current_process->heap_end, current_thread->flags);
+		print_mappings();
 
 		tm_signal_send_thread(current_thread, SIGSEGV);
 		timer_stop(&timer);

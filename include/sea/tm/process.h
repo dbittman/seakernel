@@ -147,5 +147,7 @@ int sys_kill(pid_t pid, int signal);
 void tm_process_create_kerfs_entries(struct process *proc);
 struct thread *tm_process_get_head_thread(struct process *proc);
 
+extern addr_t sysgate_page;
+
 #endif
 

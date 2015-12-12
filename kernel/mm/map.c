@@ -80,9 +80,8 @@ static void disengage_mapping_region(struct memmap *map, addr_t start, size_t of
 		 * about it */
 		for(addr_t v = start;v < (start + length);v += PAGE_SIZE, o += PAGE_SIZE) {
 			addr_t phys = mm_virtual_unmap(v);
-			if(phys) {
-				mm_physical_deallocate(phys);
-			}
+			if(phys)
+				mm_physical_decrement_count(phys);
 		}
 	}
 }
@@ -122,9 +121,8 @@ addr_t mm_establish_mapping(struct inode *node, addr_t virt,
 	for(addr_t s=virt;s < (virt + length);s+=PAGE_SIZE)
 	{
 		addr_t phys = mm_virtual_unmap(s);
-		if(phys) {
-			mm_physical_deallocate(phys);
-		}
+		if(phys)
+			mm_physical_decrement_count(phys);
 	}
 	/* if it's MAP_SHARED, then notify the mminode framework. Otherwise, we just
 	 * wait for a pagefault to bring in the pages */
@@ -167,6 +165,48 @@ int mm_sync_mapping(struct memmap *map, addr_t start, size_t length, int flags)
 		}
 	}
 	return 0;
+}
+
+void mm_mappings_clone(struct process *child)
+{
+	struct linkedentry *node;
+	if(current_process->pid == 0)
+		return;
+	for(node = linkedlist_iter_start(&current_process->mappings);
+			node != linkedlist_iter_end(&current_process->mappings);
+			node = linkedlist_iter_next(node)) {
+		struct memmap *map = linkedentry_obj(node);
+		/* first create the new mapping structure */
+		struct memmap *new = kmalloc(sizeof(*map));
+		memcpy(new, map, sizeof(*new));
+		vfs_inode_get(new->node);
+		linkedlist_insert(&child->mappings, &new->entry, new);
+		/* okay, now do the mapping */
+		int attr = PAGE_PRESENT | PAGE_USER;
+		if(new->flags & MAP_SHARED) {
+			fs_inode_map_region(new->node, new->offset, new->length);
+		}
+		if((new->flags & MAP_PRIVATE) && (new->prot & PROT_WRITE)) {
+			attr |= PAGE_COW;
+		} else if(new->prot & PROT_WRITE) {
+			attr |= PAGE_WRITE;
+		}
+		addr_t end = ((new->virtual + new->length - 1) & PAGE_MASK) + PAGE_SIZE;
+		for(addr_t virt = new->virtual; virt < end; virt += PAGE_SIZE) {
+			addr_t page;
+			bool r = mm_virtual_getmap(virt, &page, NULL);
+			if(r) {
+				if(attr & PAGE_COW) {
+					mm_virtual_changeattr(virt, attr, PAGE_SIZE);
+				}
+				mm_context_virtual_map(&child->vmm_context, virt, page, attr, PAGE_SIZE);
+				mm_physical_increment_count(page);
+			}
+		}
+		
+	}
+	memcpy(&child->mmf_valloc, &current_process->mmf_valloc, sizeof(child->mmf_valloc));
+	mutex_create(&child->mmf_valloc.lock, 0);
 }
 
 /* linear scan over all mappings for an address...yeah, it's a but slow, but
@@ -213,7 +253,7 @@ static int load_file_data(struct memmap *map, addr_t fault_address)
 	}
 	return 0;
 }
-
+#include <sea/vsprintf.h>
 /* handles a pagefault. If we can find the mapping, we need to check
  * the cause of the fault against what we're allowed to do, and then
  * either fail, or load the data correctly. */
@@ -226,6 +266,32 @@ int mm_page_fault_test_mappings(addr_t address, int pf_cause)
 		return -1;
 	}
 	/* check protections */
+	int attr;
+	addr_t page;
+	if(mm_virtual_getmap(address, &page, &attr)) {
+		if(attr & PAGE_COW) {
+			size_t count = mm_physical_get_count(page);
+			assert(count);
+			if(count > 1) {
+				addr_t newpage = mm_physical_allocate(PAGE_SIZE, false);
+				mm_physical_increment_count(newpage);
+				mm_physical_memcpy((void *)newpage, (void *)page, PAGE_SIZE, PHYS_MEMCPY_MODE_BOTH);
+				mm_virtual_unmap(address & PAGE_MASK);
+				mm_virtual_map(address & PAGE_MASK, newpage,
+						PAGE_PRESENT | PAGE_USER | PAGE_WRITE, PAGE_SIZE);
+				mm_physical_decrement_count(page);
+			} else {
+				mm_virtual_changeattr(address & PAGE_MASK, PAGE_PRESENT | PAGE_USER | PAGE_WRITE, PAGE_SIZE);
+			}
+			mutex_release(&current_process->map_lock);
+			return 0;
+		}
+		/* Not sure why this happens... TODO */
+		printk(0, "Mapped, but not COW! %x %x: %x (%x %x)\n",
+				address, attr, pf_cause, map->flags, map->prot);
+		mutex_release(&current_process->map_lock);
+		return 0;
+	}
 	if((pf_cause & PF_CAUSE_READ) && !(map->prot & PROT_READ))
 		goto out;
 	if((pf_cause & PF_CAUSE_WRITE) && !(map->prot & PROT_WRITE))

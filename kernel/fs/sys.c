@@ -133,6 +133,7 @@ int sys_setup(int a)
 	kerfs_register_report("/dev/modules", kerfs_module_report);
 	kerfs_register_report("/dev/pfault", kerfs_pfault_report);
 	kerfs_register_report("/dev/syslog", kerfs_syslog);
+	kerfs_register_report("/dev/frames", kerfs_frames_report);
 	kerfs_register_parameter("/dev/trace_on", NULL, 0, KERFS_PARAM_WRITE, kerfs_trace_on);
 	kerfs_register_parameter("/dev/trace_off", NULL, 0, KERFS_PARAM_WRITE, kerfs_trace_off);
 	tm_process_create_kerfs_entries(current_process);

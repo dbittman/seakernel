@@ -32,7 +32,6 @@ void mm_page_fault_init(void);
 void mm_flush_page_tables();
 
 void mm_context_clone(struct vmm_context *, struct vmm_context *);
-void mm_free_userspace(void);
 void mm_context_destroy(struct vmm_context *dir);
 bool mm_context_virtual_map(struct vmm_context *ctx,
 		addr_t virtual, addr_t physical, int flags, size_t length);

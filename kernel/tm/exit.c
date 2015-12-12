@@ -125,7 +125,6 @@ __attribute__((noinline)) static void tm_process_exit(int code)
 	linkedlist_destroy(&(current_process->mappings));
 	mutex_destroy(&current_process->map_lock);
 	valloc_destroy(&current_process->mmf_valloc);
-	mm_free_userspace();
 	/* TODO: free everything else? */
 
 	/* this is done before SIGCHILD is sent out */

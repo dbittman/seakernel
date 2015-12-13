@@ -9,7 +9,7 @@
 
 struct blockctl {
 	size_t blocksize;
-	ssize_t (*rw)(int dir, struct inode *node, uint64_t start, uint8_t *buffer, size_t count); /* TODO: we should use io vectoring for this (struct ioreq? struct buffers? */
+	ssize_t (*rw)(int dir, struct inode *node, uint64_t start, uint8_t *buffer, size_t count);
 	struct kthread elevator;
 	struct mutex cachelock;
 	struct hash cache;

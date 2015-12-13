@@ -145,4 +145,3 @@ void arch_cpu_early_init(void)
 	load_tables();
 }
 
-

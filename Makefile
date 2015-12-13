@@ -73,9 +73,9 @@ export GASFLAGS= ${GASFLAGS_ARCH}
 
 VERSION_H = include/sea/version.h
 
+include arch/make.inc
 include kernel/make.inc
 include drivers/make.inc
-include arch/make.inc
 include library/make.inc
 
 ADHEADS := $(addprefix $(BUILDDIR)/, $(ADHEADS))

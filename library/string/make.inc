@@ -1,5 +1,6 @@
 KOBJS += library/string/memchr.o \
 library/string/memcmp.o \
+library/string/memcpy.o \
 library/string/memmove.o \
 library/string/memset.o \
 library/string/strcat.o \

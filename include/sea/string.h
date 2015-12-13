@@ -3,9 +3,8 @@
 #include <sea/types.h>
 
 void *memchr(const void *cs, int c, size_t count);
-/* TODO: we should be able to use memcpy if we want (faster) */
-#define memcpy memmove
 void *memmove(void *dest, const void *src, size_t n);
+void *memcpy(void *dest, const void *src, size_t n);
 void *memset(void *s, int c, size_t count);
 char *_strcat(char * dest, const char * src);
 char *strchr(const char *s, int c);

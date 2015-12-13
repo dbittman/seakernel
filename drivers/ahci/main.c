@@ -164,7 +164,11 @@ void ahci_create_device(struct ahci_device *dev)
 	int err;
 	struct inode *node = fs_path_resolve_inode(name, 0, &err);
 	node->flags |= INODE_PERSIST;
-	int min = blockdev_register(node, 0, 0, 512, __rw);
+	dev->bctl.rw = __rw;
+	dev->bctl.ioctl = NULL;
+	dev->bctl.select = NULL;
+	dev->bctl.blocksize = 512;
+	int min = blockdev_register(node, &dev->bctl);
 	vfs_icache_put(node);
 	dev->minor = min;
 	hash_insert(&portmap, &dev->minor, sizeof(dev->minor), &dev->mapelem, (void *)(long)dev->idx);

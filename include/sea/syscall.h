@@ -132,8 +132,8 @@ int sys_setup();
 #define SYS_POSFSSTAT    121
 #define SYS_GETTIMEOFDAY 122
 
-#define SYS_SIGSUSPEND   123 /* TODO: implement */
-#define SYS_SIGPENDING   124 /* TODO: implement */
+#define SYS_SIGSUSPEND   123
+#define SYS_SIGPENDING   124
 
 /* These are special */
 #define SYS_RET_FROM_SIG 128

@@ -9,17 +9,9 @@
 #include <sea/fs/kerfs.h>
 static int block_major;
 static int next_minor = 1;
-int blockdev_register(struct inode *node, uint64_t partbegin, size_t partlen, size_t blocksize,
-	ssize_t (*rw)(int dir, struct inode *node, uint64_t start, uint8_t *buffer, size_t count))
-
+int blockdev_register(struct inode *node, struct blockctl *ctl)
 {
-	assert(rw);
 	struct blockdev *bd = kmalloc(sizeof(struct blockdev));
-	struct blockctl *ctl = kmalloc(sizeof(struct blockctl));
-	bd->partbegin = partbegin;
-	bd->partlen = partlen;
-	ctl->blocksize = blocksize;
-	ctl->rw = rw;
 	mutex_create(&ctl->cachelock, 0);
 	hash_create(&ctl->cache, 0, 0x4000);
 	mpscq_create(&ctl->queue, 1000);
@@ -124,7 +116,11 @@ static ssize_t __block_write(struct file *file, off_t posit, uint8_t *buf, size_
 
 int block_select(struct file *file, int rw)
 {
-	return 1; /* TODO */
+	struct blockdev *bd = file->inode->devdata;
+	assert(bd);
+	if(bd->ctl->select)
+		return bd->ctl->select(file->inode, rw);
+	return 1;
 }
 
 ssize_t block_rw(int rw, struct file *file, off_t off, uint8_t *buffer, size_t len)
@@ -138,7 +134,11 @@ ssize_t block_rw(int rw, struct file *file, off_t off, uint8_t *buffer, size_t l
 
 int block_ioctl(struct file *file, int cmd, long arg)
 {
-	return -EINVAL; /* TODO */
+	struct blockdev *bd = file->inode->devdata;
+	assert(bd);
+	if(bd->ctl->ioctl)
+		return bd->ctl->ioctl(file->inode, cmd, arg);
+	return -EINVAL;
 }
 
 static struct kdevice __kdev_block = {

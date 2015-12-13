@@ -5,6 +5,7 @@
 #include <sea/types.h>
 #include <sea/fs/inode.h>
 #include <sea/mm/dma.h>
+#include <sea/dm/blockdev.h>
 typedef enum
 {
 	FIS_TYPE_REG_H2D	= 0x27,	// Register FIS - host to device
@@ -326,6 +327,7 @@ struct ahci_device {
 	int created;
 	struct inode *node;
 	struct hashelem mapelem;
+	struct blockctl bctl;
 };
 
 #define HBA_PxCMD_ST  (1 << 0)

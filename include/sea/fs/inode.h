@@ -25,9 +25,6 @@ struct pipe;
 #define INODE_NEEDREAD 1
 #define INODE_DIRTY    2
 #define INODE_INUSE    4
-
-/* TODO: we should get rid of this */
-#define INODE_NOLRU    8 /* On calling vfs_icache_put, don't move to LRU, immediately destroy */
 #define INODE_PCACHE   0x10
 #define INODE_PERSIST  0x20
 

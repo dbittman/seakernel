@@ -139,8 +139,7 @@ struct inode *vfs_icache_get(struct filesystem *fs, uint32_t num)
 	if(!(atomic_fetch_or(&node->flags, INODE_INUSE) & INODE_INUSE)) {
 		atomic_fetch_add(&fs->usecount, 1);
 		if(!newly_created) {
-			if(!(node->flags & INODE_NOLRU))
-				queue_remove(ic_lru, &node->lru_item);
+			queue_remove(ic_lru, &node->lru_item);
 			linkedlist_insert(ic_inuse, &node->inuse_item, node);
 		}
 	}
@@ -193,18 +192,7 @@ void vfs_icache_put(struct inode *node)
 		}
 
 		linkedlist_remove(ic_inuse, &node->inuse_item);
-		if(node->flags & INODE_NOLRU) {
-			assert(!(node->flags & INODE_INUSE));
-			assert(!node->dirents.count);
-			if(node->filesystem) {
-				uint32_t key[2] = {node->filesystem->id, node->id};
-				hash_delete(icache, key, sizeof(key));
-			}
-			fs_inode_push(node);
-			vfs_inode_destroy(node);
-		} else {
-			queue_enqueue_item(ic_lru, &node->lru_item, node);
-		}
+		queue_enqueue_item(ic_lru, &node->lru_item, node);
 	}
 	mutex_release(ic_lock);
 }

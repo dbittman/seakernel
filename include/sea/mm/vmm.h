@@ -23,7 +23,7 @@ _Static_assert((__ALL_ATTRS & ATTRIB_MASK) == 0,
 
 extern struct vmm_context kernel_context;
 
-extern addr_t initial_boot_stack; /* TODO: don't we have another one of these? */
+extern addr_t initial_boot_stack;
 
 int mm_is_valid_user_pointer(int num, void *p, char flags);
 

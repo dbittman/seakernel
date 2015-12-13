@@ -4,7 +4,7 @@
 #include <sea/lib/charbuffer.h>
 #include <sea/tm/process.h>
 #include <sea/fs/inode.h>
-#include <sea/tty/termios.h>
+#include <sea/sys/termios.h>
 #include <sea/mutex.h>
 
 #define PTY_IN_BUF_SIZE 1024

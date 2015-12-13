@@ -104,9 +104,5 @@ typedef struct elf
 } elf64_t;
 
 const char *elf64_lookup_symbol (uint64_t addr, elf64_t *elf);
-const char *elf64_lookup_symbol (uint64_t addr, elf64_t *elf);
-elf64_symtab_entry_t *fill_symbol_struct(uint8_t * buf, uint64_t symbol);
-intptr_t get_section_offset(uint8_t * buf, uint64_t info);
-char *get_symbol_string(uint8_t *buf, uint64_t index);
 
 #endif

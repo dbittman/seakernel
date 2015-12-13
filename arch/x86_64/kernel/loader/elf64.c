@@ -6,6 +6,22 @@
 #include <sea/vsprintf.h>
 #include <sea/mm/kmalloc.h>
 
+const char *arch_loader_symbol_lookup(addr_t addr, struct section_data *sd)
+{
+	elf64_symtab_entry_t *symtab = (elf64_symtab_entry_t *)(sd->vbase[sd->symtab]);
+	addr_t strtab = sd->vbase[sd->strtab];
+	if(!symtab || !strtab)
+		return NULL;
+	for(unsigned i=0;i<(sd->symlen / sizeof(elf64_symtab_entry_t));i++) {
+		if(ELF_ST_TYPE(symtab[i].info) == ELF_ST_TYPE_FUNCTION) {
+			if(addr >= symtab[i].address && addr < (symtab[i].address + symtab[i].size)) {
+				return (const char *)(strtab + symtab[i].name);
+			}
+		}
+	}
+	return NULL;
+}
+
 void arch_loader_parse_kernel_elf(struct multiboot *mb, struct section_data *sd)
 {
 	/* the entire kernel file is loaded, so look for the sections we care about */
@@ -32,7 +48,7 @@ void arch_loader_parse_kernel_elf(struct multiboot *mb, struct section_data *sd)
 
 }
 
-static int process_elf64_phdr(char *mem, struct file *file, addr_t *start, addr_t *end)
+int arch_loader_parse_elf_executable(void *mem, struct file *file, addr_t *start, addr_t *end)
 {
 	uint32_t i, x;
 	addr_t entry;
@@ -91,11 +107,6 @@ static int process_elf64_phdr(char *mem, struct file *file, addr_t *start, addr_
 	*start = eh->entry;
 	*end = (max & PAGE_MASK) + PAGE_SIZE;
 	return 1;
-}
-
-int arch_loader_parse_elf_executable(void *mem, struct file *file, addr_t *start, addr_t *end)
-{
-	return process_elf64_phdr(mem, file, start, end);
 }
 
 #if (CONFIG_MODULES)
@@ -164,6 +175,53 @@ static void arch_loader_copy_sections(elf64_header_t *header, uint8_t *loaded_bu
 	}
 	sd->num = header->shnum;
 	sd->shstrtab = header->strndx;
+}
+
+static char *get_symbol_string(uint8_t *buf, uint64_t index)
+{  
+	uint32_t i;
+	char *ret;
+	elf_header_t *eh;
+	elf64_section_header_t *sh;
+	elf64_symtab_entry_t *symtab;
+	eh = (elf_header_t *)buf;
+	
+	for(i = 0; i < eh->shnum; i++)
+	{  
+		sh = (elf64_section_header_t *)(buf + eh->shoff + (i * eh->shsize));
+		if(sh->type == 2)
+		{
+			symtab = (elf64_symtab_entry_t *)(buf + sh->offset);
+			sh = (elf64_section_header_t *)(buf + eh->shoff + (sh->link * eh->shsize));
+			if(sh->type == 3)
+			{
+				if(!index)
+					return NULL;
+				return (char *)(buf + sh->offset + index);
+			}
+		}
+	}
+	return NULL;
+}
+
+static elf64_symtab_entry_t * fill_symbol_struct(uint8_t * buf, uint64_t symbol)
+{
+	uint32_t i;
+	elf_header_t * eh;
+	elf64_section_header_t * sh;
+	elf64_symtab_entry_t * symtab;
+	eh = (elf_header_t *)buf;
+	for(i = 0; i < eh->shnum; i++)
+	{  
+		sh = (elf64_section_header_t*)(buf + eh->shoff + (i * eh->shsize));
+		if(sh->type == 2)
+		{
+			symtab = (elf64_symtab_entry_t *)(buf + sh->offset + 
+					(symbol * sh->sect_size));
+			return (elf64_symtab_entry_t *)symtab;
+		}
+	}
+	return NULL;
 }
 
 int arch_loader_relocate_elf_module(void * buf, addr_t *entry, addr_t *tm_exiter, void *load_address, struct section_data *sd)

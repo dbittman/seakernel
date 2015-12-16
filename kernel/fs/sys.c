@@ -440,21 +440,24 @@ int sys_chown(char *path, int fd, uid_t uid, gid_t gid)
 		return -EINVAL;
 	struct inode *i;
 	int result;
+	struct file *file = NULL;
 	if(path)
 		i = fs_path_resolve_inode(path, 0, &result);
 	else {
-		struct file *file = file_get(fd);
+		file = file_get(fd);
 		if(!file)
 			return -EBADF;
 		i = file->inode;
-		/* TODO we can't do this yet! Wait until the end of the function! */
-		file_put(file);
 	}
-	if(!i)
+	if(!i) {
+		assert(!file);
 		return result;
+	}
 	if(current_process->effective_uid && current_process->effective_uid != i->uid) {
 		if(path)
 			vfs_icache_put(i);
+		if(file)
+			file_put(file);
 		return -EPERM;
 	}
 	if(uid != -1) i->uid = uid;
@@ -469,6 +472,8 @@ int sys_chown(char *path, int fd, uid_t uid, gid_t gid)
 	vfs_inode_set_dirty(i);
 	if(path) 
 		vfs_icache_put(i);
+	if(file)
+		file_put(file);
 	return 0;
 }
 
@@ -531,12 +536,7 @@ int sys_mknod(char *path, mode_t mode, dev_t dev)
 	i->mode = (mode & ~0xFFF) | ((mode&0xFFF) & (~current_process->cmask&0xFFF));
 	i->flags |= INODE_PERSIST;
 	
-	/* TODO: this code is duplicated... */
-	if(i->phys_dev && !i->kdev) {
-		i->kdev = dm_device_get(MAJOR(i->phys_dev));
-		if(i->kdev && i->kdev->create)
-			i->kdev->create(i);
-	}
+	fs_inode_init_kdev(i);
 	vfs_inode_set_dirty(i);
 	vfs_icache_put(i);
 	return 0;

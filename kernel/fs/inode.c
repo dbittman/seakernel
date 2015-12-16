@@ -86,9 +86,7 @@ void vfs_inode_destroy(struct inode *node)
 	if(node->kdev && node->kdev->destroy)
 		node->kdev->destroy(node);
 	if(node->kdev) {
-		dm_device_put(node->kdev); /* TODO: this probably needs to happen when
-									  the inode is LRU'd? But what if the device
-									  is removed....lots of questions here */
+		dm_device_put(node->kdev);
 		node->kdev = 0;
 	}
 	rwlock_destroy(&node->lock);
@@ -112,7 +110,6 @@ void vfs_inode_get(struct inode *node)
 }
 
 /* read in an inode from the inode cache, OR pull it in from the FS */
-/* TODO: can this fail? */
 struct inode *vfs_icache_get(struct filesystem *fs, uint32_t num)
 {
 	/* create if it doesn't exist */
@@ -143,7 +140,11 @@ struct inode *vfs_icache_get(struct filesystem *fs, uint32_t num)
 			linkedlist_insert(ic_inuse, &node->inuse_item, node);
 		}
 	}
-	fs_inode_pull(node);
+	if(fs_inode_pull(node) != 0) {
+		/* pull failed. Probably EIO. */
+		vfs_icache_put(node);
+		node = 0;
+	}
 	mutex_release(ic_lock);
 
 	return node;
@@ -235,6 +236,15 @@ size_t fs_inode_reclaim_lru(void)
 	return released ? sizeof(struct inode) : 0;
 }
 
+void fs_inode_init_kdev(struct inode *node)
+{
+	if(node->phys_dev && !node->kdev) {
+		node->kdev = dm_device_get(MAJOR(node->phys_dev));
+		if(node->kdev && node->kdev->create)
+			node->kdev->create(node);
+	}
+}
+
 /* read an inode from the filesystem */
 int fs_inode_pull(struct inode *node)
 {
@@ -245,11 +255,7 @@ int fs_inode_pull(struct inode *node)
 			atomic_fetch_and(&node->flags, ~INODE_NEEDREAD);
 		}
 	}
-	if(node->phys_dev && !node->kdev) {
-		node->kdev = dm_device_get(MAJOR(node->phys_dev));
-		if(node->kdev && node->kdev->create)
-			node->kdev->create(node);
-	}
+	fs_inode_init_kdev(node);
 	return r;
 }
 

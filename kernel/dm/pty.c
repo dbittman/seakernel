@@ -247,13 +247,27 @@ static ssize_t __pty_rw(int rw, struct file *file, off_t off, uint8_t *buf, size
 	return -EIO;
 }
 
+static void __pty_open(struct file *file)
+{
+	struct pty *pty = file->inode->devdata;
+	if(current_process->pty == pty)
+		return;
+	current_process->pty = pty;
+
+	char path[128];
+	snprintf(path, 128, "/dev/process/%d/tty", current_process->pid);
+	kerfs_unregister_entry(path);
+	kerfs_register_parameter(path, (void *)&current_process->pty->num,
+			sizeof(current_process->pty->num), 0, kerfs_rw_integer);
+}
+
 static struct kdevice __pty_kdev = {
 	.rw = __pty_rw,
 	.select = pty_select,
 	.ioctl = pty_ioctl,
 	.create = pty_create,
 	.destroy = pty_destroy,
-	.open = 0, //TODO: should set controlling terminal
+	.open = __pty_open,
 	.close = 0,
 	.name = "pty",
 };
@@ -292,7 +306,6 @@ int sys_openpty(int *master, int *slave, char *slavename, const struct termios *
 	vfs_inode_get(mf->inode);
 	vfs_inode_get(sf->inode);
 	
-	/* TODO: better system */
 	pty_create(mf->inode);
 	sf->inode->devdata = mf->inode->devdata;
 	struct pty *pty = mf->inode->devdata;
@@ -327,13 +340,7 @@ int sys_attach_pty(int fd)
 		file_put(mf);
 		return -EINVAL;
 	}
-	struct pty *pty = mf->inode->devdata;
-	current_process->pty = pty;
-
-	char file[128];
-	snprintf(file, 128, "/dev/process/%d/tty", current_process->pid);
-	kerfs_register_parameter(file, (void *)&current_process->pty->num,
-			sizeof(current_process->pty->num), 0, kerfs_rw_integer);
+	__pty_open(mf);
 	file_put(mf);
 	return 0;
 }

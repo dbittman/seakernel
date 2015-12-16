@@ -29,7 +29,6 @@ void buffer_sync(struct buffer *buf)
 	}
 }
 
-/* TODO: one dlist per blockdevice? */
 int buffer_sync_all_dirty(void)
 {
 	printk(0, "[block]: syncing block buffers (%d buffers)\n", dirty_list.count);
@@ -118,7 +117,7 @@ struct buffer *block_cache_get_first_buffer(struct ioreq *req)
 		if(req->flags & IOREQ_FAILED) {
 			return NULL;
 		}
-		br = dm_block_cache_get(req->bd, req->block); // TODO: get this from elevator
+		br = dm_block_cache_get(req->bd, req->block);
 		assert(br);
 		atomic_fetch_and(&br->flags, ~BUFFER_LOCKED);
 	}

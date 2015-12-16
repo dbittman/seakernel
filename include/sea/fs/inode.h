@@ -129,6 +129,7 @@ int vfs_inode_chdir(struct inode *node);
 int vfs_inode_chroot(struct inode *node);
 void vfs_inode_mount(struct inode *node, struct filesystem *fs);
 struct inode *fs_resolve_mount(struct inode *node);
+void fs_inode_init_kdev(struct inode *node);
 
 ssize_t fs_inode_write(struct inode *node, size_t off, size_t count, const unsigned char *buf);
 ssize_t fs_inode_read(struct inode *node, size_t off, size_t count, unsigned char *buf);

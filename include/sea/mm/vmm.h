@@ -48,7 +48,6 @@ addr_t mm_context_virtual_unmap(struct vmm_context *ctx, addr_t address);
 bool mm_context_virtual_trymap(struct vmm_context *ctx, addr_t virtual, int flags, size_t length);
 bool mm_virtual_trymap(addr_t virtual, int flags, size_t length);
 
-
 #define PF_CAUSE_NONPRESENT   1
 #define PF_CAUSE_READ         2
 #define PF_CAUSE_WRITE        4
@@ -58,3 +57,4 @@ bool mm_virtual_trymap(addr_t virtual, int flags, size_t length);
 #define PF_CAUSE_SUPER     0x40
 
 #endif
+

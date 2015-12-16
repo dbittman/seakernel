@@ -77,7 +77,7 @@ int do_exec(char *path, char **argv, char **env, int shebanged /* oh my */)
 	/* are we allowed to execute it? */
 	if(!vfs_inode_check_permissions(efil->inode, MAY_EXEC, 0))
 	{
-		file_put(efil); /* TODO: is this an okay substitute for sys_close? */
+		file_put(efil);
 		return -EACCES;
 	}
 	/* is it a valid elf? */

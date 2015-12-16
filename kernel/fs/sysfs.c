@@ -45,7 +45,6 @@ int kerfs_unregister_entry(char *path)
 	current_process->effective_uid = 0;
 	int err;
 	struct inode *node = fs_path_resolve_inode(path, RESOLVE_NOLINK, &err);
-	assertmsg(node, "failed to find kerfs entry: %d", (long)err);
 	if(!node) {
 		current_process->effective_uid = old;
 		return err;
@@ -54,8 +53,7 @@ int kerfs_unregister_entry(char *path)
 	vfs_icache_put(node);
 
 	hash_delete(table, &num, sizeof(num));
-	int r = sys_unlink(path);
-	assertmsg(r == 0, "failed to remove kerfs entry: %d", (long)r);
+	sys_unlink(path);
 	
 	current_process->effective_uid = old;
 	return 0;

@@ -28,9 +28,9 @@ struct filesystem_inode_callbacks {
 			const char *name, size_t namelen);
 	int (*unlink)(struct filesystem *fs, struct inode *parent, const char *name,
 			size_t namelen, struct inode *target);
-	int (*read)(struct filesystem *fs, struct inode *node,
+	ssize_t (*read)(struct filesystem *fs, struct inode *node,
 			size_t offset, size_t length, unsigned char *buffer);
-	int (*write)(struct filesystem *fs, struct inode *node,
+	ssize_t (*write)(struct filesystem *fs, struct inode *node,
 			size_t offset, size_t length, const unsigned char *buffer);
 	int (*select)(struct filesystem *, struct inode *, int rw);
 };
@@ -69,8 +69,8 @@ struct fsdriver {
 int fs_fssync(struct filesystem *fs);
 void fs_unmount_all();
 
-int fs_callback_inode_read(struct inode *node, size_t off, size_t len, unsigned char *buf);
-int fs_callback_inode_write(struct inode *node, size_t off, size_t len, const unsigned char *buf);
+ssize_t fs_callback_inode_read(struct inode *node, size_t off, size_t len, unsigned char *buf);
+ssize_t fs_callback_inode_write(struct inode *node, size_t off, size_t len, const unsigned char *buf);
 int fs_callback_inode_pull(struct inode *node);
 int fs_callback_inode_push(struct inode *node);
 int fs_callback_inode_link(struct inode *node, struct inode *target, const char *name, size_t namelen);

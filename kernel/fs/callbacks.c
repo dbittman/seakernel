@@ -2,8 +2,7 @@
 #include <sea/kernel.h>
 #include <sea/errno.h>
 
-/* TODO: these should return ssize_t */
-int fs_callback_inode_read(struct inode *node, size_t off, size_t len, unsigned char *buf)
+ssize_t fs_callback_inode_read(struct inode *node, size_t off, size_t len, unsigned char *buf)
 {
 	assert(node && node->filesystem);
 	if(node->filesystem->fs_inode_ops->read)
@@ -11,7 +10,7 @@ int fs_callback_inode_read(struct inode *node, size_t off, size_t len, unsigned 
 	return -ENOTSUP;
 }
 
-int fs_callback_inode_write(struct inode *node, size_t off, size_t len, const unsigned char *buf)
+ssize_t fs_callback_inode_write(struct inode *node, size_t off, size_t len, const unsigned char *buf)
 {
 	assert(node && node->filesystem && node->filesystem->fs_inode_ops);
 	if(node->filesystem->fs_inode_ops->write)

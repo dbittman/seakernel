@@ -250,7 +250,7 @@ static ssize_t __pty_rw(int rw, struct file *file, off_t off, uint8_t *buf, size
 static void __pty_open(struct file *file)
 {
 	struct pty *pty = file->inode->devdata;
-	if(current_process->pty == pty)
+	if(!pty || current_process->pty == pty || (file->flags & _FNOCTTY))
 		return;
 	current_process->pty = pty;
 
@@ -265,7 +265,7 @@ static struct kdevice __pty_kdev = {
 	.rw = __pty_rw,
 	.select = pty_select,
 	.ioctl = pty_ioctl,
-	.create = pty_create,
+	.create = 0,
 	.destroy = pty_destroy,
 	.open = __pty_open,
 	.close = 0,
@@ -284,7 +284,6 @@ int sys_openpty(int *master, int *slave, char *slavename, const struct termios *
 		const struct winsize *win)
 {
 	int num = atomic_fetch_add(&__pty_next_num, 1);
-	
 	char mname[32];
 	char sname[32];
 	snprintf(mname, 32, "/dev/ptym%d", num);

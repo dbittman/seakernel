@@ -115,11 +115,12 @@ int fs_filesystem_init_mount(struct filesystem *fs, char *point, char *node, cha
 
 int fs_umount(struct filesystem *fs)
 {
-	/* TODO: when to remove from list */
 	assert(fs);
 	if(fs->driver && fs->driver->umount)
 		fs->driver->umount(fs);
 	vfs_inode_umount(fs->point);
+	if(fs != devfs)
+		linkedlist_remove(&fslist, &fs->listnode);
 	return 0;
 }
 

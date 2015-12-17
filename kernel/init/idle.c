@@ -28,24 +28,19 @@ int kt_kernel_idle_task(void)
 	tm_thread_raise_flag(current_thread, THREAD_KERNEL);
 	kthread_create(&kthread_pager, "[kpager]", 0, __KT_pager, 0);
 	strncpy((char *)current_process->command, "[kernel]", 128);
-	/* First stage is to wait until we can clear various allocated things
-	 * that we wont need anymore */
-	cpu_interrupt_set(0);
+	/* wait until init has successfully executed, and then remap. */
+	while(!(kernel_state_flags & KSF_HAVEEXECED)) {
+		tm_schedule();
+	}
 	printk(1, "[kernel]: remapping lower memory with protection flags...\n");
-	addr_t addr = 0;
-	while(0) /* TODO: wait for init to be ready for this */
+	cpu_interrupt_set(0);
+	for(addr_t addr = MEMMAP_KERNEL_START; addr < MEMMAP_KERNEL_END; addr += PAGE_SIZE)
 	{
-		/* TODO: ACTUALLY DO THIS */
-		/* set it to write. We don't actually have to do this, because
-		 * ring0 code may always access memory. As long as the PAGE_USER
-		 * flag isn't set... */
-		//if(!(MEMMAP_SYSGATE_ADDRESS >= addr && MEMMAP_SYSGATE_ADDRESS < (addr + PAGE_SIZE_LOWER_KERNEL)))
-		//	mm_vm_set_attrib(addr, PAGE_PRESENT | PAGE_WRITE);
-		//addr += PAGE_SIZE_LOWER_KERNEL;
+		mm_virtual_changeattr(addr, PAGE_PRESENT | PAGE_WRITE, PAGE_SIZE);
 	}
 	cpu_interrupt_set(1);
 	/* Now enter the main idle loop, waiting to do periodic cleanup */
-	printk(0, "[idle]: entering background loop %x\n", current_thread->kernel_stack);
+	printk(0, "[idle]: entering background loop\n");
 	for(;;) {
 		assert(!current_thread->held_locks);
 		int r=1;
@@ -53,7 +48,6 @@ int kt_kernel_idle_task(void)
 			r=workqueue_dowork(&__current_cpu->work);
 		else
 			tm_schedule();
-		//printk(0, ": %d %d: %d\n", current_thread->held_locks, __current_cpu->work.count, r);
 		int status;
 		int pid = sys_waitpid(-1, &status, WNOHANG);
 		if(WIFSTOPPED(status)) {

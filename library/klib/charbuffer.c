@@ -28,6 +28,7 @@ static bool __release_lock(void *data)
 	return true;
 }
 
+#include <sea/vsprintf.h>
 size_t charbuffer_read(struct charbuffer *cb, unsigned char *out, size_t length, bool block)
 {
 	size_t i = 0;

@@ -344,7 +344,7 @@ int syscall_handler(struct registers *regs)
 
 #ifdef SC_DEBUG
 		if(SYSCALL_NUM_AND_RET != 0
-				&& (current_process->pid != 2))
+				&& (current_process->pid != 2 || 1))
 			printk(SC_DEBUG, "syscall %d(%d) (from: %x): enter %d %x\n",
 					current_thread->tid, current_process->pid,
 					current_thread->regs->eip, SYSCALL_NUM_AND_RET, _A_);
@@ -360,7 +360,7 @@ int syscall_handler(struct registers *regs)
 		}
 #endif
 #ifdef SC_DEBUG
-		if((ret < 0 || 1) && (ret == -EINTR || 1) && current_process->pid != 2)
+		if((ret < 0 || 1) && (ret == -EINTR || 1) && (current_process->pid != 2 || 1))
 			printk(SC_DEBUG, "syscall pid %3d: #%3d ret %4d\n",
 			   		current_thread->tid, current_thread->system, ret < 0 ? -ret : ret);
 #endif

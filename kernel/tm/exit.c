@@ -125,7 +125,6 @@ __attribute__((noinline)) static void tm_process_exit(int code)
 	mm_destroy_all_mappings(current_process);
 	linkedlist_destroy(&(current_process->mappings));
 	valloc_destroy(&current_process->mmf_valloc);
-	/* TODO: free everything else? */
 
 	/* this is done before SIGCHILD is sent out */
 	atomic_fetch_or(&current_process->flags, PROCESS_EXITED);

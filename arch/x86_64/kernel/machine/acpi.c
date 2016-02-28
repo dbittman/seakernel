@@ -4,10 +4,8 @@
 #include <sea/mm/vmm.h>
 #include <sea/cpu/acpi.h>
 #include <sea/loader/symbol.h>
-#include <sea/mm/pmap.h>
 #include <sea/vsprintf.h>
 #include <sea/string.h>
-static struct pmap acpi_pmap;
 static int __acpi_enable = 0;
 static int acpi_rsdt_pt_sz;
 static struct acpi_dt_header *acpi_rsdt;
@@ -86,9 +84,10 @@ static addr_t find_RSDT_entry(struct acpi_dt_header *rsdt, int pointer_size, con
 	{
 		addr_t v;
 		if(pointer_size == 4)
-			v = pmap_get_mapping(&acpi_pmap, *(uint32_t *)tmp);
+			v = *(uint32_t *)(tmp);
 		else
-			v = pmap_get_mapping(&acpi_pmap, *(uint64_t *)tmp);
+			v = *(uint64_t *)(tmp);
+		v += PHYS_PAGE_MAP;
 		char *test_sig = (char *)v;
 		if(!strncmp(test_sig, sig, 4))
 			return v;
@@ -100,26 +99,27 @@ static addr_t find_RSDT_entry(struct acpi_dt_header *rsdt, int pointer_size, con
 void *acpi_get_table_data(const char *sig, int *length)
 {
 	addr_t head = find_RSDT_entry(acpi_rsdt, acpi_rsdt_pt_sz, sig);
-	if(!head) return (void *)0;
+	if(!head)
+		return (void *)0;
 	struct acpi_dt_header *dt = (struct acpi_dt_header *)head;
-	if(!acpi_validate_dt(dt, sig)) return 0;
-	if(length) *length = dt->length - sizeof(struct acpi_dt_header);
+	if(!acpi_validate_dt(dt, sig))
+		return 0;
+	if(length)
+		*length = dt->length - sizeof(struct acpi_dt_header);
 	return (dt+1);
 }
 
 void acpi_init(void)
 {
-	pmap_create(&acpi_pmap, 0);
 	struct acpi_rsdp *rsdp = apci_get_RSDP();
 	if(!rsdp) return;
 	printk(0, "[acpi]: found valid RSDP structure at %x\n", rsdp);
-	struct acpi_dt_header *rsdt = (struct acpi_dt_header *)(rsdp->revision ? (addr_t)rsdp->xsdt_addr : (addr_t)rsdp->rsdt_addr);
+	struct acpi_dt_header *rsdt = (struct acpi_dt_header *)((rsdp->revision ? (addr_t)rsdp->xsdt_addr : (addr_t)rsdp->rsdt_addr) + PHYS_PAGE_MAP);
 	int pointer_size = (rsdp->revision ? 8 : 4);
 	const char *sig = (rsdp->revision ? "XSDT" : "RSDT");
-	addr_t rsdt_v = pmap_get_mapping(&acpi_pmap, (addr_t)rsdt);
-	int valid = acpi_validate_dt((void *)(rsdt_v), sig);
+	int valid = acpi_validate_dt((void *)(rsdt), sig);
 	
-	acpi_rsdt = (void *)rsdt_v;
+	acpi_rsdt = (void *)rsdt;
 	acpi_rsdt_pt_sz = pointer_size;
 	if(valid) __acpi_enable=1;
 #if CONFIG_MODULES

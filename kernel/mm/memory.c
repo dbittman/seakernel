@@ -4,7 +4,6 @@
 #include <sea/tm/process.h>
 #include <sea/cpu/processor.h>
 #include <sea/loader/symbol.h>
-#include <sea/mm/pmap.h>
 #include <sea/mm/pmm.h>
 #include <sea/mm/vmm.h>
 #include <sea/mm/dma.h>
@@ -178,9 +177,6 @@ void mm_init(struct multiboot *m)
 	loader_add_kernel_symbol(slab_kmalloc);
 	loader_add_kernel_symbol(slab_kfree);
 	loader_add_kernel_symbol(mm_virtual_map);
-	loader_add_kernel_symbol(pmap_get_mapping);
-	loader_add_kernel_symbol(pmap_create);
-	loader_add_kernel_symbol(pmap_destroy);
 	loader_add_kernel_symbol(mm_virtual_getmap);
 	loader_add_kernel_symbol(mm_allocate_dma_buffer);
 	loader_add_kernel_symbol(mm_free_dma_buffer);

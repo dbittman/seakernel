@@ -1,5 +1,4 @@
 #include <sea/cpu/acpi.h>
-#include <sea/mm/pmap.h>
 #include <sea/mm/vmm.h>
 struct hpet_header
 {
@@ -30,6 +29,7 @@ static void hpet_write64(int offset, uint64_t data)
 	*(uint64_t *)(hpet_addr + offset) = data;
 }
 
+#include <sea/vsprintf.h>
 void x86_hpet_init(void)
 {
 	int len;

@@ -1,6 +1,5 @@
 #include <sea/kernel.h>
 #include <sea/loader/module.h>
-#include <sea/mm/pmap.h>
 #include <sea/mutex.h>
 #include <sea/mm/vmm.h>
 #include <sea/types.h>
@@ -21,7 +20,6 @@
 struct pci_device *ahci_pci;
 int ahci_int = 0;
 struct hba_memory *hba_mem;
-struct pmap *ahci_pmap;
 struct ahci_device *ports[32];
 
 struct pci_device *get_ahci_pci (void)
@@ -41,7 +39,7 @@ struct pci_device *get_ahci_pci (void)
 	pci_write_dword(ahci->bus, ahci->dev, ahci->func, 4, cmd);
 	/* of course, we need to map a virtual address to physical address
 	 * for paging to not hate on us... */
-	hba_mem = (void *)pmap_get_mapping(ahci_pmap, (addr_t)hba_mem);
+	hba_mem = (void *)((addr_t)hba_mem + PHYS_PAGE_MAP);
 	printk(KERN_DEBUG, "[ahci]: mapping hba_mem to %x -> %x\n", hba_mem, ahci->pcs->bar5);
 	printk(KERN_DEBUG, "[ahci]: using interrupt %d\n", ahci->pcs->interrupt_line+32);
 	ahci_int = ahci->pcs->interrupt_line+32;
@@ -179,11 +177,9 @@ int module_install(void)
 {
 	hash_create(&portmap, 0, 32);
 	printk(KERN_DEBUG, "[ahci]: initializing ahci driver...\n");
-	ahci_pmap = pmap_create(0, 0);
 	if(!(ahci_pci = get_ahci_pci()))
 	{
 		printk(KERN_DEBUG, "[ahci]: no AHCI controllers present!\n");
-		pmap_destroy(ahci_pmap);
 		return -ENOENT;
 	}
 	irq = cpu_interrupt_register_handler(ahci_int, ahci_interrupt_handler);
@@ -207,7 +203,6 @@ int module_exit(void)
 			kfree(ports[i]);
 		}
 	}
-	pmap_destroy(ahci_pmap);
 	ahci_pci->flags = 0;
 	return 0;
 }

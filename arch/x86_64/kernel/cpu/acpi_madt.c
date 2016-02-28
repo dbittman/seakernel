@@ -2,11 +2,9 @@
 #if CONFIG_SMP
 #include <sea/cpu/acpi.h>
 #include <sea/cpu/processor.h>
-#include <sea/mm/pmap.h>
 #include <sea/cpu/cpu-x86_64.h>
 #include <sea/vsprintf.h>
 #include <sea/string.h>
-struct pmap apic_pmap;
 
 void acpi_madt_parse_processor(void *ent, int boot)
 {
@@ -41,12 +39,11 @@ void acpi_madt_parse_ioapic(void *ent)
 		uint8_t type, length, apicid, __reserved;
 		uint32_t address, int_start;
 	} *st = ent;
-	add_ioapic(pmap_get_mapping(&apic_pmap, st->address), st->apicid, st->int_start);
+	add_ioapic(st->address + PHYS_PAGE_MAP, st->apicid, st->int_start);
 }
 
 int parse_acpi_madt(void)
 {
-	pmap_create(&apic_pmap, 0);
 	int length;
 	void *ptr = acpi_get_table_data("APIC", &length);
 	if(!ptr) {
@@ -55,7 +52,7 @@ int parse_acpi_madt(void)
 	}
 	
 	uint64_t controller_address = *(uint32_t *)ptr;
-	lapic_addr = pmap_get_mapping(&apic_pmap, controller_address);
+	lapic_addr = controller_address + PHYS_PAGE_MAP;
 	void *tmp = (void *)((addr_t)ptr + 8);
 	/* the ACPI MADT specification says that we may assume
 	 * that the boot processor is the first processor listed

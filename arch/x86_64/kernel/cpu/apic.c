@@ -9,7 +9,6 @@
 #include <sea/dm/dev.h>
 #include <sea/vsprintf.h>
 #include <sea/cpu/interrupt.h>
-#include <sea/mm/pmap.h>
 #include <sea/tm/timing.h>
 #define MAX_IOAPIC 8
 #define write_ioapic(l,o,v) ioapic_rw(l, WRITE, o, v)
@@ -23,21 +22,19 @@ struct ioapic {
 unsigned lapic_timer_start=0;
 volatile unsigned num_ioapic=0;
 struct ioapic ioapic_list[MAX_IOAPIC];
-struct pmap ioapic_pmap;
-static struct pmap lapic_pmap;
 
 int lapic_inited = 0;
 
 void lapic_write(int reg, uint32_t data)
 {
 	if(lapic_inited)
-		*((uint32_t *)pmap_get_mapping(&lapic_pmap, lapic_addr + reg)) = data;
+		*((uint32_t *)lapic_addr + reg + PHYS_PAGE_MAP) = data;
 }
 
 uint32_t lapic_read(int reg)
 {
 	if(lapic_inited)
-		return (uint32_t)*((volatile uint32_t *)pmap_get_mapping(&lapic_pmap, lapic_addr + reg));
+		return (uint32_t)*((volatile uint32_t *)(lapic_addr + reg + PHYS_PAGE_MAP));
 	return 0;
 }
 
@@ -133,8 +130,6 @@ void init_lapic(int extint)
 	int i;
 	/* this function is called per-cpu, but we only want this map
 	 * to be initialized once */
-	if(!lapic_inited)
-		pmap_create(&lapic_pmap, 0);
 	lapic_inited=1;
 	/* we may be in a state where there are interrupts left
 	 * in the registers that haven't been EOI'd. I'm pretending like

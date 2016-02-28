@@ -35,7 +35,7 @@ struct section_data kernel_sections;
 
 static void parse_kernel_command_line(char *buf)
 {
-	char *c = buf + PHYS_PAGE_MAP; //TODO: something like mm_physical_read
+	char *c = buf + PHYS_PAGE_MAP;
 	while(c && *c) {
 		char *tmp = strchr(c, ' ');
 		if(tmp) *tmp++ = 0;

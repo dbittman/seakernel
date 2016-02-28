@@ -4,7 +4,6 @@
 	* Improve syscall ABI (64bit returns)
 	* Fix unlinking in FS
 0.4 A2
-	* COW
 	* Page cache
 	* Better eviction algorithms and performance
 	* Module arguments

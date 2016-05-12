@@ -1,6 +1,9 @@
 SeaOS - seakernel
 =================
 
+NOTE - A current large refactoring of this kernel is happening in a separate repo and will be merged into this one
+as soon as it is stable!
+
 A self-hosting *simple* UNIX compatible operating system written from scratch and easy to modify. It is a modular hybrid kernel designed to provide simplicity without giving up performance.
 
 Current Stats
